@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
 import AgentSuggestionExplainer from '../AgentSuggestionExplainer';
 import { AgentSuggestion } from '../../../../core/agent/ClinicalAgent';
@@ -8,18 +8,26 @@ import * as AgentExplainer from '../../../../core/agent/AgentExplainer';
 
 // Mock de la función explainSuggestion
 vi.mock('../../../../core/agent/AgentExplainer', () => ({
-  explainSuggestion: vi.fn().mockImplementation((suggestion) => {
-    return Promise.resolve('Explicación simulada para pruebas: ' + suggestion.content);
-  })
+  explainSuggestion: vi.fn()
 }));
 
 describe('AgentSuggestionExplainer', () => {
-  // Restablecer los mocks antes de cada prueba
+  // Mock para el console.log para evitar salidas en la consola durante las pruebas
+  const originalConsoleLog = console.log;
   beforeEach(() => {
-    vi.clearAllMocks();
+    console.log = vi.fn();
+    // Resetear el mock por defecto para cada test
+    vi.mocked(AgentExplainer.explainSuggestion).mockImplementation((suggestion) => {
+      return Promise.resolve('Explicación simulada para pruebas: ' + suggestion.content);
+    });
   });
-
-  // Datos de prueba: sugerencias ficticias para probar el componente
+  
+  afterEach(() => {
+    console.log = originalConsoleLog;
+    vi.resetAllMocks();
+  });
+  
+  // Datos de prueba: sugerencia ficticia para probar el componente
   const mockRecommendation: AgentSuggestion = {
     id: 'sugg-1',
     sourceBlockId: 'block-1',
@@ -60,16 +68,17 @@ describe('AgentSuggestionExplainer', () => {
     render(<AgentSuggestionExplainer suggestion={mockRecommendation} />);
     
     // Verificar que la explicación no está visible inicialmente
-    expect(screen.queryByText(/Explicación simulada/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('explanation-text')).not.toBeInTheDocument();
     
     // Hacer clic en el botón de explicación
     fireEvent.click(screen.getByText('Ver explicación'));
     
     // Verificar que aparece el mensaje de carga
-    expect(screen.getByText('Generando explicación...')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
     
     // Verificar que la explicación se muestra después de cargar
     await waitFor(() => {
+      expect(screen.getByTestId('explanation-text')).toBeInTheDocument();
       expect(screen.getByText('Explicación simulada para pruebas: Considerar evaluación de escala de dolor.')).toBeInTheDocument();
     });
     
@@ -85,14 +94,14 @@ describe('AgentSuggestionExplainer', () => {
     
     // Esperar a que se cargue la explicación
     await waitFor(() => {
-      expect(screen.getByText(/Explicación simulada/)).toBeInTheDocument();
+      expect(screen.getByTestId('explanation-text')).toBeInTheDocument();
     });
     
     // Ocultar la explicación
     fireEvent.click(screen.getByText('Ocultar explicación'));
     
     // Verificar que la explicación ya no está visible
-    expect(screen.queryByText(/Explicación simulada/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('explanation-text')).not.toBeInTheDocument();
   });
 
   it('no vuelve a llamar a explainSuggestion si ya se generó una explicación', async () => {
@@ -103,7 +112,7 @@ describe('AgentSuggestionExplainer', () => {
     
     // Esperar a que se cargue la explicación
     await waitFor(() => {
-      expect(screen.getByText(/Explicación simulada/)).toBeInTheDocument();
+      expect(screen.getByTestId('explanation-text')).toBeInTheDocument();
     });
     
     // Ocultar la explicación
@@ -118,16 +127,21 @@ describe('AgentSuggestionExplainer', () => {
 
   it('maneja los errores cuando falla la generación de explicación', async () => {
     // Configurar el mock para simular un error
-    vi.mocked(AgentExplainer.explainSuggestion).mockRejectedValueOnce(new Error('Error simulado'));
+    vi.mocked(AgentExplainer.explainSuggestion).mockRejectedValue(new Error('Error simulado'));
     
     render(<AgentSuggestionExplainer suggestion={mockWarning} />);
     
     // Hacer clic en el botón de explicación
     fireEvent.click(screen.getByText('Ver explicación'));
     
-    // Verificar que se muestra un mensaje de error genérico
+    // Esperar a que aparezca el mensaje de error
     await waitFor(() => {
-      expect(screen.getByText('No se pudo generar una explicación para esta sugerencia.')).toBeInTheDocument();
+      expect(screen.getByTestId('explanation-text')).toHaveTextContent('No se pudo generar una explicación para esta sugerencia.');
     });
+    
+    // Verificar que tiene las clases de error
+    const errorElement = screen.getByTestId('explanation-text');
+    expect(errorElement).toHaveClass('text-red-600');
+    expect(errorElement).toHaveClass('bg-red-50');
   });
 }); 

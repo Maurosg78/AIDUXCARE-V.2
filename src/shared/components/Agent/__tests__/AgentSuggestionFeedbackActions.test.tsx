@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom';
-import AgentSuggestionFeedbackActions, { AgentSuggestionFeedback } from '../AgentSuggestionFeedbackActions';
+import AgentSuggestionFeedbackActions from '../AgentSuggestionFeedbackActions';
 import { AgentSuggestion } from '../../../../core/agent/ClinicalAgent';
 
 describe('AgentSuggestionFeedbackActions', () => {

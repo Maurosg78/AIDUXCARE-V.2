@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
-import AgentSuggestionFeedbackActions, { AgentSuggestionFeedback } from './AgentSuggestionFeedbackActions';
+import AgentSuggestionFeedbackActions from './AgentSuggestionFeedbackActions';
 
 /**
  * Props para el componente AgentSuggestionsViewer
@@ -97,7 +97,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
                       <AgentSuggestionExplainer suggestion={suggestion} />
                       <AgentSuggestionFeedbackActions 
                         suggestion={suggestion} 
-                        onFeedback={(feedback: AgentSuggestionFeedback) => {
+                        onFeedback={() => {
                           // El manejador ya muestra en consola el feedback dentro del componente
                         }} 
                       />
@@ -122,7 +122,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
                       <AgentSuggestionExplainer suggestion={suggestion} />
                       <AgentSuggestionFeedbackActions 
                         suggestion={suggestion} 
-                        onFeedback={(feedback: AgentSuggestionFeedback) => {
+                        onFeedback={() => {
                           // El manejador ya muestra en consola el feedback dentro del componente
                         }} 
                       />
@@ -147,7 +147,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
                       <AgentSuggestionExplainer suggestion={suggestion} />
                       <AgentSuggestionFeedbackActions 
                         suggestion={suggestion} 
-                        onFeedback={(feedback: AgentSuggestionFeedback) => {
+                        onFeedback={() => {
                           // El manejador ya muestra en consola el feedback dentro del componente
                         }} 
                       />
