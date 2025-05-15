@@ -2,3 +2,4 @@
 
 Asistente clínico inteligente rediseñado desde cero.
 
+# trigger validate workflow
