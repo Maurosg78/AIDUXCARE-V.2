@@ -54,23 +54,23 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-boneWhite px-4 sm:px-6 lg:px-8 font-sans">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">AiDuxCare</h1>
-          <h2 className="mt-6 text-2xl font-bold tracking-tight text-gray-900">Crear cuenta</h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold tracking-tight text-slateBlue">AiDuxCare</h1>
+          <h2 className="mt-6 text-2xl font-bold tracking-tight text-slateBlue">Crear cuenta</h2>
+          <p className="mt-2 text-sm text-slateBlue/70">
             Regístrate para comenzar a utilizar el sistema
           </p>
         </div>
         
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-softCoral/10 border-l-4 border-softCoral p-4">
+            <p className="text-softCoral">{error}</p>
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleRegister}>
+        <form className="mt-8 space-y-6" onSubmit={handleRegister} role="form">
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="fullname" className="sr-only">
@@ -82,7 +82,7 @@ const RegisterPage = () => {
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full rounded-md border-0 p-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue placeholder:text-neutralGray focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
                 placeholder="Nombre completo"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
@@ -98,7 +98,7 @@ const RegisterPage = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border-0 p-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue placeholder:text-neutralGray focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
                 placeholder="Correo electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +114,7 @@ const RegisterPage = () => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 p-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm"
+                className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue placeholder:text-neutralGray focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -126,7 +126,7 @@ const RegisterPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-3 text-sm font-semibold text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`group relative flex w-full justify-center rounded-md bg-softCoral px-3 py-3 text-sm font-semibold text-white hover:bg-intersectionGreen focus:outline-none focus:ring-2 focus:ring-intersectionGreen focus:ring-offset-2 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {loading ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
@@ -134,9 +134,9 @@ const RegisterPage = () => {
         </form>
 
         <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slateBlue/70">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link to="/login" className="font-medium text-softCoral hover:text-intersectionGreen transition-colors">
               Inicia sesión
             </Link>
           </p>

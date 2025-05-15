@@ -17,8 +17,8 @@ const Layout = () => {
   // Mostrar pantalla de carga mientras verifica la autenticación
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-boneWhite">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-softCoral"></div>
       </div>
     );
   }
@@ -34,47 +34,47 @@ const Layout = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-boneWhite font-sans">
       {/* Sidebar móvil */}
       <div className={`
-        fixed inset-0 z-40 lg:hidden bg-gray-600 bg-opacity-75 transition-opacity duration-300
+        fixed inset-0 z-40 lg:hidden bg-slateBlue/75 transition-opacity duration-300
         ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
       `} onClick={toggleSidebar}></div>
       
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 lg:translate-x-0 lg:static lg:h-auto
+        fixed inset-y-0 left-0 z-50 w-64 bg-slateBlue shadow-lg transform transition-transform duration-300 lg:translate-x-0 lg:static lg:h-auto
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-center h-16 border-b">
-          <h1 className="text-xl font-bold text-gray-800">AiDuxCare</h1>
+        <div className="flex items-center justify-center h-16 border-b border-white/20">
+          <h1 className="text-xl font-bold text-white">AiDuxCare</h1>
         </div>
         <nav className="mt-5 px-2">
           <ul className="space-y-2">
             <li>
-              <Link to="/" className="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200">
+              <Link to="/" className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-softCoral/80 transition-colors">
                 <span className="mx-4">Dashboard</span>
               </Link>
             </li>
             <li>
-              <Link to="/pacientes" className="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200">
+              <Link to="/pacientes" className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-softCoral/80 transition-colors">
                 <span className="mx-4">Pacientes</span>
               </Link>
             </li>
             <li>
-              <Link to="/visitas" className="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200">
+              <Link to="/visitas" className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-softCoral/80 transition-colors">
                 <span className="mx-4">Visitas</span>
               </Link>
             </li>
             <li>
-              <Link to="/configuracion" className="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200">
+              <Link to="/configuracion" className="flex items-center px-4 py-2 text-white rounded-lg hover:bg-softCoral/80 transition-colors">
                 <span className="mx-4">Configuración</span>
               </Link>
             </li>
             <li>
               <button 
                 onClick={logout}
-                className="w-full flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="w-full flex items-center px-4 py-2 text-white rounded-lg bg-softCoral hover:bg-intersectionGreen transition-colors"
               >
                 <span className="mx-4">Cerrar sesión</span>
               </button>
@@ -87,7 +87,7 @@ const Layout = () => {
         {/* Header */}
         <header className="sticky top-0 z-10 flex items-center h-16 bg-white shadow-sm px-6">
           <button
-            className="text-gray-500 focus:outline-none lg:hidden"
+            className="text-slateBlue focus:outline-none lg:hidden"
             onClick={toggleSidebar}
             title="Abrir menú"
           >
@@ -96,17 +96,17 @@ const Layout = () => {
             </svg>
           </button>
           <div className="ml-4 lg:ml-0">
-            <h1 className="text-lg font-medium">AiDuxCare V.2</h1>
+            <h1 className="text-lg font-medium text-slateBlue font-sans">AiDuxCare V.2</h1>
           </div>
           {user && (
             <div className="ml-auto">
-              <span className="text-sm text-gray-600">{user.email}</span>
+              <span className="text-sm text-slateBlue">{user.email}</span>
             </div>
           )}
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-boneWhite">
           <Outlet />
         </main>
       </div>
