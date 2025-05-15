@@ -5,8 +5,7 @@ import {
   getSemanticMemory 
 } from '@/core/mcp/MCPDataSourceSupabase';
 import supabase from '@/core/auth/supabaseClient';
-import { PostgrestFilterBuilder, PostgrestBuilder } from '@supabase/postgrest-js';
-import { MCPMemoryBlock, MCPMemoryBlockSchema } from '@/core/mcp/schema';
+import { MCPMemoryBlock } from '@/core/mcp/schema';
 
 // Tipo para un objeto de respuesta de Supabase
 type SupabaseResponse<T> = {
@@ -14,28 +13,26 @@ type SupabaseResponse<T> = {
   error: { message: string } | null;
 };
 
-// Función para crear un builder de Supabase tipado y funcional
-function createMockSupabaseBuilder<T>(responseData: SupabaseResponse<T[]>) {
-  // Creamos un objeto que imita la cadena de métodos de Supabase y que al final
-  // devuelve una promesa con los datos que queremos
-  const mockBuilder = {
-    // Métodos de filtrado
-    eq: () => mockBuilder,
-    neq: () => mockBuilder,
-    gt: () => mockBuilder,
-    gte: () => mockBuilder,
-    lt: () => mockBuilder,
-    lte: () => mockBuilder,
-    order: () => mockBuilder,
-    
-    // Este es el final de la cadena, que retorna una promesa con los datos
-    then: <R>(onfulfilled: (value: SupabaseResponse<T[]>) => R) => {
-      return Promise.resolve(onfulfilled(responseData));
-    },
-    catch: () => Promise.resolve(responseData),
+// Interfaces para mocks tipados de Supabase
+interface MockSupabaseFilter<T> {
+  eq: (column: string, value: string) => MockSupabaseOrder<T>;
+  order: (column: string, options?: { ascending?: boolean }) => Promise<SupabaseResponse<T[]>>;
+}
+
+interface MockSupabaseOrder<T> {
+  order: (column: string, options?: { ascending?: boolean }) => Promise<SupabaseResponse<T[]>>;
+}
+
+// Función para crear un mock de respuesta de Supabase
+function createMockSupabaseResponse<T>(
+  responseData: SupabaseResponse<T[]>
+): MockSupabaseFilter<T> {
+  return {
+    eq: () => ({
+      order: () => Promise.resolve(responseData)
+    }),
+    order: () => Promise.resolve(responseData)
   };
-  
-  return mockBuilder as unknown as PostgrestFilterBuilder<any, any, T[]>;
 }
 
 // Mock del cliente Supabase
@@ -79,9 +76,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getContextualMemory('visit-123');
       expect(result).toHaveLength(1);
@@ -96,9 +99,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getContextualMemory('visit-123');
       expect(result).toHaveLength(0);
@@ -112,9 +121,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getContextualMemory('visit-123');
       expect(result).toHaveLength(0);
@@ -122,15 +137,21 @@ describe('MCPDataSourceSupabase', () => {
 
     it('debería manejar errores de validación de Zod', async () => {
       // Crear un mock de respuesta con datos inválidos
-      const mockResponse: SupabaseResponse<any[]> = {
+      const mockResponse: SupabaseResponse<Record<string, unknown>[]> = {
         data: [invalidMemoryBlock],
         error: null
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<Record<string, unknown>>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getContextualMemory('visit-123');
       expect(result).toHaveLength(0);
@@ -146,9 +167,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getPersistentMemory('patient-456');
       expect(result).toHaveLength(1);
@@ -157,13 +184,21 @@ describe('MCPDataSourceSupabase', () => {
 
     it('debería manejar errores de red y validación', async () => {
       // Crear un mock que rechaza la promesa para simular un error de red
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => ({
-          eq: () => ({
-            order: () => Promise.reject(new Error('Error de red'))
-          })
-        })
-      } as any);
+      const mockOrder = vi.fn().mockRejectedValue(new Error('Error de red'));
+      
+      const mockEq = {
+        order: mockOrder
+      };
+      
+      const mockSelect = {
+        eq: vi.fn().mockReturnValue(mockEq)
+      };
+      
+      const mockFrom = {
+        select: vi.fn().mockReturnValue(mockSelect)
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getPersistentMemory('patient-456');
       expect(result).toHaveLength(0);
@@ -179,9 +214,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getSemanticMemory();
       expect(result).toHaveLength(1);
@@ -196,9 +237,15 @@ describe('MCPDataSourceSupabase', () => {
       };
       
       // Configurar el mock de Supabase
-      vi.spyOn(supabase, 'from').mockReturnValue({
-        select: () => createMockSupabaseBuilder(mockResponse)
-      } as any);
+      const mockSelect = vi.fn().mockReturnValue(
+        createMockSupabaseResponse<MCPMemoryBlock>(mockResponse)
+      );
+      
+      const mockFrom = {
+        select: mockSelect
+      };
+      
+      vi.spyOn(supabase, 'from').mockReturnValue(mockFrom);
 
       const result = await getSemanticMemory();
       expect(result).toHaveLength(0);

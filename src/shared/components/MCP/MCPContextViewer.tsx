@@ -356,7 +356,6 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
     if (onSave) {
       // En esta versión, solo se simula la validación sin persistencia real
       // La persistencia real se implementará en v2.2.1-persistence
-      console.log("✅ Contexto validado y listo para guardar");
       await onSave(workingContext);
     }
   };
@@ -422,7 +421,7 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
             <li>Valide cada bloque individualmente</li>
             <li>Los bloques pendientes se muestran con fondo amarillo</li>
             <li>Los bloques validados se muestran con fondo verde</li>
-            <li>El botón "Confirmar incorporación al EMR" se habilitará cuando todos los bloques estén validados</li>
+            <li>El botón &quot;Confirmar incorporación al EMR&quot; se habilitará cuando todos los bloques estén validados</li>
             <li className="text-blue-600">Nota: La persistencia real estará disponible en v2.2.1-persistence</li>
           </ul>
         </div>
