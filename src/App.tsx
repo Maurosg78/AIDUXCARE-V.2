@@ -1,4 +1,5 @@
-import { Routes, Route, useRoutes } from 'react-router-dom';
+import { useRoutes } from 'react-router-dom';
+
 import { appRoutes } from './core/router';
 
 function App() {
