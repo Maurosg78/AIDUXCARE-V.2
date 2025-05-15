@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import MCPContextViewer from '@/shared/components/MCP/MCPContextViewer';
+import AuditLogViewer from '@/shared/components/Audit/AuditLogViewer';
+import AgentSuggestionsViewer from '@/shared/components/Agent/AgentSuggestionsViewer';
 import { MCPContext } from '@/core/mcp/schema';
 import { MCPManager } from '@/core/mcp/MCPManager';
+import { AuditLogger } from '@/core/mcp/AuditLogger';
+import { AgentSuggestion } from '@/core/agent/ClinicalAgent';
+import { buildAgentContext } from '@/core/agent/AgentContextBuilder';
+import { getAgentSuggestions } from '@/core/agent/ClinicalAgent';
 
 /**
  * Página de detalle de una visita clínica
@@ -17,6 +23,7 @@ const VisitDetailPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
 
   // Referencia al MCPManager
   const mcpManager = new MCPManager();
@@ -39,6 +46,13 @@ const VisitDetailPage: React.FC = () => {
         
         setContext(mcpContext);
         setError(false);
+
+        // Generar un contexto para el agente
+        const agentContext = buildAgentContext(mcpContext);
+        
+        // Obtener sugerencias del agente
+        const agentSuggestions = await getAgentSuggestions(agentContext);
+        setSuggestions(agentSuggestions);
       } catch (err) {
         console.error('Error al cargar el contexto MCP:', err);
         setError(true);
@@ -50,26 +64,33 @@ const VisitDetailPage: React.FC = () => {
     fetchMCPContext();
   }, [visitId]);
 
-  // Función para simular guardado del contexto (sin persistencia real)
+  // Función para guardar el contexto con persistencia real en Supabase
   const handleSaveContext = async (updatedContext: MCPContext): Promise<void> => {
     try {
       setSaving(true);
       setSaveError(false);
       setSaveSuccess(false);
       
-      // NOTA: En esta versión, solo simulamos el guardado con un console.log
-      // La persistencia real estará disponible en v2.2.1-persistence
-      console.log("✅ Contexto validado y listo para guardar");
+      // Usando la persistencia real en Supabase
+      const success = await mcpManager.saveContext(updatedContext);
       
-      // Utilizamos saveContext solo para logging (no hay persistencia real)
-      await mcpManager.saveContext(updatedContext);
+      if (!success) {
+        throw new Error('Error al guardar el contexto en Supabase');
+      }
       
       // Actualizamos el estado local para reflejar los cambios
       setContext(updatedContext);
       setSaveSuccess(true);
       setEditMode(false);
+
+      // Actualizar sugerencias del agente con el contexto actualizado
+      if (updatedContext) {
+        const agentContext = buildAgentContext(updatedContext);
+        const agentSuggestions = await getAgentSuggestions(agentContext);
+        setSuggestions(agentSuggestions);
+      }
     } catch (err) {
-      console.error('Error al simular guardado del contexto MCP:', err);
+      console.error('Error al guardar el contexto MCP:', err);
       setSaveError(true);
     } finally {
       setSaving(false);
@@ -119,20 +140,19 @@ const VisitDetailPage: React.FC = () => {
         
         {saving && (
           <div className="p-4 mb-4 bg-blue-50 border border-blue-200 rounded text-center">
-            <p className="text-blue-600">Simulando guardado...</p>
+            <p className="text-blue-600">Guardando cambios en la base de datos...</p>
           </div>
         )}
         
         {saveError && (
           <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded text-center">
-            <p className="text-red-600">Error al procesar los cambios. Por favor, intente nuevamente.</p>
+            <p className="text-red-600">Error al guardar los cambios en la base de datos. Por favor, intente nuevamente.</p>
           </div>
         )}
         
         {saveSuccess && (
           <div className="p-4 mb-4 bg-green-50 border border-green-200 rounded text-center">
-            <p className="text-green-600">¡Cambios validados correctamente! (Guardado simulado)</p>
-            <p className="text-xs text-gray-600 mt-1">Nota: La persistencia real estará disponible en v2.2.1-persistence</p>
+            <p className="text-green-600">¡Cambios guardados exitosamente en la base de datos!</p>
           </div>
         )}
         
@@ -156,6 +176,22 @@ const VisitDetailPage: React.FC = () => {
           />
         )}
       </div>
+      
+      {/* Visor de sugerencias del agente */}
+      {visitId && !loading && !error && (
+        <AgentSuggestionsViewer 
+          visitId={visitId}
+          suggestions={suggestions}
+        />
+      )}
+      
+      {/* Visor de logs de auditoría */}
+      {visitId && (
+        <AuditLogViewer 
+          visitId={visitId}
+          logs={AuditLogger.getAuditLogs()}
+        />
+      )}
     </div>
   );
 };

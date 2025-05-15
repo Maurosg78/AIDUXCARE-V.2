@@ -108,13 +108,11 @@ export async function getSemanticMemory(): Promise<MCPMemoryBlock[]> {
   }
 }
 
-// ❌ Desactivado hasta v2.2.1-persistence
 /**
  * Actualiza múltiples bloques de memoria en las tablas correspondientes
  * @param blocks Array de bloques de memoria a actualizar
  * @returns Array con los IDs de los bloques actualizados exitosamente
  */
-/*
 export async function updateMemoryBlocks(blocks: Record<string, unknown>[]): Promise<string[]> {
   if (!blocks || blocks.length === 0) {
     return [];
@@ -173,5 +171,4 @@ export async function updateMemoryBlocks(blocks: Record<string, unknown>[]): Pro
     console.error('Error al actualizar bloques de memoria:', error);
     return [];
   }
-}
-*/ 
+} 

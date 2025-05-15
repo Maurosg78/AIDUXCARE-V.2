@@ -4,9 +4,9 @@ import {
   getContextualMemory,
   getPersistentMemory,
   getSemanticMemory,
-  // ❌ Desactivado hasta v2.2.1-persistence
-  // updateMemoryBlocks
+  updateMemoryBlocks
 } from "./MCPDataSourceSupabase";
+import { AuditLogger } from './AuditLogger';
 
 /**
  * Clase principal que gestiona la creación y orquestación del contexto MCP
@@ -75,15 +75,36 @@ export class MCPManager {
     }
   }
 
-  // ❌ Desactivado hasta v2.2.1-persistence
   /**
    * Guarda un contexto MCP actualizado en la base de datos
    * @param updatedContext Contexto MCP con cambios realizados por el usuario
    * @returns Boolean indicando si la operación fue exitosa
    */
-  /*
   async saveContext(updatedContext: MCPContext): Promise<boolean> {
     try {
+      // Primero recuperamos los bloques originales para auditoría
+      const visitId = this.getVisitIdFromContext(updatedContext);
+      const patientId = this.getPatientIdFromContext(updatedContext);
+      
+      if (!visitId) {
+        console.error("[MCP] Error saving context: Missing visit_id");
+        return false;
+      }
+      
+      // Obtener los bloques originales
+      const [contextualMemory, persistentMemory, semanticMemory] = await Promise.all([
+        getContextualMemory(visitId),
+        getPersistentMemory(patientId || ''),
+        getSemanticMemory()
+      ]);
+      
+      // Combinar los bloques originales
+      const originalBlocks = [
+        ...contextualMemory.map(block => ({ ...block, type: 'contextual' })),
+        ...persistentMemory.map(block => ({ ...block, type: 'persistent' })),
+        ...semanticMemory.map(block => ({ ...block, type: 'semantic' }))
+      ];
+      
       // Extrae todos los bloques de memoria de las diferentes secciones
       const contextualBlocks = updatedContext.contextual.data.map(block => ({
         ...block,
@@ -100,12 +121,16 @@ export class MCPManager {
         type: 'semantic' // Asegurar que el tipo sea correcto
       }));
       
-      // Combinar todos los bloques
+      // Combinar todos los bloques actualizados
       const allBlocks = [
         ...contextualBlocks,
         ...persistentBlocks,
         ...semanticBlocks
       ];
+      
+      // Registrar operaciones en el log de auditoría
+      // Por ahora utilizamos un ID de usuario fijo
+      AuditLogger.logBlockUpdates(originalBlocks, allBlocks, "admin-test-001", visitId);
       
       // Actualizar los bloques en Supabase
       const result = await updateMemoryBlocks(allBlocks);
@@ -119,25 +144,65 @@ export class MCPManager {
       return false;
     }
   }
-  */
 
   /**
-   * Función temporal de simulación de guardado para la versión actual sin persistencia
-   * @param updatedContext Contexto MCP con cambios realizados por el usuario
-   * @returns Promise que siempre resuelve a true
+   * Obtiene el ID de visita del contexto
+   * @param context Contexto MCP
+   * @returns ID de visita o undefined si no se encuentra
    */
-  async saveContext(updatedContext: MCPContext): Promise<boolean> {
-    console.log("✅ Contexto validado y listo para guardar");
-    console.log("[MCP] Persistencia real desactivada hasta v2.2.1-persistence");
+  private getVisitIdFromContext(context: MCPContext): string | undefined {
+    // Buscar en los bloques contextuales primero, ya que suelen tener el visit_id
+    for (const block of context.contextual.data) {
+      if ('visit_id' in block && typeof block.visit_id === 'string') {
+        return block.visit_id;
+      }
+    }
     
-    // Loguear los datos que se guardarían (para debugging y desarrollo)
-    console.log("Datos que se guardarían:", JSON.stringify({
-      contextual: updatedContext.contextual.data.length,
-      persistent: updatedContext.persistent.data.length,
-      semantic: updatedContext.semantic.data.length
-    }));
+    // Si no lo encontramos, buscar en los bloques de memoria persistente
+    for (const block of context.persistent.data) {
+      if ('visit_id' in block && typeof block.visit_id === 'string') {
+        return block.visit_id;
+      }
+    }
     
-    return true;
+    // Si aún no lo encontramos, buscar en los bloques de memoria semántica
+    for (const block of context.semantic.data) {
+      if ('visit_id' in block && typeof block.visit_id === 'string') {
+        return block.visit_id;
+      }
+    }
+    
+    return undefined;
+  }
+  
+  /**
+   * Obtiene el ID de paciente del contexto
+   * @param context Contexto MCP
+   * @returns ID de paciente o undefined si no se encuentra
+   */
+  private getPatientIdFromContext(context: MCPContext): string | undefined {
+    // Buscar en los bloques de memoria persistente primero, ya que suelen tener el patient_id
+    for (const block of context.persistent.data) {
+      if ('patient_id' in block && typeof block.patient_id === 'string') {
+        return block.patient_id;
+      }
+    }
+    
+    // Si no lo encontramos, buscar en los bloques contextuales
+    for (const block of context.contextual.data) {
+      if ('patient_id' in block && typeof block.patient_id === 'string') {
+        return block.patient_id;
+      }
+    }
+    
+    // Si aún no lo encontramos, buscar en los bloques de memoria semántica
+    for (const block of context.semantic.data) {
+      if ('patient_id' in block && typeof block.patient_id === 'string') {
+        return block.patient_id;
+      }
+    }
+    
+    return undefined;
   }
 
   /**
