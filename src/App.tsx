@@ -1,16 +1,9 @@
-import { Routes, Route } from 'react-router-dom';
-import Layout from './core/components/Layout';
-import HomePage from './pages/HomePage';
+import { Routes, Route, useRoutes } from 'react-router-dom';
+import { appRoutes } from './core/router';
 
 function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<HomePage />} />
-        {/* Aquí se pueden agregar más rutas en el futuro */}
-      </Route>
-    </Routes>
-  );
+  const routes = useRoutes(appRoutes);
+  return routes;
 }
 
 export default App; 
