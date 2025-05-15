@@ -56,7 +56,8 @@ describe('LoginPage Component', () => {
 
     // Hacer clic en el botón de login sin llenar los campos
     const loginButton = screen.getByRole('button', { name: 'Iniciar sesión' });
-    
+    expect(loginButton).toBeInTheDocument();
+ 
     // Simular el envío del formulario directamente
     const form = screen.getByRole('form');
     fireEvent.submit(form, { preventDefault: mockPreventDefault });
