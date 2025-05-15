@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import HomePage from '../../pages/HomePage';
 import LoginPage from '../../pages/LoginPage';
 import RegisterPage from '../../pages/RegisterPage';
+import VisitDetailPage from '../../features/visits/id/VisitDetailPage';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -12,6 +13,10 @@ export const appRoutes: RouteObject[] = [
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: 'visits/:id',
+        element: <VisitDetailPage />,
       },
     ],
   },
