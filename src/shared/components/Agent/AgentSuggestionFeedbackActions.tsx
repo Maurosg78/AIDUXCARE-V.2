@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
+import { logMetric } from '../../../services/UsageAnalyticsService';
 
 /**
  * Tipo para las posibles acciones de retroalimentación sobre una sugerencia
@@ -12,6 +13,8 @@ export type AgentSuggestionFeedback = 'accept' | 'reject' | 'defer';
 interface AgentSuggestionFeedbackActionsProps {
   suggestion: AgentSuggestion;
   onFeedback: (feedback: AgentSuggestionFeedback) => void;
+  visitId?: string;
+  userId?: string;
 }
 
 /**
@@ -19,7 +22,9 @@ interface AgentSuggestionFeedbackActionsProps {
  */
 const AgentSuggestionFeedbackActions: React.FC<AgentSuggestionFeedbackActionsProps> = ({
   suggestion,
-  onFeedback
+  onFeedback,
+  visitId,
+  userId = 'admin-test-001'
 }) => {
   const [selectedFeedback, setSelectedFeedback] = useState<AgentSuggestionFeedback | null>(null);
 
@@ -34,8 +39,16 @@ const AgentSuggestionFeedbackActions: React.FC<AgentSuggestionFeedbackActionsPro
     setSelectedFeedback(feedback);
     onFeedback(feedback);
     
-    // Mostrar en consola según los requerimientos
-    console.log(`Feedback para sugerencia ${suggestion.sourceBlockId}: ${feedback}`);
+    // Registrar métrica si es una aceptación y tenemos un visitId
+    if (feedback === 'accept' && visitId) {
+      logMetric({
+        timestamp: new Date().toISOString(),
+        visitId,
+        userId,
+        type: 'suggestions_accepted',
+        value: 1
+      });
+    }
   };
 
   return (

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
 import AgentSuggestionFeedbackActions from './AgentSuggestionFeedbackActions';
+import { AgentSuggestionFeedback } from './AgentSuggestionFeedbackActions';
 
 /**
  * Props para el componente AgentSuggestionsViewer
@@ -9,13 +10,22 @@ import AgentSuggestionFeedbackActions from './AgentSuggestionFeedbackActions';
 interface AgentSuggestionsViewerProps {
   visitId: string;
   suggestions: AgentSuggestion[];
+  onIntegrateSuggestions?: (count: number) => void;
+  userId?: string;
 }
 
 /**
  * Componente que muestra las sugerencias generadas por el agente clínico
  */
-const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggestions }) => {
+const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ 
+  visitId,
+  suggestions,
+  onIntegrateSuggestions,
+  userId = 'admin-test-001'
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [suggestionsWithFeedback, setSuggestionsWithFeedback] = useState<{[id: string]: AgentSuggestionFeedback}>({});
+  const [hasIntegratedToEMR, setHasIntegratedToEMR] = useState(false);
 
   // Agrupar sugerencias por tipo
   const groupedSuggestions = useMemo(() => {
@@ -31,6 +41,11 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
 
     return grouped;
   }, [suggestions]);
+
+  // Número de sugerencias aceptadas
+  const acceptedCount = useMemo(() => {
+    return Object.values(suggestionsWithFeedback).filter(feedback => feedback === 'accept').length;
+  }, [suggestionsWithFeedback]);
 
   // Obtener el emoji correspondiente al tipo de sugerencia
   const getTypeIcon = (type: 'recommendation' | 'warning' | 'info'): string => {
@@ -53,6 +68,22 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
         return 'bg-yellow-50 border-yellow-200';
       case 'info':
         return 'bg-green-50 border-green-200';
+    }
+  };
+
+  // Manejar el feedback de una sugerencia
+  const handleFeedback = (suggestionId: string, feedback: AgentSuggestionFeedback) => {
+    setSuggestionsWithFeedback(prev => ({
+      ...prev,
+      [suggestionId]: feedback
+    }));
+  };
+
+  // Integrar sugerencias aceptadas al EMR
+  const handleIntegrateToEMR = () => {
+    if (acceptedCount > 0 && onIntegrateSuggestions && !hasIntegratedToEMR) {
+      onIntegrateSuggestions(acceptedCount);
+      setHasIntegratedToEMR(true);
     }
   };
 
@@ -80,82 +111,111 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({ suggest
               Este agente no tiene sugerencias para esta visita.
             </p>
           ) : (
-            <div className="space-y-6">
-              {/* Recomendaciones */}
-              {groupedSuggestions.recommendation.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-md font-medium text-gray-700 flex items-center">
-                    {getTypeIcon('recommendation')} Recomendaciones ({groupedSuggestions.recommendation.length})
-                  </h4>
-                  {groupedSuggestions.recommendation.map(suggestion => (
-                    <div 
-                      key={suggestion.id} 
-                      className={`p-3 rounded-md border ${getTypeColorClass('recommendation')}`}
-                    >
-                      <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
-                      <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
-                      <AgentSuggestionExplainer suggestion={suggestion} />
-                      <AgentSuggestionFeedbackActions 
-                        suggestion={suggestion} 
-                        onFeedback={() => {
-                          // El manejador ya muestra en consola el feedback dentro del componente
-                        }} 
-                      />
-                    </div>
-                  ))}
+            <>
+              {/* Botón para integrar al EMR */}
+              {acceptedCount > 0 && !hasIntegratedToEMR && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-md flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-green-800">
+                      <span className="font-medium">{acceptedCount}</span> sugerencias aceptadas listas para integrar
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleIntegrateToEMR}
+                    className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Integrar al EMR
+                  </button>
                 </div>
               )}
 
-              {/* Advertencias */}
-              {groupedSuggestions.warning.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-md font-medium text-gray-700 flex items-center">
-                    {getTypeIcon('warning')} Advertencias ({groupedSuggestions.warning.length})
-                  </h4>
-                  {groupedSuggestions.warning.map(suggestion => (
-                    <div 
-                      key={suggestion.id} 
-                      className={`p-3 rounded-md border ${getTypeColorClass('warning')}`}
-                    >
-                      <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
-                      <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
-                      <AgentSuggestionExplainer suggestion={suggestion} />
-                      <AgentSuggestionFeedbackActions 
-                        suggestion={suggestion} 
-                        onFeedback={() => {
-                          // El manejador ya muestra en consola el feedback dentro del componente
-                        }} 
-                      />
-                    </div>
-                  ))}
+              {/* Confirmación de integración */}
+              {hasIntegratedToEMR && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-800 flex items-center">
+                    <span className="mr-2">✅</span>
+                    {acceptedCount} sugerencias han sido integradas en el registro clínico
+                  </p>
                 </div>
               )}
 
-              {/* Información */}
-              {groupedSuggestions.info.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-md font-medium text-gray-700 flex items-center">
-                    {getTypeIcon('info')} Información ({groupedSuggestions.info.length})
-                  </h4>
-                  {groupedSuggestions.info.map(suggestion => (
-                    <div 
-                      key={suggestion.id} 
-                      className={`p-3 rounded-md border ${getTypeColorClass('info')}`}
-                    >
-                      <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
-                      <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
-                      <AgentSuggestionExplainer suggestion={suggestion} />
-                      <AgentSuggestionFeedbackActions 
-                        suggestion={suggestion} 
-                        onFeedback={() => {
-                          // El manejador ya muestra en consola el feedback dentro del componente
-                        }} 
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <div className="space-y-6">
+                {/* Recomendaciones */}
+                {groupedSuggestions.recommendation.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-md font-medium text-gray-700 flex items-center">
+                      {getTypeIcon('recommendation')} Recomendaciones ({groupedSuggestions.recommendation.length})
+                    </h4>
+                    {groupedSuggestions.recommendation.map(suggestion => (
+                      <div 
+                        key={suggestion.id} 
+                        className={`p-3 rounded-md border ${getTypeColorClass('recommendation')}`}
+                      >
+                        <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
+                        <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
+                        <AgentSuggestionExplainer suggestion={suggestion} />
+                        <AgentSuggestionFeedbackActions 
+                          suggestion={suggestion} 
+                          visitId={visitId}
+                          userId={userId}
+                          onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Advertencias */}
+                {groupedSuggestions.warning.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-md font-medium text-gray-700 flex items-center">
+                      {getTypeIcon('warning')} Advertencias ({groupedSuggestions.warning.length})
+                    </h4>
+                    {groupedSuggestions.warning.map(suggestion => (
+                      <div 
+                        key={suggestion.id} 
+                        className={`p-3 rounded-md border ${getTypeColorClass('warning')}`}
+                      >
+                        <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
+                        <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
+                        <AgentSuggestionExplainer suggestion={suggestion} />
+                        <AgentSuggestionFeedbackActions 
+                          suggestion={suggestion} 
+                          visitId={visitId}
+                          userId={userId}
+                          onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Información */}
+                {groupedSuggestions.info.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-md font-medium text-gray-700 flex items-center">
+                      {getTypeIcon('info')} Información ({groupedSuggestions.info.length})
+                    </h4>
+                    {groupedSuggestions.info.map(suggestion => (
+                      <div 
+                        key={suggestion.id} 
+                        className={`p-3 rounded-md border ${getTypeColorClass('info')}`}
+                      >
+                        <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
+                        <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
+                        <AgentSuggestionExplainer suggestion={suggestion} />
+                        <AgentSuggestionFeedbackActions 
+                          suggestion={suggestion}
+                          visitId={visitId}
+                          userId={userId}
+                          onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
           
           <div className="mt-4 text-right">

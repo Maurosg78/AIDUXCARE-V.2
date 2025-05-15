@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom';
 import MCPContextViewer from '@/shared/components/MCP/MCPContextViewer';
 import AuditLogViewer from '@/shared/components/Audit/AuditLogViewer';
 import AgentSuggestionsViewer from '@/shared/components/Agent/AgentSuggestionsViewer';
+import AgentUsageDashboard from '@/shared/components/Agent/AgentUsageDashboard';
 import { MCPContext } from '@/core/mcp/schema';
 import { MCPManager } from '@/core/mcp/MCPManager';
 import { AuditLogger } from '@/core/mcp/AuditLogger';
 import { AgentSuggestion } from '@/core/agent/ClinicalAgent';
 import { buildAgentContext } from '@/core/agent/AgentContextBuilder';
 import { getAgentSuggestions } from '@/core/agent/ClinicalAgent';
+import { logMetric } from '@/services/UsageAnalyticsService';
 
 /**
  * Página de detalle de una visita clínica
@@ -24,6 +26,9 @@ const VisitDetailPage: React.FC = () => {
   const [saveError, setSaveError] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
+  
+  // Estado para la integración de sugerencias al EMR
+  const [integratedCount, setIntegratedCount] = useState(0);
 
   // Referencia al MCPManager
   const mcpManager = new MCPManager();
@@ -101,6 +106,23 @@ const VisitDetailPage: React.FC = () => {
           setSaveSuccess(false);
         }, 3000);
       }
+    }
+  };
+
+  // Función para manejar la integración de sugerencias al EMR
+  const handleIntegrateSuggestions = (count: number) => {
+    if (count > 0 && visitId) {
+      // Registrar la métrica de integración
+      logMetric({
+        timestamp: new Date().toISOString(),
+        visitId,
+        userId: 'admin-test-001',
+        type: 'suggestions_integrated',
+        value: count
+      });
+      
+      // Actualizar el contador de integraciones
+      setIntegratedCount(prev => prev + count);
     }
   };
 
@@ -182,7 +204,13 @@ const VisitDetailPage: React.FC = () => {
         <AgentSuggestionsViewer 
           visitId={visitId}
           suggestions={suggestions}
+          onIntegrateSuggestions={handleIntegrateSuggestions}
         />
+      )}
+      
+      {/* Dashboard de métricas de uso */}
+      {visitId && (
+        <AgentUsageDashboard visitId={visitId} />
       )}
       
       {/* Visor de logs de auditoría */}
