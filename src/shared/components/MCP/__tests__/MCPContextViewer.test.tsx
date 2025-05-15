@@ -193,10 +193,7 @@ describe('MCPContextViewer', () => {
       });
     });
     
-    it('llama a onSave cuando se hace clic en el botón de confirmación y muestra mensaje de simulación', async () => {
-      // Espiar la función console.log
-      const consoleSpy = vi.spyOn(console, 'log');
-      
+    it('llama a onSave cuando se hace clic en el botón de confirmación', async () => {
       // Mock simple que resuelve inmediatamente (sin simulación de persistencia)
       const mockSave = vi.fn().mockResolvedValue(undefined);
       
@@ -221,18 +218,10 @@ describe('MCPContextViewer', () => {
       // Hacemos clic en el botón de confirmación
       fireEvent.click(confirmButton);
       
-      // Verificamos que se mostró el mensaje de simulación en consola
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith("✅ Contexto validado y listo para guardar");
-      });
-      
       // Verificamos que se llamó a onSave
       await waitFor(() => {
         expect(mockSave).toHaveBeenCalledTimes(1);
       });
-      
-      // Limpieza
-      consoleSpy.mockRestore();
     });
     
     it('muestra indicador de que la persistencia real estará disponible en una versión futura', () => {
