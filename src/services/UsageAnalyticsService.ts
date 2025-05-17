@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 

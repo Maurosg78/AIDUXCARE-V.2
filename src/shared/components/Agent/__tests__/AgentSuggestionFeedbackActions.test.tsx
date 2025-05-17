@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 vi.mock("@/core/auth/supabaseClient");
 // Mock para supabaseClient
 vi.mock('@/core/auth/supabaseClient', () => {

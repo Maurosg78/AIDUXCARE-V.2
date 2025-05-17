@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Cliente directo de Supabase que usa fetch para diagnóstico y como último recurso
  * Este archivo evita usar la biblioteca oficial para descartar problemas con ella

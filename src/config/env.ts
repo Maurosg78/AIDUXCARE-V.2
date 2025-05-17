@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // Archivo de configuración para variables de entorno
 import { z } from 'zod';
 

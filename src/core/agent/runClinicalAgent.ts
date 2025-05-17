@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { MCPContext } from '../mcp/schema';
 import { buildAgentContext } from './AgentContextBuilder';
 import { executeAgent } from './AgentExecutor';

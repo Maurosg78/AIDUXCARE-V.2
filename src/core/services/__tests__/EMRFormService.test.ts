@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // Primero mockeamos supabaseClient antes de importar EMRFormService
 vi.mock('../../../core/auth/supabaseClient', () => {
   return {

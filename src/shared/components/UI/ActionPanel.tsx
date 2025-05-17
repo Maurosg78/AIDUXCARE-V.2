@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React from 'react';
 
 interface ActionPanelProps {

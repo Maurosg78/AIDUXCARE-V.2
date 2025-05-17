@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // Este archivo simplemente exporta el cliente hardcodeado para desarrollo local
 // NOTA: Este es un bypass temporal para resolver problemas con variables de entorno
 import { createClient, SupabaseClient } from '@supabase/supabase-js';

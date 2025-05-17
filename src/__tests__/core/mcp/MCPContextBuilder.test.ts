@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { describe, expect, it } from 'vitest';
 import { MCPContext, MCPContextSchema } from '@/core/mcp/schema';
 

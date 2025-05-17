@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { createClient } from '@supabase/supabase-js';
 
 // ATENCIÓN: Este archivo solo debe usarse para desarrollo local

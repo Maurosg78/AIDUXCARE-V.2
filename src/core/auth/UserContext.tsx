@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React, { createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 

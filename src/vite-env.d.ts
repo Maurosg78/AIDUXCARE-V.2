@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {

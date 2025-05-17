@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // Este archivo proporciona un mock básico para @tanstack/react-virtual
 // para resolver problemas de dependencias
 

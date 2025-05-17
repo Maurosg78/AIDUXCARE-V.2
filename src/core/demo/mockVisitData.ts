@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { v4 as uuidv4 } from 'uuid';
 import { MCPContext, MCPMemoryBlock } from '@/core/mcp/schema';
 import { AgentSuggestion } from '@/core/agent/ClinicalAgent';

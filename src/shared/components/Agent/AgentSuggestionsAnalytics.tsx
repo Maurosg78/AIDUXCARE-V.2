@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React, { useState, useMemo } from 'react';
 import { getMetricsSummaryByVisit } from '../../../services/UsageAnalyticsService';
 

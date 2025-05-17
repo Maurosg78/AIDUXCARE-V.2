@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { MCPContext, MCPContextSchema } from './schema';
 
 /**

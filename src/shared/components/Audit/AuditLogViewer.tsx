@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React, { useState, useEffect } from 'react';
 import { AuditLogEntry, MCPUpdateAuditEntry, SuggestionIntegrationAuditEntry, AuditLogger } from '@/core/audit/AuditLogger';
 

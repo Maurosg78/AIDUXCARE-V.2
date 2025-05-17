@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React, { useState, useCallback } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import { explainSuggestion } from '../../../core/agent/AgentExplainer';

@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { useState, useEffect } from 'react';
 import { Session, AuthChangeEvent, SupabaseClient } from '@supabase/supabase-js';
 import supabase from '../auth/supabaseClient';

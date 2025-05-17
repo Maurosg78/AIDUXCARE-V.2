@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { createClient } from '@supabase/supabase-js';
 import { supabaseUrl, supabaseAnonKey, validateSupabaseEnv } from '@/config/env';
 

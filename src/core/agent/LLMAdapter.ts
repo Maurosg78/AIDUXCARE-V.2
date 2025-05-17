@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Tipo que define los proveedores de modelos de lenguaje soportados
  */

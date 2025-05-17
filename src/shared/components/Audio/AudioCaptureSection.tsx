@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import React, { useState } from 'react';
 
 interface AudioCaptureSectionProps {

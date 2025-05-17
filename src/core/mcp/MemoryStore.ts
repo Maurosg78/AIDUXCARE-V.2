@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Clase para gestionar el almacenamiento y recuperación de diferentes tipos de memoria en el MCP
  */

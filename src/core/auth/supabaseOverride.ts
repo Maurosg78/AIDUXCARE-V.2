@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { createClient } from '@supabase/supabase-js';
 
 // Credenciales hardcodeadas para desarrollo local

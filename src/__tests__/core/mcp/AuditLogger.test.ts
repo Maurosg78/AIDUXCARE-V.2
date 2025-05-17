@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AuditLogger } from '@/core/mcp/AuditLogger';
 

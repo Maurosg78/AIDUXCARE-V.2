@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // TODO: Validación visual del componente MCPContextViewer integrado en la vista de visita
 // 
 // Escenarios de prueba a implementar:

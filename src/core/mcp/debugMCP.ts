@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Script para depurar el funcionamiento del MCPContextBuilder
  * 

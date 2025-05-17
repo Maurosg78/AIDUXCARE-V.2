@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Tipo para representar una entrada de log de auditoría
  */

@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MCPManager } from '@/core/mcp/MCPManager';
 import * as SupabaseDataSource from '@/core/mcp/MCPDataSourceSupabase';

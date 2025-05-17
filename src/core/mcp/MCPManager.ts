@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import * as SupabaseDataSource from './MCPDataSourceSupabase';
 import { MCPMemoryBlock } from './schema';
 
