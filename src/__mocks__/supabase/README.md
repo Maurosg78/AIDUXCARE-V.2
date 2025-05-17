@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 # Mocks de Supabase para Tests
 
 Este directorio contiene implementaciones de mocks para el cliente de Supabase, diseñados para ser utilizados en tests unitarios y de integración.

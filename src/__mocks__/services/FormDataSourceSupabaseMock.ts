@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 // Mock para FormDataSourceSupabase para ser utilizado en pruebas
 export default class FormDataSourceSupabaseMock {
   constructor() {}
