@@ -1,3 +1,22 @@
+vi.mock("@/core/auth/supabaseClient");
+// Mock para supabaseClient
+vi.mock('@/core/auth/supabaseClient', () => {
+  return {
+    default: {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () => ({ data: {}, error: null }),
+          }),
+        }),
+      }),
+      auth: {
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      },
+    },
+  };
+});
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

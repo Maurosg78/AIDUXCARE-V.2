@@ -1,5 +1,30 @@
+vi.mock('@/core/auth/supabaseClient');
 import '@testing-library/jest-dom';
 import { vi, beforeAll, afterEach } from 'vitest';
+
+// Mock global para Supabase que se aplicará en todos los tests
+vi.mock('./core/auth/supabaseClient', () => {
+  return {
+    default: {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () => ({ data: {}, error: null }),
+            order: () => ({ data: [], error: null }),
+          }),
+        }),
+        insert: () => ({ data: {}, error: null }),
+        update: () => ({ data: {}, error: null }),
+        delete: () => ({ data: {}, error: null }),
+      }),
+      auth: {
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        signInWithPassword: () => Promise.resolve({ data: {}, error: null }),
+        signOut: () => Promise.resolve({ error: null }),
+      },
+    },
+  };
+});
 
 // Suprimir advertencias de consola durante las pruebas
 beforeAll(() => {
