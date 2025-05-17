@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+
 vi.mock('@/core/auth/supabaseClient');
 import '@testing-library/jest-dom';
 import { vi, beforeAll, afterEach } from 'vitest';
