@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session, AuthChangeEvent, SupabaseClient } from '@supabase/supabase-js';
 import supabase from '../auth/supabaseClient';
 import { UserProfile, userDataSourceSupabase } from '../services/userDataSourceSupabase';
 
@@ -79,7 +79,7 @@ export const useSession = (): UseSessionResult => {
 
     // Configurar listeners para cambios en la autenticación
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      async (event: AuthChangeEvent, newSession: Session | null) => {
         setSession(newSession);
         setLoading(true);
         

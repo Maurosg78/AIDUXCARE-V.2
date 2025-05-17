@@ -1,10 +1,42 @@
 export class AuditLogger {
-  static log(...args: any[]) {
-    console.log('[AuditLogger] log', ...args);
+  /**
+   * Registra un evento en el sistema de auditoría
+   * @param eventType Tipo de evento a registrar
+   * @param payload Datos asociados al evento
+   */
+  static log(eventType: string, payload: Record<string, any>) {
+    console.log(`[AuditLogger] ${eventType}`, payload);
+    return true;
   }
 
-  static logSuggestionIntegration(...args: any[]) {
-    console.log('[AuditLogger] suggestionIntegration', ...args);
+  /**
+   * Registra la integración de una sugerencia en el EMR
+   * @param userId ID del usuario que realiza la acción
+   * @param visitId ID de la visita
+   * @param suggestionId ID de la sugerencia
+   * @param suggestionType Tipo de sugerencia
+   * @param content Contenido de la sugerencia
+   * @param emrSection Sección del EMR donde se integró
+   */
+  static logSuggestionIntegration(
+    userId: string,
+    visitId: string,
+    suggestionId: string,
+    suggestionType: string,
+    content: string,
+    emrSection: string
+  ) {
+    const timestamp = new Date().toISOString();
+    
+    return this.log('suggestions.approved', {
+      visitId,
+      userId,
+      suggestionId,
+      suggestionType,
+      content,
+      field: emrSection,
+      timestamp
+    });
   }
 
   static logBlockUpdates(...args: any[]) {
@@ -36,6 +68,9 @@ export type AuditLogEntry = {
   suggestion_type?: string;
   suggestion_content?: string;
   emr_section?: string;
+  field?: string;
+  suggestionId?: string;
+  content?: string;
   details?: {
     visit_id?: string;
     patient_id?: string;

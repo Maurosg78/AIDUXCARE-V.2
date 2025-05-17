@@ -4,21 +4,25 @@ import { useUser } from '../auth/UserContext';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, role, loading, logout } = useUser();
+  const { user, role, isLoading, logout } = useUser();
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       // Si no está cargando y no hay usuario, redirigir al login
       navigate('/login');
     }
-  }, [user, loading, navigate]);
+  }, [user, isLoading, navigate]);
   
   // Mostrar pantalla de carga mientras verifica la autenticación
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-boneWhite">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-softCoral"></div>
+        <div 
+          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-softCoral"
+          role="status"
+          aria-label="Cargando"
+        ></div>
       </div>
     );
   }

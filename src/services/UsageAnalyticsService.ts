@@ -1,4 +1,5 @@
 import supabase from '@/core/auth/supabaseClient';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Tipo que define la estructura de una métrica de uso en el sistema
@@ -33,6 +34,23 @@ export interface LongitudinalMetric {
   clinical_evolution: 'improved' | 'stable' | 'worsened';
   notes?: string;
   details?: Record<string, unknown>;
+}
+
+// Para el uso con metric.map
+export interface MetricData {
+  id: string;
+  visit_id: string;
+  patient_id: string;
+  user_id: string;
+  date: string;
+  suggestions_generated: number;
+  suggestions_accepted: number;
+  suggestions_integrated: number;
+  time_saved_minutes: number;
+  risk_level_summary: string;
+  clinical_evolution: string;
+  details?: string;
+  [key: string]: unknown;
 }
 
 // Almacén en memoria para métricas (simulando Supabase)
@@ -234,10 +252,10 @@ export const saveLongitudinalMetricsToSupabase = async (metric: LongitudinalMetr
     // Usar el cliente Supabase disponible
     
     // Usar la función getSupabaseClient
-    const supabase = getSupabaseClient();
+    const client = getSupabaseClient();
     
     // Guardar en la tabla metrics_by_visit
-    const { error } = await supabase
+    const { error } = await client
       .from('metrics_by_visit')
       .insert([{
         ...metric,
@@ -250,8 +268,8 @@ export const saveLongitudinalMetricsToSupabase = async (metric: LongitudinalMetr
     }
     
     return true;
-  } catch (err) {
-    console.error('Error al guardar métricas longitudinales:', err);
+  } catch (e) {
+    console.error('Error guardando métricas longitudinales:', e);
     return false;
   }
 };
@@ -260,17 +278,14 @@ export const saveLongitudinalMetricsToSupabase = async (metric: LongitudinalMetr
  * Obtiene las métricas longitudinales para un paciente específico
  * 
  * @param patientId ID del paciente
- * @returns Lista de métricas longitudinales ordenadas por fecha
+ * @returns Array de métricas longitudinales
  */
 export const getLongitudinalMetricsByPatient = async (patientId: string): Promise<LongitudinalMetric[]> => {
   try {
-    // Usar el cliente Supabase disponible
+    // Primero intentar obtener de Supabase
+    const client = getSupabaseClient();
     
-    // Usar la función getSupabaseClient
-    const supabase = getSupabaseClient();
-    
-    // Obtener las métricas de Supabase
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('metrics_by_visit')
       .select('*')
       .eq('patient_id', patientId)
@@ -278,17 +293,40 @@ export const getLongitudinalMetricsByPatient = async (patientId: string): Promis
     
     if (error) {
       console.error('Error obteniendo métricas longitudinales:', error);
-      return [];
+      // Retornar las métricas del almacén local como fallback
+      return longitudinalMetricsStore.filter(m => m.patient_id === patientId);
     }
     
-    // Procesar los datos para convertir detalles de JSON a objeto
-    return data.map(metric => ({
-      ...metric,
-      details: metric.details ? JSON.parse(metric.details as string) : undefined
+    if (!data || data.length === 0) {
+      // Si no hay datos en Supabase, devolver del almacén local
+      return longitudinalMetricsStore.filter(m => m.patient_id === patientId);
+    }
+    
+    // Transformar los datos para asegurar el formato correcto
+    return data.map((metric: MetricData) => ({
+      id: metric.id,
+      visit_id: metric.visit_id,
+      previous_visit_id: metric.previous_visit_id as string | undefined,
+      patient_id: metric.patient_id,
+      user_id: metric.user_id,
+      date: metric.date,
+      fields_changed: metric.fields_changed as number,
+      suggestions_generated: metric.suggestions_generated,
+      suggestions_accepted: metric.suggestions_accepted,
+      suggestions_integrated: metric.suggestions_integrated,
+      audio_items_validated: metric.audio_items_validated as number,
+      time_saved_minutes: metric.time_saved_minutes,
+      risk_level_summary: metric.risk_level_summary as 'low' | 'medium' | 'high',
+      clinical_evolution: metric.clinical_evolution as 'improved' | 'stable' | 'worsened',
+      notes: metric.notes as string | undefined,
+      details: metric.details 
+        ? JSON.parse(metric.details as string) 
+        : undefined
     }));
-  } catch (err) {
-    console.error('Error al obtener métricas longitudinales:', err);
-    return [];
+  } catch (e) {
+    console.error('Error obteniendo métricas longitudinales:', e);
+    // En caso de error, devolver del almacén local
+    return longitudinalMetricsStore.filter(m => m.patient_id === patientId);
   }
 };
 
@@ -462,7 +500,9 @@ export const getEvolutionIndicator = (evolution: 'improved' | 'stable' | 'worsen
   }
 };
 
-// Crear cliente Supabase para analytics
-const getSupabaseClient = () => {
-  return supabase;
+/**
+ * Devuelve una instancia del cliente Supabase para uso interno
+ */
+const getSupabaseClient = (): SupabaseClient => {
+  return supabase as SupabaseClient;
 }; 

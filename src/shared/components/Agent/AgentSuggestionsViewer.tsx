@@ -30,6 +30,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [suggestionsWithFeedback, setSuggestionsWithFeedback] = useState<{[id: string]: AgentSuggestionFeedback}>({});
+  const [integratedSuggestions, setIntegratedSuggestions] = useState<Set<string>>(new Set());
   const [hasIntegratedToEMR, setHasIntegratedToEMR] = useState(false);
   const [isIntegrating, setIsIntegrating] = useState(false);
 
@@ -83,6 +84,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
       ...prev,
       [suggestionId]: feedback
     }));
+    
+    if (feedback === 'accept') {
+      setIntegratedSuggestions(prev => {
+        const updated = new Set(prev);
+        updated.add(suggestionId);
+        return updated;
+      });
+    }
   };
 
   // Integrar sugerencias aceptadas al EMR
@@ -107,25 +116,24 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
           // Mapear el tipo de sugerencia a la sección EMR correspondiente
           const emrSection = EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type);
           
-          // Insertar la sugerencia en el EMR
-          const success = await EMRFormService.insertSuggestion(
-            suggestion,
+          // Insertar la sugerencia en el EMR usando el nuevo método
+          const success = await EMRFormService.insertSuggestedContent(
             visitId,
-            patientId
+            emrSection,
+            suggestion.content,
+            'agent',
+            suggestion.id
           );
           
           if (success) {
             integratedCount++;
             
-            // Registrar evento de integración en el log de auditoría
-            AuditLogger.logSuggestionIntegration(
-              userId,
-              visitId,
-              suggestion.id,
-              suggestion.type,
-              suggestion.content,
-              emrSection
-            );
+            // Marcar la sugerencia como integrada
+            setIntegratedSuggestions(prev => {
+              const updated = new Set(prev);
+              updated.add(suggestion.id);
+              return updated;
+            });
             
             // Registrar métrica de integración y campo correspondido
             track('suggestion_field_matched', userId, visitId, 1, {
@@ -179,8 +187,8 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
             </p>
           ) : (
             <>
-              {/* Botón para integrar al EMR */}
-              {acceptedCount > 0 && !hasIntegratedToEMR && (
+              {/* Botón para integrar al EMR (solo se muestra si hay sugerencias aceptadas sin integrar) */}
+              {acceptedCount > 0 && !hasIntegratedToEMR && integratedSuggestions.size < acceptedCount && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-100 rounded-md flex justify-between items-center">
                   <div>
                     <p className="text-sm text-green-800">
@@ -202,7 +210,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
                   <p className="text-sm text-green-800 flex items-center">
                     <span className="mr-2">✅</span>
-                    {acceptedCount} sugerencias han sido integradas en el registro clínico
+                    {integratedSuggestions.size} sugerencias han sido integradas en el registro clínico
                   </p>
                 </div>
               )}
@@ -217,7 +225,11 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     {groupedSuggestions.recommendation.map(suggestion => (
                       <div 
                         key={suggestion.id} 
-                        className={`p-3 rounded-md border ${getTypeColorClass('recommendation')}`}
+                        className={`p-3 rounded-md border ${
+                          integratedSuggestions.has(suggestion.id) 
+                            ? 'bg-blue-50 border-blue-300' 
+                            : getTypeColorClass('recommendation')
+                        }`}
                       >
                         <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
                         <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
@@ -225,7 +237,9 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                         <AgentSuggestionFeedbackActions 
                           visitId={visitId}
                           userId={userId}
+                          suggestion={suggestion}
                           onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                          isIntegrated={integratedSuggestions.has(suggestion.id)}
                         />
                       </div>
                     ))}
@@ -241,7 +255,11 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     {groupedSuggestions.warning.map(suggestion => (
                       <div 
                         key={suggestion.id} 
-                        className={`p-3 rounded-md border ${getTypeColorClass('warning')}`}
+                        className={`p-3 rounded-md border ${
+                          integratedSuggestions.has(suggestion.id) 
+                            ? 'bg-blue-50 border-blue-300' 
+                            : getTypeColorClass('warning')
+                        }`}
                       >
                         <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
                         <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
@@ -249,7 +267,9 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                         <AgentSuggestionFeedbackActions 
                           visitId={visitId}
                           userId={userId}
+                          suggestion={suggestion}
                           onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                          isIntegrated={integratedSuggestions.has(suggestion.id)}
                         />
                       </div>
                     ))}
@@ -265,15 +285,21 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     {groupedSuggestions.info.map(suggestion => (
                       <div 
                         key={suggestion.id} 
-                        className={`p-3 rounded-md border ${getTypeColorClass('info')}`}
+                        className={`p-3 rounded-md border ${
+                          integratedSuggestions.has(suggestion.id) 
+                            ? 'bg-blue-50 border-blue-300' 
+                            : getTypeColorClass('info')
+                        }`}
                       >
                         <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
                         <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
                         <AgentSuggestionExplainer suggestion={suggestion} />
-                        <AgentSuggestionFeedbackActions
+                        <AgentSuggestionFeedbackActions 
                           visitId={visitId}
                           userId={userId}
+                          suggestion={suggestion}
                           onFeedback={(feedback) => handleFeedback(suggestion.id, feedback)} 
+                          isIntegrated={integratedSuggestions.has(suggestion.id)}
                         />
                       </div>
                     ))}

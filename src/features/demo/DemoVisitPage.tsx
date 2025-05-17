@@ -17,6 +17,7 @@ import {
   mockEMRData,
   mockUserId
 } from '@/core/demo/mockVisitData';
+import { MCPContext } from '@/core/mcp/schema';
 
 /**
  * Página de demostración integrada para AiDuxCare V.2
@@ -33,23 +34,29 @@ const DemoVisitPage: React.FC = () => {
   
   // Inicializar logs de auditoría simulados
   useEffect(() => {
-    // En una implementación real tendríamos métodos para limpiar y añadir logs de prueba
-    // Aquí simulamos que los logs ya están cargados desde mockAuditLogs
-    
-    // Para la demo, registramos un evento inicial
-    AuditLogger.log('demo.page.loaded', mockUserId, {
+    // Registrar carga de la página en auditoría
+    AuditLogger.log('demo.page.loaded', {
+      user_id: mockUserId,
       visit_id: mockVisit.id,
       timestamp: new Date().toISOString()
     });
+    
+    // Cargar los datos iniciales
+    setTranscriptionData(mockTranscription);
+    setEmrContent(mockEMRData);
+    
+    // Establecer documento de título
+    document.title = `Consulta ${mockVisit.id} | AiduxCare`;
   }, []);
 
-  // Manejar la captura de audio completada
+  // Manejar la finalización de captura de audio
   const handleCaptureComplete = (transcription: TranscriptionSegment[]) => {
-    setTranscriptionData(transcription.length > 0 ? transcription : mockTranscription);
+    setTranscriptionData(transcription);
     setShowTranscription(true);
     
-    // Registrar evento de audio
-    AuditLogger.log('audio.capture.completed', mockUserId, {
+    // Registrar en auditoría
+    AuditLogger.log('audio.capture.completed', {
+      user_id: mockUserId,
       visit_id: mockVisit.id,
       segments_count: transcription.length > 0 ? transcription.length : mockTranscription.length
     });
@@ -59,22 +66,23 @@ const DemoVisitPage: React.FC = () => {
       transcription.length > 0 ? transcription.length : mockTranscription.length);
   };
 
-  // Manejar la aprobación de segmentos de audio
+  // Manejar la aprobación de un segmento de audio
   const handleApproveAudioSegment = (content: string) => {
-    // Añadir el contenido aprobado al EMR (sección notas)
-    const newEmrContent = { ...emrContent };
-    newEmrContent.notes = `${newEmrContent.notes}\n\n${content}`;
-    setEmrContent(newEmrContent);
-    
-    // Añadir a la lista de contenido insertado
+    // Integrar contenido al EMR (demostración)
     setInsertedContent(prev => [...prev, content]);
     
-    // Registrar evento de auditoría
-    AuditLogger.log('audio.integrated', mockUserId, {
+    // Registrar en auditoría
+    AuditLogger.log('audio.integrated', {
+      user_id: mockUserId,
       visit_id: mockVisit.id,
       content_length: content.length,
       source: 'audio_transcription'
     });
+    
+    // Simular cierre de revisión después de unos segundos
+    setTimeout(() => {
+      setShowTranscription(false);
+    }, 1500);
     
     // Registrar métrica
     track('suggestions_accepted', mockUserId, mockVisit.id, 1);
@@ -138,9 +146,7 @@ const DemoVisitPage: React.FC = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Contexto MCP</h3>
             <MCPContextViewer
-              contextData={mockMCPContext}
-              visitId={mockVisit.id}
-              patientId={mockPatient.id}
+              context={mockMCPContext as unknown as MCPContext}
             />
           </div>
         );

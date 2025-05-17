@@ -6,3 +6,4 @@ dist/
 # Local Vercel folder
 .vercel/output/
 .vercel
+.env*

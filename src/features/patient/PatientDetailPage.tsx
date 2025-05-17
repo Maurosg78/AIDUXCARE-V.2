@@ -87,7 +87,8 @@ const PatientDetailPage: React.FC<PatientDetailPageProps> = () => {
       await visitDataSourceSupabase.createVisit(newVisit);
       
       // Registrar en el log de auditoría
-      await AuditLogger.log('visit_created', user.id, {
+      await AuditLogger.log('visit_created', {
+        user_id: user.id,
         entity_id: visitId,
         entity_type: 'visit',
         visit_date: newVisit.date,

@@ -1,8 +1,9 @@
 import supabase from '@/core/auth/supabaseClient';
 import { Patient, PatientSchema } from '../domain/patientType';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export class PatientDataSourceSupabase {
-  private supabase;
+  private supabase: SupabaseClient;
 
   constructor() {
     this.supabase = supabase;
@@ -30,7 +31,7 @@ export class PatientDataSourceSupabase {
     if (error) throw new Error(`Error fetching patients: ${error.message}`);
     
     // Validar datos con Zod
-    const validatedData = data.map(patient => {
+    const validatedData = data.map((patient: Record<string, unknown>) => {
       try {
         return PatientSchema.parse(patient);
       } catch (e) {

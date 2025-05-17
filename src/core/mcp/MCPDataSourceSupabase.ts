@@ -1,5 +1,20 @@
 import supabase from '@/core/auth/supabaseClient';
 import { MCPMemoryBlock, MCPMemoryBlockSchema } from './schema';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+// Función de ayuda para manejar errores de Supabase y registrar detalles
+const handleSupabaseError = (operation: string, error: any) => {
+  const errorMessage = error?.message || 'Error desconocido';
+  const statusCode = error?.status || 'N/A';
+  console.error(`Error en operación de Supabase [${operation}]: ${errorMessage} (código: ${statusCode})`);
+  
+  // Registrar detalles adicionales en desarrollo
+  if (import.meta.env.DEV) {
+    console.error('Detalles completos del error:', error);
+  }
+  
+  return [];
+};
 
 /**
  * Recupera datos de memoria contextual para una visita específica desde Supabase
@@ -13,15 +28,21 @@ export async function getContextualMemory(visitId: string): Promise<MCPMemoryBlo
       return [];
     }
 
-    const { data, error } = await supabase
+    // Verificar que supabase esté inicializado correctamente 
+    const client = supabase as SupabaseClient;
+    if (!client || !client.from) {
+      console.error('Cliente de Supabase no disponible o mal inicializado');
+      return [];
+    }
+
+    const { data, error } = await client
       .from('contextual_memory')
       .select('*')
       .eq('visit_id', visitId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error al recuperar memoria contextual:', error.message);
-      return [];
+      return handleSupabaseError('getContextualMemory', error);
     }
 
     if (!data || data.length === 0) {
@@ -58,15 +79,21 @@ export async function getPersistentMemory(patientId: string): Promise<MCPMemoryB
       return [];
     }
 
-    const { data, error } = await supabase
+    // Verificar que supabase esté inicializado correctamente
+    const client = supabase as SupabaseClient;
+    if (!client || !client.from) {
+      console.error('Cliente de Supabase no disponible o mal inicializado');
+      return [];
+    }
+
+    const { data, error } = await client
       .from('persistent_memory')
       .select('*')
       .eq('patient_id', patientId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error al recuperar memoria persistente:', error.message);
-      return [];
+      return handleSupabaseError('getPersistentMemory', error);
     }
 
     if (!data || data.length === 0) {
@@ -97,15 +124,21 @@ export async function getPersistentMemory(patientId: string): Promise<MCPMemoryB
  */
 export async function getSemanticMemory(): Promise<MCPMemoryBlock[]> {
   try {
-    const { data, error } = await supabase
+    // Verificar que supabase esté inicializado correctamente
+    const client = supabase as SupabaseClient;
+    if (!client || !client.from) {
+      console.error('Cliente de Supabase no disponible o mal inicializado');
+      return [];
+    }
+    
+    const { data, error } = await client
       .from('semantic_memory')
       .select('*')
       .eq('type', 'semantic')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error al recuperar memoria semántica:', error.message);
-      return [];
+      return handleSupabaseError('getSemanticMemory', error);
     }
 
     if (!data || data.length === 0) {
@@ -141,6 +174,13 @@ export async function updateMemoryBlocks(blocks: Record<string, unknown>[]): Pro
   }
 
   try {
+    // Verificar que supabase esté inicializado correctamente
+    const client = supabase as SupabaseClient;
+    if (!client || !client.from) {
+      console.error('Cliente de Supabase no disponible o mal inicializado');
+      return [];
+    }
+    
     // Agrupar bloques por tipo para actualizarlos en sus respectivas tablas
     const contextualBlocks = blocks.filter(block => block.type === 'contextual');
     const persistentBlocks = blocks.filter(block => block.type === 'persistent');
@@ -155,7 +195,7 @@ export async function updateMemoryBlocks(blocks: Record<string, unknown>[]): Pro
 
         // Solo actualizamos content, metadata y validated
         // Los demás campos permanecen iguales para mantener la trazabilidad
-        const { error } = await supabase
+        const { error } = await client
           .from(tableName)
           .update({
             content,

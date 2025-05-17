@@ -1,75 +1,57 @@
 // Archivo de configuración para variables de entorno
+import { z } from 'zod';
 
-// Detectar si estamos en un entorno browser o Node.js
-const isBrowser = typeof window !== 'undefined';
+// Esquema de validación para variables de entorno Supabase
+const supabaseEnvSchema = z.object({
+  supabaseUrl: z.string().min(1, { message: "VITE_SUPABASE_URL is required" }),
+  supabaseAnonKey: z.string().min(1, { message: "VITE_SUPABASE_ANON_KEY is required" }),
+});
 
-// Función para obtener variables de entorno de manera segura
-function getEnvVar(key: string): string {
-  if (isBrowser) {
-    // En el navegador, acceder directamente a las propiedades específicas de import.meta.env
-    if (key === 'VITE_SUPABASE_URL') {
-      return import.meta.env.VITE_SUPABASE_URL || '';
-    }
-    if (key === 'VITE_SUPABASE_ANON_KEY') {
-      return import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-    }
-    if (key === 'VITE_LANGFUSE_PUBLIC_KEY') {
-      return import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || '';
-    }
-    if (key === 'VITE_LANGFUSE_SECRET_KEY') {
-      return import.meta.env.VITE_LANGFUSE_SECRET_KEY || '';
-    }
-    return '';
-  } else {
-    // En Node.js, usar process.env
-    return process.env[key] || '';
-  }
-}
+// Obtener variables de Supabase directamente desde import.meta.env
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Supabase
-export const SUPABASE_URL = getEnvVar('VITE_SUPABASE_URL');
-export const SUPABASE_ANON_KEY = getEnvVar('VITE_SUPABASE_ANON_KEY');
+// Variables de Langfuse - mantener para compatibilidad
+export const LANGFUSE_PUBLIC_KEY = import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || '';
+export const LANGFUSE_SECRET_KEY = import.meta.env.VITE_LANGFUSE_SECRET_KEY || '';
 
-// Langfuse
-export const LANGFUSE_PUBLIC_KEY = getEnvVar('VITE_LANGFUSE_PUBLIC_KEY');
-export const LANGFUSE_SECRET_KEY = getEnvVar('VITE_LANGFUSE_SECRET_KEY');
-
-// Verificar configuración
-export const isConfigValid = (): boolean => {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+// Validar configuración de Supabase
+export const validateSupabaseEnv = () => {
+  const result = supabaseEnvSchema.safeParse({
+    supabaseUrl,
+    supabaseAnonKey
+  });
+  
+  return result;
 };
 
-// Advertencia si faltan credenciales
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('[Env] Supabase credentials are missing or malformed.');
-  
-  // En desarrollo, mostrar un mensaje de error más detallado
-  if (isBrowser && import.meta.env.DEV) {
-    console.error(`
-      [ENV ERROR] 🚨 Faltan credenciales de Supabase. Asegúrate de:
-      1. Tener un archivo .env.local con las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
-      2. O configurar las variables en el panel de Vercel
-    `);
-  }
-}
+// Verificar si la configuración es válida
+export const isSupabaseConfigValid = (): boolean => {
+  const result = validateSupabaseEnv();
+  return result.success;
+};
+
+// Exportar configuración para compatibilidad con código existente
+export const SUPABASE_URL = supabaseUrl;
+export const SUPABASE_ANON_KEY = supabaseAnonKey;
+
+// Función de validación general (mantener para compatibilidad)
+export const validateEnv = validateSupabaseEnv;
+export const isConfigValid = isSupabaseConfigValid;
 
 // Log de diagnóstico en desarrollo
-if (isBrowser) {
-  console.log('[ENV] Supabase URL en runtime:', SUPABASE_URL);
-  
-  if (import.meta.env.DEV) {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
-  console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
-    
-    // Intentar validar la URL
-    if (SUPABASE_URL) {
-      try {
-        new URL(SUPABASE_URL);
-        console.log('- URL format: VALID ✅');
-      } catch (e) {
-        console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
-      }
+  console.log(`- SUPABASE_URL: ${supabaseUrl ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'OK ✅' : 'MISSING ❌'}`);
+  
+  // Intentar validar la URL
+  if (supabaseUrl) {
+    try {
+      new URL(supabaseUrl);
+      console.log('- URL format: VALID ✅');
+    } catch (e) {
+      console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
     }
   }
 }
@@ -77,8 +59,8 @@ if (isBrowser) {
 // Exportar un objeto con toda la configuración
 export const config = {
   supabase: {
-    url: SUPABASE_URL,
-    anonKey: SUPABASE_ANON_KEY
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey
   },
   langfuse: {
     publicKey: LANGFUSE_PUBLIC_KEY,
@@ -86,4 +68,4 @@ export const config = {
   }
 };
 
-export default config; 
+export default config; console.log("🔍 VITE_SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);

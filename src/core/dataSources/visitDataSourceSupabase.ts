@@ -1,8 +1,9 @@
 import supabase from '@/core/auth/supabaseClient';
 import { Visit, VisitSchema } from '../domain/visitType';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export class VisitDataSourceSupabase {
-  private supabase;
+  private supabase: SupabaseClient;
 
   constructor() {
     this.supabase = supabase;
@@ -21,7 +22,7 @@ export class VisitDataSourceSupabase {
     if (error) throw new Error(`Error fetching visits: ${error.message}`);
     
     // Validar datos con Zod
-    const validatedData = data.map(visit => {
+    const validatedData = data.map((visit: Record<string, unknown>) => {
       try {
         return VisitSchema.parse(visit);
       } catch (e) {
@@ -123,7 +124,7 @@ export class VisitDataSourceSupabase {
     if (error) throw new Error(`Error fetching visits for patient: ${error.message}`);
     
     // Validar datos con Zod
-    const validatedData = data.map(visit => {
+    const validatedData = data.map((visit: Record<string, unknown>) => {
       try {
         return VisitSchema.parse(visit);
       } catch (e) {

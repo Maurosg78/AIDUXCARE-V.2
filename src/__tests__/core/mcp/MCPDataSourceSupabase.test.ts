@@ -43,7 +43,7 @@ function createMockSupabaseResponse<T>(
 }
 
 // Mock del cliente Supabase
-vi.mock('@/core/auth/supabaseClient', () => {
+vi.mock('../../../core/auth/supabaseClient', () => {
   return {
     default: {
       from: vi.fn().mockImplementation(() => ({

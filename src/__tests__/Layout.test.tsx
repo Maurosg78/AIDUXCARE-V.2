@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import Layout from '../core/components/Layout';
 import * as UserContext from '../core/auth/UserContext';
 import { User } from '@supabase/supabase-js';
+import React from 'react';
 
 // Mock de useNavigate
 vi.mock('react-router-dom', async () => {
@@ -35,7 +36,8 @@ describe('Layout Component', () => {
 
     vi.spyOn(UserContext, 'useUser').mockReturnValue({
       user: mockUser as User,
-      loading: false,
+      isLoading: false,
+      role: 'professional',
       session: null,
       error: null,
       setUser: vi.fn(),
@@ -86,7 +88,8 @@ describe('Layout Component', () => {
   it('muestra pantalla de carga cuando loading es true', () => {
     vi.spyOn(UserContext, 'useUser').mockReturnValue({
       user: null,
-      loading: true,
+      isLoading: true,
+      role: null,
       session: null,
       error: null,
       setUser: vi.fn(),
@@ -100,8 +103,8 @@ describe('Layout Component', () => {
       </BrowserRouter>
     );
     
-    // Debería mostrar un indicador de carga (un div con clase animate-spin)
-    const loadingIndicator = document.querySelector('.animate-spin');
-    expect(loadingIndicator).toBeInTheDocument();
+    // Verificar que se muestra el spinner de carga
+    const loadingSpinner = screen.getByRole('status', { hidden: true });
+    expect(loadingSpinner).toBeInTheDocument();
   });
 }); 

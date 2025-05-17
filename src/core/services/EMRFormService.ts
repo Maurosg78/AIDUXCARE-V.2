@@ -243,9 +243,9 @@ export class EMRFormService {
       
       // Registrar métricas
       track('suggestions_integrated', userId, visitId, 1, {
-        suggestion_id: suggestion.id,
-        suggestion_type: suggestion.type,
-        emr_section: section
+        field: section,
+        source: suggestion.sourceBlockId,
+        suggestion_id: suggestion.id
       });
       
       return true;
@@ -316,8 +316,8 @@ export class EMRFormService {
       // Registrar en el log de auditoría
       AuditLogger.log(
         'emr.form.update',
-        userId,
         {
+          user_id: userId,
           visit_id: formData.visitId,
           patient_id: formData.patientId,
           form_type: 'SOAP'
@@ -327,6 +327,138 @@ export class EMRFormService {
       return true;
     } catch (error) {
       console.error('Error al actualizar formulario EMR:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Inserta contenido sugerido en un campo específico del EMR
+   * @param visitId ID de la visita
+   * @param field Campo o sección del EMR donde integrar la sugerencia
+   * @param content Contenido a insertar
+   * @param source Fuente de la sugerencia (ej: 'agent')
+   * @param suggestionId ID opcional de la sugerencia para trazabilidad
+   * @param riskLevel Nivel de riesgo opcional
+   * @returns true si se insertó correctamente, false en caso contrario
+   */
+  public static async insertSuggestedContent(
+    visitId: string,
+    field: EMRSection,
+    content: string,
+    source: string = 'agent',
+    suggestionId?: string,
+    riskLevel?: string
+  ): Promise<boolean> {
+    try {
+      if (!visitId || !field || !content) {
+        console.error('Parámetros insuficientes para insertar sugerencia');
+        return false;
+      }
+
+      // Obtener datos del paciente y profesional
+      const { data: visitData, error: visitError } = await this.supabase
+        .from('visits')
+        .select('patient_id, professional_id')
+        .eq('id', visitId)
+        .single();
+        
+      if (visitError || !visitData) {
+        console.error('Error al obtener datos de visita:', visitError);
+        return false;
+      }
+      
+      const patientId = visitData.patient_id;
+      const professionalId = visitData.professional_id;
+      const userId = professionalId; // Por defecto, el profesional es el usuario
+      
+      // Obtener formulario existente o crear uno nuevo
+      let emrForm = await this.getEMRForm(visitId);
+      
+      if (!emrForm) {
+        // Crear un nuevo formulario EMR si no existe
+        emrForm = {
+          visitId,
+          patientId,
+          professionalId,
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+          notes: '',
+          updatedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+      }
+      
+      // Preparar el contenido con formato visual
+      const prefixedContent = `🔎 ${content}`;
+      
+      // Verificar si este contenido ya existe en la sección
+      if (emrForm[field].includes(prefixedContent)) {
+        console.log('Contenido ya integrado anteriormente, evitando duplicación');
+        return false;
+      }
+      
+      // Concatenar el contenido
+      const currentContent = emrForm[field];
+      emrForm[field] = currentContent 
+        ? `${currentContent}\n${prefixedContent}`
+        : prefixedContent;
+      
+      // Actualizar la marca de tiempo
+      emrForm.updatedAt = new Date().toISOString();
+      
+      // Convertir al formato esperado por formDataSourceSupabase
+      const formContent = {
+        subjective: emrForm.subjective,
+        objective: emrForm.objective,
+        assessment: emrForm.assessment,
+        plan: emrForm.plan,
+        notes: emrForm.notes
+      };
+      
+      // Actualizar o crear el formulario
+      if (emrForm.id) {
+        await formDataSourceSupabase.updateForm(emrForm.id, {
+          content: JSON.stringify(formContent),
+          status: 'draft'
+        });
+      } else {
+        await formDataSourceSupabase.createForm({
+          visit_id: emrForm.visitId,
+          patient_id: emrForm.patientId,
+          professional_id: emrForm.professionalId,
+          form_type: 'SOAP',
+          content: JSON.stringify(formContent),
+          status: 'draft'
+        });
+      }
+      
+      // Registrar en el log de auditoría
+      AuditLogger.log(
+        'suggestions.approved',
+        {
+          visitId,
+          userId,
+          field,
+          content,
+          source,
+          suggestionId,
+          riskLevel,
+          timestamp: new Date().toISOString()
+        }
+      );
+      
+      // Registrar métricas
+      track('suggestions_integrated', userId, visitId, 1, {
+        field,
+        source,
+        suggestion_id: suggestionId || 'unknown'
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error al insertar contenido sugerido en EMR:', error);
       return false;
     }
   }

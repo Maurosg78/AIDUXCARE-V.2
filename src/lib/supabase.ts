@@ -1,12 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, supabaseAnonKey, validateSupabaseEnv } from '@/config/env';
 
-// Valores de configuración de Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mchyxyuaegsbrwodengr.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHl4eXVhZWdzYnJ3b2RlbmdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU3OTE5ODcsImV4cCI6MjAzMTM2Nzk4N30.nPADTDUw7cKLsGI83tsDLmYxQWR1N7swPZWwrKoH-S4';
+// Validar las credenciales de Supabase
+const envValidation = validateSupabaseEnv();
 
-// Verificar que las variables estén definidas
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Las variables de entorno de Supabase no están configuradas correctamente');
+// Si faltan las credenciales, lanzar un error explícito
+if (!envValidation.success) {
+  throw new Error(
+    "Supabase credentials are missing. Please define VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment."
+  );
 }
 
 // Crear cliente con manejo de errores

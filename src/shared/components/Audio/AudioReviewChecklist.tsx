@@ -67,7 +67,8 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
     onApproveSegment(segment.content);
     
     // Registrar evento en el log de auditoría
-    AuditLogger.log('audio.validated', userId, {
+    AuditLogger.log('audio.validated', {
+      user_id: userId,
       visit_id: visitId,
       segment_id: segment.id,
       actor: segment.actor,
@@ -101,7 +102,8 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
     onApproveSegment(content);
     
     // Registrar en auditoría
-    AuditLogger.log('audio.summary.integrated', userId, {
+    AuditLogger.log('audio.summary.integrated', {
+      user_id: userId,
       visit_id: visitId,
       segments_count: approvedSegments.length,
       content_length: content.length

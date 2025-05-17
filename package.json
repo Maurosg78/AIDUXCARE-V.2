@@ -17,6 +17,8 @@
     "test:jest": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:vitest": "vitest run",
+    "test:core": "vitest run src/__tests__",
     "test:eval": "vitest run --config vitest.config.ts __tests__/evals/ClinicalAgent.eval.test.ts",
     "test:mcp-eval": "vitest run --config vitest.config.ts __tests__/evals/MCPContextBuilder.eval.test.ts",
     "script:createCase": "tsx scripts/createClinicalCase.ts",
@@ -34,9 +36,10 @@
     "vercel-build": "npm run check:env && tsc && vite build"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.17",
+    "@headlessui/react": "^1.7.15",
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.49.4",
+    "@tanstack/react-virtual": "^3.1.3",
     "cross-fetch": "^4.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
@@ -45,6 +48,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.0",
+    "use-sync-external-store": "^1.5.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.4"
   },
@@ -84,7 +88,7 @@
     "jest-snapshot": "^29.7.0",
     "jsdom": "^26.1.0",
     "magic-string": "^0.30.17",
-    "pathe": "^2.0.3",
+    "pathe": "^1.1.2",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^27.1.5",

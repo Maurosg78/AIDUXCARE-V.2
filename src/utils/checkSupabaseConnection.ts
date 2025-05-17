@@ -3,6 +3,7 @@
  */
 import supabase from '@/core/auth/supabaseClient';
 import { SUPABASE_URL } from '@/config/env';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Verifica si podemos conectar con Supabase realizando una petición simple
@@ -26,9 +27,12 @@ export async function checkSupabaseConnection(): Promise<{
     // Medir latencia
     const startTime = performance.now();
     
+    // Tipar correctamente el cliente de Supabase
+    const client = supabase as SupabaseClient;
+    
     // Usar auth.getSession() en lugar de consultar una tabla específica
     // Este método siempre está disponible y no depende de esquemas personalizados
-    const { error } = await supabase.auth.getSession();
+    const { error } = await client.auth.getSession();
     
     const endTime = performance.now();
     const latency = Math.round(endTime - startTime);

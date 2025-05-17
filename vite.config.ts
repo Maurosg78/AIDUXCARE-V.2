@@ -7,12 +7,23 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src")
+      "@": path.resolve(__dirname, "./src"),
+      "@headlessui/react": path.resolve(__dirname, "./src/lib/headless-ui.tsx"),
+      "@tanstack/react-virtual": path.resolve(__dirname, "./src/lib/tanstack-virtual-mock.ts"),
+      "use-sync-external-store": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts"),
+      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
     }
   },
   // Mejorar la configuración de dependencias
   optimizeDeps: {
-    exclude: ['@headlessui/react'] // Excluir biblioteca problemática
+    include: [
+      '@tanstack/react-virtual'
+    ],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   },
   // Configuración del servidor de desarrollo
   server: {
