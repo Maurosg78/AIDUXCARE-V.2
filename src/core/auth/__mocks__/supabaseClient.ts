@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 export const createClient = vi.fn(() => ({
   auth: {
     getSession: vi.fn().mockResolvedValue({
