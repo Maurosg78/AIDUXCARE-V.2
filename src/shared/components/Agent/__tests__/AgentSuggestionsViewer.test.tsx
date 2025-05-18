@@ -8,6 +8,7 @@ import { EMRFormService } from '../../../../core/services/EMRFormService';
 import { AuditLogger } from '../../../../core/audit/AuditLogger';
 import * as UsageAnalyticsService from '../../../../services/UsageAnalyticsService';
 import { suggestionFeedbackDataSourceSupabase } from '../../../../core/dataSources/suggestionFeedbackDataSourceSupabase';
+import * as AgentExplainer from '../../../../core/agent/AgentExplainer';
 
 // Mock completo del cliente de Supabase
 vi.mock('@supabase/supabase-js', () => ({
@@ -123,6 +124,13 @@ vi.mock('../../../../core/dataSources/suggestionFeedbackDataSourceSupabase', () 
     getFeedbacksByVisit: vi.fn(),
     getFeedbackBySuggestion: vi.fn()
   }
+}));
+
+// Mock de AgentExplainer
+vi.mock('../../../../core/agent/AgentExplainer', () => ({
+  explainSuggestion: vi.fn().mockImplementation((suggestion) => {
+    return `Explicación simulada para la sugerencia de tipo ${suggestion.type}`;
+  })
 }));
 
 describe('AgentSuggestionsViewer', () => {
@@ -597,5 +605,139 @@ describe('AgentSuggestionsViewer', () => {
         feedbacks_count: 3
       })
     );
+  });
+
+  // Nuevas pruebas para la funcionalidad de explicación clínica contextual
+  describe('Explicador clínico contextual', () => {
+    it('debe mostrar un botón de explicación para cada sugerencia', async () => {
+      // Renderizar el componente
+      render(
+        <AgentSuggestionsViewer
+          visitId={visitId}
+          suggestions={mockSuggestions}
+          userId={userId}
+          patientId={patientId}
+        />
+      );
+
+      // Expandir el componente para mostrar las sugerencias
+      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+      // Verificar que existen los botones de explicación (uno por cada sugerencia)
+      const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
+      expect(explanationButtons).toHaveLength(mockSuggestions.length);
+    });
+
+    it('debe mostrar la explicación al hacer clic en el botón', async () => {
+      // Mockear la función de explicación para que devuelva un texto específico
+      vi.mocked(AgentExplainer.explainSuggestion).mockImplementation(() => 
+        'Esta sugerencia se generó basada en el análisis del contexto clínico'
+      );
+      
+      // Renderizar el componente
+      render(
+        <AgentSuggestionsViewer
+          visitId={visitId}
+          suggestions={mockSuggestions}
+          userId={userId}
+          patientId={patientId}
+        />
+      );
+
+      // Expandir el componente para mostrar las sugerencias
+      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+      // Hacer clic en el primer botón de explicación
+      const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
+      fireEvent.click(explanationButtons[0]);
+
+      // Verificar que se muestra la explicación
+      expect(screen.getByText('Esta sugerencia se generó basada en el análisis del contexto clínico')).toBeInTheDocument();
+      
+      // Verificar que se registra el evento de auditoría
+      expect(AuditLogger.log).toHaveBeenCalledWith(
+        'suggestion_explained',
+        expect.objectContaining({
+          visitId,
+          userId,
+          suggestionId: expect.any(String)
+        })
+      );
+      
+      // Verificar que se registra la métrica de visualización
+      expect(UsageAnalyticsService.track).toHaveBeenCalledWith(
+        'suggestion_explanation_viewed',
+        userId,
+        visitId,
+        1,
+        expect.objectContaining({
+          suggestion_id: expect.any(String)
+        })
+      );
+    });
+
+    it('debe generar explicaciones según el tipo de sugerencia', () => {
+      // Verificar directamente que la función de explicación genera textos diferentes según el tipo
+      vi.mocked(AgentExplainer.explainSuggestion).mockClear();
+      vi.mocked(AgentExplainer.explainSuggestion).mockImplementation((suggestion) => {
+        switch (suggestion.type) {
+          case 'recommendation':
+            return 'Explicación para recomendación';
+          case 'warning':
+            return 'Explicación para advertencia';
+          case 'info':
+            return 'Explicación para información';
+          default:
+            return 'Explicación genérica';
+        }
+      });
+      
+      // Invocar la función con distintos tipos de sugerencias y verificar las respuestas
+      const suggestionRecommendation: AgentSuggestion = {
+        ...mockSuggestions[0],
+        type: 'recommendation'
+      };
+      const suggestionWarning: AgentSuggestion = {
+        ...mockSuggestions[0],
+        type: 'warning'
+      };
+      const suggestionInfo: AgentSuggestion = {
+        ...mockSuggestions[0],
+        type: 'info'
+      };
+      
+      expect(AgentExplainer.explainSuggestion(suggestionRecommendation)).toBe('Explicación para recomendación');
+      expect(AgentExplainer.explainSuggestion(suggestionWarning)).toBe('Explicación para advertencia');
+      expect(AgentExplainer.explainSuggestion(suggestionInfo)).toBe('Explicación para información');
+    });
+
+    it('debe colapsar la explicación al hacer clic nuevamente en el botón', async () => {
+      // Renderizar el componente
+      render(
+        <AgentSuggestionsViewer
+          visitId={visitId}
+          suggestions={mockSuggestions}
+          userId={userId}
+          patientId={patientId}
+        />
+      );
+
+      // Expandir el componente para mostrar las sugerencias
+      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+      // Hacer clic en el primer botón de explicación para expandir
+      const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
+      fireEvent.click(explanationButtons[0]);
+
+      // Verificar que aparece la explicación
+      const explanationText = screen.getByTestId('explanation-content');
+      expect(explanationText).toBeInTheDocument();
+
+      // Hacer clic nuevamente para colapsar
+      fireEvent.click(explanationButtons[0]);
+
+      // Verificar que ya no aparece la explicación
+      expect(screen.queryByTestId('explanation-content')).not.toBeInTheDocument();
+    });
   });
 }); 

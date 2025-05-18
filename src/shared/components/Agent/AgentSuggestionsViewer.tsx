@@ -3,6 +3,7 @@ import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
 import AgentSuggestionFeedbackActions, { SuggestionFeedbackType } from './AgentSuggestionFeedbackActions';
 import SuggestionContextOrigin from './SuggestionContextOrigin';
+import SuggestionExplanation from './SuggestionExplanation';
 import { EMRFormService } from '../../../core/services/EMRFormService';
 import { AuditLogger } from '../../../core/audit/AuditLogger';
 import { track } from '../../../services/UsageAnalyticsService';
@@ -355,6 +356,13 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
       
       {/* Mostrar contexto de origen de la sugerencia */}
       <SuggestionContextOrigin suggestion={suggestion} />
+      
+      {/* Componente de explicación clínica */}
+      <SuggestionExplanation 
+        suggestion={suggestion}
+        visitId={visitId}
+        userId={userId}
+      />
       
       <AgentSuggestionExplainer suggestion={suggestion} />
       <AgentSuggestionFeedbackActions 
