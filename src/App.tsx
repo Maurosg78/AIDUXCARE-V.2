@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import { supabase, checkSupabaseConnection } from './lib/supabase'
 import './App.css'
+import { initializeSemanticMemoryData } from './core/mcp/initializeSemanticMemoryData'
+import DashboardPage from './features/dashboard/DashboardPage'
 
 // Componente de inicio
 function Home() {
@@ -18,8 +20,8 @@ function Home() {
   )
 }
 
-// Componente de Dashboard con verificación de conexión
-function Dashboard() {
+// Componente de Dashboard con verificación de conexión (solo para pruebas)
+function DashboardTest() {
   const [connectionStatus, setConnectionStatus] = useState({
     checking: true,
     success: false,
@@ -44,7 +46,7 @@ function Dashboard() {
 
   return (
     <div className="page">
-      <h1>Dashboard</h1>
+      <h1>Dashboard (Prueba)</h1>
       <p>Panel de control de AiDuxCare</p>
       
       <div className="connection-status">
@@ -68,6 +70,20 @@ function Dashboard() {
 }
 
 function App() {
+  // Inicializar datos de muestra para memoria semántica al cargar la app
+  useEffect(() => {
+    // Solo en entorno de desarrollo
+    if (import.meta.env.DEV) {
+      initializeSemanticMemoryData()
+        .then(() => {
+          console.log('Datos de memoria semántica inicializados correctamente');
+        })
+        .catch((error) => {
+          console.error('Error inicializando datos de memoria semántica:', error);
+        });
+    }
+  }, []);
+
   return (
     <div className="app-container">
       <header className="header">
@@ -77,7 +93,8 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard-test" element={<DashboardTest />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </main>
       

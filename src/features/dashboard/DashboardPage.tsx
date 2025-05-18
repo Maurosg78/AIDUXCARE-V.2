@@ -4,8 +4,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useUser } from '../../core/auth/UserContext';
 import { Visit } from '../../core/domain/visitType';
 import { visitDataSourceSupabase } from '../../core/dataSources/visitDataSourceSupabase';
-import { getLongitudinalMetricsByProfessional, getProfessionalActivitySummary, getWeeklyMetrics } from './dashboardServices';
+import { getLongitudinalMetricsByProfessional, getProfessionalActivitySummary, getWeeklyMetrics } from '../../features/dashboard/dashboardServices';
 import { VisitStatus } from '../../core/domain/visitType';
+import DashboardSemanticMemoryPanel from './DashboardSemanticMemoryPanel';
 
 /**
  * Interfaz para los datos resumidos de actividad del profesional
@@ -285,6 +286,14 @@ const DashboardPage: React.FC = () => {
                 </svg>
                 Nueva visita
               </button>
+              
+              {/* Panel de Memoria Semántica */}
+              {user?.id && (
+                <DashboardSemanticMemoryPanel 
+                  userId={user.id} 
+                  lastVisitedPatientId={recentVisits.length > 0 ? recentVisits[0].patient_id : undefined}
+                />
+              )}
               
               <div className="bg-blue-50 rounded-md p-4 mt-4">
                 <h3 className="text-md font-medium text-blue-800 mb-2">Sugerencias clínicas</h3>

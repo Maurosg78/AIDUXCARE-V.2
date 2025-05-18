@@ -8,6 +8,7 @@ export interface SemanticMemoryViewerProps {
   patientId?: string;
   visitId?: string;
   minRelevance?: number; // default: 0.3
+  onBlocksLoaded?: (count: number) => void; // Callback para reportar el número de bloques cargados
 }
 
 /**
@@ -17,7 +18,8 @@ export interface SemanticMemoryViewerProps {
 const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
   patientId,
   visitId,
-  minRelevance = 0.3
+  minRelevance = 0.3,
+  onBlocksLoaded
 }) => {
   // Estado para almacenar los bloques de memoria semántica
   const [blocks, setBlocks] = useState<SemanticMemoryBlock[]>([]);
@@ -54,6 +56,11 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
         
         setBlocks(filteredBlocks);
         
+        // Notificar al componente padre sobre el número de bloques cargados
+        if (onBlocksLoaded) {
+          onBlocksLoaded(filteredBlocks.length);
+        }
+        
         // Inicializar todas las categorías como expandidas
         const categories = [...new Set(filteredBlocks.map(block => block.category))];
         const initialExpandedState = categories.reduce((acc, category) => {
@@ -64,13 +71,18 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
       } catch (err) {
         console.error('Error al cargar bloques de memoria semántica:', err);
         setError(`Error al cargar datos: ${err instanceof Error ? err.message : String(err)}`);
+        
+        // Notificar 0 bloques cargados en caso de error
+        if (onBlocksLoaded) {
+          onBlocksLoaded(0);
+        }
       } finally {
         setLoading(false);
       }
     };
     
     fetchBlocks();
-  }, [patientId, visitId, minRelevance]);
+  }, [patientId, visitId, minRelevance, onBlocksLoaded]);
 
   // Agrupar bloques por categoría
   const groupedBlocks = blocks.reduce<Record<string, SemanticMemoryBlock[]>>((groups, block) => {
@@ -130,26 +142,39 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
 
   // Renderizar componente
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
-      <h2 className="text-xl font-bold mb-4">Memoria Semántica</h2>
+    <div className="bg-white rounded-lg shadow-sm p-4" role="region" aria-label="Panel de memoria semántica">
+      <h2 className="text-xl font-bold mb-4" id="semantic-memory-title">Memoria Semántica</h2>
       
       {/* Estado de carga */}
       {loading && (
-        <div className="flex justify-center my-8">
-          <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="flex justify-center my-8" aria-live="polite">
+          <div 
+            className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent"
+            role="status"
+            aria-label="Cargando bloques de memoria"
+          >
+            <span className="sr-only">Cargando datos de memoria semántica...</span>
+          </div>
         </div>
       )}
       
       {/* Mensaje de error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 my-4">
+        <div 
+          className="bg-red-50 border border-red-200 rounded-md p-4 my-4" 
+          role="alert"
+          aria-live="assertive"
+        >
           <p className="text-red-600">{error}</p>
         </div>
       )}
       
       {/* Sin resultados */}
       {!loading && !error && blocks.length === 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-md p-4 text-center">
+        <div 
+          className="bg-gray-50 border border-gray-200 rounded-md p-4 text-center"
+          aria-live="polite" 
+        >
           <p className="text-gray-500">No se encontraron bloques de memoria semántica.</p>
         </div>
       )}
@@ -157,16 +182,21 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
       {/* Resultados */}
       {!loading && !error && blocks.length > 0 && (
         <div className="space-y-4">
-          {sortedCategories.map(category => (
+          {sortedCategories.map((category, categoryIndex) => (
             <div 
               key={category}
               className={`border rounded-md ${getCategoryBgColor(category)}`}
+              role="region"
+              aria-labelledby={`category-heading-${categoryIndex}`}
             >
               {/* Encabezado de categoría (acordeón) */}
               <button 
-                className="w-full px-4 py-3 flex justify-between items-center focus:outline-none"
+                id={`category-heading-${categoryIndex}`}
+                className="w-full px-4 py-3 flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 rounded-t-md"
                 onClick={() => toggleCategory(category)}
-                aria-expanded={expandedCategories[category] ? 'true' : 'false'}
+                data-expanded={expandedCategories[category] ? "true" : "false"}
+                role="button"
+                aria-controls={`category-content-${categoryIndex}`}
               >
                 <span className="font-semibold">{category} ({groupedBlocks[category].length})</span>
                 <svg 
@@ -174,6 +204,7 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -181,34 +212,46 @@ const SemanticMemoryViewer: React.FC<SemanticMemoryViewerProps> = ({
               
               {/* Contenido de la categoría */}
               {expandedCategories[category] && (
-                <div className="px-4 pb-4 space-y-2">
+                <div 
+                  id={`category-content-${categoryIndex}`}
+                  className="px-4 pb-4 space-y-2"
+                  aria-labelledby={`category-heading-${categoryIndex}`}
+                >
                   {/* Ordenar bloques por relevance_score (mayor a menor) */}
                   {groupedBlocks[category]
                     .sort((a, b) => b.relevance_score - a.relevance_score)
-                    .map(block => (
+                    .map((block, blockIndex) => (
                       <div 
                         key={block.id} 
                         className="bg-white border rounded-md p-3 hover:shadow-sm transition"
+                        aria-labelledby={`concept-${categoryIndex}-${blockIndex}`}
                       >
                         <div className="flex flex-col">
                           {/* Concepto */}
                           <div className="flex items-start mb-2">
-                            <span className="text-gray-500 mr-1">🧠</span>
-                            <span className="font-medium">{block.concept}</span>
+                            <span className="text-gray-500 mr-1" aria-hidden="true">🧠</span>
+                            <span 
+                              id={`concept-${categoryIndex}-${blockIndex}`}
+                              className="font-medium"
+                            >
+                              {block.concept}
+                            </span>
                           </div>
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             {/* Score */}
                             <div className="flex items-center">
-                              <span className="text-gray-500 mr-1">⚖️</span>
+                              <span className="text-gray-500 mr-1" aria-hidden="true">⚖️</span>
                               <span>Score: <strong>{formatRelevanceScore(block.relevance_score)}</strong></span>
                             </div>
                             
                             {/* Importancia */}
                             <div className="flex items-center">
-                              <span className="text-gray-500 mr-1">🧩</span>
+                              <span className="text-gray-500 mr-1" aria-hidden="true">🧩</span>
                               <span>Importancia: <strong className={getImportanceColor(block.importance)}>
-                                {block.importance}
+                                {block.importance === 'high' ? 'Alta' : 
+                                 block.importance === 'medium' ? 'Media' : 
+                                 block.importance === 'low' ? 'Baja' : block.importance}
                               </strong></span>
                             </div>
                           </div>

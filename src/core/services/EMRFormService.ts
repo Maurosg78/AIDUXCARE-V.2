@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../core/auth/supabaseClient';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
 import * as AnalyticsService from '../../services/UsageAnalyticsService';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/env';
 
 /**
  * Tipos de secciones del EMR donde se pueden integrar sugerencias
@@ -46,10 +45,8 @@ export interface SuggestionToIntegrate {
  * Servicio para gestionar la integración de sugerencias al EMR estructurado
  */
 export class EMRFormService {
-  private static supabase = createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
+  // Usar el cliente Supabase unificado
+  private static supabase = supabase;
 
   /**
    * Obtiene el formulario EMR para una visita específica
