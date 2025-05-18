@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
 import AgentSuggestionFeedbackActions, { SuggestionFeedbackType } from './AgentSuggestionFeedbackActions';
+import SuggestionContextOrigin from './SuggestionContextOrigin';
 import { EMRFormService } from '../../../core/services/EMRFormService';
 import { AuditLogger } from '../../../core/audit/AuditLogger';
 import { track } from '../../../services/UsageAnalyticsService';
@@ -351,6 +352,9 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
           </span>
         </div>
       )}
+      
+      {/* Mostrar contexto de origen de la sugerencia */}
+      <SuggestionContextOrigin suggestion={suggestion} />
       
       <AgentSuggestionExplainer suggestion={suggestion} />
       <AgentSuggestionFeedbackActions 

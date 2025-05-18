@@ -9,6 +9,10 @@ export interface AgentSuggestion {
   sourceBlockId: string;
   type: 'recommendation' | 'warning' | 'info';
   content: string;
+  context_origin?: {
+    source_block: string;
+    text: string;
+  }
 }
 
 /**
@@ -39,7 +43,11 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         id: uuidv4(),
         sourceBlockId: block.id,
         type: 'recommendation',
-        content: 'Considerar evaluación de escala de dolor y administrar analgésicos según protocolo.'
+        content: 'Considerar evaluación de escala de dolor y administrar analgésicos según protocolo.',
+        context_origin: {
+          source_block: block.id,
+          text: 'dolor'
+        }
       });
     }
     
@@ -49,7 +57,11 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         id: uuidv4(),
         sourceBlockId: block.id,
         type: 'warning',
-        content: 'Monitorizar tensión arterial cada 4 horas. Valores fuera de rango requieren atención.'
+        content: 'Monitorizar tensión arterial cada 4 horas. Valores fuera de rango requieren atención.',
+        context_origin: {
+          source_block: block.id,
+          text: 'presión'
+        }
       });
     }
   }
@@ -62,7 +74,11 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         id: uuidv4(),
         sourceBlockId: block.id,
         type: 'info',
-        content: 'Paciente con historial de diabetes. Considerar monitorización de glucemia.'
+        content: 'Paciente con historial de diabetes. Considerar monitorización de glucemia.',
+        context_origin: {
+          source_block: block.id,
+          text: 'diabetes'
+        }
       });
     }
   }
@@ -78,14 +94,22 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
       id: uuidv4(),
       sourceBlockId,
       type: 'info',
-      content: 'Recordar documentar signos vitales en cada visita según protocolo institucional.'
+      content: 'Recordar documentar signos vitales en cada visita según protocolo institucional.',
+      context_origin: {
+        source_block: sourceBlockId,
+        text: 'Recordar documentar signos vitales en cada visita según protocolo institucional.'
+      }
     });
     
     suggestions.push({
       id: uuidv4(),
       sourceBlockId,
       type: 'recommendation',
-      content: 'Evaluar estado de hidratación y balance hídrico del paciente.'
+      content: 'Evaluar estado de hidratación y balance hídrico del paciente.',
+      context_origin: {
+        source_block: sourceBlockId,
+        text: 'Evaluar estado de hidratación y balance hídrico del paciente.'
+      }
     });
   }
   

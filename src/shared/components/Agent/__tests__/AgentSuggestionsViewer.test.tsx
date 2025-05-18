@@ -136,7 +136,11 @@ describe('AgentSuggestionsViewer', () => {
       id: 'suggestion-1',
       sourceBlockId: 'block-1',
       type: 'recommendation',
-      content: 'Considerar radiografía de tórax para descartar neumonía'
+      content: 'Considerar radiografía de tórax para descartar neumonía',
+      context_origin: {
+        source_block: 'Motivo de consulta',
+        text: 'Paciente refiere dolor torácico y dificultad respiratoria desde hace 3 días.'
+      }
     },
     {
       id: 'suggestion-2',
@@ -160,7 +164,11 @@ describe('AgentSuggestionsViewer', () => {
       id: 'suggestion-5',
       sourceBlockId: 'block-5',
       type: 'warning',
-      content: 'HbA1c elevada, posible descompensación diabética'
+      content: 'HbA1c elevada, posible descompensación diabética',
+      context_origin: {
+        source_block: 'Exámenes de Laboratorio',
+        text: 'HbA1c: 9.2%, glucemia: 245 mg/dl'
+      }
     }
   ];
 
@@ -380,6 +388,66 @@ describe('AgentSuggestionsViewer', () => {
       expect(screen.getByText('Considerar radiografía de tórax para descartar neumonía')).toBeInTheDocument();
       expect(screen.getByText('Paciente con alergias a medicamentos específicos')).toBeInTheDocument();
       expect(screen.getByText('HbA1c elevada, posible descompensación diabética')).toBeInTheDocument();
+    });
+  });
+
+  // Nuevas pruebas para la visualización del contexto de origen
+  describe('Visualización del contexto de origen', () => {
+    it('debe mostrar el contexto de origen cuando está disponible', async () => {
+      // Renderizar el componente
+      render(
+        <AgentSuggestionsViewer
+          visitId={visitId}
+          suggestions={mockSuggestions}
+          userId={userId}
+          patientId={patientId}
+        />
+      );
+
+      // Expandir el componente para mostrar las sugerencias
+      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+      // Verificar que se muestra el contexto de origen para las sugerencias que lo tienen
+      await waitFor(() => {
+        // Debe haber exactamente 2 elementos con el contexto de origen presente
+        const contextOrigins = screen.getAllByTestId('suggestion-context-origin');
+        expect(contextOrigins).toHaveLength(2);
+        
+        // Verificar el contenido específico del primer contexto de origen
+        expect(screen.getByText('Motivo de consulta')).toBeInTheDocument();
+        expect(screen.getByText('Paciente refiere dolor torácico y dificultad respiratoria desde hace 3 días.')).toBeInTheDocument();
+        
+        // Verificar el contenido específico del segundo contexto de origen
+        expect(screen.getByText('Exámenes de Laboratorio')).toBeInTheDocument();
+        expect(screen.getByText('HbA1c: 9.2%, glucemia: 245 mg/dl')).toBeInTheDocument();
+      });
+    });
+
+    it('debe mostrar "Sin contexto disponible" cuando no hay contexto de origen', async () => {
+      // Renderizar el componente
+      render(
+        <AgentSuggestionsViewer
+          visitId={visitId}
+          suggestions={mockSuggestions}
+          userId={userId}
+          patientId={patientId}
+        />
+      );
+
+      // Expandir el componente para mostrar las sugerencias
+      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+      // Verificar que se muestra el mensaje "Sin contexto disponible" para las sugerencias sin contexto
+      await waitFor(() => {
+        // Debe haber exactamente 3 elementos sin contexto de origen
+        const noContextMessages = screen.getAllByTestId('suggestion-context-unavailable');
+        expect(noContextMessages).toHaveLength(3);
+        
+        // Verificar que todos muestran el mensaje correcto
+        noContextMessages.forEach(element => {
+          expect(element).toHaveTextContent('Sin contexto disponible');
+        });
+      });
     });
   });
 
