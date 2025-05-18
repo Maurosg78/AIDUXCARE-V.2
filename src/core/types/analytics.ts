@@ -47,4 +47,5 @@ export type MetricEventType =
   | 'suggestion_feedback_viewed'
   | 'suggestion_search_filter_used'
   | 'suggestion_explanation_viewed'
-  | 'suggestion_eval_failed'; 
+  | 'suggestion_eval_failed'
+  | 'llm_used'; 

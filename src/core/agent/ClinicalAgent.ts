@@ -2,7 +2,8 @@ import { AgentContext } from './AgentContextBuilder';
 import { v4 as uuidv4 } from 'uuid';
 import { getSuggestionsFromLLM } from './LLMAdapterReal';
 import { evaluateSuggestion } from '../../evals/ClinicalSuggestionEval';
-import { logMetric } from '../../services/UsageAnalyticsService';
+import { logMetric, track } from '../../services/UsageAnalyticsService';
+import { AuditLogger } from '../audit/AuditLogger';
 
 /**
  * Interfaz que define la estructura de una sugerencia generada por el agente LLM
@@ -15,7 +16,8 @@ export interface AgentSuggestion {
   context_origin?: {
     source_block: string;
     text: string;
-  }
+  };
+  source?: string;
 }
 
 /**
@@ -34,8 +36,40 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
   // Si se usa LLM real, invocar al adaptador
   if (useRealLLM) {
     console.log('Utilizando LLM real para generar sugerencias clínicas');
+    
+    // Registrar evento de solicitud de sugerencias al LLM
+    AuditLogger.log('llm_suggestion_requested', {
+      visitId: ctx.visitId,
+      userId: ctx.userId || 'system',
+      timestamp: new Date().toISOString(),
+      context_blocks_count: ctx.blocks.length
+    });
+    
+    // Obtener sugerencias del LLM
     const suggestions = await getSuggestionsFromLLM(ctx);
-    return evaluateSuggestionsIfEnabled(suggestions, ctx.visitId, ctx.patientId);
+    
+    // Marcar las sugerencias con la fuente "llm_real"
+    const markedSuggestions = suggestions.map(suggestion => ({
+      ...suggestion,
+      source: "llm_real"
+    }));
+    
+    // Registrar evento de recepción de sugerencias del LLM
+    AuditLogger.log('llm_suggestion_received', {
+      visitId: ctx.visitId,
+      userId: ctx.userId || 'system',
+      timestamp: new Date().toISOString(),
+      suggestions_count: markedSuggestions.length
+    });
+    
+    // Registrar métrica de uso del LLM
+    track('llm_used', ctx.userId || 'system', ctx.visitId, markedSuggestions.length, {
+      context_blocks_count: ctx.blocks.length,
+      source: 'llm_real'
+    });
+    
+    // Evaluar las sugerencias si está habilitado
+    return evaluateSuggestionsIfEnabled(markedSuggestions, ctx.visitId, ctx.patientId);
   }
   
   // En caso contrario, usar la implementación determinística original

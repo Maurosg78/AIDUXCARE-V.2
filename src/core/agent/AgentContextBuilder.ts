@@ -7,6 +7,7 @@ import { MCPContext } from '@/core/mcp/schema';
 export interface AgentContext {
   visitId: string;
   patientId: string;
+  userId?: string;
   blocks: {
     id: string;
     type: 'contextual' | 'persistent' | 'semantic';
@@ -95,11 +96,14 @@ export function buildAgentContext(mcpContext: MCPContext): AgentContext {
     }
   });
   
-  // Buscar el visitId en los bloques contextual
+  // Buscar el visitId y professional_id (userId) en los bloques contextual y persistente
   [...mcpContext.contextual.data, ...mcpContext.persistent.data].forEach(block => {
     const blockAny = block as Record<string, unknown>;
     if (blockAny.visit_id && typeof blockAny.visit_id === 'string' && !agentContext.visitId) {
       agentContext.visitId = blockAny.visit_id;
+    }
+    if (blockAny.professional_id && typeof blockAny.professional_id === 'string' && !agentContext.userId) {
+      agentContext.userId = blockAny.professional_id;
     }
   });
   
