@@ -158,4 +158,69 @@ describe('EMRFormService', () => {
       );
     });
   });
+  
+  describe('insertSuggestedContent', () => {
+    it('debería insertar correctamente el contenido sugerido en el EMR y registrar auditoría', async () => {
+      const visitId = 'visit-123';
+      const sectionKey = 'plan';
+      const content = 'Considerar radiografía de tórax';
+      const suggestionId = 'sugg-test-123';
+      
+      // 1. Ejecutar el método bajo prueba
+      const result = await EMRFormService.insertSuggestedContent(
+        visitId,
+        sectionKey,
+        content,
+        'agent',
+        suggestionId
+      );
+      
+      // 2. Verificar resultado
+      expect(result).toBe(true);
+      
+      // 3. Verificar que se llamó a formDataSourceSupabase.updateForm con los parámetros correctos
+      expect(formDataSourceSupabase.updateForm).toHaveBeenCalledWith(
+        'form-123',
+        expect.objectContaining({
+          content: expect.stringContaining(`🔎 ${content}`),
+          status: 'draft'
+        })
+      );
+      
+      // 4. Verificar que se registró correctamente en el log de auditoría
+      expect(AuditLogger.log).toHaveBeenCalledWith(
+        'suggestion_integrated',
+        expect.objectContaining({
+          visitId,
+          section: sectionKey,
+          content: expect.stringContaining(`🔎 ${content}`),
+          suggestionId
+        })
+      );
+      
+      // 5. Verificar estructura del contenido actualizado
+      const updateFormCall = vi.mocked(formDataSourceSupabase.updateForm).mock.calls[0];
+      const contentParam = JSON.parse(updateFormCall[1].content);
+      
+      expect(contentParam).toHaveProperty(sectionKey);
+      expect(contentParam[sectionKey]).toContain(`🔎 ${content}`);
+    });
+    
+    it('debería manejar correctamente cuando no se encuentra formulario', async () => {
+      // Mockear el caso donde no hay formularios
+      vi.mocked(formDataSourceSupabase.getFormsByVisitId).mockResolvedValueOnce([]);
+      
+      const result = await EMRFormService.insertSuggestedContent(
+        'visit-non-existent',
+        'plan',
+        'Contenido de prueba',
+        'agent',
+        'sugg-123'
+      );
+      
+      expect(result).toBe(false);
+      expect(formDataSourceSupabase.updateForm).not.toHaveBeenCalled();
+      expect(AuditLogger.log).not.toHaveBeenCalled();
+    });
+  });
 }); 

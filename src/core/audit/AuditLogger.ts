@@ -28,13 +28,13 @@ export class AuditLogger {
   ) {
     const timestamp = new Date().toISOString();
     
-    return this.log('suggestions.approved', {
+    return this.log('suggestion_integrated', {
       visitId,
       userId,
       suggestionId,
-      suggestionType,
+      suggestion_type: suggestionType,
+      field_id: emrSection,
       content,
-      field: emrSection,
       timestamp
     });
   }
@@ -69,6 +69,7 @@ export type AuditLogEntry = {
   suggestion_content?: string;
   emr_section?: string;
   field?: string;
+  field_id?: string;
   suggestionId?: string;
   content?: string;
   details?: {
