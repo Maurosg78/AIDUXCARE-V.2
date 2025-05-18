@@ -549,7 +549,7 @@ describe('AgentSuggestionsViewer', () => {
     // Verificar que el componente está colapsado
     expect(screen.getByText('Ver sugerencias del agente')).toBeInTheDocument();
   });
-  
+
   it('debe manejar el caso cuando no hay sugerencias', () => {
     // Renderizar el componente sin sugerencias
     render(
@@ -581,7 +581,7 @@ describe('AgentSuggestionsViewer', () => {
 
     // Expandir el componente para mostrar las sugerencias
     fireEvent.click(screen.getByText('Ver sugerencias del agente'));
-
+    
     // Verificar que se carguen los feedbacks
     expect(suggestionFeedbackDataSourceSupabase.getFeedbacksByVisit).toHaveBeenCalledWith(visitId);
 
@@ -645,8 +645,8 @@ describe('AgentSuggestionsViewer', () => {
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
-
+    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    
       // Hacer clic en el primer botón de explicación
       const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
       fireEvent.click(explanationButtons[0]);
@@ -723,8 +723,8 @@ describe('AgentSuggestionsViewer', () => {
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
-
+    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    
       // Hacer clic en el primer botón de explicación para expandir
       const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
       fireEvent.click(explanationButtons[0]);
