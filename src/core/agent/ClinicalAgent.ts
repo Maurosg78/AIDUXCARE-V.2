@@ -1,5 +1,6 @@
 import { AgentContext } from './AgentContextBuilder';
 import { v4 as uuidv4 } from 'uuid';
+import { getSuggestionsFromLLM } from './LLMAdapterReal';
 
 /**
  * Interfaz que define la estructura de una sugerencia generada por el agente LLM
@@ -16,18 +17,39 @@ export interface AgentSuggestion {
 }
 
 /**
- * STUB: Genera sugerencias basadas en el contexto del agente
+ * Genera sugerencias basadas en el contexto del agente
  * 
- * Esta es una implementación simulada que genera sugerencias ficticias basadas
- * en el contenido de los bloques de memoria contextual y semántica.
- * 
- * En una implementación real, esta función llamaría a un servicio LLM para generar
- * sugerencias basadas en un análisis más profundo del contexto.
+ * Dependiendo de la configuración del entorno, utilizará un modelo LLM real o 
+ * generará sugerencias determinísticas basadas en palabras clave.
  * 
  * @param ctx El contexto del agente con los bloques de memoria
  * @returns Array de sugerencias generadas
  */
 export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSuggestion[]> {
+  // Verificar si se debe usar el LLM real
+  const useRealLLM = process.env.USE_REAL_LLM === 'true';
+  
+  // Si se usa LLM real, invocar al adaptador
+  if (useRealLLM) {
+    console.log('Utilizando LLM real para generar sugerencias clínicas');
+    return getSuggestionsFromLLM(ctx);
+  }
+  
+  // En caso contrario, usar la implementación determinística original
+  console.log('Utilizando generación determinística de sugerencias clínicas');
+  return getDeterministicSuggestions(ctx);
+}
+
+/**
+ * Implementación determinística para generar sugerencias basadas en palabras clave
+ * 
+ * Esta implementación simulada genera sugerencias ficticias basadas
+ * en el contenido de los bloques de memoria contextual y semántica.
+ * 
+ * @param ctx El contexto del agente con los bloques de memoria
+ * @returns Array de sugerencias generadas
+ */
+export async function getDeterministicSuggestions(ctx: AgentContext): Promise<AgentSuggestion[]> {
   // Array para almacenar las sugerencias generadas
   const suggestions: AgentSuggestion[] = [];
   
