@@ -1,4 +1,37 @@
-import { vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock de las variables de entorno
+vi.mock('../../../config/env', () => ({
+  SUPABASE_URL: 'https://test-supabase-url.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  __esModule: true,
+  default: {}
+}));
+
+// Mock completo del cliente de Supabase
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => Promise.resolve({ 
+            data: { professional_id: 'prof-123' }, 
+            error: null 
+          })),
+          order: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null }))
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null }))
+      }))
+    })),
+    auth: {
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+    }
+  }))
+}));
+
 // Primero mockeamos supabaseClient antes de importar EMRFormService
 vi.mock('../../../core/auth/supabaseClient', () => {
   return {
@@ -56,11 +89,11 @@ vi.mock('../../../services/UsageAnalyticsService', () => ({
 vi.mock('../../../core/audit/AuditLogger', () => ({
   AuditLogger: {
     logSuggestionIntegration: vi.fn(),
-    logFormUpdate: vi.fn()
+    logFormUpdate: vi.fn(),
+    log: vi.fn()
   }
 }));
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EMRFormService, SuggestionToIntegrate } from '../EMRFormService';
 import { formDataSourceSupabase } from '../../../core/dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../../../core/audit/AuditLogger';
