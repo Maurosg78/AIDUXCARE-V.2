@@ -569,4 +569,144 @@ export const getMetricsByTypeForVisit = (visitId: string): SuggestionTypeMetrics
  */
 const getSupabaseClient = (): SupabaseClient => {
   return supabase as SupabaseClient;
+};
+
+/**
+ * Interfaz para el impacto longitudinal por tipo de sugerencia
+ */
+export interface LongitudinalImpactByType {
+  type: SuggestionType;
+  totalGenerated: number;
+  totalAccepted: number;
+  totalTimeSavedMinutes: number;
+  acceptanceRate: number;
+  visitCount: number;
+}
+
+/**
+ * Obtiene métricas longitudinales agrupadas por tipo de sugerencia para un paciente específico
+ * 
+ * @param patientId ID del paciente para obtener métricas longitudinales
+ * @returns Array con métricas acumuladas por tipo de sugerencia
+ */
+export const getLongitudinalImpactByPatient = async (patientId: string): Promise<LongitudinalImpactByType[]> => {
+  try {
+    // Obtener métricas longitudinales para el paciente
+    const metrics = await getLongitudinalMetricsByPatient(patientId);
+    
+    if (!metrics || metrics.length === 0) {
+      return [];
+    }
+    
+    // Inicializar contadores por tipo de sugerencia
+    const typeImpact: Record<SuggestionType, {
+      generated: number;
+      accepted: number;
+      timeSavedMinutes: number;
+      visitCount: number;
+    }> = {
+      'recommendation': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 },
+      'warning': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 },
+      'info': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 }
+    };
+    
+    // Procesar cada métrica longitudinal
+    metrics.forEach(metric => {
+      // Contar cada visita una vez por tipo
+      let recommendationCounted = false;
+      let warningCounted = false;
+      let infoCounted = false;
+      
+      // Si hay sugerencias generadas de algún tipo, incrementar el contador de visitas para ese tipo
+      if (metric.suggestions_generated > 0) {
+        // Obtener detalles si existen
+        const details = metric.details as any;
+        
+        if (details && details.suggestion_types) {
+          // Si hay detalles específicos por tipo
+          if (details.suggestion_types.recommendation && details.suggestion_types.recommendation.generated > 0) {
+            typeImpact.recommendation.generated += details.suggestion_types.recommendation.generated;
+            typeImpact.recommendation.accepted += details.suggestion_types.recommendation.accepted || 0;
+            typeImpact.recommendation.timeSavedMinutes += details.suggestion_types.recommendation.time_saved_minutes || 0;
+            if (!recommendationCounted) {
+              typeImpact.recommendation.visitCount++;
+              recommendationCounted = true;
+            }
+          }
+          
+          if (details.suggestion_types.warning && details.suggestion_types.warning.generated > 0) {
+            typeImpact.warning.generated += details.suggestion_types.warning.generated;
+            typeImpact.warning.accepted += details.suggestion_types.warning.accepted || 0;
+            typeImpact.warning.timeSavedMinutes += details.suggestion_types.warning.time_saved_minutes || 0;
+            if (!warningCounted) {
+              typeImpact.warning.visitCount++;
+              warningCounted = true;
+            }
+          }
+          
+          if (details.suggestion_types.info && details.suggestion_types.info.generated > 0) {
+            typeImpact.info.generated += details.suggestion_types.info.generated;
+            typeImpact.info.accepted += details.suggestion_types.info.accepted || 0;
+            typeImpact.info.timeSavedMinutes += details.suggestion_types.info.time_saved_minutes || 0;
+            if (!infoCounted) {
+              typeImpact.info.visitCount++;
+              infoCounted = true;
+            }
+          }
+        } else {
+          // Si no hay detalles específicos, distribuir proporcionalmente
+          // Asumimos una distribución aproximada: 50% recomendaciones, 30% advertencias, 20% informativas
+          const recommendationPct = 0.5;
+          const warningPct = 0.3;
+          const infoPct = 0.2;
+          
+          typeImpact.recommendation.generated += Math.round(metric.suggestions_generated * recommendationPct);
+          typeImpact.recommendation.accepted += Math.round(metric.suggestions_accepted * recommendationPct);
+          typeImpact.recommendation.timeSavedMinutes += Math.round(metric.time_saved_minutes * recommendationPct);
+          if (!recommendationCounted) {
+            typeImpact.recommendation.visitCount++;
+            recommendationCounted = true;
+          }
+          
+          typeImpact.warning.generated += Math.round(metric.suggestions_generated * warningPct);
+          typeImpact.warning.accepted += Math.round(metric.suggestions_accepted * warningPct);
+          typeImpact.warning.timeSavedMinutes += Math.round(metric.time_saved_minutes * warningPct);
+          if (!warningCounted) {
+            typeImpact.warning.visitCount++;
+            warningCounted = true;
+          }
+          
+          typeImpact.info.generated += Math.round(metric.suggestions_generated * infoPct);
+          typeImpact.info.accepted += Math.round(metric.suggestions_accepted * infoPct);
+          typeImpact.info.timeSavedMinutes += Math.round(metric.time_saved_minutes * infoPct);
+          if (!infoCounted) {
+            typeImpact.info.visitCount++;
+            infoCounted = true;
+          }
+        }
+      }
+    });
+    
+    // Convertir a array con porcentajes de aceptación calculados
+    return Object.entries(typeImpact)
+      .map(([type, data]) => {
+        const acceptanceRate = data.generated > 0 
+          ? Math.round((data.accepted / data.generated) * 100) 
+          : 0;
+          
+        return {
+          type: type as SuggestionType,
+          totalGenerated: data.generated,
+          totalAccepted: data.accepted,
+          totalTimeSavedMinutes: data.timeSavedMinutes,
+          acceptanceRate,
+          visitCount: data.visitCount
+        };
+      })
+      // Ordenar por cantidad generada (de mayor a menor)
+      .sort((a, b) => b.totalGenerated - a.totalGenerated);
+  } catch (error) {
+    console.error('Error al obtener métricas longitudinales por tipo:', error);
+    return [];
+  }
 }; 

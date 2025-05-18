@@ -24,6 +24,18 @@ export interface SuggestionTypeMetrics {
 }
 
 /**
+ * Tipo para las métricas longitudinales acumuladas por tipo de sugerencia a nivel de paciente
+ */
+export interface LongitudinalImpactByType {
+  type: SuggestionType;
+  totalGenerated: number;
+  totalAccepted: number;
+  totalTimeSavedMinutes: number;
+  acceptanceRate: number;
+  visitCount: number;
+}
+
+/**
  * Tipo para los eventos de métricas de uso
  */
 export type MetricEventType = 
