@@ -4,6 +4,7 @@ import { supabase, checkSupabaseConnection } from './lib/supabase'
 import './App.css'
 import { initializeSemanticMemoryData } from './core/mcp/initializeSemanticMemoryData'
 import DashboardPage from './features/dashboard/DashboardPage'
+import PatientListPage from './features/patient/PatientListPage'
 
 // Componente de inicio
 function Home() {
@@ -95,6 +96,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/dashboard-test" element={<DashboardTest />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/patients" element={<PatientListPage />} />
         </Routes>
       </main>
       

@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import DashboardPage from '../DashboardPage';
 import { visitDataSourceSupabase } from '../../../core/dataSources/visitDataSourceSupabase';
 import { useUser } from '../../../core/auth/UserContext';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { VisitStatus } from '../../../core/domain/visitType';
 
 // Tipo para el mock de useUser
@@ -157,5 +157,41 @@ describe('DashboardPage', () => {
 
     // Verificar que el mensaje de error contenga el texto esperado
     expect(screen.getByTestId('dashboard-error')).toHaveTextContent(errorMessage);
+  });
+
+  it('navega a /patients al hacer clic en el botón Nueva visita', async () => {
+    // Crear un mock para navigate
+    const mockNavigate = vi.fn();
+    (useNavigate as Mock).mockReturnValue(mockNavigate);
+    
+    // Configurar el mock de useUser para devolver un usuario
+    (useUser as unknown as Mock<[], MockUserHook>).mockReturnValue({
+      user: { id: 'user-123' },
+      profile: {}
+    });
+
+    // Mock de visitas
+    const mockVisits: MockVisit[] = [
+      { id: 'visit-1', patient_id: 'patient-123', date: '2023-01-01', status: VisitStatus.COMPLETED },
+      { id: 'visit-2', patient_id: 'patient-456', date: '2023-01-05', status: VisitStatus.IN_PROGRESS }
+    ];
+
+    // Configurar el mock para devolver visitas
+    (visitDataSourceSupabase.getVisitsByProfessionalId as Mock).mockResolvedValue(mockVisits);
+
+    render(<DashboardPageWithRouter />);
+    
+    // Esperar a que se cargue el dashboard
+    await waitFor(() => {
+      expect(screen.queryByTestId('dashboard-loader')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-content')).toBeInTheDocument();
+    });
+
+    // Buscar y hacer clic en el botón "Nueva visita"
+    const newVisitButton = screen.getByText('Nueva visita');
+    fireEvent.click(newVisitButton);
+    
+    // Verificar que se navegó a /patients
+    expect(mockNavigate).toHaveBeenCalledWith('/patients');
   });
 }); 
