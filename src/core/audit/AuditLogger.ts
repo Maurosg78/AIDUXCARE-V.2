@@ -39,6 +39,33 @@ export class AuditLogger {
     });
   }
 
+  /**
+   * Registra la retroalimentación proporcionada sobre una sugerencia clínica
+   * @param userId ID del usuario que proporciona la retroalimentación
+   * @param visitId ID de la visita relacionada
+   * @param suggestionId ID de la sugerencia evaluada
+   * @param feedbackType Tipo de retroalimentación (useful, irrelevant, incorrect, dangerous)
+   * @param suggestionType Tipo original de la sugerencia
+   */
+  static logSuggestionFeedback(
+    userId: string,
+    visitId: string,
+    suggestionId: string,
+    feedbackType: 'useful' | 'irrelevant' | 'incorrect' | 'dangerous',
+    suggestionType: string
+  ) {
+    const timestamp = new Date().toISOString();
+    
+    return this.log('suggestion_feedback_given', {
+      visitId,
+      userId,
+      suggestionId,
+      suggestion_type: suggestionType,
+      feedback_type: feedbackType,
+      timestamp
+    });
+  }
+
   static logBlockUpdates(...args: any[]) {
     console.log('[AuditLogger] blockUpdate', ...args);
   }
@@ -72,6 +99,7 @@ export type AuditLogEntry = {
   field_id?: string;
   suggestionId?: string;
   content?: string;
+  feedback_type?: 'useful' | 'irrelevant' | 'incorrect' | 'dangerous';
   details?: {
     visit_id?: string;
     patient_id?: string;

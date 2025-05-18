@@ -1,13 +1,13 @@
-import { vi } from "vitest";
 import React, { useState } from 'react';
 import { track } from '../../../services/UsageAnalyticsService';
-import { EMRFormService } from '../../../core/services/EMRFormService';
+import { AuditLogger } from '../../../core/audit/AuditLogger';
+import supabase from '../../../core/auth/supabaseClient';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 
 /**
  * Tipo para las posibles acciones de retroalimentación sobre una sugerencia
  */
-export type AgentSuggestionFeedback = 'accept' | 'reject' | 'none';
+export type SuggestionFeedbackType = 'useful' | 'irrelevant' | 'incorrect' | 'dangerous' | 'none';
 
 /**
  * Props para el componente AgentSuggestionFeedbackActions
@@ -15,102 +15,153 @@ export type AgentSuggestionFeedback = 'accept' | 'reject' | 'none';
 interface AgentSuggestionFeedbackActionsProps {
   visitId: string;
   userId: string;
+  suggestionId: string;
   suggestion?: AgentSuggestion;
-  onFeedback: (feedback: AgentSuggestionFeedback) => void;
-  isIntegrated?: boolean;
+  onFeedback?: (feedback: SuggestionFeedbackType) => void;
 }
 
 /**
- * Componente para los botones de aceptar/rechazar una sugerencia
+ * Componente para proporcionar retroalimentación sobre la calidad de las sugerencias clínicas
  */
 const AgentSuggestionFeedbackActions: React.FC<AgentSuggestionFeedbackActionsProps> = ({ 
   visitId, 
   userId, 
+  suggestionId,
   suggestion,
-  onFeedback,
-  isIntegrated = false
+  onFeedback
 }) => {
-  const [feedback, setFeedback] = useState<AgentSuggestionFeedback>('none');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [feedback, setFeedback] = useState<SuggestionFeedbackType>('none');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAccept = async () => {
-    setIsProcessing(true);
+  /**
+   * Guarda el feedback en Supabase, registra en AuditLogger y envía métricas
+   */
+  const saveFeedback = async (feedbackType: SuggestionFeedbackType) => {
+    if (feedbackType === 'none') return;
+    
+    setIsSubmitting(true);
     
     try {
-      // Actualizar estado local
-      setFeedback('accept');
+      // 1. Guardar en Supabase
+      const { error } = await supabase
+        .from('suggestion_feedback')
+        .insert({
+          user_id: userId,
+          visit_id: visitId,
+          suggestion_id: suggestionId,
+          feedback_type: feedbackType
+        });
       
-      // Registrar métrica de aceptación
-      if (visitId) {
-        track('suggestions_accepted', userId, visitId, 1);
+      if (error) {
+        throw new Error(`Error al guardar feedback: ${error.message}`);
       }
       
-      // Notificar al componente padre
-      onFeedback('accept');
+      // 2. Registrar en AuditLogger
+      AuditLogger.logSuggestionFeedback(
+        userId,
+        visitId,
+        suggestionId,
+        feedbackType,
+        suggestion?.type || 'unknown'
+      );
       
-      // Si tenemos la información de la sugerencia, intentar integrarla al EMR
-      if (suggestion) {
-        try {
-          await EMRFormService.insertSuggestedContent(
-            visitId,
-            EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type),
-            suggestion.content,
-            'agent',
-            suggestion.id
-          );
-        } catch (error) {
-          console.error('Error al integrar sugerencia al EMR:', error);
+      // 3. Enviar métrica de uso
+      track(
+        'suggestion_feedback_given',
+        userId,
+        visitId,
+        1,
+        { 
+          feedbackType,
+          suggestionId,
+          suggestionType: suggestion?.type || 'unknown'
         }
+      );
+      
+      // Actualizar estado y notificar al componente padre
+      setFeedback(feedbackType);
+      if (onFeedback) {
+        onFeedback(feedbackType);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        // Manejar error silenciosamente en producción
+        console.error('Error al procesar feedback:', error.message);
       }
     } finally {
-      setIsProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleReject = () => {
-    setFeedback('reject');
-    onFeedback('reject');
-  };
+  // Determinar si ya se ha dado feedback
+  const hasProvidedFeedback = feedback !== 'none';
 
   return (
-    <div className="mt-2 flex justify-end space-x-2">
-      {isIntegrated ? (
-        <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded-md">
-          <span className="mr-1">✓</span> Integrado al EMR
-        </span>
-      ) : feedback === 'none' ? (
-        <>
-          <button
-            onClick={handleAccept}
-            disabled={isProcessing}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${
-              isProcessing 
-                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+    <div className="mt-2 flex flex-col">
+      <p className="text-xs text-gray-600 mb-1">¿Qué tan útil fue esta sugerencia?</p>
+      <div className="flex space-x-2">
+        <button
+          onClick={() => saveFeedback('useful')}
+          disabled={isSubmitting || hasProvidedFeedback}
+          className={`px-3 py-1 text-xs font-medium rounded-md ${
+            feedback === 'useful' 
+              ? 'bg-green-100 text-green-700 border border-green-400' 
+              : isSubmitting || hasProvidedFeedback
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                 : 'bg-green-50 text-green-700 hover:bg-green-100'
-            }`}
-          >
-            {isProcessing ? 'Procesando...' : 'Aceptar'}
-          </button>
-          <button
-            onClick={handleReject}
-            disabled={isProcessing}
-            className={`px-3 py-1 text-xs font-medium rounded-md ${
-              isProcessing 
-                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+          }`}
+          aria-label="Sugerencia útil"
+        >
+          ✅ Útil
+        </button>
+        <button
+          onClick={() => saveFeedback('irrelevant')}
+          disabled={isSubmitting || hasProvidedFeedback}
+          className={`px-3 py-1 text-xs font-medium rounded-md ${
+            feedback === 'irrelevant' 
+              ? 'bg-yellow-100 text-yellow-700 border border-yellow-400' 
+              : isSubmitting || hasProvidedFeedback
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+          }`}
+          aria-label="Sugerencia irrelevante"
+        >
+          ⚠️ Irrelevante
+        </button>
+        <button
+          onClick={() => saveFeedback('incorrect')}
+          disabled={isSubmitting || hasProvidedFeedback}
+          className={`px-3 py-1 text-xs font-medium rounded-md ${
+            feedback === 'incorrect' 
+              ? 'bg-red-100 text-red-700 border border-red-400' 
+              : isSubmitting || hasProvidedFeedback
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                 : 'bg-red-50 text-red-700 hover:bg-red-100'
-            }`}
-          >
-            Rechazar
-          </button>
-        </>
-      ) : feedback === 'accept' ? (
-        <span className="text-xs text-green-600 flex items-center">
-          <span className="mr-1">✓</span> Aceptada
-        </span>
-      ) : (
-        <span className="text-xs text-red-600 flex items-center">
-          <span className="mr-1">✗</span> Rechazada
-        </span>
+          }`}
+          aria-label="Sugerencia incorrecta"
+        >
+          ❌ Incorrecta
+        </button>
+        <button
+          onClick={() => saveFeedback('dangerous')}
+          disabled={isSubmitting || hasProvidedFeedback}
+          className={`px-3 py-1 text-xs font-medium rounded-md ${
+            feedback === 'dangerous' 
+              ? 'bg-purple-100 text-purple-700 border border-purple-400' 
+              : isSubmitting || hasProvidedFeedback
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+          }`}
+          aria-label="Sugerencia peligrosa"
+        >
+          🔥 Peligrosa
+        </button>
+      </div>
+      {isSubmitting && (
+        <p className="text-xs text-gray-500 mt-1">Enviando feedback...</p>
+      )}
+      {hasProvidedFeedback && !isSubmitting && (
+        <p className="text-xs text-green-600 mt-1">¡Gracias por tu retroalimentación!</p>
       )}
     </div>
   );
