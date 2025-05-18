@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 export class AuditLogger {
   /**
    * Registra un evento en el sistema de auditoría

@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { vi } from 'vitest';
 
 // Mock completo del cliente Supabase para tests

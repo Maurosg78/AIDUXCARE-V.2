@@ -1,9 +1,8 @@
-import { vi } from "vitest";
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
-import { track } from '../../services/UsageAnalyticsService';
+import * as AnalyticsService from '../../services/UsageAnalyticsService';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/env';
 
 /**
@@ -243,7 +242,7 @@ export class EMRFormService {
       );
       
       // Registrar métricas
-      track('suggestions_integrated', userId, visitId, 1, {
+      AnalyticsService.track('suggestions_integrated', userId, visitId, 1, {
         field: section,
         source: suggestion.sourceBlockId,
         suggestion_id: suggestion.id
@@ -333,133 +332,72 @@ export class EMRFormService {
   }
 
   /**
-   * Inserta contenido sugerido en un campo específico del EMR
+   * Inserta el contenido sugerido en la sección correspondiente del formulario EMR
    * @param visitId ID de la visita
-   * @param field Campo o sección del EMR donde integrar la sugerencia
+   * @param sectionKey Clave de la sección del formulario (motivo_consulta, antecedentes, etc.)
    * @param content Contenido a insertar
-   * @param source Fuente de la sugerencia (ej: 'agent')
-   * @param suggestionId ID opcional de la sugerencia para trazabilidad
-   * @param riskLevel Nivel de riesgo opcional
-   * @returns true si se insertó correctamente, false en caso contrario
+   * @param source Origen de la sugerencia (agent, profesional, etc.)
+   * @param suggestionId ID de la sugerencia (opcional)
+   * @returns Promesa que resuelve a true si la inserción fue exitosa
    */
-  public static async insertSuggestedContent(
+  static async insertSuggestedContent(
     visitId: string,
-    field: EMRSection,
+    sectionKey: string,
     content: string,
-    source: string = 'agent',
-    suggestionId?: string,
-    riskLevel?: string
+    source: 'agent' | 'professional' = 'agent',
+    suggestionId?: string
   ): Promise<boolean> {
     try {
-      if (!visitId || !field || !content) {
-        console.error('Parámetros insuficientes para insertar sugerencia');
-        return false;
-      }
-
-      // Obtener datos del paciente y profesional
-      const { data: visitData, error: visitError } = await this.supabase
-        .from('visits')
-        .select('patient_id, professional_id')
-        .eq('id', visitId)
-        .single();
-        
-      if (visitError || !visitData) {
-        console.error('Error al obtener datos de visita:', visitError);
+      // 1. Obtener el formulario actual
+      const forms = await formDataSourceSupabase.getFormsByVisitId(visitId);
+      const form = forms.length > 0 ? forms[0] : null;
+      
+      if (!form) {
+        console.error(`[EMRFormService] No se encontró formulario para visita: ${visitId}`);
         return false;
       }
       
-      const patientId = visitData.patient_id;
-      const professionalId = visitData.professional_id;
-      const userId = professionalId; // Por defecto, el profesional es el usuario
+      // 2. Preparar el contenido con prefijo visual
+      const prefixedContent = source === 'agent' ? `🔎 ${content}` : content;
       
-      // Obtener formulario existente o crear uno nuevo
-      let emrForm = await this.getEMRForm(visitId);
-      
-      if (!emrForm) {
-        // Crear un nuevo formulario EMR si no existe
-        emrForm = {
-          visitId,
-          patientId,
-          professionalId,
-          subjective: '',
-          objective: '',
-          assessment: '',
-          plan: '',
-          notes: '',
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        };
-      }
-      
-      // Preparar el contenido con formato visual
-      const prefixedContent = `🔎 ${content}`;
-      
-      // Verificar si este contenido ya existe en la sección
-      if (emrForm[field].includes(prefixedContent)) {
-        console.log('Contenido ya integrado anteriormente, evitando duplicación');
-        return false;
-      }
-      
-      // Concatenar el contenido
-      const currentContent = emrForm[field];
-      emrForm[field] = currentContent 
-        ? `${currentContent}\n${prefixedContent}`
+      // 3. Actualizar la sección correspondiente del formulario
+      // Si la sección ya tiene contenido, agregamos el nuevo contenido al final
+      const formContent = JSON.parse(form.content || '{}');
+      const currentContent = formContent[sectionKey] || '';
+      const updatedContent = currentContent 
+        ? `${currentContent}\n\n${prefixedContent}`
         : prefixedContent;
       
-      // Actualizar la marca de tiempo
-      emrForm.updatedAt = new Date().toISOString();
+      // Actualizar el contenido del formulario
+      formContent[sectionKey] = updatedContent;
       
-      // Convertir al formato esperado por formDataSourceSupabase
-      const formContent = {
-        subjective: emrForm.subjective,
-        objective: emrForm.objective,
-        assessment: emrForm.assessment,
-        plan: emrForm.plan,
-        notes: emrForm.notes
-      };
-      
-      // Actualizar o crear el formulario
-      if (emrForm.id) {
-        await formDataSourceSupabase.updateForm(emrForm.id, {
-          content: JSON.stringify(formContent),
-          status: 'draft'
-        });
-      } else {
-        await formDataSourceSupabase.createForm({
-          visit_id: emrForm.visitId,
-          patient_id: emrForm.patientId,
-          professional_id: emrForm.professionalId,
-          form_type: 'SOAP',
-          content: JSON.stringify(formContent),
-          status: 'draft'
-        });
-      }
-      
-      // Registrar en el log de auditoría
-      AuditLogger.log(
-        'suggestions.approved',
+      // 4. Actualizar el formulario en la base de datos
+      const updated = await formDataSourceSupabase.updateForm(
+        form.id,
         {
-          visitId,
-          userId,
-          field,
-          content,
-          source,
-          suggestionId,
-          riskLevel,
-          timestamp: new Date().toISOString()
+          content: JSON.stringify(formContent),
+          status: form.status || 'draft'
         }
       );
       
-      // Registrar métricas
-      track('suggestions_integrated', userId, visitId, 1, {
-        field,
-        source,
-        suggestion_id: suggestionId || 'unknown'
-      });
+      if (updated) {
+        // 5. Registrar la acción en el sistema de auditoría
+        if (source === 'agent' && suggestionId) {
+          AuditLogger.log('suggestion_integrated', {
+            visitId,
+            section: sectionKey,
+            content: prefixedContent,
+            suggestionId
+          });
+        }
+        
+        console.log(`[EMRFormService] Contenido insertado en ${sectionKey} para formulario ${form.id}`);
+        return true;
+      }
       
-      return true;
+      return false;
     } catch (error) {
-      console.error('Error al insertar contenido sugerido en EMR:', error);
+      console.error('[EMRFormService] Error al insertar contenido sugerido:', error);
       return false;
     }
   }
