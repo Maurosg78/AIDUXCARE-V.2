@@ -9,7 +9,7 @@ export interface UsageMetric {
   timestamp: string;
   visitId: string;
   userId: string;
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given';
+  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used';
   value: number;
   estimated_time_saved_minutes?: number;
   details?: Record<string, unknown>;
@@ -90,7 +90,7 @@ export const logMetric = (metric: UsageMetric): void => {
  * @param details Detalles adicionales de la métrica
  */
 export const track = (
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given',
+  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used',
   userId: string,
   visitId: string,
   value: number = 1,
