@@ -1,6 +1,8 @@
 import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { SuggestionType } from '../core/types/suggestions';
+import { SuggestionTypeMetrics, MetricEventType, VisitMetricsSummary } from '../core/types/analytics';
 
 /**
  * Tipo que define la estructura de una métrica de uso en el sistema
@@ -9,7 +11,7 @@ export interface UsageMetric {
   timestamp: string;
   visitId: string;
   userId: string;
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used' | 'suggestion_explanation_viewed';
+  type: MetricEventType;
   value: number;
   estimated_time_saved_minutes?: number;
   details?: Record<string, unknown>;
@@ -126,14 +128,7 @@ export const getMetricsByVisit = (visitId: string): UsageMetric[] => {
  * @param visitId ID de la visita para filtrar las métricas
  * @returns Objeto con totales por tipo de métrica
  */
-export const getMetricsSummaryByVisit = (visitId: string): { 
-  generated: number;
-  accepted: number;
-  integrated: number;
-  field_matched: number;
-  warnings: number;
-  estimated_time_saved_minutes: number;
-} => {
+export const getMetricsSummaryByVisit = (visitId: string): VisitMetricsSummary => {
   const metrics = getMetricsByVisit(visitId);
   
   // Calcular el tiempo estimado ahorrado sumando todos los campos estimated_time_saved_minutes
@@ -499,6 +494,74 @@ export const getEvolutionIndicator = (evolution: 'improved' | 'stable' | 'worsen
     case 'worsened': return '🔴'; // Rojo: empeoramiento
     default: return '⚪';         // Blanco: desconocido
   }
+};
+
+/**
+ * Obtiene métricas acumuladas por tipo de sugerencia para una visita específica
+ * 
+ * @param visitId ID de la visita para filtrar las métricas
+ * @returns Array con las métricas acumuladas por tipo de sugerencia
+ */
+export const getMetricsByTypeForVisit = (visitId: string): SuggestionTypeMetrics[] => {
+  if (!visitId) {
+    return [];
+  }
+  
+  const metrics = getMetricsByVisit(visitId);
+  
+  // Inicializar los contadores para cada tipo de sugerencia
+  const typeMetrics: Record<SuggestionType, {
+    generated: number;
+    accepted: number;
+    integrated: number;
+    timeSavedMinutes: number;
+  }> = {
+    'recommendation': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 },
+    'warning': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 },
+    'info': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 }
+  };
+  
+  // Procesar cada métrica para acumular valores por tipo
+  metrics.forEach(metric => {
+    // Obtener el tipo de sugerencia desde los detalles
+    const suggestionType = metric.details?.suggestion_type as SuggestionType;
+    
+    // Solo procesar si es un tipo válido
+    if (suggestionType && typeMetrics[suggestionType]) {
+      // Incrementar contadores según el tipo de métrica
+      if (metric.type === 'suggestions_generated') {
+        typeMetrics[suggestionType].generated += metric.value;
+      } else if (metric.type === 'suggestions_accepted') {
+        typeMetrics[suggestionType].accepted += metric.value;
+      } else if (metric.type === 'suggestions_integrated') {
+        typeMetrics[suggestionType].integrated += metric.value;
+        
+        // Acumular tiempo ahorrado si está disponible
+        if (metric.estimated_time_saved_minutes) {
+          typeMetrics[suggestionType].timeSavedMinutes += metric.estimated_time_saved_minutes;
+        } else {
+          // Estimación base: 3 minutos por sugerencia integrada
+          typeMetrics[suggestionType].timeSavedMinutes += (metric.value * 3);
+        }
+      }
+    }
+  });
+  
+  // Convertir a array de SuggestionTypeMetrics con tasa de aceptación calculada
+  return Object.entries(typeMetrics).map(([type, data]) => {
+    // Calcular tasa de aceptación (evitar división por cero)
+    const acceptanceRate = data.generated > 0 
+      ? Math.round((data.accepted / data.generated) * 100) 
+      : 0;
+      
+    return {
+      type: type as SuggestionType,
+      generated: data.generated,
+      accepted: data.accepted,
+      acceptanceRate,
+      timeSavedMinutes: data.timeSavedMinutes
+    };
+  });
 };
 
 /**

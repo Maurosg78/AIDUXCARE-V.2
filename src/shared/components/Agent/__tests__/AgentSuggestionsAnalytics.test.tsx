@@ -1,9 +1,17 @@
 import { vi } from "vitest";
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import AgentSuggestionsAnalytics from '../AgentSuggestionsAnalytics';
+import * as UsageAnalyticsService from '../../../../services/UsageAnalyticsService';
+import { SuggestionTypeMetrics } from '../../../../core/types/analytics';
+
+// Mock del servicio de métricas
+vi.mock('../../../../services/UsageAnalyticsService', () => ({
+  getMetricsSummaryByVisit: vi.fn(),
+  getMetricsByTypeForVisit: vi.fn()
+}));
 
 describe('AgentSuggestionsAnalytics', () => {
   // Mock de sugerencias para las pruebas
@@ -37,6 +45,47 @@ describe('AgentSuggestionsAnalytics', () => {
       // Sin feedback (pendiente)
     }
   ];
+
+  // Mock de métricas por tipo para las pruebas
+  const mockTypeMetrics: SuggestionTypeMetrics[] = [
+    {
+      type: 'recommendation',
+      generated: 10,
+      accepted: 8,
+      acceptanceRate: 80,
+      timeSavedMinutes: 15
+    },
+    {
+      type: 'warning',
+      generated: 5,
+      accepted: 2,
+      acceptanceRate: 40,
+      timeSavedMinutes: 3
+    },
+    {
+      type: 'info',
+      generated: 3,
+      accepted: 3,
+      acceptanceRate: 100,
+      timeSavedMinutes: 6
+    }
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Configurar valores predeterminados para los mocks
+    vi.mocked(UsageAnalyticsService.getMetricsSummaryByVisit).mockReturnValue({
+      generated: 18,
+      accepted: 13,
+      integrated: 10,
+      field_matched: 10,
+      warnings: 5,
+      estimated_time_saved_minutes: 24
+    });
+
+    vi.mocked(UsageAnalyticsService.getMetricsByTypeForVisit).mockReturnValue(mockTypeMetrics);
+  });
 
   test('se renderiza correctamente con sugerencias', () => {
     const result = render(<AgentSuggestionsAnalytics visitId="visit-123" suggestions={mockSuggestions} />);
@@ -175,5 +224,103 @@ describe('AgentSuggestionsAnalytics', () => {
     });
     
     expect(riesgoText).toBeInTheDocument();
+  });
+
+  // Nuevas pruebas para la funcionalidad de métricas acumuladas por tipo de sugerencia
+  describe('Métricas acumuladas por tipo de sugerencia', () => {
+    test('muestra correctamente las métricas por tipo de sugerencia', () => {
+      render(<AgentSuggestionsAnalytics visitId="visit-123" suggestions={mockSuggestions} />);
+      
+      // Verificar que se llama a la función para obtener métricas por tipo
+      expect(UsageAnalyticsService.getMetricsByTypeForVisit).toHaveBeenCalledWith('visit-123');
+      
+      // Expandir la vista detallada
+      fireEvent.click(screen.getByText('Ver detalles'));
+      
+      // Verificar que se muestra el título de la sección
+      expect(screen.getByText('Impacto por Tipo de Sugerencia')).toBeInTheDocument();
+      
+      // Verificar que se muestran los tres tipos de sugerencias utilizando los data-testid
+      expect(screen.getByTestId('type-metrics-recommendation')).toBeInTheDocument();
+      expect(screen.getByTestId('type-metrics-warning')).toBeInTheDocument();
+      expect(screen.getByTestId('type-metrics-info')).toBeInTheDocument();
+      
+      // Verificar que se muestran las métricas correctamente
+      expect(screen.getByText('Generadas: 10 | Aceptadas: 8 | 80%')).toBeInTheDocument();
+      expect(screen.getByText('Generadas: 5 | Aceptadas: 2 | 40%')).toBeInTheDocument();
+      expect(screen.getByText('Generadas: 3 | Aceptadas: 3 | 100%')).toBeInTheDocument();
+      
+      // Verificar que se muestra el tiempo ahorrado buscando partes de texto
+      const timeTexts = screen.getAllByText(/min ahorrados/);
+      expect(timeTexts.length).toBe(3);
+      
+      // Verificar los valores específicos de tiempo ahorrado
+      expect(screen.getByText(/15 min ahorrados/)).toBeInTheDocument();
+      expect(screen.getByText(/3 min ahorrados/)).toBeInTheDocument();
+      expect(screen.getByText(/6 min ahorrados/)).toBeInTheDocument();
+    });
+    
+    test('muestra mensaje cuando no hay métricas por tipo', () => {
+      // Mockear para que no devuelva métricas
+      vi.mocked(UsageAnalyticsService.getMetricsByTypeForVisit).mockReturnValue([]);
+      
+      render(<AgentSuggestionsAnalytics visitId="visit-123" suggestions={mockSuggestions} />);
+      
+      // Expandir la vista detallada
+      fireEvent.click(screen.getByText('Ver detalles'));
+      
+      // Verificar que se muestra el mensaje cuando no hay datos
+      expect(screen.getByText('Sin datos de métricas por tipo de sugerencia')).toBeInTheDocument();
+    });
+    
+    test('calcula correctamente los porcentajes de aceptación', () => {
+      // Mockear métricas con valores específicos para verificar cálculo de porcentajes
+      const customMetrics: SuggestionTypeMetrics[] = [
+        {
+          type: 'recommendation',
+          generated: 10,
+          accepted: 5,
+          acceptanceRate: 50, // 5/10 = 50%
+          timeSavedMinutes: 15
+        }
+      ];
+      
+      vi.mocked(UsageAnalyticsService.getMetricsByTypeForVisit).mockReturnValue(customMetrics);
+      
+      render(<AgentSuggestionsAnalytics visitId="visit-123" suggestions={mockSuggestions} />);
+      
+      // Expandir la vista detallada
+      fireEvent.click(screen.getByText('Ver detalles'));
+      
+      // Verificar que el porcentaje se muestra correctamente
+      expect(screen.getByText('Generadas: 10 | Aceptadas: 5 | 50%')).toBeInTheDocument();
+    });
+    
+    test('no muestra el tiempo ahorrado cuando es cero', () => {
+      // Mockear métricas con tiempo ahorrado cero
+      const customMetrics: SuggestionTypeMetrics[] = [
+        {
+          type: 'info',
+          generated: 5,
+          accepted: 0,
+          acceptanceRate: 0,
+          timeSavedMinutes: 0
+        }
+      ];
+      
+      vi.mocked(UsageAnalyticsService.getMetricsByTypeForVisit).mockReturnValue(customMetrics);
+      
+      render(<AgentSuggestionsAnalytics visitId="visit-123" suggestions={mockSuggestions} />);
+      
+      // Expandir la vista detallada
+      fireEvent.click(screen.getByText('Ver detalles'));
+      
+      // Verificar que no se muestra el tiempo ahorrado
+      const metricsText = screen.getByText('Generadas: 5 | Aceptadas: 0 | 0%');
+      expect(metricsText).toBeInTheDocument();
+      
+      // Verificar que no incluye texto sobre minutos ahorrados
+      expect(metricsText.textContent).not.toContain('min ahorrados');
+    });
   });
 }); 
