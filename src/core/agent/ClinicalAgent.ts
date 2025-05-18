@@ -1,6 +1,8 @@
 import { AgentContext } from './AgentContextBuilder';
 import { v4 as uuidv4 } from 'uuid';
 import { getSuggestionsFromLLM } from './LLMAdapterReal';
+import { evaluateSuggestion } from '../../evals/ClinicalSuggestionEval';
+import { logMetric } from '../../services/UsageAnalyticsService';
 
 /**
  * Interfaz que define la estructura de una sugerencia generada por el agente LLM
@@ -32,12 +34,77 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
   // Si se usa LLM real, invocar al adaptador
   if (useRealLLM) {
     console.log('Utilizando LLM real para generar sugerencias clínicas');
-    return getSuggestionsFromLLM(ctx);
+    const suggestions = await getSuggestionsFromLLM(ctx);
+    return evaluateSuggestionsIfEnabled(suggestions, ctx.visitId, ctx.patientId);
   }
   
   // En caso contrario, usar la implementación determinística original
   console.log('Utilizando generación determinística de sugerencias clínicas');
-  return getDeterministicSuggestions(ctx);
+  const suggestions = await getDeterministicSuggestions(ctx);
+  return evaluateSuggestionsIfEnabled(suggestions, ctx.visitId, ctx.patientId);
+}
+
+/**
+ * Evalúa las sugerencias generadas si la evaluación está habilitada
+ * 
+ * @param suggestions Sugerencias a evaluar
+ * @param visitId ID de la visita
+ * @param patientId ID del paciente
+ * @returns Las mismas sugerencias recibidas (la evaluación es solo para métricas)
+ */
+function evaluateSuggestionsIfEnabled(
+  suggestions: AgentSuggestion[], 
+  visitId: string, 
+  patientId: string
+): AgentSuggestion[] {
+  // Verificar si está habilitada la evaluación (desactivada por defecto)
+  const enableEvaluation = process.env.ENABLE_SUGGESTION_EVAL === 'true';
+  
+  if (!enableEvaluation) {
+    return suggestions;
+  }
+  
+  // Si la evaluación está activada, evaluar cada sugerencia
+  console.log('Evaluando calidad de sugerencias clínicas');
+  
+  let invalidCount = 0;
+  
+  suggestions.forEach(suggestion => {
+    const evalResult = evaluateSuggestion(suggestion);
+    
+    if (!evalResult.isValid) {
+      invalidCount++;
+      
+      // Registrar métrica de sugerencia inválida para análisis posterior
+      if (visitId) {
+        try {
+          logMetric({
+            timestamp: new Date().toISOString(),
+            visitId,
+            userId: 'system',
+            type: 'suggestion_eval_failed',
+            value: 1,
+            details: {
+              suggestion_id: suggestion.id,
+              patient_id: patientId,
+              reasons: evalResult.reasons,
+              suggestion_type: suggestion.type,
+              suggestion_content: suggestion.content.substring(0, 50) // Primeros 50 caracteres para análisis
+            }
+          });
+        } catch (error) {
+          console.error('Error al registrar métrica de evaluación de sugerencia:', error);
+        }
+      }
+    }
+  });
+  
+  if (invalidCount > 0) {
+    console.warn(`Se encontraron ${invalidCount} sugerencias que no cumplen con los criterios de calidad.`);
+  }
+  
+  // Devolver las sugerencias originales (la evaluación es solo para métricas)
+  return suggestions;
 }
 
 /**
