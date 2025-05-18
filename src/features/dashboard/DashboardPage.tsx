@@ -7,6 +7,7 @@ import { visitDataSourceSupabase } from '../../core/dataSources/visitDataSourceS
 import { getLongitudinalMetricsByProfessional, getProfessionalActivitySummary, getWeeklyMetrics } from '../../features/dashboard/dashboardServices';
 import { VisitStatus } from '../../core/domain/visitType';
 import DashboardSemanticMemoryPanel from './DashboardSemanticMemoryPanel';
+import EmptyState from '../../shared/components/UI/EmptyState';
 
 /**
  * Interfaz para los datos resumidos de actividad del profesional
@@ -49,11 +50,15 @@ const DashboardPage: React.FC = () => {
   const [recentVisits, setRecentVisits] = useState<Visit[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState<boolean>(false); // Estado para controlar si ya se cargaron los datos
   
   useEffect(() => {
     // Solo cargar datos si el usuario está autenticado
     if (user?.id) {
       loadDashboardData(user.id);
+    } else {
+      // Si no hay usuario, finalizar la carga
+      setIsLoading(false);
     }
   }, [user]);
   
@@ -61,27 +66,32 @@ const DashboardPage: React.FC = () => {
    * Carga todos los datos necesarios para el panel de control
    */
   const loadDashboardData = async (userId: string) => {
+    if (dataLoaded) return; // Evitar cargas duplicadas
+    
     setIsLoading(true);
     setError(null);
     
     try {
-      // Cargar resumen de actividad
-      const summary = await getProfessionalActivitySummary(userId);
-      setActivitySummary(summary);
+      // Crear un array de promesas para cargar todos los datos en paralelo
+      const [summary, weeklyData, visits] = await Promise.all([
+        getProfessionalActivitySummary(userId),
+        getWeeklyMetrics(userId),
+        visitDataSourceSupabase.getVisitsByProfessionalId(userId)
+      ]);
       
-      // Cargar métricas semanales para los gráficos
-      const weeklyData = await getWeeklyMetrics(userId);
+      // Actualizar estados con los datos obtenidos
+      setActivitySummary(summary);
       setWeeklyMetrics(weeklyData);
       
-      // Cargar visitas recientes
-      const visits = await visitDataSourceSupabase.getVisitsByProfessionalId(userId);
       // Ordenar por fecha y limitar a las 5 más recientes
       setRecentVisits(visits.slice(0, 5));
+      setDataLoaded(true); // Marcar que los datos se han cargado correctamente
       
     } catch (err) {
       setError("Error al cargar datos del panel de control: " + (err instanceof Error ? err.message : String(err)));
       console.error("Error cargando datos del panel:", err);
     } finally {
+      // Asegurarse de que el estado de carga se desactive siempre
       setIsLoading(false);
     }
   };
@@ -141,17 +151,31 @@ const DashboardPage: React.FC = () => {
       <h1 className="text-3xl font-bold mb-6">Panel de Control Profesional</h1>
       
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center h-64" data-testid="dashboard-loader">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500" role="status">
             <span className="sr-only">Cargando...</span>
           </div>
         </div>
       ) : error ? (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" data-testid="dashboard-error">
           {error}
         </div>
+      ) : recentVisits.length === 0 ? (
+        <div data-testid="dashboard-empty">
+          <EmptyState
+            title="Aún no tienes visitas clínicas"
+            description="Crea tu primera visita para comenzar a generar sugerencias clínicas con AiDuxCare."
+            actionLabel="Nueva visita"
+            onActionClick={() => navigate('/patients')}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            }
+          />
+        </div>
       ) : (
-        <>
+        <div data-testid="dashboard-content">
           {/* Sección de resumen de actividad */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
@@ -303,7 +327,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

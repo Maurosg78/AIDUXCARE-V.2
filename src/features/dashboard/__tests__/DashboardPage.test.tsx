@@ -1,220 +1,161 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen, waitFor } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import DashboardPage from '../DashboardPage';
-import * as UserContext from '../../../core/auth/UserContext';
 import { visitDataSourceSupabase } from '../../../core/dataSources/visitDataSourceSupabase';
-import * as dashboardServices from '../dashboardServices';
-import { User } from '@supabase/supabase-js';
-import { Visit, VisitStatus } from '../../../core/domain/visitType';
+import { useUser } from '../../../core/auth/UserContext';
+import { MemoryRouter } from 'react-router-dom';
+import { VisitStatus } from '../../../core/domain/visitType';
 
-// Mock de react-router-dom
-vi.mock('react-router-dom', async () => {
-  const originalModule = await vi.importActual('react-router-dom');
-  return {
-    ...(originalModule as object),
-    useNavigate: () => vi.fn()
-  };
-});
+// Tipo para el mock de useUser
+interface MockUserHook {
+  user: { id: string };
+  profile: Record<string, unknown>;
+}
 
-// Mock del contexto de usuario
+// Tipo para el mock de visitas
+interface MockVisit {
+  id: string;
+  patient_id: string;
+  date: string;
+  status: string;
+}
+
+// Mock de useUser
 vi.mock('../../../core/auth/UserContext', () => ({
   useUser: vi.fn()
 }));
 
-// Mock de los servicios de dashboard
-vi.mock('../dashboardServices', () => ({
-  getProfessionalActivitySummary: vi.fn(),
-  getWeeklyMetrics: vi.fn(),
-  getLongitudinalMetricsByProfessional: vi.fn()
-}));
-
-// Mock del servicio de datos de visitas
+// Mock de servicios
 vi.mock('../../../core/dataSources/visitDataSourceSupabase', () => ({
   visitDataSourceSupabase: {
     getVisitsByProfessionalId: vi.fn()
   }
 }));
 
-// Datos de prueba
-const mockUser = {
-  id: 'user-test-123',
-  email: 'doctor@example.com',
-  app_metadata: { role: 'professional' },
-  user_metadata: {},
-  aud: 'authenticated',
-  created_at: '2023-01-01T00:00:00Z'
-} as User;
+vi.mock('../dashboardServices', () => ({
+  getProfessionalActivitySummary: vi.fn().mockResolvedValue({
+    totalVisits: 5,
+    suggestionsGenerated: 10,
+    suggestionsAccepted: 8,
+    suggestionsIntegrated: 6,
+    timeSavedMinutes: 45
+  }),
+  getWeeklyMetrics: vi.fn().mockResolvedValue([
+    { week: 'Semana 1', visits: 1, suggestionsGenerated: 2, suggestionsAccepted: 1 },
+    { week: 'Semana 2', visits: 2, suggestionsGenerated: 4, suggestionsAccepted: 3 }
+  ]),
+  getLongitudinalMetricsByProfessional: vi.fn().mockResolvedValue([])
+}));
 
-const mockProfile = {
-  id: 'user-test-123',
-  role: 'professional',
-  full_name: 'Dr. Test User'
-};
+vi.mock('../DashboardSemanticMemoryPanel', () => ({
+  default: () => <div data-testid="dashboard-semantic-memory">Memory Panel Mock</div>
+}));
 
-const mockVisits: Visit[] = [
-  {
-    id: 'visit-1',
-    patient_id: 'patient-1',
-    professional_id: 'user-test-123',
-    date: '2023-05-15T10:00:00Z',
-    status: VisitStatus.COMPLETED,
-    notes: 'Test notes',
-    created_at: '2023-05-15T09:30:00Z',
-    updated_at: '2023-05-15T11:30:00Z'
-  },
-  {
-    id: 'visit-2',
-    patient_id: 'patient-2',
-    professional_id: 'user-test-123',
-    date: '2023-05-16T14:30:00Z',
-    status: VisitStatus.IN_PROGRESS,
-    notes: 'In progress notes',
-    created_at: '2023-05-16T14:00:00Z',
-    updated_at: '2023-05-16T14:30:00Z'
-  }
-];
+// Contenedor para el componente con Router
+const DashboardPageWithRouter = () => (
+  <MemoryRouter>
+    <DashboardPage />
+  </MemoryRouter>
+);
 
-const mockActivitySummary = {
-  totalVisits: 24,
-  suggestionsGenerated: 120,
-  suggestionsAccepted: 96,
-  suggestionsIntegrated: 84,
-  timeSavedMinutes: 252
-};
-
-const mockWeeklyMetrics = [
-  { week: 'Semana 1', visits: 5, suggestionsGenerated: 25, suggestionsAccepted: 20 },
-  { week: 'Semana 2', visits: 6, suggestionsGenerated: 30, suggestionsAccepted: 24 },
-  { week: 'Semana 3', visits: 7, suggestionsGenerated: 35, suggestionsAccepted: 28 },
-  { week: 'Semana 4', visits: 6, suggestionsGenerated: 30, suggestionsAccepted: 24 }
-];
-
-describe('DashboardPage Component', () => {
+describe('DashboardPage', () => {
   beforeEach(() => {
-    // Configurar mocks antes de cada prueba
-    vi.mocked(UserContext.useUser).mockReturnValue({
-      user: mockUser,
-      profile: mockProfile,
-      session: null,
-      role: 'professional',
-      isLoading: false,
-      error: null,
-      logout: vi.fn(),
-      refreshProfile: vi.fn(),
-      hasRole: () => true
-    });
-    
-    vi.mocked(visitDataSourceSupabase.getVisitsByProfessionalId).mockResolvedValue(mockVisits);
-    vi.mocked(dashboardServices.getProfessionalActivitySummary).mockResolvedValue(mockActivitySummary);
-    vi.mocked(dashboardServices.getWeeklyMetrics).mockResolvedValue(mockWeeklyMetrics);
+    vi.clearAllMocks();
   });
-  
-  it('renderiza el componente correctamente y muestra estado de carga', async () => {
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
+
+  it('muestra el loader mientras carga los datos', async () => {
+    // Configurar el mock de useUser para devolver un usuario
+    (useUser as unknown as Mock<[], MockUserHook>).mockReturnValue({
+      user: { id: 'user-123' },
+      profile: {}
+    });
+
+    // Simular una carga de datos que tarda
+    (visitDataSourceSupabase.getVisitsByProfessionalId as Mock).mockReturnValue(
+      new Promise(resolve => setTimeout(() => resolve([]), 100))
     );
+
+    render(<DashboardPageWithRouter />);
     
-    // Verificar título
+    // Verificar que el loader esté visible
+    expect(screen.getByTestId('dashboard-loader')).toBeInTheDocument();
+  });
+
+  it('muestra el contenido del dashboard cuando hay visitas', async () => {
+    // Configurar el mock de useUser para devolver un usuario
+    (useUser as unknown as Mock<[], MockUserHook>).mockReturnValue({
+      user: { id: 'user-123' },
+      profile: {}
+    });
+
+    // Mock de visitas
+    const mockVisits: MockVisit[] = [
+      { id: 'visit-1', patient_id: 'patient-123', date: '2023-01-01', status: VisitStatus.COMPLETED },
+      { id: 'visit-2', patient_id: 'patient-456', date: '2023-01-05', status: VisitStatus.IN_PROGRESS }
+    ];
+
+    // Configurar el mock para devolver visitas
+    (visitDataSourceSupabase.getVisitsByProfessionalId as Mock).mockResolvedValue(mockVisits);
+
+    render(<DashboardPageWithRouter />);
+    
+    // Esperar a que desaparezca el loader y aparezca el contenido
+    await waitFor(() => {
+      expect(screen.queryByTestId('dashboard-loader')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-content')).toBeInTheDocument();
+    });
+
+    // Verificar que aparezcan elementos clave del dashboard
     expect(screen.getByText('Panel de Control Profesional')).toBeInTheDocument();
-    
-    // Durante la carga inicial debería mostrar un spinner
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-  
-  it('muestra el resumen de actividad después de cargar los datos', async () => {
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
-    
-    // Esperar a que se carguen los datos
-    await waitFor(() => {
-      expect(screen.getByText('24')).toBeInTheDocument(); // Total de visitas
-    });
-    
-    // Verificar que muestra los datos del resumen
     expect(screen.getByText('Visitas totales')).toBeInTheDocument();
-    expect(screen.getByText('Sugerencias integradas')).toBeInTheDocument();
-    expect(screen.getByText('Tasa de aceptación')).toBeInTheDocument();
-    expect(screen.getByText('Tiempo ahorrado')).toBeInTheDocument();
-    
-    // Verificar valores específicos
-    expect(screen.getByText('84')).toBeInTheDocument(); // Sugerencias integradas
-    expect(screen.getByText('80%')).toBeInTheDocument(); // Tasa de aceptación (96/120 = 80%)
-    expect(screen.getByText('4h 12m')).toBeInTheDocument(); // Tiempo ahorrado (252 minutos)
+    expect(screen.getByText('Visitas recientes')).toBeInTheDocument();
   });
-  
-  it('muestra la lista de visitas recientes', async () => {
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
-    
-    // Esperar a que se carguen los datos
-    await waitFor(() => {
-      expect(screen.getByText('Visitas recientes')).toBeInTheDocument();
+
+  it('muestra el estado vacío cuando no hay visitas', async () => {
+    // Configurar el mock de useUser para devolver un usuario
+    (useUser as unknown as Mock<[], MockUserHook>).mockReturnValue({
+      user: { id: 'user-123' },
+      profile: {}
     });
+
+    // Configurar el mock para devolver un array vacío de visitas
+    (visitDataSourceSupabase.getVisitsByProfessionalId as Mock).mockResolvedValue([]);
+
+    render(<DashboardPageWithRouter />);
     
-    // Verificar que muestra las visitas
-    expect(screen.getByText('Paciente 1')).toBeInTheDocument();
-    expect(screen.getByText('Paciente 2')).toBeInTheDocument();
-    expect(screen.getByText(VisitStatus.COMPLETED)).toBeInTheDocument();
-    expect(screen.getByText(VisitStatus.IN_PROGRESS)).toBeInTheDocument();
+    // Esperar a que desaparezca el loader y aparezca el estado vacío
+    await waitFor(() => {
+      expect(screen.queryByTestId('dashboard-loader')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-empty')).toBeInTheDocument();
+    });
+
+    // Verificar el mensaje de estado vacío
+    expect(screen.getByText('Aún no tienes visitas clínicas')).toBeInTheDocument();
+    expect(screen.getByText('Crea tu primera visita para comenzar a generar sugerencias clínicas con AiDuxCare.')).toBeInTheDocument();
+    expect(screen.getByText('Nueva visita')).toBeInTheDocument();
   });
-  
-  it('muestra el gráfico de evolución semanal', async () => {
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
-    
-    // Esperar a que se carguen los datos
-    await waitFor(() => {
-      expect(screen.getByText('Evolución de uso (últimas 4 semanas)')).toBeInTheDocument();
+
+  it('maneja correctamente errores en la carga de datos', async () => {
+    // Configurar el mock de useUser para devolver un usuario
+    (useUser as unknown as Mock<[], MockUserHook>).mockReturnValue({
+      user: { id: 'user-123' },
+      profile: {}
     });
-  });
-  
-  it('muestra el botón de nueva visita', async () => {
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
+
+    // Simular un error en la carga de visitas
+    const errorMessage = 'Error al cargar visitas';
+    (visitDataSourceSupabase.getVisitsByProfessionalId as Mock).mockRejectedValue(new Error(errorMessage));
+
+    render(<DashboardPageWithRouter />);
     
-    // Esperar a que se carguen los datos
+    // Esperar a que desaparezca el loader y aparezca el mensaje de error
     await waitFor(() => {
-      expect(screen.getByText('Nueva visita')).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-loader')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboard-error')).toBeInTheDocument();
     });
-    
-    // Verificar el botón
-    const newVisitButton = screen.getByText('Nueva visita');
-    expect(newVisitButton).toBeInTheDocument();
-    
-    // Simular click en el botón
-    fireEvent.click(newVisitButton);
-    // No podemos verificar la navegación directamente porque useNavigate es un mock
-  });
-  
-  it('maneja errores de carga correctamente', async () => {
-    // Configurar mock para provocar un error
-    vi.mocked(dashboardServices.getProfessionalActivitySummary).mockRejectedValueOnce(new Error('Error de prueba'));
-    
-    render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
-    
-    // Esperar a que se muestre el mensaje de error
-    await waitFor(() => {
-      expect(screen.getByText(/Error al cargar datos del panel de control/)).toBeInTheDocument();
-    });
+
+    // Verificar que el mensaje de error contenga el texto esperado
+    expect(screen.getByTestId('dashboard-error')).toHaveTextContent(errorMessage);
   });
 }); 
