@@ -1,12 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
 import { AgentSuggestion } from '../../../../core/agent/ClinicalAgent';
 import { EMRFormService } from '../../../../core/services/EMRFormService';
 import { AuditLogger } from '../../../../core/audit/AuditLogger';
 import * as UsageAnalyticsService from '../../../../services/UsageAnalyticsService';
+
+// Mock completo del cliente de Supabase
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null }))
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null }))
+      }))
+    }))
+  }))
+}));
+
+// Mock de las variables de entorno
+vi.mock('../../../../config/env', () => ({
+  SUPABASE_URL: 'https://test-supabase-url.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  __esModule: true,
+  default: {}
+}));
 
 // Mock de AgentSuggestionFeedbackActions que simula la integración directa
 // cuando se acepte una sugerencia
@@ -80,6 +105,15 @@ vi.mock('../AgentSuggestionFeedbackActions', () => {
 vi.mock('../AgentSuggestionExplainer', () => ({
   __esModule: true,
   default: () => <div data-testid="explainer">Explicación de la sugerencia</div>
+}));
+
+// Mock de formDataSourceSupabase
+vi.mock('../../../../core/dataSources/formDataSourceSupabase', () => ({
+  formDataSourceSupabase: {
+    getFormsByVisitId: vi.fn().mockResolvedValue([]),
+    updateForm: vi.fn().mockResolvedValue(true),
+    createForm: vi.fn().mockResolvedValue(true)
+  }
 }));
 
 describe('AgentSuggestionsViewer', () => {

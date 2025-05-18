@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState, useMemo } from 'react';
 import { AgentSuggestion } from '../../../core/agent/ClinicalAgent';
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
@@ -117,7 +116,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
           // Mapear el tipo de sugerencia a la sección EMR correspondiente
           const emrSection = EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type);
           
-          // Insertar la sugerencia en el EMR usando el nuevo método
+          // Insertar la sugerencia en el EMR usando el método insertSuggestedContent
           const success = await EMRFormService.insertSuggestedContent(
             visitId,
             emrSection,
