@@ -114,6 +114,16 @@ vi.mock('./core/dataSources/formDataSourceSupabase', () => ({
   }
 }));
 
+// Mock para ResizeObserver que necesita recharts
+class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
+// @ts-ignore - agregamos ResizeObserver al objeto global para los tests
+global.ResizeObserver = MockResizeObserver;
+
 // Suprimir advertencias de consola durante las pruebas
 beforeAll(() => {
   // Almacenar los métodos originales de console
