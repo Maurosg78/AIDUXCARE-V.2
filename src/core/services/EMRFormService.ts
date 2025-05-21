@@ -1,8 +1,11 @@
 import { z } from 'zod';
-import supabase from '../../core/auth/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
-import * as AnalyticsService from '../../services/UsageAnalyticsService';
+import { trackMetric } from '../../services/UsageAnalyticsService';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/env';
+import { FormDataSource, Form } from '../dataSources/FormDataSource';
+import { ClinicalFormData, EMRContent, EMRForm } from '@/types/forms';
 
 /**
  * Tipos de secciones del EMR donde se pueden integrar sugerencias
@@ -27,11 +30,6 @@ export const EMRFormSchema = z.object({
 });
 
 /**
- * Tipo derivado del esquema
- */
-export type EMRForm = z.infer<typeof EMRFormSchema>;
-
-/**
  * Interfaz para representar una sugerencia que se integrará al EMR
  */
 export interface SuggestionToIntegrate {
@@ -45,8 +43,15 @@ export interface SuggestionToIntegrate {
  * Servicio para gestionar la integración de sugerencias al EMR estructurado
  */
 export class EMRFormService {
-  // Usar el cliente Supabase unificado
-  private static supabase = supabase;
+  private static supabase = createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+  private formDataSource: FormDataSource;
+
+  constructor(formDataSource: FormDataSource) {
+    this.formDataSource = formDataSource;
+  }
 
   /**
    * Obtiene el formulario EMR para una visita específica
@@ -77,9 +82,9 @@ export class EMRFormService {
       // Construir y validar el objeto EMRForm
       const emrForm: EMRForm = {
         id: soapForm.id,
-        visitId: soapForm.visit_id,
-        patientId: soapForm.patient_id,
-        professionalId: soapForm.professional_id,
+        visitId: soapForm.visit_id || '',
+        patientId: soapForm.patient_id || '',
+        professionalId: soapForm.professional_id || '',
         subjective: emrContent.subjective || '',
         objective: emrContent.objective || '',
         assessment: emrContent.assessment || '',
@@ -212,20 +217,27 @@ export class EMRFormService {
       
       // Si existe el formulario, actualizarlo
       if (emrForm.id) {
-        await formDataSourceSupabase.updateForm(emrForm.id, {
-          content: JSON.stringify(formContent),
-          status: 'draft'
-        });
-      } else {
-        // Si no existe, crear uno nuevo
-        await formDataSourceSupabase.createForm({
-          visit_id: emrForm.visitId,
-          patient_id: emrForm.patientId,
-          professional_id: emrForm.professionalId,
+        const clinicalFormData: ClinicalFormData = {
           form_type: 'SOAP',
           content: JSON.stringify(formContent),
-          status: 'draft'
-        });
+          status: 'draft',
+          id: emrForm.id,
+          visit_id: emrForm.visitId,
+          patient_id: emrForm.patientId,
+          professional_id: emrForm.professionalId
+        };
+        await formDataSourceSupabase.updateForm(emrForm.id, clinicalFormData);
+      } else {
+        // Si no existe, crear uno nuevo
+        const clinicalFormData: ClinicalFormData = {
+          form_type: 'SOAP',
+          content: JSON.stringify(formContent),
+          status: 'draft',
+          visit_id: emrForm.visitId,
+          patient_id: emrForm.patientId,
+          professional_id: emrForm.professionalId
+        };
+        await formDataSourceSupabase.createForm(clinicalFormData);
       }
       
       // Registrar en el log de auditoría
@@ -239,15 +251,21 @@ export class EMRFormService {
       );
       
       // Registrar métricas
-      AnalyticsService.track('suggestions_integrated', userId, visitId, 1, {
-        field: section,
-        source: suggestion.sourceBlockId,
-        suggestion_id: suggestion.id
-      });
+      trackMetric(
+        'suggestions_integrated',
+        userId,
+        visitId,
+        1,
+        {
+          suggestion_id: suggestion.id,
+          suggestion_type: suggestion.type,
+          emr_section: section
+        }
+      );
       
       return true;
     } catch (error) {
-      console.error('Error al insertar sugerencia en EMR:', error);
+      console.error('Error inserting suggestion:', error);
       return false;
     }
   }
@@ -295,6 +313,7 @@ export class EMRFormService {
       if (formData.id) {
         // Actualizar formulario existente
         await formDataSourceSupabase.updateForm(formData.id, {
+          form_type: 'SOAP',
           content: JSON.stringify(formContent),
           status: 'draft'
         });
@@ -369,9 +388,14 @@ export class EMRFormService {
       formContent[sectionKey] = updatedContent;
       
       // 4. Actualizar el formulario en la base de datos
+      if (!form.id) {
+        console.error('Form ID is undefined');
+        return false;
+      }
       const updated = await formDataSourceSupabase.updateForm(
         form.id,
         {
+          form_type: 'SOAP',
           content: JSON.stringify(formContent),
           status: form.status || 'draft'
         }
@@ -396,6 +420,82 @@ export class EMRFormService {
     } catch (error) {
       console.error('[EMRFormService] Error al insertar contenido sugerido:', error);
       return false;
+    }
+  }
+
+  async getFormByVisitId(visitId: string): Promise<EMRForm | null> {
+    try {
+      const form = await this.formDataSource.getFormByVisitId(visitId);
+      if (!form) return null;
+
+      let content: EMRContent;
+      try {
+        content = JSON.parse(form.content as string) as EMRContent;
+      } catch {
+        content = {
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+          notes: ''
+        };
+      }
+
+      return {
+        id: form.id as string,
+        visitId: form.visit_id as string,
+        patientId: form.patient_id as string,
+        professionalId: form.professional_id as string,
+        ...content,
+        updatedAt: form.updated_at as string | undefined,
+        createdAt: form.created_at as string | undefined
+      };
+    } catch (error) {
+      console.error('Error getting form:', error);
+      return null;
+    }
+  }
+
+  async updateForm(formId: string, formData: EMRForm): Promise<void> {
+    try {
+      const clinicalFormData: ClinicalFormData = {
+        form_type: 'SOAP',
+        content: JSON.stringify({
+          subjective: formData.subjective,
+          objective: formData.objective,
+          assessment: formData.assessment,
+          plan: formData.plan,
+          notes: formData.notes
+        }),
+        status: 'draft'
+      };
+
+      await this.formDataSource.updateForm(formId, clinicalFormData);
+    } catch (error) {
+      console.error('Error updating form:', error);
+      throw error;
+    }
+  }
+
+  async getFormContent(formId: string): Promise<EMRContent | null> {
+    try {
+      const form = await this.formDataSource.getFormById(formId);
+      if (!form) return null;
+
+      try {
+        return JSON.parse(form.content as string) as EMRContent;
+      } catch {
+        return {
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+          notes: ''
+        };
+      }
+    } catch (error) {
+      console.error('Error getting form content:', error);
+      return null;
     }
   }
 } 

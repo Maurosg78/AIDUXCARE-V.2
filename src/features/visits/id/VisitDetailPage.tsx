@@ -19,6 +19,7 @@ import Tabs from '@/shared/components/UI/Tabs';
 import ActionPanel from '@/shared/components/UI/ActionPanel';
 import LoadingSpinner from '@/shared/components/UI/LoadingSpinner';
 import LongitudinalMetricsViewer from '@/shared/components/Metrics/LongitudinalMetricsViewer';
+import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
 
 /**
  * Página de detalle de una visita clínica
@@ -156,9 +157,8 @@ const VisitDetailPage: React.FC = () => {
       setSaveSuccess(true);
 
       // Actualizar sugerencias del agente con el contexto actualizado
-      if (updatedContext) {
-        const agentContext = buildAgentContext(updatedContext);
-        await getAgentSuggestions(agentContext);
+      if (updatedContext && visitId) {
+        await runClinicalAgent(visitId);
       }
     } catch (err) {
       console.error('Error al guardar el contexto MCP:', err);

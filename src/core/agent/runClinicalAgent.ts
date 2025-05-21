@@ -1,91 +1,49 @@
-import { vi } from "vitest";
-import { MCPContext } from '../mcp/schema';
+import { v4 as uuidv4 } from 'uuid';
+import { AgentContext, AgentSuggestion } from '@/types/agent';
 import { buildAgentContext } from './AgentContextBuilder';
-import { executeAgent } from './AgentExecutor';
-import { AgentSuggestion } from './ClinicalAgent';
-import { LLMProvider } from './LLMAdapter';
-import { logMetric } from '../../services/UsageAnalyticsService';
+import { AgentExecutor } from './AgentExecutor';
+import { logMetric } from '@/services/UsageAnalyticsService';
+import { UsageMetricType } from '@/services/UsageAnalyticsService';
 
 /**
- * Tipo para los resultados devueltos por runClinicalAgent
- */
-export interface RunClinicalAgentResult {
-  suggestions: AgentSuggestion[];
-  auditLogs: string[]; // Para uso futuro
-}
-
-/**
- * Tipo para los parámetros del contexto adicional
- */
-export interface RunClinicalAgentParams {
-  visitId?: string;
-  userId?: string;
-}
-
-/**
- * Función de alto nivel que orquesta el flujo completo del agente clínico
+ * Ejecuta el agente clínico para una visita específica
  * 
- * Este flujo combina el builder del contexto y la ejecución del agente,
- * proporcionando una interfaz simplificada para usar el agente clínico.
- * 
- * @param mcpContext Contexto MCP con los datos de memoria
- * @param provider Proveedor LLM a utilizar (por defecto: 'openai')
- * @param params Parámetros adicionales como visitId y userId
- * @returns Objeto con las sugerencias generadas y logs de auditoría
+ * @param visitId ID de la visita para la cual ejecutar el agente
+ * @returns Promise<AgentSuggestion[]> Array de sugerencias generadas por el agente
  */
-export async function runClinicalAgent(
-  mcpContext: MCPContext,
-  provider: LLMProvider = 'openai',
-  params: RunClinicalAgentParams = {}
-): Promise<RunClinicalAgentResult> {
-  // Resultado por defecto en caso de error
-  const defaultResult: RunClinicalAgentResult = {
-    suggestions: [],
-    auditLogs: []
-  };
-
+export async function runClinicalAgent(visitId: string): Promise<AgentSuggestion[]> {
   try {
-    // Validación básica del contexto MCP
-    if (!mcpContext || 
-        !mcpContext.contextual || 
-        !mcpContext.persistent || 
-        !mcpContext.semantic) {
-      return defaultResult;
-    }
+    // Construir el contexto del agente
+    const agentContext = await buildAgentContext(visitId);
 
-    // Construir el contexto del agente a partir del contexto MCP
-    const agentContext = buildAgentContext(mcpContext);
+    // Crear y ejecutar el agente
+    const executor = await AgentExecutor.create(visitId, 'openai');
+    const suggestions = await executor.execute();
 
-    // Ejecutar el agente con el contexto construido
-    const suggestions = await executeAgent({
-      context: agentContext,
-      provider
-    });
+    // Registrar métrica de sugerencias generadas
+    if (suggestions.length > 0) {
+      const metric: UsageMetricType = 'suggestions_generated';
+      const estimatedTimeSaved = suggestions.length * 3; // 3 minutos por sugerencia
 
-    // Registrar métrica de sugerencias generadas si hay sugerencias y un visitId
-    if (suggestions.length > 0 && params.visitId) {
-      // Calcular el tiempo estimado ahorrado (3 minutos por sugerencia)
-      const estimatedTimeSaved = suggestions.length * 3;
-      
-      // Registrar la métrica con el tiempo estimado ahorrado
       logMetric({
+        id: uuidv4(),
+        type: metric,
+        userId: agentContext.metadata.professionalId || 'system',
+        visitId: visitId,
+        metadata: {
+          suggestionCount: suggestions.length,
+          contextSize: agentContext.blocks.length
+        },
+        createdAt: new Date(),
         timestamp: new Date().toISOString(),
-        visitId: params.visitId,
-        userId: params.userId || 'admin-test-001',
-        type: 'suggestions_generated',
         value: suggestions.length,
         estimated_time_saved_minutes: estimatedTimeSaved
       });
     }
 
-    // Retornar las sugerencias generadas y un array vacío para auditLogs (uso futuro)
-    return {
-      suggestions,
-      auditLogs: []
-    };
+    return suggestions;
   } catch (error) {
-    // En caso de error, capturarlo y devolver un resultado vacío
-    // Aquí se podría agregar lógica adicional para registrar el error en el futuro
-    return defaultResult;
+    console.error('Error al ejecutar el agente clínico:', error);
+    throw error;
   }
 } 

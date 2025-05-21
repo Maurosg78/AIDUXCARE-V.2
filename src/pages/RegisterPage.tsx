@@ -66,7 +66,10 @@ const RegisterPage = () => {
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleRegister} role="form">
+        <form
+          onSubmit={handleRegister}
+          className="space-y-6"
+        >
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="fullname" className="sr-only">

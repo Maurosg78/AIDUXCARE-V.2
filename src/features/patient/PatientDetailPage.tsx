@@ -9,8 +9,6 @@ import { Visit, VisitStatus } from "@/core/domain/visitType";
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import { v4 as uuidv4 } from 'uuid';
 import LongitudinalMetricsViewer from "@/shared/components/Metrics/LongitudinalMetricsViewer";
-import AgentLongitudinalImpact from "@/shared/components/Agent/AgentLongitudinalImpact";
-import MCPContextDiffDashboard from "@/shared/components/MCP/MCPContextDiffDashboard";
 
 // Contexto de usuario simulado para pruebas
 const mockUser = {
@@ -338,23 +336,6 @@ const PatientDetailPage: React.FC<PatientDetailPageProps> = () => {
               </div>
             )}
           </div>
-          
-          {/* Nuevo componente: Impacto longitudinal del agente */}
-          {patient.id && (
-            <div className="mb-6">
-              <AgentLongitudinalImpact patientId={patient.id} />
-            </div>
-          )}
-          
-          {/* Nuevo componente: Comparador de Contexto MCP */}
-          {patient.id && visits.length > 1 && (
-            <div className="mb-6">
-              <MCPContextDiffDashboard 
-                visits={visits} 
-                patientId={patient.id} 
-              />
-            </div>
-          )}
         </>
       )}
     </div>

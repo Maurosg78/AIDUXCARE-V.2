@@ -1,7 +1,6 @@
 import { vi } from "vitest";
 import React, { useState, useMemo } from 'react';
-import { getMetricsSummaryByVisit, getMetricsByTypeForVisit } from '../../../services/UsageAnalyticsService';
-import SuggestionImpactSummary from './SuggestionImpactSummary';
+import { getMetricsSummaryByVisit } from '../../../services/UsageAnalyticsService';
 
 /**
  * Tipo de sugerencia del agente clínico
@@ -83,12 +82,6 @@ const AgentSuggestionsAnalytics: React.FC<AgentSuggestionsAnalyticsProps> = ({ s
   const metricsData = useMemo(() => {
     if (!visitId) return null;
     return getMetricsSummaryByVisit(visitId);
-  }, [visitId]);
-
-  // Obtener métricas por tipo de sugerencia
-  const typeMetrics = useMemo(() => {
-    if (!visitId) return [];
-    return getMetricsByTypeForVisit(visitId);
   }, [visitId]);
 
   // Calcular la altura máxima para normalizar el gráfico de barras
@@ -257,57 +250,57 @@ const AgentSuggestionsAnalytics: React.FC<AgentSuggestionsAnalyticsProps> = ({ s
                 Respuesta del Clínico
               </h4>
               <div className="mt-2 space-y-2">
-                {/* Barra de feedback: Aceptadas */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                {/* Barra para aceptadas */}
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Aceptadas</span>
                     <span>{stats.feedbackCount.accept} de {stats.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div 
-                      className="bg-green-500 h-2 rounded-full" 
+                      className="bg-green-600 h-2.5 rounded-full" 
                       style={{ width: `${stats.total ? (stats.feedbackCount.accept / stats.total) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
 
-                {/* Barra de feedback: Rechazadas */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                {/* Barra para rechazadas */}
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Rechazadas</span>
                     <span>{stats.feedbackCount.reject} de {stats.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div 
-                      className="bg-red-500 h-2 rounded-full" 
+                      className="bg-red-500 h-2.5 rounded-full" 
                       style={{ width: `${stats.total ? (stats.feedbackCount.reject / stats.total) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
 
-                {/* Barra de feedback: Pospuestas */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                {/* Barra para pospuestas */}
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Pospuestas</span>
                     <span>{stats.feedbackCount.defer} de {stats.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div 
-                      className="bg-yellow-500 h-2 rounded-full" 
+                      className="bg-yellow-400 h-2.5 rounded-full" 
                       style={{ width: `${stats.total ? (stats.feedbackCount.defer / stats.total) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
 
-                {/* Barra de feedback: Pendientes */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
+                {/* Barra para pendientes */}
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Pendientes</span>
                     <span>{stats.feedbackCount.pending} de {stats.total}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div 
-                      className="bg-gray-400 h-2 rounded-full" 
+                      className="bg-gray-400 h-2.5 rounded-full" 
                       style={{ width: `${stats.total ? (stats.feedbackCount.pending / stats.total) * 100 : 0}%` }}
                     ></div>
                   </div>
@@ -316,28 +309,20 @@ const AgentSuggestionsAnalytics: React.FC<AgentSuggestionsAnalyticsProps> = ({ s
             </div>
           </div>
 
-          {/* Nueva sección: Métricas acumuladas por tipo de sugerencia */}
-          <div className="mt-6">
-            <SuggestionImpactSummary metricsData={typeMetrics} />
-          </div>
-
           {/* Resumen textual */}
-          <div className="mt-6 p-3 bg-gray-50 border border-gray-200 rounded-md">
-            <p className="text-sm text-gray-700">
-              <strong>Resumen:</strong> Esta visita generó {stats.total} sugerencias clínicas, 
-              incluyendo {stats.typeCount.recommendation} recomendaciones, {stats.typeCount.warning} advertencias 
-              y {stats.typeCount.info} informativas. El nivel de adherencia a sugerencias fue {getAdherenceLabel(stats.adherenceRate).toLowerCase()}.
+          <div className="mt-6 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
+            <p className="mb-1">
+              <strong>Resumen:</strong> Visita #{visitId} tiene {stats.total} sugerencias 
+              ({stats.typeCount.recommendation} recomendaciones, {stats.typeCount.warning} advertencias, {stats.typeCount.info} informativas).
             </p>
-            <p className="text-sm text-gray-700 mt-2">
-              <strong>Impacto clínico:</strong> {stats.ignoredWarnings > 0 ? (
-                <span className={getRiskColorClass(stats.riskLevel)}>
-                  Se detectó un riesgo clínico {stats.riskLevel} debido a {stats.ignoredWarnings} advertencias ignoradas.
-                </span>
-              ) : (
-                <span className="text-green-600">
-                  No se identificaron riesgos clínicos significativos en esta visita.
-                </span>
-              )}
+            <p className="mb-1">
+              <strong>Impacto clínico:</strong> {stats.adherenceRate}% de adherencia a sugerencias. 
+              {stats.ignoredWarnings > 0 
+                ? <span> Se han ignorado <span className={getRiskColorClass(stats.riskLevel)}>{stats.ignoredWarnings} advertencias</span>, lo que representa un riesgo clínico {stats.riskLevel}.</span> 
+                : ' No se han ignorado advertencias, lo que sugiere un riesgo clínico bajo.'}
+            </p>
+            <p>
+              <strong>Eficiencia:</strong> Tiempo estimado ahorrado: {metricsData?.estimated_time_saved_minutes || stats.estimatedTimeSaved} minutos.
             </p>
           </div>
         </div>

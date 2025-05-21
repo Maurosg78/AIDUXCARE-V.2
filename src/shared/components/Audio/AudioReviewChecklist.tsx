@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import React, { useState } from 'react';
 import { TranscriptionSegment, audioCaptureService } from '@/core/audio/AudioCaptureService';
-import { track } from '@/services/UsageAnalyticsService';
+import { trackMetric } from '@/services/UsageAnalyticsService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 
 interface AudioReviewChecklistProps {
@@ -78,7 +78,17 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
     });
     
     // Registrar métrica
-    track('suggestions_accepted', userId, visitId, 1);
+    trackMetric(
+      'suggestions_accepted',
+      userId,
+      visitId,
+      1,
+      {
+        segment_id: segment.id,
+        actor: segment.actor,
+        edited: segment.edited || false
+      }
+    );
   };
   
   // Rechazar un segmento

@@ -8,7 +8,7 @@ import MCPContextViewer from '@/shared/components/MCP/MCPContextViewer';
 import AuditLogViewer from '@/shared/components/Audit/AuditLogViewer';
 import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
-import { track } from '@/services/UsageAnalyticsService';
+import { trackMetric } from '@/services/UsageAnalyticsService';
 import {
   mockPatient,
   mockVisit,
@@ -19,21 +19,45 @@ import {
   mockUserId
 } from '@/core/demo/mockVisitData';
 import { MCPContext } from '@/core/mcp/schema';
+import { useParams } from 'react-router-dom';
+import { AgentSuggestion } from '@/types/agent';
+import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
 
 /**
  * Página de demostración integrada para AiDuxCare V.2
  * Muestra un flujo clínico completo con todos los módulos principales
  */
 const DemoVisitPage: React.FC = () => {
-  // Estados para la página
+  const { visitId } = useParams<{ visitId: string }>();
   const [showTranscription, setShowTranscription] = useState(false);
   const [transcriptionData, setTranscriptionData] = useState<TranscriptionSegment[]>([]);
   const [emrContent, setEmrContent] = useState(mockEMRData);
   const [insertedContent, setInsertedContent] = useState<string[]>([]);
-  // Estado para las pestañas
   const [activeTab, setActiveTab] = useState(0);
-  
-  // Inicializar logs de auditoría simulados
+  const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      if (!visitId) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const suggestions = await runClinicalAgent(visitId);
+        setSuggestions(suggestions);
+      } catch (err) {
+        setError('Error al cargar las sugerencias');
+        console.error('Error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSuggestions();
+  }, [visitId]);
+
   useEffect(() => {
     // Registrar carga de la página en auditoría
     AuditLogger.log('demo.page.loaded', {
@@ -50,7 +74,6 @@ const DemoVisitPage: React.FC = () => {
     document.title = `Consulta ${mockVisit.id} | AiduxCare`;
   }, []);
 
-  // Manejar la finalización de captura de audio
   const handleCaptureComplete = (transcription: TranscriptionSegment[]) => {
     setTranscriptionData(transcription);
     setShowTranscription(true);
@@ -63,11 +86,17 @@ const DemoVisitPage: React.FC = () => {
     });
     
     // Registrar métrica
-    track('suggestions_generated', mockUserId, mockVisit.id, 
-      transcription.length > 0 ? transcription.length : mockTranscription.length);
+    trackMetric(
+      'suggestions_generated',
+      mockUserId,
+      mockVisit.id,
+      transcription.length > 0 ? transcription.length : mockTranscription.length,
+      {
+        segments_count: transcription.length > 0 ? transcription.length : mockTranscription.length
+      }
+    );
   };
 
-  // Manejar la aprobación de un segmento de audio
   const handleApproveAudioSegment = (content: string) => {
     // Integrar contenido al EMR (demostración)
     setInsertedContent(prev => [...prev, content]);
@@ -86,22 +115,36 @@ const DemoVisitPage: React.FC = () => {
     }, 1500);
     
     // Registrar métrica
-    track('suggestions_accepted', mockUserId, mockVisit.id, 1);
+    trackMetric(
+      'suggestions_accepted',
+      mockUserId,
+      mockVisit.id,
+      1,
+      {
+        content_length: content.length,
+        source: 'audio_transcription'
+      }
+    );
   };
   
-  // Manejar el cierre del checklist de revisión
   const handleCloseReview = () => {
     setShowTranscription(false);
     setTranscriptionData([]);
   };
   
-  // Manejar la integración de sugerencias
   const handleIntegrateSuggestions = (count: number) => {
     // Registrar métrica
-    track('suggestions_integrated', mockUserId, mockVisit.id, count);
+    trackMetric(
+      'suggestions_integrated',
+      mockUserId,
+      mockVisit.id,
+      count,
+      {
+        suggestions_count: count
+      }
+    );
   };
   
-  // Estilo para cada pestaña
   const getTabStyle = (isActive: boolean) => {
     return `px-4 py-2 text-sm font-medium rounded-t-md focus:outline-none ${
       isActive 
@@ -110,7 +153,6 @@ const DemoVisitPage: React.FC = () => {
     }`;
   };
 
-  // Renderizar el panel de pestaña activo
   const renderActiveTabPanel = () => {
     switch(activeTab) {
       case 0:
@@ -156,9 +198,20 @@ const DemoVisitPage: React.FC = () => {
     }
   };
 
+  if (!visitId) {
+    return <div>ID de visita no proporcionado</div>;
+  }
+
+  if (isLoading) {
+    return <div>Cargando sugerencias...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-600">{error}</div>;
+  }
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      {/* Encabezado con información del paciente y visita */}
       <div className="bg-white rounded-md shadow-sm p-4 mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -196,14 +249,11 @@ const DemoVisitPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Panel principal (2/3 del ancho) */}
         <div className="md:col-span-2 space-y-6">
-          {/* Componente de escucha activa */}
           {!showTranscription && (
             <AudioListener onCaptureComplete={handleCaptureComplete} />
           )}
           
-          {/* Componente de revisión de transcripción */}
           {showTranscription && transcriptionData.length > 0 && (
             <AudioReviewChecklist 
               transcription={transcriptionData}
@@ -214,16 +264,19 @@ const DemoVisitPage: React.FC = () => {
             />
           )}
           
-          {/* Sugerencias del agente */}
           <AgentSuggestionsViewer 
             visitId={mockVisit.id}
-            suggestions={mockAgentSuggestions}
-            onIntegrateSuggestions={handleIntegrateSuggestions}
+            suggestions={suggestions}
+            onSuggestionAccepted={(suggestion) => {
+              console.log('Sugerencia aceptada:', suggestion);
+            }}
+            onSuggestionRejected={(suggestion) => {
+              console.log('Sugerencia rechazada:', suggestion);
+            }}
             userId={mockUserId}
             patientId={mockPatient.id}
           />
           
-          {/* EMR editable */}
           <div className="bg-white rounded-md shadow-sm p-4">
             <h2 className="text-lg font-semibold mb-4">Registro Médico Electrónico</h2>
             
@@ -273,10 +326,8 @@ const DemoVisitPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Panel lateral (1/3 del ancho) */}
         <div className="md:col-span-1">
           <div className="bg-white rounded-md shadow-sm">
-            {/* Tabs */}
             <div className="flex border-b border-gray-200">
               <button 
                 className={getTabStyle(activeTab === 0)}
@@ -298,7 +349,6 @@ const DemoVisitPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Tab Panel Content */}
             <div className="p-4">
               {renderActiveTabPanel()}
             </div>
@@ -308,5 +358,7 @@ const DemoVisitPage: React.FC = () => {
     </div>
   );
 };
+
+DemoVisitPage.displayName = 'DemoVisitPage';
 
 export default DemoVisitPage; 

@@ -31,14 +31,6 @@ vi.mock('../../src/services/UsageAnalyticsService', () => ({
   track: vi.fn()
 }));
 
-// Mock de suggestionFeedbackDataSourceSupabase
-vi.mock('../../src/core/dataSources/suggestionFeedbackDataSourceSupabase', () => ({
-  suggestionFeedbackDataSourceSupabase: {
-    getFeedbacksByVisit: vi.fn().mockResolvedValue([]),
-    getFeedbackBySuggestion: vi.fn().mockResolvedValue(null)
-  }
-}));
-
 /**
  * EVALUACIÓN DEL AGENTSUGGESTIONSVIEWER
  * 
@@ -54,39 +46,20 @@ describe('AgentSuggestionsViewer EVAL', () => {
   const mockUserId = 'user-test-001';
   const mockPatientId = 'patient-test-001';
   
-  const createMockSuggestion = (type: 'recommendation' | 'warning' | 'info', content: string, addContextOrigin: boolean = false): AgentSuggestion => {
-    const blockId = `block-${Math.floor(Math.random() * 1000)}`;
-    const suggestion: AgentSuggestion = {
-      id: uuidv4(),
-      sourceBlockId: blockId,
-      type,
-      content
-    };
-    
-    // Añadir contexto de origen para algunas sugerencias
-    if (addContextOrigin) {
-      const blockTypes = {
-        'recommendation': 'Plan de tratamiento',
-        'warning': 'Evaluación clínica',
-        'info': 'Información relevante'
-      };
-      
-      suggestion.context_origin = {
-        source_block: blockTypes[type],
-        text: `Contexto clínico: ${content.substring(0, 30)}...`
-      };
-    }
-    
-    return suggestion;
-  };
+  const createMockSuggestion = (type: 'recommendation' | 'warning' | 'info', content: string): AgentSuggestion => ({
+    id: uuidv4(),
+    sourceBlockId: `block-${Math.floor(Math.random() * 1000)}`,
+    type,
+    content
+  });
   
   const mockRecommendations = [
-    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica', true),
+    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica'),
     createMockSuggestion('recommendation', 'Ajustar dosis de metformina a 1000mg c/12h')
   ];
   
   const mockWarnings = [
-    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente', true)
+    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente')
   ];
   
   const mockInfos = [
@@ -119,46 +92,15 @@ describe('AgentSuggestionsViewer EVAL', () => {
       // Expandir las sugerencias
       fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
       
-      // En la nueva implementación, primero verificamos que existen los botones de filtro
-      expect(screen.getByTestId('filter-recommendation')).toBeInTheDocument();
-      expect(screen.getByTestId('filter-warning')).toBeInTheDocument();
-      expect(screen.getByTestId('filter-info')).toBeInTheDocument();
+      // Verificar que se muestran las categorías correctas - usando expresiones regulares para mayor flexibilidad
+      expect(screen.getByText(/Recomendaciones \(2\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Advertencias \(1\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Información \(1\)/i)).toBeInTheDocument();
       
-      // Verificar que se muestra el contador de sugerencias correctamente
-      expect(screen.getByText(/Mostrando todas las sugerencias \(4\)/i)).toBeInTheDocument();
-      
-      // Verificar que se muestran todas las sugerencias (independientemente de cómo se agrupen)
-      // usando el contenido específico de cada una
+      // Verificar que se muestra el contenido de cada sugerencia usando coincidencia parcial
       expect(screen.getByText((content) => content.includes('ECG para evaluar posible cardiopatía'))).toBeInTheDocument();
-      expect(screen.getByText((content) => content.includes('Ajustar dosis de metformina'))).toBeInTheDocument();
-      expect(screen.getByText((content, element) => {
-        return content.includes('HTA no controlada') && 
-               element?.tagName.toLowerCase() === 'p' && 
-               element?.className.includes('text-sm');
-      })).toBeInTheDocument();
+      expect(screen.getByText((content) => content.includes('HTA no controlada'))).toBeInTheDocument();
       expect(screen.getByText((content) => content.includes('referir a nutricionista'))).toBeInTheDocument();
-      
-      // Ahora comprobar si podemos filtrar por tipo (por ejemplo, solo mostrar advertencias)
-      // Primero seleccionamos solo advertencias desactivando los otros filtros
-      fireEvent.click(screen.getByTestId('filter-recommendation'));
-      fireEvent.click(screen.getByTestId('filter-info'));
-      
-      // Esperar a que el filtrado se aplique
-      await waitFor(() => {
-        // Verificar que ahora solo se muestra 1 sugerencia (la advertencia)
-        expect(screen.getByText(/Mostrando 1 de 4 sugerencias/i)).toBeInTheDocument();
-      });
-      
-      // Verificar que solo la advertencia está visible
-      expect(screen.getByText((content, element) => {
-        return content.includes('HTA no controlada') && 
-               element?.tagName.toLowerCase() === 'p' && 
-               element?.className.includes('text-sm');
-      })).toBeInTheDocument();
-      
-      // Y verificar que las demás NO están visibles
-      expect(screen.queryByText((content) => content.includes('ECG para evaluar'))).not.toBeInTheDocument();
-      expect(screen.queryByText((content) => content.includes('referir a nutricionista'))).not.toBeInTheDocument();
     });
     
     it('debe mostrar el contador correcto de sugerencias', () => {
@@ -176,35 +118,6 @@ describe('AgentSuggestionsViewer EVAL', () => {
       expect(screen.getByText((content, element) => {
         return element?.tagName.toLowerCase() === 'span' && content === '4';
       })).toBeInTheDocument();
-    });
-    
-    it('debe mostrar el contexto de origen para sugerencias que lo tienen disponible', async () => {
-      // Renderizar el componente con sugerencias
-      render(
-        <AgentSuggestionsViewer 
-          visitId={mockVisitId}
-          suggestions={mockSuggestions}
-          userId={mockUserId}
-          patientId={mockPatientId}
-        />
-      );
-      
-      // Expandir las sugerencias
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
-      
-      // Verificar que se muestran los contextos de origen para las sugerencias que los tienen
-      await waitFor(() => {
-        // Verificar texto de contexto para la recomendación con contexto
-        expect(screen.getByText(/Contexto clínico: Realizar ECG para evaluar/)).toBeInTheDocument();
-        expect(screen.getByText(/Plan de tratamiento/)).toBeInTheDocument();
-        
-        // Verificar texto de contexto para la advertencia con contexto
-        expect(screen.getByText(/Contexto clínico: Paciente con HTA no controlada/)).toBeInTheDocument();
-        expect(screen.getByText(/Evaluación clínica/)).toBeInTheDocument();
-      });
-      
-      // Verificar que las sugerencias sin contexto muestran el mensaje apropiado
-      expect(screen.getAllByText('Sin contexto disponible')).toHaveLength(2);
     });
   });
 

@@ -104,7 +104,10 @@ const LoginPage = () => {
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleLogin} role="form">
+        <form
+          onSubmit={handleLogin}
+          className="space-y-6"
+        >
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email-address" className="sr-only">

@@ -72,44 +72,22 @@ export class VisitDataSourceSupabase {
       .single();
 
     if (error) throw new Error(`Error creating visit: ${error.message}`);
-    
-    // Validar datos con Zod
-    try {
-      return VisitSchema.parse(data);
-    } catch (e) {
-      console.error('Validation error for new visit:', e);
-      throw e;
-    }
+    return data as Visit;
   }
 
   /**
    * Actualiza una visita existente
    */
-  async updateVisit(visitId: string, visitData: Partial<Omit<Visit, 'id' | 'created_at' | 'updated_at'>>): Promise<Visit> {
-    // Primero obtener la visita existente
-    const existingVisit = await this.getVisitById(visitId);
-    if (!existingVisit) throw new Error(`Visit not found: ${visitId}`);
-    
-    // Actualizar la visita
+  async updateVisit(visitId: string, visitData: Partial<Visit>): Promise<Visit> {
     const { data, error } = await this.supabase
       .from('visits')
-      .update({
-        ...visitData,
-        updated_at: new Date().toISOString()
-      })
+      .update(visitData)
       .eq('id', visitId)
       .select()
       .single();
 
     if (error) throw new Error(`Error updating visit: ${error.message}`);
-    
-    // Validar datos con Zod
-    try {
-      return VisitSchema.parse(data);
-    } catch (e) {
-      console.error(`Validation error for updated visit ${visitId}:`, e);
-      throw e;
-    }
+    return data as Visit;
   }
 
   /**
@@ -135,6 +113,26 @@ export class VisitDataSourceSupabase {
     });
     
     return validatedData;
+  }
+
+  async deleteVisit(visitId: string): Promise<boolean> {
+    const { error } = await this.supabase
+      .from('visits')
+      .delete()
+      .eq('id', visitId);
+
+    if (error) throw new Error(`Error deleting visit: ${error.message}`);
+    return true;
+  }
+
+  async getAllVisits(): Promise<Visit[]> {
+    const { data, error } = await this.supabase
+      .from('visits')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Error fetching visits: ${error.message}`);
+    return data as Visit[];
   }
 }
 

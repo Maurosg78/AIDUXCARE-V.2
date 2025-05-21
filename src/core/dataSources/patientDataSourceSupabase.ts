@@ -170,4 +170,7 @@ export class PatientDataSourceSupabase {
 }
 
 // Exportar una instancia singleton para uso en toda la aplicación
-export const patientDataSourceSupabase = new PatientDataSourceSupabase(); 
+export const patientDataSourceSupabase = new PatientDataSourceSupabase();
+
+// Exportar función helper
+export const getPatients = () => patientDataSourceSupabase.getAllPatients(); 

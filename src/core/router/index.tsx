@@ -8,10 +8,9 @@ import VisitDetailPage from '../../features/visits/id/VisitDetailPage';
 import DemoVisitPage from '../../features/demo/DemoVisitPage';
 import AccessDeniedPage from '../../features/auth/AccessDeniedPage';
 import ProtectedRoute from '../../features/auth/ProtectedRoute';
-import AdminDashboardPage from '../../features/admin/DashboardPage';
+import DashboardPage from '../../features/admin/DashboardPage';
 import PatientPortalPage from '../../features/patient/PatientPortalPage';
 import PatientDetailPage from '../../features/patient/PatientDetailPage';
-import DashboardPage from '../../features/dashboard/DashboardPage';
 
 export const appRoutes: RouteObject[] = [
   {
@@ -23,14 +22,6 @@ export const appRoutes: RouteObject[] = [
         element: (
           <ProtectedRoute>
             <HomePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'dashboard',
-        element: (
-          <ProtectedRoute requiredRoles={['professional', 'admin']}>
-            <DashboardPage />
           </ProtectedRoute>
         ),
       },
@@ -62,7 +53,7 @@ export const appRoutes: RouteObject[] = [
         path: 'admin',
         element: (
           <ProtectedRoute requiredRoles="admin">
-            <AdminDashboardPage />
+            <DashboardPage />
           </ProtectedRoute>
         ),
       },

@@ -22,4 +22,17 @@ export const VisitSchema = z.object({
 });
 
 // Tipo derivado del esquema
-export type Visit = z.infer<typeof VisitSchema>; 
+export type Visit = z.infer<typeof VisitSchema>;
+
+export interface CreateVisitDTO {
+  patient_id: string;
+  date: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+}
+
+export interface UpdateVisitDTO {
+  date?: string;
+  status?: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+} 

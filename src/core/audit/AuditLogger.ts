@@ -1,3 +1,14 @@
+import supabase from '@/core/auth/supabaseClient';
+
+export interface AuditEvent {
+  id: string;
+  type: string;
+  userId: string;
+  visitId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
 export class AuditLogger {
   /**
    * Registra un evento en el sistema de auditoría
@@ -80,6 +91,75 @@ export class AuditLogger {
 
   static getAuditLogsFromSupabase(visitId: string): Promise<AuditLogEntry[]> {
     return Promise.resolve([]);
+  }
+
+  public static async logEvent(
+    type: string,
+    userId: string,
+    metadata: Record<string, unknown>,
+    visitId?: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          type,
+          user_id: userId,
+          visit_id: visitId,
+          metadata,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error al registrar evento de auditoría:', error);
+      throw error;
+    }
+  }
+
+  public static async getEvents(
+    userId?: string,
+    visitId?: string,
+    type?: string
+  ): Promise<AuditEvent[]> {
+    try {
+      let query = supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      if (visitId) {
+        query = query.eq('visit_id', visitId);
+      }
+
+      if (type) {
+        query = query.eq('type', type);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      return data.map(event => ({
+        id: event.id,
+        type: event.type,
+        userId: event.user_id,
+        visitId: event.visit_id,
+        metadata: event.metadata,
+        createdAt: new Date(event.created_at)
+      }));
+    } catch (error) {
+      console.error('Error al obtener eventos de auditoría:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,12 +1,12 @@
 import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { MCPMemoryBlock, MCPMemoryBlockSchema } from './schema';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 
 // Función de ayuda para manejar errores de Supabase y registrar detalles
-const handleSupabaseError = (operation: string, error: any) => {
+const handleSupabaseError = (operation: string, error: PostgrestError) => {
   const errorMessage = error?.message || 'Error desconocido';
-  const statusCode = error?.status || 'N/A';
+  const statusCode = error?.code || 'N/A';
   console.error(`Error en operación de Supabase [${operation}]: ${errorMessage} (código: ${statusCode})`);
   
   // Registrar detalles adicionales en desarrollo

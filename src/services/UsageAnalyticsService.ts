@@ -1,21 +1,33 @@
 import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { SuggestionType } from '../core/types/suggestions';
-import { SuggestionTypeMetrics, MetricEventType, VisitMetricsSummary } from '../core/types/analytics';
+import { track } from '@/lib/analytics';
 
 /**
  * Tipo que define la estructura de una métrica de uso en el sistema
  */
 export interface UsageMetric {
-  timestamp: string;
-  visitId: string;
+  id: string;
+  type: UsageMetricType;
   userId: string;
-  type: MetricEventType;
+  visitId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  timestamp: string;
   value: number;
   estimated_time_saved_minutes?: number;
-  details?: Record<string, unknown>;
 }
+
+/**
+ * Tipos válidos de métricas de uso
+ */
+export type UsageMetricType = 
+  | 'suggestions_generated'
+  | 'suggestions_accepted'
+  | 'suggestions_integrated'
+  | 'suggestion_feedback_given'
+  | 'audio_items_validated'
+  | 'time_saved_minutes';
 
 /**
  * Tipo que define la estructura de métricas longitudinales entre visitas
@@ -89,23 +101,28 @@ export const logMetric = (metric: UsageMetric): void => {
  * @param type Tipo de métrica a registrar
  * @param userId ID del usuario que realiza la acción
  * @param visitId ID de la visita asociada
- * @param details Detalles adicionales de la métrica
+ * @param value Valor numérico de la métrica
+ * @param metadata Metadatos adicionales
  */
-export const track = (
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used' | 'suggestion_explanation_viewed',
+export const trackMetric = (
+  type: UsageMetricType,
   userId: string,
   visitId: string,
-  value: number = 1,
-  details?: Record<string, unknown>
+  value: number,
+  metadata: Record<string, unknown> = {}
 ): void => {
-  logMetric({
-    timestamp: new Date().toISOString(),
-    visitId,
-    userId,
-    type,
-    value,
-    details
-  });
+  try {
+    // Registrar el evento de uso
+    track(type, {
+      user_id: userId,
+      visit_id: visitId,
+      value,
+      ...metadata
+    });
+  } catch (error) {
+    console.error('Error al registrar métrica de uso:', error);
+    throw error;
+  }
 };
 
 /**
@@ -128,7 +145,14 @@ export const getMetricsByVisit = (visitId: string): UsageMetric[] => {
  * @param visitId ID de la visita para filtrar las métricas
  * @returns Objeto con totales por tipo de métrica
  */
-export const getMetricsSummaryByVisit = (visitId: string): VisitMetricsSummary => {
+export const getMetricsSummaryByVisit = (visitId: string): { 
+  generated: number;
+  accepted: number;
+  integrated: number;
+  field_matched: number;
+  warnings: number;
+  estimated_time_saved_minutes: number;
+} => {
   const metrics = getMetricsByVisit(visitId);
   
   // Calcular el tiempo estimado ahorrado sumando todos los campos estimated_time_saved_minutes
@@ -153,7 +177,7 @@ export const getMetricsSummaryByVisit = (visitId: string): VisitMetricsSummary =
       .reduce((sum, m) => sum + m.value, 0),
 
     field_matched: metrics
-      .filter(m => m.type === 'suggestion_field_matched')
+      .filter(m => m.type === 'suggestions_generated' && m.metadata?.field_matched)
       .reduce((sum, m) => sum + m.value, 0),
       
     warnings: warningCount,
@@ -497,216 +521,41 @@ export const getEvolutionIndicator = (evolution: 'improved' | 'stable' | 'worsen
 };
 
 /**
- * Obtiene métricas acumuladas por tipo de sugerencia para una visita específica
- * 
- * @param visitId ID de la visita para filtrar las métricas
- * @returns Array con las métricas acumuladas por tipo de sugerencia
- */
-export const getMetricsByTypeForVisit = (visitId: string): SuggestionTypeMetrics[] => {
-  if (!visitId) {
-    return [];
-  }
-  
-  const metrics = getMetricsByVisit(visitId);
-  
-  // Inicializar los contadores para cada tipo de sugerencia
-  const typeMetrics: Record<SuggestionType, {
-    generated: number;
-    accepted: number;
-    integrated: number;
-    timeSavedMinutes: number;
-  }> = {
-    'recommendation': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 },
-    'warning': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 },
-    'info': { generated: 0, accepted: 0, integrated: 0, timeSavedMinutes: 0 }
-  };
-  
-  // Procesar cada métrica para acumular valores por tipo
-  metrics.forEach(metric => {
-    // Obtener el tipo de sugerencia desde los detalles
-    const suggestionType = metric.details?.suggestion_type as SuggestionType;
-    
-    // Solo procesar si es un tipo válido
-    if (suggestionType && typeMetrics[suggestionType]) {
-      // Incrementar contadores según el tipo de métrica
-      if (metric.type === 'suggestions_generated') {
-        typeMetrics[suggestionType].generated += metric.value;
-      } else if (metric.type === 'suggestions_accepted') {
-        typeMetrics[suggestionType].accepted += metric.value;
-      } else if (metric.type === 'suggestions_integrated') {
-        typeMetrics[suggestionType].integrated += metric.value;
-        
-        // Acumular tiempo ahorrado si está disponible
-        if (metric.estimated_time_saved_minutes) {
-          typeMetrics[suggestionType].timeSavedMinutes += metric.estimated_time_saved_minutes;
-        } else {
-          // Estimación base: 3 minutos por sugerencia integrada
-          typeMetrics[suggestionType].timeSavedMinutes += (metric.value * 3);
-        }
-      }
-    }
-  });
-  
-  // Convertir a array de SuggestionTypeMetrics con tasa de aceptación calculada
-  return Object.entries(typeMetrics).map(([type, data]) => {
-    // Calcular tasa de aceptación (evitar división por cero)
-    const acceptanceRate = data.generated > 0 
-      ? Math.round((data.accepted / data.generated) * 100) 
-      : 0;
-      
-    return {
-      type: type as SuggestionType,
-      generated: data.generated,
-      accepted: data.accepted,
-      acceptanceRate,
-      timeSavedMinutes: data.timeSavedMinutes
-    };
-  });
-};
-
-/**
  * Devuelve una instancia del cliente Supabase para uso interno
  */
 const getSupabaseClient = (): SupabaseClient => {
   return supabase as SupabaseClient;
 };
 
-/**
- * Interfaz para el impacto longitudinal por tipo de sugerencia
- */
-export interface LongitudinalImpactByType {
-  type: SuggestionType;
-  totalGenerated: number;
-  totalAccepted: number;
-  totalTimeSavedMinutes: number;
-  acceptanceRate: number;
-  visitCount: number;
-}
-
-/**
- * Obtiene métricas longitudinales agrupadas por tipo de sugerencia para un paciente específico
- * 
- * @param patientId ID del paciente para obtener métricas longitudinales
- * @returns Array con métricas acumuladas por tipo de sugerencia
- */
-export const getLongitudinalImpactByPatient = async (patientId: string): Promise<LongitudinalImpactByType[]> => {
-  try {
-    // Obtener métricas longitudinales para el paciente
-    const metrics = await getLongitudinalMetricsByPatient(patientId);
-    
-    if (!metrics || metrics.length === 0) {
-      return [];
+export class UsageAnalyticsService {
+  public static async logMetric(
+    type: string,
+    userId: string,
+    metadata: Record<string, unknown>,
+    visitId?: string
+  ): Promise<void> {
+    try {
+      // Registrar el evento de uso
+      track(type, {
+        user_id: userId,
+        visit_id: visitId,
+        ...metadata
+      });
+    } catch (error) {
+      console.error('Error al registrar métrica de uso:', error);
+      throw error;
     }
-    
-    // Inicializar contadores por tipo de sugerencia
-    const typeImpact: Record<SuggestionType, {
-      generated: number;
-      accepted: number;
-      timeSavedMinutes: number;
-      visitCount: number;
-    }> = {
-      'recommendation': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 },
-      'warning': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 },
-      'info': { generated: 0, accepted: 0, timeSavedMinutes: 0, visitCount: 0 }
-    };
-    
-    // Procesar cada métrica longitudinal
-    metrics.forEach(metric => {
-      // Contar cada visita una vez por tipo
-      let recommendationCounted = false;
-      let warningCounted = false;
-      let infoCounted = false;
-      
-      // Si hay sugerencias generadas de algún tipo, incrementar el contador de visitas para ese tipo
-      if (metric.suggestions_generated > 0) {
-        // Obtener detalles si existen
-        const details = metric.details as any;
-        
-        if (details && details.suggestion_types) {
-          // Si hay detalles específicos por tipo
-          if (details.suggestion_types.recommendation && details.suggestion_types.recommendation.generated > 0) {
-            typeImpact.recommendation.generated += details.suggestion_types.recommendation.generated;
-            typeImpact.recommendation.accepted += details.suggestion_types.recommendation.accepted || 0;
-            typeImpact.recommendation.timeSavedMinutes += details.suggestion_types.recommendation.time_saved_minutes || 0;
-            if (!recommendationCounted) {
-              typeImpact.recommendation.visitCount++;
-              recommendationCounted = true;
-            }
-          }
-          
-          if (details.suggestion_types.warning && details.suggestion_types.warning.generated > 0) {
-            typeImpact.warning.generated += details.suggestion_types.warning.generated;
-            typeImpact.warning.accepted += details.suggestion_types.warning.accepted || 0;
-            typeImpact.warning.timeSavedMinutes += details.suggestion_types.warning.time_saved_minutes || 0;
-            if (!warningCounted) {
-              typeImpact.warning.visitCount++;
-              warningCounted = true;
-            }
-          }
-          
-          if (details.suggestion_types.info && details.suggestion_types.info.generated > 0) {
-            typeImpact.info.generated += details.suggestion_types.info.generated;
-            typeImpact.info.accepted += details.suggestion_types.info.accepted || 0;
-            typeImpact.info.timeSavedMinutes += details.suggestion_types.info.time_saved_minutes || 0;
-            if (!infoCounted) {
-              typeImpact.info.visitCount++;
-              infoCounted = true;
-            }
-          }
-        } else {
-          // Si no hay detalles específicos, distribuir proporcionalmente
-          // Asumimos una distribución aproximada: 50% recomendaciones, 30% advertencias, 20% informativas
-          const recommendationPct = 0.5;
-          const warningPct = 0.3;
-          const infoPct = 0.2;
-          
-          typeImpact.recommendation.generated += Math.round(metric.suggestions_generated * recommendationPct);
-          typeImpact.recommendation.accepted += Math.round(metric.suggestions_accepted * recommendationPct);
-          typeImpact.recommendation.timeSavedMinutes += Math.round(metric.time_saved_minutes * recommendationPct);
-          if (!recommendationCounted) {
-            typeImpact.recommendation.visitCount++;
-            recommendationCounted = true;
-          }
-          
-          typeImpact.warning.generated += Math.round(metric.suggestions_generated * warningPct);
-          typeImpact.warning.accepted += Math.round(metric.suggestions_accepted * warningPct);
-          typeImpact.warning.timeSavedMinutes += Math.round(metric.time_saved_minutes * warningPct);
-          if (!warningCounted) {
-            typeImpact.warning.visitCount++;
-            warningCounted = true;
-          }
-          
-          typeImpact.info.generated += Math.round(metric.suggestions_generated * infoPct);
-          typeImpact.info.accepted += Math.round(metric.suggestions_accepted * infoPct);
-          typeImpact.info.timeSavedMinutes += Math.round(metric.time_saved_minutes * infoPct);
-          if (!infoCounted) {
-            typeImpact.info.visitCount++;
-            infoCounted = true;
-          }
-        }
-      }
-    });
-    
-    // Convertir a array con porcentajes de aceptación calculados
-    return Object.entries(typeImpact)
-      .map(([type, data]) => {
-        const acceptanceRate = data.generated > 0 
-          ? Math.round((data.accepted / data.generated) * 100) 
-          : 0;
-          
-        return {
-          type: type as SuggestionType,
-          totalGenerated: data.generated,
-          totalAccepted: data.accepted,
-          totalTimeSavedMinutes: data.timeSavedMinutes,
-          acceptanceRate,
-          visitCount: data.visitCount
-        };
-      })
-      // Ordenar por cantidad generada (de mayor a menor)
-      .sort((a, b) => b.totalGenerated - a.totalGenerated);
-  } catch (error) {
-    console.error('Error al obtener métricas longitudinales por tipo:', error);
+  }
+
+  public static async getMetrics(
+    userId?: string,
+    visitId?: string,
+    type?: string
+  ): Promise<UsageMetric[]> {
+    // Implementación simulada para desarrollo
     return [];
   }
-}; 
+}
+
+// Exportar track para uso en otros módulos
+export { track }; 

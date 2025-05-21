@@ -1,136 +1,96 @@
-import { supabaseUrl, supabaseAnonKey } from '@/config/env';
-
+import { vi } from "vitest";
 /**
- * Función para probar la conexión a Supabase directamente sin usar el cliente
- * Esto es útil para diagnosticar problemas de conexión o como fallback
+ * Cliente directo de Supabase que usa fetch para diagnóstico y como último recurso
+ * Este archivo evita usar la biblioteca oficial para descartar problemas con ella
  */
+
+// Credenciales directas
+const SUPABASE_URL = 'https://mchyxyuaegsbrwodengr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaHl4eXVhZWdzYnJ3b2RlbmdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU3OTE5ODcsImV4cCI6MjAzMTM2Nzk4N30.nPADTDUw7cKLsGI83tsDLmYxQWR1N7swPZWwrKoH-S4';
+
+// Función para prueba de diagnóstico
 export async function testDirectConnection() {
   try {
-    console.log('Probando conexión directa a Supabase...');
+    console.log('🔍 Probando conexión directa a Supabase con fetch...');
     
-    if (!supabaseUrl) {
-      return { 
-        success: false, 
-        error: { 
-          message: 'URL de Supabase no configurada',
-          hint: 'Verifique las variables de entorno',
-          code: 'CONFIG_ERROR'
-        } 
-      };
-    }
-    
-    // Construir URL para health check
-    const url = `${supabaseUrl}/rest/v1/health_check?select=*&limit=1`;
-    
-    // Intentar conexión con fetch
-    const response = await fetch(url, {
+    // Intentar una petición directa a la API REST
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/health_check?select=*&limit=1`, {
       method: 'GET',
       headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json'
       }
     });
     
-    if (!response.ok) {
-      // Si la respuesta no es exitosa
-      let errorMessage = `Error HTTP: ${response.status}`;
-      let errorHint = '';
-      let errorCode = `HTTP_${response.status}`;
-      
-      // Detectar errores comunes
-      if (response.status === 401) {
-        errorCode = 'AUTH_ERROR';
-        errorMessage = 'Error de autenticación con Supabase';
-        errorHint = 'La API key puede ser inválida o estar expirada';
-      } else if (response.status === 404) {
-        errorCode = 'ENDPOINT_ERROR';
-        errorMessage = 'Endpoint no encontrado';
-        errorHint = 'La URL de Supabase puede ser incorrecta';
-      }
-      
-      // Intentar obtener más detalles del error
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-        errorHint = errorData.hint || errorHint;
-      } catch (e) {
-        // Si no podemos parsear el JSON, usar el texto de la respuesta
-        errorHint = await response.text();
-      }
-      
-      return { success: false, error: { message: errorMessage, hint: errorHint, code: errorCode } };
+    // Verificar respuesta
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Conexión directa exitosa:', data);
+      return { success: true, data };
+    } else {
+      const error = await response.json();
+      console.error('❌ Error en conexión directa:', error);
+      return { success: false, error, status: response.status };
     }
-    
-    // Respuesta exitosa
-    return { success: true };
   } catch (err) {
-    // Error de red u otro error
-    return { 
-      success: false, 
-      error: { 
-        message: err instanceof Error ? err.message : 'Error de conexión desconocido',
-        hint: 'Verifique su conexión a internet y la URL de Supabase',
-        code: 'NETWORK_ERROR'
-      } 
-    };
+    console.error('❌ Error en petición fetch:', err);
+    return { success: false, error: err };
   }
 }
 
-/**
- * Función de fallback para realizar operaciones básicas cuando Supabase no está disponible
- * Esta función simula un cliente mínimo para evitar errores en la aplicación
- */
-export function createFallbackClient() {
-  // Cliente mínimo que no hace nada pero evita errores
-  return {
-    // Auth methods
-    auth: {
-      getUser: async () => ({ data: { user: null }, error: null }),
-      getSession: async () => ({ data: { session: null }, error: null }),
-      signOut: async () => ({ error: null }),
-      onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
-      // Añadir más métodos según se necesiten
-    },
-    // Database methods
-    from: (table: string) => ({
-      select: (columns: string = '*') => ({
-        eq: (column: string, value: string | number | boolean) => ({
-          single: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } }),
-        }),
-        limit: (limitNum: number) => ({
-          range: (from: number, to: number) => ({
-            order: (column: string, options: { ascending?: boolean }) => ({
-              execute: async () => ({ data: [], error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-            })
-          })
-        }),
-        execute: async () => ({ data: [], error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-      }),
-      insert: () => ({
-        execute: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-      }),
-      update: () => ({
-        eq: () => ({
-          execute: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-        })
-      }),
-      delete: () => ({
-        eq: () => ({
-          execute: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-        })
-      })
-    }),
-    // Storage methods
-    storage: {
-      from: () => ({
-        upload: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } }),
-        list: async () => ({ data: [], error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } }),
-        download: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } }),
-        remove: async () => ({ data: null, error: { message: 'Supabase no disponible', code: 'FALLBACK_MODE' } })
-      })
+// Función para hacer un select simple
+export async function directQuery(table: string) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&limit=5`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      return { success: true, data: await response.json() };
+    } else {
+      return { 
+        success: false, 
+        error: await response.json(),
+        status: response.status
+      };
     }
-  };
+  } catch (err) {
+    return { success: false, error: err };
+  }
 }
 
-export default { testDirectConnection, createFallbackClient }; 
+// Mock de cliente Supabase para reemplazar completamente el original si es necesario
+const mockSupabaseClient = {
+  from: (table: string) => ({
+    select: (query: string = '*') => ({
+      limit: async (limit: number = 10) => {
+        const result = await directQuery(table);
+        return result.success 
+          ? { data: result.data, error: null } 
+          : { data: null, error: result.error };
+      },
+      eq: (column: string, value: string) => ({
+        order: async (orderColumn: string, { ascending = true } = {}) => {
+          const result = await directQuery(table);
+          return result.success 
+            ? { data: result.data, error: null } 
+            : { data: null, error: result.error };
+        }
+      }),
+      order: async (column: string, { ascending = true } = {}) => {
+        const result = await directQuery(table);
+        return result.success 
+          ? { data: result.data, error: null } 
+          : { data: null, error: result.error };
+      }
+    })
+  })
+};
+
+export default mockSupabaseClient; 

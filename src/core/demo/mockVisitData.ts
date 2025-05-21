@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { v4 as uuidv4 } from 'uuid';
 import { MCPContext, MCPMemoryBlock } from '@/core/mcp/schema';
-import { AgentSuggestion } from '@/core/agent/ClinicalAgent';
+import type { AgentSuggestion, SuggestionField } from '@/types/agent';
 import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AuditLogEntry } from '@/core/audit/AuditLogger';
 
@@ -136,31 +136,46 @@ export const mockAgentSuggestions: AgentSuggestion[] = [
     id: uuidv4(),
     sourceBlockId: 'ctx-demo-2',
     type: 'warning',
-    content: 'La presión arterial del paciente (152/88 mmHg) está por encima del objetivo terapéutico para un paciente diabético (140/90 mmHg). Considerar ajuste en la medicación antihipertensiva.'
+    content: 'La presión arterial del paciente (152/88 mmHg) está por encima del objetivo terapéutico para un paciente diabético (140/90 mmHg). Considerar ajuste en la medicación antihipertensiva.',
+    field: 'vitals',
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: uuidv4(),
     sourceBlockId: 'ctx-demo-1',
     type: 'recommendation',
-    content: 'Evaluar neuropatía diabética por el dolor en extremidades inferiores. Aplicar escala DN4 o similar para valoración.'
+    content: 'Evaluar neuropatía diabética por el dolor en extremidades inferiores. Aplicar escala DN4 o similar para valoración.',
+    field: 'symptoms',
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: uuidv4(),
     sourceBlockId: 'sem-demo-1',
     type: 'info',
-    content: 'HbA1c 7.2%. Objetivo terapéutico por guía ADA 2023 para este paciente: <7.0%. Considerar revisar tratamiento diabetológico.'
+    content: 'HbA1c 7.2%. Objetivo terapéutico por guía ADA 2023 para este paciente: <7.0%. Considerar revisar tratamiento diabetológico.',
+    field: 'lab_results',
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: uuidv4(),
     sourceBlockId: 'ctx-demo-1',
     type: 'recommendation',
-    content: 'Episodios de mareo al levantarse sugieren hipotensión ortostática. Realizar prueba de ortostatismo en consulta y educar al paciente sobre medidas preventivas.'
+    content: 'Episodios de mareo al levantarse sugieren hipotensión ortostática. Realizar prueba de ortostatismo en consulta y educar al paciente sobre medidas preventivas.',
+    field: 'symptoms',
+    createdAt: new Date(),
+    updatedAt: new Date()
   },
   {
     id: uuidv4(),
     sourceBlockId: 'per-demo-3',
     type: 'warning',
-    content: 'Paciente alérgico a Penicilina y Sulfamidas. Documentar prominentemente en historia clínica y verificar que no existan interacciones con medicación actual.'
+    content: 'Paciente alérgico a Penicilina y Sulfamidas. Documentar prominentemente en historia clínica y verificar que no existan interacciones con medicación actual.',
+    field: 'history',
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 

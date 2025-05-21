@@ -1,165 +1,30 @@
-import { AgentContext } from './AgentContextBuilder';
+import { AgentContext, AgentSuggestion, MemoryBlock, SuggestionType, SuggestionField } from '@/types/agent';
 import { v4 as uuidv4 } from 'uuid';
-import { getSuggestionsFromLLM } from './LLMAdapterReal';
-import { evaluateSuggestion } from '../../evals/ClinicalSuggestionEval';
-import { logMetric, track } from '../../services/UsageAnalyticsService';
-import { AuditLogger } from '../audit/AuditLogger';
+import supabase from '@/core/auth/supabaseClient';
 
 /**
- * Interfaz que define la estructura de una sugerencia generada por el agente LLM
- */
-export interface AgentSuggestion {
-  id: string;
-  sourceBlockId: string;
-  type: 'recommendation' | 'warning' | 'info';
-  content: string;
-  context_origin?: {
-    source_block: string;
-    text: string;
-  };
-  source?: string;
-}
-
-/**
- * Genera sugerencias basadas en el contexto del agente
+ * STUB: Genera sugerencias basadas en el contexto del agente
  * 
- * Dependiendo de la configuración del entorno, utilizará un modelo LLM real o 
- * generará sugerencias determinísticas basadas en palabras clave.
+ * Esta es una implementación simulada que genera sugerencias ficticias basadas
+ * en el contenido de los bloques de memoria contextual y semántica.
+ * 
+ * En una implementación real, esta función llamaría a un servicio LLM para generar
+ * sugerencias basadas en un análisis más profundo del contexto.
  * 
  * @param ctx El contexto del agente con los bloques de memoria
  * @returns Array de sugerencias generadas
  */
 export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSuggestion[]> {
-  // Verificar si se debe usar el LLM real
-  const useRealLLM = process.env.USE_REAL_LLM === 'true';
-  
-  // Si se usa LLM real, invocar al adaptador
-  if (useRealLLM) {
-    console.log('Utilizando LLM real para generar sugerencias clínicas');
-    
-    // Registrar evento de solicitud de sugerencias al LLM
-    AuditLogger.log('llm_suggestion_requested', {
-      visitId: ctx.visitId,
-      userId: ctx.userId || 'system',
-      timestamp: new Date().toISOString(),
-      context_blocks_count: ctx.blocks.length
-    });
-    
-    // Obtener sugerencias del LLM
-    const suggestions = await getSuggestionsFromLLM(ctx);
-    
-    // Marcar las sugerencias con la fuente "llm_real"
-    const markedSuggestions = suggestions.map(suggestion => ({
-      ...suggestion,
-      source: "llm_real"
-    }));
-    
-    // Registrar evento de recepción de sugerencias del LLM
-    AuditLogger.log('llm_suggestion_received', {
-      visitId: ctx.visitId,
-      userId: ctx.userId || 'system',
-      timestamp: new Date().toISOString(),
-      suggestions_count: markedSuggestions.length
-    });
-    
-    // Registrar métrica de uso del LLM
-    track('llm_used', ctx.userId || 'system', ctx.visitId, markedSuggestions.length, {
-      context_blocks_count: ctx.blocks.length,
-      source: 'llm_real'
-    });
-    
-    // Evaluar las sugerencias si está habilitado
-    return evaluateSuggestionsIfEnabled(markedSuggestions, ctx.visitId, ctx.patientId);
-  }
-  
-  // En caso contrario, usar la implementación determinística original
-  console.log('Utilizando generación determinística de sugerencias clínicas');
-  const suggestions = await getDeterministicSuggestions(ctx);
-  return evaluateSuggestionsIfEnabled(suggestions, ctx.visitId, ctx.patientId);
-}
-
-/**
- * Evalúa las sugerencias generadas si la evaluación está habilitada
- * 
- * @param suggestions Sugerencias a evaluar
- * @param visitId ID de la visita
- * @param patientId ID del paciente
- * @returns Las mismas sugerencias recibidas (la evaluación es solo para métricas)
- */
-function evaluateSuggestionsIfEnabled(
-  suggestions: AgentSuggestion[], 
-  visitId: string, 
-  patientId: string
-): AgentSuggestion[] {
-  // Verificar si está habilitada la evaluación (desactivada por defecto)
-  const enableEvaluation = process.env.ENABLE_SUGGESTION_EVAL === 'true';
-  
-  if (!enableEvaluation) {
-    return suggestions;
-  }
-  
-  // Si la evaluación está activada, evaluar cada sugerencia
-  console.log('Evaluando calidad de sugerencias clínicas');
-  
-  let invalidCount = 0;
-  
-  suggestions.forEach(suggestion => {
-    const evalResult = evaluateSuggestion(suggestion);
-    
-    if (!evalResult.isValid) {
-      invalidCount++;
-      
-      // Registrar métrica de sugerencia inválida para análisis posterior
-      if (visitId) {
-        try {
-          logMetric({
-            timestamp: new Date().toISOString(),
-            visitId,
-            userId: 'system',
-            type: 'suggestion_eval_failed',
-            value: 1,
-            details: {
-              suggestion_id: suggestion.id,
-              patient_id: patientId,
-              reasons: evalResult.reasons,
-              suggestion_type: suggestion.type,
-              suggestion_content: suggestion.content.substring(0, 50) // Primeros 50 caracteres para análisis
-            }
-          });
-        } catch (error) {
-          console.error('Error al registrar métrica de evaluación de sugerencia:', error);
-        }
-      }
-    }
-  });
-  
-  if (invalidCount > 0) {
-    console.warn(`Se encontraron ${invalidCount} sugerencias que no cumplen con los criterios de calidad.`);
-  }
-  
-  // Devolver las sugerencias originales (la evaluación es solo para métricas)
-  return suggestions;
-}
-
-/**
- * Implementación determinística para generar sugerencias basadas en palabras clave
- * 
- * Esta implementación simulada genera sugerencias ficticias basadas
- * en el contenido de los bloques de memoria contextual y semántica.
- * 
- * @param ctx El contexto del agente con los bloques de memoria
- * @returns Array de sugerencias generadas
- */
-export async function getDeterministicSuggestions(ctx: AgentContext): Promise<AgentSuggestion[]> {
   // Array para almacenar las sugerencias generadas
   const suggestions: AgentSuggestion[] = [];
   
   // Filtrar bloques de tipo contextual y semantico
-  const contextualBlocks = ctx.blocks.filter(block => block.type === 'contextual');
-  const semanticBlocks = ctx.blocks.filter(block => block.type === 'semantic');
+  const contextualBlocks = ctx.blocks.filter((block: MemoryBlock) => block.type === 'contextual');
+  const semanticBlocks = ctx.blocks.filter((block: MemoryBlock) => block.type === 'semantic');
   
   // STUB: Generar sugerencias basadas en bloques contextuales
   for (const block of contextualBlocks) {
+    const now = new Date();
     // Solo generamos sugerencias para bloques que contengan ciertas palabras clave
     if (block.content.toLowerCase().includes('dolor')) {
       suggestions.push({
@@ -167,10 +32,9 @@ export async function getDeterministicSuggestions(ctx: AgentContext): Promise<Ag
         sourceBlockId: block.id,
         type: 'recommendation',
         content: 'Considerar evaluación de escala de dolor y administrar analgésicos según protocolo.',
-        context_origin: {
-          source_block: block.id,
-          text: 'dolor'
-        }
+        field: 'symptoms',
+        createdAt: now,
+        updatedAt: now
       });
     }
     
@@ -181,16 +45,16 @@ export async function getDeterministicSuggestions(ctx: AgentContext): Promise<Ag
         sourceBlockId: block.id,
         type: 'warning',
         content: 'Monitorizar tensión arterial cada 4 horas. Valores fuera de rango requieren atención.',
-        context_origin: {
-          source_block: block.id,
-          text: 'presión'
-        }
+        field: 'vitals',
+        createdAt: now,
+        updatedAt: now
       });
     }
   }
   
   // STUB: Generar sugerencias basadas en bloques semánticos
   for (const block of semanticBlocks) {
+    const now = new Date();
     if (block.content.toLowerCase().includes('diabetes') || 
         block.content.toLowerCase().includes('glucosa')) {
       suggestions.push({
@@ -198,16 +62,16 @@ export async function getDeterministicSuggestions(ctx: AgentContext): Promise<Ag
         sourceBlockId: block.id,
         type: 'info',
         content: 'Paciente con historial de diabetes. Considerar monitorización de glucemia.',
-        context_origin: {
-          source_block: block.id,
-          text: 'diabetes'
-        }
+        field: 'diagnosis',
+        createdAt: now,
+        updatedAt: now
       });
     }
   }
   
   // Si no se generaron sugerencias basadas en keywords, generar al menos 2 genéricas
   if (suggestions.length === 0) {
+    const now = new Date();
     // Usar el primer bloque contextual si existe
     const sourceBlockId = contextualBlocks.length > 0 
       ? contextualBlocks[0].id 
@@ -218,10 +82,9 @@ export async function getDeterministicSuggestions(ctx: AgentContext): Promise<Ag
       sourceBlockId,
       type: 'info',
       content: 'Recordar documentar signos vitales en cada visita según protocolo institucional.',
-      context_origin: {
-        source_block: sourceBlockId,
-        text: 'Recordar documentar signos vitales en cada visita según protocolo institucional.'
-      }
+      field: 'vitals',
+      createdAt: now,
+      updatedAt: now
     });
     
     suggestions.push({
@@ -229,12 +92,124 @@ export async function getDeterministicSuggestions(ctx: AgentContext): Promise<Ag
       sourceBlockId,
       type: 'recommendation',
       content: 'Evaluar estado de hidratación y balance hídrico del paciente.',
-      context_origin: {
-        source_block: sourceBlockId,
-        text: 'Evaluar estado de hidratación y balance hídrico del paciente.'
-      }
+      field: 'symptoms',
+      createdAt: now,
+      updatedAt: now
     });
   }
   
   return suggestions;
+}
+
+/**
+ * Genera un resumen clínico basado en el contexto de la visita
+ * @param visitId ID de la visita
+ * @returns Resumen clínico en formato texto
+ */
+export async function runSummaryAgent(visitId: string): Promise<string> {
+  try {
+    // Obtener contexto completo de la visita
+    const context = await buildAgentContext(visitId);
+    
+    // Filtrar bloques relevantes para el resumen
+    const relevantBlocks: MemoryBlock[] = context.blocks.filter((block: MemoryBlock) => 
+      block.type === 'contextual' || 
+      block.type === 'semantic' || 
+      block.type === 'clinical'
+    );
+
+    if (relevantBlocks.length === 0) {
+      return 'No hay suficiente información clínica para generar un resumen.';
+    }
+
+    // TODO: En el futuro, aquí se integrará con el LLM real
+    // Por ahora, generamos un resumen simulado basado en los bloques
+    const mockSummary = `Resumen clínico generado para la visita ${visitId}:
+
+${relevantBlocks.map((block: MemoryBlock) => {
+  switch (block.type) {
+    case 'contextual':
+      return `Contexto: ${block.content}`;
+    case 'semantic':
+      return `Análisis: ${block.content}`;
+    case 'clinical':
+      return `Datos clínicos: ${block.content}`;
+    default:
+      return '';
+  }
+}).filter(Boolean).join('\n\n')}
+
+Nota: Este es un resumen generado automáticamente. Por favor, revise y ajuste según sea necesario.`;
+
+    return mockSummary;
+
+  } catch (error) {
+    console.error('Error al generar resumen clínico:', error);
+    throw new Error('Error al generar el resumen clínico');
+  }
+}
+
+export async function buildAgentContext(visitId: string): Promise<AgentContext> {
+  try {
+    // Obtener bloques de memoria para la visita
+    const { data: blocks, error } = await supabase
+      .from('memory_blocks')
+      .select('*')
+      .eq('visit_id', visitId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const now = new Date();
+    return {
+      visitId,
+      blocks: blocks as MemoryBlock[],
+      metadata: {
+        createdAt: now,
+        updatedAt: now
+      }
+    };
+  } catch (err) {
+    console.error('Error building agent context:', err);
+    throw err;
+  }
+}
+
+export class ClinicalAgent {
+  private context: AgentContext;
+  private suggestions: AgentSuggestion[] = [];
+
+  constructor(context: AgentContext) {
+    this.context = context;
+  }
+
+  public static async create(visitId: string): Promise<ClinicalAgent> {
+    const context = await buildAgentContext(visitId);
+    return new ClinicalAgent(context);
+  }
+
+  public getSuggestions(): AgentSuggestion[] {
+    return this.suggestions;
+  }
+
+  public addSuggestion(suggestion: Omit<AgentSuggestion, 'createdAt' | 'updatedAt'>): void {
+    const now = new Date();
+    this.suggestions.push({
+      ...suggestion,
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+
+  public getContext(): AgentContext {
+    return this.context;
+  }
+
+  public getMemoryBlocks(): MemoryBlock[] {
+    return this.context.blocks;
+  }
+
+  public getSuggestionTypes(): SuggestionType[] {
+    return ['diagnostic', 'treatment', 'followup', 'contextual', 'recommendation', 'warning', 'info'];
+  }
 } 
