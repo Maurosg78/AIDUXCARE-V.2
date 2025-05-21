@@ -3,11 +3,11 @@ import * as SupabaseDataSource from './MCPDataSourceSupabase';
 import { MCPMemoryBlock } from './schema';
 
 export class MCPManager {
-  async getContextForVisit(visitId: string): Promise<any> {
+  async getContextForVisit(visitId: string): Promise<Record<string, unknown>> {
     return { context: 'mocked context for visitId ' + visitId };
   }
 
-  async saveContext(visitId: string, context: any) {
+  async saveContext(visitId: string, context: Record<string, unknown>) {
     console.log(`[MCPManager] Context saved for ${visitId}`, context);
   }
 

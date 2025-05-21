@@ -16,11 +16,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface MinimalSupabaseClient {
+  from: (table: string) => {
+    select: (columns?: string) => {
+      limit: (count: number) => Promise<unknown>;
+    };
+  };
+}
+
 // Función para verificar si un cliente funciona
-async function testClient(client: unknown, name: string): Promise<boolean> {
+async function testClient(client: Partial<MinimalSupabaseClient>, name: string): Promise<boolean> {
   try {
-    if (!client || typeof (client as any).from !== 'function') return false;
-    await (client as any).from('test').select('*').limit(1);
+    if (!client || typeof client.from !== 'function') return false;
+    await client.from('test').select('*').limit(1);
     console.log(`✅ Cliente ${name} funcionando correctamente`);
     return true;
   } catch (error) {
