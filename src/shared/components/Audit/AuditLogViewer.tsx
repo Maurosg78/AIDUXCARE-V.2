@@ -165,7 +165,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
     const details: LogDetails = log.details;
     return (
       <div>
-        {details.description ? (
+        {typeof details.description === 'string' ? (
           <p>{details.description}</p>
         ) : (
           <pre className="text-xs overflow-auto max-h-24">{JSON.stringify(details, null, 2)}</pre>
