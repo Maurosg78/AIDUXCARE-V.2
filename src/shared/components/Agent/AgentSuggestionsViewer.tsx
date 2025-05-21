@@ -101,6 +101,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-sm text-blue-600 hover:text-blue-800"
+          data-testid="toggle-suggestions"
         >
           {isExpanded ? 'Ocultar' : 'Mostrar'}
         </button>

@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../../src/shared/components/Agent/AgentSuggestionsViewer';
-import { AgentSuggestion } from '../../src/core/agent/ClinicalAgent';
+import { AgentSuggestion } from '../../src/types/agent';
 import { v4 as uuidv4 } from 'uuid';
 
 // Mock de las dependencias externas
@@ -50,7 +50,10 @@ describe('AgentSuggestionsViewer EVAL', () => {
     id: uuidv4(),
     sourceBlockId: `block-${Math.floor(Math.random() * 1000)}`,
     type,
-    content
+    content,
+    field: 'notes',
+    createdAt: new Date(),
+    updatedAt: new Date()
   });
   
   const mockRecommendations = [
@@ -76,21 +79,25 @@ describe('AgentSuggestionsViewer EVAL', () => {
    */
   describe('Caso 1: Renderizado de sugerencias válidas', () => {
     it('debe mostrar las sugerencias agrupadas por tipo cuando se expande', async () => {
-      // Renderizar el componente con sugerencias
       render(
         <AgentSuggestionsViewer 
           visitId={mockVisitId}
           suggestions={mockSuggestions}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
       // Verificar que inicialmente está colapsado
       expect(screen.queryByText(/Recomendaciones/)).not.toBeInTheDocument();
       
-      // Expandir las sugerencias
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      // Verificar que se muestra el botón para expandir
+      expect(screen.getByTestId('toggle-suggestions')).toBeInTheDocument();
+      
+      // Expandir el componente
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Verificar que se muestran las categorías correctas - usando expresiones regulares para mayor flexibilidad
       expect(screen.getByText(/Recomendaciones \(2\)/i)).toBeInTheDocument();
@@ -140,7 +147,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Expandir el panel
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Verificar que se muestra el mensaje de "sin sugerencias", con coincidencia parcial
       expect(screen.getByText((content) => content.includes('no tiene sugerencias'))).toBeInTheDocument();
@@ -187,7 +194,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Expandir el panel
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Aceptar todas las sugerencias usando eventos reales (no mocks)
       const acceptButtons = screen.getAllByText('Aceptar');
@@ -249,7 +256,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Expandir el panel
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Verificar que no aparece la opción para integrar
       expect(screen.queryByText((content) => content.includes('sugerencias aceptadas listas para integrar'))).not.toBeInTheDocument();
@@ -274,7 +281,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Expandir el panel
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Aceptar dos sugerencias
       const acceptButtons = screen.getAllByText('Aceptar');
@@ -320,7 +327,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Expandir el panel
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
       // Aceptar una sugerencia
       const acceptButtons = screen.getAllByText('Aceptar');

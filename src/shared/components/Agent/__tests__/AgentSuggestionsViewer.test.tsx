@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
-import { AgentSuggestion } from '../../../../core/agent/ClinicalAgent';
+import { AgentSuggestion, SuggestionType } from '../../../../types/agent';
 import { EMRFormService } from '../../../../core/services/EMRFormService';
 import { AuditLogger } from '../../../../core/audit/AuditLogger';
 import * as UsageAnalyticsService from '../../../../services/UsageAnalyticsService';
@@ -128,8 +128,8 @@ vi.mock('../../../../core/dataSources/suggestionFeedbackDataSourceSupabase', () 
 
 // Mock de AgentExplainer
 vi.mock('../../../../core/agent/AgentExplainer', () => ({
-  explainSuggestion: vi.fn().mockImplementation((suggestion) => {
-    return `Explicación simulada para la sugerencia de tipo ${suggestion.type}`;
+  explainSuggestion: vi.fn().mockImplementation(async (suggestion: AgentSuggestion) => {
+    return Promise.resolve(`Explicación simulada para la sugerencia de tipo ${suggestion.type}`);
   })
 }));
 
@@ -137,6 +137,8 @@ describe('AgentSuggestionsViewer', () => {
   const visitId = 'test-visit-id';
   const userId = 'test-user-id';
   const patientId = 'test-patient-id';
+  const onSuggestionAccepted = vi.fn();
+  const onSuggestionRejected = vi.fn();
   
   // Ampliar el conjunto de sugerencias de prueba para validar filtros y ordenamiento
   const mockSuggestions: AgentSuggestion[] = [
@@ -144,39 +146,48 @@ describe('AgentSuggestionsViewer', () => {
       id: 'suggestion-1',
       sourceBlockId: 'block-1',
       type: 'recommendation',
+      field: 'diagnosis',
       content: 'Considerar radiografía de tórax para descartar neumonía',
-      context_origin: {
-        source_block: 'Motivo de consulta',
-        text: 'Paciente refiere dolor torácico y dificultad respiratoria desde hace 3 días.'
-      }
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      explanation: 'Basado en los síntomas reportados'
     },
     {
       id: 'suggestion-2',
       sourceBlockId: 'block-2',
       type: 'warning',
-      content: 'Paciente con alergias a medicamentos específicos'
+      field: 'medication',
+      content: 'Paciente con alergias a medicamentos específicos',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-3',
       sourceBlockId: 'block-3',
       type: 'info',
-      content: 'Última visita el 12/03/2023 por dolor abdominal'
+      field: 'history',
+      content: 'Última visita el 12/03/2023 por dolor abdominal',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-4',
       sourceBlockId: 'block-4',
       type: 'recommendation',
-      content: 'Realizar seguimiento de presión arterial en próxima visita'
+      field: 'followup',
+      content: 'Realizar seguimiento de presión arterial en próxima visita',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-5',
       sourceBlockId: 'block-5',
       type: 'warning',
+      field: 'lab_results',
       content: 'HbA1c elevada, posible descompensación diabética',
-      context_origin: {
-        source_block: 'Exámenes de Laboratorio',
-        text: 'HbA1c: 9.2%, glucemia: 245 mg/dl'
-      }
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      explanation: 'Basado en resultados de laboratorio'
     }
   ];
 
@@ -211,8 +222,7 @@ describe('AgentSuggestionsViewer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Espiamos los métodos que queremos verificar
-    vi.spyOn(EMRFormService, 'mapSuggestionTypeToEMRSection').mockImplementation((type: any) => {
+    vi.spyOn(EMRFormService, 'mapSuggestionTypeToEMRSection').mockImplementation((type: SuggestionType) => {
       switch (type) {
         case 'recommendation':
           return 'plan';
@@ -229,25 +239,30 @@ describe('AgentSuggestionsViewer', () => {
     vi.spyOn(AuditLogger, 'log').mockReturnValue(true);
     vi.spyOn(UsageAnalyticsService, 'track').mockImplementation(() => {});
     
-    // Mockear la función getFeedbacksByVisit
     vi.mocked(suggestionFeedbackDataSourceSupabase.getFeedbacksByVisit).mockResolvedValue(mockFeedbacks);
+
+    // Mock de AgentExplainer para que retorne una Promise
+    vi.spyOn(AgentExplainer, 'explainSuggestion').mockImplementation(async (suggestion: AgentSuggestion) => {
+      return Promise.resolve(`Explicación simulada para la sugerencia de tipo ${suggestion.type}`);
+    });
   });
 
   // Nuevas pruebas para la funcionalidad de búsqueda y filtrado
   describe('Búsqueda y filtrado de sugerencias', () => {
     it('debe filtrar sugerencias por texto de búsqueda', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Verificar que se muestran todas las sugerencias inicialmente
       expect(screen.getByText('Mostrando todas las sugerencias (5)')).toBeInTheDocument();
@@ -281,18 +296,19 @@ describe('AgentSuggestionsViewer', () => {
     });
 
     it('debe filtrar sugerencias por tipo', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Verificar que se muestran todas las sugerencias inicialmente
       expect(screen.getByText('Mostrando todas las sugerencias (5)')).toBeInTheDocument();
@@ -316,18 +332,19 @@ describe('AgentSuggestionsViewer', () => {
     });
 
     it('debe ordenar sugerencias por utilidad', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Esperar a que se carguen los feedbacks
       await waitFor(() => {
@@ -357,18 +374,19 @@ describe('AgentSuggestionsViewer', () => {
     });
 
     it('debe resetear los filtros correctamente', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Hacer una búsqueda que no retorne resultados
       fireEvent.change(screen.getByTestId('suggestion-search-input'), { 
@@ -402,18 +420,19 @@ describe('AgentSuggestionsViewer', () => {
   // Nuevas pruebas para la visualización del contexto de origen
   describe('Visualización del contexto de origen', () => {
     it('debe mostrar el contexto de origen cuando está disponible', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Verificar que se muestra el contexto de origen para las sugerencias que lo tienen
       await waitFor(() => {
@@ -432,18 +451,19 @@ describe('AgentSuggestionsViewer', () => {
     });
 
     it('debe mostrar "Sin contexto disponible" cuando no hay contexto de origen', async () => {
-      // Renderizar el componente
       render(
         <AgentSuggestionsViewer
           visitId={visitId}
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Verificar que se muestra el mensaje "Sin contexto disponible" para las sugerencias sin contexto
       await waitFor(() => {
@@ -461,18 +481,19 @@ describe('AgentSuggestionsViewer', () => {
 
   // Mantener los tests existentes inalterados
   it('debe validar la integración completa de sugerencias al EMR con auditoría y métricas', async () => {
-    // Renderizar el componente
     render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
         userId={userId}
         patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
       />
     );
 
     // Expandir el componente para mostrar las sugerencias
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
     // Verificar que se muestran las sugerencias (al menos las primeras dos)
     expect(screen.getByText('Considerar radiografía de tórax para descartar neumonía')).toBeInTheDocument();
@@ -532,13 +553,14 @@ describe('AgentSuggestionsViewer', () => {
   });
 
   it('no debe mostrar sugerencias si el componente no está expandido', () => {
-    // Renderizar el componente (sin expandirlo)
     render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
         userId={userId}
         patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
       />
     );
 
@@ -547,40 +569,42 @@ describe('AgentSuggestionsViewer', () => {
     expect(screen.queryByText('Paciente con alergias a medicamentos específicos')).not.toBeInTheDocument();
 
     // Verificar que el componente está colapsado
-    expect(screen.getByText('Ver sugerencias del agente')).toBeInTheDocument();
+    expect(screen.getByTestId('toggle-suggestions')).toBeInTheDocument();
   });
 
   it('debe manejar el caso cuando no hay sugerencias', () => {
-    // Renderizar el componente sin sugerencias
     render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={[]}
         userId={userId}
         patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
       />
     );
     
     // Expandir el componente
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    fireEvent.click(screen.getByTestId('toggle-suggestions'));
     
     // Verificar que se muestra el mensaje de que no hay sugerencias
     expect(screen.getByText('Este agente no tiene sugerencias para esta visita.')).toBeInTheDocument();
   });
 
   it('debe mostrar correctamente los feedbacks de las sugerencias', async () => {
-    // Renderizar el componente
     render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
         userId={userId}
         patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
       />
     );
 
     // Expandir el componente para mostrar las sugerencias
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    fireEvent.click(screen.getByTestId('toggle-suggestions'));
     
     // Verificar que se carguen los feedbacks
     expect(suggestionFeedbackDataSourceSupabase.getFeedbacksByVisit).toHaveBeenCalledWith(visitId);
@@ -617,11 +641,13 @@ describe('AgentSuggestionsViewer', () => {
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-      fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
       // Verificar que existen los botones de explicación (uno por cada sugerencia)
       const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
@@ -641,11 +667,13 @@ describe('AgentSuggestionsViewer', () => {
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
     
       // Hacer clic en el primer botón de explicación
       const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
@@ -719,11 +747,13 @@ describe('AgentSuggestionsViewer', () => {
           suggestions={mockSuggestions}
           userId={userId}
           patientId={patientId}
+          onSuggestionAccepted={onSuggestionAccepted}
+          onSuggestionRejected={onSuggestionRejected}
         />
       );
 
       // Expandir el componente para mostrar las sugerencias
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+      fireEvent.click(screen.getByTestId('toggle-suggestions'));
     
       // Hacer clic en el primer botón de explicación para expandir
       const explanationButtons = screen.getAllByText('¿Por qué esta sugerencia?');
@@ -739,5 +769,50 @@ describe('AgentSuggestionsViewer', () => {
       // Verificar que ya no aparece la explicación
       expect(screen.queryByTestId('explanation-content')).not.toBeInTheDocument();
     });
+  });
+
+  it('should render suggestions grouped by type when expanded', async () => {
+    render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // ... existing code ...
+  });
+
+  it('should handle empty suggestions array', () => {
+    render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={[]}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // ... existing code ...
+  });
+
+  it('should handle suggestion acceptance', async () => {
+    render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // ... existing code ...
   });
 }); 
