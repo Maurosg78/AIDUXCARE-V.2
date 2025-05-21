@@ -1,35 +1,44 @@
-name: Validate
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'npm'
 
-      - name: Install dependencies
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Run type checking (tsc)
+      - name: Lint (ESLint)
+        run: npx eslint . --ext .ts,.tsx
+
+      - name: Compilar TypeScript
         run: npx tsc --noEmit
 
-      - name: Run tests (vitest)
-        run: npx vitest run
+      - name: Ejecutar tests (Vitest)
+        run: npx vitest run --coverage
 
-      - name: Run ESLint (no fail on warnings)
-        run: |
-          echo "Running ESLint..."
-          npx eslint . --ext .ts,.tsx || echo "Warnings detected, but not failing build."
+      - name: Subir reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
