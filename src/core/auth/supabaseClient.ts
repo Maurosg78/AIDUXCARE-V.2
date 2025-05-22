@@ -14,23 +14,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface HasFrom {
+  from: (table: string) => {
+    select: (query?: string) => {
+      limit: (limit?: number) => Promise<unknown>;
+    };
+  };
+}
+
 /**
  * Función para verificar si un cliente es funcional.
  * En lugar de esperar un tipo exacto, validamos que la función `.from().select()` devuelva una promesa.
  */
-async function testClient(client: any, name: string): Promise<boolean> {
+async function testClient(client: unknown, name: string): Promise<boolean> {
   try {
-    const result = client?.from?.('test')?.select?.('*')?.limit?.(1);
-
-    if (result && typeof result.then === 'function') {
-      await result;
-      console.log(`✅ Cliente ${name} funcionando correctamente`);
-      return true;
+    if (
+      typeof client === 'object' &&
+      client !== null &&
+      'from' in client &&
+      typeof (client as HasFrom).from === 'function'
+    ) {
+      const result = (client as HasFrom).from('test')?.select?.('*')?.limit?.(1);
+      if (result && typeof result.then === 'function') {
+        await result;
+        console.log(`✅ Cliente ${name} funcionando correctamente`);
+        return true;
+      }
     }
   } catch (error) {
     console.error(`❌ Error al probar cliente ${name}:`, error);
   }
-
   return false;
 }
 

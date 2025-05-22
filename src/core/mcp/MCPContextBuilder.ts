@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import { MCPContext, MCPContextSchema } from './schema';
+import { getContextualMemory, getPersistentMemory, getSemanticMemory } from './MCPDataSourceSupabase';
 
 /**
  * Tipo para los datos de memoria utilizados internamente
@@ -42,3 +43,33 @@ export function buildMCPContext(
   
   return validationResult.data;
 } 
+
+/**
+ * Recupera el contexto MCP asociado a una visita clínica.
+ * Usado para poblar el visor MCP en VisitDetailPage.
+ */
+export async function getContextFromVisit(
+  visitId: string,
+  patientId: string
+): Promise<MCPContext> {
+  const [contextual, persistent, semantic] = await Promise.all([
+    getContextualMemory(visitId),
+    getPersistentMemory(patientId),
+    getSemanticMemory()
+  ]);
+
+  return {
+    contextual: {
+      source: 'supabase',
+      data: contextual
+    },
+    persistent: {
+      source: 'supabase',
+      data: persistent
+    },
+    semantic: {
+      source: 'supabase',
+      data: semantic
+    }
+  };
+}
