@@ -1,5 +1,6 @@
 {
   "root": true,
+  "ignorePatterns": ["temp_backup/"],
   "env": {
     "browser": true,
     "es2021": true
