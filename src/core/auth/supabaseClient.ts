@@ -1,6 +1,4 @@
-import { vi } from "vitest";
-// Este archivo simplemente exporta el cliente hardcodeado para desarrollo local
-// NOTA: Este es un bypass temporal para resolver problemas con variables de entorno
+// src/core/auth/supabaseClient.ts
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import hardcodedClient from './hardcodedClient';
 import mockSupabaseClient from './directClient';
@@ -16,52 +14,52 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Función para verificar si un cliente funciona
+/**
+ * Función para verificar si un cliente es funcional.
+ * En lugar de esperar un tipo exacto, validamos que la función `.from().select()` devuelva una promesa.
+ */
 async function testClient(client: any, name: string): Promise<boolean> {
   try {
-    if (!client || typeof client.from !== 'function') return false;
-    await client.from('test').select('*').limit(1);
-    console.log(`✅ Cliente ${name} funcionando correctamente`);
-    return true;
+    const result = client?.from?.('test')?.select?.('*')?.limit?.(1);
+
+    if (result && typeof result.then === 'function') {
+      await result;
+      console.log(`✅ Cliente ${name} funcionando correctamente`);
+      return true;
+    }
   } catch (error) {
     console.error(`❌ Error al probar cliente ${name}:`, error);
-    return false;
   }
+
+  return false;
 }
 
-// Variable para el cliente que finalmente usaremos
-let supabaseClient: unknown = null;
+// Variable global para el cliente elegido
+let supabaseClient: SupabaseClient;
 
-// Probar clientes en orden y usar el primero que funcione
+// Inicializar el cliente dinámicamente
 async function initializeClient() {
-  // Prueba 1: Cliente directo con createClient
   if (await testClient(supabase, 'supabase')) {
     supabaseClient = supabase;
     return;
   }
-  
-  // Prueba 2: Cliente hardcodeado (de hardcodedClient.ts)
+
   if (await testClient(hardcodedClient, 'hardcodedClient')) {
     supabaseClient = hardcodedClient;
     return;
   }
-  
-  // Prueba 3: Cliente mock (de directClient.ts)
+
   if (await testClient(mockSupabaseClient, 'mockSupabaseClient')) {
-    supabaseClient = mockSupabaseClient;
+    supabaseClient = mockSupabaseClient as unknown as SupabaseClient;
     return;
   }
-  
-  console.log('Todos los clientes fallaron. Usando mockSupabaseClient como última opción.');
-  supabaseClient = mockSupabaseClient;
+
+  console.warn('⚠️ Todos los clientes fallaron. Se usará supabase por defecto.');
+  supabaseClient = supabase;
 }
 
-// Inicializar el cliente
+// Inicializar el cliente (sin esperar — no bloquea)
 initializeClient().catch(console.error);
 
-// Devolver un cliente vacío si es null para evitar errores al importarlo
-// Esto será reemplazado por un cliente real una vez que initializeClient complete
-const fallbackClient = createClient(supabaseUrl, supabaseAnonKey);
-
-// Exportar el cliente para usar en la aplicación
-export default (supabaseClient || fallbackClient) as SupabaseClient; 
+// Fallback: exporta supabase por si la inicialización no ha terminado aún
+export default supabase;
