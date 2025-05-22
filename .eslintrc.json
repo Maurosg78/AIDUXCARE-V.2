@@ -22,9 +22,22 @@
   "rules": {
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "error",
     "jsx-a11y/aria-props": "error",
     "jsx-a11y/role-has-required-aria-props": "error"
   },
+  "overrides": [
+    {
+      "files": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "scripts/**"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ],
   "settings": {
     "react": {
       "version": "detect"
