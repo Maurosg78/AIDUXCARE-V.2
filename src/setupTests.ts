@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom';
 import { vi, beforeAll, afterEach } from 'vitest';
 
+// Configurar jest globalmente
+global.jest = vi as unknown as typeof jest;
+
 // Mock completo para las variables de entorno
 vi.mock('./config/env', () => ({
   SUPABASE_URL: 'https://mock-supabase-url.co',

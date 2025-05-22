@@ -3,6 +3,8 @@ import { AgentSuggestion, SuggestionType, SuggestionField } from '@/types/agent'
 import AgentSuggestionExplainer from './AgentSuggestionExplainer';
 import AgentSuggestionFeedbackActions from './AgentSuggestionFeedbackActions';
 import { trackMetric } from '@/services/UsageAnalyticsService';
+import { EMRFormService } from '@/core/services/EMRFormService';
+import { AuditLogger } from '@/core/audit/AuditLogger';
 
 /**
  * Props para el componente AgentSuggestionsViewer
@@ -77,19 +79,44 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
     }
   };
 
-  const handleSuggestionAccepted = (suggestion: AgentSuggestion) => {
-    trackMetric(
-      'suggestions_integrated',
-      userId,
-      visitId,
-      1,
-      {
-        suggestion_id: suggestion.id,
-        suggestion_type: suggestion.type,
-        suggestion_field: suggestion.field
+  const handleSuggestionAccepted = async (suggestion: AgentSuggestion) => {
+    try {
+      const emrSection = EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type as 'recommendation' | 'warning' | 'info');
+      const success = await EMRFormService.insertSuggestedContent(
+        visitId,
+        emrSection,
+        suggestion.content,
+        'agent',
+        suggestion.id
+      );
+
+      if (success) {
+        setIntegratedSuggestions(prev => new Set([...prev, suggestion.id]));
+        trackMetric(
+          'suggestions_integrated',
+          userId,
+          visitId,
+          1,
+          {
+            suggestion_id: suggestion.id,
+            suggestion_type: suggestion.type,
+            suggestion_field: suggestion.field
+          }
+        );
+        AuditLogger.log('suggestion_integrated', {
+          userId,
+          visitId,
+          patientId,
+          section: emrSection,
+          content: suggestion.content,
+          suggestionId: suggestion.id
+        });
+        onSuggestionAccepted(suggestion);
+        onIntegrateSuggestions?.(1);
       }
-    );
-    onSuggestionAccepted(suggestion);
+    } catch (error) {
+      console.error('Error al integrar sugerencia:', error);
+    }
   };
 
   return (
@@ -123,6 +150,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                         ? 'bg-blue-50 border-blue-300' 
                         : getTypeColorClass(suggestion.type)
                     }`}
+                    data-testid={`suggestion-${suggestion.id}`}
                   >
                     <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
                     <p className="text-xs text-gray-500">Campo: {suggestion.field}</p>

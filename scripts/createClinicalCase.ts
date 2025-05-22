@@ -89,7 +89,7 @@ async function main() {
       .single();
     
     let patientUserId;
-    let patientEmail = PATIENT_EMAIL;
+    const patientEmail = PATIENT_EMAIL;
     
     if (patientUserError && patientUserError.code !== 'PGRST116') {
       throw new Error(`Error al buscar el usuario paciente: ${patientUserError.message}`);

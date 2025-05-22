@@ -31,6 +31,10 @@ export interface AuditLogEntry {
     blocks_count?: number;
     suggestions_count?: number;
     description?: string;
+    block_type?: string;
+    block_content?: string;
+    suggestion_content?: string;
+    emr_section?: string;
   };
 }
 

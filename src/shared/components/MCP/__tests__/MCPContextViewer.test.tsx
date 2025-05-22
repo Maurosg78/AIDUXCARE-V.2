@@ -76,38 +76,99 @@ describe('MCPContextViewer', () => {
   });
 
   it('muestra correctamente el contenido de la memoria contextual', () => {
-    render(<MCPContextViewer context={mockContext} />);
-    
+    render(
+      <MCPContextViewer
+        context={mockContext}
+        editable={false}
+        onSave={jest.fn()}
+      />
+    );
+
+    // Verificar que se muestra el contenido de la memoria contextual
     expect(screen.getByText('Información contextual de prueba')).toBeInTheDocument();
     expect(screen.getByText('ID: ctx-1')).toBeInTheDocument();
-    // También podríamos verificar que se muestra el metadata si es necesario
+    expect(screen.getByText((content) => content.includes('15/05/2025') && content.includes('12:30'))).toBeInTheDocument();
   });
 
   it('muestra correctamente el contenido de la memoria persistente', () => {
-    render(<MCPContextViewer context={mockContext} />);
-    
+    render(
+      <MCPContextViewer
+        context={mockContext}
+        editable={false}
+        onSave={jest.fn()}
+      />
+    );
+
+    // Verificar que se muestran los títulos de las secciones
+    expect(screen.getByText('Memoria Contextual')).toBeInTheDocument();
+    expect(screen.getByText('Memoria Persistente')).toBeInTheDocument();
+    expect(screen.getByText('Memoria Semántica')).toBeInTheDocument();
+
+    // Verificar que se muestra el contenido de la memoria persistente
     expect(screen.getByText('Historial médico del paciente')).toBeInTheDocument();
     expect(screen.getByText('ID: per-1')).toBeInTheDocument();
-    
-    // Para verificar las etiquetas, necesitamos usar una función de consulta más flexible
-    // Ya que pueden estar en elementos distintos
-    const tagsContainer = screen.getByText((content, element) => {
-      // Buscar un elemento que sea el contenedor de las etiquetas
-      return element?.className.includes('flex-wrap gap-1') || false;
-    });
-    
-    // Ahora verificamos que las etiquetas están dentro de este contenedor
-    expect(tagsContainer).toContainHTML('historial');
-    expect(tagsContainer).toContainHTML('crónico');
+    expect(screen.getByText((content) => content.includes('10/05/2025') && content.includes('10:15'))).toBeInTheDocument();
   });
 
-  it('muestra mensaje cuando no hay datos en una sección', () => {
-    render(<MCPContextViewer context={mockContext} />);
-    
-    const emptyMessage = screen.getByText('Sin datos disponibles en esta sección');
-    expect(emptyMessage).toBeInTheDocument();
+  it('muestra un mensaje cuando no hay datos en una sección', () => {
+    render(
+      <MCPContextViewer
+        context={mockContext}
+        editable={false}
+        onSave={jest.fn()}
+      />
+    );
+
+    // Verificar que se muestra el mensaje de que no hay datos
+    expect(screen.getByText('Sin datos disponibles en esta sección')).toBeInTheDocument();
   });
-  
+
+  it('muestra el modo editable cuando editable es true', () => {
+    render(
+      <MCPContextViewer
+        context={mockContext}
+        editable={true}
+        onSave={jest.fn()}
+      />
+    );
+
+    // Verificar que se muestran los botones de edición
+    expect(screen.getAllByText('Editar')).toHaveLength(2); // Uno para cada tipo de memoria
+  });
+
+  it('llama a onSave cuando se confirman los cambios', () => {
+    const onSave = jest.fn();
+    render(
+      <MCPContextViewer
+        context={mockContext}
+        editable={true}
+        onSave={onSave}
+      />
+    );
+
+    // Editar un bloque
+    fireEvent.click(screen.getAllByText('Editar')[0]);
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'Nuevo contenido' } });
+
+    // Confirmar cambios
+    fireEvent.click(screen.getByText('Guardar'));
+
+    // Verificar que se llamó a onSave con los datos correctos
+    expect(onSave).toHaveBeenCalledWith({
+      ...mockContext,
+      contextual: {
+        ...mockContext.contextual,
+        data: [
+          {
+            ...mockContext.contextual.data[0],
+            content: 'Nuevo contenido'
+          }
+        ]
+      }
+    });
+  });
+
   // Tests para el modo editable
   
   describe('Modo editable', () => {

@@ -141,6 +141,13 @@ const PatientPortalPage: React.FC = () => {
                   <div 
                     key={visit.id}
                     onClick={() => setSelectedVisitId(selectedVisitId === visit.id ? null : visit.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedVisitId(selectedVisitId === visit.id ? null : visit.id);
+                      }
+                    }}
                     className={`border rounded-md p-4 cursor-pointer transition ${
                       selectedVisitId === visit.id ? 'border-softCoral bg-softCoral/5' : 'border-gray-200 hover:border-softCoral'
                     }`}

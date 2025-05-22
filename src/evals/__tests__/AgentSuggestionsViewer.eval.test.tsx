@@ -97,13 +97,13 @@ describe('AgentSuggestionsViewer - Evaluación', () => {
     fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
     // Verificar categorías usando within
-    const recommendationsSection = screen.getByTestId('recommendations-section');
-    const warningsSection = screen.getByTestId('warnings-section');
+    const recommendationSection = screen.getByTestId('recommendation-section');
+    const warningSection = screen.getByTestId('warning-section');
     const infoSection = screen.getByTestId('info-section');
 
-    expect(within(recommendationsSection).getByText(/Recomendaciones/i)).toBeInTheDocument();
-    expect(within(warningsSection).getByText(/Advertencias/i)).toBeInTheDocument();
-    expect(within(infoSection).getByText(/Información/i)).toBeInTheDocument();
+    expect(within(recommendationSection).getByText(/radiografía de tórax/i)).toBeInTheDocument();
+    expect(within(warningSection).getByText(/alergias a medicamentos/i)).toBeInTheDocument();
+    expect(within(infoSection).getByText(/Última visita/i)).toBeInTheDocument();
 
     // Verificar contenidos usando getByText con opciones avanzadas
     expect(screen.getByText((content) => content.includes('radiografía de tórax'))).toBeInTheDocument();
@@ -126,18 +126,18 @@ describe('AgentSuggestionsViewer - Evaluación', () => {
     );
 
     // Verificar que inicialmente está colapsado
-    expect(screen.queryByTestId('recommendations-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('recommendation-section')).not.toBeInTheDocument();
 
     // Expandir el componente
     fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
     // Verificar que se expandió
-    expect(screen.getByTestId('recommendations-section')).toBeInTheDocument();
+    expect(screen.getByTestId('recommendation-section')).toBeInTheDocument();
 
     // Colapsar el componente
     fireEvent.click(screen.getByTestId('toggle-suggestions'));
 
     // Verificar que se colapsó
-    expect(screen.queryByTestId('recommendations-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('recommendation-section')).not.toBeInTheDocument();
   });
 }); 

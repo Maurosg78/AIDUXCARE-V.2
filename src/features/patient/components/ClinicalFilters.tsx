@@ -93,15 +93,17 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
 
         {/* Resumen IA */}
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="hasSummary"
-            checked={filters.hasSummary}
-            onChange={handleSummaryToggle}
-            className="h-4 w-4 text-blue-600 rounded border-gray-300"
-          />
-          <label htmlFor="hasSummary" className="ml-2 text-sm text-gray-700">
-            Solo visitas con resumen clínico generado
+          <label htmlFor="hasSummary" className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="hasSummary"
+              checked={filters.hasSummary}
+              onChange={handleSummaryToggle}
+              className="h-4 w-4 text-blue-600 rounded border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">
+              Solo visitas con resumen clínico generado
+            </span>
           </label>
         </div>
 

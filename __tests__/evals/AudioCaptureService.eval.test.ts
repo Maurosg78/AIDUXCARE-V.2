@@ -259,7 +259,6 @@ describe('EVAL: Sistema de Escucha Activa Clínica', () => {
       
       // Mock para el callback de aprobación
       const mockOnApproveSegment = vi.fn();
-      const mockOnClose = vi.fn();
       
       // Importar screen de nuestro mock, que ya tiene elementos definidos
       const { screen } = await import('@testing-library/react');

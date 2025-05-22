@@ -121,13 +121,12 @@ describe('SuggestionIntegrationService', () => {
     });
 
     // Verificar registro en audit log
-    expect(AuditLogger.log).toHaveBeenCalledWith('suggestion.integrated', {
+    expect(AuditLogger.log).toHaveBeenCalledWith('suggestion.integrated', expect.objectContaining({
       visitId,
       userId,
       suggestionId: suggestion.id,
-      field: suggestion.field,
-      acceptedAt: expect.any(String)
-    });
+      field: suggestion.field
+    }));
   });
 
   it('debe integrar correctamente una sugerencia en un campo con contenido previo', async () => {

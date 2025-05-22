@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState, useEffect } from 'react';
 import { AuditLogEntry, MCPUpdateAuditEntry, SuggestionIntegrationAuditEntry, AuditLogger } from '@/core/audit/AuditLogger';
 
@@ -14,6 +13,12 @@ interface LogDetails {
   blocks_count?: number;
   suggestions_count?: number;
   description?: string;
+  content?: string;
+  section?: string;
+  block_type?: string;
+  block_content?: string;
+  suggestion_content?: string;
+  emr_section?: string;
 }
 
 /**
@@ -156,19 +161,47 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
 
   // Función para renderizar los detalles del log
   const renderLogDetails = (log: AuditLogEntry) => {
-    if (isMCPUpdateEntry(log) || isSuggestionIntegrationEntry(log)) {
-      return null;
+    if (isMCPUpdateEntry(log)) {
+      const details = log.details as LogDetails;
+      return (
+        <div className="mt-2 text-sm">
+          <p className="text-gray-600">
+            <span className="font-medium">Tipo de Bloque:</span> {getBlockTypeText(details.block_type || '')}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Contenido:</span> {truncateContent(details.block_content || '')}
+          </p>
+        </div>
+      );
     }
+
+    if (isSuggestionIntegrationEntry(log)) {
+      const details = log.details as LogDetails;
+      return (
+        <div className="mt-2 text-sm">
+          <p className="text-gray-600">
+            <span className="font-medium">Sección:</span> {details.emr_section || ''}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Contenido:</span> {truncateContent(details.suggestion_content || '')}
+          </p>
+        </div>
+      );
+    }
+
     if (!log.details) {
       return null;
     }
+
     const details: LogDetails = log.details;
     return (
-      <div>
+      <div className="mt-2 text-sm">
         {typeof details.description === 'string' ? (
-          <p>{details.description}</p>
+          <p className="text-gray-600">{details.description}</p>
         ) : (
-          <pre className="text-xs overflow-auto max-h-24">{JSON.stringify(details, null, 2)}</pre>
+          <pre className="text-xs overflow-auto max-h-24 bg-gray-50 p-2 rounded">
+            {JSON.stringify(details, null, 2)}
+          </pre>
         )}
       </div>
     );
@@ -183,6 +216,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="px-3 py-1 text-sm font-medium rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100"
+          data-testid="toggle-audit-logs"
         >
           {isExpanded ? 'Ocultar historial' : 'Mostrar historial'}
         </button>
@@ -197,122 +231,43 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
           ) : error ? (
             <div className="text-center py-4">
               <p className="text-red-600">{error}</p>
-              <button
-                onClick={() => {
-                  if (fromSupabase) {
-                    setLoading(true);
-                    AuditLogger.getAuditLogsFromSupabase(visitId)
-                      .then(setSupabaseLogs)
-                      .catch(err => {
-                        console.error('Error retrying logs fetch:', err);
-                        setError('Error al cargar los logs. Intente nuevamente.');
-                      })
-                      .finally(() => setLoading(false));
-                  }
-                }}
-                className="mt-2 px-3 py-1 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Reintentar
-              </button>
             </div>
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-gray-600">No hay logs de auditoría para esta visita.</p>
+              <p className="text-gray-600">No hay registros de actividad para mostrar</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fecha y Hora
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Usuario
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th scope="col" className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fuente
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Detalles
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredLogs.map((log, index) => {
-                    const sourceBadge = getSourceBadge(log.source || 'manual');
-                    
-                    return (
-                      <tr key={`log-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
-                          {formatDateTime(log.timestamp)}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
-                          {log.user_id}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700">
-                          {getEventTypeDescription(log)}
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${sourceBadge.color}`}>
-                            {sourceBadge.label}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-700">
-                          {isMCPUpdateEntry(log) && (
-                            <div>
-                              <p><strong>Tipo de bloque:</strong> {getBlockTypeText(log.block_type || '')}</p>
-                              <p><strong>Contenido anterior:</strong> {truncateContent(log.old_content || '')}</p>
-                              <p><strong>Contenido nuevo:</strong> {truncateContent(log.new_content || '')}</p>
-                            </div>
-                          )}
-                          {isSuggestionIntegrationEntry(log) && (
-                            <div>
-                              <p><strong>Tipo:</strong> {log.suggestion_type}</p>
-                              <p><strong>Contenido:</strong> {truncateContent(log.suggestion_content || '')}</p>
-                              <p><strong>Sección EMR:</strong> {log.emr_section}</p>
-                            </div>
-                          )}
-                          {renderLogDetails(log)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {filteredLogs.map((log, index) => (
+                <div 
+                  key={`${log.event_type}-${log.timestamp}-${index}`}
+                  className="border rounded-md p-3 hover:bg-gray-50"
+                  data-testid={`audit-log-${index}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        {getEventTypeDescription(log)}
+                      </span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${getSourceBadge(log.source || 'manual').color}`}>
+                        {getSourceBadge(log.source || 'manual').label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatDateTime(log.timestamp)}
+                    </span>
+                  </div>
+                  {renderLogDetails(log)}
+                </div>
+              ))}
             </div>
           )}
-          
-          <div className="mt-4 text-right">
-            <p className="text-xs text-gray-500">
-              Total de registros: {filteredLogs.length}
-            </p>
-            {fromSupabase && (
-              <button 
-                onClick={() => {
-                  setLoading(true);
-                  AuditLogger.getAuditLogsFromSupabase(visitId)
-                    .then(setSupabaseLogs)
-                    .catch(err => {
-                      console.error('Error refreshing logs:', err);
-                      setError('Error al actualizar los logs.');
-                    })
-                    .finally(() => setLoading(false));
-                }}
-                className="ml-2 px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200"
-                disabled={loading}
-              >
-                Actualizar
-              </button>
-            )}
-          </div>
         </div>
       )}
     </div>
   );
 };
+
+AuditLogViewer.displayName = 'AuditLogViewer';
 
 export default AuditLogViewer; 
