@@ -1,6 +1,83 @@
+/* Importación de fuentes */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: theme('fontFamily.sans');
+    color: theme('colors.primary.DEFAULT');
+    background-color: theme('colors.boneWhite');
+  }
+
+  body {
+    @apply antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: theme('fontFamily.display');
+  }
+
+  code, pre {
+    font-family: theme('fontFamily.mono');
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply flex flex-col min-h-screen;
+  }
+
+  .header {
+    @apply bg-primary text-white py-4 px-8 text-center shadow-md;
+  }
+
+  .main-content {
+    @apply flex-1 p-8 flex justify-center;
+  }
+
+  .footer {
+    @apply bg-primary text-white p-4 text-center text-sm;
+  }
+
+  .page {
+    @apply bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl text-center;
+  }
+
+  .page h1 {
+    @apply text-primary mb-4;
+  }
+
+  .links {
+    @apply mt-8;
+  }
+
+  .button {
+    @apply inline-block px-5 py-2.5 bg-primary text-white no-underline rounded font-medium transition-colors duration-300;
+  }
+
+  .button:hover {
+    @apply bg-primary-dark;
+  }
+
+  .success {
+    @apply text-success font-bold;
+  }
+
+  .error {
+    @apply text-error font-bold;
+  }
+
+  .connection-status {
+    @apply my-8 p-6 bg-neutral-light rounded-lg border border-neutral;
+  }
+
+  .connection-status h3 {
+    @apply mb-4 text-primary;
+  }
+}
 
 * {
   box-sizing: border-box;
