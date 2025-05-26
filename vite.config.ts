@@ -17,7 +17,8 @@ export default defineConfig({
   // Mejorar la configuración de dependencias
   optimizeDeps: {
     include: [
-      '@tanstack/react-virtual'
+      '@tanstack/react-virtual',
+      '@supabase/supabase-js'
     ],
     esbuildOptions: {
       define: {

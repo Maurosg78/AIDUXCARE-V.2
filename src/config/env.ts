@@ -68,4 +68,4 @@ export const config = {
   }
 };
 
-export default config; console.log("🔍 VITE_SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
+export default config;

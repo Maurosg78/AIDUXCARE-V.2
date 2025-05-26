@@ -37,11 +37,11 @@ describe('RegisterPage Component', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByRole('heading', { name: 'Regístrate' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Registro' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Correo electrónico')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Nombre completo')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Contraseña')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrarme' })).toBeInTheDocument();
   });
 
   it('muestra errores de validación cuando faltan campos', async () => {
@@ -50,7 +50,7 @@ describe('RegisterPage Component', () => {
         <RegisterPage />
       </BrowserRouter>
     );
-    fireEvent.submit(screen.getByRole('form'));
+    fireEvent.submit(screen.getByTestId('register-form'));
 
     await waitFor(() => {
       expect(screen.getByText('Por favor, completa todos los campos')).toBeInTheDocument();

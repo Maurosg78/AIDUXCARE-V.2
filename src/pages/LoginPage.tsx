@@ -106,6 +106,7 @@ const LoginPage = () => {
         <form
           onSubmit={handleLogin}
           className="space-y-6"
+          data-testid="login-form"
         >
           <div className="space-y-4 rounded-md shadow-sm">
             <div>

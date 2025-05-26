@@ -2,43 +2,39 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main ]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
+      # Inyecta aquí tus secrets de GitHub
+      SUPABASE_URL:                \${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY:           \${{ secrets.SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_URL:           \${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY:      \${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL:    \${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY:\${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # añade aquí el resto de claves (Langfuse, HuggingFace, etc.)
     steps:
-      - name: Checkout código
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Configurar Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: 'npm'
+          node-version: '18'
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: npm ci
 
-      - name: Lint (ESLint)
-        run: npx eslint . --ext .ts,.tsx
+      - name: Lint
+        run: npm run lint
 
-      - name: Compilar TypeScript
-        run: npx tsc --noEmit
+      - name: Build & Type-check
+        run: npm run build
 
-      - name: Ejecutar tests (Vitest)
-        run: npx vitest run --coverage
-
-      - name: Subir reporte de cobertura
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
+      - name: Run tests
+        run: npm test

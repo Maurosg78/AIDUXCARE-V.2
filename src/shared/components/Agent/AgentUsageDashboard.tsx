@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState, useEffect } from 'react';
 import { getMetricsSummaryByVisit } from '../../../services/UsageAnalyticsService';
 

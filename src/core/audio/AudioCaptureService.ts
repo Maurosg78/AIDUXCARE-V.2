@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 /**
  * Tipo para el actor en la transcripción
  */

@@ -26,6 +26,10 @@ export async function sendToLLM(
   context: AgentContext,
   provider: LLMProvider = 'openai'
 ): Promise<LLMResponse> {
+  // Validar proveedor soportado
+  if (provider !== 'openai' && provider !== 'anthropic' && provider !== 'cohere') {
+    return Promise.reject(new Error('Unsupported LLM provider'));
+  }
   // Implementación simulada para desarrollo
   return {
     suggestions: [

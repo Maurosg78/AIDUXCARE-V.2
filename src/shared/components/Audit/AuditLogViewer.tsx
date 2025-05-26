@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AuditLogEntry, MCPUpdateAuditEntry, SuggestionIntegrationAuditEntry, AuditLogger } from '@/core/audit/AuditLogger';
+import React, { useState } from 'react';
+import { AuditLogEntry, MCPUpdateAuditEntry, SuggestionIntegrationAuditEntry } from '@/core/audit/AuditLogger';
 
 interface AuditLogViewerProps {
   visitId: string;
@@ -37,36 +37,9 @@ const isSuggestionIntegrationEntry = (log: AuditLogEntry): log is AuditLogEntry 
 
 const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fromSupabase = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [supabaseLogs, setSupabaseLogs] = useState<AuditLogEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Efecto para cargar logs desde Supabase si es necesario
-  useEffect(() => {
-    const fetchLogsFromSupabase = async () => {
-      if (!fromSupabase) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const fetchedLogs = await AuditLogger.getAuditLogsFromSupabase(visitId);
-        setSupabaseLogs(fetchedLogs);
-      } catch (err) {
-        console.error('Error fetching audit logs from Supabase:', err);
-        setError('Error al cargar los logs de auditoría desde Supabase');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (fromSupabase && isExpanded) {
-      fetchLogsFromSupabase();
-    }
-  }, [fromSupabase, visitId, isExpanded]);
 
   // Usar logs de Supabase o los proporcionados vía props
-  const allLogs: AuditLogEntry[] = fromSupabase ? supabaseLogs : logs;
+  const allLogs: AuditLogEntry[] = logs;
 
   // Filtrar solo los logs relacionados con esta visita
   const filteredLogs = allLogs.filter((log: AuditLogEntry) => {
@@ -224,15 +197,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
 
       {isExpanded && (
         <div className="p-4">
-          {loading ? (
-            <div className="text-center py-4">
-              <p className="text-gray-600">Cargando logs de auditoría...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-4">
-              <p className="text-red-600">{error}</p>
-            </div>
-          ) : filteredLogs.length === 0 ? (
+          {filteredLogs.length === 0 ? (
             <div className="text-center py-4">
               <p className="text-gray-600">No hay registros de actividad para mostrar</p>
             </div>

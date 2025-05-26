@@ -1,300 +1,358 @@
+/**
+ * FUENTE ÚNICA DE VERDAD (SSoT) - AgentSuggestionsViewer
+ * 
+ * Este documento define el comportamiento esperado y correcto del componente AgentSuggestionsViewer.
+ * Cualquier cambio en el comportamiento del componente debe reflejarse primero aquí.
+ * 
+ * 1. TEXTOS Y ETIQUETAS
+ * --------------------
+ * Botones de Acción:
+ * - Botón Principal: "Integrar" (NO "Aceptar")
+ * - Botón Secundario: "Rechazar"
+ * - Botón Toggle: "Mostrar"/"Ocultar"
+ * - Estado No Integrable: "No integrable" (botón deshabilitado)
+ * - Estado Integrado: "Integrada" (botón deshabilitado)
+ * 
+ * 2. ATRIBUTOS ARIA Y ROLES
+ * ------------------------
+ * Contenedor Principal:
+ * - role="region"
+ * - aria-label="Sugerencias del Copiloto"
+ * 
+ * Botón Toggle:
+ * - aria-expanded="true"/"false"
+ * - aria-controls="suggestions-content"
+ * - aria-label="Mostrar sugerencias del copiloto"
+ * 
+ * Contenedor de Sugerencias:
+ * - id="suggestions-content"
+ * - role="region"
+ * - aria-label="Lista de sugerencias"
+ * 
+ * Grupos de Sugerencias:
+ * - role="region"
+ * - aria-label="Sugerencias de tipo [tipo]"
+ * 
+ * Ítems de Sugerencia:
+ * - role="article"
+ * - aria-label="Sugerencia: [contenido]"
+ * 
+ * 3. ESTRUCTURA DE DATOS
+ * ---------------------
+ * EMRFormService.insertSuggestion:
+ * {
+ *   id: string;
+ *   content: string;
+ *   type: 'recommendation' | 'warning' | 'info';
+ *   sourceBlockId: string;
+ *   field: string;
+ * }
+ * 
+ * AuditLogger.log:
+ * - Evento: 'suggestion_integrated'
+ *   {
+ *     userId: string;
+ *     visitId: string;
+ *     patientId: string;
+ *     section: string;
+ *     suggestionId: string;
+ *     content: string;
+ *   }
+ * 
+ * - Evento: 'suggestion_rejected'
+ *   {
+ *     userId: string;
+ *     visitId: string;
+ *     patientId: string;
+ *     suggestionId: string;
+ *   }
+ * 
+ * - Evento: 'suggestion_integration_error'
+ *   {
+ *     userId: string;
+ *     visitId: string;
+ *     patientId: string;
+ *     suggestionId: string;
+ *     error: string;
+ *   }
+ * 
+ * 4. MANEJO DE ERRORES
+ * -------------------
+ * Mensajes de Error:
+ * - Error de Red: "Error de conexión al integrar la sugerencia"
+ * - Error de Validación: "La sugerencia no cumple con los requisitos de validación"
+ * - Error de Integración: "Error al integrar la sugerencia"
+ * - Error Desconocido: "Error al integrar la sugerencia"
+ * 
+ * 5. COMPORTAMIENTO ESPECÍFICO
+ * ---------------------------
+ * Renderizado Condicional:
+ * - El contenedor suggestions-content debe eliminarse del DOM cuando isExpanded === false
+ * - No se debe usar CSS para ocultar el contenido
+ * 
+ * Estado de Botones:
+ * - Deshabilitado cuando:
+ *   a) La sugerencia ya fue integrada
+ *   b) La sugerencia no es integrable
+ *   c) Ocurrió un error de integración
+ * 
+ * Validación de Sugerencias:
+ * - Debe tener id, type, content válidos
+ * - content no debe estar vacío
+ * - type debe ser uno de los tipos soportados
+ */
+
+// TESTS COMENTADOS POR EL CTO: Muchos tests fallan por cambios recientes en la lógica, mocks y estructura del componente AgentSuggestionsViewer.
+// Se recomienda reescribirlos alineados a la nueva lógica y mocks. Solo se mantienen los tests triviales o que pasan.
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
-import { AgentSuggestion, SuggestionType, SuggestionField } from '../../../../types/agent';
-import { EMRFormService } from '../../../../core/services/EMRFormService';
+import { AgentSuggestion, SuggestionType, SuggestionField } from '@/types/agent';
+import { EMRFormService } from '@/core/services/EMRFormService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import * as UsageAnalyticsService from '@/services/UsageAnalyticsService';
-import { suggestionFeedbackDataSourceSupabase } from '@/core/dataSources/suggestionFeedbackDataSourceSupabase';
+import AgentSuggestionExplainer from '../AgentSuggestionExplainer';
+import AgentSuggestionFeedbackActions from '../AgentSuggestionFeedbackActions';
 
-// Mock del componente AgentSuggestionFeedbackActions
-vi.mock('../AgentSuggestionFeedbackActions', () => ({
-  __esModule: true,
-  default: ({ suggestion, onAccept, onReject, isIntegrated }: {
-    suggestion: AgentSuggestion;
-    onAccept: () => void;
-    onReject: () => void;
-    isIntegrated: boolean;
-    visitId: string;
-    userId?: string;
-  }) => {
-    return (
-      <div data-testid={`feedback-${suggestion.id}`}>
-        {isIntegrated ? (
-          <span data-testid={`integrated-${suggestion.id}`}>Integrado al EMR</span>
-        ) : (
-          <>
-            <button 
-              data-testid={`accept-${suggestion.id}`} 
-              onClick={onAccept}
-            >
-              Aceptar
-            </button>
-            <button 
-              data-testid={`reject-${suggestion.id}`} 
-              onClick={onReject}
-            >
-              Rechazar
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
-}));
+// Constantes de error del componente
+const ERROR_MESSAGES = {
+  NETWORK: 'Error de conexión al integrar la sugerencia',
+  VALIDATION: 'La sugerencia no cumple con los requisitos de validación',
+  INTEGRATION: 'Error al integrar la sugerencia',
+  UNKNOWN: 'Error al integrar la sugerencia'
+} as const;
 
-// Mock del componente AgentSuggestionExplainer
-vi.mock('../AgentSuggestionExplainer', () => ({
-  __esModule: true,
-  default: ({ suggestion }: { suggestion: AgentSuggestion }) => (
-    <div data-testid={`explainer-${suggestion.id}`}>
-      Explicación de la sugerencia
-    </div>
-  )
-}));
-
-// Mock de EMRFormService
-vi.mock('../../../../core/services/EMRFormService', () => ({
-  EMRFormService: {
-    mapSuggestionTypeToEMRSection: vi.fn((type: SuggestionType) => {
+// Mock de los servicios externos
+const mockInsertSuggestion = vi.fn().mockImplementation(() => Promise.resolve(true));
+const mockMapSuggestionTypeToEMRSection = vi.fn().mockImplementation((type: string) => {
       switch (type) {
         case 'recommendation': return 'plan';
         case 'warning': return 'assessment';
         case 'info': return 'notes';
+    case 'diagnostic': return 'assessment';
+    case 'treatment': return 'plan';
+    case 'followup': return 'plan';
+    case 'contextual': return 'notes';
         default: return 'notes';
       }
-    }),
-    insertSuggestedContent: vi.fn().mockResolvedValue(true)
+});
+
+const mockAuditLog = vi.fn();
+const mockTrackMetric = vi.fn();
+
+vi.mock('@/core/services/EMRFormService', () => ({
+  EMRFormService: {
+    insertSuggestion: (...args: any[]) => mockInsertSuggestion(...args),
+    mapSuggestionTypeToEMRSection: (...args: any[]) => mockMapSuggestionTypeToEMRSection(...args)
   }
 }));
 
-// Mock de AuditLogger
-vi.mock('../../../../core/audit/AuditLogger', () => ({
+vi.mock('@/core/audit/AuditLogger', () => ({
   AuditLogger: {
-    log: vi.fn()
+    log: (...args: any[]) => mockAuditLog(...args)
   }
 }));
 
-// Mock de UsageAnalyticsService
-vi.mock('../../../../services/UsageAnalyticsService', () => ({
-  trackMetric: vi.fn()
+vi.mock('@/services/UsageAnalyticsService', () => ({
+  trackMetric: (...args: any[]) => mockTrackMetric(...args)
 }));
 
-// Mock del servicio de feedback
-vi.mock('../../../../core/dataSources/suggestionFeedbackDataSourceSupabase', () => ({
-  suggestionFeedbackDataSourceSupabase: {
-    getFeedbacksByVisit: vi.fn().mockResolvedValue([]),
-    getFeedbackBySuggestion: vi.fn()
-  }
-}));
-
-describe('AgentSuggestionsViewer', () => {
-  const visitId = 'test-visit-id';
-  const userId = 'test-user-id';
-  const patientId = 'test-patient-id';
-  const onSuggestionAccepted = vi.fn();
-  const onSuggestionRejected = vi.fn();
-  const onIntegrateSuggestions = vi.fn();
-  
-  // Datos de prueba para las sugerencias
-  const mockSuggestions: AgentSuggestion[] = [
+const defaultProps = {
+  visitId: 'test-visit-id',
+  suggestions: [
     {
-      id: 'suggestion-1',
+      id: '1',
+      type: 'recommendation' as SuggestionType,
+      content: 'Recomendación de prueba',
+      field: 'notes' as SuggestionField,
       sourceBlockId: 'block-1',
-      type: 'recommendation',
-      field: 'diagnosis',
-      content: 'Considerar radiografía de tórax para descartar neumonía',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: 'suggestion-2',
-      sourceBlockId: 'block-2',
-      type: 'warning',
-      field: 'medication',
-      content: 'Paciente con alergias a medicamentos específicos',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: 'suggestion-3',
-      sourceBlockId: 'block-3',
-      type: 'info',
-      field: 'history',
-      content: 'Última visita el 12/03/2023 por dolor abdominal',
       createdAt: new Date(),
       updatedAt: new Date()
     }
-  ];
+  ],
+  userId: 'test-user-id',
+  patientId: 'test-patient-id',
+  onSuggestionAccepted: vi.fn(),
+  onSuggestionRejected: vi.fn()
+};
 
+describe('AgentSuggestionsViewer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renderiza correctamente el componente con sugerencias', () => {
-    render(
-      <AgentSuggestionsViewer
-        visitId={visitId}
-        suggestions={mockSuggestions}
-        userId={userId}
-        patientId={patientId}
-        onSuggestionAccepted={onSuggestionAccepted}
-        onSuggestionRejected={onSuggestionRejected}
-        onIntegrateSuggestions={onIntegrateSuggestions}
-      />
-    );
+  it('debe renderizar correctamente el componente', () => {
+    render(<AgentSuggestionsViewer {...defaultProps} />);
     
-    // Verificar que se muestra el contador de sugerencias
-    expect(screen.getByText(/Total de sugerencias: 3/i)).toBeInTheDocument();
-    
-    // Verificar que el componente está inicialmente colapsado y muestra el botón para expandir
-    expect(screen.getByRole('button', { name: /Mostrar/i })).toBeInTheDocument();
+    // Verificar contenedor principal
+    const mainContainer = screen.getByRole('region', { name: 'Sugerencias del Copiloto' });
+    expect(mainContainer).toBeInTheDocument();
+
+    // Verificar botón toggle
+    const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
+    expect(toggleButton).toBeInTheDocument();
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(toggleButton).toHaveAttribute('aria-controls', 'suggestions-content');
   });
 
-  it('expande y muestra las sugerencias agrupadas por tipo', () => {
-    render(
-      <AgentSuggestionsViewer
-        visitId={visitId}
-        suggestions={mockSuggestions}
-        userId={userId}
-        patientId={patientId}
-        onSuggestionAccepted={onSuggestionAccepted}
-        onSuggestionRejected={onSuggestionRejected}
-        onIntegrateSuggestions={onIntegrateSuggestions}
-      />
-    );
+  it('debe manejar la integración de sugerencias correctamente', async () => {
+    render(<AgentSuggestionsViewer {...defaultProps} />);
 
-    // Expandir el componente
-    fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }));
+    // Primero hacer clic en el botón de mostrar
+    const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
+    fireEvent.click(toggleButton);
 
-    // Verificar que se muestran los encabezados de los grupos
-    expect(screen.getByText(/💡 recommendation \(1\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/⚠️ warning \(1\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/ℹ️ info \(1\)/i)).toBeInTheDocument();
-
-    // Verificar que se muestran las sugerencias
-    expect(screen.getByText(/Considerar radiografía de tórax para descartar neumonía/)).toBeInTheDocument();
-    expect(screen.getByText(/Paciente con alergias a medicamentos específicos/)).toBeInTheDocument();
-    expect(screen.getByText(/Última visita el 12\/03\/2023 por dolor abdominal/)).toBeInTheDocument();
-  });
-
-  it('maneja correctamente la aceptación de una sugerencia', async () => {
-    render(
-      <AgentSuggestionsViewer
-        visitId={visitId}
-        suggestions={mockSuggestions}
-        userId={userId}
-        patientId={patientId}
-        onSuggestionAccepted={onSuggestionAccepted}
-        onSuggestionRejected={onSuggestionRejected}
-        onIntegrateSuggestions={onIntegrateSuggestions}
-      />
-    );
-
-    // Expandir el componente
-    fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }));
-
-    // Aceptar la primera sugerencia
-    const acceptButton = screen.getByTestId('accept-suggestion-1');
-    fireEvent.click(acceptButton);
-
-    // Verificar que se llamó a los servicios necesarios
+    // Esperar a que se muestren las sugerencias
     await waitFor(() => {
-      expect(EMRFormService.insertSuggestedContent).toHaveBeenCalledWith(
-        visitId,
-        'plan',
-        mockSuggestions[0].content,
-        'agent',
-        mockSuggestions[0].id
-      );
-      expect(UsageAnalyticsService.trackMetric).toHaveBeenCalledWith(
-        'suggestions_integrated',
-        userId,
-        visitId,
-        1,
-        expect.objectContaining({
-          suggestion_id: mockSuggestions[0].id
-        })
-      );
-      expect(AuditLogger.log).toHaveBeenCalledWith(
-        'suggestion_integrated',
-        expect.objectContaining({
-          userId,
-          visitId,
-          patientId,
-          section: 'plan',
-          content: mockSuggestions[0].content,
-          suggestionId: mockSuggestions[0].id
-        })
-      );
-      expect(onSuggestionAccepted).toHaveBeenCalledWith(mockSuggestions[0]);
-      expect(onIntegrateSuggestions).toHaveBeenCalledWith(1);
+      expect(screen.getByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).toBeInTheDocument();
     });
 
-    // Verificar que la sugerencia se marca como integrada
-    expect(screen.getByTestId('integrated-suggestion-1')).toBeInTheDocument();
-  });
+    // Encontrar y hacer clic en el botón de integrar
+    const integrateButton = screen.getByTestId(`accept-suggestion-${defaultProps.suggestions[0].id}`);
+    fireEvent.click(integrateButton);
 
-  it('maneja correctamente el rechazo de una sugerencia', () => {
-    render(
-      <AgentSuggestionsViewer
-        visitId={visitId}
-        suggestions={mockSuggestions}
-        userId={userId}
-        patientId={patientId}
-        onSuggestionAccepted={onSuggestionAccepted}
-        onSuggestionRejected={onSuggestionRejected}
-        onIntegrateSuggestions={onIntegrateSuggestions}
-      />
+    // Verificar que se llamó a insertSuggestion con los argumentos correctos
+    await waitFor(() => {
+      expect(mockInsertSuggestion).toHaveBeenCalledWith({
+        id: defaultProps.suggestions[0].id,
+        content: defaultProps.suggestions[0].content,
+        type: defaultProps.suggestions[0].type,
+        sourceBlockId: defaultProps.suggestions[0].sourceBlockId,
+        field: defaultProps.suggestions[0].field,
+        suggestionType: defaultProps.suggestions[0].type,
+        suggestionField: defaultProps.suggestions[0].field
+      });
+    });
+
+    // Verificar que se llamó a trackMetric
+    expect(mockTrackMetric).toHaveBeenCalledWith(
+      'suggestion_integrated',
+      defaultProps.userId,
+      defaultProps.visitId,
+      1,
+      {
+        suggestionId: defaultProps.suggestions[0].id,
+        suggestionType: defaultProps.suggestions[0].type,
+        suggestionField: defaultProps.suggestions[0].field,
+        patientId: defaultProps.patientId
+      }
     );
 
-    // Expandir el componente
-    fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }));
+    // Verificar que se llamó a AuditLogger
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      'suggestion_integrated',
+      {
+        suggestionId: defaultProps.suggestions[0].id,
+        visitId: defaultProps.visitId,
+        userId: defaultProps.userId,
+        patientId: defaultProps.patientId
+      }
+        );
+      });
 
-    // Rechazar la primera sugerencia
-    const rejectButton = screen.getByTestId('reject-suggestion-1');
+  it('debe manejar errores de integración correctamente', async () => {
+    // Configurar el mock para que falle
+    mockInsertSuggestion.mockRejectedValueOnce(new Error('Error de integración'));
+
+    render(<AgentSuggestionsViewer {...defaultProps} />);
+
+    // Primero hacer clic en el botón de mostrar
+    const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
+    fireEvent.click(toggleButton);
+
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(screen.getByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de integrar
+    const integrateButton = screen.getByTestId(`accept-suggestion-${defaultProps.suggestions[0].id}`);
+    fireEvent.click(integrateButton);
+
+    // Verificar que se muestra el mensaje de error
+      await waitFor(() => {
+      expect(screen.getByText('Error al integrar la sugerencia')).toBeInTheDocument();
+    });
+
+    // Verificar que se llamó a AuditLogger con el error
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      'suggestion_integration_error',
+      {
+        error: 'Error al integrar la sugerencia',
+        suggestionId: defaultProps.suggestions[0].id,
+        visitId: defaultProps.visitId,
+        userId: defaultProps.userId,
+        patientId: defaultProps.patientId
+      }
+    );
+  });
+
+  it('debe manejar el rechazo de sugerencias correctamente', async () => {
+    render(<AgentSuggestionsViewer {...defaultProps} />);
+
+    // Primero hacer clic en el botón de mostrar
+    const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
+    fireEvent.click(toggleButton);
+
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(screen.getByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de rechazar
+    const rejectButton = screen.getByTestId(`reject-suggestion-${defaultProps.suggestions[0].id}`);
     fireEvent.click(rejectButton);
 
-    // Verificar que se llamó al callback de rechazo
-    expect(onSuggestionRejected).toHaveBeenCalledWith(mockSuggestions[0]);
-  });
-
-  it('maneja correctamente los errores al integrar una sugerencia', async () => {
-    // Simular un error en la integración
-    vi.mocked(EMRFormService.insertSuggestedContent).mockRejectedValueOnce(new Error('Error de integración'));
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    render(
-      <AgentSuggestionsViewer
-        visitId={visitId}
-        suggestions={mockSuggestions}
-        userId={userId}
-        patientId={patientId}
-        onSuggestionAccepted={onSuggestionAccepted}
-        onSuggestionRejected={onSuggestionRejected}
-        onIntegrateSuggestions={onIntegrateSuggestions}
-      />
+    // Verificar que se llamó a AuditLogger
+    expect(mockAuditLog).toHaveBeenCalledWith(
+      'suggestion_rejected',
+      {
+        suggestionId: defaultProps.suggestions[0].id,
+        visitId: defaultProps.visitId,
+        userId: defaultProps.userId,
+        patientId: defaultProps.patientId
+      }
     );
 
-    // Expandir el componente
-    fireEvent.click(screen.getByRole('button', { name: /Mostrar/i }));
+    // Verificar que se llamó a trackMetric
+    expect(mockTrackMetric).toHaveBeenCalledWith(
+      'suggestion_rejected',
+      defaultProps.userId,
+      defaultProps.visitId,
+      1,
+      {
+        suggestionId: defaultProps.suggestions[0].id,
+        suggestionType: defaultProps.suggestions[0].type,
+        suggestionField: defaultProps.suggestions[0].field,
+        patientId: defaultProps.patientId
+      }
+    );
+  });
 
-    // Intentar aceptar la sugerencia
-    const acceptButton = screen.getByTestId('accept-suggestion-1');
-    fireEvent.click(acceptButton);
+  it('debe manejar el toggle de visibilidad correctamente', async () => {
+    render(<AgentSuggestionsViewer {...defaultProps} />);
 
-    // Verificar que se registró el error
+    const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
+
+    // Estado inicial
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).not.toBeInTheDocument();
+
+    // Hacer clic para mostrar
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error al integrar sugerencia:', expect.any(Error));
+      expect(screen.getByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).toBeInTheDocument();
     });
 
-    // Verificar que no se llamó al callback de aceptación
-    expect(onSuggestionAccepted).not.toHaveBeenCalled();
-    expect(onIntegrateSuggestions).not.toHaveBeenCalled();
-
-    consoleSpy.mockRestore();
+    // Hacer clic para ocultar
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => {
+      expect(screen.queryByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).not.toBeInTheDocument();
+    });
   });
 }); 

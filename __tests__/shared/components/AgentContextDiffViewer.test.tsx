@@ -112,16 +112,19 @@ describe('AgentContextDiffViewer', () => {
     // Verificar que muestra el encabezado del grupo contextual
     expect(screen.getByText('contextual (2)')).toBeInTheDocument();
     
-    // Verificar que muestra el bloque modificado
-    const modifiedBlock = screen.getByTestId('diff-block-modified');
-    expect(modifiedBlock).toBeInTheDocument();
+    // Verificar que muestra los bloques modificados
+    const modifiedBlocks = screen.getAllByTestId('diff-block-modified');
+    expect(modifiedBlocks).toHaveLength(2); // Uno para el original y uno para el modificado
     
     // Verificar que muestra tanto el contenido original como el modificado
-    expect(modifiedBlock).toHaveTextContent('Dato contextual original');
-    expect(modifiedBlock).toHaveTextContent('Dato contextual modificado');
+    const blockContents = modifiedBlocks.map(block => block.textContent);
+    expect(blockContents).toContain('Dato contextual original');
+    expect(blockContents).toContain('Dato contextual modificado');
     
-    // Verificar que tiene el estilo correcto (fondo amarillo)
-    expect(modifiedBlock).toHaveClass('bg-yellow-50');
+    // Verificar que tienen el estilo correcto (fondo amarillo)
+    modifiedBlocks.forEach(block => {
+      expect(block).toHaveClass('bg-yellow-50');
+    });
   });
 
   test('muestra bloques sin cambios con el estilo correcto', () => {
@@ -235,14 +238,16 @@ describe('AgentContextDiffViewer', () => {
     />);
 
     // Verificar que los grupos tienen atributos de accesibilidad
-    const groupElement = screen.getByRole('group', { name: /Diferencias de tipo contextual/i });
-    expect(groupElement).toBeInTheDocument();
+    const contextualGroup = screen.getByRole('group', { name: /contextual/i });
+    expect(contextualGroup).toBeInTheDocument();
     
-    // Buscar el botón específicamente dentro del grupo contextual
-    const contextualGroup = screen.getByText('contextual (2)').closest('div');
-    const collapseButton = contextualGroup?.querySelector('button[aria-label="Colapsar sección contextual"]');
-    
-    // Verificar que el botón tiene el atributo aria-label correcto
+    // Verificar que el botón de colapso tiene los atributos correctos
+    const collapseButton = screen.getByRole('button', { name: /Colapsar sección contextual/i });
     expect(collapseButton).toHaveAttribute('aria-label', 'Colapsar sección contextual');
+    
+    // Verificar que el grupo tiene el encabezado correcto
+    const header = screen.getByText('contextual (2)');
+    expect(header).toHaveAttribute('id', 'contextual-header');
+    expect(contextualGroup).toHaveAttribute('aria-labelledby', 'contextual-header');
   });
 }); 

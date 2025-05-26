@@ -91,7 +91,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       );
       
       // Verificar que inicialmente está colapsado
-      expect(screen.queryByText(/Recomendaciones/)).not.toBeInTheDocument();
+      expect(screen.queryByTestId('suggestions-content')).not.toBeInTheDocument();
       
       // Verificar que se muestra el botón para expandir
       expect(screen.getByTestId('toggle-suggestions')).toBeInTheDocument();
@@ -99,32 +99,32 @@ describe('AgentSuggestionsViewer EVAL', () => {
       // Expandir el componente
       fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
-      // Verificar que se muestran las categorías correctas - usando expresiones regulares para mayor flexibilidad
-      expect(screen.getByText(/Recomendaciones \(2\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Advertencias \(1\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Información \(1\)/i)).toBeInTheDocument();
+      // Verificar que se muestran las categorías correctas
+      expect(screen.getByTestId('recommendation-section')).toBeInTheDocument();
+      expect(screen.getByTestId('warning-section')).toBeInTheDocument();
+      expect(screen.getByTestId('info-section')).toBeInTheDocument();
       
-      // Verificar que se muestra el contenido de cada sugerencia usando coincidencia parcial
-      expect(screen.getByText((content) => content.includes('ECG para evaluar posible cardiopatía'))).toBeInTheDocument();
-      expect(screen.getByText((content) => content.includes('HTA no controlada'))).toBeInTheDocument();
-      expect(screen.getByText((content) => content.includes('referir a nutricionista'))).toBeInTheDocument();
+      // Verificar que se muestra el contenido de cada sugerencia
+      mockSuggestions.forEach(suggestion => {
+        expect(screen.getByTestId(`suggestion-${suggestion.id}`)).toBeInTheDocument();
+      });
     });
     
     it('debe mostrar el contador correcto de sugerencias', () => {
-      // Renderizar el componente con sugerencias
       render(
         <AgentSuggestionsViewer 
           visitId={mockVisitId}
           suggestions={mockSuggestions}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
-      // Verificar que se muestra el número total correcto, buscando por texto o dentro de un elemento
-      expect(screen.getByText((content, element) => {
-        return element?.tagName.toLowerCase() === 'span' && content === '4';
-      })).toBeInTheDocument();
+      // Verificar que se muestra el número total correcto
+      const titleElement = screen.getByTestId('suggestions-title');
+      expect(titleElement).toHaveTextContent('4');
     });
   });
 
@@ -136,38 +136,39 @@ describe('AgentSuggestionsViewer EVAL', () => {
    */
   describe('Caso 2: Manejo de arrays de sugerencias vacíos', () => {
     it('debe mostrar un mensaje cuando no hay sugerencias', () => {
-      // Renderizar el componente sin sugerencias, asegurándonos de pasar un array vacío
       render(
         <AgentSuggestionsViewer 
           visitId={mockVisitId}
           suggestions={[]}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
       // Expandir el panel
       fireEvent.click(screen.getByTestId('toggle-suggestions'));
       
-      // Verificar que se muestra el mensaje de "sin sugerencias", con coincidencia parcial
-      expect(screen.getByText((content) => content.includes('no tiene sugerencias'))).toBeInTheDocument();
+      // Verificar que se muestra el mensaje de "sin sugerencias"
+      expect(screen.getByTestId('no-suggestions-message')).toHaveTextContent('No hay sugerencias disponibles');
     });
     
     it('debe mostrar el contador en 0 cuando no hay sugerencias', () => {
-      // Renderizar el componente sin sugerencias
       render(
         <AgentSuggestionsViewer 
           visitId={mockVisitId}
           suggestions={[]}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
-      // Verificar que el contador muestra 0, buscando específicamente en elementos que podrían contenerlo
-      expect(screen.getByText((content, element) => {
-        return element?.tagName.toLowerCase() === 'span' && content === '0';
-      })).toBeInTheDocument();
+      // Verificar que el contador muestra 0
+      const titleElement = screen.getByTestId('suggestions-title');
+      expect(titleElement).toHaveTextContent('0');
     });
   });
 
@@ -190,6 +191,8 @@ describe('AgentSuggestionsViewer EVAL', () => {
           onIntegrateSuggestions={mockIntegrateFn}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
@@ -252,6 +255,8 @@ describe('AgentSuggestionsViewer EVAL', () => {
           onIntegrateSuggestions={vi.fn()}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
@@ -277,6 +282,8 @@ describe('AgentSuggestionsViewer EVAL', () => {
           onIntegrateSuggestions={mockIntegrateFn}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
@@ -323,6 +330,8 @@ describe('AgentSuggestionsViewer EVAL', () => {
           onIntegrateSuggestions={mockIntegrateFn}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       

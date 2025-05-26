@@ -1,5 +1,5 @@
 /* Importación de fuentes */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,17 +7,27 @@
 
 @layer base {
   html {
-    font-family: theme('fontFamily.sans');
-    color: theme('colors.primary.DEFAULT');
-    background-color: theme('colors.boneWhite');
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   body {
-    @apply antialiased;
+    @apply bg-[#F7F7F7] text-[#2C3E50];
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: theme('fontFamily.display');
+  h1 {
+    @apply text-3xl font-bold text-[#2C3E50];
+  }
+
+  h2 {
+    @apply text-2xl font-semibold text-[#2C3E50];
+  }
+
+  h3 {
+    @apply text-xl font-semibold text-[#2C3E50];
+  }
+
+  p {
+    @apply text-base text-[#2C3E50];
   }
 
   code, pre {
@@ -27,19 +37,19 @@
 
 @layer components {
   .app-container {
-    @apply flex flex-col min-h-screen;
+    @apply min-h-screen flex flex-col;
   }
 
   .header {
-    @apply bg-primary text-white py-4 px-8 text-center shadow-md;
+    @apply bg-[#2C3E50] text-white py-4 px-8 text-center shadow;
   }
 
   .main-content {
-    @apply flex-1 p-8 flex justify-center;
+    @apply flex-1 flex justify-center items-center px-4 py-8;
   }
 
   .footer {
-    @apply bg-primary text-white p-4 text-center text-sm;
+    @apply bg-[#2C3E50] text-white py-4 text-center text-sm;
   }
 
   .page {
@@ -55,27 +65,77 @@
   }
 
   .button {
-    @apply inline-block px-5 py-2.5 bg-primary text-white no-underline rounded font-medium transition-colors duration-300;
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
   }
 
-  .button:hover {
-    @apply bg-primary-dark;
+  .button-primary {
+    @apply bg-[#FF6F61] text-white hover:bg-[#5DA5A3];
   }
 
-  .success {
-    @apply text-success font-bold;
+  .button-secondary {
+    @apply bg-[#A8E6CF] text-[#2C3E50] hover:bg-[#5DA5A3];
   }
 
-  .error {
-    @apply text-error font-bold;
+  .button-outline {
+    @apply border-2 border-[#2C3E50] text-[#2C3E50] hover:bg-[#2C3E50] hover:text-white;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-[#BDC3C7] focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-[#2C3E50] mb-1;
+  }
+
+  .error-message {
+    @apply text-[#FF6F61] text-sm mt-1;
+  }
+
+  .success-message {
+    @apply text-[#5DA5A3] text-sm mt-1;
+  }
+
+  .card {
+    @apply bg-[#A8E6CF] rounded-lg shadow-md p-6;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-[#A8E6CF] text-[#2C3E50];
+  }
+
+  .badge-secondary {
+    @apply bg-[#BDC3C7] text-[#2C3E50];
+  }
+
+  .badge-success {
+    @apply bg-[#5DA5A3] text-white;
+  }
+
+  .badge-error {
+    @apply bg-[#FF6F61] text-white;
+  }
+
+  .badge-warning {
+    @apply bg-[#FF6F61] text-white;
+  }
+
+  .badge-info {
+    @apply bg-[#5DA5A3] text-white;
   }
 
   .connection-status {
-    @apply my-8 p-6 bg-neutral-light rounded-lg border border-neutral;
+    @apply my-8 p-6 bg-[#BDC3C7] rounded-lg border border-[#2C3E50];
   }
+}
 
-  .connection-status h3 {
-    @apply mb-4 text-primary;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
@@ -147,21 +207,6 @@ body {
 
 .links {
   margin-top: 2rem;
-}
-
-.button {
-  display: inline-block;
-  padding: 0.6em 1.2em;
-  background-color: var(--primary-color);
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.button:hover {
-  background-color: var(--secondary-color);
 }
 
 .success {

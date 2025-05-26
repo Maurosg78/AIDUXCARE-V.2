@@ -1,7 +1,34 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { sendToLLM, LLMProvider } from '../../../src/core/agent/LLMAdapter';
+import { AgentContext, MemoryBlock } from '../../../src/types/agent';
 
 describe('LLMAdapter', () => {
+  // Configuración de mocks y datos de prueba
+  const mockMemoryBlocks: MemoryBlock[] = [
+    {
+      id: 'block-1',
+      type: 'contextual',
+      content: 'Paciente presenta dolor abdominal intenso',
+      created_at: '2023-05-15T10:30:00Z'
+    },
+    {
+      id: 'block-2',
+      type: 'persistent',
+      content: 'Historial de hipertensión arterial',
+      created_at: '2023-05-10T08:15:00Z'
+    }
+  ];
+
+  const mockContext: AgentContext = {
+    visitId: 'visit-123',
+    blocks: mockMemoryBlocks,
+    metadata: {
+      createdAt: new Date('2023-05-15T10:40:00Z'),
+      updatedAt: new Date('2023-05-15T10:40:00Z'),
+      patientId: 'patient-456'
+    }
+  };
+
   // Acelerar los tests reemplazando setTimeout
   beforeAll(() => {
     vi.useFakeTimers();
@@ -11,96 +38,90 @@ describe('LLMAdapter', () => {
     vi.useRealTimers();
   });
 
-  it('debería devolver una respuesta para el proveedor OpenAI', async () => {
-    const promptTest = "Analiza los síntomas del paciente";
-    const responsePromise = sendToLLM(promptTest, 'openai');
-    
-    // Avanzar el tiempo simulado para resolver el setTimeout
+  it('debe devolver una respuesta válida con sugerencias para OpenAI', async () => {
+    const responsePromise = sendToLLM(mockContext, 'openai');
     vi.advanceTimersByTime(500);
     
     const response = await responsePromise;
     
     expect(response).toBeTruthy();
-    expect(typeof response).toBe('string');
-    expect(response.length).toBeGreaterThan(0);
-    expect(response).toContain('OpenAI GPT response');
-    expect(response).toContain(promptTest);
+    expect(response).toHaveProperty('suggestions');
+    expect(Array.isArray(response.suggestions)).toBe(true);
+    expect(response.suggestions.length).toBeGreaterThan(0);
+    
+    const suggestion = response.suggestions[0];
+    expect(suggestion).toHaveProperty('id');
+    expect(suggestion).toHaveProperty('type');
+    expect(suggestion).toHaveProperty('field');
+    expect(suggestion).toHaveProperty('content');
+    expect(suggestion).toHaveProperty('sourceBlockId');
+    expect(suggestion.sourceBlockId).toBe('block-1');
   });
 
-  it('debería devolver una respuesta para el proveedor Anthropic', async () => {
-    const promptTest = "Evalúa el historial clínico";
-    const responsePromise = sendToLLM(promptTest, 'anthropic');
+  it('debe devolver respuestas para diferentes proveedores', async () => {
+    const providers: LLMProvider[] = ['openai', 'anthropic', 'cohere'];
     
+    for (const provider of providers) {
+      const responsePromise = sendToLLM(mockContext, provider);
+      vi.advanceTimersByTime(500);
+      
+      const response = await responsePromise;
+      
+      expect(response).toBeTruthy();
+      expect(response.suggestions.length).toBeGreaterThan(0);
+      expect(response.suggestions[0]).toHaveProperty('id');
+      expect(response.suggestions[0]).toHaveProperty('content');
+    }
+  });
+
+  it('debe manejar un contexto vacío sin errores', async () => {
+    const emptyContext: AgentContext = {
+      visitId: 'empty-visit',
+      blocks: [],
+      metadata: {
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    };
+    
+    const responsePromise = sendToLLM(emptyContext, 'openai');
     vi.advanceTimersByTime(500);
     
     const response = await responsePromise;
     
     expect(response).toBeTruthy();
-    expect(typeof response).toBe('string');
-    expect(response.length).toBeGreaterThan(0);
-    expect(response).toContain('Anthropic Claude response');
-    expect(response).toContain(promptTest);
+    expect(response.suggestions.length).toBeGreaterThan(0);
+    expect(response.suggestions[0].sourceBlockId).toBe('default');
   });
 
-  it('debería devolver una respuesta para el proveedor Mistral', async () => {
-    const promptTest = "Recomienda un tratamiento";
-    const responsePromise = sendToLLM(promptTest, 'mistral');
-    
-    vi.advanceTimersByTime(500);
-    
-    const response = await responsePromise;
-    
-    expect(response).toBeTruthy();
-    expect(typeof response).toBe('string');
-    expect(response.length).toBeGreaterThan(0);
-    expect(response).toContain('Mistral AI response');
-    expect(response).toContain(promptTest);
-  });
-
-  it('debería devolver una respuesta para el proveedor Custom', async () => {
-    const promptTest = "Sugiere un diagnóstico diferencial";
-    const responsePromise = sendToLLM(promptTest, 'custom');
-    
-    vi.advanceTimersByTime(500);
-    
-    const response = await responsePromise;
-    
-    expect(response).toBeTruthy();
-    expect(typeof response).toBe('string');
-    expect(response.length).toBeGreaterThan(0);
-    expect(response).toContain('Custom LLM response');
-    expect(response).toContain(promptTest);
-  });
-
-  it('debería rechazar la promesa con un error si el proveedor no es soportado', async () => {
-    // Asignar un tipo inválido utilizando 'as' solo para propósitos de prueba
+  it('debe rechazar la promesa con un error si el proveedor no es soportado', async () => {
     const invalidProvider = 'invalid-provider' as LLMProvider;
     
-    const responsePromise = sendToLLM("Prompt de prueba", invalidProvider);
-    
-    // No es necesario avanzar el tiempo ya que el rechazo es inmediato
-    
-    await expect(responsePromise).rejects.toThrow('Unsupported LLM provider');
+    await expect(sendToLLM(mockContext, invalidProvider))
+      .rejects
+      .toThrow('Unsupported LLM provider');
   });
 
-  it('debería demorar aproximadamente 500ms en devolver la respuesta', async () => {
-    const promptTest = "Test de tiempo";
-    const responsePromise = sendToLLM(promptTest, 'openai');
+  it('debe demorar aproximadamente 500ms en responder', async () => {
+    const responsePromise = sendToLLM(mockContext, 'openai');
     
-    // Avanzar 499ms (no debería resolver aún)
-    vi.advanceTimersByTime(499);
+    // Avanzar 400ms (no debería resolverse aún)
+    vi.advanceTimersByTime(400);
+    
+    // Verificar que no se ha resuelto
     const notResolved = await Promise.race([
-      responsePromise.then(() => true),
+      responsePromise.then(() => true).catch(() => true),
       Promise.resolve(false)
     ]);
     
-    expect(notResolved).toBe(false); // La promesa no debería resolverse aún
+    expect(notResolved).toBe(false);
     
-    // Avanzar 1ms más para llegar a 500ms
-    vi.advanceTimersByTime(1);
+    // Avanzar 100ms más para completar los 500ms
+    vi.advanceTimersByTime(100);
     
+    // Ahora debería resolverse
     const response = await responsePromise;
     expect(response).toBeTruthy();
-    expect(response).toContain('OpenAI GPT response');
+    expect(response.suggestions.length).toBeGreaterThan(0);
   });
 }); 

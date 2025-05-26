@@ -1,40 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../src/shared/components/Agent/AgentSuggestionsViewer';
-import { AgentSuggestion } from '../src/core/agent/ClinicalAgent';
-import { EMRFormService } from '../src/core/services/EMRFormService';
+import { AgentSuggestion } from '../src/types/agent';
+import { EMRFormService, SuggestionToIntegrate } from '../src/core/services/EMRFormService';
 import { AuditLogger } from '../src/core/audit/AuditLogger';
 import * as UsageAnalyticsService from '../src/services/UsageAnalyticsService';
-import { formDataSourceSupabase } from '../src/core/dataSources/formDataSourceSupabase';
-
-// Mock para las funciones de servicio integradas manualmente
-const mockInsertSuggestedContent = vi.fn(async (
-  visitId: string,
-  sectionKey: string,
-  content: string,
-  source: string = 'agent',
-  suggestionId?: string
-) => {
-  // Esta implementación simulada llama a los otros mocks como lo haría la implementación real
-  AuditLogger.log('suggestion_integrated', {
-    visitId,
-    section: sectionKey,
-    content: `🔎 ${content}`,
-    suggestionId
-  });
-  
-  UsageAnalyticsService.track(
-    'suggestions_integrated',
-    'test-user-id',
-    visitId,
-    1,
-    { suggestion_id: suggestionId }
-  );
-  
-  return true;
-});
+// TODO: formDataSourceSupabase está reservado para pruebas futuras de integración
+// import { formDataSourceSupabase } from '../src/core/dataSources/formDataSourceSupabase';
+// TODO: source está reservado para pruebas futuras de campos de sugerencia
+// const source = 'test-source';
 
 // Mocks para las dependencias externas
 vi.mock('../src/core/services/EMRFormService', () => ({
@@ -44,19 +20,14 @@ vi.mock('../src/core/services/EMRFormService', () => ({
         case 'recommendation': return 'plan';
         case 'warning': return 'assessment';
         case 'info': return 'notes';
+        case 'diagnostic': return 'assessment';
+        case 'treatment': return 'plan';
+        case 'followup': return 'plan';
+        case 'contextual': return 'notes';
         default: return 'notes';
       }
     }),
-    insertSuggestedContent: vi.fn(async (
-      visitId: string,
-      sectionKey: string,
-      content: string,
-      source: string = 'agent',
-      suggestionId?: string
-    ) => {
-      // Llamar al mock implementado arriba para simular el comportamiento esperado
-      return mockInsertSuggestedContent(visitId, sectionKey, content, source, suggestionId);
-    })
+    insertSuggestion: vi.fn()
   }
 }));
 
@@ -67,7 +38,7 @@ vi.mock('../src/core/audit/AuditLogger', () => ({
 }));
 
 vi.mock('../src/services/UsageAnalyticsService', () => ({
-  track: vi.fn()
+  trackMetric: vi.fn()
 }));
 
 vi.mock('../src/core/dataSources/formDataSourceSupabase', () => ({
@@ -87,6 +58,19 @@ vi.mock('../src/core/dataSources/formDataSourceSupabase', () => ({
   }
 }));
 
+// Mock para las funciones de servicio integradas manualmente
+const mockInsertSuggestion = vi.fn(async (
+  suggestion: SuggestionToIntegrate,
+  visitId: string,
+  patientId: string,
+  userId: string = 'anonymous'
+) => {
+  return true; // Solo devuelve true, sin efectos secundarios
+});
+
+// Configurar el mock de insertSuggestion
+(EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
+
 describe('AgentSuggestionsViewer', () => {
   // Datos de prueba
   const visitId = 'test-visit-id';
@@ -97,138 +81,320 @@ describe('AgentSuggestionsViewer', () => {
     {
       id: 'suggestion-1',
       sourceBlockId: 'block-1',
-      type: 'recommendation',
-      content: 'Considerar radiografía de tórax'
+      type: 'recommendation' as const,
+      field: 'diagnosis',
+      content: 'Considerar radiografía de tórax',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-2',
       sourceBlockId: 'block-2',
-      type: 'warning',
-      content: 'Paciente con alergias a medicamentos'
+      type: 'warning' as const,
+      field: 'medication',
+      content: 'Paciente con alergias a medicamentos',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-3',
       sourceBlockId: 'block-3',
-      type: 'info',
-      content: 'Antecedentes familiares relevantes'
+      type: 'info' as const,
+      field: 'history',
+      content: 'Antecedentes familiares relevantes',
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ];
+
+  const onSuggestionAccepted = vi.fn();
+  const onSuggestionRejected = vi.fn();
 
   beforeEach(() => {
     // Limpiar todos los mocks antes de cada prueba
     vi.clearAllMocks();
+    // Resetear el mock de insertSuggestion a su implementación por defecto
+    (EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
   });
 
-  it('debe renderizarse sin errores', () => {
-    const { getByText } = render(
+  it('debe renderizarse sin errores', async () => {
+    const { getByText, getByTestId } = render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
         userId={userId}
         patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
       />
     );
 
-    // Verificar que se muestra el título del componente
-    expect(getByText('Sugerencias del Agente Clínico')).toBeInTheDocument();
+    // Verificar que se muestra el título del componente con el contador
+    expect(getByText('Sugerencias del Copiloto (3)')).toBeInTheDocument();
     
-    // Verificar que se muestra el botón para expandir
-    expect(getByText('Ver sugerencias del agente')).toBeInTheDocument();
+    // Verificar que se muestra el botón para expandir/ocultar
+    const toggleButton = getByTestId('toggle-suggestions');
+    expect(toggleButton).toBeInTheDocument();
+    expect(toggleButton).toHaveTextContent('Mostrar');
+
+    // Verificar que se muestran las secciones de sugerencias al expandir
+    fireEvent.click(toggleButton);
+    
+    await waitFor(() => {
+    expect(getByTestId('recommendation-section')).toBeInTheDocument();
+    expect(getByTestId('warning-section')).toBeInTheDocument();
+    expect(getByTestId('info-section')).toBeInTheDocument();
+    });
+
+    // Verificar que se muestran todas las sugerencias
+    mockSuggestions.forEach(suggestion => {
+      expect(getByTestId(`suggestion-${suggestion.id}`)).toBeInTheDocument();
+    });
   });
 
-  // Test para validar específicamente los tres requerimientos del prompt
   it('debe validar la integración completa de sugerencias al EMR', async () => {
-    // Llamada directa a insertSuggestedContent para simular la integración
-    const sugerencia = mockSuggestions[0]; // Usar la sugerencia tipo recommendation
-    const emrSection = EMRFormService.mapSuggestionTypeToEMRSection(sugerencia.type);
+    const suggestion = mockSuggestions[0];
     
-    // 1. Insertar sugerencia (simular acción desde el componente)
-    await EMRFormService.insertSuggestedContent(
-      visitId,
-      emrSection,
-      sugerencia.content,
-      'agent',
-      sugerencia.id
+    // Simular inserción exitosa
+    (EMRFormService.insertSuggestion as jest.Mock).mockResolvedValueOnce(true);
+    
+    const { getByTestId } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
     );
     
-    // Validar los tres requisitos:
-    
-    // REQUISITO 1: Verificar que se llama a insertSuggestedContent con los parámetros correctos
-    expect(EMRFormService.insertSuggestedContent).toHaveBeenCalledWith(
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+  
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(getByTestId(`suggestion-${suggestion.id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de aceptar
+    const acceptButton = getByTestId(`accept-suggestion-${suggestion.id}`);
+    expect(acceptButton).toBeInTheDocument();
+    await fireEvent.click(acceptButton);
+
+    expect(EMRFormService.insertSuggestion).toHaveBeenCalledWith(
+      {
+        id: suggestion.id,
+        content: suggestion.content,
+        type: suggestion.type,
+        sourceBlockId: suggestion.sourceBlockId
+      },
       visitId,
-      emrSection,
-      sugerencia.content,
-      'agent',
-      sugerencia.id
+      patientId,
+      userId
     );
     
-    // REQUISITO 2: Verificar que se registra correctamente en AuditLogger.log
     expect(AuditLogger.log).toHaveBeenCalledWith(
       'suggestion_integrated',
       expect.objectContaining({
         visitId,
-        section: emrSection,
-        suggestionId: sugerencia.id
+        section: EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type),
+        suggestionId: suggestion.id
       })
     );
     
-    // REQUISITO 3: Verificar que se registran métricas con UsageAnalyticsService.track
-    expect(UsageAnalyticsService.track).toHaveBeenCalledWith(
+    expect(UsageAnalyticsService.trackMetric).toHaveBeenCalledWith(
       'suggestions_integrated',
-      expect.any(String),
+      userId,
       visitId,
-      expect.any(Number),
-      expect.objectContaining({
-        suggestion_id: sugerencia.id
-      })
-    );
-  });
-  
-  // Test ampliado para verificar el flujo completo con detalles específicos
-  it('debe verificar el proceso completo de integración de sugerencias con validación detallada', async () => {
-    // Preparar y ejecutar la prueba
-    const suggestion = mockSuggestions[0];
-    const emrSection = 'plan'; // Corresponde a 'recommendation'
-    
-    // Llamar al método directamente (en un caso real esto ocurriría al hacer clic en "Integrar")
-    const result = await EMRFormService.insertSuggestedContent(
-      visitId,
-      emrSection,
-      suggestion.content,
-      'agent',
-      suggestion.id
-    );
-    
-    // 1. Verificar que la inserción fue exitosa
-    expect(result).toBe(true);
-    expect(EMRFormService.insertSuggestedContent).toHaveBeenCalledWith(
-      visitId,
-      emrSection,
-      suggestion.content,
-      'agent',
-      suggestion.id
-    );
-    
-    // 2. Verificar que se registró correctamente en el sistema de auditoría con los campos requeridos
-    expect(AuditLogger.log).toHaveBeenCalledWith(
-      'suggestion_integrated',
-      expect.objectContaining({
-        visitId,       // ID de la visita
-        section: emrSection, // field_id
-        content: expect.stringContaining(suggestion.content), // Contenido de la sugerencia
-        suggestionId: suggestion.id  // ID de la sugerencia
-      })
-    );
-    
-    // 3. Verificar que se registraron las métricas de uso
-    expect(UsageAnalyticsService.track).toHaveBeenCalledWith(
-      'suggestions_integrated', // Tipo de métrica
-      expect.any(String),       // userId
-      visitId,                   // visitId
-      1,                        // value
+      1,
       expect.objectContaining({
         suggestion_id: suggestion.id
       })
     );
+  });
+
+  it('debe manejar correctamente cuando no hay sugerencias', () => {
+    const { getByText, getByTestId } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={[]}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    expect(getByText('Sugerencias del Copiloto (0)')).toBeInTheDocument();
+    
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+    
+    expect(getByTestId('no-suggestions-message')).toBeInTheDocument();
+  });
+
+  it('debe manejar correctamente sugerencias con contenido vacío', () => {
+    const emptySuggestions = [{
+      id: 'empty-1',
+      sourceBlockId: 'block-1',
+      type: 'recommendation' as const,
+      field: 'diagnosis',
+      content: '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }];
+
+    const { getByTestId, queryByTestId } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={emptySuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+
+    // Verificar que la sugerencia vacía no se muestra
+    expect(queryByTestId('suggestion-empty-1')).not.toBeInTheDocument();
+  });
+
+  it('debe manejar correctamente errores de red al integrar sugerencias', async () => {
+    const networkError = new Error('Error de red');
+    (EMRFormService.insertSuggestion as jest.Mock).mockRejectedValueOnce(networkError);
+
+    const { getByTestId, findByText } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(getByTestId(`suggestion-${mockSuggestions[0].id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de aceptar
+    const acceptButton = getByTestId(`accept-suggestion-${mockSuggestions[0].id}`);
+    expect(acceptButton).toBeInTheDocument();
+    fireEvent.click(acceptButton);
+
+    // Esperar a que aparezca el mensaje de error
+    const errorMessage = await findByText('Error al integrar la sugerencia');
+    expect(errorMessage).toBeInTheDocument();
+
+    // Verificar que se registró el error en el logger
+    expect(AuditLogger.log).toHaveBeenCalledWith(
+      'suggestion_integration_error',
+      expect.objectContaining({
+        error: 'Error de red',
+        suggestionId: mockSuggestions[0].id,
+        suggestionType: mockSuggestions[0].type,
+        suggestionField: mockSuggestions[0].field
+      })
+    );
+  });
+
+  it('debe manejar correctamente la cancelación de integración', async () => {
+    const { getByTestId } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(getByTestId(`suggestion-${mockSuggestions[0].id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de rechazar
+    const rejectButton = getByTestId(`reject-suggestion-${mockSuggestions[0].id}`);
+    expect(rejectButton).toBeInTheDocument();
+    await fireEvent.click(rejectButton);
+
+    expect(onSuggestionRejected).toHaveBeenCalledWith(mockSuggestions[0]);
+    expect(EMRFormService.insertSuggestion).not.toHaveBeenCalled();
+  });
+
+  it('debe manejar correctamente sugerencias no integrables', async () => {
+    const nonIntegrableSuggestion: AgentSuggestion = {
+      id: 'non-integrable-1',
+      sourceBlockId: 'block-1',
+      type: 'diagnostic',
+      field: 'diagnosis',
+      content: 'Sugerencia no integrable',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const { getByTestId } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={[nonIntegrableSuggestion]}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // Expandir las sugerencias
+    fireEvent.click(getByTestId('toggle-suggestions'));
+
+    // Esperar a que se muestren las sugerencias
+    await waitFor(() => {
+      expect(getByTestId(`suggestion-${nonIntegrableSuggestion.id}`)).toBeInTheDocument();
+    });
+
+    // Encontrar y hacer clic en el botón de aceptar
+    const acceptButton = getByTestId(`accept-suggestion-${nonIntegrableSuggestion.id}`);
+    expect(acceptButton).toBeInTheDocument();
+    await fireEvent.click(acceptButton);
+
+    expect(EMRFormService.insertSuggestion).not.toHaveBeenCalled();
+    expect(AuditLogger.log).not.toHaveBeenCalledWith(
+      'suggestion_integrated',
+      expect.any(Object)
+    );
+  });
+
+  it('debe ser accesible', () => {
+    const { getByRole, getAllByRole } = render(
+      <AgentSuggestionsViewer
+        visitId={visitId}
+        suggestions={mockSuggestions}
+        userId={userId}
+        patientId={patientId}
+        onSuggestionAccepted={onSuggestionAccepted}
+        onSuggestionRejected={onSuggestionRejected}
+      />
+    );
+
+    // Verificar roles principales
+    expect(getByRole('region', { name: /sugerencias del copiloto/i })).toBeInTheDocument();
+    
+    // Verificar que cada sugerencia tiene un contenedor con role="region"
+    const suggestionRegions = getAllByRole('region', { name: /sugerencia/i });
+    expect(suggestionRegions).toHaveLength(mockSuggestions.length);
   });
 }); 

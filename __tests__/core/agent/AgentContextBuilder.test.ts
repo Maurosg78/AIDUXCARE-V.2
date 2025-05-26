@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext } from '../../../src/core/agent/AgentContextBuilder';
+import { buildAgentContextFromMCP } from '../../../src/core/agent/AgentContextBuilder';
 import { MCPContext } from '../../../src/core/mcp/schema';
 
 describe('AgentContextBuilder', () => {
@@ -65,7 +65,7 @@ describe('AgentContextBuilder', () => {
   
   it('debe generar un AgentContext válido a partir de un MCPContext', () => {
     const mockContext = createMockMCPContext();
-    const agentContext = buildAgentContext(mockContext);
+    const agentContext = buildAgentContextFromMCP(mockContext);
     
     // Verificar estructura básica
     expect(agentContext).toBeDefined();
@@ -90,7 +90,7 @@ describe('AgentContextBuilder', () => {
   
   it('debe excluir bloques vacíos o sin ID', () => {
     const mockContext = createMockMCPContext();
-    const agentContext = buildAgentContext(mockContext);
+    const agentContext = buildAgentContextFromMCP(mockContext);
     
     // Verificar que no hay bloques sin ID ni contenido vacío
     expect(agentContext.blocks.every(b => b.id && b.content)).toBe(true);
@@ -109,7 +109,7 @@ describe('AgentContextBuilder', () => {
       semantic: { source: 'test', data: [] }
     };
     
-    const agentContext = buildAgentContext(emptyContext);
+    const agentContext = buildAgentContextFromMCP(emptyContext);
     
     // Verificar valores por defecto
     expect(agentContext.visitId).toBe('');

@@ -71,10 +71,10 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
       <div className="space-y-4">
         {/* Campos clínicos */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="fields-ia" className="block text-sm font-medium text-gray-700 mb-2">
             Campos Impactados por IA
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" id="fields-ia">
             {AVAILABLE_FIELDS.map(field => (
               <button
                 key={field.id}

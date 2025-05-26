@@ -47,8 +47,6 @@ describe('AgentContextBuilder', () => {
     vi.setSystemTime(mockDate);
     
     // Configurar el mock básico de Supabase
-    // Esta es una simplificación necesaria para los tests
-    // En un entorno real, usaríamos un mock más detallado
     const mockSupabaseQuery = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -58,7 +56,6 @@ describe('AgentContextBuilder', () => {
       })
     };
     
-    // Usamos un tipo genérico para evitar errores de linter con la API de Supabase
     vi.mocked(supabase.from).mockReturnValue(mockSupabaseQuery as PostgrestMock);
   });
 
@@ -69,7 +66,6 @@ describe('AgentContextBuilder', () => {
   it('debe construir un contexto válido con bloques de memoria', async () => {
     const result = await buildAgentContext(visitId);
     
-    // Verificar que el contexto se construyó correctamente
     expect(result).toEqual({
       visitId,
       blocks: mockMemoryBlocks,
@@ -79,12 +75,10 @@ describe('AgentContextBuilder', () => {
       }
     });
     
-    // Verificar que se llamó correctamente a supabase
     expect(supabase.from).toHaveBeenCalledWith('memory_blocks');
   });
 
   it('debe manejar errores de la base de datos correctamente', async () => {
-    // Configurar el mock para simular un error
     const mockError = new Error('Error de base de datos');
     
     const mockErrorQuery = {
@@ -98,12 +92,10 @@ describe('AgentContextBuilder', () => {
     
     vi.mocked(supabase.from).mockReturnValueOnce(mockErrorQuery as PostgrestMock);
     
-    // Verificar que el error se propaga correctamente
     await expect(buildAgentContext(visitId)).rejects.toThrow(mockError);
   });
 
   it('debe manejar el caso cuando no hay bloques de memoria', async () => {
-    // Configurar el mock para devolver un array vacío
     const mockEmptyQuery = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -117,7 +109,6 @@ describe('AgentContextBuilder', () => {
     
     const result = await buildAgentContext(visitId);
     
-    // Verificar que se devuelve un contexto válido con un array vacío de bloques
     expect(result).toEqual({
       visitId,
       blocks: [],
@@ -129,21 +120,18 @@ describe('AgentContextBuilder', () => {
   });
 
   it('debe rechazar con un error si falla la consulta', async () => {
-    // Simular un error en la consulta
     const dbError = new Error('Error de conexión');
     
     vi.mocked(supabase.from).mockImplementationOnce(() => {
       throw dbError;
     });
     
-    // Verificar que el error se propaga
     await expect(buildAgentContext(visitId)).rejects.toThrow(dbError);
   });
 
   it('debe cumplir con el tipo AgentContext', async () => {
     const result = await buildAgentContext(visitId);
     
-    // Verificamos que el resultado cumple con la estructura de AgentContext
     const validateAgentContext = (context: AgentContext): boolean => {
       return (
         typeof context.visitId === 'string' &&
@@ -156,12 +144,131 @@ describe('AgentContextBuilder', () => {
     
     expect(validateAgentContext(result)).toBe(true);
     
-    // Verificar también cada bloque
     result.blocks.forEach(block => {
       expect(block).toHaveProperty('id');
       expect(block).toHaveProperty('type');
       expect(block).toHaveProperty('content');
       expect(block).toHaveProperty('created_at');
     });
+  });
+
+  // Nuevos tests para validar casos especiales
+  it('debe filtrar bloques de memoria con datos incompletos', async () => {
+    const invalidBlocks = [
+      { id: 'block-1', type: 'contextual' }, // Falta content y created_at
+      { id: 'block-2', content: 'Contenido sin tipo' }, // Falta type y created_at
+      { id: 'block-3', type: 'semantic', created_at: '2023-05-15T10:35:00Z' }, // Falta content
+      ...mockMemoryBlocks // Bloques válidos
+    ];
+
+    const mockQueryWithInvalidBlocks = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: invalidBlocks,
+        error: null
+      })
+    };
+
+    vi.mocked(supabase.from).mockReturnValueOnce(mockQueryWithInvalidBlocks as PostgrestMock);
+
+    const result = await buildAgentContext(visitId);
+    
+    // Verificar que solo se incluyeron los bloques válidos
+    expect(result.blocks).toEqual(mockMemoryBlocks);
+    expect(result.blocks.length).toBe(mockMemoryBlocks.length);
+  });
+
+  it('debe manejar correctamente diferentes formatos de fecha en created_at', async () => {
+    const blocksWithDifferentDateFormats = [
+      {
+        id: 'block-1',
+        type: 'contextual',
+        content: 'Contenido con fecha ISO',
+        created_at: '2023-05-15T10:30:00Z'
+      },
+      {
+        id: 'block-2',
+        type: 'persistent',
+        content: 'Contenido con fecha Unix',
+        created_at: '1684155000000'
+      },
+      {
+        id: 'block-3',
+        type: 'semantic',
+        content: 'Contenido con fecha local',
+        created_at: '2023-05-15 10:30:00'
+      }
+    ];
+
+    const mockQueryWithDifferentDates = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: blocksWithDifferentDateFormats,
+        error: null
+      })
+    };
+
+    vi.mocked(supabase.from).mockReturnValueOnce(mockQueryWithDifferentDates as PostgrestMock);
+
+    const result = await buildAgentContext(visitId);
+    
+    // Verificar que todos los bloques tienen una fecha válida
+    result.blocks.forEach(block => {
+      expect(new Date(block.created_at).toString()).not.toBe('Invalid Date');
+    });
+  });
+
+  it('debe manejar correctamente bloques con contenido vacío', async () => {
+    const blocksWithEmptyContent = [
+      {
+        id: 'block-1',
+        type: 'contextual',
+        content: '',
+        created_at: '2023-05-15T10:30:00Z'
+      },
+      {
+        id: 'block-2',
+        type: 'persistent',
+        content: '   ', // Solo espacios en blanco
+        created_at: '2023-05-10T08:15:00Z'
+      },
+      ...mockMemoryBlocks // Bloques válidos
+    ];
+
+    const mockQueryWithEmptyContent = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({
+        data: blocksWithEmptyContent,
+        error: null
+      })
+    };
+
+    vi.mocked(supabase.from).mockReturnValueOnce(mockQueryWithEmptyContent as PostgrestMock);
+
+    const result = await buildAgentContext(visitId);
+    
+    // Verificar que solo se incluyeron los bloques con contenido no vacío
+    expect(result.blocks).toEqual(mockMemoryBlocks);
+    expect(result.blocks.length).toBe(mockMemoryBlocks.length);
+  });
+
+  it('debe validar que los metadatos de fecha sean consistentes', async () => {
+    const result = await buildAgentContext(visitId);
+    
+    // Verificar que las fechas de metadata son instancias de Date
+    expect(result.metadata.createdAt).toBeInstanceOf(Date);
+    expect(result.metadata.updatedAt).toBeInstanceOf(Date);
+    
+    // Verificar que las fechas son consistentes con el mockDate
+    expect(result.metadata.createdAt.getTime()).toBe(mockDate.getTime());
+    expect(result.metadata.updatedAt.getTime()).toBe(mockDate.getTime());
+    
+    // Verificar que updatedAt no es anterior a createdAt
+    expect(result.metadata.updatedAt.getTime()).toBeGreaterThanOrEqual(
+      result.metadata.createdAt.getTime()
+    );
   });
 }); 

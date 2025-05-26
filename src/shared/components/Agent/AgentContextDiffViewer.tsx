@@ -1,61 +1,111 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { MCPContext } from '@/core/mcp/schema';
 
-interface Props {
-  diffs: {
-    id: string;
-    title: string;
-    original: string;
-    updated: string;
-  }[];
-  onAccept: (id: string) => void;
-  onReject: (id: string) => void;
+interface Block {
+  id: string;
+  type: 'contextual' | 'persistent' | 'semantic';
+  content: string;
+  timestamp?: string;
+  created_at?: string;
+  validated?: boolean;
 }
 
-const AgentContextDiffViewer: React.FC<Props> = ({ diffs, onAccept, onReject }) => {
+interface Props {
+  previousContext: MCPContext;
+  currentContext: MCPContext;
+}
+
+const AgentContextDiffViewer: React.FC<Props> = ({ previousContext, currentContext }) => {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    contextual: true,
+    persistent: true,
+    semantic: true
+  });
+
+  const toggleGroup = (groupType: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupType]: !prev[groupType]
+    }));
+  };
+
+  const renderBlock = (block: Block, type: 'added' | 'modified' | 'unchanged', isOriginal: boolean = false) => {
+    const baseClasses = "p-3 rounded-md text-sm";
+    const typeClasses = {
+      added: "bg-green-50 border border-green-200",
+      modified: "bg-yellow-50 border border-yellow-200",
+      unchanged: "bg-gray-50 border border-gray-200"
+    };
+
+    return (
+      <div
+        key={`${block.id}-${type}-${isOriginal ? 'original' : 'modified'}`}
+        data-testid={`diff-block-${type}`}
+        className={`${baseClasses} ${typeClasses[type]}`}
+      >
+        {block.content}
+      </div>
+    );
+  };
+
+  const renderGroup = (groupType: 'contextual' | 'persistent' | 'semantic') => {
+    const previousBlocks = previousContext[groupType]?.data || [];
+    const currentBlocks = currentContext[groupType]?.data || [];
+    
+    if (currentBlocks.length === 0) return null;
+
+    const isExpanded = expandedGroups[groupType];
+
+  return (
+        <div
+          role="group"
+        aria-labelledby={`${groupType}-header`}
+        className="mb-4"
+        >
+        <button
+          onClick={() => toggleGroup(groupType)}
+          className="w-full text-left font-semibold mb-2 flex items-center justify-between"
+          aria-label={`${isExpanded ? 'Colapsar' : 'Expandir'} sección ${groupType}`}
+        >
+          <span id={`${groupType}-header`}>
+            {groupType} ({currentBlocks.length})
+          </span>
+          <span className="material-icons text-sm">
+            {isExpanded ? 'expand_less' : 'expand_more'}
+          </span>
+              </button>
+        
+        {isExpanded && (
+          <div className="space-y-2">
+            {currentBlocks.map(block => {
+              const previousBlock = previousBlocks.find(b => b.id === block.id);
+              
+              if (!previousBlock) {
+                return renderBlock(block, 'added');
+              }
+              
+              if (previousBlock.content !== block.content) {
+                return (
+                  <div key={`${block.id}-modified-group`} className="space-y-2">
+                    {renderBlock(previousBlock, 'modified', true)}
+                    {renderBlock(block, 'modified', false)}
+            </div>
+                );
+              }
+              
+              return renderBlock(block, 'unchanged');
+            })}
+          </div>
+        )}
+              </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
-      {diffs.map((diff) => (
-        <div
-          key={diff.id}
-          className="border rounded-xl p-4 shadow-sm bg-white"
-          role="group"
-          aria-labelledby={`diff-${diff.id}`}
-        >
-          <div className="flex justify-between items-center mb-2">
-            <h3 id={`diff-${diff.id}`} className="text-lg font-semibold">
-              {diff.title}
-            </h3>
-            <div className="flex gap-2">
-              <button
-                className="px-3 py-1 bg-green-100 hover:bg-green-200 rounded-md text-green-800"
-                onClick={() => onAccept(diff.id)}
-              >
-                Aceptar
-              </button>
-              <button
-                className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-md text-red-800"
-                onClick={() => onReject(diff.id)}
-              >
-                Rechazar
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="font-semibold">Original</p>
-              <div className="bg-gray-50 p-2 rounded-md whitespace-pre-wrap border">
-                {diff.original}
-              </div>
-            </div>
-            <div>
-              <p className="font-semibold">Modificado</p>
-              <div className="bg-blue-50 p-2 rounded-md whitespace-pre-wrap border border-blue-300">
-                {diff.updated}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+      {renderGroup('contextual')}
+      {renderGroup('persistent')}
+      {renderGroup('semantic')}
     </div>
   );
 };

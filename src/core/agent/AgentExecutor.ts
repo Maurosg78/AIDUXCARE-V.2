@@ -31,10 +31,13 @@ ID de Paciente: ${context.metadata?.patientId || 'No disponible'}
 
 `;
 
+  // Validación defensiva para context.blocks
+  const blocks = Array.isArray(context.blocks) ? context.blocks : [];
+
   // Agrupar bloques por tipo
-  const contextualBlocks = context.blocks.filter((block: MemoryBlock) => block.type === 'contextual');
-  const persistentBlocks = context.blocks.filter((block: MemoryBlock) => block.type === 'persistent');
-  const semanticBlocks = context.blocks.filter((block: MemoryBlock) => block.type === 'semantic');
+  const contextualBlocks = blocks.filter((block: MemoryBlock) => block.type === 'contextual');
+  const persistentBlocks = blocks.filter((block: MemoryBlock) => block.type === 'persistent');
+  const semanticBlocks = blocks.filter((block: MemoryBlock) => block.type === 'semantic');
 
   // Añadir bloques contextuales
   if (contextualBlocks.length > 0) {
@@ -86,11 +89,17 @@ Asegúrate de incluir solo sugerencias relevantes y útiles basadas en el contex
  * @returns Array de objetos AgentSuggestion
  */
 function parseResponseToSuggestions(llmResponse: LLMResponse, context: AgentContext): AgentSuggestion[] {
-  return llmResponse.suggestions.map(suggestion => ({
+  console.log('parseResponseToSuggestions - Respuesta LLM recibida:', llmResponse);
+  console.log('parseResponseToSuggestions - Contexto recibido:', context);
+
+  const suggestions = llmResponse.suggestions.map(suggestion => ({
     ...suggestion,
     createdAt: new Date(),
     updatedAt: new Date()
   }));
+
+  console.log('parseResponseToSuggestions - Sugerencias procesadas:', suggestions);
+  return suggestions;
 }
 
 export class AgentExecutor {
@@ -105,6 +114,9 @@ export class AgentExecutor {
   }
 
   public static async create(visitId: string, provider: LLMProvider): Promise<AgentExecutor> {
+    if (!visitId) {
+      throw new Error('El ID de visita es requerido para crear el ejecutor del agente');
+    }
     const agent = await ClinicalAgent.create(visitId);
     const context = await agent.getContext();
     return new AgentExecutor(agent, context, provider);
@@ -115,9 +127,26 @@ export class AgentExecutor {
   }
 
   public async execute(): Promise<AgentSuggestion[]> {
+    try {
+      console.log('AgentExecutor.execute - Contexto recibido:', {
+        visitId: this.context.visitId,
+        blocksCount: this.context.blocks?.length,
+        blocks: this.context.blocks
+      });
+
+    if (!this.context || !Array.isArray(this.context.blocks)) {
+        console.log('AgentExecutor.execute - Contexto inválido o sin bloques');
+      return [];
+    }
+
     const prompt = buildPromptFromContext(this.context);
+      console.log('AgentExecutor.execute - Prompt generado:', prompt);
+
     const llmResponse = await sendToLLM(this.context, this.provider);
+      console.log('AgentExecutor.execute - Respuesta LLM:', llmResponse);
+
     const suggestions = parseResponseToSuggestions(llmResponse, this.context);
+      console.log('AgentExecutor.execute - Sugerencias parseadas:', suggestions);
     
     // Añadir cada sugerencia al agente
     for (const suggestion of suggestions) {
@@ -131,5 +160,9 @@ export class AgentExecutor {
     }
     
     return suggestions;
+    } catch (error) {
+      console.error('Error al ejecutar el agente:', error);
+      return [];
+    }
   }
 } 

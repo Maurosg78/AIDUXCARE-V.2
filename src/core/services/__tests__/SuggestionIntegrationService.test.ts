@@ -193,4 +193,59 @@ describe('SuggestionIntegrationService', () => {
     await expect(SuggestionIntegrationService.integrateSuggestion(suggestion, visitId, userId))
       .rejects.toThrow('Error al integrar la sugerencia: Error en el upsert');
   });
+
+  it('debe rechazar sugerencias con contenido vacío', async () => {
+    const emptySuggestion: AgentSuggestion = {
+      ...suggestion,
+      content: ''
+    };
+
+    await expect(SuggestionIntegrationService.integrateSuggestion(emptySuggestion, visitId, userId))
+      .rejects.toThrow('La sugerencia no puede tener contenido vacío');
+
+    // Verificar que no se intentó ninguna operación en la base de datos
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it('debe rechazar campos inválidos', async () => {
+    const invalidFieldSuggestion: AgentSuggestion = {
+      ...suggestion,
+      field: 'invalid_field' as SuggestionField
+    };
+
+    await expect(SuggestionIntegrationService.integrateSuggestion(invalidFieldSuggestion, visitId, userId))
+      .rejects.toThrow('Campo inválido para la integración');
+
+    // Verificar que no se intentó ninguna operación en la base de datos
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it('debe registrar métricas de error cuando falla la integración', async () => {
+    // Configurar error en la inserción
+    mockInsert.mockReturnValueOnce({ 
+      error: { message: 'Error en la inserción de datos' } 
+    });
+
+    try {
+      await SuggestionIntegrationService.integrateSuggestion(suggestion, visitId, userId);
+    } catch (error) {
+      // Verificar que se registró el error en analytics
+      expect(track).toHaveBeenCalledWith('suggestion_integration_error', {
+        suggestion_id: suggestion.id,
+        suggestion_type: suggestion.type,
+        suggestion_field: suggestion.field,
+        error_message: 'Error en la inserción de datos'
+      });
+
+      // Verificar que se registró en el audit log
+      expect(AuditLogger.log).toHaveBeenCalledWith('suggestion.integration_error', expect.objectContaining({
+        visitId,
+        userId,
+        suggestionId: suggestion.id,
+        error: 'Error en la inserción de datos'
+      }));
+    }
+  });
 }); 

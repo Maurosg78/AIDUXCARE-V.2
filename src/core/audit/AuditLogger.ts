@@ -38,7 +38,65 @@ export interface AuditLogEntry {
   };
 }
 
+export interface BlockUpdate {
+  id: string;
+  type: 'contextual' | 'persistent' | 'semantic';
+  content: string;
+  visit_id: string;
+  patient_id?: string;
+}
+
 export class AuditLogger {
+  private static logs: AuditLogEntry[] = [];
+
+  /**
+   * Obtiene todos los logs de auditoría almacenados
+   * @returns Array de entradas de log
+   */
+  static getAuditLogs(): AuditLogEntry[] {
+    return this.logs;
+  }
+
+  /**
+   * Limpia todos los logs de auditoría almacenados
+   */
+  static clearLogs(): void {
+    this.logs = [];
+  }
+
+  /**
+   * Registra actualizaciones de bloques en el sistema de auditoría
+   * @param oldBlocks Bloques originales
+   * @param newBlocks Bloques actualizados
+   * @param userId ID del usuario que realiza la actualización
+   * @param visitId ID de la visita
+   */
+  static logBlockUpdates(
+    oldBlocks: BlockUpdate[],
+    newBlocks: BlockUpdate[],
+    userId: string,
+    visitId: string
+  ): void {
+    const entry: AuditLogEntry = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      action: 'block.update',
+      visit_id: visitId,
+      patient_id: oldBlocks[0]?.patient_id || '',
+      timestamp: new Date().toISOString(),
+      metadata: {
+        oldBlocks,
+        newBlocks
+      },
+      event_type: 'mcp.block.update',
+      block_type: oldBlocks[0]?.type,
+      old_content: oldBlocks[0]?.content,
+      new_content: newBlocks[0]?.content
+    };
+
+    this.logs.push(entry);
+  }
+
   /**
    * Registra un evento en el sistema de auditoría
    * @param eventType Tipo de evento a registrar
@@ -64,7 +122,7 @@ export class AuditLogger {
       event_type: action
     };
 
-    console.log('Audit log entry:', entry);
+    this.logs.push(entry);
   }
 
   /**
@@ -119,27 +177,6 @@ export class AuditLogger {
       feedback_type: feedbackType,
       timestamp: new Date().toISOString()
     });
-  }
-
-  static logBlockUpdates(
-    oldBlocks: Record<string, unknown>[],
-    newBlocks: Record<string, unknown>[],
-    userId: string,
-    visitId: string
-  ) {
-    console.log('[AuditLogger] blockUpdate', { oldBlocks, newBlocks, userId, visitId });
-  }
-
-  static clearLogs() {
-    console.log('[AuditLogger] clearLogs');
-  }
-
-  static getAuditLogs(): AuditLogEntry[] {
-    return [];
-  }
-
-  static getAuditLogsFromSupabase(visitId: string): Promise<AuditLogEntry[]> {
-    return Promise.resolve([]);
   }
 
   public static async logEvent(

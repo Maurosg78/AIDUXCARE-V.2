@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getAgentSuggestions, AgentSuggestion } from '../../src/core/agent/ClinicalAgent';
-import { buildAgentContext } from '../../src/core/agent/AgentContextBuilder';
+import { getAgentSuggestions } from '../../src/core/agent/ClinicalAgent';
+import { buildAgentContextFromMCP } from '../../src/core/agent/AgentContextBuilder';
 import { validMCP } from '../../__mocks__/contexts/validMCP';
 import { emptyMCP } from '../../__mocks__/contexts/emptyMCP';
 import { contradictoryMCP } from '../../__mocks__/contexts/contradictoryMCP';
@@ -28,7 +28,12 @@ describe('ClinicalAgent EVAL', () => {
   describe('Caso 1: Contexto clínico válido', () => {
     it('debe generar 2-3 sugerencias con explicaciones para un contexto válido', async () => {
       // Construir el contexto del agente a partir del MCP válido
-      const agentContext = buildAgentContext(validMCP);
+      const agentContext = buildAgentContextFromMCP(validMCP);
+      
+      // Debug logs
+      console.log('\n[DEBUG TEST - Caso 1: Contexto válido]');
+      console.log('agentContext:', JSON.stringify(agentContext, null, 2));
+      console.log('agentContext.blocks:', agentContext?.blocks || 'undefined');
       
       // Obtener sugerencias del agente
       const suggestions = await getAgentSuggestions(agentContext);
@@ -62,7 +67,13 @@ describe('ClinicalAgent EVAL', () => {
     });
     
     it('debe referenciar correctamente los bloques de origen de las sugerencias', async () => {
-      const agentContext = buildAgentContext(validMCP);
+      const agentContext = buildAgentContextFromMCP(validMCP);
+      
+      // Debug logs
+      console.log('\n[DEBUG TEST - Referencia bloques]');
+      console.log('agentContext:', JSON.stringify(agentContext, null, 2));
+      console.log('agentContext.blocks:', agentContext?.blocks || 'undefined');
+      
       const suggestions = await getAgentSuggestions(agentContext);
       
       // Verificar que cada sugerencia tiene un sourceBlockId válido
@@ -84,7 +95,7 @@ describe('ClinicalAgent EVAL', () => {
   describe('Caso 2: Contexto vacío', () => {
     it('debe generar sugerencias genéricas para un contexto vacío', async () => {
       // Construir el contexto del agente a partir del MCP vacío
-      const agentContext = buildAgentContext(emptyMCP);
+      const agentContext = buildAgentContextFromMCP(emptyMCP);
       
       // Obtener sugerencias del agente
       const suggestions = await getAgentSuggestions(agentContext);
@@ -120,10 +131,13 @@ describe('ClinicalAgent EVAL', () => {
    */
   describe('Caso 3: Contexto con datos contradictorios', () => {
     it('debe generar sugerencias relevantes incluso con información contradictoria', async () => {
-      // Construir el contexto del agente a partir del MCP contradictorio
-      const agentContext = buildAgentContext(contradictoryMCP);
+      const agentContext = buildAgentContextFromMCP(contradictoryMCP);
       
-      // Obtener sugerencias del agente
+      // Debug logs
+      console.log('\n[DEBUG TEST - Caso 3: Datos contradictorios]');
+      console.log('agentContext:', JSON.stringify(agentContext, null, 2));
+      console.log('agentContext.blocks:', agentContext?.blocks || 'undefined');
+      
       const suggestions = await getAgentSuggestions(agentContext);
       
       // Verificar que se generan sugerencias (al menos las genéricas)
@@ -166,10 +180,13 @@ describe('ClinicalAgent EVAL', () => {
    */
   describe('Caso 4: Contexto de enfermedad crónica', () => {
     it('debe generar sugerencias relevantes para el contexto de enfermedad crónica', async () => {
-      // Construir el contexto del agente a partir del MCP de caso crónico
-      const agentContext = buildAgentContext(chronicMCP);
+      const agentContext = buildAgentContextFromMCP(chronicMCP);
       
-      // Obtener sugerencias del agente
+      // Debug logs
+      console.log('\n[DEBUG TEST - Caso 4: Enfermedad crónica]');
+      console.log('agentContext:', JSON.stringify(agentContext, null, 2));
+      console.log('agentContext.blocks:', agentContext?.blocks || 'undefined');
+      
       const suggestions = await getAgentSuggestions(agentContext);
       
       // Verificar que se generan sugerencias

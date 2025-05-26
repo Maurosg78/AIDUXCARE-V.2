@@ -1,5 +1,5 @@
-import { vi } from "vitest";
 import React from 'react';
+import { Button } from './Button';
 
 interface ActionPanelProps {
   visitId: string;
@@ -10,18 +10,18 @@ interface ActionPanelProps {
 const ActionPanel: React.FC<ActionPanelProps> = ({ visitId, patientId, hasPreviousVisits }) => {
   return (
     <div className="flex space-x-2">
-      <button
-        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+      <Button
+        variant="primary"
         onClick={() => console.log(`Guardando visita ${visitId} para paciente ${patientId}`)}
       >
         Guardar
-      </button>
+      </Button>
       {hasPreviousVisits && (
-        <button
-          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50"
+        <Button
+          variant="outline"
         >
           Comparar
-        </button>
+        </Button>
       )}
     </div>
   );

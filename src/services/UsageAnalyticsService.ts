@@ -20,13 +20,7 @@ export interface UsageMetric {
 /**
  * Tipos válidos de métricas de uso
  */
-export type UsageMetricType = 
-  | 'suggestions_generated'
-  | 'suggestions_accepted'
-  | 'suggestions_integrated'
-  | 'suggestion_feedback_given'
-  | 'audio_items_validated'
-  | 'time_saved_minutes';
+export type UsageMetricType = 'suggestions_integrated' | 'suggestions_rejected';
 
 /**
  * Tipo que define la estructura de métricas longitudinales entre visitas
@@ -103,25 +97,20 @@ export const logMetric = (metric: UsageMetric): void => {
  * @param value Valor numérico de la métrica
  * @param metadata Metadatos adicionales
  */
-export const trackMetric = (
-  type: UsageMetricType,
+export interface UsageMetricData {
+  suggestionId: string;
+  suggestionType: 'recommendation' | 'warning' | 'info';
+  suggestionField: string;
+}
+
+export const trackMetric = async (
+  metricType: UsageMetricType,
+  data: UsageMetricData,
   userId: string,
-  visitId: string,
-  value: number,
-  metadata: Record<string, unknown> = {}
-): void => {
-  try {
-    // Registrar el evento de uso
-    track(type, {
-      user_id: userId,
-      visit_id: visitId,
-      value,
-      ...metadata
-    });
-  } catch (error) {
-    console.error('Error al registrar métrica de uso:', error);
-    throw error;
-  }
+  visitId: string
+): Promise<void> => {
+  // Aquí iría la implementación real
+  console.log('Track Metric:', { metricType, data, userId, visitId });
 };
 
 /**

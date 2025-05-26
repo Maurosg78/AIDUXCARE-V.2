@@ -6,12 +6,30 @@ import * as UserContext from '../core/auth/UserContext';
 import { User } from '@supabase/supabase-js';
 import React from 'react';
 
-// Mock de useNavigate
-vi.mock('react-router-dom', () => ({
-  ...vi.importActual('react-router-dom'),
+/**
+ * NOTA: Advertencias de React Router v7
+ * 
+ * Durante la ejecución de los tests, React Router muestra dos advertencias sobre cambios futuros en v7:
+ * 1. startTransition: React Router comenzará a envolver las actualizaciones de estado en React.startTransition
+ * 2. relativeSplatPath: La resolución de rutas relativas dentro de rutas Splat cambiará
+ * 
+ * Estas advertencias no afectan el funcionamiento actual, pero deberán ser consideradas
+ * durante la actualización a React Router v7.
+ * 
+ * Referencias:
+ * - https://reactrouter.com/v6/upgrading/future#v7_starttransition
+ * - https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath
+ */
+
+// Mock de react-router-dom
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom') as typeof import('react-router-dom');
+  return {
+    ...actual,
   useNavigate: () => vi.fn(),
   Outlet: () => <div data-testid="outlet">Outlet Content</div>
-}));
+  };
+});
 
 // Mock del contexto de usuario
 vi.mock('../core/auth/UserContext', () => ({

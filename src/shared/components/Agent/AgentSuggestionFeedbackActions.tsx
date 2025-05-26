@@ -1,12 +1,14 @@
 import React from 'react';
-import { AgentSuggestion, SuggestionFeedbackType } from '@/types/agent';
-import { track } from '@/lib/analytics';
-import { AuditLogger } from '../../../core/audit/AuditLogger';
+import { Button } from '../UI/Button';
+import { track } from '../../utils/analytics';
 
-export interface AgentSuggestionFeedbackActionsProps {
+interface AgentSuggestionFeedbackActionsProps {
   visitId: string;
   userId: string;
-  suggestion: AgentSuggestion;
+  suggestion: {
+    id: string;
+    content: string;
+  };
   onAccept: () => void;
   onReject: () => void;
   isIntegrated: boolean;
@@ -32,7 +34,7 @@ const AgentSuggestionFeedbackActions: React.FC<AgentSuggestionFeedbackActionsPro
 
   if (isIntegrated) {
     return (
-      <div className="mt-2 text-sm text-green-600">
+      <div className="mt-2 text-sm text-success">
         ✓ Sugerencia integrada
       </div>
     );
@@ -40,22 +42,22 @@ const AgentSuggestionFeedbackActions: React.FC<AgentSuggestionFeedbackActionsPro
 
   return (
     <div className="mt-2 flex space-x-2">
-      <button
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleAccept}
-        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
       >
         Aceptar
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleReject}
-        className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
       >
         Rechazar
-      </button>
+      </Button>
     </div>
   );
 };
-
-AgentSuggestionFeedbackActions.displayName = 'AgentSuggestionFeedbackActions';
 
 export default AgentSuggestionFeedbackActions; 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { executeAgent, AgentExecutionParams } from '../../src/core/agent/AgentExecutor';
+import { AgentExecutor, AgentExecutionParams } from '../../src/core/agent/AgentExecutor';
 import { buildAgentContext } from '../../src/core/agent/AgentContextBuilder';
-import { AgentSuggestion } from '../../src/core/agent/ClinicalAgent';
+import { AgentSuggestion } from '../../src/types/agent';
 import { LLMProvider } from '../../src/core/agent/LLMAdapter';
 import { validMCP } from '../../__mocks__/contexts/validMCP';
 import { emptyMCP } from '../../__mocks__/contexts/emptyMCP';
@@ -9,6 +9,7 @@ import { partialMCP } from '../../__mocks__/contexts/partialMCP';
 import { z } from 'zod';
 import { EMRFormService } from '../../src/core/services/EMRFormService';
 import { AuditLogger } from '../../src/core/audit/AuditLogger';
+import { v4 as uuidv4 } from 'uuid';
 
 // Mocks para los servicios de EMR y auditoría
 vi.mock('../../src/core/services/EMRFormService');
@@ -24,22 +25,130 @@ const AgentSuggestionSchema = z.object({
 
 // Mock para sendToLLM para evitar llamadas reales a servicios externos
 vi.mock('../../src/core/agent/LLMAdapter', () => ({
-  sendToLLM: vi.fn().mockImplementation((prompt, provider) => {
-    // Respuestas diferentes según el prompt para simular diferentes escenarios
-    if (prompt.includes('malestar general') || prompt.includes('parámetros normales')) {
-      return Promise.resolve(`Respuesta para contexto parcial. Sin información específica suficiente para generar recomendaciones detalladas.`);
-    } else if (prompt.includes('dolor torácico') || prompt.includes('Diabetes mellitus')) {
-      return Promise.resolve(`
-        Análisis del caso:
-        1. [TIPO: warning] Considerar evaluación cardíaca urgente por dolor torácico opresivo con irradiación al brazo izquierdo, sugiriendo posible SCA.
-        2. [TIPO: recommendation] Ajuste farmacológico necesario dado HbA1c 8.2% y TA 165/95 mmHg que indican control subóptimo.
-        3. [TIPO: info] Recomendar perfil lipídico completo y evaluación de riesgo cardiovascular por dislipidemia.
-      `);
-    } else {
-      // Respuesta genérica para contextos vacíos o no reconocidos
-      return Promise.resolve(`No hay información clínica relevante para generar sugerencias.`);
+  sendToLLM: vi.fn().mockImplementation((context, provider) => {
+    // Si el contexto es vacío, simular respuesta vacía
+    if (context && Array.isArray(context.blocks) && context.blocks.length === 0) {
+      return Promise.resolve({ suggestions: [], explanation: 'Sin datos' });
     }
+    // Simular otros escenarios según el contenido de los bloques
+    if (context && context.blocks && context.blocks.some(b => b.content.includes('malestar general'))) {
+      return Promise.resolve({
+        suggestions: [
+          {
+            id: uuidv4(),
+            type: 'warning' as const,
+            field: 'plan' as const,
+            content: 'Considerar evaluación adicional por malestar general inespecífico',
+            sourceBlockId: context.blocks[0]?.id || 'default',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ],
+        explanation: 'Respuesta para contexto parcial.'
+      });
+    }
+    // Respuesta genérica con múltiples sugerencias
+    return Promise.resolve({
+      suggestions: [
+        {
+          id: uuidv4(),
+          type: 'recommendation' as const,
+          field: 'diagnosis' as const,
+          content: 'Considerar realizar radiografía de tórax',
+          sourceBlockId: context.blocks[0]?.id || 'default',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: uuidv4(),
+          type: 'warning' as const,
+          field: 'plan' as const,
+          content: 'Vigilar signos de dificultad respiratoria',
+          sourceBlockId: context.blocks[1]?.id || 'default',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: uuidv4(),
+          type: 'info' as const,
+          field: 'notes' as const,
+          content: 'Considerar antecedente de asma en evaluación',
+          sourceBlockId: context.blocks[1]?.id || 'default',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ],
+      explanation: 'Respuesta generada por mock.'
+    });
   })
+}));
+
+vi.mock('../../src/core/agent/ClinicalAgent', () => ({
+  ClinicalAgent: {
+    create: vi.fn().mockImplementation(async (visitId: string) => {
+      // Si el visitId es 'empty-visit', retornar contexto vacío
+      if (visitId === 'empty-visit') {
+        return {
+      getContext: vi.fn().mockResolvedValue({
+        visitId,
+        blocks: [],
+        metadata: {}
+      }),
+      getSuggestions: vi.fn().mockReturnValue([]),
+      addSuggestion: vi.fn()
+        };
+      }
+      // Si el visitId es 'visit-partial', retornar contexto parcial
+      if (visitId === 'visit-partial') {
+        return {
+          getContext: vi.fn().mockResolvedValue({
+            visitId,
+            blocks: [
+              {
+                id: 'block-1',
+                type: 'contextual',
+                content: 'Paciente refiere malestar general',
+                timestamp: new Date().toISOString(),
+                patient_id: 'patient-123'
+              }
+            ],
+            metadata: {
+              patientId: 'patient-123'
+            }
+          }),
+          getSuggestions: vi.fn().mockReturnValue([]),
+          addSuggestion: vi.fn()
+        };
+      }
+      // Para otros casos, retornar contexto completo
+      return {
+        getContext: vi.fn().mockResolvedValue({
+          visitId,
+          blocks: [
+            {
+              id: 'block-1',
+              type: 'contextual',
+              content: 'Paciente presenta fiebre de 38.5°C y tos seca',
+              timestamp: new Date().toISOString(),
+              patient_id: 'patient-123'
+            },
+            {
+              id: 'block-2',
+              type: 'persistent',
+              content: 'Historial de asma bronquial',
+              timestamp: new Date().toISOString(),
+              patient_id: 'patient-123'
+            }
+          ],
+          metadata: {
+            patientId: 'patient-123'
+          }
+        }),
+        getSuggestions: vi.fn().mockReturnValue([]),
+        addSuggestion: vi.fn()
+      };
+    })
+  }
 }));
 
 /**
@@ -71,17 +180,9 @@ describe('AgentExecutor EVAL', () => {
    */
   describe('Caso 1: Contexto MCP completo y válido', () => {
     it('debe generar sugerencias estructuradas cuando se proporciona un contexto completo', async () => {
-      // Construir el contexto del agente a partir del MCP válido
-      const agentContext = buildAgentContext(validMCP);
-      
-      // Parámetros para ejecutar el agente
-      const params: AgentExecutionParams = {
-        context: agentContext,
-        provider: 'openai' as LLMProvider
-      };
-      
-      // Ejecutar el agente
-      const suggestions = await executeAgent(params);
+      // Crear el executor usando el método estático y ejecutar el agente
+      const executor = await AgentExecutor.create('visit-123', 'openai');
+      const suggestions = await executor.execute();
       
       // Verificaciones
       expect(suggestions).toBeDefined();
@@ -117,17 +218,9 @@ describe('AgentExecutor EVAL', () => {
    */
   describe('Caso 2: Contexto MCP nulo o vacío', () => {
     it('debe manejar correctamente un contexto vacío sin errores', async () => {
-      // Construir el contexto del agente a partir del MCP vacío
-      const agentContext = buildAgentContext(emptyMCP);
-      
-      // Parámetros para ejecutar el agente
-      const params: AgentExecutionParams = {
-        context: agentContext,
-        provider: 'openai' as LLMProvider
-      };
-      
-      // Ejecutar el agente
-      const suggestions = await executeAgent(params);
+      // Crear el executor usando el método estático y ejecutar el agente
+      const executor = await AgentExecutor.create('empty-visit', 'openai');
+      const suggestions = await executor.execute();
       
       // Verificar que se devuelve un array (posiblemente vacío), pero sin errores
       expect(suggestions).toBeDefined();
@@ -143,14 +236,10 @@ describe('AgentExecutor EVAL', () => {
     });
     
     it('debe rechazar un contexto nulo con un error apropiado', async () => {
-      // Intentar ejecutar con un contexto nulo (intencionalmente provocamos un error)
-      const params = {
-        context: null,
-        provider: 'openai' as LLMProvider
-      } as unknown as AgentExecutionParams;
-      
-      // La ejecución debería rechazar la promesa con un error descriptivo
-      await expect(executeAgent(params)).rejects.toThrow();
+      // Intentar crear el executor con un visitId inválido
+      await expect(AgentExecutor.create(null as any, 'openai'))
+        .rejects
+        .toThrow('El ID de visita es requerido para crear el ejecutor del agente');
     });
   });
 
@@ -162,46 +251,9 @@ describe('AgentExecutor EVAL', () => {
    */
   describe('Caso 3: Contexto sin información accionable', () => {
     it('debe devolver un array vacío o sugerencias limitadas cuando no hay info accionable', async () => {
-      // Crear un contexto con estructura válida pero sin datos médicamente relevantes
-      const emptyContextWithStructure = buildAgentContext({
-        contextual: {
-          source: "test",
-          data: [
-            {
-              id: "empty-1",
-              type: "contextual",
-              content: "Sin hallazgos significativos.",
-              timestamp: new Date().toISOString(),
-              created_at: new Date().toISOString()
-            }
-          ]
-        },
-        persistent: {
-          source: "test",
-          data: [
-            {
-              id: "empty-2",
-              type: "persistent",
-              content: "Sin información previa disponible.",
-              timestamp: new Date().toISOString(),
-              created_at: new Date().toISOString()
-            }
-          ]
-        },
-        semantic: {
-          source: "test",
-          data: []
-        }
-      });
-      
-      // Parámetros para ejecutar el agente
-      const params: AgentExecutionParams = {
-        context: emptyContextWithStructure,
-        provider: 'openai' as LLMProvider
-      };
-      
-      // Ejecutar el agente
-      const suggestions = await executeAgent(params);
+      // Crear el executor usando el método estático y ejecutar el agente
+      const executor = await AgentExecutor.create('visit-empty-structure', 'openai');
+      const suggestions = await executor.execute();
       
       // Verificar el resultado - podría ser un array vacío o con sugerencias genéricas
       expect(suggestions).toBeDefined();
@@ -226,17 +278,9 @@ describe('AgentExecutor EVAL', () => {
    */
   describe('Caso 4: Contexto parcialmente válido', () => {
     it('debe limpiar datos parciales y generar sugerencias razonables', async () => {
-      // Construir el contexto del agente a partir del MCP parcial
-      const agentContext = buildAgentContext(partialMCP);
-      
-      // Parámetros para ejecutar el agente
-      const params: AgentExecutionParams = {
-        context: agentContext,
-        provider: 'openai' as LLMProvider
-      };
-      
-      // Ejecutar el agente
-      const suggestions = await executeAgent(params);
+      // Crear el executor usando el método estático y ejecutar el agente
+      const executor = await AgentExecutor.create('visit-partial', 'openai');
+      const suggestions = await executor.execute();
       
       // Verificaciones
       expect(suggestions).toBeDefined();
@@ -249,14 +293,15 @@ describe('AgentExecutor EVAL', () => {
       });
       
       // Verificar que las sugerencias son razonables dado el contexto limitado
-      // No podemos verificar el contenido específico, pero al menos podemos
-      // asegurar que tienen la estructura correcta
       if (suggestions.length > 0) {
-        const sourceBlockIds = suggestions.map(s => s.sourceBlockId);
+        const sourceBlockIds = suggestions.map(s => s.sourceBlockId).filter(id => id != null);
         
-        // Los IDs de bloque fuente deben existir en el contexto
-        const contextBlockIds = agentContext.blocks.map(b => b.id);
-        const allSourceBlocksExist = sourceBlockIds.every(id => contextBlockIds.includes(id));
+        // Obtener los IDs de bloques del contexto real usado
+        const context = await executor['agent'].getContext();
+        const actualBlockIds = context.blocks.map(b => b.id);
+        
+        // Verificar que todos los sourceBlockIds existen en el contexto real
+        const allSourceBlocksExist = sourceBlockIds.every(id => actualBlockIds.includes(id!));
         expect(allSourceBlocksExist).toBe(true);
       }
     });
@@ -271,24 +316,28 @@ describe('AgentExecutor EVAL', () => {
   describe('Caso 5: Integración de sugerencias al EMR', () => {
     it('debe integrar una sugerencia aprobada en el EMR y registrar el evento', async () => {
       // Crear una sugerencia de prueba
-      const testSuggestion: AgentSuggestion = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        sourceBlockId: 'block-123',
-        type: 'recommendation',
-        content: 'Aumentar dosis de metformina a 1000mg BID'
+      const mockSuggestion = {
+        id: uuidv4(),
+        sourceBlockId: 'block-1',
+        type: 'recommendation' as const,
+        content: 'Mock content',
+        field: 'diagnosis' as const,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       // Configurar mocks
-      const mockInsertSuggestedContent = vi.fn().mockImplementation(async () => {
-        // Llamamos directamente al mockLog para simular el llamado interno desde insertSuggestedContent
-        mockLog('suggestions.approved', {
+      const mockInsertSuggestion = vi.fn().mockImplementation(async () => {
+        // Simular el logging interno que ocurre después de una inserción exitosa
+        await AuditLogger.log('suggestions.approved', {
           visitId: 'visit-test-123',
           userId: 'user-test-456',
+          patientId: 'patient-test-789',
           field: 'plan',
-          content: testSuggestion.content,
+          content: mockSuggestion.content,
           source: 'agent',
-          suggestionId: testSuggestion.id,
-          timestamp: expect.any(String)
+          suggestionId: mockSuggestion.id,
+          timestamp: new Date().toISOString()
         });
         return true;
       });
@@ -296,48 +345,47 @@ describe('AgentExecutor EVAL', () => {
       const mockLog = vi.fn().mockReturnValue(true);
       
       // Asignar los mocks a los métodos
-      EMRFormService.insertSuggestedContent = mockInsertSuggestedContent;
-      EMRFormService.mapSuggestionTypeToEMRSection = vi.fn().mockReturnValue('plan');
-      AuditLogger.log = mockLog;
+      vi.mocked(EMRFormService).insertSuggestion = mockInsertSuggestion;
+      vi.mocked(EMRFormService).mapSuggestionTypeToEMRSection = vi.fn().mockReturnValue('plan');
+      vi.mocked(AuditLogger).log = mockLog;
       
       // Datos de prueba
       const visitId = 'visit-test-123';
       const userId = 'user-test-456';
       
       // Simular una aprobación de sugerencia
-      await EMRFormService.insertSuggestedContent(
+      await EMRFormService.insertSuggestion(
+        {
+          id: mockSuggestion.id,
+          content: mockSuggestion.content,
+          type: mockSuggestion.type,
+          sourceBlockId: mockSuggestion.sourceBlockId
+        },
         visitId,
-        'plan',
-        testSuggestion.content,
-        'agent',
-        testSuggestion.id
+        'patient-test-789',
+        userId
       );
       
       // Verificar que se llamó al método de inserción con los parámetros correctos
-      expect(mockInsertSuggestedContent).toHaveBeenCalledWith(
+      expect(mockInsertSuggestion).toHaveBeenCalledWith(
+        {
+          id: mockSuggestion.id,
+          content: mockSuggestion.content,
+          type: mockSuggestion.type,
+          sourceBlockId: mockSuggestion.sourceBlockId
+        },
         visitId,
-        'plan',
-        testSuggestion.content,
-        'agent',
-        testSuggestion.id
+        'patient-test-789',
+        userId
       );
       
       // Verificar que se registró el evento en el sistema de auditoría
-      expect(mockLog).toHaveBeenCalled();
       expect(mockLog).toHaveBeenCalledWith('suggestions.approved', expect.objectContaining({
         visitId,
         field: 'plan',
-        content: testSuggestion.content
+          content: mockSuggestion.content,
+        suggestionId: mockSuggestion.id
       }));
-      
-      // Verificar que el contenido se integró correctamente (simulado por el mock)
-      expect(await EMRFormService.insertSuggestedContent(
-        visitId,
-        'plan',
-        testSuggestion.content,
-        'agent',
-        testSuggestion.id
-      )).toBe(true);
     });
   });
 }); 

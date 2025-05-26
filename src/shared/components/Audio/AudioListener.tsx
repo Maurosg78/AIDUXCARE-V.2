@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState } from 'react';
 import { audioCaptureService, TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 

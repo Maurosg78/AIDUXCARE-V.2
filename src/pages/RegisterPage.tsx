@@ -68,6 +68,7 @@ const RegisterPage = () => {
         <form
           onSubmit={handleRegister}
           className="space-y-6"
+          data-testid="register-form"
         >
           <div className="space-y-4 rounded-md shadow-sm">
             <div>

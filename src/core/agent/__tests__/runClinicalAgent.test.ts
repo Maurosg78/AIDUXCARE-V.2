@@ -90,7 +90,16 @@ describe('runClinicalAgent', () => {
     // Modificar temporalmente el mock para lanzar un error
     vi.mocked(AgentExecutor.create).mockRejectedValueOnce(mockError);
     
-    await expect(runClinicalAgent('visit-123')).rejects.toThrow('Error de prueba');
+    const result = await runClinicalAgent('visit-123');
+    expect(result).toEqual([]);
+    expect(logMetric).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'agent_execution_failed',
+      userId: 'system',
+      visitId: 'visit-123',
+      metadata: expect.objectContaining({
+        error: 'Error de prueba'
+      })
+    }));
   });
 
   it('debe manejar correctamente un contexto vacío sin lanzar errores', async () => {
@@ -106,7 +115,7 @@ describe('runClinicalAgent', () => {
     vi.mocked(buildAgentContext).mockResolvedValueOnce(emptyContext);
     
     const result = await runClinicalAgent('empty-visit');
-    expect(result).toEqual(mockSuggestions);
+    expect(result).toEqual([]);
   });
 
   it('debe utilizar openai como proveedor por defecto', async () => {
@@ -132,7 +141,16 @@ describe('runClinicalAgent', () => {
     const contextError = new Error('Error al construir contexto');
     vi.mocked(buildAgentContext).mockRejectedValueOnce(contextError);
     
-    await expect(runClinicalAgent('visit-123')).rejects.toThrow('Error al construir contexto');
+    const result = await runClinicalAgent('visit-123');
+    expect(result).toEqual([]);
+    expect(logMetric).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'agent_execution_failed',
+      userId: 'system',
+      visitId: 'visit-123',
+      metadata: expect.objectContaining({
+        error: 'Error al construir contexto'
+      })
+    }));
   });
 
   it('debe manejar errores en el proceso de ejecución del agente', async () => {
@@ -144,6 +162,15 @@ describe('runClinicalAgent', () => {
     
     vi.mocked(AgentExecutor.create).mockResolvedValueOnce(mockErrorExecutor as unknown as AgentExecutor);
     
-    await expect(runClinicalAgent('visit-123')).rejects.toThrow('Error durante la ejecución');
+    const result = await runClinicalAgent('visit-123');
+    expect(result).toEqual([]);
+    expect(logMetric).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'agent_execution_failed',
+      userId: 'system',
+      visitId: 'visit-123',
+      metadata: expect.objectContaining({
+        error: 'Error durante la ejecución'
+      })
+    }));
   });
 }); 

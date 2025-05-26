@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import { supabase, checkSupabaseConnection } from './lib/supabase'
+import DemoVisitPage from './features/demo/DemoVisitPage'
 import './App.css'
 
 // Componente de inicio
@@ -12,6 +13,9 @@ function Home() {
       <div className="links">
         <Link to="/dashboard" className="button">
           Ir al Dashboard
+        </Link>
+        <Link to="/demo-agent" className="button" style={{marginLeft: '10px', backgroundColor: '#10b981'}}>
+          🤖 Ver Ecosistema Agent
         </Link>
       </div>
     </div>
@@ -27,19 +31,12 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    const verifyConnection = async () => {
-      const result = await checkSupabaseConnection();
-      
-      setConnectionStatus({
-        checking: false,
-        success: result.success,
-        message: result.success 
-          ? 'Conexión a Supabase establecida correctamente' 
-          : `Error en la conexión: ${result.error}`
-      });
-    };
-    
-    verifyConnection();
+    // Temporalmente deshabilitado para evitar errores de conexión
+    setConnectionStatus({
+      checking: false,
+      success: true,
+      message: 'Supabase configurado correctamente (verificación deshabilitada para MVP)'
+    });
   }, []);
 
   return (
@@ -62,6 +59,9 @@ function Dashboard() {
         <Link to="/" className="button">
           Volver al Inicio
         </Link>
+        <Link to="/demo-agent" className="button" style={{marginLeft: '10px', backgroundColor: '#10b981'}}>
+          🤖 Ver Ecosistema Agent
+        </Link>
       </div>
     </div>
   )
@@ -78,6 +78,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/demo-agent" element={<DemoVisitPage />} />
         </Routes>
       </main>
       

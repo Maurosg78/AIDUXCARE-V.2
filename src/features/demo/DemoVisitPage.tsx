@@ -19,7 +19,6 @@ import {
   mockUserId
 } from '@/core/demo/mockVisitData';
 import { MCPContext } from '@/core/mcp/schema';
-import { useParams } from 'react-router-dom';
 import { AgentSuggestion } from '@/types/agent';
 import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
 
@@ -28,7 +27,8 @@ import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
  * Muestra un flujo clínico completo con todos los módulos principales
  */
 const DemoVisitPage: React.FC = () => {
-  const { visitId } = useParams<{ visitId: string }>();
+  // Para la demo, usamos un visitId fijo en lugar de obtenerlo de la URL
+  const visitId = 'demo-visit-123';
   const [showTranscription, setShowTranscription] = useState(false);
   const [transcriptionData, setTranscriptionData] = useState<TranscriptionSegment[]>([]);
   const [emrContent, setEmrContent] = useState(mockEMRData);

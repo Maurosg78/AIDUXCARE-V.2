@@ -15,12 +15,15 @@ import supabase from '@/core/auth/supabaseClient';
  * @returns Array de sugerencias generadas
  */
 export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSuggestion[]> {
+  // Asegurar que blocks sea un array
+  const blocks = ctx.blocks || [];
+  
   // Array para almacenar las sugerencias generadas
   const suggestions: AgentSuggestion[] = [];
   
   // Filtrar bloques de tipo contextual y semantico
-  const contextualBlocks = ctx.blocks.filter((block: MemoryBlock) => block.type === 'contextual');
-  const semanticBlocks = ctx.blocks.filter((block: MemoryBlock) => block.type === 'semantic');
+  const contextualBlocks = blocks.filter((block: MemoryBlock) => block.type === 'contextual');
+  const semanticBlocks = blocks.filter((block: MemoryBlock) => block.type === 'semantic');
   
   // STUB: Generar sugerencias basadas en bloques contextuales
   for (const block of contextualBlocks) {
@@ -163,7 +166,7 @@ export async function buildAgentContext(visitId: string): Promise<AgentContext> 
     const now = new Date();
     return {
       visitId,
-      blocks: blocks as MemoryBlock[],
+      blocks: blocks || [], // Asegurar que blocks sea un array
       metadata: {
         createdAt: now,
         updatedAt: now
@@ -171,7 +174,15 @@ export async function buildAgentContext(visitId: string): Promise<AgentContext> 
     };
   } catch (err) {
     console.error('Error building agent context:', err);
-    throw err;
+    // En caso de error, devolver un contexto con array vacío
+    return {
+      visitId,
+      blocks: [],
+      metadata: {
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    };
   }
 }
 

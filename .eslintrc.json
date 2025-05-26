@@ -24,8 +24,20 @@
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "error",
-    "jsx-a11y/aria-props": "error",
-    "jsx-a11y/role-has-required-aria-props": "error"
+    "jsx-a11y/aria-props": ["error", {
+      "aria-expanded": {
+        "allowExpression": true,
+        "allowBoolean": true
+      },
+      "aria-busy": {
+        "allowExpression": true,
+        "allowBoolean": true
+      }
+    }],
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/aria-role": ["error", {
+      "allowInvalidRoles": false
+    }]
   },
   "overrides": [
     {

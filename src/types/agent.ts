@@ -15,6 +15,7 @@ export interface MemoryBlock {
 
 export interface AgentContext {
   visitId: string;
+  patientId?: string;
   blocks: MemoryBlock[];
   metadata: {
     createdAt: Date;

@@ -4,10 +4,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionFeedbackActions from '../AgentSuggestionFeedbackActions';
 import { AgentSuggestion, SuggestionType } from '../../../../types/agent';
-import { track } from '../../../../lib/analytics';
+import { track } from '../../../utils/analytics';
 
 // Mock de la función track
-vi.mock('../../../../lib/analytics', () => ({
+vi.mock('../../../utils/analytics', () => ({
   track: vi.fn()
 }));
 

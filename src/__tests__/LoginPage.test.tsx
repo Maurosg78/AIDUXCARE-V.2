@@ -61,7 +61,7 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     );
 
-    const form = screen.getByRole('form');
+    const form = screen.getByTestId('login-form');
     fireEvent.submit(form);
 
     await waitFor(() => {

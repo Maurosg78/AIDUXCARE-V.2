@@ -1,18 +1,15 @@
 // src/core/config/env.ts
 
-// Carga URL y KEY de Supabase desde Vercel/Next, Vite o variables sin prefijo
+// Carga URL y KEY de Supabase desde variables de entorno de Vite
 export const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  process.env.SUPABASE_URL ||
+  import.meta.env.VITE_SUPABASE_URL ||
   '';
 
 export const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
   '';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables');
+// Validación opcional para desarrollo (no bloquear en producción)
+if (import.meta.env.DEV && (!SUPABASE_URL || !SUPABASE_ANON_KEY)) {
+  console.warn('⚠️ Missing Supabase environment variables - some features may not work');
 }

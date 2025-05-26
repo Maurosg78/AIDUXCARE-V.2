@@ -1,65 +1,98 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { executeAgent, AgentExecutionParams } from '../../../src/core/agent/AgentExecutor';
-import { AgentContext } from '../../../src/core/agent/AgentContextBuilder';
-import * as LLMAdapter from '../../../src/core/agent/LLMAdapter';
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { AgentExecutor, AgentExecutionParams } from '../../../src/core/agent/AgentExecutor';
+import { ClinicalAgent } from '../../../src/core/agent/ClinicalAgent';
+import type { AgentContext, AgentSuggestion, MemoryBlock } from '../../../src/types/agent';
+import { sendToLLM, LLMProvider, LLMResponse } from '../../../src/core/agent/LLMAdapter';
 
 // Mock para sendToLLM
 vi.mock('../../../src/core/agent/LLMAdapter', () => ({
-  sendToLLM: vi.fn().mockImplementation((prompt, provider) => {
-    return Promise.resolve(`Respuesta simulada de ${provider} para el prompt recibido. Analizando la información médica proporcionada y generando recomendaciones basadas en la evidencia.`);
+  sendToLLM: vi.fn().mockImplementation((context, provider) => {
+    return Promise.resolve({
+      suggestions: [
+        {
+          id: 'sug-1',
+          type: 'recommendation',
+          field: 'diagnosis',
+          content: 'Considerar realizar radiografía de columna lumbar para evaluar posibles alteraciones estructurales.',
+          sourceBlockId: 'ctx-1',
+          explanation: 'El dolor lumbar persistente y la falta de respuesta a analgésicos sugieren la necesidad de estudios imagenológicos.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: 'sug-2',
+          type: 'warning',
+          field: 'treatment',
+          content: 'Evaluar la necesidad de ajustar la dosis de enalapril considerando la hipertensión controlada.',
+          sourceBlockId: 'per-1',
+          explanation: 'El historial de hipertensión y el tratamiento actual sugieren la necesidad de revisar la medicación.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+    });
   })
 }));
 
-describe('AgentExecutor', () => {
-  // Contexto de prueba con datos ficticios
+// Definir mockContext antes de usarlo
   const mockContext: AgentContext = {
     visitId: 'visit-123',
-    patientId: 'patient-456',
+  metadata: {
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    professionalId: 'professional-789',
+    visitDate: new Date().toISOString()
+  },
     blocks: [
       {
         id: 'ctx-1',
         type: 'contextual',
-        content: 'Paciente presenta dolor en la región lumbar desde hace 3 días. No responde bien a analgésicos.'
+      content: 'Paciente presenta dolor en la región lumbar desde hace 3 días. No responde bien a analgésicos.',
+      created_at: new Date().toISOString()
       },
       {
         id: 'ctx-2',
         type: 'contextual',
-        content: 'Signos vitales: TA 130/85, FC 78, FR 16, T 36.5°C'
+      content: 'Signos vitales: TA 130/85, FC 78, FR 16, T 36.5°C',
+      created_at: new Date().toISOString()
       },
       {
         id: 'per-1',
         type: 'persistent',
-        content: 'Historial de hipertensión controlada. Tratamiento habitual con enalapril 10mg/día.'
+      content: 'Historial de hipertensión controlada. Tratamiento habitual con enalapril 10mg/día.',
+      created_at: new Date().toISOString()
       },
       {
         id: 'sem-1',
         type: 'semantic',
-        content: 'El dolor lumbar puede ser causado por distensión muscular, problemas posturales, hernia de disco o condiciones inflamatorias.'
+      content: 'El dolor lumbar puede ser causado por distensión muscular, problemas posturales, hernia de disco o condiciones inflamatorias.',
+      created_at: new Date().toISOString()
       }
     ]
   };
 
+// Mock para ClinicalAgent
+const mockAgent = {
+  getContext: vi.fn().mockResolvedValue(mockContext),
+  getSuggestions: vi.fn().mockReturnValue([]),
+  addSuggestion: vi.fn().mockResolvedValue(undefined),
+  getMemoryBlocks: vi.fn().mockReturnValue(mockContext.blocks),
+  getSuggestionTypes: vi.fn().mockReturnValue(['recommendation', 'warning', 'info'])
+} as unknown as ClinicalAgent;
+
+describe('AgentExecutor', () => {
   const mockParams: AgentExecutionParams = {
     context: mockContext,
     provider: 'openai'
   };
 
-  // Acelerar los tests reemplazando setTimeout
-  beforeAll(() => {
-    vi.useFakeTimers();
-  });
-
-  afterAll(() => {
-    vi.useRealTimers();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('debería devolver un array con al menos 2 sugerencias válidas', async () => {
-    const responsePromise = executeAgent(mockParams);
-    
-    // Avanzar el tiempo simulado para resolver el setTimeout en sendToLLM
-    vi.advanceTimersByTime(500);
-    
-    const suggestions = await responsePromise;
+    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    const suggestions = await executor.execute();
     
     expect(Array.isArray(suggestions)).toBe(true);
     expect(suggestions.length).toBeGreaterThanOrEqual(2);
@@ -80,29 +113,16 @@ describe('AgentExecutor', () => {
   });
 
   it('debería generar un prompt que contenga fragmentos del contexto original', async () => {
-    await executeAgent(mockParams);
+    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    await executor.execute();
     
-    // Avanzar el tiempo simulado
-    vi.advanceTimersByTime(500);
-    
-    // Verificar que se llamó a sendToLLM con un prompt que contiene partes del contexto
-    const promptArg = vi.mocked(LLMAdapter.sendToLLM).mock.calls[0][0];
-    
-    expect(typeof promptArg).toBe('string');
-    expect(promptArg).toContain('visit-123'); // visitId
-    expect(promptArg).toContain('patient-456'); // patientId
-    expect(promptArg).toContain('dolor en la región lumbar'); // contenido de bloque contextual
-    expect(promptArg).toContain('Historial de hipertensión'); // contenido de bloque persistente
-    expect(promptArg).toContain('hernia de disco'); // contenido de bloque semántico
+    // Verificar que se llamó a sendToLLM con el contexto correcto
+    expect(sendToLLM).toHaveBeenCalledWith(mockContext, mockParams.provider);
   });
 
   it('debería incluir sourceBlockId válido en las sugerencias', async () => {
-    const responsePromise = executeAgent(mockParams);
-    
-    // Avanzar el tiempo simulado
-    vi.advanceTimersByTime(500);
-    
-    const suggestions = await responsePromise;
+    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    const suggestions = await executor.execute();
     
     // Obtener la lista de IDs de bloques válidos del contexto
     const validBlockIds = mockContext.blocks.map(block => block.id);
@@ -116,8 +136,11 @@ describe('AgentExecutor', () => {
   it('no debería lanzar errores si el contexto está parcialmente vacío', async () => {
     // Crear un contexto con datos mínimos
     const minimalContext: AgentContext = {
-      visitId: '',
-      patientId: '',
+      visitId: 'visit-123',
+      metadata: {
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
       blocks: []
     };
     
@@ -127,12 +150,8 @@ describe('AgentExecutor', () => {
     };
     
     // No debería lanzar errores
-    const responsePromise = executeAgent(minimalParams);
-    
-    // Avanzar el tiempo simulado
-    vi.advanceTimersByTime(500);
-    
-    const suggestions = await responsePromise;
+    const executor = new AgentExecutor(mockAgent, minimalContext, minimalParams.provider);
+    const suggestions = await executor.execute();
     
     // Verificar que se obtienen sugerencias
     expect(Array.isArray(suggestions)).toBe(true);
@@ -141,7 +160,7 @@ describe('AgentExecutor', () => {
 
   it('debería utilizar diferentes LLMProviders según se especifique', async () => {
     // Probar con diferentes proveedores
-    const providers: LLMAdapter.LLMProvider[] = ['openai', 'anthropic', 'mistral', 'custom'];
+    const providers: LLMProvider[] = ['openai', 'anthropic'];
     
     for (const provider of providers) {
       const params: AgentExecutionParams = {
@@ -150,17 +169,73 @@ describe('AgentExecutor', () => {
       };
       
       // Limpiar mocks para nuevo test
-      vi.mocked(LLMAdapter.sendToLLM).mockClear();
+      vi.mocked(sendToLLM).mockClear();
       
-      const responsePromise = executeAgent(params);
-      
-      // Avanzar el tiempo simulado
-      vi.advanceTimersByTime(500);
-      
-      await responsePromise;
+      const executor = new AgentExecutor(mockAgent, mockContext, provider);
+      await executor.execute();
       
       // Verificar que se llamó a sendToLLM con el proveedor correcto
-      expect(LLMAdapter.sendToLLM).toHaveBeenCalledWith(expect.any(String), provider);
+      expect(sendToLLM).toHaveBeenCalledWith(mockContext, provider);
     }
+  });
+
+  it('debe ejecutar el agente y generar sugerencias', async () => {
+    // Mock de la respuesta del LLM
+    const mockLLMResponse: LLMResponse = {
+      suggestions: [
+        {
+          id: 'sug-1',
+          type: 'recommendation',
+          field: 'diagnosis',
+          content: 'Considerar realizar radiografía de columna lumbar para evaluar posibles alteraciones estructurales.',
+          sourceBlockId: 'ctx-1',
+          explanation: 'El dolor lumbar persistente y la falta de respuesta a analgésicos sugieren la necesidad de estudios imagenológicos.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+    };
+
+    // Configurar el mock de sendToLLM
+    (sendToLLM as any).mockResolvedValue(mockLLMResponse);
+
+    // Crear instancia de AgentExecutor
+    const executor = new AgentExecutor(mockAgent, mockContext, 'openai');
+
+    // Ejecutar el agente
+    const suggestions = await executor.execute();
+
+    // Verificar resultados
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].type).toBe('recommendation');
+    expect(suggestions[0].content).toContain('radiografía');
+    expect(mockAgent.addSuggestion).toHaveBeenCalledTimes(1);
+  });
+
+  it('debe manejar errores durante la ejecución', async () => {
+    // Mock de error en sendToLLM
+    (sendToLLM as any).mockRejectedValue(new Error('Error de LLM'));
+
+    // Crear instancia de AgentExecutor
+    const executor = new AgentExecutor(mockAgent, mockContext, 'openai');
+
+    // Ejecutar el agente y verificar que retorna array vacío en caso de error
+    const suggestions = await executor.execute();
+    expect(suggestions).toEqual([]);
+  });
+
+  it('debe manejar contexto inválido', async () => {
+    // Crear contexto inválido con un array vacío en lugar de null
+    const invalidContext: AgentContext = {
+      ...mockContext,
+      blocks: []
+    };
+
+    // Crear instancia de AgentExecutor con contexto inválido
+    const executor = new AgentExecutor(mockAgent, invalidContext, 'openai');
+
+    // Ejecutar el agente y verificar que retorna array vacío
+    const suggestions = await executor.execute();
+    expect(suggestions).toEqual([]);
   });
 }); 

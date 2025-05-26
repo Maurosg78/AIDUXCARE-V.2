@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState } from 'react';
 import { TranscriptionSegment, audioCaptureService } from '@/core/audio/AudioCaptureService';
 import { trackMetric } from '@/services/UsageAnalyticsService';

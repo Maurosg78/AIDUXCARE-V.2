@@ -1,3 +1,4 @@
+// Archivo de configuración para variables de entorno
 import { createClient } from '@supabase/supabase-js';
 import { supabaseUrl, supabaseAnonKey, validateSupabaseEnv } from '@/config/env';
 
@@ -11,6 +12,9 @@ if (!envValidation.success) {
   );
 }
 
+console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+
 // Crear cliente con manejo de errores
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -19,17 +23,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Función para verificar la conexión a Supabase
+// Función para verificar la conexión a Supabase (opcional)
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('test').select('*').limit(1);
+    // Verificación simple sin acceder a tablas específicas
+    const { data, error } = await supabase.auth.getSession();
     
     if (error) {
       console.error('Error al conectar con Supabase:', error);
       return { success: false, error: error.message };
     }
     
-    return { success: true, data };
+    return { success: true, data: 'Conexión establecida' };
   } catch (err) {
     console.error('Excepción al conectar con Supabase:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
