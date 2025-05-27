@@ -50,7 +50,7 @@ export async function runClinicalAgent(visitId: string): Promise<AgentSuggestion
     return suggestions;
   } catch (error) {
     // Registrar el error en las métricas
-    const errorMetric: UsageMetricType = 'suggestion_integration_error';
+    const errorMetric: UsageMetricType = 'suggestions_rejected';
     logMetric({
       id: uuidv4(),
       type: errorMetric,

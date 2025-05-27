@@ -48,6 +48,10 @@ export interface AgentSuggestion {
   explanation?: string;
   createdAt: Date;
   updatedAt: Date;
+  context_origin?: {
+    source_block: string;
+    text: string;
+  };
 }
 
 export type SuggestionFeedbackType = 'accept' | 'reject' | 'ignore'; 
