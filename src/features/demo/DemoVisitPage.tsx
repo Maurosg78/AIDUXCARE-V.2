@@ -90,12 +90,13 @@ const DemoVisitPage: React.FC = () => {
     // Registrar métrica
     trackMetric(
       'suggestions_generated',
-      mockUserId,
-      mockVisit.id,
-      transcription.length > 0 ? transcription.length : mockTranscription.length,
       {
-        segments_count: transcription.length > 0 ? transcription.length : mockTranscription.length
-      }
+        suggestionId: 'audio',
+        suggestionType: 'recommendation',
+        suggestionField: 'audio'
+      },
+      mockUserId,
+      mockVisit.id
     );
   };
 
@@ -120,13 +121,13 @@ const DemoVisitPage: React.FC = () => {
     // Registrar métrica
     trackMetric(
       'suggestions_accepted',
-      mockUserId,
-      mockVisit.id,
-      1,
       {
-        content_length: content.length,
-        source: 'audio_transcription'
-      }
+        suggestionId: 'audio',
+        suggestionType: 'recommendation',
+        suggestionField: 'audio'
+      },
+      mockUserId,
+      mockVisit.id
     );
   };
   
@@ -139,12 +140,13 @@ const DemoVisitPage: React.FC = () => {
     // Registrar métrica
     trackMetric(
       'suggestions_integrated',
-      mockUserId,
-      mockVisit.id,
-      count,
       {
-        suggestions_count: count
-      }
+        suggestionId: 'audio',
+        suggestionType: 'recommendation',
+        suggestionField: 'audio'
+      },
+      mockUserId,
+      mockVisit.id
     );
   };
   
