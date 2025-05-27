@@ -27,7 +27,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const checkSupabaseConnection = async () => {
   try {
     // Verificación simple sin acceder a tablas específicas
-    const { data, error } = await supabase.auth.getSession();
+    const { error } = await supabase.auth.getSession();
     
     if (error) {
       console.error('Error al conectar con Supabase:', error);
