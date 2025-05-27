@@ -20,7 +20,12 @@ export interface UsageMetric {
 /**
  * Tipos válidos de métricas de uso
  */
-export type UsageMetricType = 'suggestions_integrated' | 'suggestions_rejected';
+export type UsageMetricType =
+  | 'suggestions_generated'
+  | 'suggestions_accepted'
+  | 'suggestions_integrated'
+  | 'suggestions_rejected'
+  | 'suggestion_field_matched';
 
 /**
  * Tipo que define la estructura de métricas longitudinales entre visitas
