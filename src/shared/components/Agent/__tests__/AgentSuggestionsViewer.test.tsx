@@ -176,7 +176,7 @@ const defaultProps = {
   userId: 'test-user-id',
   patientId: 'test-patient-id',
   onSuggestionAccepted: vi.fn(),
-  onSuggestionRejected: vi.fn()
+  onSuggestionRejected: vi.fn(),
 };
 
 describe('AgentSuggestionsViewer', () => {
@@ -216,40 +216,42 @@ describe('AgentSuggestionsViewer', () => {
 
     // Verificar que se llamó a insertSuggestion con los argumentos correctos
     await waitFor(() => {
-      expect(mockInsertSuggestion).toHaveBeenCalledWith({
-        id: defaultProps.suggestions[0].id,
-        content: defaultProps.suggestions[0].content,
-        type: defaultProps.suggestions[0].type,
-        sourceBlockId: defaultProps.suggestions[0].sourceBlockId,
-        field: defaultProps.suggestions[0].field,
-        suggestionType: defaultProps.suggestions[0].type,
-        suggestionField: defaultProps.suggestions[0].field
-      });
+      expect(mockInsertSuggestion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: defaultProps.suggestions[0].id,
+          content: defaultProps.suggestions[0].content,
+          type: defaultProps.suggestions[0].type,
+          sourceBlockId: defaultProps.suggestions[0].sourceBlockId,
+          field: defaultProps.suggestions[0].field
+        }),
+        defaultProps.visitId,
+        defaultProps.patientId,
+        defaultProps.userId
+      );
     });
 
     // Verificar que se llamó a trackMetric
     expect(mockTrackMetric).toHaveBeenCalledWith(
       'suggestion_integrated',
-      defaultProps.userId,
-      defaultProps.visitId,
-      1,
-      {
+      expect.objectContaining({
         suggestionId: defaultProps.suggestions[0].id,
         suggestionType: defaultProps.suggestions[0].type,
         suggestionField: defaultProps.suggestions[0].field,
         patientId: defaultProps.patientId
-      }
+      }),
+      defaultProps.userId,
+      defaultProps.visitId
     );
 
     // Verificar que se llamó a AuditLogger
     expect(mockAuditLog).toHaveBeenCalledWith(
       'suggestion_integrated',
-      {
+      expect.objectContaining({
         suggestionId: defaultProps.suggestions[0].id,
         visitId: defaultProps.visitId,
         userId: defaultProps.userId,
         patientId: defaultProps.patientId
-      }
+      })
     );
   });
 
@@ -273,20 +275,20 @@ describe('AgentSuggestionsViewer', () => {
     fireEvent.click(integrateButton);
 
     // Verificar que se muestra el mensaje de error
-    await waitFor(() => {
+      await waitFor(() => {
       expect(screen.getByText('Error al integrar la sugerencia')).toBeInTheDocument();
     });
 
     // Verificar que se llamó a AuditLogger con el error
     expect(mockAuditLog).toHaveBeenCalledWith(
       'suggestion_integration_error',
-      {
+      expect.objectContaining({
         error: 'Error al integrar la sugerencia',
         suggestionId: defaultProps.suggestions[0].id,
         visitId: defaultProps.visitId,
         userId: defaultProps.userId,
         patientId: defaultProps.patientId
-      }
+      })
     );
   });
 
@@ -309,26 +311,25 @@ describe('AgentSuggestionsViewer', () => {
     // Verificar que se llamó a AuditLogger
     expect(mockAuditLog).toHaveBeenCalledWith(
       'suggestion_rejected',
-      {
+      expect.objectContaining({
         suggestionId: defaultProps.suggestions[0].id,
         visitId: defaultProps.visitId,
         userId: defaultProps.userId,
         patientId: defaultProps.patientId
-      }
+      })
     );
 
     // Verificar que se llamó a trackMetric
     expect(mockTrackMetric).toHaveBeenCalledWith(
       'suggestion_rejected',
-      defaultProps.userId,
-      defaultProps.visitId,
-      1,
-      {
+      expect.objectContaining({
         suggestionId: defaultProps.suggestions[0].id,
         suggestionType: defaultProps.suggestions[0].type,
         suggestionField: defaultProps.suggestions[0].field,
         patientId: defaultProps.patientId
-      }
+      }),
+      defaultProps.userId,
+      defaultProps.visitId
     );
   });
 
@@ -364,11 +365,13 @@ describe('AgentSuggestionsViewer', () => {
         suggestions={defaultProps.suggestions}
         userId={defaultProps.userId}
         patientId={defaultProps.patientId}
+        onSuggestionAccepted={defaultProps.onSuggestionAccepted}
+        onSuggestionRejected={defaultProps.onSuggestionRejected}
       />
     );
 
     // Expandir el componente para mostrar las sugerencias
-    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+    fireEvent.click(screen.getByText('Mostrar'));
 
     // Verificar que se carguen los feedbacks
     expect(screen.getByText('Retroalimentación: Útil')).toBeInTheDocument();

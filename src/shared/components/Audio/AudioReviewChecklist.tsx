@@ -80,14 +80,15 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
     // Registrar métrica
     trackMetric(
       'suggestions_accepted',
-      userId,
-      visitId,
-      1,
       {
-        segment_id: segment.id,
+        suggestionId: segment.id,
+        suggestionType: 'recommendation',
+        suggestionField: 'audio',
         actor: segment.actor,
         edited: segment.edited || false
-      }
+      },
+      userId,
+      visitId
     );
   };
   

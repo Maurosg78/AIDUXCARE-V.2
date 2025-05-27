@@ -297,16 +297,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
         onIntegrateSuggestions(1);
       }
         trackMetric(
-        'suggestion_integrated' as UsageMetricType,
-          userId,
-          visitId,
-          1,
-          {
+          'suggestions_integrated',
+        {
           suggestionId: suggestion.id,
-          suggestionType: suggestion.type,
-          suggestionField: suggestion.field,
-          patientId
-          }
+          suggestionType: (['recommendation', 'warning', 'info'].includes(suggestion.type) ? suggestion.type : 'recommendation') as 'recommendation' | 'warning' | 'info',
+          suggestionField: suggestion.field || 'notes'
+        },
+          userId,
+        visitId
         );
         AuditLogger.log('suggestion_integrated', {
         suggestionId: suggestion.id,
@@ -345,16 +343,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
 
       // Registrar métrica de rechazo
       trackMetric(
-        'suggestion_rejected' as UsageMetricType,
-        userId,
-        visitId,
-        1,
+        'suggestions_rejected',
         {
           suggestionId: suggestion.id,
-          suggestionType: suggestion.type,
-          suggestionField: suggestion.field,
-          patientId
-        }
+          suggestionType: (['recommendation', 'warning', 'info'].includes(suggestion.type) ? suggestion.type : 'recommendation') as 'recommendation' | 'warning' | 'info',
+          suggestionField: suggestion.field || 'notes'
+        },
+        userId,
+        visitId
       );
 
       // Registrar el rechazo en el log de auditoría
@@ -587,14 +583,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     />
                   </div>
                 ))}
-            </div>
-          )}
-          
-          <div className="mt-4 text-right">
-            <p className="text-xs text-gray-500">
-              Total de sugerencias: {suggestions.length}
-            </p>
-          </div>
+        </div>
+      )}
+      
+      <div className="mt-4 text-right">
+        <p className="text-xs text-gray-500">
+          Total de sugerencias: {suggestions.length}
+        </p>
+      </div>
         </div>
       )}
     </div>

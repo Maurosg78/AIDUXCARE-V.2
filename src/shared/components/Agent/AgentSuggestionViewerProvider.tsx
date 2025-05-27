@@ -39,7 +39,12 @@ const AgentSuggestionViewerProvider: React.FC<AgentSuggestionViewerProviderProps
       setError(null);
       
       // Primero intentamos insertar la sugerencia
-      const insertResult = await EMRFormService.insertSuggestion();
+      const insertResult = await EMRFormService.insertSuggestion(
+        suggestion,
+        visitId,
+        patientId,
+        userId
+      );
       
       if (!insertResult) {
         throw new Error('Error al integrar la sugerencia');
@@ -48,7 +53,7 @@ const AgentSuggestionViewerProvider: React.FC<AgentSuggestionViewerProviderProps
       // Si la inserción fue exitosa, actualizamos el estado y registramos las métricas
       await Promise.all([
         trackMetric(
-          'suggestions_integrated' as UsageMetricType,
+          'suggestion_integrated' as UsageMetricType,
           {
             suggestionId: suggestion.id,
             suggestionType: suggestion.type as 'recommendation' | 'warning' | 'info',
@@ -74,7 +79,7 @@ const AgentSuggestionViewerProvider: React.FC<AgentSuggestionViewerProviderProps
     } finally {
       setIsLoading(false);
     }
-  }, [visitId, userId]);
+  }, [visitId, userId, patientId]);
 
   const handleSuggestionRejected = useCallback(async (suggestion: AgentSuggestion) => {
     try {
@@ -84,7 +89,7 @@ const AgentSuggestionViewerProvider: React.FC<AgentSuggestionViewerProviderProps
       // Registramos las métricas
       await Promise.all([
         trackMetric(
-          'suggestions_rejected' as UsageMetricType,
+          'suggestion_rejected' as UsageMetricType,
           {
             suggestionId: suggestion.id,
             suggestionType: suggestion.type as 'recommendation' | 'warning' | 'info',

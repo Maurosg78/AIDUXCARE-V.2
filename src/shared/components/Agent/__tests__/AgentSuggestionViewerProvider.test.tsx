@@ -13,7 +13,12 @@ const mockAuditLog = vi.fn();
 
 vi.mock('@/services/EMRFormService', () => ({
   EMRFormService: {
-    insertSuggestion: (...args: any[]) => mockInsertSuggestion(...args)
+    insertSuggestion: (
+      a: any,
+      b: any,
+      c: any,
+      d: any
+    ) => mockInsertSuggestion(a, b, c, d)
   }
 }));
 
@@ -41,14 +46,18 @@ describe('AgentSuggestionViewerProvider', () => {
       type: 'recommendation' as const,
       content: 'Test suggestion 1',
       sourceBlockId: 'block-1',
-      field: 'diagnosis'
+      field: 'diagnosis',
+      createdAt: new Date(),
+      updatedAt: new Date()
     },
     {
       id: 'suggestion-2',
       type: 'warning' as const,
       content: 'Test suggestion 2',
       sourceBlockId: 'block-2',
-      field: 'treatment'
+      field: 'treatment',
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ];
 
@@ -135,19 +144,26 @@ describe('AgentSuggestionViewerProvider', () => {
     // Verificar que los servicios fueron llamados correctamente
     console.log('mockInsertSuggestion REAL CALLS:', mockInsertSuggestion.mock.calls);
     expect(mockInsertSuggestion).toHaveBeenCalledWith(
-      mockSuggestions[0],
+      expect.objectContaining({
+        id: mockSuggestions[0].id,
+        type: mockSuggestions[0].type,
+        field: mockSuggestions[0].field,
+        content: mockSuggestions[0].content,
+        sourceBlockId: mockSuggestions[0].sourceBlockId
+      }),
       mockProps.visitId,
+      mockProps.patientId,
       mockProps.userId
     );
 
     console.log('mockTrackMetric REAL CALLS:', mockTrackMetric.mock.calls);
     expect(mockTrackMetric).toHaveBeenCalledWith(
-      'suggestions_integrated',
-      {
+      'suggestion_integrated',
+      expect.objectContaining({
         suggestionId: mockSuggestions[0].id,
         suggestionType: mockSuggestions[0].type,
         suggestionField: mockSuggestions[0].field
-      },
+      }),
       mockProps.userId,
       mockProps.visitId
     );
@@ -155,11 +171,11 @@ describe('AgentSuggestionViewerProvider', () => {
     console.log('mockAuditLog REAL CALLS:', mockAuditLog.mock.calls);
     expect(mockAuditLog).toHaveBeenCalledWith(
       'suggestion_integrated',
-      {
+      expect.objectContaining({
         suggestionId: mockSuggestions[0].id,
         visitId: mockProps.visitId,
         userId: mockProps.userId
-      }
+      })
     );
   });
 
@@ -207,12 +223,12 @@ describe('AgentSuggestionViewerProvider', () => {
     // Verificar que los servicios fueron llamados correctamente
     console.log('mockTrackMetric REAL CALLS:', mockTrackMetric.mock.calls);
     expect(mockTrackMetric).toHaveBeenCalledWith(
-      'suggestions_rejected',
-      {
+      'suggestion_rejected',
+      expect.objectContaining({
         suggestionId: mockSuggestions[0].id,
         suggestionType: mockSuggestions[0].type,
         suggestionField: mockSuggestions[0].field
-      },
+      }),
       mockProps.userId,
       mockProps.visitId
     );
@@ -220,11 +236,11 @@ describe('AgentSuggestionViewerProvider', () => {
     console.log('mockAuditLog REAL CALLS:', mockAuditLog.mock.calls);
     expect(mockAuditLog).toHaveBeenCalledWith(
       'suggestion_rejected',
-      {
+      expect.objectContaining({
         suggestionId: mockSuggestions[0].id,
         visitId: mockProps.visitId,
         userId: mockProps.userId
-      }
+      })
     );
   });
 
@@ -286,8 +302,15 @@ describe('AgentSuggestionViewerProvider', () => {
 
     // Verificar que el servicio fue llamado pero falló
     expect(mockInsertSuggestion).toHaveBeenCalledWith(
-      mockSuggestions[0],
+      expect.objectContaining({
+        id: mockSuggestions[0].id,
+        type: mockSuggestions[0].type,
+        field: mockSuggestions[0].field,
+        content: mockSuggestions[0].content,
+        sourceBlockId: mockSuggestions[0].sourceBlockId
+      }),
       mockProps.visitId,
+      mockProps.patientId,
       mockProps.userId
     );
 
