@@ -471,6 +471,48 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
     return null;
   }
 
+  // Renderizar sugerencias con su feedback correspondiente
+  const renderSuggestion = (suggestion: AgentSuggestion) => (
+    <div 
+      key={suggestion.id} 
+      className={`p-3 rounded-md border ${
+        integratedSuggestions.has(suggestion.id) 
+          ? 'bg-blue-50 border-blue-300' 
+          : SUGGESTION_STYLES[suggestion.type as SuggestionType].colorClass
+      }`}
+      data-testid={`suggestion-item-${suggestion.id}`}
+    >
+      <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
+      <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
+      
+      <div className="mt-2 flex justify-end space-x-2">
+        <button
+          onClick={() => handleSuggestionAccepted(suggestion)}
+          onKeyDown={handleKeyDown}
+          disabled={integratedSuggestions.has(suggestion.id) || !isSuggestionIntegrable(suggestion)}
+          className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+          data-testid={`accept-suggestion-${suggestion.id}`}
+          aria-label={integratedSuggestions.has(suggestion.id) ? 'Sugerencia integrada' : 
+                    !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
+                    BUTTON_TEXTS.INTEGRATE}
+        >
+          {integratedSuggestions.has(suggestion.id) ? BUTTON_TEXTS.INTEGRATED : 
+           !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
+           BUTTON_TEXTS.INTEGRATE}
+        </button>
+        <button
+          onClick={() => handleReject(suggestion)}
+          onKeyDown={handleKeyDown}
+          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          data-testid={`reject-suggestion-${suggestion.id}`}
+          aria-label="Rechazar sugerencia"
+        >
+          {BUTTON_TEXTS.REJECT}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div 
       className="bg-white rounded-lg shadow-sm border border-gray-200"
@@ -531,11 +573,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
               No hay sugerencias disponibles
             </p>
           ) : (
-            <div 
-              className="space-y-4"
-              role="list"
-              aria-label="Lista de sugerencias por tipo"
-            >
+            <div className="space-y-3">
               {Object.entries(groupedSuggestions).map(([type, typeSuggestions]) => (
                 <div key={type} role="listitem">
                   <SuggestionSection
@@ -549,8 +587,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     />
                   </div>
                 ))}
-              </div>
+            </div>
           )}
+          
+          <div className="mt-4 text-right">
+            <p className="text-xs text-gray-500">
+              Total de sugerencias: {suggestions.length}
+            </p>
+          </div>
         </div>
       )}
     </div>

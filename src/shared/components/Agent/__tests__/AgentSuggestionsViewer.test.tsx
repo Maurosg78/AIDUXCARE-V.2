@@ -250,8 +250,8 @@ describe('AgentSuggestionsViewer', () => {
         userId: defaultProps.userId,
         patientId: defaultProps.patientId
       }
-        );
-      });
+    );
+  });
 
   it('debe manejar errores de integración correctamente', async () => {
     // Configurar el mock para que falle
@@ -273,7 +273,7 @@ describe('AgentSuggestionsViewer', () => {
     fireEvent.click(integrateButton);
 
     // Verificar que se muestra el mensaje de error
-      await waitFor(() => {
+    await waitFor(() => {
       expect(screen.getByText('Error al integrar la sugerencia')).toBeInTheDocument();
     });
 
@@ -354,5 +354,34 @@ describe('AgentSuggestionsViewer', () => {
     await waitFor(() => {
       expect(screen.queryByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).not.toBeInTheDocument();
     });
+  });
+
+  it('debe mostrar correctamente los feedbacks de las sugerencias', async () => {
+    // Renderizar el componente
+    render(
+      <AgentSuggestionsViewer
+        visitId={defaultProps.visitId}
+        suggestions={defaultProps.suggestions}
+        userId={defaultProps.userId}
+        patientId={defaultProps.patientId}
+      />
+    );
+
+    // Expandir el componente para mostrar las sugerencias
+    fireEvent.click(screen.getByText('Ver sugerencias del agente'));
+
+    // Verificar que se carguen los feedbacks
+    expect(screen.getByText('Retroalimentación: Útil')).toBeInTheDocument();
+
+    // Verificar que se ha registrado la métrica de visualización de feedback
+    expect(UsageAnalyticsService.track).toHaveBeenCalledWith(
+      'suggestion_feedback_viewed',
+      defaultProps.userId,
+      defaultProps.visitId,
+      1,
+      expect.objectContaining({
+        feedbacks_count: 1
+      })
+    );
   });
 }); 
