@@ -9,14 +9,10 @@ export interface UsageMetric {
   id: string;
   type: UsageMetricType;
   userId: string;
-<<<<<<< HEAD
   visitId?: string;
   metadata: Record<string, unknown>;
   createdAt: Date;
   timestamp: string;
-=======
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used';
->>>>>>> 233b4a4 (feat: búsqueda y filtros en AgentSuggestionsViewer con orden de prioridad clínica)
   value: number;
   estimated_time_saved_minutes?: number;
 }
@@ -101,7 +97,6 @@ export const logMetric = (metric: UsageMetric): void => {
  * @param value Valor numérico de la métrica
  * @param metadata Metadatos adicionales
  */
-<<<<<<< HEAD
 export interface UsageMetricData {
   suggestionId: string;
   suggestionType: 'recommendation' | 'warning' | 'info';
@@ -111,10 +106,6 @@ export interface UsageMetricData {
 export const trackMetric = async (
   metricType: UsageMetricType,
   data: UsageMetricData,
-=======
-export const track = (
-  type: 'suggestions_generated' | 'suggestions_accepted' | 'suggestions_integrated' | 'suggestion_field_matched' | 'suggestion_feedback_given' | 'suggestion_feedback_viewed' | 'suggestion_search_filter_used',
->>>>>>> 233b4a4 (feat: búsqueda y filtros en AgentSuggestionsViewer con orden de prioridad clínica)
   userId: string,
   visitId: string
 ): Promise<void> => {
