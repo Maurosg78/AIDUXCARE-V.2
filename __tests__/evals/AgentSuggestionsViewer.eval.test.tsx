@@ -31,6 +31,14 @@ vi.mock('../../src/services/UsageAnalyticsService', () => ({
   track: vi.fn()
 }));
 
+// Mock de suggestionFeedbackDataSourceSupabase
+vi.mock('../../src/core/dataSources/suggestionFeedbackDataSourceSupabase', () => ({
+  suggestionFeedbackDataSourceSupabase: {
+    getFeedbacksByVisit: vi.fn().mockResolvedValue([]),
+    getFeedbackBySuggestion: vi.fn().mockResolvedValue(null)
+  }
+}));
+
 /**
  * EVALUACIÓN DEL AGENTSUGGESTIONSVIEWER
  * 
@@ -57,12 +65,12 @@ describe('AgentSuggestionsViewer EVAL', () => {
   });
   
   const mockRecommendations = [
-    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica'),
+    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica', true),
     createMockSuggestion('recommendation', 'Ajustar dosis de metformina a 1000mg c/12h')
   ];
   
   const mockWarnings = [
-    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente')
+    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente', true)
   ];
   
   const mockInfos = [
@@ -125,6 +133,35 @@ describe('AgentSuggestionsViewer EVAL', () => {
       // Verificar que se muestra el número total correcto
       const titleElement = screen.getByTestId('suggestions-title');
       expect(titleElement).toHaveTextContent('4');
+    });
+    
+    it('debe mostrar el contexto de origen para sugerencias que lo tienen disponible', async () => {
+      // Renderizar el componente con sugerencias
+      render(
+        <AgentSuggestionsViewer 
+          visitId={mockVisitId}
+          suggestions={mockSuggestions}
+          userId={mockUserId}
+          patientId={mockPatientId}
+        />
+      );
+      
+      // Expandir las sugerencias
+      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      
+      // Verificar que se muestran los contextos de origen para las sugerencias que los tienen
+      await waitFor(() => {
+        // Verificar texto de contexto para la recomendación con contexto
+        expect(screen.getByText(/Contexto clínico: Realizar ECG para evaluar/)).toBeInTheDocument();
+        expect(screen.getByText(/Plan de tratamiento/)).toBeInTheDocument();
+        
+        // Verificar texto de contexto para la advertencia con contexto
+        expect(screen.getByText(/Contexto clínico: Paciente con HTA no controlada/)).toBeInTheDocument();
+        expect(screen.getByText(/Evaluación clínica/)).toBeInTheDocument();
+      });
+      
+      // Verificar que las sugerencias sin contexto muestran el mensaje apropiado
+      expect(screen.getAllByText('Sin contexto disponible')).toHaveLength(2);
     });
   });
 

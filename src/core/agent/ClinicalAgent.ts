@@ -1,6 +1,19 @@
 import { AgentContext, AgentSuggestion, MemoryBlock, SuggestionType, SuggestionField } from '@/types/agent';
 import { v4 as uuidv4 } from 'uuid';
-import supabase from '@/core/auth/supabaseClient';
+
+/**
+ * Interfaz que define la estructura de una sugerencia generada por el agente LLM
+ */
+export interface AgentSuggestion {
+  id: string;
+  sourceBlockId: string;
+  type: 'recommendation' | 'warning' | 'info';
+  content: string;
+  context_origin?: {
+    source_block: string;
+    text: string;
+  }
+}
 
 /**
  * STUB: Genera sugerencias basadas en el contexto del agente
@@ -35,9 +48,10 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         sourceBlockId: block.id,
         type: 'recommendation',
         content: 'Considerar evaluación de escala de dolor y administrar analgésicos según protocolo.',
-        field: 'symptoms',
-        createdAt: now,
-        updatedAt: now
+        context_origin: {
+          source_block: block.id,
+          text: 'dolor'
+        }
       });
     }
     
@@ -48,9 +62,10 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         sourceBlockId: block.id,
         type: 'warning',
         content: 'Monitorizar tensión arterial cada 4 horas. Valores fuera de rango requieren atención.',
-        field: 'vitals',
-        createdAt: now,
-        updatedAt: now
+        context_origin: {
+          source_block: block.id,
+          text: 'presión'
+        }
       });
     }
   }
@@ -65,9 +80,10 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
         sourceBlockId: block.id,
         type: 'info',
         content: 'Paciente con historial de diabetes. Considerar monitorización de glucemia.',
-        field: 'diagnosis',
-        createdAt: now,
-        updatedAt: now
+        context_origin: {
+          source_block: block.id,
+          text: 'diabetes'
+        }
       });
     }
   }
@@ -85,9 +101,10 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
       sourceBlockId,
       type: 'info',
       content: 'Recordar documentar signos vitales en cada visita según protocolo institucional.',
-      field: 'vitals',
-      createdAt: now,
-      updatedAt: now
+      context_origin: {
+        source_block: sourceBlockId,
+        text: 'Recordar documentar signos vitales en cada visita según protocolo institucional.'
+      }
     });
     
     suggestions.push({
@@ -95,9 +112,10 @@ export async function getAgentSuggestions(ctx: AgentContext): Promise<AgentSugge
       sourceBlockId,
       type: 'recommendation',
       content: 'Evaluar estado de hidratación y balance hídrico del paciente.',
-      field: 'symptoms',
-      createdAt: now,
-      updatedAt: now
+      context_origin: {
+        source_block: sourceBlockId,
+        text: 'Evaluar estado de hidratación y balance hídrico del paciente.'
+      }
     });
   }
   

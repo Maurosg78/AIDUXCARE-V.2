@@ -290,7 +290,12 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
         suggestionType: suggestion.type as IntegrableSuggestionType,
         suggestionField: suggestion.field || 'notes'
       };
-      await EMRFormService.insertSuggestion(suggestionToIntegrate);
+      await EMRFormService.insertSuggestion(
+        suggestionToIntegrate,
+        visitId,
+        patientId,
+        userId
+      );
         setIntegratedSuggestions(prev => new Set([...prev, suggestion.id]));
       onSuggestionAccepted(suggestion);
       if (onIntegrateSuggestions) {
@@ -569,7 +574,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
               No hay sugerencias disponibles
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3" role="list">
               {Object.entries(groupedSuggestions).map(([type, typeSuggestions]) => (
                 <div key={type} role="listitem">
                   <SuggestionSection
@@ -580,17 +585,17 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
                     integratedSuggestions={integratedSuggestions}
                     isSuggestionIntegrable={isSuggestionIntegrable}
                     onKeyDown={handleKeyDown}
-                    />
-                  </div>
-                ))}
-        </div>
-      )}
-      
-      <div className="mt-4 text-right">
-        <p className="text-xs text-gray-500">
-          Total de sugerencias: {suggestions.length}
-        </p>
-      </div>
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="mt-4 text-right">
+            <p className="text-xs text-gray-500">
+              Total de sugerencias: {suggestions.length}
+            </p>
+          </div>
         </div>
       )}
     </div>
