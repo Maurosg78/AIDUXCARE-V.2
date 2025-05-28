@@ -70,8 +70,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             className
           )}
           disabled={disabled}
-          /* eslint-disable jsx-a11y/aria-proptypes */ // Deshabilitado debido a falsos positivos con el patrón aria-invalid={...} en React. Se debe prestar especial atención a otros valores ARIA en este archivo durante las revisiones de código.
-          aria-invalid={error ? 'true' : undefined}
+          {...(error ? { 'aria-invalid': 'true' } : {})}
           aria-describedby={
             error || helperText
               ? `${props.id}-description`

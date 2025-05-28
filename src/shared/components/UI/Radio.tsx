@@ -63,8 +63,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
               className
             )}
             disabled={disabled}
-            {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
-            aria-invalid={error ? 'true' : undefined}
+            {...(error ? { 'aria-invalid': 'true' } : {})}
             aria-describedby={
               error || helperText
                 ? `${props.id}-description`

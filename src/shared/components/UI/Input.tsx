@@ -79,6 +79,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
           ref={ref}
           id={id}
           className={inputStyles}
-          {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error ? `${id}-error`
+          {...(error ? { 'aria-invalid': 'true' } : {})}
+          aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
+          {...props}
+        />
+      </div>
+    </div>
+  );
+});
