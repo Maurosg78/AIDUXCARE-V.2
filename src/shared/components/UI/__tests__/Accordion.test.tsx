@@ -42,7 +42,7 @@ describe.skip('Accordion', () => {
   });
 
   it('mantiene abierto el item por defecto', () => {
-    render(<Accordion items={items} defaultOpen={['item-1']} />);
+    render(<Accordion items={items} defaultOpen="item-1" />);
     
     expect(screen.getByText('Contenido 1')).toBeVisible();
   });
