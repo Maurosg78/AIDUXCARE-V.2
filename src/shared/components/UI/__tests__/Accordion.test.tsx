@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Accordion } from '../Accordion';
+import Accordion from '../Accordion';
 
 describe.skip('Accordion', () => {
   const items = [
