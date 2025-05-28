@@ -3,13 +3,14 @@ import { cn } from '@/lib/utils';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
-export interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   size?: ModalSize;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
+  headerTitle?: React.ReactNode;
+  headerDescription?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }
 
 const sizeStyles: Record<ModalSize, string> = {
@@ -26,11 +27,10 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
       isOpen,
       onClose,
       size = 'md',
-      title,
-      description,
+      headerTitle,
+      headerDescription,
       children,
       className,
-      ...props
     },
     ref
   ) => {
@@ -48,9 +48,8 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
         className="fixed inset-0 z-50 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
-        aria-describedby={description ? 'modal-description' : undefined}
-        {...props}
+        aria-labelledby={headerTitle ? 'modal-title' : undefined}
+        aria-describedby={headerDescription ? 'modal-description' : undefined}
       >
         {/* Backdrop */}
         <div
@@ -68,22 +67,22 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
           )}
         >
           {/* Header */}
-          {(title || description) && (
+          {(headerTitle || headerDescription) && (
             <div className="px-6 py-4 border-b border-gray-200">
-              {title && (
+              {headerTitle && (
                 <h2
                   id="modal-title"
                   className="text-lg font-semibold text-gray-900"
                 >
-                  {title}
+                  {headerTitle}
                 </h2>
               )}
-              {description && (
+              {headerDescription && (
                 <p
                   id="modal-description"
                   className="mt-1 text-sm text-gray-500"
                 >
-                  {description}
+                  {headerDescription}
                 </p>
               )}
             </div>

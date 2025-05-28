@@ -4,14 +4,15 @@ import { cn } from '@/lib/utils';
 export type DrawerPosition = 'left' | 'right' | 'top' | 'bottom';
 export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
-export interface DrawerProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   position?: DrawerPosition;
   size?: DrawerSize;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
+  headerTitle?: React.ReactNode;
+  headerDescription?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }
 
 const positionStyles: Record<DrawerPosition, string> = {
@@ -43,11 +44,10 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
       onClose,
       position = 'right',
       size = 'md',
-      title,
-      description,
+      headerTitle,
+      headerDescription,
       children,
       className,
-      ...props
     },
     ref
   ) => {
@@ -65,9 +65,8 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
         className="fixed inset-0 z-50 flex"
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'drawer-title' : undefined}
-        aria-describedby={description ? 'drawer-description' : undefined}
-        {...props}
+        aria-labelledby={headerTitle ? 'drawer-title' : undefined}
+        aria-describedby={headerDescription ? 'drawer-description' : undefined}
       >
         {/* Backdrop */}
         <div
@@ -87,22 +86,22 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
           )}
         >
           {/* Header */}
-          {(title || description) && (
+          {(headerTitle || headerDescription) && (
             <div className="px-6 py-4 border-b border-gray-200">
-              {title && (
+              {headerTitle && (
                 <h2
                   id="drawer-title"
                   className="text-lg font-semibold text-gray-900"
                 >
-                  {title}
+                  {headerTitle}
                 </h2>
               )}
-              {description && (
+              {headerDescription && (
                 <p
                   id="drawer-description"
                   className="mt-1 text-sm text-gray-500"
                 >
-                  {description}
+                  {headerDescription}
                 </p>
               )}
             </div>

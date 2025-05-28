@@ -4,11 +4,12 @@ import { cn } from '@/lib/utils';
 export type TooltipVariant = 'default' | 'outline' | 'filled';
 export type TooltipPosition = 'top' | 'right' | 'bottom' | 'left';
 
-export interface TooltipProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface TooltipProps {
   variant?: TooltipVariant;
   position?: TooltipPosition;
-  content: React.ReactNode;
+  content: string | undefined;
   children: React.ReactNode;
+  className?: string;
 }
 
 const variantStyles: Record<TooltipVariant, string> = {
@@ -39,7 +40,6 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       content,
       children,
       className,
-      ...props
     },
     ref
   ) => {
@@ -49,10 +49,9 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     return (
       <div
         ref={ref}
-        className="relative inline-block"
+        className={cn('relative inline-block', className)}
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
-        {...props}
       >
         {children}
         {isVisible && (

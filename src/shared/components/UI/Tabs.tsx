@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/aria-proptypes */
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -11,12 +12,13 @@ export interface Tab {
   disabled?: boolean;
 }
 
-export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface TabsProps {
   tabs: Tab[];
   variant?: TabVariant;
   size?: TabSize;
   defaultTab?: string;
   onChange?: (tabId: string) => void;
+  className?: string;
 }
 
 const variantStyles: Record<TabVariant, string> = {
@@ -52,7 +54,6 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
       defaultTab,
       onChange,
       className,
-      ...props
     },
     ref
   ) => {
@@ -64,7 +65,7 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
     };
 
     return (
-      <div ref={ref} className={cn('w-full', className)} {...props}>
+      <div ref={ref} className={cn('w-full', className)}>
         {/* Tab List */}
         <div
           className={cn(
@@ -75,23 +76,25 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
           role="tablist"
         >
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
-              disabled={tab.disabled}
-              onClick={() => handleTabClick(tab.id)}
-              className={cn(
-                'px-4 py-2 font-medium transition-colors',
-                sizeStyles[size],
-                tabStyles[variant],
-                activeTab === tab.id && activeTabStyles[variant],
-                tab.disabled && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
+              <button
+                role="tab"
+                aria-selected={activeTab === tab.id ? 'true' : 'false'}
+                aria-controls={`panel-${tab.id}`}
+                disabled={tab.disabled}
+                onClick={() => handleTabClick(tab.id)}
+                className={cn(
+                  'px-4 py-2 font-medium transition-colors',
+                  sizeStyles[size],
+                  tabStyles[variant],
+                  activeTab === tab.id && activeTabStyles[variant],
+                  tab.disabled && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {tab.label}
+              </button>
+            </React.Fragment>
           ))}
         </div>
 
