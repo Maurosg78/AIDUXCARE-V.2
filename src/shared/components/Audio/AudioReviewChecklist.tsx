@@ -83,9 +83,7 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
       {
         suggestionId: segment.id,
         suggestionType: 'recommendation',
-        suggestionField: 'audio',
-        actor: segment.actor,
-        edited: segment.edited || false
+        suggestionField: 'audio'
       },
       userId,
       visitId
