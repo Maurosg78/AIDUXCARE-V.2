@@ -1,11 +1,4 @@
-import { vi } from "vitest";
-import React, { useState, useEffect } from 'react';
-import AudioListener from '@/shared/components/Audio/AudioListener';
-import AudioReviewChecklist from '@/shared/components/Audio/AudioReviewChecklist';
-import AgentSuggestionsViewer from '@/shared/components/Agent/AgentSuggestionsViewer';
-import AgentUsageDashboard from '@/shared/components/Agent/AgentUsageDashboard';
-import MCPContextViewer from '@/shared/components/MCP/MCPContextViewer';
-import AuditLogViewer from '@/shared/components/Audit/AuditLogViewer';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import { trackMetric } from '@/services/UsageAnalyticsService';
@@ -21,6 +14,22 @@ import {
 import { MCPContext } from '@/core/mcp/schema';
 import { AgentSuggestion } from '@/types/agent';
 import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
+
+// Lazy loading de componentes pesados
+const AudioListener = lazy(() => import('@/shared/components/Audio/AudioListener'));
+const AudioReviewChecklist = lazy(() => import('@/shared/components/Audio/AudioReviewChecklist'));
+const AgentSuggestionsViewer = lazy(() => import('@/shared/components/Agent/AgentSuggestionsViewer'));
+const AgentUsageDashboard = lazy(() => import('@/shared/components/Agent/AgentUsageDashboard'));
+const MCPContextViewer = lazy(() => import('@/shared/components/MCP/MCPContextViewer'));
+const AuditLogViewer = lazy(() => import('@/shared/components/Audit/AuditLogViewer'));
+
+// Componente de loading para componentes pesados
+const ComponentLoader = ({ name }: { name: string }) => (
+  <div className="flex items-center justify-center p-8 bg-gray-50 rounded-md">
+    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+    <span className="ml-2 text-sm text-gray-600">Cargando {name}...</span>
+  </div>
+);
 
 /**
  * Página de demostración integrada para AiDuxCare V.2
@@ -164,7 +173,9 @@ const DemoVisitPage: React.FC = () => {
         return (
           <div>
             <h3 className="text-lg font-medium mb-4">Métricas de Uso</h3>
-            <AgentUsageDashboard visitId={mockVisit.id} />
+            <Suspense fallback={<ComponentLoader name="Dashboard" />}>
+              <AgentUsageDashboard visitId={mockVisit.id} />
+            </Suspense>
             
             {/* Métricas adicionales */}
             <div className="mt-4 space-y-3">
@@ -186,16 +197,20 @@ const DemoVisitPage: React.FC = () => {
         return (
           <div>
             <h3 className="text-lg font-medium mb-4">Registro de Auditoría</h3>
-            <AuditLogViewer visitId={mockVisit.id} />
+            <Suspense fallback={<ComponentLoader name="Auditoría" />}>
+              <AuditLogViewer visitId={mockVisit.id} />
+            </Suspense>
           </div>
         );
       case 2:
         return (
           <div>
             <h3 className="text-lg font-medium mb-4">Contexto MCP</h3>
-            <MCPContextViewer
-              context={mockMCPContext as unknown as MCPContext}
-            />
+            <Suspense fallback={<ComponentLoader name="MCP Context" />}>
+              <MCPContextViewer
+                context={mockMCPContext as unknown as MCPContext}
+              />
+            </Suspense>
           </div>
         );
       default:
@@ -256,31 +271,37 @@ const DemoVisitPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           {!showTranscription && (
-            <AudioListener onCaptureComplete={handleCaptureComplete} />
+            <Suspense fallback={<ComponentLoader name="Audio Listener" />}>
+              <AudioListener onCaptureComplete={handleCaptureComplete} />
+            </Suspense>
           )}
           
           {showTranscription && transcriptionData.length > 0 && (
-            <AudioReviewChecklist 
-              transcription={transcriptionData}
-              visitId={mockVisit.id}
-              userId={mockUserId}
-              onApproveSegment={handleApproveAudioSegment}
-              onClose={handleCloseReview}
-            />
+            <Suspense fallback={<ComponentLoader name="Audio Review" />}>
+              <AudioReviewChecklist 
+                transcription={transcriptionData}
+                visitId={mockVisit.id}
+                userId={mockUserId}
+                onApproveSegment={handleApproveAudioSegment}
+                onClose={handleCloseReview}
+              />
+            </Suspense>
           )}
           
-          <AgentSuggestionsViewer 
-            visitId={mockVisit.id}
-            suggestions={suggestions}
-            onSuggestionAccepted={(suggestion) => {
-              console.log('Sugerencia aceptada:', suggestion);
-            }}
-            onSuggestionRejected={(suggestion) => {
-              console.log('Sugerencia rechazada:', suggestion);
-            }}
-            userId={mockUserId}
-            patientId={mockPatient.id}
-          />
+          <Suspense fallback={<ComponentLoader name="AgentSuggestionsViewer" />}>
+            <AgentSuggestionsViewer 
+              visitId={mockVisit.id}
+              suggestions={suggestions}
+              onSuggestionAccepted={(suggestion) => {
+                console.log('Sugerencia aceptada:', suggestion);
+              }}
+              onSuggestionRejected={(suggestion) => {
+                console.log('Sugerencia rechazada:', suggestion);
+              }}
+              userId={mockUserId}
+              patientId={mockPatient.id}
+            />
+          </Suspense>
           
           <div className="bg-white rounded-md shadow-sm p-4">
             <h2 className="text-lg font-semibold mb-4">Registro Médico Electrónico</h2>

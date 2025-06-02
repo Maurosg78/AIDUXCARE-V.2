@@ -1,5 +1,4 @@
-import { vi } from "vitest";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MCPContext } from '../schema';
 
 interface MCPEditorProps {

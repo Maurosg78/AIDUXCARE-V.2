@@ -1,5 +1,4 @@
-import { vi } from "vitest";
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 
 // Definición mínima necesaria para tipo de usuario y perfil

@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { AuditLogger } from '@/core/audit/AuditLogger';
 
 // Función para crear logs de prueba

@@ -1,54 +1,87 @@
-// Archivo de configuración para variables de entorno
-import { z } from 'zod';
+/**
+ * Variables de entorno para AiDuxCare V.2
+ * Centraliza todas las configuraciones del sistema
+ */
 
-// Esquema de validación para variables de entorno Supabase
-const supabaseEnvSchema = z.object({
-  supabaseUrl: z.string().min(1, { message: "VITE_SUPABASE_URL is required" }),
-  supabaseAnonKey: z.string().min(1, { message: "VITE_SUPABASE_ANON_KEY is required" }),
-});
+// Variables de Supabase
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Obtener variables de Supabase directamente desde import.meta.env
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Variables de APIs de IA
+export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+export const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
 
-// Variables de Langfuse - mantener para compatibilidad
-export const LANGFUSE_PUBLIC_KEY = import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || '';
-export const LANGFUSE_SECRET_KEY = import.meta.env.VITE_LANGFUSE_SECRET_KEY || '';
+// Variables de entorno de la aplicación
+export const APP_ENVIRONMENT = import.meta.env.VITE_APP_ENVIRONMENT || 'development';
 
-// Validar configuración de Supabase
-export const validateSupabaseEnv = () => {
-  const result = supabaseEnvSchema.safeParse({
-    supabaseUrl,
-    supabaseAnonKey
-  });
+// Configuración de Ollama (local)
+const OLLAMA_DEFAULT_URL = 'http://localhost:11434';
+const OLLAMA_DEFAULT_MODEL = 'llama3.2:3b';
+
+/**
+ * Configuración completa del entorno
+ */
+export const ENV_CONFIG = {
+  // Base de datos
+  supabase: {
+    url: SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY
+  },
   
-  return result;
+  // APIs de IA
+  ai: {
+    openai: {
+      apiKey: OPENAI_API_KEY
+    },
+    huggingface: {
+      apiKey: HUGGINGFACE_API_KEY
+    },
+    ollama: {
+      url: OLLAMA_DEFAULT_URL,
+      model: OLLAMA_DEFAULT_MODEL
+    }
+  },
+  
+  // Configuración de la aplicación
+  app: {
+    environment: APP_ENVIRONMENT,
+    isDevelopment: APP_ENVIRONMENT === 'development',
+    isProduction: APP_ENVIRONMENT === 'production'
+  }
 };
 
-// Verificar si la configuración es válida
-export const isSupabaseConfigValid = (): boolean => {
-  const result = validateSupabaseEnv();
-  return result.success;
-};
+/**
+ * Validar que las variables de entorno críticas estén configuradas
+ */
+export function validateEnvironment(): {
+  isValid: boolean;
+  missingVars: string[];
+} {
+  const required = [
+    { key: 'VITE_SUPABASE_URL', value: SUPABASE_URL },
+    { key: 'VITE_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY }
+  ];
 
-// Exportar configuración para compatibilidad con código existente
-export const SUPABASE_URL = supabaseUrl;
-export const SUPABASE_ANON_KEY = supabaseAnonKey;
+  const missing = required
+    .filter(({ value }) => !value)
+    .map(({ key }) => key);
 
-// Función de validación general (mantener para compatibilidad)
-export const validateEnv = validateSupabaseEnv;
-export const isConfigValid = isSupabaseConfigValid;
+  return {
+    isValid: missing.length === 0,
+    missingVars: missing
+  };
+}
 
 // Log de diagnóstico en desarrollo
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
-  console.log(`- SUPABASE_URL: ${supabaseUrl ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
   
   // Intentar validar la URL
-  if (supabaseUrl) {
+  if (SUPABASE_URL) {
     try {
-      new URL(supabaseUrl);
+      new URL(SUPABASE_URL);
       console.log('- URL format: VALID ✅');
     } catch (e) {
       console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
@@ -56,16 +89,4 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   }
 }
 
-// Exportar un objeto con toda la configuración
-export const config = {
-  supabase: {
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey
-  },
-  langfuse: {
-    publicKey: LANGFUSE_PUBLIC_KEY,
-    secretKey: LANGFUSE_SECRET_KEY
-  }
-};
-
-export default config;
+export default ENV_CONFIG;

@@ -11,7 +11,7 @@
     "debug:mcp": "tsx src/core/mcp/debugMCP.ts",
     "dev": "vite",
     "build": "npm run check:env && tsc && vite build",
-    "lint": "eslint src/**/*.ts src/**/*.tsx --max-warnings 20",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "vitest --config config/vitest.config.ts",
     "preview": "vite preview",
@@ -43,7 +43,8 @@
     "test:nlp-rag": "tsx scripts/test-nlp-rag-integration.ts",
     "demo:integration": "tsx scripts/test-nlp-rag-integration.ts",
     "test:rag-solo": "tsx scripts/test-rag-solo.ts",
-    "demo:rag-solo": "tsx scripts/test-rag-solo.ts"
+    "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
+    "analyze": "node scripts/analyze-bundle.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -107,6 +108,7 @@
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "postcss": "^8.4.33",
+    "rollup-plugin-visualizer": "^6.0.1",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
@@ -114,6 +116,7 @@
     "typescript": "^5.3.3",
     "vite": "^5.4.19",
     "vite-tsconfig-paths": "^4.2.1",
-    "vitest": "^0.29.8"
+    "vitest": "^0.29.8",
+    "web-vitals": "^5.0.2"
   }
 }

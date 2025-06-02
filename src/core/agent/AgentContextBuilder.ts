@@ -1,5 +1,5 @@
-import { vi } from "vitest";
-import { AgentContext, MemoryBlock } from '@/types/agent';
+import type { AgentContext, MemoryBlock } from '@/types/agent';
+import { MCPManager } from '../mcp/MCPManager';
 import supabase from '@/core/auth/supabaseClient';
 import { MCPContext, MCPMemoryBlock } from '@/core/mcp/schema';
 

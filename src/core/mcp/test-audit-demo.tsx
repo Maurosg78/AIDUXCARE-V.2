@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useEffect } from 'react';
 import AuditLogViewer from '@/shared/components/Audit/AuditLogViewer';
 import { AuditLogger } from '@/core/audit/AuditLogger';

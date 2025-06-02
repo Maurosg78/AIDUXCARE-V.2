@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { MCPMemoryBlock, MCPMemoryBlockSchema } from './schema';
 import { SupabaseClient, PostgrestError } from '@supabase/supabase-js';

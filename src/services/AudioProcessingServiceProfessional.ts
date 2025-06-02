@@ -14,6 +14,7 @@ import { ClinicalEntity, SOAPNotes, ProcessingMetrics, FisiotherapyContext, Sess
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import { trackMetric } from '@/services/UsageAnalyticsService';
 import { v4 as uuidv4 } from 'uuid';
+import { ClinicalInsightsEngine, ClinicalInsightSummary } from '../core/ai/ClinicalInsightsEngine';
 
 export interface AudioProcessingResult {
   // Datos principales
@@ -35,6 +36,9 @@ export interface AudioProcessingResult {
   
   // ID único del procesamiento
   processingId: string;
+  
+  // Insights clínicos
+  clinicalInsights?: ClinicalInsightSummary;
 }
 
 export interface QualityAssessment {
@@ -64,6 +68,9 @@ export interface AudioProcessingOptions {
   // Configuración de agentes
   enableAgentSuggestions?: boolean;
   agentProvider?: 'ollama' | 'openai';
+  
+  // Configuración de insights clínicos
+  enableClinicalInsights?: boolean;
 }
 
 export class AudioProcessingServiceProfessional {
@@ -87,9 +94,9 @@ export class AudioProcessingServiceProfessional {
       enableRealTimeProcessing: true,
       language: 'es' as const,
       specialization: 'fisioterapia' as const,
-      minConfidenceThreshold: 0.7,
       enableQualityAssessment: true,
       enableAgentSuggestions: true,
+      enableClinicalInsights: true,
       agentProvider: 'ollama' as const,
       ...options
     };
@@ -102,7 +109,8 @@ export class AudioProcessingServiceProfessional {
         visitId,
         patientId,
         fileSize: audioFile.size,
-        specialization: config.specialization
+        specialization: config.specialization,
+        enableClinicalInsights: config.enableClinicalInsights
       });
 
       // FASE 1: Speech-to-Text Profesional
@@ -147,16 +155,41 @@ export class AudioProcessingServiceProfessional {
           )
         : this.defaultQualityAssessment();
 
+      // **NUEVA FASE 6: Generación de Insights Clínicos**
+      let clinicalInsights: ClinicalInsightSummary | undefined;
+      
+      if (config.enableClinicalInsights) {
+        try {
+          console.log('🧠 Generando insights clínicos avanzados...');
+          
+          clinicalInsights = await ClinicalInsightsEngine.generateClinicalInsights({
+            entities: nlpResult.entities,
+            soapNotes: nlpResult.soapNotes,
+            patientId,
+            visitId,
+            userId,
+            sessionHistory: [] // TODO: Integrar historial real cuando esté disponible
+          });
+          
+          console.log(`✅ Insights generados: ${clinicalInsights.processing_metadata.insights_generated} total`);
+          
+        } catch (insightsError) {
+          console.warn('⚠️ Error generando insights clínicos:', insightsError);
+          // Los insights son opcionales, continuamos sin ellos
+        }
+      }
+
       const totalTime = Date.now() - startTime;
 
-      // FASE 6: Métricas profesionales
+      // FASE 7: Métricas profesionales actualizadas
       const metrics = this.buildProfessionalMetrics(
         processingId,
         totalTime,
         transcription,
         nlpResult,
         agentSuggestions,
-        qualityAssessment
+        qualityAssessment,
+        clinicalInsights
       );
 
       const result: AudioProcessingResult = {
@@ -167,7 +200,8 @@ export class AudioProcessingServiceProfessional {
         agentSuggestions,
         metrics,
         qualityAssessment,
-        processingId
+        processingId,
+        clinicalInsights
       };
 
       // Auditoría: Procesamiento completado
@@ -180,7 +214,10 @@ export class AudioProcessingServiceProfessional {
         entitiesCount: nlpResult.entities.length,
         suggestionsCount: agentSuggestions.length,
         qualityScore: qualityAssessment.overall_score,
-        requiresReview: qualityAssessment.requires_review
+        requiresReview: qualityAssessment.requires_review,
+        insightsGenerated: clinicalInsights?.processing_metadata.insights_generated || 0,
+        clinicalComplexity: clinicalInsights?.overall_assessment.clinical_complexity || 'unknown',
+        interventionUrgency: clinicalInsights?.overall_assessment.intervention_urgency || 'unknown'
       });
 
       // Métrica de uso profesional
@@ -188,7 +225,9 @@ export class AudioProcessingServiceProfessional {
         processingId,
         specialization: config.specialization,
         qualityScore: qualityAssessment.overall_score,
-        processingTimeMs: totalTime
+        processingTimeMs: totalTime,
+        insightsEnabled: config.enableClinicalInsights,
+        clinicalComplexity: clinicalInsights?.overall_assessment.clinical_complexity || 'unknown'
       } as any, userId, visitId);
 
       return result;
@@ -480,27 +519,68 @@ export class AudioProcessingServiceProfessional {
     processingId: string,
     totalTime: number,
     transcription: TranscriptionSegment[],
-    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics },
+    nlpResult: any,
     agentSuggestions: AgentSuggestion[],
-    qualityAssessment: QualityAssessment
+    qualityAssessment: QualityAssessment,
+    clinicalInsights?: ClinicalInsightSummary
   ): ProcessingMetrics {
     
-    return {
-      ...nlpResult.metrics,
+    const transcriptionConfidence = transcription.length > 0 
+      ? transcription.reduce((sum, t) => {
+          // Mapear confidence string a number
+          const confidenceValue = t.confidence === 'entendido' ? 0.9 : 
+                                  t.confidence === 'poco_claro' ? 0.6 : 0.3;
+          return sum + confidenceValue;
+        }, 0) / transcription.length 
+      : 0;
+
+    const baseMetrics = {
       session_id: processingId,
       total_processing_time_ms: totalTime,
-      
-      // Métricas STT
-      stt_duration_ms: Math.round(totalTime * 0.3),
-      stt_confidence: transcription.reduce((sum, seg) => 
-        sum + (seg.confidence === 'entendido' ? 0.9 : 
-               seg.confidence === 'poco_claro' ? 0.6 : 0.3), 0
-      ) / transcription.length,
-      
-      // Métricas profesionales adicionales
-      overall_confidence: qualityAssessment.overall_score / 100,
-      requires_review: qualityAssessment.requires_review
+      stt_duration_ms: 800, // Estimado para STT
+      stt_confidence: transcriptionConfidence,
+      entity_extraction_time_ms: nlpResult.metrics?.entity_extraction_time_ms || 600,
+      entities_extracted: nlpResult.entities.length,
+      soap_generation_time_ms: nlpResult.metrics?.soap_generation_time_ms || 900,
+      soap_completeness: this.calculateCompleteness(transcription, nlpResult.soapNotes),
+      total_tokens_used: 0, // Ollama es local
+      estimated_cost_usd: 0.0, // Ollama es gratuito
+      overall_confidence: (
+        transcriptionConfidence +
+        (qualityAssessment.overall_score / 100) +
+        (clinicalInsights?.processing_metadata.ai_confidence || 0.5)
+      ) / 3,
+      requires_review: qualityAssessment.requires_review || 
+                      (clinicalInsights?.overall_assessment.intervention_urgency === 'immediate') ||
+                      (clinicalInsights?.alerts.some(a => a.severity === 'critical')) || false
     };
+
+    // Añadir métricas específicas de insights clínicos
+    if (clinicalInsights) {
+      return {
+        ...baseMetrics,
+        // Métricas extendidas con insights
+        insights_processing_time_ms: clinicalInsights.processing_metadata.processing_time_ms,
+        insights_generated: clinicalInsights.processing_metadata.insights_generated,
+        clinical_patterns_detected: clinicalInsights.patterns.length,
+        clinical_alerts_generated: clinicalInsights.alerts.length,
+        recommendations_generated: clinicalInsights.recommendations.length,
+        clinical_complexity_score: this.mapComplexityToScore(clinicalInsights.overall_assessment.clinical_complexity),
+        ai_confidence_insights: clinicalInsights.processing_metadata.ai_confidence,
+        evidence_sources_used: clinicalInsights.processing_metadata.evidence_sources
+      } as ProcessingMetrics & {
+        insights_processing_time_ms: number;
+        insights_generated: number;
+        clinical_patterns_detected: number;
+        clinical_alerts_generated: number;
+        recommendations_generated: number;
+        clinical_complexity_score: number;
+        ai_confidence_insights: number;
+        evidence_sources_used: number;
+      };
+    }
+
+    return baseMetrics;
   }
 
   // === MÉTODOS AUXILIARES ===
@@ -619,5 +699,18 @@ export class AudioProcessingServiceProfessional {
       red_flags: [],
       recommendations: ['Procesamiento estándar completado']
     };
+  }
+
+  /**
+   * Mapea complejidad clínica a score numérico
+   */
+  private static mapComplexityToScore(complexity: string): number {
+    switch (complexity) {
+      case 'low': return 25;
+      case 'medium': return 50;
+      case 'high': return 75;
+      case 'very_high': return 100;
+      default: return 50;
+    }
   }
 } 

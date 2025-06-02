@@ -1,5 +1,4 @@
-import { vi } from "vitest";
-import type { AgentSuggestion, SuggestionType } from '@/types/agent';
+import type { MemoryBlock, AgentSuggestion } from '@/types/agent';
 
 /**
  * Función que simula la generación de una explicación detallada para una sugerencia del agente

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Environment - AiDuxCare</title>
+</head>
+<body>
+    <h1>🔍 Diagnóstico de Variables de Entorno</h1>
+    <div id="env-info"></div>
+    
+    <script type="module">
+        const envInfo = {
+            VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+            VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 
+                import.meta.env.VITE_SUPABASE_ANON_KEY.substring(0, 50) + '...' : 'MISSING',
+            timestamp: new Date().toISOString()
+        };
+        
+        document.getElementById('env-info').innerHTML = `
+            <pre>${JSON.stringify(envInfo, null, 2)}</pre>
+        `;
+        
+        console.log('🔍 Variables de entorno:', envInfo);
+    </script>
+</body>
+</html> 

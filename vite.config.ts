@@ -1,10 +1,20 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from 'path';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Configuración optimizada de Vite
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Bundle analyzer - genera stats.html después del build
+    visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -33,8 +43,25 @@ export default defineConfig({
     open: true,
     host: true
   },
-  // Mejorar el manejo de errores
+  // Optimización del build
   build: {
-    sourcemap: true
+    sourcemap: true,
+    // Optimizaciones de bundle
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separar vendor chunks para mejor caching
+          react: ['react', 'react-dom'],
+          supabase: ['@supabase/supabase-js'],
+          router: ['react-router-dom'],
+          ui: ['@headlessui/react'],
+          utils: ['date-fns', 'uuid']
+        }
+      }
+    },
+    // Configuraciones de optimización
+    chunkSizeWarningLimit: 1000,
+    minify: 'esbuild',
+    target: 'esnext'
   }
 });

@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useState, useCallback, useEffect } from 'react';
 import { MCPContext } from '@/core/mcp/schema';
 

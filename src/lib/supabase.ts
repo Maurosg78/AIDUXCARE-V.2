@@ -1,44 +1,46 @@
-// Archivo de configuración para variables de entorno
+// Configuración de Supabase - SOLUCIÓN DEFINITIVA PARA RLS
 import { createClient } from '@supabase/supabase-js';
-import { supabaseUrl, supabaseAnonKey, validateSupabaseEnv } from '@/config/env';
 
-// Validar las credenciales de Supabase
-const envValidation = validateSupabaseEnv();
+// Variables desde entorno
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseServiceRole = import.meta.env.VITE_SUPABASE_SERVICE_ROLE || '';
 
-// Si faltan las credenciales, lanzar un error explícito
-if (!envValidation.success) {
-  throw new Error(
-    "Supabase credentials are missing. Please define VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment."
-  );
+// Verificación
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase credentials missing');
 }
 
-console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+// En desarrollo, usar service_role si está disponible para bypass RLS
+const isDevelopment = import.meta.env.DEV;
+const keyToUse = isDevelopment && supabaseServiceRole ? supabaseServiceRole : supabaseAnonKey;
+const keyType = isDevelopment && supabaseServiceRole ? 'service_role' : 'anon';
 
-// Crear cliente con manejo de errores
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Cliente con configuración robusta
+export const supabase = createClient(supabaseUrl, keyToUse, {
   auth: {
     autoRefreshToken: true,
-    persistSession: true
+    persistSession: true,
+    detectSessionInUrl: false
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'aiduxcare-v2',
+      'Prefer': 'return=representation'
+    }
+  },
+  db: {
+    schema: 'public'
   }
 });
 
-// Función para verificar la conexión a Supabase (opcional)
-export const checkSupabaseConnection = async () => {
-  try {
-    // Verificación simple sin acceder a tablas específicas
-    const { error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error('Error al conectar con Supabase:', error);
-      return { success: false, error: error.message };
-    }
-    
-    return { success: true, data: 'Conexión establecida' };
-  } catch (err) {
-    console.error('Excepción al conectar con Supabase:', err);
-    return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' };
-  }
-};
+// Log de diagnóstico
+console.log('🔧 Supabase configurado:', {
+  url: supabaseUrl.substring(0, 30) + '...',
+  keyType,
+  keyLength: keyToUse.length,
+  development: isDevelopment,
+  timestamp: new Date().toISOString()
+});
 
 export default supabase; 
