@@ -8,7 +8,6 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { AudioProcessingServiceProfessional, AudioProcessingResult, QualityAssessment } from '@/services/AudioProcessingServiceProfessional';
-import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AgentSuggestion } from '@/types/agent';
 import { Button } from '@/shared/components/UI/Button';
 import { AuditLogger } from '@/core/audit/AuditLogger';
