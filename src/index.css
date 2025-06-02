@@ -1,5 +1,9 @@
-/* Importación de fuentes */
+/* Importación de fuentes oficiales AiDuxCare */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap');
+
+/* Importar identidad visual oficial */
+@import './styles/aidux-theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -7,41 +11,45 @@
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-family-primary);
   }
 
   body {
-    @apply bg-[#F7F7F7] text-[#2C3E50];
+    @apply bg-aidux-background text-aidux-primary;
+    font-family: var(--font-family-primary);
   }
 
   h1 {
-    @apply text-3xl font-bold text-[#2C3E50];
+    @apply aidux-heading-primary;
   }
 
   h2 {
-    @apply text-2xl font-semibold text-[#2C3E50];
+    @apply aidux-heading-secondary;
   }
 
   h3 {
-    @apply text-xl font-semibold text-[#2C3E50];
+    @apply text-xl font-semibold;
+    color: var(--aidux-blue-slate);
   }
 
   p {
-    @apply text-base text-[#2C3E50];
+    @apply aidux-text-body;
   }
 
   code, pre {
-    font-family: theme('fontFamily.mono');
+    font-family: var(--font-family-mono);
   }
 }
 
 @layer components {
   .app-container {
     @apply min-h-screen flex flex-col;
+    background-color: var(--aidux-bone-white);
   }
 
   .header {
-    @apply bg-[#2C3E50] text-white py-4 px-8 text-center shadow;
+    @apply aidux-sidebar text-white py-4 px-8 text-center;
+    box-shadow: var(--shadow-md);
   }
 
   .main-content {
@@ -49,87 +57,132 @@
   }
 
   .footer {
-    @apply bg-[#2C3E50] text-white py-4 text-center text-sm;
+    @apply aidux-sidebar text-white py-4 text-center text-sm;
   }
 
   .page {
-    @apply bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl text-center;
+    @apply aidux-professional w-full max-w-3xl text-center;
+    @apply aidux-clean-spacing;
   }
 
   .page h1 {
-    @apply text-primary mb-4;
+    color: var(--aidux-blue-slate);
+    margin-bottom: var(--spacing-md);
   }
 
   .links {
-    @apply mt-8;
+    margin-top: var(--spacing-xl);
   }
 
   .button {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+    @apply aidux-btn-primary;
+    font-family: var(--font-family-primary);
+    transition: all 0.2s ease;
   }
 
   .button-primary {
-    @apply bg-[#FF6F61] text-white hover:bg-[#5DA5A3];
+    @apply aidux-btn-primary;
   }
 
   .button-secondary {
-    @apply bg-[#A8E6CF] text-[#2C3E50] hover:bg-[#5DA5A3];
+    @apply aidux-btn-secondary;
   }
 
   .button-outline {
-    @apply border-2 border-[#2C3E50] text-[#2C3E50] hover:bg-[#2C3E50] hover:text-white;
+    border: 2px solid var(--aidux-blue-slate);
+    color: var(--aidux-blue-slate);
+    background-color: transparent;
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .button-outline:hover {
+    background-color: var(--aidux-blue-slate);
+    color: var(--aidux-pure-white);
   }
 
   .input {
-    @apply w-full px-4 py-2 rounded-lg border border-[#BDC3C7] focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--aidux-neutral-gray);
+    font-family: var(--font-family-primary);
+    transition: all 0.2s ease;
+  }
+
+  .input:focus {
+    @apply aidux-field-focus;
+    outline: none;
+  }
+
+  .input:disabled {
+    @apply aidux-field-disabled;
   }
 
   .label {
-    @apply block text-sm font-medium text-[#2C3E50] mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: var(--aidux-blue-slate);
+    font-family: var(--font-family-primary);
   }
 
   .error-message {
-    @apply text-[#FF6F61] text-sm mt-1;
+    color: var(--aidux-coral-dark);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-xs);
   }
 
   .success-message {
-    @apply text-[#5DA5A3] text-sm mt-1;
+    color: var(--aidux-intersection-green);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-xs);
   }
 
   .card {
-    @apply bg-[#A8E6CF] rounded-lg shadow-md p-6;
+    @apply aidux-clinical-card;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center rounded-full text-xs font-medium;
+    padding: var(--spacing-xs) calc(var(--spacing-sm) + var(--spacing-xs));
   }
 
   .badge-primary {
-    @apply bg-[#A8E6CF] text-[#2C3E50];
+    background-color: var(--aidux-mint-green);
+    color: var(--aidux-blue-slate);
   }
 
   .badge-secondary {
-    @apply bg-[#BDC3C7] text-[#2C3E50];
+    background-color: var(--aidux-neutral-gray);
+    color: var(--aidux-blue-slate);
   }
 
   .badge-success {
-    @apply bg-[#5DA5A3] text-white;
+    background-color: var(--aidux-intersection-green);
+    color: var(--aidux-pure-white);
   }
 
   .badge-error {
-    @apply bg-[#FF6F61] text-white;
+    background-color: var(--aidux-coral);
+    color: var(--aidux-pure-white);
   }
 
   .badge-warning {
-    @apply bg-[#FF6F61] text-white;
+    background-color: var(--aidux-coral-light);
+    color: var(--aidux-pure-white);
   }
 
   .badge-info {
-    @apply bg-[#5DA5A3] text-white;
+    background-color: var(--aidux-intersection-green);
+    color: var(--aidux-pure-white);
   }
 
   .connection-status {
-    @apply my-8 p-6 bg-[#BDC3C7] rounded-lg border border-[#2C3E50];
+    @apply aidux-professional;
+    margin: var(--spacing-xl) 0;
+    padding: var(--spacing-lg);
+    border-left: 4px solid var(--aidux-intersection-green);
   }
 }
 
@@ -137,8 +190,26 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Utilidades específicas AiDuxCare */
+  .clinical-focus {
+    @apply aidux-clinical-card aidux-animate-in;
+  }
+  
+  .medical-professional {
+    @apply aidux-professional;
+    background: linear-gradient(135deg, var(--aidux-pure-white) 0%, var(--aidux-bone-white) 100%);
+  }
+  
+  .ai-accent {
+    background: linear-gradient(135deg, var(--aidux-blue-slate) 0%, var(--aidux-intersection-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
+/* Reset básico manteniendo la identidad AiDuxCare */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -146,19 +217,21 @@
 }
 
 :root {
-  --primary-color: #3366cc;
-  --secondary-color: #6699ff;
-  --text-color: #333;
-  --background-color: #f5f5f5;
-  --container-bg: #ffffff;
-  --success-color: #22c55e;
-  --error-color: #ef4444;
+  /* Variables de compatibilidad con el sistema existente */
+  --primary-color: var(--aidux-blue-slate);
+  --secondary-color: var(--aidux-intersection-green);
+  --text-color: var(--aidux-blue-slate);
+  --background-color: var(--aidux-bone-white);
+  --container-bg: var(--aidux-pure-white);
+  --success-color: var(--aidux-intersection-green);
+  --error-color: var(--aidux-coral-dark);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-family-primary);
   color: var(--text-color);
   background-color: var(--background-color);
+  line-height: 1.6;
 }
 
 .app-container {
@@ -172,7 +245,7 @@ body {
   color: white;
   padding: 1rem 2rem;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .main-content {
@@ -193,8 +266,8 @@ body {
 .page {
   background-color: var(--container-bg);
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 800px;
   text-align: center;
@@ -222,9 +295,10 @@ body {
 .connection-status {
   margin: 2rem 0;
   padding: 1.5rem;
-  background-color: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(168, 230, 207, 0.1);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--aidux-mint-green);
+  border-left: 4px solid var(--aidux-intersection-green);
 }
 
 .connection-status h3 {

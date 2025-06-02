@@ -25,7 +25,8 @@ export type UsageMetricType =
   | 'suggestions_accepted'
   | 'suggestions_integrated'
   | 'suggestions_rejected'
-  | 'suggestion_field_matched';
+  | 'suggestion_field_matched'
+  | 'agent_execution_failed';
 
 /**
  * Tipo que define la estructura de métricas longitudinales entre visitas

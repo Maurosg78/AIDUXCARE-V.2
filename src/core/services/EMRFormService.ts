@@ -44,6 +44,7 @@ export interface SuggestionToIntegrate {
   content: string;
   type: IntegrableSuggestionType;
   sourceBlockId: string;
+  field?: string;
 }
 
 /**

@@ -1,5 +1,4 @@
-/* eslint-disable jsx-a11y/aria-proptypes */
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 export type TabVariant = 'default' | 'pills' | 'underline';
@@ -45,80 +44,102 @@ const sizeStyles: Record<TabSize, string> = {
   lg: 'text-lg',
 };
 
-export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
-  (
-    {
-      tabs,
-      variant = 'default',
-      size = 'md',
-      defaultTab,
-      onChange,
-      className,
-    },
-    ref
-  ) => {
-    const [activeTab, setActiveTab] = React.useState(defaultTab || tabs[0]?.id);
+export const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  variant = 'default',
+  size = 'md',
+  defaultTab = tabs[0]?.id,
+  onChange,
+  className
+}) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
-    const handleTabClick = (tabId: string) => {
-      setActiveTab(tabId);
-      onChange?.(tabId);
-    };
+  const handleTabClick = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+    onChange?.(tabId);
+  }, [onChange]);
 
-    return (
-      <div ref={ref} className={cn('w-full', className)}>
-        {/* Tab List */}
-        <div
-          className={cn(
-            'flex',
-            variantStyles[variant],
-            className
-          )}
-          role="tablist"
-        >
-          {tabs.map((tab) => (
-            <React.Fragment key={tab.id}>
-              {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
-              <button
-                role="tab"
-                aria-selected={activeTab === tab.id ? 'true' : 'false'}
-                aria-controls={`panel-${tab.id}`}
-                disabled={tab.disabled}
-                onClick={() => handleTabClick(tab.id)}
-                className={cn(
-                  'px-4 py-2 font-medium transition-colors',
-                  sizeStyles[size],
-                  tabStyles[variant],
-                  activeTab === tab.id && activeTabStyles[variant],
-                  tab.disabled && 'opacity-50 cursor-not-allowed'
-                )}
-              >
-                {tab.label}
-              </button>
-            </React.Fragment>
-          ))}
-        </div>
+  const handleKeyDown = useCallback((event: React.KeyboardEvent, tabId: string) => {
+    const currentIndex = tabs.findIndex(tab => tab.id === tabId);
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
 
-        {/* Tab Panels */}
-        <div className="mt-4">
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              role="tabpanel"
-              id={`panel-${tab.id}`}
-              aria-labelledby={tab.id}
-              hidden={activeTab !== tab.id}
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        event.preventDefault();
+        handleTabClick(tabs[nextIndex].id);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        event.preventDefault();
+        handleTabClick(tabs[prevIndex].id);
+        break;
+      case 'Home':
+        event.preventDefault();
+        handleTabClick(tabs[0].id);
+        break;
+      case 'End':
+        event.preventDefault();
+        handleTabClick(tabs[tabs.length - 1].id);
+        break;
+    }
+  }, [tabs, handleTabClick]);
+
+  // Encontrar el tab activo para renderizado condicional
+  const activeTabContent = tabs.find(tab => tab.id === activeTab);
+
+  return (
+    <div className={cn('w-full', className)}>
+      <div 
+        className={cn('flex', variantStyles[variant])} 
+        role="tablist"
+        aria-label="Tabs de navegación"
+      >
+        {tabs.map((tab, index) => {
+          const isSelected = activeTab === tab.id;
+          const isDisabled = tab.disabled;
+          
+          return (
+            <button
+              key={index}
+              role="tab"
+              aria-selected={isSelected}
+              aria-controls={`tabpanel-${index}`}
+              aria-disabled={isDisabled}
+              disabled={isDisabled}
+              onClick={() => handleTabClick(tab.id)}
+              onKeyDown={(e) => handleKeyDown(e, tab.id)}
               className={cn(
-                'outline-none',
-                activeTab === tab.id ? 'block' : 'hidden'
+                'px-4 py-2 font-medium transition-colors',
+                sizeStyles[size],
+                tabStyles[variant],
+                isSelected && activeTabStyles[variant],
+                isDisabled && 'opacity-50 cursor-not-allowed'
               )}
+              tabIndex={isSelected ? 0 : -1}
             >
-              {tab.content}
-            </div>
-          ))}
-        </div>
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
-    );
-  }
-);
+
+      {/* TAREA 2: Renderizado condicional - solo renderiza el contenido del tab activo */}
+      <div className="mt-4">
+        {activeTabContent && (
+          <div
+            role="tabpanel"
+            id={`tabpanel-${tabs.findIndex(tab => tab.id === activeTab)}`}
+            aria-labelledby={`tab-${tabs.findIndex(tab => tab.id === activeTab)}`}
+            className="outline-none"
+          >
+            {activeTabContent.content}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 Tabs.displayName = 'Tabs'; 

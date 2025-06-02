@@ -106,10 +106,9 @@ describe('AgentSuggestionsViewer', () => {
     });
     expect(trackMetric).toHaveBeenCalledWith(
       'suggestions_integrated',
-      'user-123',
-      'visit-123',
-      1,
-      expect.any(Object)
+      expect.any(Object),
+      "user-123",
+      "visit-123"
     );
     expect(AuditLogger.log).toHaveBeenCalledWith(
       'suggestion_integrated',
@@ -183,7 +182,7 @@ describe('AgentSuggestionsViewer', () => {
     
     // Verificar roles principales
     expect(screen.getByRole('region', { name: /sugerencias del copiloto/i })).toBeInTheDocument();
-    expect(screen.getAllByRole('article')).toHaveLength(2);
+    const allRegions = screen.getAllByRole("region"); const suggestionRegions = allRegions.filter(region => region.getAttribute("aria-label")?.match(/^Sugerencia [0-9]+$/)); expect(suggestionRegions).toHaveLength(2);
   });
 
   it('debe manejar correctamente sugerencias no integrables', async () => {

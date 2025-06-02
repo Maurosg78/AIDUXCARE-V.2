@@ -14,7 +14,7 @@ function Home() {
         <Link to="/dashboard" className="button">
           Ir al Dashboard
         </Link>
-        <Link to="/demo-agent" className="button" style={{marginLeft: '10px', backgroundColor: '#10b981'}}>
+        <Link to="/demo-agent" className="button aidux-btn-primary" style={{marginLeft: '10px'}}>
           🤖 Ver Ecosistema Agent
         </Link>
       </div>
@@ -59,7 +59,7 @@ function Dashboard() {
         <Link to="/" className="button">
           Volver al Inicio
         </Link>
-        <Link to="/demo-agent" className="button" style={{marginLeft: '10px', backgroundColor: '#10b981'}}>
+        <Link to="/demo-agent" className="button aidux-btn-primary" style={{marginLeft: '10px'}}>
           🤖 Ver Ecosistema Agent
         </Link>
       </div>

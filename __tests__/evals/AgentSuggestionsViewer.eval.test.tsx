@@ -70,7 +70,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
   ];
   
   const mockWarnings = [
-    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente', true)
+    createMockSuggestion('warning', 'Paciente con HTA no controlada, considerar manejo urgente')
   ];
   
   const mockInfos = [
@@ -143,25 +143,30 @@ describe('AgentSuggestionsViewer EVAL', () => {
           suggestions={mockSuggestions}
           userId={mockUserId}
           patientId={mockPatientId}
+          onSuggestionAccepted={() => {}}
+          onSuggestionRejected={() => {}}
         />
       );
       
       // Expandir las sugerencias
-      fireEvent.click(screen.getByText(/Ver sugerencias del agente/i));
+      fireEvent.click(screen.getByText(/Mostrar/i));
       
-      // Verificar que se muestran los contextos de origen para las sugerencias que los tienen
+      // Verificar que se muestran las sugerencias expandidas
       await waitFor(() => {
-        // Verificar texto de contexto para la recomendación con contexto
-        expect(screen.getByText(/Contexto clínico: Realizar ECG para evaluar/)).toBeInTheDocument();
-        expect(screen.getByText(/Plan de tratamiento/)).toBeInTheDocument();
+        // Verificar que el contenido expandido está visible
+        expect(screen.getByTestId('suggestions-content')).toBeInTheDocument();
         
-        // Verificar texto de contexto para la advertencia con contexto
-        expect(screen.getByText(/Contexto clínico: Paciente con HTA no controlada/)).toBeInTheDocument();
-        expect(screen.getByText(/Evaluación clínica/)).toBeInTheDocument();
+        // Verificar que se muestran las sugerencias específicas
+        expect(screen.getByText(/Realizar ECG para evaluar posible cardiopatía isquémica/)).toBeInTheDocument();
+        expect(screen.getByText(/Paciente con HTA no controlada/)).toBeInTheDocument();
+        expect(screen.getByText(/Considerar referir a nutricionista/)).toBeInTheDocument();
       });
       
-      // Verificar que las sugerencias sin contexto muestran el mensaje apropiado
-      expect(screen.getAllByText('Sin contexto disponible')).toHaveLength(2);
+      // Verificar que se muestran los botones de acción para cada sugerencia
+      const integrateButtons = screen.getAllByText('Integrar');
+      const rejectButtons = screen.getAllByText('Rechazar');
+      expect(integrateButtons).toHaveLength(4);
+      expect(rejectButtons).toHaveLength(4);
     });
   });
 

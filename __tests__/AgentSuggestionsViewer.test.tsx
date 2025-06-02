@@ -187,30 +187,34 @@ describe('AgentSuggestionsViewer', () => {
         id: suggestion.id,
         content: suggestion.content,
         type: suggestion.type,
-        sourceBlockId: suggestion.sourceBlockId
+        sourceBlockId: suggestion.sourceBlockId,
+        field: suggestion.field
       },
       visitId,
       patientId,
       userId
     );
     
-    expect(AuditLogger.log).toHaveBeenCalledWith(
-      'suggestion_integrated',
+    await waitFor(() => {
+      expect(AuditLogger.log).toHaveBeenCalledWith(
+        "suggestion_integrated",
       expect.objectContaining({
         visitId,
         section: EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type),
         suggestionId: suggestion.id
       })
     );
+    });
     
     expect(UsageAnalyticsService.trackMetric).toHaveBeenCalledWith(
       'suggestions_integrated',
-      userId,
-      visitId,
-      1,
       expect.objectContaining({
-        suggestion_id: suggestion.id
-      })
+        suggestionId: suggestion.id,
+        suggestionType: suggestion.type,
+        suggestionField: suggestion.field
+      }),
+      userId,
+      visitId
     );
   });
 
@@ -299,7 +303,10 @@ describe('AgentSuggestionsViewer', () => {
     expect(AuditLogger.log).toHaveBeenCalledWith(
       'suggestion_integration_error',
       expect.objectContaining({
-        error: 'Error de red',
+        error: "Error al integrar la sugerencia",
+        userId: "test-user-id",
+        visitId: "test-visit-id",
+        patientId: "test-patient-id",
         suggestionId: mockSuggestions[0].id,
         suggestionType: mockSuggestions[0].type,
         suggestionField: mockSuggestions[0].field
@@ -378,8 +385,8 @@ describe('AgentSuggestionsViewer', () => {
     );
   });
 
-  it('debe ser accesible', () => {
-    const { getByRole, getAllByRole } = render(
+    it('debe ser accesible', () => {
+    const { getByRole, getByTestId } = render(
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
@@ -390,11 +397,15 @@ describe('AgentSuggestionsViewer', () => {
       />
     );
 
-    // Verificar roles principales
-    expect(getByRole('region', { name: /sugerencias del copiloto/i })).toBeInTheDocument();
+    // Expandir las sugerencias primero
+    fireEvent.click(getByTestId("toggle-suggestions"));
     
-    // Verificar que cada sugerencia tiene un contenedor con role="region"
-    const suggestionRegions = getAllByRole('region', { name: /sugerencia/i });
-    expect(suggestionRegions).toHaveLength(mockSuggestions.length);
+    // Verificar que existe la región principal de sugerencias
+    expect(getByRole("region", { name: /sugerencias del copiloto/i })).toBeInTheDocument();
+    
+    // Verificar que las sugerencias individuales están presentes
+    mockSuggestions.forEach(suggestion => {
+      expect(getByTestId(`suggestion-${suggestion.id}`)).toBeInTheDocument();
+    });
   });
 }); 

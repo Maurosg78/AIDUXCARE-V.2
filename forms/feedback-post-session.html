@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AiDuxCare - Feedback Post-Sesión</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #F7F7F7 0%, #BDC3C7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(44, 62, 80, 0.1);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C3E50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #5DA5A3;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .session-info {
+            background: #A8E6CF;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            color: #2C3E50;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-left: 4px solid #5DA5A3;
+            padding-left: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #2C3E50;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], 
+        input[type="email"], 
+        input[type="number"],
+        textarea, 
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #BDC3C7;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, 
+        textarea:focus, 
+        select:focus {
+            outline: none;
+            border-color: #5DA5A3;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .rating-group {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .rating-scale {
+            display: flex;
+            gap: 8px;
+        }
+
+        .rating-scale input[type="radio"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .rating-scale label {
+            margin: 0;
+            padding: 8px 12px;
+            background: #F7F7F7;
+            border: 2px solid #BDC3C7;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: normal;
+        }
+
+        .rating-scale input[type="radio"]:checked + label {
+            background: #5DA5A3;
+            color: white;
+            border-color: #5DA5A3;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #5DA5A3 0%, #2C3E50 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #F7F7F7;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #A8E6CF 0%, #5DA5A3 100%);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7F8C8D;
+            margin-top: 5px;
+        }
+
+        .required {
+            color: #FF6F61;
+        }
+
+        .footer {
+            text-align: center;
+            color: #7F8C8D;
+            margin-top: 40px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">AiDuxCare</div>
+            <div class="subtitle">Feedback Post-Sesión de Testing</div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <form id="feedbackForm">
+            <!-- Información de la Sesión -->
+            <div class="session-info">
+                <h3 style="color: #2C3E50; margin-bottom: 15px;">📋 Información de la Sesión</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label for="participantName">Nombre del Fisioterapeuta <span class="required">*</span></label>
+                        <input type="text" id="participantName" name="participantName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionNumber">Número de Sesión <span class="required">*</span></label>
+                        <select id="sessionNumber" name="sessionNumber" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="1">Sesión 1 - Onboarding</option>
+                            <option value="2">Sesión 2 - Casos Reales</option>
+                            <option value="3">Sesión 3 - Testing Avanzado</option>
+                            <option value="4">Sesión 4 - Feedback Final</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionDate">Fecha de Sesión <span class="required">*</span></label>
+                        <input type="date" id="sessionDate" name="sessionDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionDuration">Duración (minutos) <span class="required">*</span></label>
+                        <input type="number" id="sessionDuration" name="sessionDuration" min="30" max="180" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción del Caso Clínico -->
+            <div class="form-section">
+                <h3 class="section-title">🏥 Caso Clínico Utilizado</h3>
+                
+                <div class="form-group">
+                    <label for="caseType">Tipo de Caso <span class="required">*</span></label>
+                    <select id="caseType" name="caseType" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="ortopedico">Ortopédico (lumbalgia, cervicalgia, etc.)</option>
+                        <option value="deportivo">Deportivo (lesiones ligamentarias, musculares)</option>
+                        <option value="neurologico">Neurológico (ACV, Parkinson, etc.)</option>
+                        <option value="geriatrico">Geriátrico (múltiples comorbilidades)</option>
+                        <option value="simulado">Caso simulado/ficticio</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="caseDescription">Descripción Breve del Caso</label>
+                    <textarea id="caseDescription" name="caseDescription" placeholder="Ej: Paciente de 45 años con lumbalgia crónica, dolor irradiado a pierna derecha..."></textarea>
+                </div>
+            </div>
+
+            <!-- Evaluación de Transcripción -->
+            <div class="form-section">
+                <h3 class="section-title">🎤 Evaluación de Transcripción</h3>
+                
+                <div class="rating-group">
+                    <label>Precisión de la transcripción <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="transcription_precision_1" name="transcriptionPrecision" value="1" required>
+                        <label for="transcription_precision_1">1</label>
+                        <input type="radio" id="transcription_precision_2" name="transcriptionPrecision" value="2">
+                        <label for="transcription_precision_2">2</label>
+                        <input type="radio" id="transcription_precision_3" name="transcriptionPrecision" value="3">
+                        <label for="transcription_precision_3">3</label>
+                        <input type="radio" id="transcription_precision_4" name="transcriptionPrecision" value="4">
+                        <label for="transcription_precision_4">4</label>
+                        <input type="radio" id="transcription_precision_5" name="transcriptionPrecision" value="5">
+                        <label for="transcription_precision_5">5</label>
+                        <input type="radio" id="transcription_precision_6" name="transcriptionPrecision" value="6">
+                        <label for="transcription_precision_6">6</label>
+                        <input type="radio" id="transcription_precision_7" name="transcriptionPrecision" value="7">
+                        <label for="transcription_precision_7">7</label>
+                        <input type="radio" id="transcription_precision_8" name="transcriptionPrecision" value="8">
+                        <label for="transcription_precision_8">8</label>
+                        <input type="radio" id="transcription_precision_9" name="transcriptionPrecision" value="9">
+                        <label for="transcription_precision_9">9</label>
+                        <input type="radio" id="transcription_precision_10" name="transcriptionPrecision" value="10">
+                        <label for="transcription_precision_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Muy Imprecisa</span>
+                    <span>Perfecta</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Velocidad de transcripción <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="transcription_speed_1" name="transcriptionSpeed" value="1" required>
+                        <label for="transcription_speed_1">1</label>
+                        <input type="radio" id="transcription_speed_2" name="transcriptionSpeed" value="2">
+                        <label for="transcription_speed_2">2</label>
+                        <input type="radio" id="transcription_speed_3" name="transcriptionSpeed" value="3">
+                        <label for="transcription_speed_3">3</label>
+                        <input type="radio" id="transcription_speed_4" name="transcriptionSpeed" value="4">
+                        <label for="transcription_speed_4">4</label>
+                        <input type="radio" id="transcription_speed_5" name="transcriptionSpeed" value="5">
+                        <label for="transcription_speed_5">5</label>
+                        <input type="radio" id="transcription_speed_6" name="transcriptionSpeed" value="6">
+                        <label for="transcription_speed_6">6</label>
+                        <input type="radio" id="transcription_speed_7" name="transcriptionSpeed" value="7">
+                        <label for="transcription_speed_7">7</label>
+                        <input type="radio" id="transcription_speed_8" name="transcriptionSpeed" value="8">
+                        <label for="transcription_speed_8">8</label>
+                        <input type="radio" id="transcription_speed_9" name="transcriptionSpeed" value="9">
+                        <label for="transcription_speed_9">9</label>
+                        <input type="radio" id="transcription_speed_10" name="transcriptionSpeed" value="10">
+                        <label for="transcription_speed_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Muy Lenta</span>
+                    <span>Instantánea</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Manejo de interrupciones/ruido <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="transcription_interruptions_1" name="transcriptionInterruptions" value="1" required>
+                        <label for="transcription_interruptions_1">1</label>
+                        <input type="radio" id="transcription_interruptions_2" name="transcriptionInterruptions" value="2">
+                        <label for="transcription_interruptions_2">2</label>
+                        <input type="radio" id="transcription_interruptions_3" name="transcriptionInterruptions" value="3">
+                        <label for="transcription_interruptions_3">3</label>
+                        <input type="radio" id="transcription_interruptions_4" name="transcriptionInterruptions" value="4">
+                        <label for="transcription_interruptions_4">4</label>
+                        <input type="radio" id="transcription_interruptions_5" name="transcriptionInterruptions" value="5">
+                        <label for="transcription_interruptions_5">5</label>
+                        <input type="radio" id="transcription_interruptions_6" name="transcriptionInterruptions" value="6">
+                        <label for="transcription_interruptions_6">6</label>
+                        <input type="radio" id="transcription_interruptions_7" name="transcriptionInterruptions" value="7">
+                        <label for="transcription_interruptions_7">7</label>
+                        <input type="radio" id="transcription_interruptions_8" name="transcriptionInterruptions" value="8">
+                        <label for="transcription_interruptions_8">8</label>
+                        <input type="radio" id="transcription_interruptions_9" name="transcriptionInterruptions" value="9">
+                        <label for="transcription_interruptions_9">9</label>
+                        <input type="radio" id="transcription_interruptions_10" name="transcriptionInterruptions" value="10">
+                        <label for="transcription_interruptions_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Muy Malo</span>
+                    <span>Excelente</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="transcriptionComments">Comentarios sobre transcripción</label>
+                    <textarea id="transcriptionComments" name="transcriptionComments" placeholder="Errores específicos, palabras mal transcritas, problemas técnicos, etc."></textarea>
+                </div>
+            </div>
+
+            <!-- Evaluación de Nota SOAP -->
+            <div class="form-section">
+                <h3 class="section-title">📋 Evaluación de Nota SOAP Generada</h3>
+                
+                <div class="rating-group">
+                    <label>Precisión médica del contenido <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="soap_precision_1" name="soapPrecision" value="1" required>
+                        <label for="soap_precision_1">1</label>
+                        <input type="radio" id="soap_precision_2" name="soapPrecision" value="2">
+                        <label for="soap_precision_2">2</label>
+                        <input type="radio" id="soap_precision_3" name="soapPrecision" value="3">
+                        <label for="soap_precision_3">3</label>
+                        <input type="radio" id="soap_precision_4" name="soapPrecision" value="4">
+                        <label for="soap_precision_4">4</label>
+                        <input type="radio" id="soap_precision_5" name="soapPrecision" value="5">
+                        <label for="soap_precision_5">5</label>
+                        <input type="radio" id="soap_precision_6" name="soapPrecision" value="6">
+                        <label for="soap_precision_6">6</label>
+                        <input type="radio" id="soap_precision_7" name="soapPrecision" value="7">
+                        <label for="soap_precision_7">7</label>
+                        <input type="radio" id="soap_precision_8" name="soapPrecision" value="8">
+                        <label for="soap_precision_8">8</label>
+                        <input type="radio" id="soap_precision_9" name="soapPrecision" value="9">
+                        <label for="soap_precision_9">9</label>
+                        <input type="radio" id="soap_precision_10" name="soapPrecision" value="10">
+                        <label for="soap_precision_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Incorrecta</span>
+                    <span>Perfecta</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Completitud de la información <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="soap_completeness_1" name="soapCompleteness" value="1" required>
+                        <label for="soap_completeness_1">1</label>
+                        <input type="radio" id="soap_completeness_2" name="soapCompleteness" value="2">
+                        <label for="soap_completeness_2">2</label>
+                        <input type="radio" id="soap_completeness_3" name="soapCompleteness" value="3">
+                        <label for="soap_completeness_3">3</label>
+                        <input type="radio" id="soap_completeness_4" name="soapCompleteness" value="4">
+                        <label for="soap_completeness_4">4</label>
+                        <input type="radio" id="soap_completeness_5" name="soapCompleteness" value="5">
+                        <label for="soap_completeness_5">5</label>
+                        <input type="radio" id="soap_completeness_6" name="soapCompleteness" value="6">
+                        <label for="soap_completeness_6">6</label>
+                        <input type="radio" id="soap_completeness_7" name="soapCompleteness" value="7">
+                        <label for="soap_completeness_7">7</label>
+                        <input type="radio" id="soap_completeness_8" name="soapCompleteness" value="8">
+                        <label for="soap_completeness_8">8</label>
+                        <input type="radio" id="soap_completeness_9" name="soapCompleteness" value="9">
+                        <label for="soap_completeness_9">9</label>
+                        <input type="radio" id="soap_completeness_10" name="soapCompleteness" value="10">
+                        <label for="soap_completeness_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Muy Incompleta</span>
+                    <span>Muy Completa</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Utilidad clínica práctica <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="soap_utility_1" name="soapUtility" value="1" required>
+                        <label for="soap_utility_1">1</label>
+                        <input type="radio" id="soap_utility_2" name="soapUtility" value="2">
+                        <label for="soap_utility_2">2</label>
+                        <input type="radio" id="soap_utility_3" name="soapUtility" value="3">
+                        <label for="soap_utility_3">3</label>
+                        <input type="radio" id="soap_utility_4" name="soapUtility" value="4">
+                        <label for="soap_utility_4">4</label>
+                        <input type="radio" id="soap_utility_5" name="soapUtility" value="5">
+                        <label for="soap_utility_5">5</label>
+                        <input type="radio" id="soap_utility_6" name="soapUtility" value="6">
+                        <label for="soap_utility_6">6</label>
+                        <input type="radio" id="soap_utility_7" name="soapUtility" value="7">
+                        <label for="soap_utility_7">7</label>
+                        <input type="radio" id="soap_utility_8" name="soapUtility" value="8">
+                        <label for="soap_utility_8">8</label>
+                        <input type="radio" id="soap_utility_9" name="soapUtility" value="9">
+                        <label for="soap_utility_9">9</label>
+                        <input type="radio" id="soap_utility_10" name="soapUtility" value="10">
+                        <label for="soap_utility_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Inútil</span>
+                    <span>Muy Útil</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="soapEditing">¿Requirió edición la nota SOAP? <span class="required">*</span></label>
+                    <select id="soapEditing" name="soapEditing" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="no">No, estaba perfecta</option>
+                        <option value="minor">Sí, ediciones menores</option>
+                        <option value="moderate">Sí, ediciones moderadas</option>
+                        <option value="major">Sí, ediciones mayores</option>
+                        <option value="complete">Tuve que reescribirla completamente</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="soapComments">Comentarios sobre la nota SOAP</label>
+                    <textarea id="soapComments" name="soapComments" placeholder="Errores específicos, información faltante, sugerencias de mejora, etc."></textarea>
+                </div>
+            </div>
+
+            <!-- Evaluación de Sugerencias de Agentes -->
+            <div class="form-section">
+                <h3 class="section-title">🤖 Evaluación de Sugerencias de Agentes</h3>
+                
+                <div class="rating-group">
+                    <label>Relevancia clínica <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="agent_relevance_1" name="agentRelevance" value="1" required>
+                        <label for="agent_relevance_1">1</label>
+                        <input type="radio" id="agent_relevance_2" name="agentRelevance" value="2">
+                        <label for="agent_relevance_2">2</label>
+                        <input type="radio" id="agent_relevance_3" name="agentRelevance" value="3">
+                        <label for="agent_relevance_3">3</label>
+                        <input type="radio" id="agent_relevance_4" name="agentRelevance" value="4">
+                        <label for="agent_relevance_4">4</label>
+                        <input type="radio" id="agent_relevance_5" name="agentRelevance" value="5">
+                        <label for="agent_relevance_5">5</label>
+                        <input type="radio" id="agent_relevance_6" name="agentRelevance" value="6">
+                        <label for="agent_relevance_6">6</label>
+                        <input type="radio" id="agent_relevance_7" name="agentRelevance" value="7">
+                        <label for="agent_relevance_7">7</label>
+                        <input type="radio" id="agent_relevance_8" name="agentRelevance" value="8">
+                        <label for="agent_relevance_8">8</label>
+                        <input type="radio" id="agent_relevance_9" name="agentRelevance" value="9">
+                        <label for="agent_relevance_9">9</label>
+                        <input type="radio" id="agent_relevance_10" name="agentRelevance" value="10">
+                        <label for="agent_relevance_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Irrelevante</span>
+                    <span>Muy Relevante</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Seguridad de las sugerencias <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="agent_safety_1" name="agentSafety" value="1" required>
+                        <label for="agent_safety_1">1</label>
+                        <input type="radio" id="agent_safety_2" name="agentSafety" value="2">
+                        <label for="agent_safety_2">2</label>
+                        <input type="radio" id="agent_safety_3" name="agentSafety" value="3">
+                        <label for="agent_safety_3">3</label>
+                        <input type="radio" id="agent_safety_4" name="agentSafety" value="4">
+                        <label for="agent_safety_4">4</label>
+                        <input type="radio" id="agent_safety_5" name="agentSafety" value="5">
+                        <label for="agent_safety_5">5</label>
+                        <input type="radio" id="agent_safety_6" name="agentSafety" value="6">
+                        <label for="agent_safety_6">6</label>
+                        <input type="radio" id="agent_safety_7" name="agentSafety" value="7">
+                        <label for="agent_safety_7">7</label>
+                        <input type="radio" id="agent_safety_8" name="agentSafety" value="8">
+                        <label for="agent_safety_8">8</label>
+                        <input type="radio" id="agent_safety_9" name="agentSafety" value="9">
+                        <label for="agent_safety_9">9</label>
+                        <input type="radio" id="agent_safety_10" name="agentSafety" value="10">
+                        <label for="agent_safety_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Peligrosas</span>
+                    <span>Muy Seguras</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Novedad/Valor añadido <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="agent_novelty_1" name="agentNovelty" value="1" required>
+                        <label for="agent_novelty_1">1</label>
+                        <input type="radio" id="agent_novelty_2" name="agentNovelty" value="2">
+                        <label for="agent_novelty_2">2</label>
+                        <input type="radio" id="agent_novelty_3" name="agentNovelty" value="3">
+                        <label for="agent_novelty_3">3</label>
+                        <input type="radio" id="agent_novelty_4" name="agentNovelty" value="4">
+                        <label for="agent_novelty_4">4</label>
+                        <input type="radio" id="agent_novelty_5" name="agentNovelty" value="5">
+                        <label for="agent_novelty_5">5</label>
+                        <input type="radio" id="agent_novelty_6" name="agentNovelty" value="6">
+                        <label for="agent_novelty_6">6</label>
+                        <input type="radio" id="agent_novelty_7" name="agentNovelty" value="7">
+                        <label for="agent_novelty_7">7</label>
+                        <input type="radio" id="agent_novelty_8" name="agentNovelty" value="8">
+                        <label for="agent_novelty_8">8</label>
+                        <input type="radio" id="agent_novelty_9" name="agentNovelty" value="9">
+                        <label for="agent_novelty_9">9</label>
+                        <input type="radio" id="agent_novelty_10" name="agentNovelty" value="10">
+                        <label for="agent_novelty_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Sin Valor</span>
+                    <span>Muy Valioso</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="agentComments">Comentarios específicos sobre sugerencias</label>
+                    <textarea id="agentComments" name="agentComments" placeholder="Sugerencias específicas que te llamaron la atención, errores detectados, mejoras propuestas, etc."></textarea>
+                </div>
+            </div>
+
+            <!-- Experiencia General -->
+            <div class="form-section">
+                <h3 class="section-title">⭐ Experiencia General</h3>
+                
+                <div class="rating-group">
+                    <label>Facilidad de uso <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="ease_of_use_1" name="easeOfUse" value="1" required>
+                        <label for="ease_of_use_1">1</label>
+                        <input type="radio" id="ease_of_use_2" name="easeOfUse" value="2">
+                        <label for="ease_of_use_2">2</label>
+                        <input type="radio" id="ease_of_use_3" name="easeOfUse" value="3">
+                        <label for="ease_of_use_3">3</label>
+                        <input type="radio" id="ease_of_use_4" name="easeOfUse" value="4">
+                        <label for="ease_of_use_4">4</label>
+                        <input type="radio" id="ease_of_use_5" name="easeOfUse" value="5">
+                        <label for="ease_of_use_5">5</label>
+                        <input type="radio" id="ease_of_use_6" name="easeOfUse" value="6">
+                        <label for="ease_of_use_6">6</label>
+                        <input type="radio" id="ease_of_use_7" name="easeOfUse" value="7">
+                        <label for="ease_of_use_7">7</label>
+                        <input type="radio" id="ease_of_use_8" name="easeOfUse" value="8">
+                        <label for="ease_of_use_8">8</label>
+                        <input type="radio" id="ease_of_use_9" name="easeOfUse" value="9">
+                        <label for="ease_of_use_9">9</label>
+                        <input type="radio" id="ease_of_use_10" name="easeOfUse" value="10">
+                        <label for="ease_of_use_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Muy Difícil</span>
+                    <span>Muy Fácil</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Ahorro de tiempo percibido <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="time_saving_1" name="timeSaving" value="1" required>
+                        <label for="time_saving_1">1</label>
+                        <input type="radio" id="time_saving_2" name="timeSaving" value="2">
+                        <label for="time_saving_2">2</label>
+                        <input type="radio" id="time_saving_3" name="timeSaving" value="3">
+                        <label for="time_saving_3">3</label>
+                        <input type="radio" id="time_saving_4" name="timeSaving" value="4">
+                        <label for="time_saving_4">4</label>
+                        <input type="radio" id="time_saving_5" name="timeSaving" value="5">
+                        <label for="time_saving_5">5</label>
+                        <input type="radio" id="time_saving_6" name="timeSaving" value="6">
+                        <label for="time_saving_6">6</label>
+                        <input type="radio" id="time_saving_7" name="timeSaving" value="7">
+                        <label for="time_saving_7">7</label>
+                        <input type="radio" id="time_saving_8" name="timeSaving" value="8">
+                        <label for="time_saving_8">8</label>
+                        <input type="radio" id="time_saving_9" name="timeSaving" value="9">
+                        <label for="time_saving_9">9</label>
+                        <input type="radio" id="time_saving_10" name="timeSaving" value="10">
+                        <label for="time_saving_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Pierde Tiempo</span>
+                    <span>Gran Ahorro</span>
+                </div>
+
+                <div class="rating-group">
+                    <label>Mejora en calidad de práctica <span class="required">*</span></label>
+                    <div class="rating-scale">
+                        <input type="radio" id="quality_improvement_1" name="qualityImprovement" value="1" required>
+                        <label for="quality_improvement_1">1</label>
+                        <input type="radio" id="quality_improvement_2" name="qualityImprovement" value="2">
+                        <label for="quality_improvement_2">2</label>
+                        <input type="radio" id="quality_improvement_3" name="qualityImprovement" value="3">
+                        <label for="quality_improvement_3">3</label>
+                        <input type="radio" id="quality_improvement_4" name="qualityImprovement" value="4">
+                        <label for="quality_improvement_4">4</label>
+                        <input type="radio" id="quality_improvement_5" name="qualityImprovement" value="5">
+                        <label for="quality_improvement_5">5</label>
+                        <input type="radio" id="quality_improvement_6" name="qualityImprovement" value="6">
+                        <label for="quality_improvement_6">6</label>
+                        <input type="radio" id="quality_improvement_7" name="qualityImprovement" value="7">
+                        <label for="quality_improvement_7">7</label>
+                        <input type="radio" id="quality_improvement_8" name="qualityImprovement" value="8">
+                        <label for="quality_improvement_8">8</label>
+                        <input type="radio" id="quality_improvement_9" name="qualityImprovement" value="9">
+                        <label for="quality_improvement_9">9</label>
+                        <input type="radio" id="quality_improvement_10" name="qualityImprovement" value="10">
+                        <label for="quality_improvement_10">10</label>
+                    </div>
+                </div>
+                <div class="scale-labels">
+                    <span>Empeora</span>
+                    <span>Mejora Mucho</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="realWorldUsage">¿Usarías AiDuxCare en tu práctica real? <span class="required">*</span></label>
+                    <select id="realWorldUsage" name="realWorldUsage" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="definitely_yes">Definitivamente sí</option>
+                        <option value="probably_yes">Probablemente sí</option>
+                        <option value="maybe">Tal vez</option>
+                        <option value="probably_no">Probablemente no</option>
+                        <option value="definitely_no">Definitivamente no</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="generalComments">Comentarios generales sobre esta sesión</label>
+                    <textarea id="generalComments" name="generalComments" placeholder="Impresiones generales, aspectos destacados, problemas encontrados, sugerencias de mejora..."></textarea>
+                </div>
+            </div>
+
+            <!-- Problemas Técnicos -->
+            <div class="form-section">
+                <h3 class="section-title">🔧 Problemas Técnicos</h3>
+                
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_crashes" name="technicalIssues" value="crashes">
+                        <label for="tech_crashes">Crashes/Cierres inesperados</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_slow" name="technicalIssues" value="slow">
+                        <label for="tech_slow">Lentitud excesiva</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_audio" name="technicalIssues" value="audio">
+                        <label for="tech_audio">Problemas de audio</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_connection" name="technicalIssues" value="connection">
+                        <label for="tech_connection">Problemas de conexión</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_interface" name="technicalIssues" value="interface">
+                        <label for="tech_interface">Problemas de interfaz</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tech_none" name="technicalIssues" value="none">
+                        <label for="tech_none">Ningún problema técnico</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="technicalDetails">Detalles de problemas técnicos</label>
+                    <textarea id="technicalDetails" name="technicalDetails" placeholder="Describe específicamente qué problemas técnicos experimentaste y cuándo ocurrieron..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">📤 Enviar Feedback</button>
+        </form>
+
+        <div class="footer">
+            <p>🔒 Este feedback es confidencial y se usa únicamente para mejorar AiDuxCare</p>
+            <p>Gracias por tu tiempo y contribución al desarrollo de herramientas innovadoras para fisioterapia</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Recopilar todos los datos del formulario
+            const formData = new FormData(this);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (data[key]) {
+                    if (Array.isArray(data[key])) {
+                        data[key].push(value);
+                    } else {
+                        data[key] = [data[key], value];
+                    }
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            // Agregar timestamp
+            data.submissionTime = new Date().toISOString();
+            
+            // Enviar datos (implementar endpoint según necesidades)
+            console.log('Feedback data:', data);
+            
+            // Mostrar confirmación
+            alert('¡Gracias por tu feedback! Los datos han sido enviados correctamente.');
+            
+            // Opcional: Reset form o redirect
+            this.reset();
+        });
+
+        // Manejar checkbox exclusivo para "Ningún problema técnico"
+        document.getElementById('tech_none').addEventListener('change', function() {
+            if (this.checked) {
+                const otherCheckboxes = document.querySelectorAll('input[name="technicalIssues"]:not(#tech_none)');
+                otherCheckboxes.forEach(cb => cb.checked = false);
+            }
+        });
+
+        // Desmarcar "Ningún problema técnico" si se selecciona otro
+        document.querySelectorAll('input[name="technicalIssues"]:not(#tech_none)').forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.checked) {
+                    document.getElementById('tech_none').checked = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

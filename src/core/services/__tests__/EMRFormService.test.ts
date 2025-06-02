@@ -138,18 +138,28 @@ export class EMRFormService {
       );
       trackMetric(
         'suggestions_integrated',
-        userId,
-        visitId,
-        1,
         {
-          suggestion_id: suggestion.id,
-          suggestion_type: suggestion.type,
-          emr_section: sec
-        }
+          suggestionId: suggestion.id,
+          suggestionType: suggestion.type,
+          suggestionField: sec
+        },
+        userId,
+        visitId
       );
       return true;
     } catch (e) {
       console.error('Error inserting suggestion:', e);
+      
+      // Registrar el error en el audit log
+      AuditLogger.log('suggestion_integration_error', {
+        userId,
+        visitId,
+        patientId,
+        error: e instanceof Error ? e.message : String(e),
+        suggestionId: suggestion.id,
+        suggestionType: suggestion.type
+      });
+      
       return false;
     }
   }
@@ -303,5 +313,34 @@ describe('EMRFormService', () => {
     expect(result).toBe(true);
     expect(formDataSourceSupabase.updateForm).toHaveBeenCalled();
     expect(AuditLogger.log).toHaveBeenCalled();
+  });
+
+  it('debe manejar errores de red al integrar sugerencias', async () => {
+    // Configurar mock para que falle con error de red
+    vi.mocked(formDataSourceSupabase.updateForm).mockRejectedValueOnce(new Error('Error de red simulado'));
+    vi.mocked(formDataSourceSupabase.getFormsByVisitId).mockResolvedValue([mockForm]);
+    
+    const suggestion = { 
+      id: 'sug-1', 
+      content: 'Nueva sugerencia', 
+      type: 'recommendation' as const, 
+      sourceBlockId: 'block-1' 
+    };
+    
+    const result = await EMRFormService.insertSuggestion(suggestion, 'visit-1', 'patient-1', 'user-1');
+    
+    // Debe retornar false en caso de error
+    expect(result).toBe(false);
+    
+    // Debe llamar a AuditLogger.log con el evento de error
+    expect(AuditLogger.log).toHaveBeenCalledWith(
+      'suggestion_integration_error',
+      expect.objectContaining({
+        error: 'Error de red simulado',
+        userId: 'user-1',
+        visitId: 'visit-1',
+        suggestionId: 'sug-1'
+      })
+    );
   });
 });

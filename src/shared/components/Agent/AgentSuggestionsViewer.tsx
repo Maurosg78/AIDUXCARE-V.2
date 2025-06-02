@@ -150,10 +150,18 @@ const SuggestionItem = memo(({
   <li 
     data-testid={`suggestion-${suggestion.id}`}
     className="p-3 bg-gray-50 rounded-md"
-    role="article"
-    aria-label={`Sugerencia: ${suggestion.content}`}
+    role="region"
+    aria-label={`Sugerencia ${suggestion.id}`}
   >
     <p className="text-sm text-gray-700">{suggestion.content}</p>
+    {suggestion.feedback && (
+      <p 
+        className="text-xs text-green-600 mt-1"
+        data-testid={`suggestion-feedback-${suggestion.id}`}
+      >
+        Retroalimentación: {suggestion.feedback}
+      </p>
+    )}
     <div className="mt-2 flex justify-end space-x-2" role="group" aria-label="Acciones de sugerencia">
       <button
         onClick={() => onAccept(suggestion)}
@@ -291,7 +299,13 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
         suggestionField: suggestion.field || 'notes'
       };
       await EMRFormService.insertSuggestion(
-        suggestionToIntegrate,
+        {
+          id: suggestion.id,
+          content: suggestion.content,
+          type: suggestion.type as IntegrableSuggestionType,
+          sourceBlockId: suggestion.sourceBlockId,
+          field: suggestion.field || 'notes'
+        },
         visitId,
         patientId,
         userId
@@ -301,26 +315,26 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
       if (onIntegrateSuggestions) {
         onIntegrateSuggestions(1);
       }
-        trackMetric(
-          'suggestions_integrated',
-        {
-          suggestionId: suggestion.id,
-          suggestionType: (['recommendation', 'warning', 'info'].includes(suggestion.type) ? suggestion.type : 'recommendation') as 'recommendation' | 'warning' | 'info',
-          suggestionField: suggestion.field || 'notes'
-        },
-          userId,
-        visitId
-        );
-        AuditLogger.log('suggestion_integrated', {
+      trackMetric('suggestions_integrated', {
         suggestionId: suggestion.id,
-        visitId,
+        suggestionType: suggestion.type as 'recommendation' | 'warning' | 'info',
+        suggestionField: suggestion.field || 'notes'
+      }, userId, visitId);
+        AuditLogger.log('suggestion_integrated', {
           userId,
-        patientId
+          visitId,
+          patientId,
+        suggestionId: suggestion.id,
+        suggestionType: suggestion.type,
+        suggestionField: suggestion.field || 'notes',
+          content: suggestion.content,
+        section: EMRFormService.mapSuggestionTypeToEMRSection(suggestion.type)
       });
     } catch (err) {
       let errorMessage: ErrorMessage = 'Error al integrar la sugerencia';
       if (err instanceof Error) {
-        if (err.message.includes('conexión') || err.message.toLowerCase().includes('network')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('conexión') || msg.includes('network')) {
           errorMessage = 'Error de conexión al integrar la sugerencia';
         } else if (err.message === 'La sugerencia no cumple con los requisitos de validación') {
           errorMessage = 'La sugerencia no cumple con los requisitos de validación';
@@ -328,11 +342,13 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
       }
       setError(errorMessage);
       AuditLogger.log('suggestion_integration_error', {
-        error: errorMessage,
-        suggestionId: suggestion.id,
+        userId,
         visitId,
         patientId,
-        userId
+        error: errorMessage,
+        suggestionId: suggestion.id,
+        suggestionType: suggestion.type,
+        suggestionField: suggestion.field || 'notes'
       });
       console.error('Error al integrar sugerencia:', err);
     }
@@ -347,24 +363,14 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
       onSuggestionRejected(suggestion);
 
       // Registrar métrica de rechazo
-      trackMetric(
-        'suggestions_rejected',
-        {
-          suggestionId: suggestion.id,
-          suggestionType: (['recommendation', 'warning', 'info'].includes(suggestion.type) ? suggestion.type : 'recommendation') as 'recommendation' | 'warning' | 'info',
-          suggestionField: suggestion.field || 'notes'
-        },
-        userId,
-        visitId
-      );
+      trackMetric('suggestions_rejected', {
+        suggestionId: suggestion.id,
+        suggestionType: suggestion.type as 'recommendation' | 'warning' | 'info',
+        suggestionField: suggestion.field || 'notes'
+      }, userId, visitId);
 
       // Registrar el rechazo en el log de auditoría
-      AuditLogger.log('suggestion_rejected', {
-        suggestionId: suggestion.id,
-        visitId,
-        userId,
-        patientId
-      });
+      AuditLogger.log('suggestion_rejected', { userId, visitId, patientId, suggestionId: suggestion.id, suggestionType: suggestion.type, suggestionField: suggestion.field || 'notes' });
 
     } catch (err) {
       console.error('Error al rechazar sugerencia:', err);
@@ -472,48 +478,6 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
     return null;
   }
 
-  // Renderizar sugerencias con su feedback correspondiente
-  const renderSuggestion = (suggestion: AgentSuggestion) => (
-    <div 
-      key={suggestion.id} 
-      className={`p-3 rounded-md border ${
-        integratedSuggestions.has(suggestion.id) 
-          ? 'bg-blue-50 border-blue-300' 
-          : SUGGESTION_STYLES[suggestion.type as SuggestionType].colorClass
-      }`}
-      data-testid={`suggestion-item-${suggestion.id}`}
-    >
-      <p className="text-sm text-gray-800 mb-2">{suggestion.content}</p>
-      <p className="text-xs text-gray-500">Fuente: {suggestion.sourceBlockId}</p>
-      
-      <div className="mt-2 flex justify-end space-x-2">
-        <button
-          onClick={() => handleSuggestionAccepted(suggestion)}
-          onKeyDown={handleKeyDown}
-          disabled={integratedSuggestions.has(suggestion.id) || !isSuggestionIntegrable(suggestion)}
-          className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-          data-testid={`accept-suggestion-${suggestion.id}`}
-          aria-label={integratedSuggestions.has(suggestion.id) ? 'Sugerencia integrada' : 
-                    !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
-                    BUTTON_TEXTS.INTEGRATE}
-        >
-          {integratedSuggestions.has(suggestion.id) ? BUTTON_TEXTS.INTEGRATED : 
-           !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
-           BUTTON_TEXTS.INTEGRATE}
-        </button>
-        <button
-          onClick={() => handleReject(suggestion)}
-          onKeyDown={handleKeyDown}
-          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          data-testid={`reject-suggestion-${suggestion.id}`}
-          aria-label="Rechazar sugerencia"
-        >
-          {BUTTON_TEXTS.REJECT}
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div 
       className="bg-white rounded-lg shadow-sm border border-gray-200"
@@ -574,23 +538,83 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
               No hay sugerencias disponibles
             </p>
           ) : (
-            <div className="space-y-3" role="list">
+            <ul className="space-y-3">
               {Object.entries(groupedSuggestions).map(([type, typeSuggestions]) => (
-                <div key={type} role="listitem">
-                  <SuggestionSection
-                    type={type}
-                    suggestions={typeSuggestions}
-                    onAccept={handleSuggestionAccepted}
-                    onReject={handleReject}
-                    integratedSuggestions={integratedSuggestions}
-                    isSuggestionIntegrable={isSuggestionIntegrable}
-                    onKeyDown={handleKeyDown}
-                  />
+                <li key={type}>
+                  <section 
+                    data-testid={`${type}-section`}
+                    className="space-y-2"
+                    aria-labelledby={`${type}-section-title`}
+                  >
+                    <h4 
+                      id={`${type}-section-title`}
+                      className="text-sm font-medium text-gray-700 capitalize"
+                    >
+                      {type === 'recommendation' ? 'Recomendaciones' :
+                       type === 'warning' ? 'Advertencias' :
+                       type === 'info' ? 'Información' : type}
+                </h4>
+                    <ul 
+                      className="space-y-2" 
+                      aria-label={`Lista de ${type === 'recommendation' ? 'recomendaciones' :
+                                 type === 'warning' ? 'advertencias' :
+                                 type === 'info' ? 'información' : type}`}
+                    >
+                      {typeSuggestions.map((suggestion) => (
+                        <li 
+                  key={suggestion.id} 
+                  data-testid={`suggestion-${suggestion.id}`}
+                          className="p-3 bg-gray-50 rounded-md"
+                          role="region"
+                          aria-label={`Sugerencia ${suggestion.id}`}
+                        >
+                          <p className="text-sm text-gray-700">{suggestion.content}</p>
+                          {suggestion.feedback && (
+                            <p 
+                              className="text-xs text-green-600 mt-1"
+                              data-testid={`suggestion-feedback-${suggestion.id}`}
+                            >
+                              Retroalimentación: {suggestion.feedback}
+                            </p>
+                          )}
+                          <div 
+                            className="mt-2 flex justify-end space-x-2" 
+                            role="group" 
+                            aria-label="Acciones de sugerencia"
+                          >
+                            <button
+                              onClick={() => handleSuggestionAccepted(suggestion)}
+                              onKeyDown={handleKeyDown}
+                              disabled={integratedSuggestions.has(suggestion.id) || !isSuggestionIntegrable(suggestion)}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                              data-testid={`accept-suggestion-${suggestion.id}`}
+                              aria-label={integratedSuggestions.has(suggestion.id) ? 'Sugerencia integrada' : 
+                                        !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
+                                        BUTTON_TEXTS.INTEGRATE}
+                        >
+                          {integratedSuggestions.has(suggestion.id) ? BUTTON_TEXTS.INTEGRATED : 
+                           !isSuggestionIntegrable(suggestion) ? BUTTON_TEXTS.NOT_INTEGRABLE : 
+                           BUTTON_TEXTS.INTEGRATE}
+                          </button>
+                          <button
+                            onClick={() => handleReject(suggestion)}
+                            onKeyDown={handleKeyDown}
+                            className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            data-testid={`reject-suggestion-${suggestion.id}`}
+                            aria-label="Rechazar sugerencia"
+                          >
+                            {BUTTON_TEXTS.REJECT}
+                          </button>
                 </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-          
+      
           <div className="mt-4 text-right">
             <p className="text-xs text-gray-500">
               Total de sugerencias: {suggestions.length}

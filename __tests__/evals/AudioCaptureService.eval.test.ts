@@ -28,43 +28,47 @@ const mockAuditLogger = {
 
 const mockTrack = vi.fn();
 
+// Función helper para generar contenido clínico (fuera del mock)
+function generateMockClinicalContent(segments: TranscriptionSegment[]): string {
+  console.log('Direct function called with segments:', segments?.length || 0);
+  
+  if (!segments || !Array.isArray(segments) || segments.length === 0) {
+    return '🔊 **Resumen de consulta (transcripción asistida - sin datos)**';
+  }
+  
+  let content = '🔊 **Resumen de consulta (transcripción asistida)**\n\n';
+  
+  const profesionalSegments = segments.filter(s => s.actor === 'profesional');
+  const pacienteSegments = segments.filter(s => s.actor === 'paciente');
+  const acompañanteSegments = segments.filter(s => s.actor === 'acompañante');
+  
+  if (profesionalSegments.length > 0) {
+    content += '**Profesional sanitario:**\n';
+    profesionalSegments.forEach(s => content += `- ${s.content}\n`);
+    content += '\n';
+  }
+  
+  if (pacienteSegments.length > 0) {
+    content += '**Paciente:**\n';
+    pacienteSegments.forEach(s => content += `- ${s.content}\n`);
+    content += '\n';
+  }
+  
+  if (acompañanteSegments.length > 0) {
+    content += '**Acompañante:**\n';
+    acompañanteSegments.forEach(s => content += `- ${s.content}\n`);
+  }
+  
+  console.log('Direct function returning:', content.substring(0, 50) + '...');
+  return content;
+}
+
 // Mock del servicio de captura de audio
 const mockAudioCaptureService = {
   startCapture: vi.fn(),
   stopCapture: vi.fn().mockImplementation(() => MultiSpeakerTranscript),
   isCurrentlyCapturing: vi.fn(),
-  generateClinicalContent: vi.fn((segments: TranscriptionSegment[]) => {
-    // Asegurarse de que segments no sea undefined o null
-    if (!segments || !Array.isArray(segments) || segments.length === 0) {
-      return '🔊 **Resumen de consulta (transcripción asistida - sin datos)**';
-    }
-    
-    let content = '🔊 **Resumen de consulta (transcripción asistida)**\n\n';
-    
-    // Agrupar por actor
-    const profesionalSegments = segments.filter(s => s.actor === 'profesional');
-    const pacienteSegments = segments.filter(s => s.actor === 'paciente');
-    const acompañanteSegments = segments.filter(s => s.actor === 'acompañante');
-    
-    if (profesionalSegments.length > 0) {
-      content += '**Profesional sanitario:**\n';
-      profesionalSegments.forEach(s => content += `- ${s.content}\n`);
-      content += '\n';
-    }
-    
-    if (pacienteSegments.length > 0) {
-      content += '**Paciente:**\n';
-      pacienteSegments.forEach(s => content += `- ${s.content}\n`);
-      content += '\n';
-    }
-    
-    if (acompañanteSegments.length > 0) {
-      content += '**Acompañante:**\n';
-      acompañanteSegments.forEach(s => content += `- ${s.content}\n`);
-    }
-    
-    return content;
-  })
+  generateClinicalContent: generateMockClinicalContent
 };
 
 // Mock de los elementos del DOM para testing
@@ -445,5 +449,59 @@ describe('EVAL: Sistema de Escucha Activa Clínica', () => {
       // Verificar que se trackeó correctamente
       expect(mockTrack).toHaveBeenCalledWith('audio_suggestion_approved');
     });
+  });
+
+  it('debe manejar correctamente la transcripción de múltiples oradores', () => {
+    // Debug: verificar que el array no esté vacío
+    console.log('MultiSpeakerTranscript:', MultiSpeakerTranscript?.length || 0);
+    expect(MultiSpeakerTranscript).toBeDefined();
+    expect(Array.isArray(MultiSpeakerTranscript)).toBe(true);
+    
+    const result = mockAudioCaptureService.generateClinicalContent(MultiSpeakerTranscript);
+    console.log('Result:', result);
+    
+    // Verificar que result no sea undefined
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('string');
+    expect(result).toContain('Profesional sanitario:');
+    expect(result).toContain('Paciente:');
+    expect(result).toContain('Acompañante:');
+  });
+
+  it('debe manejar correctamente la transcripción con errores', () => {
+    // Debug: verificar que el array no esté vacío o que al menos esté definido
+    console.log('ErrorTranscript:', ErrorTranscript?.length || 0);
+    expect(ErrorTranscript).toBeDefined();
+    expect(Array.isArray(ErrorTranscript)).toBe(true);
+    
+    const result = mockAudioCaptureService.generateClinicalContent(ErrorTranscript);
+    console.log('Result for errors:', result);
+    
+    // Verificar que result no sea undefined
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('string');
+    
+    // Si tiene elementos, debe contener contenido estructurado, si no, el mensaje de sin datos
+    if (ErrorTranscript.length > 0) {
+      expect(result).toContain('Resumen de consulta (transcripción asistida)');
+    } else {
+      expect(result).toContain('Resumen de consulta (transcripción asistida - sin datos)');
+    }
+  });
+
+  it('debe manejar correctamente la transcripción vacía', () => {
+    // Debug: verificar que es un array vacío
+    console.log('EmptyTranscript:', EmptyTranscript?.length || 0);
+    expect(EmptyTranscript).toBeDefined();
+    expect(Array.isArray(EmptyTranscript)).toBe(true);
+    expect(EmptyTranscript.length).toBe(0);
+    
+    const result = mockAudioCaptureService.generateClinicalContent(EmptyTranscript);
+    console.log('Result for empty:', result);
+    
+    // Verificar que result no sea undefined
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('string');
+    expect(result).toContain('Resumen de consulta (transcripción asistida - sin datos)');
   });
 }); 

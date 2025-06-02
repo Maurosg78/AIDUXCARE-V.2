@@ -46,6 +46,7 @@ export interface AgentSuggestion {
   content: string;
   sourceBlockId: string;
   explanation?: string;
+  feedback?: string;
   createdAt: Date;
   updatedAt: Date;
   context_origin?: {
