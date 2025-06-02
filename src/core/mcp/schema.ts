@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { z } from 'zod';
 import { VisitSchema } from '../domain/visitType';
 

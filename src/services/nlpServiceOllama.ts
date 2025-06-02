@@ -287,7 +287,7 @@ JSON:
     soapNotes: SOAPNotes;
     metrics: ProcessingMetrics;
     ragUsed?: boolean;
-    ragResult?: any; // Añadir resultado RAG
+    ragResult?: unknown;
   }> {
     const startTime = Date.now();
     const useRAG = options.useRAG !== false; // Default true
@@ -307,10 +307,8 @@ JSON:
       
       // 3. Obtener evidencia RAG para UI (si está habilitado)
       let ragResult = null;
-      let ragTime = 0;
       
       if (useRAG && entities.length > 2) {
-        const ragStartTime = Date.now();
         try {
           // Extraer términos clave principales para RAG de UI
           const keyTerms = entities
@@ -321,13 +319,11 @@ JSON:
           if (keyTerms.length > 0) {
             const ragQuery = keyTerms.join(' ') + ' treatment evidence';
             ragResult = await RAGMedicalMCP.retrieveRelevantKnowledge(ragQuery, 'fisioterapia', 5);
-            ragTime = Date.now() - ragStartTime;
             
             console.log(`🔬 RAG UI: ${ragResult.citations.length} artículos para interfaz de usuario`);
           }
         } catch (ragError) {
           console.warn('⚠️ RAG para UI falló:', ragError);
-          ragTime = Date.now() - ragStartTime;
         }
       }
       
@@ -355,7 +351,7 @@ JSON:
         soapNotes,
         metrics,
         ragUsed: useRAG,
-        ragResult // Incluir resultado RAG para UI
+        ragResult
       };
       
     } catch (error) {
@@ -468,7 +464,7 @@ JSON:
   /**
    * Calcula confianza de la nota SOAP
    */
-  private static calculateSOAPConfidence(soapData: any): number {
+  private static calculateSOAPConfidence(soapData: { subjective?: string; objective?: string; assessment?: string; plan?: string }): number {
     let score = 0;
     
     if (soapData.subjective && soapData.subjective.length > 20) score += 0.25;

@@ -34,8 +34,8 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
     setProcessingResult(result);
     
     // Extraer resultado RAG si está disponible
-    if ((result as any).ragResult) {
-      setRagResult((result as any).ragResult);
+    if ('ragResult' in result && result.ragResult) {
+      setRagResult(result.ragResult as RAGQueryResult);
     }
   }, []);
 
@@ -125,7 +125,14 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
       },
       processingId: 'demo-processing-id',
       physiotherapyContext: {
-        session_summary: 'Sesión de tratamiento cervical',
+        session: {
+          visit_id: 'demo-visit',
+          patient_id: 'demo-patient',
+          date: new Date(),
+          session_type: 'follow_up',
+          duration_minutes: 30,
+          therapist_id: 'therapist_demo'
+        },
         patient_profile: { 
           id: 'demo-patient',
           name: 'Paciente Demo',
@@ -140,8 +147,10 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
           processing_time_ms: 2500,
           word_count: 45,
           confidence_average: 0.92
-        }
-      } as any
+        },
+        context_version: '1.0.0',
+        created_at: new Date()
+      }
     };
 
     // Simular resultado RAG también

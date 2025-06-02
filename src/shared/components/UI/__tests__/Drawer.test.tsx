@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Drawer } from '../Drawer';
-import React from 'react';
 
 describe('Drawer', () => {
   const defaultProps = {

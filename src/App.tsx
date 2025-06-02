@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
-import { supabase, checkSupabaseConnection } from './lib/supabase'
 import DemoVisitPage from './features/demo/DemoVisitPage'
 import './App.css'
 

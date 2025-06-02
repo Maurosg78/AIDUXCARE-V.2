@@ -3,7 +3,7 @@
  * Componente para visualizar artículos científicos y evidencia
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
 
 interface EvidencePanelProps {
@@ -163,7 +163,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
         ].map(tab => (
           <button
             key={tab.key}
-            onClick={() => setExpandedSection(tab.key as any)}
+            onClick={() => setExpandedSection(tab.key as 'summary' | 'articles' | 'context')}
             className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               expandedSection === tab.key
                 ? 'border-blue-500 text-blue-600 bg-blue-50'

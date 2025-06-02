@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Tooltip } from '../Tooltip';
-import React from 'react';
 
 describe('Tooltip', () => {
   it('renderiza el contenido hijo', () => {

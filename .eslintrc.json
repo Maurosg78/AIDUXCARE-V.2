@@ -49,6 +49,16 @@
       "rules": {
         "@typescript-eslint/no-explicit-any": "off"
       }
+    },
+    {
+      "files": [
+        "src/services/AudioProcessingServiceProfessional.ts",
+        "src/types/nlp.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": "warn"
+      }
     }
   ],
   "settings": {

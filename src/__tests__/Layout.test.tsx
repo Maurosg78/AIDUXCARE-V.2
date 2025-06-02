@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import Layout from '../core/components/Layout';
 import * as UserContext from '../core/auth/UserContext';
 import { User } from '@supabase/supabase-js';
-import React from 'react';
 
 /**
  * NOTA: Advertencias de React Router v7

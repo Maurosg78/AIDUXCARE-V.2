@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import supabase from '@/core/auth/supabaseClient';
 import { Visit, VisitSchema } from '../domain/visitType';
 import { SupabaseClient } from '@supabase/supabase-js';

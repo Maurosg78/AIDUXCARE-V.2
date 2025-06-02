@@ -1,4 +1,3 @@
-import React from 'react';
 export const AgentSuggestionType = () => <span>Stub AgentSuggestionType</span>;
 export const AgentSuggestionStatus = () => <span>Stub AgentSuggestionStatus</span>;
 

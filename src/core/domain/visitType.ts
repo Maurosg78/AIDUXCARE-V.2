@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { z } from 'zod';
 
 // Enumeración para estado de visitas

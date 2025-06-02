@@ -121,7 +121,7 @@ export interface ProcessingFlags {
 
 // === RESPUESTAS DE LLM ===
 
-export interface LLMResponse<T = any> {
+export interface LLMResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -199,39 +199,50 @@ export type NLPErrorType =
 export interface NLPError {
   type: NLPErrorType;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
   recoverable: boolean;
 }
 
 // === UTILIDADES DE VALIDACIÓN ===
 
-export function isValidClinicalEntity(entity: any): entity is ClinicalEntity {
+export function isValidClinicalEntity(entity: unknown): entity is ClinicalEntity {
   return (
-    entity &&
-    typeof entity.type === 'string' &&
-    typeof entity.text === 'string' &&
-    typeof entity.confidence === 'number' &&
-    entity.confidence >= 0 && entity.confidence <= 1
+    typeof entity === 'object' &&
+    entity !== null &&
+    'type' in entity &&
+    'text' in entity &&
+    'confidence' in entity &&
+    typeof (entity as any).type === 'string' &&
+    typeof (entity as any).text === 'string' &&
+    typeof (entity as any).confidence === 'number' &&
+    (entity as any).confidence >= 0 && (entity as any).confidence <= 1
   );
 }
 
-export function isValidSOAPNotes(soap: any): soap is SOAPNotes {
+export function isValidSOAPNotes(soap: unknown): soap is SOAPNotes {
   return (
-    soap &&
-    typeof soap.subjective === 'string' &&
-    typeof soap.objective === 'string' &&
-    typeof soap.assessment === 'string' &&
-    typeof soap.plan === 'string'
+    typeof soap === 'object' &&
+    soap !== null &&
+    'subjective' in soap &&
+    'objective' in soap &&
+    'assessment' in soap &&
+    'plan' in soap &&
+    typeof (soap as any).subjective === 'string' &&
+    typeof (soap as any).objective === 'string' &&
+    typeof (soap as any).assessment === 'string' &&
+    typeof (soap as any).plan === 'string'
   );
 }
 
-export function isValidFisiotherapyContext(context: any): context is FisiotherapyContext {
+export function isValidFisiotherapyContext(context: unknown): context is FisiotherapyContext {
   return (
-    context &&
-    context.session &&
-    context.patient_profile &&
-    typeof context.context_version === 'string'
+    typeof context === 'object' &&
+    context !== null &&
+    'session' in context &&
+    'patient_profile' in context &&
+    'context_version' in context &&
+    typeof (context as any).context_version === 'string'
   );
 }
 

@@ -56,13 +56,13 @@ export class OllamaClient {
   }
 
   /**
-   * Lista modelos disponibles
+   * Lista modelos disponibles en Ollama
    */
   async listModels(): Promise<string[]> {
     try {
       const response = await fetch(`${this.baseUrl}/api/tags`);
-      const data = await response.json();
-      return data.models?.map((m: any) => m.name) || [];
+      const data: { models?: Array<{ name: string }> } = await response.json();
+      return data.models?.map((m) => m.name) || [];
     } catch (error) {
       console.error('Error listing models:', error);
       return [];
@@ -243,7 +243,7 @@ export class OllamaClient {
       }
 
       // Test de generación simple
-      const testResponse = await this.generateCompletion('Test', { max_tokens: 1 });
+      await this.generateCompletion('Test', { max_tokens: 1 });
       const latency = Date.now() - startTime;
 
       return {

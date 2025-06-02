@@ -1,6 +1,5 @@
 /*  src/shared/components/Agent/__tests__/AgentSuggestionExplainer.test.tsx */
 
-import React from 'react';
 import {
   render,
   screen,

@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from '../../core/auth/UserContext';

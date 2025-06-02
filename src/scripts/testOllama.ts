@@ -250,14 +250,15 @@ async function testSpecificFeature(feature: 'entities' | 'soap' | 'health' | 'pe
   const testText = testTranscripts[0].text;
   
   switch (feature) {
-    case 'entities':
+    case 'entities': {
       console.log('🧪 Testing solo extracción de entidades...');
       const entities = await NLPServiceOllama.extractClinicalEntities(testText);
       console.log(`✅ ${entities.length} entidades extraídas`);
       entities.forEach(e => console.log(`   - ${e.type}: ${e.text}`));
       break;
+    }
       
-    case 'soap':
+    case 'soap': {
       console.log('🧪 Testing solo generación SOAP...');
       const soap = await NLPServiceOllama.generateSOAPNotes(testText, []);
       console.log('✅ Nota SOAP generada:');
@@ -266,16 +267,19 @@ async function testSpecificFeature(feature: 'entities' | 'soap' | 'health' | 'pe
       console.log(`   A: ${soap.assessment}`);
       console.log(`   P: ${soap.plan}`);
       break;
+    }
       
-    case 'health':
+    case 'health': {
       console.log('🧪 Testing solo health checks...');
       await testClientHealth();
       break;
+    }
       
-    case 'performance':
+    case 'performance': {
       console.log('🧪 Testing solo performance...');
       await testPerformanceMetrics();
       break;
+    }
   }
 }
 
