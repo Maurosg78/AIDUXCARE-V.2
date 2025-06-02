@@ -1,13 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
+import { supabase } from '@/lib/supabase';
 import { FormDataSource } from './FormDataSource';
 import { Form, ClinicalFormData } from '@/types/forms';
 
 class FormDataSourceSupabase implements FormDataSource {
-  private supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async getFormsByVisitId(visitId: string): Promise<Form[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('forms')
       .select('*')
       .eq('visit_id', visitId);
@@ -17,7 +15,7 @@ class FormDataSourceSupabase implements FormDataSource {
   }
 
   async getFormById(formId: string): Promise<Form | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('forms')
       .select('*')
       .eq('id', formId)
@@ -32,7 +30,7 @@ class FormDataSourceSupabase implements FormDataSource {
     patient_id: string;
     professional_id: string;
   }): Promise<Form> {
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('forms')
       .insert([formData])
       .select()
@@ -43,7 +41,7 @@ class FormDataSourceSupabase implements FormDataSource {
   }
 
   async updateForm(formId: string, formData: ClinicalFormData): Promise<Form> {
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('forms')
       .update(formData)
       .eq('id', formId)
@@ -55,7 +53,7 @@ class FormDataSourceSupabase implements FormDataSource {
   }
 
   async deleteForm(formId: string): Promise<void> {
-    const { error } = await this.supabase
+    const { error } = await supabase
       .from('forms')
       .delete()
       .eq('id', formId);

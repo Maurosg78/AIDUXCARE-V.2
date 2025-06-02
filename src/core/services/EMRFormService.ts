@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
 import { trackMetric } from '../services/UsageAnalyticsService';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/env';
 import { FormDataSource } from '../dataSources/FormDataSource';
 import { ClinicalFormData, EMRContent, EMRForm } from '@/types/forms';
 import { SuggestionType } from '@/types/agent';
@@ -51,10 +50,6 @@ export interface SuggestionToIntegrate {
  * Servicio para gestionar la integración de sugerencias al EMR estructurado
  */
 export class EMRFormService {
-  private static supabase = createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
   private formDataSource: FormDataSource;
 
   constructor(formDataSource: FormDataSource) {
@@ -180,7 +175,7 @@ export class EMRFormService {
       
       if (!emrForm) {
         // Si no hay formulario, verificar si obtenemos el professionalId
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
           .from('visits')
           .select('professional_id')
           .eq('id', visitId)
@@ -225,7 +220,7 @@ export class EMRFormService {
         : prefixedContent;
 
       // Actualizar el formulario en la base de datos
-      const { error } = await this.supabase
+      const { error } = await supabase
         .from('forms')
         .update({
           content: JSON.stringify({
@@ -310,7 +305,7 @@ export class EMRFormService {
       const validatedData = EMRFormSchema.parse(formData);
 
       // Actualizar el formulario en la base de datos
-      const { error } = await this.supabase
+      const { error } = await supabase
         .from('forms')
         .update({
           content: JSON.stringify({
