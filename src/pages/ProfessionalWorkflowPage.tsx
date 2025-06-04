@@ -112,43 +112,114 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F7F7F7' }}>
       
-      {/* Header del Paciente - Historia Clínica */}
-      <div className="p-6 m-4 rounded-lg border" style={{ backgroundColor: '#A8E6CF', borderColor: '#5DA5A3' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-            Información del Paciente - Historia Clínica - Tratamientos Previos
-          </h1>
-          <span className="px-3 py-1 rounded-md text-sm font-medium" style={{ backgroundColor: '#5DA5A3', color: 'white' }}>
-            ID: {patientData.id}
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Datos del Paciente</h3>
-            <p><strong>Nombre:</strong> {patientData.name}</p>
-            <p><strong>Edad:</strong> {patientData.age} años</p>
-            <p><strong>Condición:</strong> {patientData.condition}</p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Historia Clínica</h3>
-            <p className="text-sm">{patientData.clinicalHistory}</p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Tratamientos Previos</h3>
-            {patientData.previousTreatments.map((treatment, i) => (
-              <p key={i} className="text-sm">• {treatment}</p>
-            ))}
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Advertencias Médicas</h3>
-            <p><strong>Alergias:</strong> {patientData.allergies.join(', ')}</p>
-            <div className="mt-2">
-              <strong>Medicamentos:</strong>
-              {patientData.medications.map((med, i) => (
-                <p key={i} className="text-sm">• {med}</p>
-              ))}
+      {/* Header del Paciente - Información Resumida */}
+      <div className="mx-4 mb-6">
+        {/* Barra Superior con Info Básica */}
+        <div className="bg-white rounded-t-lg border-b-0 border p-4" style={{ borderColor: '#BDC3C7' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8E6CF' }}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2C3E50' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
+                  {patientData.name}
+                </h1>
+                <p className="text-sm" style={{ color: '#7F8C8D' }}>
+                  {patientData.age} años • {patientData.condition}
+                </p>
+              </div>
             </div>
+            <div className="flex items-center space-x-3">
+              <span className="px-3 py-1 rounded-md text-sm font-medium" style={{ backgroundColor: '#5DA5A3', color: 'white' }}>
+                {patientData.id}
+              </span>
+              <button
+                className="text-sm px-3 py-1 rounded-md border transition-colors hover:bg-gray-50"
+                style={{ borderColor: '#BDC3C7', color: '#7F8C8D' }}
+              >
+                Ver Historia Completa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel de Información Detallada */}
+        <div className="bg-white rounded-b-lg border-t-0 border p-6" style={{ borderColor: '#BDC3C7' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Columna 1: Antecedentes */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm uppercase tracking-wide pb-2 border-b" style={{ color: '#5DA5A3', borderColor: '#BDC3C7' }}>
+                Antecedentes Clínicos
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <h4 className="font-medium text-sm mb-1" style={{ color: '#2C3E50' }}>Historia Médica</h4>
+                  <p className="text-sm leading-relaxed" style={{ color: '#7F8C8D' }}>
+                    {patientData.clinicalHistory}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm mb-1" style={{ color: '#2C3E50' }}>Tratamientos Previos</h4>
+                  <div className="space-y-1">
+                    {patientData.previousTreatments.map((treatment, i) => (
+                      <div key={i} className="flex items-center text-sm" style={{ color: '#7F8C8D' }}>
+                        <div className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: '#A8E6CF' }}></div>
+                        {treatment}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna 2: Medicación Actual */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm uppercase tracking-wide pb-2 border-b" style={{ color: '#5DA5A3', borderColor: '#BDC3C7' }}>
+                Medicación Actual
+              </h3>
+              <div className="space-y-2">
+                {patientData.medications.map((med, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: '#F7F7F7' }}>
+                    <span className="text-sm font-medium" style={{ color: '#2C3E50' }}>{med}</span>
+                    <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#A8E6CF', color: '#2C3E50' }}>
+                      Activo
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Columna 3: Alertas Médicas */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm uppercase tracking-wide pb-2 border-b" style={{ color: '#FF6F61', borderColor: '#BDC3C7' }}>
+                Alertas Médicas
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg border-l-4" style={{ backgroundColor: '#FFF5F4', borderLeftColor: '#FF6F61' }}>
+                  <h4 className="font-medium text-sm mb-1" style={{ color: '#2C3E50' }}>Alergias</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {patientData.allergies.map((allergy, i) => (
+                      <span key={i} className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#FF6F61', color: 'white' }}>
+                        {allergy}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: '#A8E6CF' }}>
+                  <p className="text-xs font-medium" style={{ color: '#2C3E50' }}>
+                    ✓ Historia clínica revisada
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: '#5DA5A3' }}>
+                    Última actualización: Hoy
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
