@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import supabase from '@/core/auth/supabaseClient';
-import { testDirectConnection } from '@/core/auth/directClient';
+// import { testDirectConnection } from '@/core/auth/directClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 interface ErrorWithMessage {
@@ -20,19 +20,19 @@ export const ConnectionStatus = () => {
       console.log('Iniciando diagnóstico de conexión a Supabase...');
       
       try {
-        // 1. Primero intentar con el método directo con fetch
-        console.log('MÉTODO 1: Probando conexión directa con fetch...');
-        const directResult = await testDirectConnection();
+        // 1. Primero intentar con el cliente Singleton oficial
+        console.log('MÉTODO 1: Probando conexión con cliente Singleton...');
+        const singletonTest = await supabase.from('patients').select('id').limit(1);
         
-        if (directResult.success) {
+        if (!singletonTest.error) {
           setStatus('connected');
           setErrorInfo(null);
-          setDetails('✅ Conexión directa con fetch exitosa');
-          console.log('✅ Método directo exitoso');
+          setDetails('✅ Conexión exitosa con cliente Singleton');
+          console.log('✅ Cliente Singleton funcionando');
           return;
         } 
         
-        console.log('❌ Método directo falló:', directResult.error);
+        console.log('❌ Cliente Singleton falló:', singletonTest.error);
         
         // 2. Si falló el método directo, intentar con el cliente oficial
         console.log('MÉTODO 2: Probando con el cliente oficial de Supabase...');
@@ -75,13 +75,13 @@ export const ConnectionStatus = () => {
           setErrorInfo(null);
           setDetails(`Conexión establecida con cliente oficial a través de tabla: ${successfulTable}`);
         } else {
-          // Si ambos métodos fallaron, mostrar error del método directo por ser más ilustrativo
+          // Si ambos métodos fallaron, mostrar error
           setStatus('error');
           
-          if (directResult.error) {
-            const directError = directResult.error as ErrorWithMessage;
-            const message = directError.message || 'Error desconocido';
-            const hint = directError.hint || '';
+          if (singletonTest.error) {
+            const singletonError = singletonTest.error as ErrorWithMessage;
+            const message = singletonError.message || 'Error desconocido';
+            const hint = singletonError.hint || '';
             setErrorInfo(`${message}${hint ? ` (${hint})` : ''}`);
           } else if (lastError) {
             const message = lastError.message || 'Error desconocido';
@@ -92,7 +92,7 @@ export const ConnectionStatus = () => {
           
           // Detalles técnicos completos
           setDetails(JSON.stringify({ 
-            directMethod: directResult, 
+            singletonMethod: singletonTest, 
             clientMethod: { error: lastError } 
           }, null, 2));
         }

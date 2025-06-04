@@ -180,7 +180,7 @@ async function testTranscriptProcessing(maxTests: number, detailed: boolean) {
       
       console.log(`📊 Métricas:`);
       console.log(`   Tiempo total: ${result.metrics.total_processing_time_ms}ms`);
-      console.log(`   Confianza general: ${(result.metrics.overall_confidence * 100).toFixed(0)}%`);
+      console.log(`   Confianza general: ${(result.metrics.overall_confidence ? result.metrics.overall_confidence * 100 : 0).toFixed(0)}%`);
       console.log(`   Requiere revisión: ${result.metrics.requires_review ? '⚠️ Sí' : '✅ No'}`);
       
     } catch (error) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AiDuxCareLogo, AiDuxCareLogoCompact, AiDuxCareLogoHero } from '../components/branding/AiDuxCareLogo';
+import { AiDuxCareLogo, AiDuxCareLogoCompact, AiDuxCareLogoHero } from '../../src/components/branding/AiDuxCareLogo';
 
 const IdentityVisualExample: React.FC = () => {
   return (
@@ -39,8 +39,14 @@ const IdentityVisualExample: React.FC = () => {
             <h3 className="aidux-heading-secondary mb-4">Ficha Clínica</h3>
             <div className="space-y-3">
               <div>
-                <label className="label">Nombre del Paciente</label>
+                <label
+                  htmlFor="patient-name-input"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Nombre del Paciente:
+                </label>
                 <input 
+                  id="patient-name-input"
                   className="input" 
                   value="María González" 
                   title="Nombre del paciente"
@@ -49,8 +55,14 @@ const IdentityVisualExample: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="label">Diagnóstico</label>
+                <label
+                  htmlFor="diagnosis-input"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Diagnóstico:
+                </label>
                 <input 
+                  id="diagnosis-input"
                   className="input" 
                   value="Lumbalgia crónica" 
                   title="Diagnóstico del paciente"

@@ -397,10 +397,10 @@ export class AudioProcessingServiceProfessional {
       context_version: '1.0.0',
       created_at: new Date(),
       processing_flags: {
-        requires_medical_review: nlpResult.metrics.requires_review,
+        requires_medical_review: nlpResult.metrics.requires_review || false,
         contains_red_flags: this.detectRedFlags(nlpResult.entities, nlpResult.soapNotes),
-        incomplete_information: nlpResult.metrics.overall_confidence < 0.7,
-        high_confidence: nlpResult.metrics.overall_confidence > 0.8
+        incomplete_information: (nlpResult.metrics.overall_confidence || 0) < 0.7,
+        high_confidence: (nlpResult.metrics.overall_confidence || 0) > 0.8
       }
     };
   }
@@ -480,14 +480,13 @@ export class AudioProcessingServiceProfessional {
     
     // Score general
     const overall_score = Math.round((completeness + clinical_relevance + 
-                                   (nlpResult.metrics.overall_confidence * 100)) / 3);
+                                   (nlpResult.metrics.overall_confidence ? nlpResult.metrics.overall_confidence * 100 : 0)) / 3);
     
     // Detectar red flags
     const red_flags = this.detectRedFlagsList(nlpResult.entities, nlpResult.soapNotes);
     
     // Determinar si requiere revisión
-    const requires_review = overall_score < 70 || red_flags.length > 0 || 
-                           nlpResult.metrics.requires_review;
+    const requires_review = nlpResult.metrics.requires_review || false;
     
     // Nivel de confianza
     const confidence_level = overall_score >= 80 ? 'high' : 
@@ -543,6 +542,7 @@ export class AudioProcessingServiceProfessional {
       entities_extracted: nlpResult.entities.length,
       soap_generation_time_ms: nlpResult.metrics?.soap_generation_time_ms || 900,
       soap_completeness: this.calculateCompleteness(transcription, nlpResult.soapNotes),
+      soap_confidence: nlpResult.soapNotes.confidence_score || 0.7,
       total_tokens_used: 0, // Ollama es local
       estimated_cost_usd: 0.0, // Ollama es gratuito
       overall_confidence: (

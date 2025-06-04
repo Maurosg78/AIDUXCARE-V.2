@@ -15,6 +15,9 @@ export default defineConfig({
       brotliSize: true,
     })
   ],
+  css: {
+    postcss: './postcss.config.js',
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -38,30 +41,28 @@ export default defineConfig({
   },
   // Configuración del servidor de desarrollo
   server: {
-    port: 5173,
+    port: 5174,
     strictPort: false,
     open: true,
     host: true
   },
   // Optimización del build
   build: {
-    sourcemap: true,
+    sourcemap: false,
     // Optimizaciones de bundle
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separar vendor chunks para mejor caching
-          react: ['react', 'react-dom'],
-          supabase: ['@supabase/supabase-js'],
-          router: ['react-router-dom'],
-          ui: ['@headlessui/react'],
-          utils: ['date-fns', 'uuid']
-        }
+        manualChunks: undefined
       }
     },
     // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
     target: 'esnext'
+  },
+  define: {
+    // Eliminar referencias a service workers que causan errores
+    'self': 'globalThis',
+    'global': 'globalThis'
   }
 });

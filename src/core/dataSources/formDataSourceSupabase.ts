@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { FormDataSource } from './FormDataSource';
 import { Form, ClinicalFormData } from '@/types/forms';
 

@@ -1,5 +1,5 @@
 // Test directo de conexión Supabase
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function testSupabaseConnection() {
   console.log('🔧 Iniciando test de conexión Supabase...');

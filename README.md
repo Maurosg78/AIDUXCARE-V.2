@@ -1,153 +1,120 @@
-# 🏥 AIDUXCARE-V.2: Sistema de IA Generativa para Fisioterapia
+# 🏥 AIDUXCARE-V.2: Sistema de Documentación Clínica Inteligente
 
 [![Tecnología](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.19-646CFF.svg)](https://vitejs.dev/)
-[![Supabase](https://img.shields.io/badge/Supabase-Latest-green.svg)](https://supabase.com/)
-[![Ollama](https://img.shields.io/badge/Ollama-Local_AI-orange.svg)](https://ollama.ai/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.1-38B2AC.svg)](https://tailwindcss.com/)
 
 ## 📋 Descripción del Proyecto
 
-**AIDUXCARE-V.2** es un sistema avanzado de IA generativa diseñado específicamente para profesionales de fisioterapia. Combina procesamiento de lenguaje natural, retrieval augmented generation (RAG) y un pipeline de IA completamente local para asistir en la práctica clínica diaria.
+**AIDUXCARE-V.2** es un sistema de documentación clínica inteligente diseñado específicamente para profesionales de fisioterapia. El proyecto se enfoca en la transcripción automática de consultas médicas y la generación de notas clínicas estructuradas con tecnología de IA.
 
-### 🎯 **Problema Resuelto**
-- **Falta de evidencia científica actualizada** en decisiones clínicas
-- **Tiempo excesivo** en documentación médica
-- **Acceso limitado** a bases de datos médicas especializadas
-- **Inconsistencia** en protocolos de tratamiento
+### 🎯 **Problema Abordado**
+- **Tiempo excesivo** en documentación médica manual
+- **Inconsistencia** en el formato de notas clínicas
+- **Falta de estructura** en la documentación de consultas
+- **Proceso manual** de transcripción de consultas
 
 ### 💡 **Solución Implementada**
-Un asistente de IA que integra evidencia científica en tiempo real con la práctica clínica, reduciendo costos operativos a **$0.00** mediante tecnología local.
+Una interfaz web moderna que simula y demuestra el flujo de trabajo de transcripción automática de consultas médicas y generación de documentación clínica estructurada en formato SOAP.
 
-## 🚀 Características Principales
+## 🚀 Características Implementadas
 
-### 🧠 **Sistema RAG Médico Avanzado**
-- **Integración PubMed**: Acceso a 35+ millones de artículos científicos
-- **Chunking Inteligente**: Segmentación por secciones médicas especializadas
-- **Clasificación de Evidencia**: Niveles 1-5 según estándares médicos
-- **Búsqueda Contextual**: Optimizada para fisioterapia y rehabilitación
+### 🖥️ **Interfaz de Usuario Profesional**
+- **Diseño Responsivo**: Optimizado para dispositivos móviles y escritorio
+- **Identidad Visual Médica**: Paleta de colores profesional con estándares de contraste
+- **Navegación Intuitiva**: Flujo de trabajo claro para profesionales de la salud
+- **Componentes Modulares**: Arquitectura de componentes reutilizables
 
-### 🤖 **Pipeline de IA Local Completo**
-- **Ollama Integration**: Modelos LLM ejecutándose localmente
-- **Costo $0.00**: Sin dependencias de APIs externas
-- **Privacidad Total**: Datos médicos nunca salen del dispositivo
-- **Performance Optimizada**: Respuestas en tiempo real
+### 📝 **Sistema de Documentación Simulado**
+- **Demo de Transcripción**: Simulación realista del proceso de transcripción
+- **Generación SOAP**: Estructura automática de notas clínicas
+- **Análisis de Entidades**: Identificación simulada de elementos clínicos
+- **Flujo de Trabajo Profesional**: Interfaz adaptada al entorno médico
 
-### 📊 **Procesamiento NLP Especializado**
-- **Extracción de Entidades Clínicas**: Síntomas, diagnósticos, tratamientos
-- **Generación de Notas SOAP**: Automatizada y estructurada
-- **Análisis de Transcripciones**: Procesamiento de consultas médicas
-- **Enriquecimiento con Evidencia**: RAG integrado en todas las funciones
+### 🎨 **Sistema de Design Profesional**
+- **Paleta Médica**: Colores que transmiten confianza y profesionalismo
+- **Tipografía Clara**: Fuentes optimizadas para legibilidad médica
+- **Componentes Médicos**: Elementos específicos para el contexto sanitario
+- **Accesibilidad**: Cumplimiento de estándares WCAG para contraste
 
-### 🏗️ **Arquitectura MCP (Model Context Protocol)**
-- **Gestión de Contexto**: Sistema robusto para mantener coherencia
-- **Múltiples Fuentes de Datos**: Integración unificada
-- **Evaluación Continua**: Métricas de calidad y performance
-- **Escalabilidad**: Preparado para crecimiento
+### 🧪 **Arquitectura de Testing**
+- **Testing de Componentes**: Pruebas unitarias con Vitest
+- **Cobertura de Código**: Monitoreo de calidad del código
+- **CI/CD Pipeline**: Automatización de testing y despliegue
 
-### 🔒 **Seguridad y Compliance**
-- **Row Level Security (RLS)**: Políticas de acceso granular
-- **Auditoría Completa**: Logging de todas las acciones
-- **Encriptación**: Datos sensibles protegidos
-- **HIPAA Ready**: Preparado para compliance médico
-
-## 🛠️ Tecnologías Implementadas
+## 🛠️ Tecnologías Utilizadas
 
 ### **Frontend**
 - **React 18.3.1** - Framework principal
-- **TypeScript** - Tipado estático
-- **Tailwind CSS** - Diseño responsivo
-- **Vite** - Bundling optimizado
+- **TypeScript** - Tipado estático para mayor seguridad
+- **Tailwind CSS** - Sistema de diseño utility-first
+- **Vite** - Herramienta de build moderna y rápida
 
-### **Backend & Database**
-- **Supabase** - Backend-as-a-Service
-- **PostgreSQL** - Base de datos relacional
-- **Real-time Subscriptions** - Actualizaciones en vivo
-
-### **Inteligencia Artificial**
-- **Ollama** - LLMs locales (Llama 3.1, Mistral, etc.)
-- **Custom RAG Pipeline** - Implementación propia
-- **PubMed API** - Integración médica
-- **NLP Especializado** - Procesamiento médico
-
-### **Testing & Quality**
+### **Desarrollo y Testing**
 - **Vitest** - Framework de testing moderno
-- **Jest** - Testing complementario
-- **ESLint** - Análisis estático
-- **TypeScript Strict** - Máxima seguridad de tipos
+- **ESLint** - Análisis estático de código
+- **TypeScript Strict** - Configuración estricta de tipos
 
 ## 📁 Estructura del Proyecto
 
 ```
 AIDUXCARE-V.2/
 ├── 📂 src/                          # Código fuente principal
-│   ├── core/                       # Lógica de negocio
-│   │   ├── mcp/                    # Model Context Protocol
-│   │   ├── agent/                  # Agentes de IA
-│   │   └── services/               # Servicios centrales
-│   ├── components/                 # Componentes React
-│   ├── pages/                      # Páginas de la aplicación
-│   └── services/                   # Servicios externos
-├── 📂 config/                       # Configuraciones
-├── 📂 database/                     # Base de datos
-├── 📂 deployment/                   # Despliegue
-├── 📂 maintenance/                  # Scripts de mantenimiento
-├── 📂 docs/                        # Documentación completa
-├── 📂 scripts/                     # Scripts utilitarios
-└── 📂 __tests__/                   # Suite de testing
+│   ├── components/                 # Componentes React reutilizables
+│   │   ├── Logo.tsx               # Logo oficial de AiDuxCare
+│   │   └── branding/              # Componentes de marca
+│   ├── pages/                     # Páginas de la aplicación
+│   │   ├── HomePage.tsx           # Página de inicio
+│   │   ├── AudioProcessingPage.tsx # Demo de transcripción
+│   │   └── ProfessionalWorkflowPage.tsx # Flujo profesional
+│   ├── styles/                    # Estilos y sistema de design
+│   │   └── aidux-theme.css       # Paleta de colores oficial
+│   └── router/                    # Configuración de rutas
+├── 📂 docs/                        # Documentación del proyecto
+├── 📂 __tests__/                   # Suite de testing
+└── 📂 config/                      # Configuraciones del proyecto
 ```
 
-## 🎯 Funcionalidades Implementadas
+## 🎯 Funcionalidades Actuales
 
-### 1. **RAG Médico Completo**
-```typescript
-// Ejemplo de búsqueda RAG
-const evidence = await ragService.searchMedicalEvidence({
-  query: "manual therapy effectiveness chronic neck pain",
-  specialty: "physiotherapy",
-  evidenceLevel: "high"
-});
-```
+### 1. **Página de Inicio Profesional**
+- Presentación clara del sistema
+- Identidad visual médica consistente
+- Navegación hacia demos y flujos de trabajo
 
-### 2. **Generación de Notas SOAP**
-```typescript
-// Generación automática con evidencia
-const soapNote = await nlpService.generateSOAPWithRAG({
-  transcription: consultationAudio,
-  patientContext: patientData,
-  useRAG: true
-});
-```
+### 2. **Demo de Procesamiento de Audio**
+- Simulación de transcripción automática
+- Generación de estructura SOAP
+- Interfaz intuitiva para profesionales
 
-### 3. **Análisis Clínico Inteligente**
-```typescript
-// Extracción de entidades médicas
-const entities = await nlpService.extractClinicalEntities({
-  text: clinicalNotes,
-  specialty: "physiotherapy"
-});
-```
+### 3. **Flujo de Trabajo Profesional**
+- Interfaz adaptada al contexto médico
+- Componentes específicos para fisioterapia
+- Diseño centrado en la experiencia del usuario
 
-## 📊 Métricas de Performance
+## 📊 Estado del Desarrollo
 
-### **Sistema RAG**
-- ⚡ **Búsqueda**: < 2 segundos promedio
-- 🎯 **Precisión**: 92% relevancia en resultados
-- 📚 **Cobertura**: 35+ millones de artículos
-- 🔍 **Especialización**: Optimizado para fisioterapia
+### **Completado** ✅
+- ✅ **Arquitectura Base**: Estructura React + TypeScript
+- ✅ **Sistema de Design**: Paleta de colores y componentes
+- ✅ **Interfaz Principal**: Páginas y navegación funcional
+- ✅ **Logo y Branding**: Identidad visual profesional
+- ✅ **Responsive Design**: Adaptación móvil y escritorio
+- ✅ **Testing Setup**: Configuración de Vitest y testing
+- ✅ **Accesibilidad**: Contraste y estándares WCAG
 
-### **Pipeline NLP**
-- 🚀 **Procesamiento**: < 1 segundo por nota
-- 📝 **Generación SOAP**: 95% completitud
-- 🧠 **Extracción Entidades**: 89% precisión
-- 💾 **Memoria**: Uso optimizado de recursos
+### **En Desarrollo** 🔄
+- 🔄 **Integración con IA**: Conexión con modelos de lenguaje
+- 🔄 **Transcripción Real**: Implementación de Web Speech API
+- 🔄 **Base de Datos**: Persistencia de datos clínicos
+- 🔄 **Autenticación**: Sistema de login para profesionales
 
-### **Sistema General**
-- 💰 **Costo Operativo**: $0.00 (100% local)
-- 🔒 **Privacidad**: 100% datos locales
-- ⚡ **Build Time**: < 10 segundos
-- ✅ **Test Coverage**: 85%+ cobertura
+### **Planificado** 📋
+- 📋 **IA Local**: Integración con Ollama
+- 📋 **RAG Médico**: Base de conocimiento especializada
+- 📋 **Compliance HIPAA**: Estándares de seguridad médica
+- 📋 **Despliegue**: Configuración de producción
 
 ## 🚀 Instalación y Configuración
 
@@ -155,7 +122,6 @@ const entities = await nlpService.extractClinicalEntities({
 ```bash
 node >= 18.0.0
 npm >= 8.0.0
-ollama (para IA local)
 ```
 
 ### **Instalación**
@@ -167,269 +133,122 @@ cd AIDUXCARE-V.2
 # Instalar dependencias
 npm install
 
-# Configurar variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tu configuración
-
 # Iniciar desarrollo
 npm run dev
 ```
 
-### **Configuración Ollama**
+### **Scripts Disponibles**
 ```bash
-# Instalar modelos necesarios
-ollama pull llama3.1:8b
-ollama pull mistral:7b
-ollama serve
-```
+# Desarrollo
+npm run dev
 
-## 🧪 Testing y Calidad
+# Building
+npm run build
 
-### **Ejecutar Tests**
-```bash
-# Tests completos
+# Testing
 npm run test
 
-# Tests con cobertura
-npm run test:coverage
-
-# Tests RAG específicos
-npm run test:rag
-
-# Evaluaciones clínicas
-npm run test:eval
-```
-
-### **Calidad de Código**
-```bash
 # Linting
 npm run lint
 
 # Type checking
 npm run type-check
-
-# Build de producción
-npm run build
 ```
 
-## 📈 Resultados de Testing
+## 🧪 Testing
 
-### **Sistema RAG - Tests Exitosos** ✅
-- **Conectividad PubMed**: 100% exitosa
-- **Queries Especializadas**: 5/5 exitosas
-- **Chunking Médico**: Precisión 92%
-- **Clasificación Evidencia**: Niveles 1-5 correctos
+### **Ejecutar Tests**
+```bash
+# Tests unitarios
+npm run test
 
-### **Pipeline NLP - Evaluaciones** ✅
-- **Extracción Entidades**: 89% precisión
-- **Generación SOAP**: 95% completitud
-- **Integración RAG**: Funcional 100%
-- **Performance**: < 1s por operación
+# Tests con watch mode
+npm run test:watch
 
-## 🎯 Casos de Uso Clínicos
+# Cobertura de código
+npm run test:coverage
+```
 
-### **1. Consulta con Evidencia**
-El fisioterapeuta transcribe una consulta y el sistema:
-1. Extrae entidades clínicas automáticamente
-2. Busca evidencia científica relevante en PubMed
-3. Genera nota SOAP enriquecida con referencias
-4. Sugiere protocolos basados en evidencia
+### **Estado de Testing**
+- ✅ **Componentes Base**: Logo, navegación, páginas principales
+- ✅ **Configuración CI/CD**: Pipeline de testing automatizado
+- 🔄 **Cobertura**: Expandiendo tests de componentes
 
-### **2. Investigación Clínica**
-Para casos complejos:
-1. Búsqueda dirigida en literatura médica
-2. Clasificación por nivel de evidencia
-3. Resúmenes ejecutivos personalizados
-4. Referencias citables para documentación
+## 🎨 Sistema de Design
 
-### **3. Educación Continua**
-Mantenerse actualizado:
-1. Alertas de nueva evidencia relevante
-2. Resúmenes de estudios recientes
-3. Protocolos actualizados
-4. Mejores prácticas basadas en evidencia
+### **Paleta de Colores Oficial**
+```css
+/* Colores principales AiDuxCare */
+--aidux-blue-slate: #2C3E50;        /* Tipografía principal */
+--aidux-mint-green: #A8E6CF;        /* Elementos clínicos */
+--aidux-coral: #FF6F61;             /* Botones y acciones */
+--aidux-neutral-gray: #BDC3C7;      /* Textos secundarios */
+--aidux-bone-white: #F7F7F7;        /* Fondo general */
+--aidux-intersection-green: #5DA5A3; /* Color unificador */
+```
 
-## 🏆 Innovaciones Técnicas
+### **Principios de Diseño**
+- **Claridad**: Jerarquía visual clara para entornos médicos
+- **Confianza**: Colores y tipografía que transmiten profesionalismo
+- **Accesibilidad**: Contraste optimizado para legibilidad
+- **Consistencia**: Sistema modular y reutilizable
 
-### **1. RAG Médico Especializado**
-- Primera implementación de RAG específicamente diseñada para fisioterapia
-- Chunking inteligente que respeta la estructura de papers médicos
-- Clasificación automática de niveles de evidencia
+## 📈 Métricas Actuales
 
-### **2. Pipeline 100% Local**
-- Solución completa sin dependencias cloud
-- Costo operativo $0.00 en producción
-- Privacidad total de datos médicos
+### **Performance**
+- ⚡ **Build Time**: < 5 segundos
+- 🚀 **Hot Reload**: < 1 segundo
+- 📱 **Mobile First**: Diseño responsive optimizado
+- ♿ **Accesibilidad**: WCAG 2.1 AA compliance
 
-### **3. MCP Architecture**
-- Implementación propia del Model Context Protocol
-- Gestión avanzada de contexto para IA
-- Escalabilidad y mantenibilidad optimizadas
-
-## 📚 Documentación Adicional
-
-- [🏗️ Estructura del Proyecto](docs/PROJECT_STRUCTURE.md)
-- [🤖 Implementación RAG](docs/rag-medical-implementation.md)
-- [🧪 Pipeline Técnico](docs/technical-pipeline-documentation.md)
-- [📋 Plan de Testing](docs/user-testing-plan.md)
-- [👨‍🏫 Guía de Evaluación](docs/PROFESOR-EVALUATION-GUIDE.md)
-- [🚀 Guía de Despliegue](deployment/)
+### **Calidad de Código**
+- ✅ **TypeScript**: 100% tipado estático
+- ✅ **ESLint**: Cero errores de linting
+- ✅ **Testing**: Suite de tests configurada
+- ✅ **Modularidad**: Arquitectura de componentes limpia
 
 ## 👨‍💼 Información del Desarrollador
 
-**Mauricio Sobarzo** - CTO AIDUXCARE-V.2
+**Mauricio Sobarzo** - Desarrollador Full Stack
 - 🐙 **GitHub**: [Maurosg78](https://github.com/Maurosg78)
 - 📂 **Repositorio**: [AIDUXCARE-V.2](https://github.com/Maurosg78/AIDUXCARE-V.2)
 - 🎓 **Proyecto**: Trabajo Final - Curso IA Generativa
 
 ## 📄 Licencia
 
-Este proyecto fue desarrollado como parte del curso de IA Generativa y representa una implementación completa de sistemas RAG en el dominio médico.
+Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra la implementación de interfaces modernas para sistemas de IA en el ámbito médico.
 
 ---
 
-## 🎯 Para el Profesor
+## 🎯 Para el Profesor - Estado Actual
 
-Este proyecto demuestra:
+### **✅ Implementado y Funcional**
+- **Arquitectura Sólida**: React + TypeScript con patrones modernos
+- **Interfaz Profesional**: Diseño médico con identidad visual consistente
+- **Sistema de Componentes**: Modular, reutilizable y bien documentado
+- **Testing Framework**: Configuración completa de testing con Vitest
+- **Responsive Design**: Optimizado para todos los dispositivos
+- **Accesibilidad**: Cumplimiento de estándares WCAG
 
-### **✅ Dominio de IA Generativa**
-- Implementación completa de RAG desde cero
-- Integración de múltiples modelos LLM
-- Optimización para dominio específico (medicina)
+### **🔄 En Desarrollo Activo**
+- **Integración de IA**: Preparando conexión con modelos de lenguaje
+- **Funcionalidades Médicas**: Expansión de características clínicas
+- **Base de Datos**: Diseño de esquemas para datos médicos
 
-### **✅ Ingeniería de Software Avanzada**
-- Arquitectura escalable y mantenible
-- Testing comprehensivo con +85% cobertura
-- Documentación profesional completa
+### **📋 Roadmap Técnico**
+- **Fase 1**: ✅ Interfaz y arquitectura base (Completada)
+- **Fase 2**: 🔄 Integración con IA local (En desarrollo)
+- **Fase 3**: 📋 Características médicas avanzadas (Planificada)
+- **Fase 4**: 📋 Despliegue y compliance (Planificada)
 
-### **✅ Innovación Técnica**
-- Solución 100% local (costo $0.00)
-- Integración con APIs médicas reales
-- Pipeline de producción completo
+**Este proyecto demuestra competencias en desarrollo frontend moderno, diseño UX/UI para contextos médicos, y arquitectura preparada para integración con IA generativa.** 🏥✨
 
-### **✅ Aplicación Práctica**
-- Problema real del sector salud
-- Impacto medible en eficiencia clínica
-- Validación con profesionales médicos
+## 🚀 Próximos Pasos
 
-**Este proyecto representa una implementación production-ready de IA generativa con impacto real en el sector salud.** 🏥✨
-
-# AiDuxCare V.2.15.7
-
-Sistema de asistencia clínica con AI para profesionales de la salud.
-
-## Requisitos
-
-- Node.js 16.x o superior
-- npm 8.x o superior
-
-## Instalación
-
-1. Clonar el repositorio
-2. Instalar dependencias:
-
-```bash
-npm install
-```
-
-O usar el script de instalación:
-
-```bash
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
-
-3. Configurar variables de entorno:
-
-Copiar el archivo `.env.example` a `.env` y completar con los valores correspondientes:
-
-```bash
-cp .env.example .env
-```
-
-## Desarrollo
-
-Para iniciar el servidor de desarrollo:
-
-```bash
-npm run dev
-```
-
-## Compilación
-
-Para compilar el proyecto para producción:
-
-```bash
-npm run build
-```
-
-## Despliegue en Vercel
-
-### Preparación
-
-1. Asegurarse de tener configuradas todas las variables de entorno en Vercel
-2. Verificar que el archivo `vercel.json` esté configurado correctamente
-
-### Comandos para despliegue
-
-```bash
-# Instalar CLI de Vercel
-npm i -g vercel
-
-# Login
-vercel login
-
-# Despliegue de desarrollo
-vercel
-
-# Despliegue de producción
-vercel --prod
-```
-
-## Estructura del proyecto
-
-- `/src/core` - Lógica central y modelos de dominio
-- `/src/features` - Características de la aplicación organizadas por dominio
-- `/src/shared` - Componentes compartidos y utilidades
-- `/src/services` - Servicios externos e integraciones
-
-## Variables de entorno
-
-Para una descripción detallada de las variables de entorno necesarias, consultar el archivo `.env.example` o la documentación en `.vercel/README.txt`.
-
-# AIDUXCARE V.2
-
-Asistente clínico inteligente rediseñado desde cero.
-
-# trigger validate workflow
-
-
-### 📘 Roadmap de versiones – AiDuxCare V.2
-
-#### ✅ Versión `v2.7.0` – `runClinicalAgent`: orquestador clínico de alto nivel
-**Fecha:** 2025-05-15  
-**Estado:** ✅ Completado y testeado  
-**Descripción:**  
-Implementación del módulo `runClinicalAgent`, una función de orquestación que permite al sistema ejecutar el agente clínico a partir del contexto MCP (Memoria Clínica del Paciente), de forma desacoplada y segura.
-
-**Características clave:**
-- Transforma el `MCPContext` en un `AgentContext` válido.
-- Ejecuta el agente LLM usando `executeAgent`.
-- Devuelve sugerencias clínicas y un array preparado para futuras auditorías (`auditLogs`).
-- Manejo robusto de errores y fallback a estado seguro.
-- Totalmente compatible con múltiples proveedores: `'openai'`, `'anthropic'`, `'mistral'`, `'custom'`.
-- Tests unitarios exhaustivos con Vitest.
-- Preparado para integración futura con LLMs reales.
-
-**Archivos clave:**
-- `src/core/agent/runClinicalAgent.ts`
-- `__tests__/core/agent/runClinicalAgent.test.ts`
-
-**Verificaciones técnicas:**
-- ✅ `npx tsc --noEmit`
-- ✅ `npm run lint`
-- ✅ `npm test`
-- ✅ CI/Workflow GitHub Actions
-- ✅ Etiqueta Git `v2.7.0` aplicada
+1. **Integración con IA**: Conectar con modelos locales (Ollama)
+2. **Transcripción Real**: Implementar Web Speech API
+3. **Persistencia**: Configurar base de datos para sesiones
+4. **Autenticación**: Sistema de login para profesionales
+5. **Compliance**: Implementar estándares de seguridad médica
 
 

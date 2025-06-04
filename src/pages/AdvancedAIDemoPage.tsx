@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { ProfessionalAudioProcessor } from '@/components/professional/ProfessionalAudioProcessor';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
 import ClinicalInsightsPanel from '@/components/insights/ClinicalInsightsPanel';
+import PromptTestingWidget from '@/components/testing/PromptTestingWidget';
 import { AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
 import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
 import { 
@@ -108,19 +109,20 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
         }
       ],
       entities: [
-        { type: 'symptom', text: 'dolor cervical persistente', confidence: 0.95 },
-        { type: 'diagnosis', text: 'latigazo cervical post-traumático', confidence: 0.90 },
-        { type: 'treatment', text: 'técnicas de Mulligan C1-C2', confidence: 0.92 },
-        { type: 'treatment', text: 'liberación miofascial instrumentada', confidence: 0.88 },
-        { type: 'objective', text: 'contractura del trapecio superior', confidence: 0.93 },
-        { type: 'progress', text: 'alivio del 60% post-tratamiento', confidence: 0.87 }
+        { id: 'demo_1', type: 'symptom', text: 'dolor cervical persistente', confidence: 0.95 },
+        { id: 'demo_2', type: 'diagnosis', text: 'latigazo cervical post-traumático', confidence: 0.90 },
+        { id: 'demo_3', type: 'treatment', text: 'técnicas de Mulligan C1-C2', confidence: 0.92 },
+        { id: 'demo_4', type: 'treatment', text: 'liberación miofascial instrumentada', confidence: 0.88 },
+        { id: 'demo_5', type: 'objective', text: 'contractura del trapecio superior', confidence: 0.93 },
+        { id: 'demo_6', type: 'progress', text: 'alivio del 60% post-tratamiento', confidence: 0.87 }
       ],
       soapNotes: {
-        subjective: "Paciente masculino de 35 años refiere dolor cervical persistente de 3 semanas de evolución tras latigazo cervical en accidente de tráfico. Dolor descrito como constante, intensidad 7/10, que empeora con movimientos rotatorios y mejora parcialmente con reposo. Refiere cefaleas ocasionales y tensión muscular.",
-        objective: "Evaluación física revela limitación significativa en rotación cervical derecha (35° vs 80° normal), contractura palpable del trapecio superior bilateral con predominio derecho, puntos gatillo activos en región suboccipital. Test de Jackson positivo. Postura anteriorizada de cabeza evidente.",
-        assessment: "Síndrome cervical post-traumático con componente miofascial significativo. Disfunción articular C1-C2 con patrón restrictivo en rotación derecha. Hipertonía muscular reactiva de estabilizadores cervicales. Progreso favorable con enfoque multimodal.",
-        plan: "Continuar con técnicas de terapia manual (Mulligan, movilización articular), liberación miofascial instrumentada 2x/semana. Incorporar ejercicios de control motor cervical profundo y fortalecimiento postural. Reevaluar en 1 semana para progresión. Educación en ergonomía y automovilizaciones.",
-        generated_at: new Date()
+        subjective: 'Paciente refiere dolor cervical persistente desde accidente vehicular hace 6 meses. Intensidad 7/10, empeora con movimientos rotacionales.',
+        objective: 'Contractura evidente del trapecio superior bilateral. ROM cervical limitado 40%. Test de Spurling positivo bilateral.',
+        assessment: 'Latigazo cervical post-traumático con componente muscular predominante. Compromiso biomecánico C1-C2.',
+        plan: 'Técnicas de Mulligan específicas C1-C2, liberación miofascial instrumentada, programa ejercicios domiciliarios.',
+        generated_at: new Date(),
+        confidence_score: 0.92
       },
       agentSuggestions: [
         {
@@ -143,15 +145,16 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
         }
       ],
       metrics: {
-        session_id: 'advanced-demo-session',
-        total_processing_time_ms: 4200,
-        stt_duration_ms: 1100,
-        stt_confidence: 0.94,
-        entity_extraction_time_ms: 850,
+        session_id: 'demo_session_advanced_ai',
+        total_processing_time_ms: 3200,
+        stt_duration_ms: 0,
+        stt_confidence: 1.0,
+        entity_extraction_time_ms: 1200,
         entities_extracted: 6,
         soap_generation_time_ms: 1200,
         soap_completeness: 0.92,
-        total_tokens_used: 0,
+        soap_confidence: 0.92,
+        total_tokens_used: 2100,
         estimated_cost_usd: 0.0,
         overall_confidence: 0.91,
         requires_review: false
@@ -581,6 +584,9 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Prompt Testing Widget para A/B Testing */}
+      <PromptTestingWidget />
     </div>
   );
 };

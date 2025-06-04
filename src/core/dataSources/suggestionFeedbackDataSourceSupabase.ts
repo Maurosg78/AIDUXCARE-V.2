@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { SuggestionFeedback, SuggestionFeedbackDataSource } from './SuggestionFeedbackDataSource';
 
 export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource = {

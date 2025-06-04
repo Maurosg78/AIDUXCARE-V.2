@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
 import { trackMetric } from '../services/UsageAnalyticsService';

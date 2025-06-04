@@ -23,6 +23,7 @@ const PatientPortalPage = lazy(() => import('../../features/patient/PatientPorta
 const PatientDetailPage = lazy(() => import('../../features/patient/PatientDetailPage'));
 const AdvancedAIDemoPage = lazy(() => import('@/pages/AdvancedAIDemoPage'));
 const AudioTestPage = lazy(() => import('@/pages/AudioTestPage'));
+const AudioProcessingPage = lazy(() => import('@/pages/AudioProcessingPage'));
 
 export const appRoutes: RouteObject[] = [
   {
@@ -103,6 +104,16 @@ export const appRoutes: RouteObject[] = [
           <Suspense fallback={<PageLoader />}>
             <AudioTestPage />
           </Suspense>
+        )
+      },
+      {
+        path: 'audio-processing',
+        element: (
+          <ProtectedRoute requiredRoles={['professional', 'admin']}>
+            <Suspense fallback={<PageLoader />}>
+              <AudioProcessingPage />
+            </Suspense>
+          </ProtectedRoute>
         )
       },
     ],

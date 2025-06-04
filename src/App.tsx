@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import DemoVisitPage from './features/demo/DemoVisitPage'
+import AudioProcessingPage from './pages/AudioProcessingPage'
 import './App.css'
 
 // Componente de inicio
@@ -15,6 +16,9 @@ function Home() {
         </Link>
         <Link to="/demo-agent" className="button aidux-btn-primary" style={{marginLeft: '10px'}}>
           🤖 Ver Ecosistema Agent
+        </Link>
+        <Link to="/audio-processing" className="button aidux-btn-secondary" style={{marginLeft: '10px'}}>
+          🎵 Procesamiento de Audio
         </Link>
       </div>
     </div>
@@ -78,6 +82,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/demo-agent" element={<DemoVisitPage />} />
+          <Route path="/audio-processing" element={<AudioProcessingPage />} />
         </Routes>
       </main>
       

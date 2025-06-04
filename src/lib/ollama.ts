@@ -77,6 +77,7 @@ export class OllamaClient {
     max_tokens?: number;
     top_p?: number;
     stream?: boolean;
+    timeout?: number;
   }): Promise<OllamaResponse> {
     const requestBody = {
       model: this.model,
@@ -92,12 +93,13 @@ export class OllamaClient {
 
     try {
       const startTime = Date.now();
+      const timeoutMs = options?.timeout || this.timeout;
       
       const response = await fetch(`${this.baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(this.timeout)
+        signal: AbortSignal.timeout(timeoutMs)
       });
 
       if (!response.ok) {

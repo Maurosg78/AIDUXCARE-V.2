@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['../src/setupTests.ts'],
+    setupFiles: [path.resolve(__dirname, '../src/setupTests.ts')],
     include: [
       '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       '**/*.eval.test.{js,ts,jsx,tsx}'
@@ -25,7 +25,7 @@ export default defineConfig({
     ],
     coverage: {
       reporter: ['text', 'lcov', 'html'],
-      reportsDirectory: '../coverage',
+      reportsDirectory: path.resolve(__dirname, '../coverage'),
       exclude: [
         'node_modules/',
         'src/setupTests.ts',

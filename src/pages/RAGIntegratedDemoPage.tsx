@@ -76,18 +76,18 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
         }
       ],
       entities: [
-        { text: 'dolor cervical', type: 'symptom', confidence: 0.95 },
-        { text: 'contractura muscular', type: 'symptom', confidence: 0.90 },
-        { text: 'terapia manual', type: 'treatment', confidence: 0.88 },
-        { text: 'trapecio superior', type: 'objective', confidence: 0.92 }
+        { id: 'rag_1', text: 'dolor cervical', type: 'symptom', confidence: 0.95 },
+        { id: 'rag_2', text: 'contractura muscular', type: 'symptom', confidence: 0.90 },
+        { id: 'rag_3', text: 'terapia manual', type: 'treatment', confidence: 0.88 },
+        { id: 'rag_4', text: 'trapecio superior', type: 'objective', confidence: 0.92 }
       ],
       soapNotes: {
-        subjective: 'Paciente de 45 años refiere dolor cervical intenso de 3 días de evolución, localizado en región derecha, que se agrava con rotación cefálica.',
-        objective: 'Se observa contractura muscular evidente en trapecio superior derecho. Limitación en rango de movimiento de rotación cervical derecha (30°/80° normal).',
-        assessment: 'Contractura muscular cervical aguda post-postural. Sin signos neurológicos de alarma.',
-        plan: 'Aplicación de terapia manual, ejercicios de movilización cervical suave, calor local. Reevaluación en 1 semana.',
+        subjective: 'Paciente refiere dolor cervical de 2 semanas de evolución...',
+        objective: 'Contractura del trapecio superior, ROM limitado...',
+        assessment: 'Síndrome cervical con componente miofascial...',
+        plan: 'Terapia manual 3x/semana, ejercicios domiciliarios...',
         generated_at: new Date(),
-        confidence_score: 0.87
+        confidence_score: 0.89
       },
       agentSuggestions: [
         {
@@ -101,17 +101,18 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
         }
       ],
       metrics: {
-        session_id: 'demo-session',
-        total_processing_time_ms: 2500,
-        stt_duration_ms: 800,
-        stt_confidence: 0.92,
+        session_id: 'rag-demo-session',
+        total_processing_time_ms: 2800,
+        stt_duration_ms: 0,
+        stt_confidence: 1.0,
         entity_extraction_time_ms: 600,
         entities_extracted: 4,
-        soap_generation_time_ms: 900,
-        soap_completeness: 0.87,
-        total_tokens_used: 0,
+        soap_generation_time_ms: 800,
+        soap_completeness: 0.89,
+        soap_confidence: 0.89,
+        total_tokens_used: 1500,
         estimated_cost_usd: 0.0,
-        overall_confidence: 0.89,
+        overall_confidence: 0.88,
         requires_review: false
       },
       qualityAssessment: {
