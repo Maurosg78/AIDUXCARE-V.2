@@ -1,6 +1,6 @@
 /**
  * 🏥 Professional Workflow Page - AiDuxCare V.2
- * Interfaz clínica profesional limpia y automática
+ * Layout rediseñado según wireframe proporcionado
  */
 
 import React, { useState, useCallback } from 'react';
@@ -10,301 +10,441 @@ interface PatientData {
   name: string;
   age: number;
   condition: string;
-  lastVisit?: string;
+  allergies: string[];
+  previousTreatments: string[];
+  medications: string[];
+  clinicalHistory: string;
 }
 
-interface TranscriptionSegment {
+interface HighlightItem {
   id: string;
   text: string;
-  timestamp: string;
-  speakerDetected: boolean;
-}
-
-interface ClinicalFinding {
-  id: string;
-  type: 'symptom' | 'finding' | 'diagnosis' | 'plan';
-  text: string;
+  category: 'síntoma' | 'hallazgo' | 'plan' | 'advertencia';
   confidence: number;
+  isSelected: boolean;
+}
+
+interface LegalWarning {
+  id: string;
+  type: 'legal' | 'iatrogénica' | 'contraindicación';
+  description: string;
+  severity: 'alta' | 'media' | 'baja';
+  isAccepted: boolean;
 }
 
 export const ProfessionalWorkflowPage: React.FC = () => {
   // Estado principal
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcription, setTranscription] = useState<string>('');
-  const [clinicalFindings, setClinicalFindings] = useState<ClinicalFinding[]>([]);
-  const [soapNotes, setSOAPNotes] = useState<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [highlights, setHighlights] = useState<HighlightItem[]>([]);
+  const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([]);
+  const [soapContent, setSOAPContent] = useState('');
+  const [showAssistant, setShowAssistant] = useState(false);
 
   // Datos del paciente
   const [patientData] = useState<PatientData>({
-    id: 'PAT-2025-001',
+    id: 'FT-2025-001',
     name: 'María González Rodríguez',
     age: 45,
     condition: 'Lumbalgia crónica L4-L5',
-    lastVisit: '15 enero 2025'
+    allergies: ['AINEs', 'Penicilina'],
+    previousTreatments: ['Fisioterapia manual', 'Electroterapia', 'Ejercicio terapéutico'],
+    medications: ['Tramadol 50mg', 'Omeprazol 20mg'],
+    clinicalHistory: 'Cirugía discectomía L4-L5 (2023), Diabetes tipo 2 controlada'
   });
 
-  const handleStartRecording = useCallback(() => {
-    setIsRecording(true);
+  const handleStartListening = useCallback(() => {
+    setIsListening(true);
     
-    // Simulación de transcripción automática
+    // Simulación de highlights detectados
     setTimeout(() => {
-      setTranscription("Paciente refiere dolor lumbar matutino de intensidad 7/10, irradiación hacia pierna derecha...");
-    }, 2000);
-    
-    setTimeout(() => {
-      setTranscription("Paciente refiere dolor lumbar matutino de intensidad 7/10, irradiación hacia pierna derecha. En exploración se observa limitación flexión lumbar, test Lasègue positivo a 45°.");
-      
-      // Hallazgos automáticos
-      setClinicalFindings([
-        { id: '1', type: 'symptom', text: 'Dolor lumbar matutino 7/10', confidence: 0.95 },
-        { id: '2', type: 'symptom', text: 'Irradiación pierna derecha', confidence: 0.92 },
-        { id: '3', type: 'finding', text: 'Limitación flexión lumbar', confidence: 0.88 },
-        { id: '4', type: 'finding', text: 'Lasègue positivo 45°', confidence: 0.91 }
+      setHighlights([
+        { id: '1', text: 'Dolor lumbar irradiado', category: 'síntoma', confidence: 0.95, isSelected: false },
+        { id: '2', text: 'Limitación flexión', category: 'hallazgo', confidence: 0.88, isSelected: false },
+        { id: '3', text: 'Test Lasègue positivo', category: 'hallazgo', confidence: 0.92, isSelected: false },
+        { id: '4', text: 'Ejercicios de fortalecimiento', category: 'plan', confidence: 0.85, isSelected: false }
       ]);
-    }, 4000);
-    
-    setTimeout(() => {
-      setIsRecording(false);
       
-      // Generar SOAP automáticamente
-      setSOAPNotes({
-        subjective: "Dolor lumbar matutino intensidad 7/10 con irradiación a pierna derecha",
-        objective: "Limitación flexión lumbar, test Lasègue positivo a 45°",
-        assessment: "Probable radiculopatía L5-S1",
-        plan: "Continuar fisioterapia, ejercicios extensión lumbar, reevaluación en 2 semanas"
-      });
-    }, 6000);
-    
+      setLegalWarnings([
+        { 
+          id: '1', 
+          type: 'contraindicación', 
+          description: 'Paciente alérgico a AINEs - evitar antiinflamatorios', 
+          severity: 'alta',
+          isAccepted: false 
+        },
+        { 
+          id: '2', 
+          type: 'iatrogénica', 
+          description: 'Diabetes - monitorear ejercicio intenso', 
+          severity: 'media',
+          isAccepted: false 
+        }
+      ]);
+    }, 3000);
   }, []);
 
-  const handleStopRecording = useCallback(() => {
-    setIsRecording(false);
+  const handleStopListening = useCallback(() => {
+    setIsListening(false);
   }, []);
+
+  const toggleHighlight = (id: string) => {
+    setHighlights(prev => prev.map(item => 
+      item.id === id ? { ...item, isSelected: !item.isSelected } : item
+    ));
+  };
+
+  const acceptWarning = (id: string) => {
+    setLegalWarnings(prev => prev.map(warning =>
+      warning.id === id ? { ...warning, isAccepted: true } : warning
+    ));
+  };
+
+  const generateSOAP = () => {
+    const selectedHighlights = highlights.filter(h => h.isSelected);
+    const symptoms = selectedHighlights.filter(h => h.category === 'síntoma').map(h => h.text).join(', ');
+    const findings = selectedHighlights.filter(h => h.category === 'hallazgo').map(h => h.text).join(', ');
+    const plans = selectedHighlights.filter(h => h.category === 'plan').map(h => h.text).join(', ');
+    
+    const soapText = `S: ${symptoms}\nO: ${findings}\nA: Evaluación fisioterapéutica\nP: ${plans}`;
+    setSOAPContent(soapText);
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F7F7F7' }}>
       
-      {/* Información del Paciente */}
-      <div className="rounded-lg p-6 mb-6" style={{ backgroundColor: '#A8E6CF', border: '1px solid #5DA5A3' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2C3E50' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            <h2 className="text-xl font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Información del Paciente
-            </h2>
-          </div>
+      {/* Header del Paciente - Historia Clínica */}
+      <div className="p-6 m-4 rounded-lg border" style={{ backgroundColor: '#A8E6CF', borderColor: '#5DA5A3' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
+            Información del Paciente - Historia Clínica - Tratamientos Previos
+          </h1>
           <span className="px-3 py-1 rounded-md text-sm font-medium" style={{ backgroundColor: '#5DA5A3', color: 'white' }}>
             ID: {patientData.id}
           </span>
         </div>
-      </div>
-
-      {/* Grid Principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Datos Básicos */}
-        <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
-          <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-            </svg>
-            <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Datos Básicos
-            </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Datos del Paciente</h3>
+            <p><strong>Nombre:</strong> {patientData.name}</p>
+            <p><strong>Edad:</strong> {patientData.age} años</p>
+            <p><strong>Condición:</strong> {patientData.condition}</p>
           </div>
-          
-          <div className="space-y-3">
-            <div>
-              <span className="text-sm font-medium" style={{ color: '#BDC3C7' }}>Nombre:</span>
-              <p className="font-medium" style={{ color: '#2C3E50' }}>{patientData.name}</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium" style={{ color: '#BDC3C7' }}>Edad:</span>
-              <p className="font-medium" style={{ color: '#2C3E50' }}>{patientData.age} años</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium" style={{ color: '#BDC3C7' }}>Última consulta:</span>
-              <p className="font-medium" style={{ color: '#2C3E50' }}>{patientData.lastVisit}</p>
+          <div>
+            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Historia Clínica</h3>
+            <p className="text-sm">{patientData.clinicalHistory}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Tratamientos Previos</h3>
+            {patientData.previousTreatments.map((treatment, i) => (
+              <p key={i} className="text-sm">• {treatment}</p>
+            ))}
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2" style={{ color: '#2C3E50' }}>Advertencias Médicas</h3>
+            <p><strong>Alergias:</strong> {patientData.allergies.join(', ')}</p>
+            <div className="mt-2">
+              <strong>Medicamentos:</strong>
+              {patientData.medications.map((med, i) => (
+                <p key={i} className="text-sm">• {med}</p>
+              ))}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Condición Actual */}
+      {/* Tres Cards Funcionales */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-4 mb-6">
+        
+        {/* Card 1: Botón Escucha Activa */}
         <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
           <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#A8E6CF' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
             </svg>
-            <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Condición Actual
-            </h3>
+            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Escucha Activa</h3>
           </div>
           
-          <div className="p-4 rounded-lg" style={{ backgroundColor: '#A8E6CF' }}>
-            <p className="font-semibold text-center" style={{ color: '#2C3E50' }}>
-              {patientData.condition}
+          <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
+            Activa la transcripción automática del ambiente. El sistema identifica 
+            diferentes interlocutores y marca las partes del audio que requieren clarificación.
+          </p>
+          
+          <div className="text-center">
+            <button
+              onClick={isListening ? handleStopListening : handleStartListening}
+              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all mx-auto mb-3 ${
+                isListening ? 'animate-pulse' : ''
+              }`}
+              style={{
+                backgroundColor: isListening ? '#FF6F61' : '#5DA5A3'
+              }}
+              aria-label={isListening ? 'Detener escucha' : 'Iniciar escucha activa'}
+            >
+              {isListening ? (
+                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="6" width="12" height="12" rx="2"/>
+                </svg>
+              ) : (
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+              )}
+            </button>
+            <p className="text-sm font-medium" style={{ color: '#2C3E50' }}>
+              {isListening ? 'Escuchando...' : 'Iniciar Escucha'}
             </p>
           </div>
         </div>
 
-        {/* Historial Relevante */}
+        {/* Card 2: Checklist de Highlights */}
         <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
-          <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#FF6F61' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
-            <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Historial Relevante
-            </h3>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="text-sm" style={{ color: '#2C3E50' }}>• Cirugía discectomía L4-L5 (2023)</div>
-            <div className="text-sm" style={{ color: '#2C3E50' }}>• Fisioterapia previa 6 meses</div>
-            <div className="text-sm" style={{ color: '#2C3E50' }}>• Alergia: AINEs</div>
-            <div className="text-sm" style={{ color: '#2C3E50' }}>• Diabetes tipo 2 controlada</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Control de Grabación */}
-      <div className="mt-8 bg-white rounded-lg border p-8 text-center" style={{ borderColor: '#BDC3C7' }}>
-        <h3 className="text-xl font-semibold mb-6" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-          Transcripción Automática de Consulta
-        </h3>
-        
-        <button
-          onClick={isRecording ? handleStopRecording : handleStartRecording}
-          className={`w-24 h-24 rounded-full flex items-center justify-center transition-all mb-4 mx-auto ${
-            isRecording ? 'animate-pulse' : ''
-          }`}
-          style={{
-            backgroundColor: isRecording ? '#FF6F61' : '#5DA5A3'
-          }}
-        >
-          {isRecording ? (
-            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2"/>
-            </svg>
-          ) : (
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-            </svg>
-          )}
-        </button>
-        
-        <p className="text-lg font-medium mb-2" style={{ color: '#2C3E50' }}>
-          {isRecording ? 'Grabando consulta...' : 'Iniciar grabación'}
-        </p>
-        <p className="text-sm" style={{ color: '#BDC3C7' }}>
-          {isRecording 
-            ? 'El sistema detecta automáticamente la conversación y genera notas clínicas' 
-            : 'Presiona para comenzar la transcripción automática de la consulta'
-          }
-        </p>
-      </div>
-
-      {/* Transcripción */}
-      {transcription && (
-        <div className="mt-6 bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
-          <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Transcripción de Consulta
-            </h3>
-          </div>
-          
-          <div className="p-4 rounded-lg" style={{ backgroundColor: '#F7F7F7', border: '1px solid #BDC3C7' }}>
-            <p className="leading-relaxed" style={{ color: '#2C3E50' }}>{transcription}</p>
-            
-            {isRecording && (
-              <div className="flex items-center mt-3">
-                <div className="w-2 h-2 rounded-full animate-pulse mr-2" style={{ backgroundColor: '#FF6F61' }}></div>
-                <span className="text-sm" style={{ color: '#BDC3C7' }}>Transcribiendo en tiempo real...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Hallazgos Clínicos */}
-      {clinicalFindings.length > 0 && (
-        <div className="mt-6 bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
           <div className="flex items-center mb-4">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#A8E6CF' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-              Hallazgos Identificados Automáticamente
-            </h3>
+            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Highlights de Conversación</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {clinicalFindings.map((finding) => (
-              <div key={finding.id} className="p-3 rounded-lg border" style={{ backgroundColor: '#F7F7F7', borderColor: '#BDC3C7' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ 
-                    backgroundColor: finding.type === 'symptom' ? '#FF6F61' : '#A8E6CF',
-                    color: finding.type === 'symptom' ? 'white' : '#2C3E50'
-                  }}>
-                    {finding.type.toUpperCase()}
+          <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
+            Elementos clave detectados automáticamente en la conversación. 
+            Selecciona los que deseas incluir en las notas SOAP.
+          </p>
+          
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {highlights.map((highlight) => (
+              <label key={highlight.id} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={highlight.isSelected}
+                  onChange={() => toggleHighlight(highlight.id)}
+                  className="rounded"
+                  style={{ accentColor: '#5DA5A3' }}
+                />
+                <span className="text-sm">
+                  <span 
+                    className="font-medium px-2 py-1 rounded text-xs mr-2"
+                    style={{ 
+                      backgroundColor: highlight.category === 'síntoma' ? '#FF6F61' : 
+                                      highlight.category === 'hallazgo' ? '#A8E6CF' : '#5DA5A3',
+                      color: highlight.category === 'síntoma' ? 'white' : '#2C3E50'
+                    }}
+                  >
+                    {highlight.category}
                   </span>
-                  <span className="text-xs" style={{ color: '#BDC3C7' }}>
-                    {Math.round(finding.confidence * 100)}% confianza
-                  </span>
+                  {highlight.text}
+                </span>
+              </label>
+            ))}
+          </div>
+          
+          {highlights.length > 0 && (
+            <button
+              onClick={generateSOAP}
+              className="mt-3 w-full px-4 py-2 rounded text-white text-sm font-medium transition-colors"
+              style={{ backgroundColor: '#5DA5A3' }}
+            >
+              Generar Notas SOAP
+            </button>
+          )}
+        </div>
+
+        {/* Card 3: Advertencias Legales */}
+        <div className="bg-white rounded-lg border p-6 relative" style={{ borderColor: '#BDC3C7' }}>
+          <div className="flex items-center mb-4">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#FF6F61' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Advertencias Clínicas</h3>
+          </div>
+          
+          <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
+            Alertas de seguridad, contraindicaciones y consideraciones iatrogénicas 
+            basadas en el perfil del paciente.
+          </p>
+          
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {legalWarnings.map((warning) => (
+              <div 
+                key={warning.id} 
+                className="border rounded p-3" 
+                style={{ 
+                  borderColor: warning.severity === 'alta' ? '#FF6F61' : '#BDC3C7',
+                  backgroundColor: warning.severity === 'alta' ? '#FFF5F4' : '#F7F7F7'
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <span 
+                      className="text-xs font-medium uppercase px-2 py-1 rounded"
+                      style={{ 
+                        backgroundColor: warning.severity === 'alta' ? '#FF6F61' : '#5DA5A3',
+                        color: 'white'
+                      }}
+                    >
+                      {warning.type}
+                    </span>
+                    <p className="text-xs mt-2" style={{ color: '#2C3E50' }}>{warning.description}</p>
+                  </div>
+                  <button
+                    onClick={() => acceptWarning(warning.id)}
+                    className={`ml-2 px-2 py-1 rounded text-xs transition-colors ${
+                      warning.isAccepted 
+                        ? 'bg-green-500 text-white' 
+                        : 'hover:bg-gray-300'
+                    }`}
+                    style={{ backgroundColor: warning.isAccepted ? '#5DA5A3' : '#BDC3C7' }}
+                  >
+                    {warning.isAccepted ? '✓' : 'Revisar'}
+                  </button>
                 </div>
-                <p className="text-sm font-medium" style={{ color: '#2C3E50' }}>{finding.text}</p>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {/* Notas SOAP */}
-      {soapNotes && (
-        <div className="mt-6 bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#FF6F61' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-              <h3 className="text-lg font-semibold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
-                Notas SOAP Generadas
-              </h3>
-            </div>
+          {/* Asistente Virtual Flotante */}
+          <div className="absolute -right-2 -bottom-2">
             <button 
-              className="px-4 py-2 rounded-lg text-white font-medium text-sm"
-              style={{ backgroundColor: '#FF6F61' }}
+              className="p-4 rounded-lg shadow-lg cursor-pointer max-w-xs text-left transition-transform hover:scale-105"
+              style={{ backgroundColor: '#2C3E50', color: 'white' }}
+              onClick={() => setShowAssistant(!showAssistant)}
+              aria-label="Abrir asistente virtual AIDUX"
             >
-              Exportar PDF
+              <div className="flex items-center mb-2">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h4 className="font-bold text-sm">AIDUX Asistente</h4>
+              </div>
+              <p className="text-xs">
+                Consulta medicamentos, protocolos, términos médicos y más...
+              </p>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Sección SOAP */}
+      <div className="mx-4 mb-6">
+        <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <h2 className="text-xl font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
+                Documentación SOAP
+              </h2>
+            </div>
+            <span className="text-sm px-3 py-1 rounded" style={{ backgroundColor: '#A8E6CF', color: '#2C3E50' }}>
+              Generación Automática
+            </span>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2" style={{ color: '#5DA5A3' }}>S - Subjetivo</h4>
-              <p className="text-sm" style={{ color: '#2C3E50' }}>{soapNotes.subjective}</p>
+          <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
+            Documentación clínica estructurada, lógica y temporal. Lista para exportación PDF.
+          </p>
+          
+          <div 
+            className="rounded-lg p-6 min-h-48 border"
+            style={{ backgroundColor: '#F7F7F7', borderColor: '#BDC3C7' }}
+          >
+            {soapContent ? (
+              <div>
+                <div className="mb-4">
+                  <span className="inline-block px-2 py-1 rounded text-xs font-medium mb-2" style={{ backgroundColor: '#5DA5A3', color: 'white' }}>
+                    Documento generado automáticamente
+                  </span>
+                </div>
+                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed" style={{ color: '#2C3E50' }}>
+                  {soapContent}
+                </pre>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 mt-16">
+                <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#BDC3C7' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p style={{ color: '#7F8C8D' }}>Las notas SOAP aparecerán aquí automáticamente</p>
+                <p className="text-xs mt-1" style={{ color: '#BDC3C7' }}>Selecciona elementos y genera la documentación</p>
+              </div>
+            )}
+          </div>
+          
+          {soapContent && (
+            <div className="flex justify-center mt-4 space-x-3">
+              <button
+                className="px-6 py-2 rounded text-white font-medium transition-colors"
+                style={{ backgroundColor: '#5DA5A3' }}
+              >
+                📄 Exportar PDF
+              </button>
+              <button
+                className="px-6 py-2 rounded text-white font-medium transition-colors"
+                style={{ backgroundColor: '#FF6F61' }}
+                onClick={() => setSOAPContent('')}
+              >
+                🗑️ Limpiar
+              </button>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2" style={{ color: '#A8E6CF' }}>O - Objetivo</h4>
-              <p className="text-sm" style={{ color: '#2C3E50' }}>{soapNotes.objective}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Modal Asistente Virtual */}
+      {showAssistant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 m-4 max-w-md w-full shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center">
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 className="text-lg font-bold" style={{ color: '#2C3E50' }}>AIDUX Asistente Virtual</h3>
+              </div>
+              <button
+                onClick={() => setShowAssistant(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+                aria-label="Cerrar asistente virtual"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2" style={{ color: '#FF6F61' }}>A - Análisis</h4>
-              <p className="text-sm" style={{ color: '#2C3E50' }}>{soapNotes.assessment}</p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2" style={{ color: '#5DA5A3' }}>P - Plan</h4>
-              <p className="text-sm" style={{ color: '#2C3E50' }}>{soapNotes.plan}</p>
+            
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: '#A8E6CF' }}>
+                <h4 className="font-medium mb-2" style={{ color: '#2C3E50' }}>Consultas Disponibles:</h4>
+                <ul className="text-sm space-y-1" style={{ color: '#2C3E50' }}>
+                  <li>💊 Información de medicamentos</li>
+                  <li>📋 Historia previa del paciente</li>
+                  <li>📚 Términos médicos desconocidos</li>
+                  <li>🔬 Protocolos de tratamiento</li>
+                  <li>⚠️ Contraindicaciones y alertas</li>
+                </ul>
+              </div>
+              
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Escribe tu consulta..."
+                  className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  style={{ 
+                    borderColor: '#BDC3C7'
+                  }}
+                />
+                <button
+                  className="px-4 py-2 rounded text-white font-medium transition-colors"
+                  style={{ backgroundColor: '#5DA5A3' }}
+                >
+                  Enviar
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

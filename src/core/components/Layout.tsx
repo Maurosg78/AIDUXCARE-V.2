@@ -76,8 +76,7 @@ const Layout = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center space-x-3 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{ focusRingColor: '#FF6F61' }}
+                className="flex items-center space-x-3 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
               >
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8E6CF' }}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2C3E50' }}>
