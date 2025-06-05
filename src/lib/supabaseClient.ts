@@ -39,11 +39,13 @@ function createSupabaseClient(): SupabaseClient {
 
   console.log('🚀 Creando nueva instancia de Supabase Singleton');
 
-  // Determinar qué clave usar basado en entorno
+  // TEMPORAL MVP FIX: Usar service role en desarrollo para evitar problemas RLS
   const isDevelopment = import.meta.env.DEV;
   const useServiceRole = isDevelopment && supabaseServiceRole;
   const keyToUse = useServiceRole ? supabaseServiceRole : supabaseAnonKey;
   const keyType = useServiceRole ? 'service_role' : 'anon';
+  
+  console.log('🔧 MVP SUPABASE FIX: Usando', keyType, 'key para evitar problemas RLS');
 
   // Crear cliente con configuración optimizada
   supabaseInstance = createClient(supabaseUrl, keyToUse, {
