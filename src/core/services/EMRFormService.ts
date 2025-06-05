@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { supabase } from '@/lib/supabaseClient';
+import supabase from '@/core/auth/supabaseClient';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
 import { trackMetric } from '../services/UsageAnalyticsService';
 import { FormDataSource } from '../dataSources/FormDataSource';
 import { ClinicalFormData, EMRContent, EMRForm } from '@/types/forms';
 import { SuggestionType } from '@/types/agent';
+import { StructuredErrorFactory, ErrorLogger, StructuredError } from '@/types/errors';
 
 /**
  * Tipos de secciones del EMR donde se pueden integrar sugerencias
@@ -57,51 +58,112 @@ export class EMRFormService {
   }
 
   /**
+   * Genera un EMR fallback cuando las operaciones de base de datos fallan
+   */
+  private static generateFallbackEMRForm(visitId: string, patientId: string): EMRForm {
+    const timestamp = new Date().toISOString();
+    return {
+      id: `fallback-emr-${Date.now()}`,
+      visitId,
+      patientId,
+      professionalId: 'unknown-professional',
+      subjective: '⚠️ Formulario generado por sistema de respaldo - Requiere revisión médica',
+      objective: '',
+      assessment: '',
+      plan: '',
+      notes: `📝 NOTA TÉCNICA: Formulario creado automáticamente por falla del sistema el ${timestamp}. Todos los datos requieren validación médica.`,
+      updatedAt: timestamp,
+      createdAt: timestamp
+    };
+  }
+
+  /**
    * Obtiene el formulario EMR para una visita específica
    * @param visitId ID de la visita
    * @returns Formulario EMR o null si no existe
    */
   public static async getEMRForm(visitId: string): Promise<EMRForm | null> {
+    const logger = new ErrorLogger('EMRFormService');
+    
     try {
-      // Obtener el formulario clínico desde Supabase
-      const forms = await formDataSourceSupabase.getFormsByVisitId(visitId);
-      
-      // Buscar un formulario de tipo SOAP (o el primero que exista)
-      const soapForm = forms.find(form => form.form_type === 'SOAP') || forms[0];
-      
-      if (!soapForm) return null;
-      
-      // Convertir al formato EMRForm
-      let emrContent: EMRContent;
-      
-      try {
-        // Intentar parsear el contenido JSON
-        emrContent = JSON.parse(soapForm.content);
-      } catch (e) {
-        console.error('Error parsing form content:', e);
-        return null;
-      }
-      
-      // Construir y validar el objeto EMRForm
-      const emrForm: EMRForm = {
-        id: soapForm.id,
-        visitId: soapForm.visit_id,
-        patientId: soapForm.patient_id,
-        professionalId: soapForm.professional_id,
-        subjective: emrContent.subjective || '',
-        objective: emrContent.objective || '',
-        assessment: emrContent.assessment || '',
-        plan: emrContent.plan || '',
-        notes: emrContent.notes || '',
-        updatedAt: soapForm.updated_at,
-        createdAt: soapForm.created_at
+      // Timeout para operaciones de base de datos
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database timeout')), 15000)
+      );
+
+      const dbOperation = async () => {
+        // Obtener el formulario clínico desde Supabase
+        const forms = await formDataSourceSupabase.getFormsByVisitId(visitId);
+        
+        // Buscar un formulario de tipo SOAP (o el primero que exista)
+        const soapForm = forms.find(form => form.form_type === 'SOAP') || forms[0];
+        
+        if (!soapForm) return null;
+        
+        // Convertir al formato EMRForm
+        let emrContent: EMRContent;
+        
+        try {
+          // Intentar parsear el contenido JSON
+          emrContent = JSON.parse(soapForm.content);
+        } catch (parseError) {
+          const structuredError = StructuredErrorFactory.createDatabaseError(
+            'EMR_CONTENT_PARSE_FAILED',
+            'Error parsing EMR form content',
+            { visitId, formId: soapForm.id, content: soapForm.content },
+            parseError as Error,
+            'contact_support'
+          );
+          
+          await logger.logError(structuredError);
+          return null;
+        }
+        
+        // Construir y validar el objeto EMRForm
+        const emrForm: EMRForm = {
+          id: soapForm.id,
+          visitId: soapForm.visit_id,
+          patientId: soapForm.patient_id,
+          professionalId: soapForm.professional_id,
+          subjective: emrContent.subjective || '',
+          objective: emrContent.objective || '',
+          assessment: emrContent.assessment || '',
+          plan: emrContent.plan || '',
+          notes: emrContent.notes || '',
+          updatedAt: soapForm.updated_at,
+          createdAt: soapForm.created_at
+        };
+        
+        // Validar con Zod
+        try {
+          return EMRFormSchema.parse(emrForm);
+        } catch (validationError) {
+          const structuredError = StructuredErrorFactory.createValidationError(
+            'EMR_FORM_VALIDATION_FAILED',
+            'EMR form data validation failed',
+            { visitId, formData: emrForm },
+            validationError as Error,
+            'use_fallback_data'
+          );
+          
+          await logger.logError(structuredError);
+          return null;
+        }
       };
+
+      return await Promise.race([dbOperation(), timeoutPromise]) as EMRForm | null;
       
-      // Validar con Zod
-      return EMRFormSchema.parse(emrForm);
     } catch (error) {
-      console.error('Error fetching EMR form:', error);
-      return null;
+      const structuredError = StructuredErrorFactory.createDatabaseError(
+        'EMR_FORM_FETCH_FAILED',
+        'Failed to fetch EMR form from database',
+        { visitId },
+        error as Error,
+        'use_fallback_data'
+      );
+      
+      await logger.logError(structuredError);
+      throw structuredError; // Re-lanzar para que el caller maneje el fallback
     }
   }
 
@@ -163,44 +225,95 @@ export class EMRFormService {
     patientId: string,
     userId: string = 'anonymous'
   ): Promise<boolean> {
+    const logger = new ErrorLogger('EMRFormService');
+    
     try {
       // Verificar que el tipo de sugerencia sea integrable
       if (!INTEGRABLE_SUGGESTION_TYPES.includes(suggestion.type)) {
-        console.warn('Tipo de sugerencia no soportado para integración:', suggestion.type);
+        const structuredError = StructuredErrorFactory.createValidationError(
+          'UNSUPPORTED_SUGGESTION_TYPE',
+          'Suggestion type not supported for integration',
+          { suggestionType: suggestion.type, supportedTypes: INTEGRABLE_SUGGESTION_TYPES },
+          new Error(`Unsupported suggestion type: ${suggestion.type}`),
+          'skip_operation'
+        );
+        
+        await logger.logError(structuredError);
         return false;
       }
 
       // Obtener o crear el formulario EMR para esta visita
-      let emrForm = await this.getEMRForm(visitId);
+      let emrForm: EMRForm | null = null;
+      let usingFallback = false;
+      
+      try {
+        emrForm = await this.getEMRForm(visitId);
+      } catch (error) {
+        // Si falla la obtención, usar formulario fallback
+        emrForm = this.generateFallbackEMRForm(visitId, patientId);
+        usingFallback = true;
+        
+        const structuredError = StructuredErrorFactory.createDatabaseError(
+          'EMR_FORM_FETCH_FALLBACK',
+          'Using fallback EMR form due to database error',
+          { visitId, patientId, usingFallback: true },
+          error as Error,
+          'continue_with_fallback'
+        );
+        
+        await logger.logError(structuredError);
+      }
       
       if (!emrForm) {
-        // Si no hay formulario, verificar si obtenemos el professionalId
-        const { data, error } = await supabase
-          .from('visits')
-          .select('professional_id')
-          .eq('id', visitId)
-          .single();
+        // Si no hay formulario, intentar obtener professionalId para crear uno nuevo
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database timeout')), 10000)
+          );
+
+          const dbQuery = supabase
+            .from('visits')
+            .select('professional_id')
+            .eq('id', visitId)
+            .single();
+
+          const { data, error } = await Promise.race([dbQuery, timeoutPromise]) as any;
           
-        if (error || !data) {
-          console.error('Error fetching professional_id for visit:', error);
-          return false;
+          if (error || !data) {
+            throw new Error(`Failed to fetch professional_id: ${error?.message || 'Unknown error'}`);
+          }
+          
+          const professionalId = data.professional_id;
+          
+          // Crear un nuevo formulario EMR
+          emrForm = {
+            visitId,
+            patientId,
+            professionalId,
+            subjective: '',
+            objective: '',
+            assessment: '',
+            plan: '',
+            notes: '',
+            updatedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+          };
+          
+        } catch (error) {
+          // Usar fallback si falla la creación de formulario nuevo
+          emrForm = this.generateFallbackEMRForm(visitId, patientId);
+          usingFallback = true;
+          
+          const structuredError = StructuredErrorFactory.createDatabaseError(
+            'PROFESSIONAL_ID_FETCH_FAILED',
+            'Failed to fetch professional ID, using fallback form',
+            { visitId, patientId },
+            error as Error,
+            'continue_with_fallback'
+          );
+          
+          await logger.logError(structuredError);
         }
-        
-        const professionalId = data.professional_id;
-        
-        // Crear un nuevo formulario EMR
-        emrForm = {
-          visitId,
-          patientId,
-          professionalId,
-          subjective: '',
-          objective: '',
-          assessment: '',
-          plan: '',
-          notes: '',
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        };
       }
 
       // Verificar si la sugerencia ya ha sido integrada
@@ -212,61 +325,128 @@ export class EMRFormService {
       const section = this.mapSuggestionTypeToEMRSection(suggestion.type);
       
       // Prefijo visual para indicar que es una sugerencia integrada
-      const prefixedContent = `🔎 ${suggestion.content}`;
+      const prefixedContent = usingFallback 
+        ? `🔎💾 ${suggestion.content} [MODO SEGURO]`
+        : `🔎 ${suggestion.content}`;
       
       // Concatenar la sugerencia al contenido existente
       emrForm[section] = emrForm[section]
         ? `${emrForm[section]}\n\n${prefixedContent}`
         : prefixedContent;
 
-      // Actualizar el formulario en la base de datos
-      const { error } = await supabase
-        .from('forms')
-        .update({
-          content: JSON.stringify({
-            subjective: emrForm.subjective,
-            objective: emrForm.objective,
-            assessment: emrForm.assessment,
-            plan: emrForm.plan,
-            notes: emrForm.notes
-          }),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', emrForm.id);
+      // Intentar actualizar el formulario en la base de datos
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Database timeout')), 10000)
+        );
 
-      if (error) {
-        console.error('Error updating form:', error);
-        return false;
+        const updateOperation = supabase
+          .from('forms')
+          .update({
+            content: JSON.stringify({
+              subjective: emrForm.subjective,
+              objective: emrForm.objective,
+              assessment: emrForm.assessment,
+              plan: emrForm.plan,
+              notes: emrForm.notes
+            }),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', emrForm.id);
+
+        const { error } = await Promise.race([updateOperation, timeoutPromise]) as any;
+
+        if (error) {
+          throw error;
+        }
+
+      } catch (updateError) {
+        const structuredError = StructuredErrorFactory.createDatabaseError(
+          'EMR_FORM_UPDATE_FAILED',
+          'Failed to update EMR form in database',
+          { 
+            suggestionId: suggestion.id, 
+            visitId, 
+            section,
+            usingFallback 
+          },
+          updateError as Error,
+          usingFallback ? 'data_stored_locally' : 'retry_later'
+        );
+        
+        await logger.logError(structuredError);
+        
+        if (!usingFallback) {
+          return false; // Fallar si no estamos en modo fallback
+        }
+        // En modo fallback, continuamos aunque falle la actualización
       }
 
-      // Registrar el evento de auditoría
-      await AuditLogger.logEvent(
-        'suggestion.integrated',
-        userId,
-        {
-          suggestionId: suggestion.id,
-          suggestionType: suggestion.type,
-          section,
-          content: suggestion.content
-        },
-        visitId
-      );
+      // Intentar registrar el evento de auditoría (no crítico)
+      try {
+        await AuditLogger.logEvent(
+          'suggestion.integrated',
+          userId,
+          {
+            suggestionId: suggestion.id,
+            suggestionType: suggestion.type,
+            section,
+            content: suggestion.content,
+            usingFallback
+          },
+          visitId
+        );
+      } catch (auditError) {
+        // Log del error de auditoría pero no fallar la operación
+        const structuredError = StructuredErrorFactory.createSystemError(
+          'AUDIT_LOG_FAILED',
+          'Failed to log audit event',
+          { suggestionId: suggestion.id, visitId },
+          auditError as Error,
+          'continue_without_audit'
+        );
+        
+        await logger.logError(structuredError);
+      }
 
-      // Registrar métrica de uso
-      trackMetric(
-        'suggestion_integrated',
-        userId,
-        visitId,
-        1,
-        {
-          suggestionType: suggestion.type,
-          section
-        }
-      );
+      // Intentar registrar métrica de uso (no crítico)
+      try {
+        trackMetric(
+          'suggestion_integrated',
+          userId,
+          visitId,
+          1,
+          {
+            suggestionType: suggestion.type,
+            section,
+            usingFallback
+          }
+        );
+      } catch (metricsError) {
+        // Log del error de métricas pero no fallar la operación
+        const structuredError = StructuredErrorFactory.createSystemError(
+          'METRICS_TRACKING_FAILED',
+          'Failed to track usage metrics',
+          { suggestionId: suggestion.id, visitId },
+          metricsError as Error,
+          'continue_without_metrics'
+        );
+        
+        await logger.logError(structuredError);
+      }
 
       return true;
+      
     } catch (error) {
-      console.error('Error inserting suggestion:', error);
+      const structuredError = StructuredErrorFactory.createSystemError(
+        'SUGGESTION_INTEGRATION_FAILED',
+        'Critical error during suggestion integration',
+        { suggestionId: suggestion.id, visitId, patientId },
+        error as Error,
+        'contact_support'
+      );
+      
+      await logger.logError(structuredError);
       return false;
     }
   }
@@ -281,12 +461,22 @@ export class EMRFormService {
     visitId: string,
     section: EMRSection
   ): Promise<string> {
+    const logger = new ErrorLogger('EMRFormService');
+    
     try {
       const emrForm = await this.getEMRForm(visitId);
       return emrForm ? emrForm[section] : '';
     } catch (error) {
-      console.error('Error getting section content:', error);
-      return '';
+      const structuredError = StructuredErrorFactory.createDatabaseError(
+        'EMR_SECTION_FETCH_FAILED',
+        'Failed to fetch EMR section content',
+        { visitId, section },
+        error as Error,
+        'return_empty_content'
+      );
+      
+      await logger.logError(structuredError);
+      return '⚠️ Error al cargar contenido - Requiere recarga manual';
     }
   }
 
@@ -300,45 +490,107 @@ export class EMRFormService {
     formData: EMRForm,
     userId: string
   ): Promise<boolean> {
+    const logger = new ErrorLogger('EMRFormService');
+    
     try {
       // Validar los datos del formulario
-      const validatedData = EMRFormSchema.parse(formData);
-
-      // Actualizar el formulario en la base de datos
-      const { error } = await supabase
-        .from('forms')
-        .update({
-          content: JSON.stringify({
-            subjective: validatedData.subjective,
-            objective: validatedData.objective,
-            assessment: validatedData.assessment,
-            plan: validatedData.plan,
-            notes: validatedData.notes
-          }),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', validatedData.id);
-
-      if (error) {
-        console.error('Error updating form:', error);
+      let validatedData: EMRForm;
+      
+      try {
+        validatedData = EMRFormSchema.parse(formData);
+      } catch (validationError) {
+        const structuredError = StructuredErrorFactory.createValidationError(
+          'EMR_FORM_UPDATE_VALIDATION_FAILED',
+          'EMR form data validation failed during update',
+          { formId: formData.id, visitId: formData.visitId },
+          validationError as Error,
+          'fix_form_data'
+        );
+        
+        await logger.logError(structuredError);
         return false;
       }
 
-      // Registrar el evento de auditoría
-      await AuditLogger.logEvent(
-        'form.updated',
-        userId,
-        {
-          formId: validatedData.id,
-          visitId: validatedData.visitId,
-          patientId: validatedData.patientId
-        },
-        validatedData.visitId
-      );
+      // Actualizar el formulario en la base de datos
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Database timeout')), 15000)
+        );
+
+        const updateOperation = supabase
+          .from('forms')
+          .update({
+            content: JSON.stringify({
+              subjective: validatedData.subjective,
+              objective: validatedData.objective,
+              assessment: validatedData.assessment,
+              plan: validatedData.plan,
+              notes: validatedData.notes
+            }),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', validatedData.id);
+
+        const { error } = await Promise.race([updateOperation, timeoutPromise]) as any;
+
+        if (error) {
+          throw error;
+        }
+
+      } catch (updateError) {
+        const structuredError = StructuredErrorFactory.createDatabaseError(
+          'EMR_FORM_DATABASE_UPDATE_FAILED',
+          'Failed to update EMR form in database',
+          { 
+            formId: validatedData.id, 
+            visitId: validatedData.visitId,
+            patientId: validatedData.patientId 
+          },
+          updateError as Error,
+          'retry_operation'
+        );
+        
+        await logger.logError(structuredError);
+        return false;
+      }
+
+      // Intentar registrar el evento de auditoría (no crítico)
+      try {
+        await AuditLogger.logEvent(
+          'form.updated',
+          userId,
+          {
+            formId: validatedData.id,
+            visitId: validatedData.visitId,
+            patientId: validatedData.patientId
+          },
+          validatedData.visitId
+        );
+      } catch (auditError) {
+        // Log del error de auditoría pero no fallar la operación
+        const structuredError = StructuredErrorFactory.createSystemError(
+          'EMR_UPDATE_AUDIT_FAILED',
+          'Failed to log EMR form update audit event',
+          { formId: validatedData.id, visitId: validatedData.visitId },
+          auditError as Error,
+          'continue_without_audit'
+        );
+        
+        await logger.logError(structuredError);
+      }
 
       return true;
+      
     } catch (error) {
-      console.error('Error updating EMR form:', error);
+      const structuredError = StructuredErrorFactory.createSystemError(
+        'EMR_FORM_UPDATE_CRITICAL_FAILED',
+        'Critical error during EMR form update',
+        { formId: formData.id, visitId: formData.visitId },
+        error as Error,
+        'contact_support'
+      );
+      
+      await logger.logError(structuredError);
       return false;
     }
   }
