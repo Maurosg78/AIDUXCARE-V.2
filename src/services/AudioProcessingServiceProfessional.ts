@@ -15,6 +15,7 @@ import { AuditLogger } from '@/core/audit/AuditLogger';
 import { trackMetric } from '@/services/UsageAnalyticsService';
 import { v4 as uuidv4 } from 'uuid';
 import { ClinicalInsightsEngine, ClinicalInsightSummary } from '../core/ai/ClinicalInsightsEngine';
+import { StructuredError, StructuredErrorFactory, ErrorLogger, ErrorCategory, ErrorSeverity } from '@/types/errors';
 
 export interface AudioProcessingResult {
   // Datos principales
@@ -120,10 +121,58 @@ export class AudioProcessingServiceProfessional {
         processingId
       );
       
-      // FASE 2: Procesamiento NLP con Ollama
-      const nlpResult = await NLPServiceOllama.processTranscript(
-        this.transcriptionToText(transcription)
-      );
+      // FASE 2: Procesamiento NLP con Ollama (con error handling robusto)
+      let nlpResult;
+      try {
+        console.log('🤖 Iniciando procesamiento NLP con Ollama...');
+        
+        const transcriptText = this.transcriptionToText(transcription);
+        
+        // Validación de entrada
+        if (!transcriptText || transcriptText.trim().length === 0) {
+          throw new Error('Transcripción vacía o inválida');
+        }
+        
+        // Llamada protegida a Ollama con timeout
+        nlpResult = await Promise.race([
+          NLPServiceOllama.processTranscript(transcriptText),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout: Ollama no respondió en 30 segundos')), 30000)
+          )
+        ]);
+        
+        // Validación de respuesta
+        if (!nlpResult || !nlpResult.entities || !nlpResult.soapNotes) {
+          throw new Error('Respuesta incompleta de Ollama');
+        }
+        
+        console.log('✅ Procesamiento NLP completado exitosamente');
+        
+      } catch (ollamaError) {
+        // Error estructurado para Ollama
+        const structuredError = StructuredErrorFactory.createOllamaError(
+          ollamaError as Error,
+          processingId,
+          userId,
+          visitId
+        );
+        
+        // Log técnico del error
+        ErrorLogger.logStructuredError(structuredError);
+        
+        // Implementar fallback: usar datos simulados para MVP
+        console.log('🔄 Activando fallback para Ollama...');
+        nlpResult = await this.getOllamaFallbackResult(transcription, processingId);
+        
+        // Auditoría del fallback
+        AuditLogger.log('audio.processing.ollama_fallback_used', {
+          processingId,
+          userId,
+          visitId,
+          originalError: structuredError.technicalDetails,
+          fallbackUsed: true
+        });
+      }
 
       // FASE 3: Construcción de contexto fisioterapéutico
       const physiotherapyContext = await this.buildPhysiotherapyContext(
@@ -712,5 +761,161 @@ export class AudioProcessingServiceProfessional {
       case 'very_high': return 100;
       default: return 50;
     }
+  }
+
+  /**
+   * Fallback para cuando Ollama falla - genera datos estructurados para continuar el flujo
+   */
+  private static async getOllamaFallbackResult(
+    transcription: TranscriptionSegment[],
+    processingId: string
+  ): Promise<{ entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics }> {
+    
+    console.log('🔄 Generando resultado de fallback para Ollama...');
+    
+    // Simular delay de procesamiento
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Generar entidades básicas basadas en keywords de la transcripción
+    const transcriptText = this.transcriptionToText(transcription);
+    const entities: ClinicalEntity[] = this.generateFallbackEntities(transcriptText);
+    
+    // Generar SOAP básico basado en la transcripción
+    const soapNotes: SOAPNotes = this.generateFallbackSOAP(transcriptText, entities);
+    
+    // Métricas básicas para el fallback
+    const metrics: ProcessingMetrics = {
+      session_id: processingId,
+      total_processing_time_ms: 1000,
+      stt_duration_ms: 800,
+      stt_confidence: 0.7,
+      entity_extraction_time_ms: 100,
+      entities_extracted: entities.length,
+      soap_generation_time_ms: 100,
+      soap_completeness: 60,
+      soap_confidence: 0.6,
+      total_tokens_used: 0,
+      estimated_cost_usd: 0.0,
+      overall_confidence: 0.6,
+      requires_review: true // Siempre requiere revisión cuando es fallback
+    };
+    
+    console.log('✅ Fallback completado - datos estructurados generados');
+    
+    return { entities, soapNotes, metrics };
+  }
+
+  /**
+   * Genera entidades clínicas básicas usando keywords
+   */
+  private static generateFallbackEntities(transcriptText: string): ClinicalEntity[] {
+    const entities: ClinicalEntity[] = [];
+    const lowerText = transcriptText.toLowerCase();
+    
+    // Keywords para síntomas
+    const symptomKeywords = [
+      { keyword: 'dolor', text: 'dolor', confidence: 0.8 },
+      { keyword: 'molestia', text: 'molestia', confidence: 0.7 },
+      { keyword: 'inflamación', text: 'inflamación', confidence: 0.8 },
+      { keyword: 'rigidez', text: 'rigidez articular', confidence: 0.7 },
+      { keyword: 'tensión', text: 'tensión muscular', confidence: 0.6 }
+    ];
+    
+    // Keywords para tratamientos
+    const treatmentKeywords = [
+      { keyword: 'ejercicio', text: 'ejercicios terapéuticos', confidence: 0.8 },
+      { keyword: 'terapia', text: 'terapia manual', confidence: 0.9 },
+      { keyword: 'masaje', text: 'masaje terapéutico', confidence: 0.7 },
+      { keyword: 'estiramiento', text: 'ejercicios de estiramiento', confidence: 0.8 }
+    ];
+    
+    // Keywords para anatomía
+    const anatomyKeywords = [
+      { keyword: 'rodilla', text: 'rodilla', confidence: 0.9 },
+      { keyword: 'espalda', text: 'columna vertebral', confidence: 0.8 },
+      { keyword: 'hombro', text: 'articulación del hombro', confidence: 0.9 },
+      { keyword: 'cuello', text: 'región cervical', confidence: 0.8 }
+    ];
+    
+    // Buscar síntomas
+    symptomKeywords.forEach(({ keyword, text, confidence }) => {
+      if (lowerText.includes(keyword)) {
+        entities.push({
+          id: `fallback-symptom-${Date.now()}-${Math.random()}`,
+          text,
+          type: 'symptom',
+          confidence,
+          start_position: lowerText.indexOf(keyword),
+          end_position: lowerText.indexOf(keyword) + keyword.length,
+          metadata: { source: 'fallback', category: 'pain' }
+        });
+      }
+    });
+    
+    // Buscar tratamientos
+    treatmentKeywords.forEach(({ keyword, text, confidence }) => {
+      if (lowerText.includes(keyword)) {
+        entities.push({
+          id: `fallback-treatment-${Date.now()}-${Math.random()}`,
+          text,
+          type: 'treatment',
+          confidence,
+          start_position: lowerText.indexOf(keyword),
+          end_position: lowerText.indexOf(keyword) + keyword.length,
+          metadata: { source: 'fallback', category: 'therapy' }
+        });
+      }
+    });
+    
+    // Buscar anatomía
+    anatomyKeywords.forEach(({ keyword, text, confidence }) => {
+      if (lowerText.includes(keyword)) {
+        entities.push({
+          id: `fallback-anatomy-${Date.now()}-${Math.random()}`,
+          text,
+          type: 'anatomy',
+          confidence,
+          start_position: lowerText.indexOf(keyword),
+          end_position: lowerText.indexOf(keyword) + keyword.length,
+          metadata: { source: 'fallback', category: 'body_part' }
+        });
+      }
+    });
+    
+    return entities;
+  }
+
+  /**
+   * Genera notas SOAP básicas para fallback
+   */
+  private static generateFallbackSOAP(transcriptText: string, entities: ClinicalEntity[]): SOAPNotes {
+    const symptoms = entities.filter(e => e.type === 'symptom');
+    const treatments = entities.filter(e => e.type === 'treatment');
+    const anatomy = entities.filter(e => e.type === 'anatomy');
+    
+    return {
+      subjective: symptoms.length > 0 
+        ? `Paciente refiere ${symptoms.map(s => s.text).join(', ')}. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]`
+        : 'Información subjetiva no disponible. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]',
+        
+      objective: anatomy.length > 0 
+        ? `Evaluación física: ${anatomy.map(a => a.text).join(', ')}. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]`
+        : 'Evaluación objetiva no disponible. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]',
+        
+      assessment: 'Evaluación pendiente - requiere análisis manual. [GENERADO POR FALLBACK]',
+      
+      plan: treatments.length > 0 
+        ? `Plan de tratamiento: ${treatments.map(t => t.text).join(', ')}. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]`
+        : 'Plan de tratamiento a determinar. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]',
+        
+      confidence_score: 0.4, // Baja confianza para fallback
+      
+      metadata: {
+        generated_by: 'fallback_system',
+        requires_manual_review: true,
+        original_system_failure: 'ollama_unavailable',
+        fallback_timestamp: new Date().toISOString()
+      }
+    };
   }
 } 

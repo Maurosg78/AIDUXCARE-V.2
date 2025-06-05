@@ -6,6 +6,7 @@
 import { ollamaClient } from '../lib/ollama';
 import { ClinicalEntity, SOAPNotes, ProcessingMetrics } from '../types/nlp';
 import { RAGMedicalMCP } from '../core/mcp/RAGMedicalMCP';
+// Removido temporalmente para arreglar errores
 
 export class NLPServiceOllama {
   
@@ -108,8 +109,15 @@ Responde SOLO en formato JSON:
             context: transcript.substring(0, 200),
             position: { start: 0, end: entity.text?.length || 0 }
           }));
-        } catch (parseError) {
-          console.error('Error parsing entities JSON:', parseError);
+                  } catch (parseError) {
+           ErrorLogger.logStructuredError(
+             StructuredErrorFactory.createOllamaError(
+               parseError instanceof Error ? parseError : new Error(String(parseError)),
+               `entities-${transcript.slice(0, 50)}`,
+               undefined,
+               undefined
+             )
+           );
           entities = this.extractEntitiesWithRegex(transcript);
         }
       } else {
@@ -140,7 +148,14 @@ Responde SOLO en formato JSON:
       return entities;
       
     } catch (error) {
-      console.error('Error extracting clinical entities:', error);
+      ErrorLogger.logError(
+        StructuredErrorFactory.createOllamaError(
+          'ENTITY_EXTRACTION_ERROR',
+          'Failed to extract clinical entities',
+          error,
+          { retryAttempt: 1 }
+        )
+      );
       
       // Fallback: usar regex básico
       return this.extractEntitiesWithRegex(transcript);
@@ -278,7 +293,14 @@ Genera SOAP en formato JSON:
           return soapNotes;
           
         } catch (parseError) {
-          console.error('Error parsing SOAP JSON:', parseError);
+          ErrorLogger.logError(
+            StructuredErrorFactory.createOllamaError(
+              'SOAP_JSON_PARSE_ERROR',
+              'Failed to parse SOAP JSON from Ollama response',
+              parseError,
+              { step: 'soap_generation', rawResponse: result.response }
+            )
+          );
         }
       }
       
@@ -286,7 +308,13 @@ Genera SOAP en formato JSON:
       return this.generateFallbackSOAP(transcript, useRAG);
       
     } catch (error) {
-      console.error('Error generating original SOAP notes:', error);
+      ErrorLogger.logError(
+        StructuredErrorFactory.createOllamaError(
+          'SOAP_GENERATION_ERROR',
+          'Failed to generate original SOAP notes',
+          error
+        )
+      );
       
       // Si hay timeout, intentar versión ultra-simplificada
       if (error instanceof Error && error.message.includes('timeout')) {
@@ -402,7 +430,14 @@ SOAP JSON:
           return soapNotes;
           
         } catch (parseError) {
-          console.error('Error parsing optimized SOAP JSON:', parseError);
+          ErrorLogger.logError(
+            StructuredErrorFactory.createOllamaError(
+              'SOAP_JSON_PARSE_ERROR',
+              'Failed to parse SOAP JSON from Ollama response',
+              parseError,
+              { step: 'soap_generation', rawResponse: result.response }
+            )
+          );
         }
       }
       

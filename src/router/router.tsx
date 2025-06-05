@@ -3,6 +3,7 @@ import Layout from '@/core/components/Layout';
 import HomePage from '@/pages/HomePage';
 import AudioProcessingPage from '@/pages/AudioProcessingPage';
 import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
+import MVPCorePage from '@/pages/MVPCorePage';
 
 export const router = createBrowserRouter([
   // Página de bienvenida (sin layout)
@@ -16,6 +17,10 @@ export const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
+      {
+        path: "mvp-core",
+        element: <MVPCorePage />,
+      },
       {
         path: "professional-workflow",
         element: <ProfessionalWorkflowPage />,
@@ -79,4 +84,10 @@ export const router = createBrowserRouter([
       </div>
     </div>
   }
-]); 
+], {
+  // Future flags for React Router v6 - Eliminates deprecation warnings
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true
+  }
+});

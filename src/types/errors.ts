@@ -59,7 +59,7 @@ export interface StructuredError {
   stack?: string;
   
   // Metadata adicional
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   
   // Estrategias de recuperación
   retryable: boolean;
@@ -71,7 +71,7 @@ export interface StructuredError {
 
 export interface ErrorRecoveryStrategy {
   canRecover: boolean;
-  fallbackFunction?: () => Promise<any>;
+  fallbackFunction?: () => Promise<unknown>;
   retryConfig?: {
     maxRetries: number;
     delayMs: number;
@@ -177,7 +177,7 @@ export class StructuredErrorFactory {
   
   static createValidationError(
     field: string,
-    value: any,
+    value: unknown,
     expectedType: string,
     userId?: string
   ): StructuredError {

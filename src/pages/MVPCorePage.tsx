@@ -116,19 +116,20 @@ export const MVPCorePage: React.FC = () => {
   /**
    * Handler para errores de procesamiento de audio
    */
-  const handleProcessingError = useCallback((error: any) => {
+  const handleProcessingError = useCallback((error: unknown) => {
     console.error('❌ Error en procesamiento de audio:', error);
     
     // Determinar si es un error estructurado o error genérico
     let errorInfo;
     
-    if (error && typeof error === 'object' && error.userMessage) {
+    if (error && typeof error === 'object' && 'userMessage' in error) {
       // Es un error estructurado
+      const structuredError = error as StructuredError;
       errorInfo = {
-        userMessage: error.userMessage,
-        technicalDetails: error.technicalDetails || error.message || 'Error técnico no especificado',
-        retryable: error.retryable || false,
-        fallbackUsed: error.fallbackAvailable || false
+        userMessage: structuredError.userMessage,
+        technicalDetails: structuredError.technicalDetails || structuredError.message || 'Error técnico no especificado',
+        retryable: structuredError.retryable || false,
+        fallbackUsed: structuredError.fallbackAvailable || false
       };
     } else {
       // Error genérico - crear estructura básica
@@ -263,8 +264,7 @@ export const MVPCorePage: React.FC = () => {
                 </p>
                 
                 <EvidencePanel 
-                  entities={flowState.audioProcessingResult.entities}
-                  agentSuggestions={flowState.audioProcessingResult.agentSuggestions}
+                  isLoading={false}
                 />
               </div>
             )}

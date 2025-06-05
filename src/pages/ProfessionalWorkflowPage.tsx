@@ -3,7 +3,7 @@
  * Layout rediseñado según wireframe proporcionado
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 interface PatientData {
   id: string;
@@ -33,24 +33,64 @@ interface LegalWarning {
 }
 
 export const ProfessionalWorkflowPage: React.FC = () => {
-  // Estado principal
-  const [isListening, setIsListening] = useState(false);
-  const [highlights, setHighlights] = useState<HighlightItem[]>([]);
-  const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([]);
-  const [soapContent, setSOAPContent] = useState('');
-  const [showAssistant, setShowAssistant] = useState(false);
-
-  // Datos del paciente
+  // Estados del paciente
   const [patientData] = useState<PatientData>({
-    id: 'FT-2025-001',
-    name: 'María González Rodríguez',
+    id: "P-2024-001",
+    name: "María González Rodríguez",
     age: 45,
-    condition: 'Lumbalgia crónica L4-L5',
-    allergies: ['AINEs', 'Penicilina'],
-    previousTreatments: ['Fisioterapia manual', 'Electroterapia', 'Ejercicio terapéutico'],
-    medications: ['Tramadol 50mg', 'Omeprazol 20mg'],
-    clinicalHistory: 'Cirugía discectomía L4-L5 (2023), Diabetes tipo 2 controlada'
+    condition: "Lumbalgia crónica",
+    allergies: ["AINEs", "Penicilina"],
+    previousTreatments: ["Fisioterapia convencional", "Acupuntura"],
+    medications: ["Paracetamol 500mg", "Omeprazol 20mg"],
+    clinicalHistory: "Paciente con historial de lumbalgia desde hace 3 años, tratada previamente con fisioterapia convencional."
   });
+
+  // Estados de highlights
+  const [highlights, setHighlights] = useState<HighlightItem[]>([
+    { id: '1', text: 'Dolor en región lumbar L4-L5', category: 'síntoma', confidence: 95, isSelected: false },
+    { id: '2', text: 'Limitación del ROM en flexión anterior', category: 'hallazgo', confidence: 87, isSelected: false },
+    { id: '3', text: 'Ejercicios de estabilización lumbar recomendados', category: 'plan', confidence: 92, isSelected: false },
+    { id: '4', text: 'Evaluar respuesta antiinflamatoria', category: 'advertencia', confidence: 78, isSelected: false }
+  ]);
+
+  // Estados de advertencias legales/clínicas
+  const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([
+    {
+      id: '1',
+      type: 'contraindicación',
+      description: 'Paciente alérgico a AINEs - evitar antiinflamatorios',
+      severity: 'alta',
+      isAccepted: false
+    },
+    {
+      id: '2',
+      type: 'iatrogénica',
+      description: 'Diabetes - monitorear ejercicio intenso',
+      severity: 'media',
+      isAccepted: false
+    }
+  ]);
+
+  // Estados de SOAP
+  const [soapContent, setSOAPContent] = useState<string>('');
+
+  // Estados del asistente virtual
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [assistantPosition, setAssistantPosition] = useState({ x: window.innerWidth - 450, y: 100 });
+  const [assistantMinimized, setAssistantMinimized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Estados para el botón flotante independiente
+  const [buttonPosition, setButtonPosition] = useState({ x: window.innerWidth - 100, y: window.innerHeight - 100 });
+  const [isButtonDragging, setIsButtonDragging] = useState(false);
+  const [buttonDragOffset, setButtonDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Estados del chat
+  const [chatInput, setChatInput] = useState('');
+  
+  // Estados de transcripción
+  const [isListening, setIsListening] = useState(false);
 
   const handleStartListening = useCallback(() => {
     setIsListening(true);
@@ -88,26 +128,96 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   }, []);
 
   const toggleHighlight = (id: string) => {
-    setHighlights(prev => prev.map(item => 
-      item.id === id ? { ...item, isSelected: !item.isSelected } : item
-    ));
+    setHighlights(prev => prev.map(h => h.id === id ? { ...h, isSelected: !h.isSelected } : h));
   };
 
   const acceptWarning = (id: string) => {
-    setLegalWarnings(prev => prev.map(warning =>
-      warning.id === id ? { ...warning, isAccepted: true } : warning
-    ));
+    setLegalWarnings(prev => prev.map(w => w.id === id ? { ...w, isAccepted: !w.isAccepted } : w));
   };
 
   const generateSOAP = () => {
     const selectedHighlights = highlights.filter(h => h.isSelected);
-    const symptoms = selectedHighlights.filter(h => h.category === 'síntoma').map(h => h.text).join(', ');
-    const findings = selectedHighlights.filter(h => h.category === 'hallazgo').map(h => h.text).join(', ');
-    const plans = selectedHighlights.filter(h => h.category === 'plan').map(h => h.text).join(', ');
+    if (selectedHighlights.length === 0) return;
+
+    const soap = `DOCUMENTACIÓN SOAP - ${new Date().toLocaleDateString()}
+Paciente: ${patientData.name}
+
+SUBJETIVO:
+${selectedHighlights.filter(h => h.category === 'síntoma').map(h => `• ${h.text}`).join('\n')}
+
+OBJETIVO:
+${selectedHighlights.filter(h => h.category === 'hallazgo').map(h => `• ${h.text}`).join('\n')}
+
+EVALUACIÓN:
+• Evaluación clínica basada en hallazgos objetivos
+
+PLAN:
+${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`).join('\n')}`;
     
-    const soapText = `S: ${symptoms}\nO: ${findings}\nA: Evaluación fisioterapéutica\nP: ${plans}`;
-    setSOAPContent(soapText);
+    setSOAPContent(soap);
   };
+
+  // Funciones para el asistente movible
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - assistantPosition.x,
+      y: e.clientY - assistantPosition.y
+    });
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      setAssistantPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    }
+    if (isButtonDragging) {
+      setButtonPosition({
+        x: e.clientX - buttonDragOffset.x,
+        y: e.clientY - buttonDragOffset.y
+      });
+    }
+  }, [isDragging, dragOffset, isButtonDragging, buttonDragOffset]);
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setIsButtonDragging(false);
+  };
+
+  // Funciones para el botón flotante
+  const handleButtonMouseDown = (e: React.MouseEvent) => {
+    setIsButtonDragging(true);
+    setButtonDragOffset({
+      x: e.clientX - buttonPosition.x,
+      y: e.clientY - buttonPosition.y
+    });
+  };
+
+  // Efectos para el drag and drop
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Efectos para el botón flotante
+  useEffect(() => {
+    if (isButtonDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isButtonDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F7F7F7' }}>
@@ -224,47 +334,127 @@ export const ProfessionalWorkflowPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tres Cards Funcionales */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-4 mb-6">
+      {/* Workflow de IA - Layout Expandido */}
+      <div className="mx-4 mb-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
+            Proceso de IA Asistido
+          </h2>
+          <p className="text-sm" style={{ color: '#7F8C8D' }}>
+            Monitorea en tiempo real cómo la IA procesa la información clínica y genera recomendaciones automáticas
+          </p>
+        </div>
         
-        {/* Card 1: Botón Escucha Activa */}
-        <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
-          <div className="flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-            </svg>
-            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Escucha Activa</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        
+        {/* Card 1: Transcripción en Tiempo Real - EXPANDIDA */}
+        <div className="bg-white rounded-lg border p-6 min-h-96" style={{ borderColor: '#BDC3C7' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <h3 className="font-bold text-lg" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>🎤 Transcripción en Tiempo Real</h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className={`text-xs px-2 py-1 rounded-full ${isListening ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}>
+                {isListening ? '🔴 GRABANDO' : '⏸️ EN PAUSA'}
+              </span>
+            </div>
           </div>
           
-          <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
-            Activa la transcripción automática del ambiente. El sistema identifica 
-            diferentes interlocutores y marca las partes del audio que requieren clarificación.
+          <p className="text-sm mb-6" style={{ color: '#7F8C8D' }}>
+            Sistema de transcripción automática con IA que identifica diferentes interlocutores, 
+            detecta términos médicos y genera confianza en tiempo real.
           </p>
           
-          <div className="text-center">
-            <button
-              onClick={isListening ? handleStopListening : handleStartListening}
-              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all mx-auto mb-3 ${
-                isListening ? 'animate-pulse' : ''
-              }`}
-              style={{
-                backgroundColor: isListening ? '#FF6F61' : '#5DA5A3'
-              }}
-              aria-label={isListening ? 'Detener escucha' : 'Iniciar escucha activa'}
-            >
-              {isListening ? (
-                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="6" width="12" height="12" rx="2"/>
-                </svg>
-              ) : (
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Ventana de Transcripción */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-4 min-h-48 max-h-64 overflow-y-auto border" style={{ borderColor: '#BDC3C7' }}>
+            {isListening ? (
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">FT</div>
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">Fisioterapeuta • 10:34 AM</div>
+                    <p className="text-sm bg-white p-2 rounded-lg shadow-sm" style={{ color: '#2C3E50' }}>
+                      &ldquo;Buenos días María, hoy vamos a trabajar en ejercicios de fortalecimiento para su región lumbar. ¿Cómo se siente hoy?&rdquo;
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">PC</div>
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">Paciente • 10:35 AM</div>
+                    <p className="text-sm bg-white p-2 rounded-lg shadow-sm" style={{ color: '#2C3E50' }}>
+                      &ldquo;Me siento mejor que la semana pasada, pero aún tengo algo de dolor cuando me inclino hacia adelante.&rdquo;
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-center py-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-xs text-gray-500 ml-2">Transcribiendo...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                 </svg>
-              )}
-            </button>
-            <p className="text-sm font-medium" style={{ color: '#2C3E50' }}>
-              {isListening ? 'Escuchando...' : 'Iniciar Escucha'}
-            </p>
+                <p className="text-center text-sm">
+                  La transcripción aparecerá aquí en tiempo real<br/>
+                  <span className="text-xs">Presiona el botón para comenzar</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Controles y Métricas */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={isListening ? handleStopListening : handleStartListening}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                  isListening ? 'animate-pulse' : ''
+                }`}
+                style={{
+                  backgroundColor: isListening ? '#FF6F61' : '#5DA5A3'
+                }}
+                aria-label={isListening ? 'Detener escucha' : 'Iniciar escucha activa'}
+              >
+                {isListening ? (
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2"/>
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                  </svg>
+                )}
+              </button>
+              
+              <div className="text-sm">
+                <p className="font-medium" style={{ color: '#2C3E50' }}>
+                  {isListening ? 'Grabando...' : 'Listo para grabar'}
+                </p>
+                <p className="text-xs" style={{ color: '#7F8C8D' }}>
+                  Calidad: {isListening ? '🟢 Excelente' : '⚪ Esperando'}
+                </p>
+              </div>
+            </div>
+            
+            {isListening && (
+              <div className="text-right text-xs" style={{ color: '#7F8C8D' }}>
+                <div>⏱️ Tiempo: 2:34</div>
+                <div>🔊 Nivel: 78dB</div>
+                <div>🎯 Confianza: 94%</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -319,78 +509,85 @@ export const ProfessionalWorkflowPage: React.FC = () => {
             </button>
           )}
         </div>
+        </div>
 
-        {/* Card 3: Advertencias Legales */}
+        {/* Card 3: Advertencias Clínicas - Checklist Simple */}
         <div className="bg-white rounded-lg border p-6 relative" style={{ borderColor: '#BDC3C7' }}>
           <div className="flex items-center mb-4">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#FF6F61' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
             </svg>
-            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Advertencias Clínicas</h3>
+            <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>🚨 Advertencias Clínicas</h3>
           </div>
           
           <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
-            Alertas de seguridad, contraindicaciones y consideraciones iatrogénicas 
-            basadas en el perfil del paciente.
+            Alertas de seguridad detectadas automáticamente. Haz clic en cualquier alerta para ver las fuentes bibliográficas.
           </p>
           
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-2 max-h-40 overflow-y-auto">
             {legalWarnings.map((warning) => (
-              <div 
-                key={warning.id} 
-                className="border rounded p-3" 
-                style={{ 
-                  borderColor: warning.severity === 'alta' ? '#FF6F61' : '#BDC3C7',
-                  backgroundColor: warning.severity === 'alta' ? '#FFF5F4' : '#F7F7F7'
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <span 
-                      className="text-xs font-medium uppercase px-2 py-1 rounded"
-                      style={{ 
-                        backgroundColor: warning.severity === 'alta' ? '#FF6F61' : '#5DA5A3',
-                        color: 'white'
-                      }}
-                    >
-                      {warning.type}
-                    </span>
-                    <p className="text-xs mt-2" style={{ color: '#2C3E50' }}>{warning.description}</p>
-                  </div>
-                  <button
-                    onClick={() => acceptWarning(warning.id)}
-                    className={`ml-2 px-2 py-1 rounded text-xs transition-colors ${
-                      warning.isAccepted 
-                        ? 'bg-green-500 text-white' 
-                        : 'hover:bg-gray-300'
-                    }`}
-                    style={{ backgroundColor: warning.isAccepted ? '#5DA5A3' : '#BDC3C7' }}
+              <div key={warning.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3 flex-1">
+                  <input
+                    type="checkbox"
+                    checked={warning.isAccepted}
+                    onChange={() => acceptWarning(warning.id)}
+                    className="rounded"
+                    style={{ accentColor: '#5DA5A3' }}
+                    aria-label={`Aceptar advertencia: ${warning.description}`}
+                  />
+                  <button 
+                    className="text-left flex-1 hover:text-blue-600 transition-colors"
+                    onClick={() => {
+                      // Función para mostrar fuentes bibliográficas
+                      console.log('Mostrando fuentes para:', warning.description);
+                      alert(`Referencias bibliográficas para &ldquo;${warning.description}&rdquo;:\n\n📚 Guías Clínicas APTA 2024\n📚 Manual de Fisioterapia Ortopédica\n📚 Protocolo Nacional de Seguridad Clínica`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        console.log('Mostrando fuentes para:', warning.description);
+                        alert(`Referencias bibliográficas para &ldquo;${warning.description}&rdquo;:\n\n📚 Guías Clínicas APTA 2024\n📚 Manual de Fisioterapia Ortopédica\n📚 Protocolo Nacional de Seguridad Clínica`);
+                      }
+                    }}
+                    tabIndex={0}
                   >
-                    {warning.isAccepted ? '✓' : 'Revisar'}
+                    <div className="flex items-center space-x-2">
+                      <span 
+                        className="text-xs font-medium uppercase px-2 py-1 rounded"
+                        style={{ 
+                          backgroundColor: warning.severity === 'alta' ? '#FFE5E5' : '#E5F4F4',
+                          color: warning.severity === 'alta' ? '#FF6F61' : '#5DA5A3'
+                        }}
+                      >
+                        {warning.type}
+                      </span>
+                      {warning.severity === 'alta' && (
+                        <span className="text-xs text-red-600">⚠️</span>
+                      )}
+                    </div>
+                    <span className="text-sm" style={{ color: '#2C3E50' }}>
+                      {warning.description}
+                    </span>
                   </button>
                 </div>
+                
+                <button
+                  className="ml-3 px-3 py-1 rounded text-xs font-medium transition-colors hover:bg-green-100"
+                  style={{ backgroundColor: '#A8E6CF', color: '#2C3E50' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Agregando advertencia a SOAP:', warning.description);
+                  }}
+                >
+                  + SOAP
+                </button>
               </div>
             ))}
           </div>
-
-          {/* Asistente Virtual Flotante */}
-          <div className="absolute -right-2 -bottom-2">
-            <button 
-              className="p-4 rounded-lg shadow-lg cursor-pointer max-w-xs text-left transition-transform hover:scale-105"
-              style={{ backgroundColor: '#2C3E50', color: 'white' }}
-              onClick={() => setShowAssistant(!showAssistant)}
-              aria-label="Abrir asistente virtual AIDUX"
-            >
-              <div className="flex items-center mb-2">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h4 className="font-bold text-sm">AIDUX Asistente</h4>
-              </div>
-              <p className="text-xs">
-                Consulta medicamentos, protocolos, términos médicos y más...
-              </p>
-            </button>
+          
+          <div className="text-xs mt-3 text-center" style={{ color: '#7F8C8D' }}>
+            💡 Haz clic en cualquier alerta para ver referencias bibliográficas
           </div>
         </div>
       </div>
@@ -462,58 +659,206 @@ export const ProfessionalWorkflowPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal Asistente Virtual */}
-      {showAssistant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 m-4 max-w-md w-full shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#5DA5A3' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      {/* Botón Flotante Independiente del Asistente Virtual */}
+      {!showAssistant && (
+        <div
+          className="floating-button fixed z-40 select-none"
+          style={{
+            left: `${buttonPosition.x}px`,
+            top: `${buttonPosition.y}px`,
+            transition: isButtonDragging ? 'none' : 'all 0.3s ease-in-out'
+          }}
+        >
+          <button
+            className="p-3 rounded-full shadow-lg cursor-pointer transition-all hover:scale-110 hover:shadow-xl"
+            style={{ backgroundColor: '#2C3E50', color: 'white' }}
+            onMouseDown={handleButtonMouseDown}
+            onClick={(e) => {
+              if (!isButtonDragging) {
+                setShowAssistant(true);
+              }
+            }}
+            aria-label="Abrir asistente virtual AIDUX"
+          >
+            <div className="flex items-center justify-center relative">
+              {/* Avatar del Dr. AIDUX */}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 p-2 shadow-inner border-2 border-white">
+                <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM12 8C13.1 8 14 8.9 14 10C14 11.1 13.1 12 12 12C10.9 12 10 11.1 10 10C10 8.9 10.9 8 12 8ZM12 14C16.4 14 20 15.8 20 18V20H4V18C4 15.8 7.6 14 12 14Z"/>
                 </svg>
-                <h3 className="text-lg font-bold" style={{ color: '#2C3E50' }}>AIDUX Asistente Virtual</h3>
               </div>
+              {/* Indicador de estado en línea */}
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            </div>
+            
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black text-white text-xs rounded-lg opacity-0 pointer-events-none transition-opacity hover:opacity-100 whitespace-nowrap shadow-lg">
+              <div className="text-center">
+                <div className="font-medium">Dr. AIDUX</div>
+                <div className="text-xs opacity-80">Asistente Médico Virtual</div>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Ventana Flotante del Asistente Virtual */}
+      {showAssistant && (
+        <div
+          className="assistant-window fixed bg-white rounded-lg shadow-2xl border z-50 select-none"
+          style={{
+            left: `${assistantPosition.x}px`,
+            top: `${assistantPosition.y}px`,
+            width: assistantMinimized ? '250px' : '400px',
+            height: assistantMinimized ? '50px' : '450px',
+            borderColor: '#5DA5A3',
+            transition: isDragging ? 'none' : 'all 0.3s ease-in-out'
+          }}
+        >
+          {/* Barra de Título Arrastrable */}
+          <div
+            className="flex items-center justify-between p-3 cursor-move border-b rounded-t-lg"
+            style={{ backgroundColor: '#2C3E50', borderColor: '#BDC3C7' }}
+            onMouseDown={handleMouseDown}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleMouseDown(e as unknown as React.MouseEvent);
+              }
+            }}
+          >
+            <div className="flex items-center">
+              <div className="w-6 h-6 rounded-full mr-2 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM12 8C13.1 8 14 8.9 14 10C14 11.1 13.1 12 12 12C10.9 12 10 11.1 10 10C10 8.9 10.9 8 12 8ZM12 14C16.4 14 20 15.8 20 18V20H4V18C4 15.8 7.6 14 12 14Z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Dr. AIDUX</h3>
+                <div className="text-xs text-gray-300">Asistente Médico Virtual</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-1">
+              {/* Botón Minimizar */}
+              <button
+                onClick={() => setAssistantMinimized(!assistantMinimized)}
+                className="w-6 h-6 rounded-full bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition-colors"
+                aria-label={assistantMinimized ? 'Maximizar' : 'Minimizar'}
+              >
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {assistantMinimized ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/>
+                  )}
+                </svg>
+              </button>
+              
+              {/* Botón Cerrar */}
               <button
                 onClick={() => setShowAssistant(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-                aria-label="Cerrar asistente virtual"
+                className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
+                aria-label="Cerrar asistente"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
-            
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg" style={{ backgroundColor: '#A8E6CF' }}>
-                <h4 className="font-medium mb-2" style={{ color: '#2C3E50' }}>Consultas Disponibles:</h4>
-                <ul className="text-sm space-y-1" style={{ color: '#2C3E50' }}>
-                  <li>💊 Información de medicamentos</li>
-                  <li>📋 Historia previa del paciente</li>
-                  <li>📚 Términos médicos desconocidos</li>
-                  <li>🔬 Protocolos de tratamiento</li>
-                  <li>⚠️ Contraindicaciones y alertas</li>
-                </ul>
+          </div>
+
+          {/* Contenido del Asistente (solo visible cuando no está minimizado) */}
+          {!assistantMinimized && (
+            <div className="p-4 h-full overflow-hidden flex flex-col">
+              {/* Status Bar */}
+              <div className="flex items-center justify-between mb-3 p-2 rounded" style={{ backgroundColor: '#A8E6CF' }}>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#5DA5A3' }}></div>
+                  <span className="text-xs font-medium" style={{ color: '#2C3E50' }}>En línea</span>
+                </div>
+                <span className="text-xs" style={{ color: '#7F8C8D' }}>v2.0.1</span>
               </div>
-              
+
+              {/* Área de Conversación */}
+              <div className="flex-1 bg-gray-50 rounded-lg p-3 mb-3 overflow-y-auto">
+                <div className="space-y-3">
+                  <div className="bg-white rounded-lg p-2 shadow-sm">
+                    <div className="flex items-center mb-2">
+                      <div className="w-6 h-6 rounded-full mr-2 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 3.5C14.1 3.1 13.1 3.1 12.2 3.5L6 7V9C6 10.1 6.9 11 8 11S10 10.1 10 9V8L12 7L14 8V9C14 10.1 14.9 11 16 11S18 10.1 18 9M12 13.5C7 13.5 2.73 16.39 2 21H22C21.27 16.39 17 13.5 12 13.5Z"/>
+                        </svg>
+                      </div>
+                      <p className="text-xs font-medium" style={{ color: '#5DA5A3' }}>Dr. AIDUX</p>
+                    </div>
+                    <p className="text-sm mb-2" style={{ color: '#2C3E50' }}>
+                      👋 ¡Hola! Soy tu asistente médico especializado en fisioterapia. 
+                      Estoy aquí para ayudarte con cualquier consulta durante tu sesión clínica.
+                    </p>
+                    <p className="text-xs mb-2" style={{ color: '#7F8C8D' }}>
+                      Puedes preguntarme sobre:
+                    </p>
+                    <div className="mt-2 grid grid-cols-1 gap-1">
+                      {[
+                        '💊 Medicamentos e interacciones',
+                        '📋 Historia del paciente',
+                        '📚 Términos médicos',
+                        '🔬 Protocolos clínicos',
+                        '⚠️ Contraindicaciones'
+                      ].map((item, i) => (
+                        <button
+                          key={i}
+                          className="text-xs text-left p-1 rounded hover:bg-gray-100 transition-colors"
+                          style={{ color: '#7F8C8D' }}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Input de Consulta */}
               <div className="flex space-x-2">
                 <input
                   type="text"
-                  placeholder="Escribe tu consulta..."
-                  className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  style={{ 
-                    borderColor: '#BDC3C7'
+                  placeholder="Pregunta sobre medicamentos, protocolos, términos médicos..."
+                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                  style={{ borderColor: '#BDC3C7' }}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && chatInput.trim()) {
+                      // Aquí se integrará con Ollama más tarde
+                      console.log('Consulta:', chatInput);
+                      setChatInput('');
+                    }
                   }}
                 />
                 <button
-                  className="px-4 py-2 rounded text-white font-medium transition-colors"
+                  className="px-3 py-2 rounded-lg text-white text-sm font-medium transition-colors hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: '#5DA5A3' }}
+                  disabled={!chatInput.trim()}
+                  aria-label="Enviar consulta"
+                  onClick={() => {
+                    if (chatInput.trim()) {
+                      // Aquí se integrará con Ollama más tarde
+                      console.log('Consulta:', chatInput);
+                      setChatInput('');
+                    }
+                  }}
                 >
-                  Enviar
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                  </svg>
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

@@ -2,10 +2,8 @@
 // para evitar problemas de dependencias durante el desarrollo
 
 /* eslint-disable react/display-name */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable jsx-a11y/aria-props */
-/* eslint-disable jsx-a11y/role-has-required-aria-props */
+ 
+ 
 import React, { ReactNode, forwardRef, HTMLAttributes, ButtonHTMLAttributes, InputHTMLAttributes, DependencyList, EffectCallback } from 'react';
 
 // Tipo base para componentes con displayName
@@ -14,7 +12,7 @@ type ComponentWithDisplayName<P = Record<string, never>> = React.FC<P> & {
 };
 
 // Función helper para establecer displayName de manera segura
-const setDisplayName = <T extends React.ComponentType<any>>(component: T, name: string): T => {
+const setDisplayName = <T extends React.ComponentType<unknown>>(component: T, name: string): T => {
   Object.defineProperty(component, 'displayName', { value: name });
   return component;
 };

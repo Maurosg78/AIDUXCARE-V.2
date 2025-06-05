@@ -277,7 +277,7 @@ export class EMRFormService {
             .eq('id', visitId)
             .single();
 
-          const { data, error } = await Promise.race([dbQuery, timeoutPromise]) as any;
+          const { data, error } = await Promise.race([dbQuery, timeoutPromise]) as { data: { professional_id: string } | null; error: Error | null };
           
           if (error || !data) {
             throw new Error(`Failed to fetch professional_id: ${error?.message || 'Unknown error'}`);
@@ -354,7 +354,7 @@ export class EMRFormService {
           })
           .eq('id', emrForm.id);
 
-        const { error } = await Promise.race([updateOperation, timeoutPromise]) as any;
+        const { error } = await Promise.race([updateOperation, timeoutPromise]) as { error: Error | null };
 
         if (error) {
           throw error;
@@ -531,7 +531,7 @@ export class EMRFormService {
           })
           .eq('id', validatedData.id);
 
-        const { error } = await Promise.race([updateOperation, timeoutPromise]) as any;
+        const { error } = await Promise.race([updateOperation, timeoutPromise]) as { error: Error | null };
 
         if (error) {
           throw error;

@@ -46,6 +46,14 @@ const ArticlePreview: React.FC<{
     <div 
       className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all"
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -150,7 +158,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
           </div>
         </div>
         <p className="text-sm text-gray-600 mt-1">
-          Query: "{ragResult.query}"
+          Query: &quot;{ragResult.query}&quot;
         </p>
       </div>
 
