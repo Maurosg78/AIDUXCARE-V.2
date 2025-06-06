@@ -128,31 +128,31 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   }, []);
 
   const toggleHighlight = (id: string) => {
-    setHighlights(prev => prev.map(h => h.id === id ? { ...h, isSelected: !h.isSelected } : h));
+    setHighlights((prev: HighlightItem[]) => prev.map((h: HighlightItem) => h.id === id ? { ...h, isSelected: !h.isSelected } : h));
   };
 
   const acceptWarning = (id: string) => {
-    setLegalWarnings(prev => prev.map(w => w.id === id ? { ...w, isAccepted: !w.isAccepted } : w));
+    setLegalWarnings((prev: LegalWarning[]) => prev.map((w: LegalWarning) => w.id === id ? { ...w, isAccepted: !w.isAccepted } : w));
   };
 
   const generateSOAP = () => {
-    const selectedHighlights = highlights.filter(h => h.isSelected);
+    const selectedHighlights = highlights.filter((h: HighlightItem) => h.isSelected);
     if (selectedHighlights.length === 0) return;
 
     const soap = `DOCUMENTACIÓN SOAP - ${new Date().toLocaleDateString()}
 Paciente: ${patientData.name}
 
 SUBJETIVO:
-${selectedHighlights.filter(h => h.category === 'síntoma').map(h => `• ${h.text}`).join('\n')}
+${selectedHighlights.filter((h: HighlightItem) => h.category === 'síntoma').map((h: HighlightItem) => `• ${h.text}`).join('\n')}
 
 OBJETIVO:
-${selectedHighlights.filter(h => h.category === 'hallazgo').map(h => `• ${h.text}`).join('\n')}
+${selectedHighlights.filter((h: HighlightItem) => h.category === 'hallazgo').map((h: HighlightItem) => `• ${h.text}`).join('\n')}
 
 EVALUACIÓN:
 • Evaluación clínica basada en hallazgos objetivos
 
 PLAN:
-${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`).join('\n')}`;
+${selectedHighlights.filter((h: HighlightItem) => h.category === 'plan').map((h: HighlightItem) => `• ${h.text}`).join('\n')}`;
     
     setSOAPContent(soap);
   };
@@ -275,7 +275,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                 <div>
                   <h4 className="font-medium text-sm mb-1" style={{ color: '#2C3E50' }}>Tratamientos Previos</h4>
                   <div className="space-y-1">
-                    {patientData.previousTreatments.map((treatment, i) => (
+                    {patientData.previousTreatments.map((treatment: string, i: number) => (
                       <div key={i} className="flex items-center text-sm" style={{ color: '#7F8C8D' }}>
                         <div className="w-1.5 h-1.5 rounded-full mr-2" style={{ backgroundColor: '#A8E6CF' }}></div>
                         {treatment}
@@ -292,7 +292,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                 Medicación Actual
               </h3>
               <div className="space-y-2">
-                {patientData.medications.map((med, i) => (
+                {patientData.medications.map((med: string, i: number) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: '#F7F7F7' }}>
                     <span className="text-sm font-medium" style={{ color: '#2C3E50' }}>{med}</span>
                     <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#A8E6CF', color: '#2C3E50' }}>
@@ -312,7 +312,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                 <div className="p-3 rounded-lg border-l-4" style={{ backgroundColor: '#FFF5F4', borderLeftColor: '#FF6F61' }}>
                   <h4 className="font-medium text-sm mb-1" style={{ color: '#2C3E50' }}>Alergias</h4>
                   <div className="flex flex-wrap gap-1">
-                    {patientData.allergies.map((allergy, i) => (
+                    {patientData.allergies.map((allergy: string, i: number) => (
                       <span key={i} className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#FF6F61', color: 'white' }}>
                         {allergy}
                       </span>
@@ -473,7 +473,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
           </p>
           
           <div className="space-y-2 max-h-32 overflow-y-auto">
-            {highlights.map((highlight) => (
+            {highlights.map((highlight: HighlightItem) => (
               <label key={highlight.id} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                 <input
                   type="checkbox"
@@ -525,7 +525,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
           </p>
           
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            {legalWarnings.map((warning) => (
+            {legalWarnings.map((warning: LegalWarning) => (
               <div key={warning.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 transition-colors">
                 <div className="flex items-center space-x-3 flex-1">
                   <input
@@ -539,14 +539,13 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                   <button 
                     className="text-left flex-1 hover:text-blue-600 transition-colors"
                     onClick={() => {
-                      // Función para mostrar fuentes bibliográficas
-                      console.log('Mostrando fuentes para:', warning.description);
+                      // TODO: Integrar con sistema de referencias bibliográficas
                       alert(`Referencias bibliográficas para &ldquo;${warning.description}&rdquo;:\n\n📚 Guías Clínicas APTA 2024\n📚 Manual de Fisioterapia Ortopédica\n📚 Protocolo Nacional de Seguridad Clínica`);
                     }}
-                    onKeyDown={(e) => {
+                    onKeyDown={(e: React.KeyboardEvent) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        console.log('Mostrando fuentes para:', warning.description);
+                        // TODO: Integrar con sistema de referencias bibliográficas  
                         alert(`Referencias bibliográficas para &ldquo;${warning.description}&rdquo;:\n\n📚 Guías Clínicas APTA 2024\n📚 Manual de Fisioterapia Ortopédica\n📚 Protocolo Nacional de Seguridad Clínica`);
                       }
                     }}
@@ -575,9 +574,9 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                 <button
                   className="ml-3 px-3 py-1 rounded text-xs font-medium transition-colors hover:bg-green-100"
                   style={{ backgroundColor: '#A8E6CF', color: '#2C3E50' }}
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
-                    console.log('Agregando advertencia a SOAP:', warning.description);
+                    // TODO: Implementar integración con SOAP
                   }}
                 >
                   + SOAP
@@ -673,7 +672,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
             className="p-3 rounded-full shadow-lg cursor-pointer transition-all hover:scale-110 hover:shadow-xl"
             style={{ backgroundColor: '#2C3E50', color: 'white' }}
             onMouseDown={handleButtonMouseDown}
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               if (!isButtonDragging) {
                 setShowAssistant(true);
               }
@@ -722,7 +721,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
             onMouseDown={handleMouseDown}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => {
+            onKeyDown={(e: React.KeyboardEvent) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 handleMouseDown(e as unknown as React.MouseEvent);
@@ -830,11 +829,10 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                   className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                   style={{ borderColor: '#BDC3C7' }}
                   value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChatInput(e.target.value)}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter' && chatInput.trim()) {
-                      // Aquí se integrará con Ollama más tarde
-                      console.log('Consulta:', chatInput);
+                      // TODO: Integrar con Ollama para procesamiento de consultas
                       setChatInput('');
                     }
                   }}
@@ -846,8 +844,7 @@ ${selectedHighlights.filter(h => h.category === 'plan').map(h => `• ${h.text}`
                   aria-label="Enviar consulta"
                   onClick={() => {
                     if (chatInput.trim()) {
-                      // Aquí se integrará con Ollama más tarde
-                      console.log('Consulta:', chatInput);
+                      // TODO: Integrar con Ollama para procesamiento de consultas
                       setChatInput('');
                     }
                   }}

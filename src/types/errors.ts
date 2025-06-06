@@ -203,6 +203,35 @@ export class StructuredErrorFactory {
       logLevel: 'warn'
     };
   }
+
+  static createSystemError(
+    originalError: Error,
+    operation: string,
+    userId?: string,
+    visitId?: string
+  ): StructuredError {
+    return {
+      id: `system-error-${Date.now()}`,
+      category: ErrorCategory.SYSTEM_ERROR,
+      severity: ErrorSeverity.HIGH,
+      message: 'Error del sistema',
+      userMessage: 'Hubo un problema técnico. El equipo de soporte ha sido notificado.',
+      technicalDetails: `System operation failed: ${operation} - ${originalError.message}`,
+      timestamp: new Date().toISOString(),
+      source: 'SystemService',
+      userId,
+      visitId,
+      originalError,
+      stack: originalError.stack,
+      metadata: {
+        operation,
+        service: 'system'
+      },
+      retryable: false,
+      fallbackAvailable: true,
+      logLevel: 'error'
+    };
+  }
 }
 
 /**
@@ -259,4 +288,4 @@ export class ErrorLogger {
     
     return message;
   }
-} 
+}

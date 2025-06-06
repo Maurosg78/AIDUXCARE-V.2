@@ -122,7 +122,7 @@ export class AudioProcessingServiceProfessional {
       );
       
       // FASE 2: Procesamiento NLP con Ollama (con error handling robusto)
-      let nlpResult;
+      let nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics };
       try {
         console.log('🤖 Iniciando procesamiento NLP con Ollama...');
         
@@ -136,13 +136,13 @@ export class AudioProcessingServiceProfessional {
         // Llamada protegida a Ollama con timeout
         nlpResult = await Promise.race([
           NLPServiceOllama.processTranscript(transcriptText),
-          new Promise((_, reject) => 
+          new Promise<{ entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics }>((_, reject) => 
             setTimeout(() => reject(new Error('Timeout: Ollama no respondió en 30 segundos')), 30000)
           )
         ]);
         
         // Validación de respuesta
-        if (!nlpResult || !nlpResult.entities || !nlpResult.soapNotes) {
+        if (!nlpResult || typeof nlpResult !== 'object' || !('entities' in nlpResult) || !('soapNotes' in nlpResult)) {
           throw new Error('Respuesta incompleta de Ollama');
         }
         
@@ -169,6 +169,7 @@ export class AudioProcessingServiceProfessional {
           processingId,
           userId,
           visitId,
+          patientId,
           originalError: structuredError.technicalDetails,
           fallbackUsed: true
         });
@@ -845,9 +846,10 @@ export class AudioProcessingServiceProfessional {
           text,
           type: 'symptom',
           confidence,
-          start_position: lowerText.indexOf(keyword),
-          end_position: lowerText.indexOf(keyword) + keyword.length,
-          metadata: { source: 'fallback', category: 'pain' }
+          position: {
+            start: lowerText.indexOf(keyword),
+            end: lowerText.indexOf(keyword) + keyword.length
+          }
         });
       }
     });
@@ -860,9 +862,10 @@ export class AudioProcessingServiceProfessional {
           text,
           type: 'treatment',
           confidence,
-          start_position: lowerText.indexOf(keyword),
-          end_position: lowerText.indexOf(keyword) + keyword.length,
-          metadata: { source: 'fallback', category: 'therapy' }
+          position: {
+            start: lowerText.indexOf(keyword),
+            end: lowerText.indexOf(keyword) + keyword.length
+          }
         });
       }
     });
@@ -875,9 +878,10 @@ export class AudioProcessingServiceProfessional {
           text,
           type: 'anatomy',
           confidence,
-          start_position: lowerText.indexOf(keyword),
-          end_position: lowerText.indexOf(keyword) + keyword.length,
-          metadata: { source: 'fallback', category: 'body_part' }
+          position: {
+            start: lowerText.indexOf(keyword),
+            end: lowerText.indexOf(keyword) + keyword.length
+          }
         });
       }
     });
@@ -909,13 +913,8 @@ export class AudioProcessingServiceProfessional {
         : 'Plan de tratamiento a determinar. [GENERADO POR FALLBACK - REQUIERE REVISIÓN]',
         
       confidence_score: 0.4, // Baja confianza para fallback
+      generated_at: new Date(),
       
-      metadata: {
-        generated_by: 'fallback_system',
-        requires_manual_review: true,
-        original_system_failure: 'ollama_unavailable',
-        fallback_timestamp: new Date().toISOString()
-      }
     };
   }
 } 

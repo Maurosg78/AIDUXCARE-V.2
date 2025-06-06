@@ -11,7 +11,7 @@ import { EMRFormService } from '@/core/services/EMRFormService';
 import { AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
 import { SOAPNotes } from '@/types/nlp';
 import { Button } from '@/shared/components/UI/Button';
-import { StructuredError, ErrorLogger } from '@/types/errors';
+import { StructuredError } from '@/types/errors';
 
 // IDs temporales para MVP (en producción vendrían de contexto/props)
 const MVP_VISIT_ID = 'mvp-visit-001';
@@ -48,9 +48,9 @@ export const MVPCorePage: React.FC = () => {
    * Handler cuando el procesamiento de audio se completa
    */
   const handleProcessingComplete = useCallback((result: AudioProcessingResult) => {
-    console.log('🎉 Procesamiento completado:', result);
+    // TODO: Implementar logging estructurado para auditoría
     
-    setFlowState(prev => ({
+    setFlowState((prev: MVPFlowState) => ({
       ...prev,
       step: 'results',
       audioProcessingResult: result,
@@ -65,7 +65,7 @@ export const MVPCorePage: React.FC = () => {
   const handleSaveSOAP = useCallback(async () => {
     if (!flowState.soapNotes) return;
 
-    setFlowState(prev => ({
+    setFlowState((prev: MVPFlowState) => ({
       ...prev,
       isSaving: true,
       saveError: null
@@ -90,14 +90,14 @@ export const MVPCorePage: React.FC = () => {
       const saveSuccess = await EMRFormService.updateEMRForm(emrForm, MVP_USER_ID);
 
       if (saveSuccess) {
-        setFlowState(prev => ({
+        setFlowState((prev: MVPFlowState) => ({
           ...prev,
           step: 'saved',
           isSaving: false,
           saveSuccess: true
         }));
         
-        console.log('✅ SOAP guardado exitosamente');
+        // TODO: Implementar logging estructurado para auditoría
       } else {
         throw new Error('Failed to save SOAP notes');
       }
@@ -105,7 +105,7 @@ export const MVPCorePage: React.FC = () => {
     } catch (error) {
       console.error('❌ Error guardando SOAP:', error);
       
-      setFlowState(prev => ({
+      setFlowState((prev: MVPFlowState) => ({
         ...prev,
         isSaving: false,
         saveError: error instanceof Error ? error.message : 'Error desconocido'
@@ -142,7 +142,7 @@ export const MVPCorePage: React.FC = () => {
       };
     }
     
-    setFlowState(prev => ({
+    setFlowState((prev: MVPFlowState) => ({
       ...prev,
       step: 'error',
       processingError: errorInfo

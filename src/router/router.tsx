@@ -87,7 +87,6 @@ export const router = createBrowserRouter([
 ], {
   // Future flags for React Router v6 - Eliminates deprecation warnings
   future: {
-    v7_startTransition: true,
     v7_relativeSplatPath: true
   }
 });
