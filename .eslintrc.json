@@ -1,0 +1,72 @@
+{
+  "root": true,
+  "ignorePatterns": ["temp_backup/"],
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:jsx-a11y/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": ["react", "@typescript-eslint", "jsx-a11y"],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "error",
+    "jsx-a11y/aria-props": ["error", {
+      "aria-expanded": {
+        "allowExpression": true,
+        "allowBoolean": true
+      },
+      "aria-busy": {
+        "allowExpression": true,
+        "allowBoolean": true
+      }
+    }],
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/aria-role": ["error", {
+      "allowInvalidRoles": false
+    }]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "scripts/**"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "src/services/AudioProcessingServiceProfessional.ts",
+        "src/types/nlp.ts",
+        "src/services/nlpServiceOllama.ts",
+        "src/core/services/EMRFormService.ts",
+        "src/scripts/testOllama.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": "warn"
+      }
+    }
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}
