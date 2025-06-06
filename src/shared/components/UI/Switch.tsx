@@ -64,7 +64,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
               type="checkbox"
               className="peer sr-only"
               disabled={disabled}
-              aria-invalid={error ? true : false}
+              aria-invalid={!!error}
               aria-describedby={
                 error || helperText
                   ? `${props.id}-description`
