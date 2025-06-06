@@ -574,11 +574,14 @@ export class AudioProcessingServiceProfessional {
     processingId: string,
     totalTime: number,
     transcription: TranscriptionSegment[],
-    nlpResult: any,
+    nlpResult: { entities: unknown[]; soapNotes: { confidence_score?: number }; metrics?: { entity_extraction_time_ms?: number; soap_generation_time_ms?: number } },
     agentSuggestions: AgentSuggestion[],
     qualityAssessment: QualityAssessment,
     clinicalInsights?: ClinicalInsightSummary
   ): ProcessingMetrics {
+    
+    // Cast seguro de nlpResult
+    const typedNlpResult = nlpResult as { entities: unknown[]; soapNotes: { confidence_score?: number }; metrics?: { entity_extraction_time_ms?: number; soap_generation_time_ms?: number } };
     
     const transcriptionConfidence = transcription.length > 0 
       ? transcription.reduce((sum, t) => {
@@ -594,11 +597,11 @@ export class AudioProcessingServiceProfessional {
       total_processing_time_ms: totalTime,
       stt_duration_ms: 800, // Estimado para STT
       stt_confidence: transcriptionConfidence,
-      entity_extraction_time_ms: nlpResult.metrics?.entity_extraction_time_ms || 600,
-      entities_extracted: nlpResult.entities.length,
-      soap_generation_time_ms: nlpResult.metrics?.soap_generation_time_ms || 900,
-      soap_completeness: this.calculateCompleteness(transcription, nlpResult.soapNotes),
-      soap_confidence: nlpResult.soapNotes.confidence_score || 0.7,
+      entity_extraction_time_ms: typedNlpResult.metrics?.entity_extraction_time_ms || 600,
+      entities_extracted: Array.isArray(typedNlpResult.entities) ? typedNlpResult.entities.length : 0,
+      soap_generation_time_ms: typedNlpResult.metrics?.soap_generation_time_ms || 900,
+      soap_completeness: this.calculateCompleteness(transcription, { subjective: '', objective: '', assessment: '', plan: '', generated_at: new Date() }),
+      soap_confidence: typedNlpResult.soapNotes.confidence_score || 0.7,
       total_tokens_used: 0, // Ollama es local
       estimated_cost_usd: 0.0, // Ollama es gratuito
       overall_confidence: (
