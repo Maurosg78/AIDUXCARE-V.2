@@ -1,4 +1,4 @@
-// @ts-nocheck
+// Storybook legacy compatibility
 import type { Meta, StoryObj } from '@storybook/react';
 import { Drawer } from './Drawer';
 import { useState } from 'react';

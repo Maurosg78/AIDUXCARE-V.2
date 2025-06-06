@@ -1,2 +1,2 @@
-// @ts-nocheck
+// Storybook legacy compatibility
  
