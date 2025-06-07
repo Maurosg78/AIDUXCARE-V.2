@@ -6,14 +6,328 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Reset básico */
-* {
-  box-sizing: border-box;
+/* Estilos base para AiDuxCare V.2 */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  * {
+    @apply border-gray-200;
+  }
 }
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  margin: 0;
-  padding: 0;
-  line-height: 1.5;
+/* Componentes personalizados */
+@layer components {
+  .floating-button {
+    @apply fixed z-40 cursor-move;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .floating-button:hover {
+    @apply scale-110 shadow-xl;
+  }
+  
+  .assistant-window {
+    @apply fixed bg-white rounded-lg shadow-2xl border;
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+  
+  .audio-visualizer {
+    @apply flex items-end justify-center space-x-1;
+  }
+  
+  .audio-bar {
+    @apply bg-current rounded-full;
+    animation: audioWave 1.5s ease-in-out infinite;
+  }
+  
+  .soap-section {
+    @apply border-l-4 pl-4 mb-4;
+  }
+  
+  .soap-section.subjective {
+    @apply border-blue-500;
+  }
+  
+  .soap-section.objective {
+    @apply border-green-500;
+  }
+  
+  .soap-section.assessment {
+    @apply border-yellow-500;
+  }
+  
+  .soap-section.plan {
+    @apply border-purple-500;
+  }
+  
+  .evidence-card {
+    @apply border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow;
+  }
+  
+  .evidence-card:hover {
+    @apply border-blue-300;
+  }
+  
+  .medical-term {
+    @apply inline-block px-2 py-1 rounded text-xs font-medium mr-1 mb-1;
+  }
+  
+  .medical-term.symptom {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .medical-term.diagnosis {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .medical-term.treatment {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .medical-term.medication {
+    @apply bg-purple-100 text-purple-800;
+  }
+  
+  .medical-term.anatomy {
+    @apply bg-orange-100 text-orange-800;
+  }
+  
+  .highlight-item {
+    @apply p-2 rounded hover:bg-gray-50 transition-colors cursor-pointer;
+  }
+  
+  .highlight-item.selected {
+    @apply bg-blue-50 border border-blue-200;
+  }
+  
+  .warning-item {
+    @apply p-3 rounded-lg border transition-colors;
+  }
+  
+  .warning-item.high {
+    @apply border-red-200 bg-red-50;
+  }
+  
+  .warning-item.medium {
+    @apply border-yellow-200 bg-yellow-50;
+  }
+  
+  .warning-item.low {
+    @apply border-blue-200 bg-blue-50;
+  }
+  
+  .transcription-segment {
+    @apply mb-3 p-3 rounded-lg;
+  }
+  
+  .transcription-segment.professional {
+    @apply bg-blue-50 border-l-4 border-blue-500;
+  }
+  
+  .transcription-segment.patient {
+    @apply bg-green-50 border-l-4 border-green-500;
+  }
+  
+  .confidence-indicator {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .confidence-indicator.high {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .confidence-indicator.medium {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .confidence-indicator.low {
+    @apply bg-red-100 text-red-800;
+  }
+}
+
+/* Utilidades personalizadas */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Animaciones personalizadas */
+@keyframes audioWave {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 20px;
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Clases de animación */
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Estados de carga */
+.loading-skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: loading-dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes loading-dots {
+  0%, 20% {
+    content: '';
+  }
+  40% {
+    content: '.';
+  }
+  60% {
+    content: '..';
+  }
+  80%, 100% {
+    content: '...';
+  }
+}
+
+/* Responsive breakpoints personalizados */
+@media (max-width: 640px) {
+  .floating-button {
+    @apply scale-90;
+  }
+  
+  .assistant-window {
+    @apply mx-4;
+    width: calc(100vw - 2rem) !important;
+  }
+}
+
+/* Modo oscuro (preparado para futuro) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  .dark-mode .assistant-window {
+    @apply bg-gray-800 border-gray-700;
+    background-color: rgba(31, 41, 55, 0.95);
+  }
+  
+  .dark-mode .evidence-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .floating-button,
+  .assistant-window,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-spin {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Focus visible para accesibilidad */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Estilos para impresión */
+@media print {
+  .floating-button,
+  .assistant-window,
+  .no-print {
+    display: none !important;
+  }
+  
+  .soap-section {
+    @apply break-inside-avoid;
+  }
+  
+  .evidence-card {
+    @apply break-inside-avoid border border-gray-400;
+  }
 }

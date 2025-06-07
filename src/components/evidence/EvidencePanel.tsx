@@ -1,133 +1,179 @@
 /**
- * 🔬 EvidencePanel - Mostrar Evidencia Científica RAG
- * Componente para visualizar artículos científicos y evidencia
+ * 🔬 Evidence Panel - AiDuxCare V.2
+ * Panel para mostrar evidencia científica y referencias bibliográficas
  */
 
-import React, { useState } from 'react';
-import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/shared/components/UI/Button';
+
+interface EvidenceItem {
+  id: string;
+  title: string;
+  authors: string[];
+  journal: string;
+  year: number;
+  doi?: string;
+  url?: string;
+  relevanceScore: number;
+  abstractSnippet: string;
+  category: 'research' | 'guideline' | 'review' | 'case-study';
+  evidenceLevel: 'I' | 'II' | 'III' | 'IV' | 'V';
+}
 
 interface EvidencePanelProps {
-  ragResult?: RAGQueryResult;
   isLoading?: boolean;
-  onArticleClick?: (citation: CitationReference) => void;
-  onRefresh?: () => void;
-  className?: string;
+  searchQuery?: string;
+  onEvidenceSelect?: (evidence: EvidenceItem) => void;
 }
 
-interface EvidenceBadgeProps {
-  level: string;
-  articles: number;
-  confidence: number;
-}
-
-const EvidenceBadge: React.FC<EvidenceBadgeProps> = ({ level, articles, confidence }) => {
-  const getBadgeColor = (level: string) => {
-    switch (level) {
-      case 'Level-1': return 'bg-green-100 text-green-800 border-green-300';
-      case 'Level-2': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Guidelines': return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'Consensus': return 'bg-orange-100 text-orange-800 border-orange-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  return (
-    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getBadgeColor(level)}`}>
-      🔬 {level} • {articles} estudios • {confidence}%
-    </span>
-  );
-};
-
-const ArticlePreview: React.FC<{
-  citation: CitationReference;
-  onClick?: () => void;
-}> = ({ citation, onClick }) => {
-  return (
-    <div 
-      className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all"
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
-            {citation.title}
-          </h4>
-          <p className="text-xs text-gray-600 mb-2">
-            {citation.authors} • {citation.journal} ({citation.year})
-          </p>
-          <div className="flex items-center gap-2">
-            <EvidenceBadge 
-              level="Level-1" 
-              articles={1} 
-              confidence={Math.round(citation.relevance_score * 100)}
-            />
-            {citation.pmid && (
-              <span className="text-xs text-blue-600">PMID: {citation.pmid}</span>
-            )}
-          </div>
-        </div>
-        <div className="ml-2 text-right">
-          <div className="text-lg font-bold text-blue-600">
-            {Math.round(citation.relevance_score * 100)}%
-          </div>
-          <div className="text-xs text-gray-500">relevancia</div>
-        </div>
-      </div>
-    </div>
-  );
-};
+const mockEvidenceData: EvidenceItem[] = [
+  {
+    id: '1',
+    title: 'Effectiveness of Manual Therapy and Exercise for Low Back Pain: A Systematic Review',
+    authors: ['Smith, J.A.', 'González, M.R.', 'Johnson, K.L.'],
+    journal: 'Journal of Physical Therapy Science',
+    year: 2023,
+    doi: '10.1589/jpts.35.123',
+    url: 'https://example.com/study1',
+    relevanceScore: 94,
+    abstractSnippet: 'Manual therapy combined with specific exercises shows significant improvement in chronic low back pain patients compared to standard care alone.',
+    category: 'research',
+    evidenceLevel: 'I'
+  },
+  {
+    id: '2',
+    title: 'Clinical Practice Guidelines for Physical Therapy Management of Lumbar Spine Disorders',
+    authors: ['American Physical Therapy Association'],
+    journal: 'Physical Therapy',
+    year: 2024,
+    doi: '10.1093/ptj/pzad089',
+    relevanceScore: 96,
+    abstractSnippet: 'Evidence-based recommendations for assessment and treatment of lumbar spine conditions, including contraindications and safety considerations.',
+    category: 'guideline',
+    evidenceLevel: 'I'
+  },
+  {
+    id: '3',
+    title: 'Contraindications and Precautions in Spinal Manual Therapy: Updated Review',
+    authors: ['Rodriguez, C.M.', 'Williams, P.J.'],
+    journal: 'Manual Therapy',
+    year: 2023,
+    doi: '10.1016/j.math.2023.102589',
+    relevanceScore: 89,
+    abstractSnippet: 'Comprehensive review of absolute and relative contraindications for spinal manipulation, with emphasis on red flags and safety screening.',
+    category: 'review',
+    evidenceLevel: 'II'
+  },
+  {
+    id: '4',
+    title: 'Exercise Therapy vs. Anti-inflammatory Medication in Chronic Low Back Pain',
+    authors: ['López, A.B.', 'Chen, L.', 'Miller, R.F.'],
+    journal: 'Spine',
+    year: 2023,
+    doi: '10.1097/BRS.0000000000004567',
+    relevanceScore: 87,
+    abstractSnippet: 'Randomized controlled trial comparing exercise therapy to NSAIDs in 240 patients with chronic low back pain over 12 weeks.',
+    category: 'research',
+    evidenceLevel: 'I'
+  }
+];
 
 export const EvidencePanel: React.FC<EvidencePanelProps> = ({
-  ragResult,
   isLoading = false,
-  onArticleClick,
-  onRefresh,
-  className = ''
+  searchQuery,
+  onEvidenceSelect
 }) => {
-  const [expandedSection, setExpandedSection] = useState<'summary' | 'articles' | 'context'>('summary');
+  const [evidenceData, setEvidenceData] = useState<EvidenceItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'relevance' | 'year' | 'evidence-level'>('relevance');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Simular carga de datos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setEvidenceData(mockEvidenceData);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  /**
+   * Filtrar evidencia por categoría
+   */
+  const filteredEvidence = evidenceData.filter(item => {
+    if (selectedCategory === 'all') return true;
+    return item.category === selectedCategory;
+  });
+
+  /**
+   * Ordenar evidencia
+   */
+  const sortedEvidence = [...filteredEvidence].sort((a, b) => {
+    switch (sortBy) {
+      case 'relevance':
+        return b.relevanceScore - a.relevanceScore;
+      case 'year':
+        return b.year - a.year;
+      case 'evidence-level':
+        return a.evidenceLevel.localeCompare(b.evidenceLevel);
+      default:
+        return 0;
+    }
+  });
+
+  /**
+   * Toggle expanded item
+   */
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
+  };
+
+  /**
+   * Obtener color por categoría
+   */
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      research: 'bg-blue-100 text-blue-800',
+      guideline: 'bg-green-100 text-green-800',
+      review: 'bg-purple-100 text-purple-800',
+      'case-study': 'bg-orange-100 text-orange-800'
+    };
+    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  /**
+   * Obtener color por nivel de evidencia
+   */
+  const getEvidenceLevelColor = (level: string) => {
+    const colors = {
+      I: 'bg-green-500',
+      II: 'bg-blue-500',
+      III: 'bg-yellow-500',
+      IV: 'bg-orange-500',
+      V: 'bg-red-500'
+    };
+    return colors[level as keyof typeof colors] || 'bg-gray-500';
+  };
 
   if (isLoading) {
     return (
-      <div className={`evidence-panel ${className}`}>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-            <div>
-              <h3 className="text-sm font-medium text-blue-900">Buscando evidencia científica...</h3>
-              <p className="text-xs text-blue-700">Consultando PubMed</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!ragResult || ragResult.citations.length === 0) {
-    return (
-      <div className={`evidence-panel ${className}`}>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="text-center">
-            <div className="text-gray-400 text-2xl mb-2">🔍</div>
-            <h3 className="text-sm font-medium text-gray-700">Sin evidencia disponible</h3>
-            <p className="text-xs text-gray-500 mt-1">
-              No se encontraron artículos científicos relevantes
-            </p>
-            {onRefresh && (
-              <button 
-                onClick={onRefresh}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800"
-              >
-                🔄 Intentar nueva búsqueda
-              </button>
-            )}
+      <div className="space-y-4">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="border rounded-lg p-4">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -135,117 +181,203 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
   }
 
   return (
-    <div className={`evidence-panel bg-white border border-gray-200 rounded-lg ${className}`}>
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+    <div className="space-y-6">
+      {/* Header y Controles */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            🔬 Evidencia Científica
-          </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
-              {ragResult.processing_time_ms}ms
-            </span>
-            {onRefresh && (
-              <button 
-                onClick={onRefresh}
-                className="text-gray-400 hover:text-gray-600 text-sm"
-                title="Actualizar evidencia"
-              >
-                🔄
-              </button>
-            )}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              📚 Evidencia Científica
+            </h3>
+            <p className="text-sm text-gray-600">
+              Referencias bibliográficas relevantes para el caso clínico
+            </p>
+          </div>
+          <div className="text-sm text-gray-500">
+            {sortedEvidence.length} referencias encontradas
           </div>
         </div>
-        <p className="text-sm text-gray-600 mt-1">
-          Query: &quot;{ragResult.query}&quot;
-        </p>
+
+        {/* Filtros y Ordenamiento */}
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="category-select" className="text-sm font-medium text-gray-700">Categoría:</label>
+            <select
+              id="category-select"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="text-sm border border-gray-300 rounded px-2 py-1"
+            >
+              <option value="all">Todas</option>
+              <option value="research">Investigación</option>
+              <option value="guideline">Guías Clínicas</option>
+              <option value="review">Revisiones</option>
+              <option value="case-study">Casos Clínicos</option>
+            </select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <label htmlFor="sort-select" className="text-sm font-medium text-gray-700">Ordenar por:</label>
+            <select
+              id="sort-select" value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "relevance" | "year" | "evidence-level")}
+              className="text-sm border border-gray-300 rounded px-2 py-1"
+            >
+              <option value="relevance">Relevancia</option>
+              <option value="year">Año</option>
+              <option value="evidence-level">Nivel de Evidencia</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-gray-200">
-        {[
-          { key: 'summary', label: '📊 Resumen', count: ragResult.citations.length },
-          { key: 'articles', label: '📚 Artículos', count: ragResult.citations.length },
-          { key: 'context', label: '🧠 Contexto', count: 1 }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setExpandedSection(tab.key as 'summary' | 'articles' | 'context')}
-            className={`flex-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              expandedSection === tab.key
-                ? 'border-blue-500 text-blue-600 bg-blue-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+      {/* Lista de Evidencias */}
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        {sortedEvidence.map((evidence) => (
+          <div
+            key={evidence.id}
+            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
           >
-            {tab.label} ({tab.count})
-          </button>
+            <div className="space-y-3">
+              {/* Header del artículo */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(evidence.category)}`}>
+                      {evidence.category === 'research' ? 'Investigación' :
+                       evidence.category === 'guideline' ? 'Guía Clínica' :
+                       evidence.category === 'review' ? 'Revisión' : 'Caso Clínico'}
+                    </span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-500">Nivel</span>
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${getEvidenceLevelColor(evidence.evidenceLevel)}`}
+                      >
+                        {evidence.evidenceLevel}
+                      </div>
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <span className="mr-1">🎯</span>
+                      {evidence.relevanceScore}%
+                    </div>
+                  </div>
+                  
+                  <h4 className="font-semibold text-gray-900 mb-1 leading-tight">
+                    {evidence.title}
+                  </h4>
+                  
+                  <div className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium">{evidence.authors.join(', ')}</span>
+                    <span className="mx-2">•</span>
+                    <span className="italic">{evidence.journal}</span>
+                    <span className="mx-2">•</span>
+                    <span>{evidence.year}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Abstract snippet */}
+              <div className="text-sm text-gray-700 leading-relaxed">
+                {evidence.abstractSnippet}
+              </div>
+
+              {/* Expanded content */}
+              {expandedItems.has(evidence.id) && (
+                <div className="border-t pt-3 space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">DOI:</span>
+                      <span className="ml-2 text-blue-600">{evidence.doi || 'No disponible'}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Relevancia:</span>
+                      <span className="ml-2">{evidence.relevanceScore}% para este caso</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    {evidence.url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(evidence.url, '_blank')}
+                        className="text-xs"
+                      >
+                        🔗 Ver Artículo Completo
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEvidenceSelect?.(evidence)}
+                      className="text-xs"
+                    >
+                      📋 Agregar a SOAP
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleExpanded(evidence.id)}
+                  className="text-xs text-gray-600 hover:text-gray-800"
+                >
+                  {expandedItems.has(evidence.id) ? '📄 Menos detalles' : '📄 Más detalles'}
+                </Button>
+                
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Implementar exportación de cita
+                      const citation = `${evidence.authors.join(', ')}. ${evidence.title}. ${evidence.journal}. ${evidence.year}${evidence.doi ? `. doi:${evidence.doi}` : ''}`;
+                      navigator.clipboard.writeText(citation);
+                      alert('Cita copiada al portapapeles');
+                    }}
+                    className="text-xs"
+                  >
+                    📎 Copiar Cita
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="p-4 max-h-96 overflow-y-auto">
-        
-        {/* Summary Tab */}
-        {expandedSection === 'summary' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-green-50 p-3 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {ragResult.citations.length}
-                </div>
-                <div className="text-xs text-green-700">Artículos encontrados</div>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {Math.round(ragResult.confidence_score * 100)}%
-                </div>
-                <div className="text-xs text-blue-700">Confianza general</div>
-              </div>
-            </div>
-            
-            {/* Top Article Preview */}
-            {ragResult.citations.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-800 mb-2">📈 Artículo más relevante:</h4>
-                <ArticlePreview 
-                  citation={ragResult.citations[0]}
-                  onClick={() => onArticleClick?.(ragResult.citations[0])}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Articles Tab */}
-        {expandedSection === 'articles' && (
-          <div className="space-y-3">
-            {ragResult.citations.map((citation, index) => (
-              <ArticlePreview
-                key={`${citation.pmid}-${index}`}
-                citation={citation}
-                onClick={() => onArticleClick?.(citation)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Context Tab */}
-        {expandedSection === 'context' && (
+      {/* Footer con estadísticas */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <h4 className="text-sm font-medium text-gray-800 mb-2">🧠 Contexto médico generado:</h4>
-            <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 leading-relaxed">
-              {ragResult.medical_context || 'No hay contexto médico disponible.'}
+            <div className="text-lg font-bold text-gray-900">
+              {evidenceData.filter(e => e.evidenceLevel === 'I').length}
             </div>
+            <div className="text-xs text-gray-600">Nivel I</div>
           </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-3 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Fuente: PubMed • Actualizado en tiempo real</span>
-          <span>Costo: $0.00</span>
+          <div>
+            <div className="text-lg font-bold text-gray-900">
+              {evidenceData.filter(e => e.category === 'guideline').length}
+            </div>
+            <div className="text-xs text-gray-600">Guías Clínicas</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-gray-900">
+              {Math.round(evidenceData.reduce((acc, e) => acc + e.relevanceScore, 0) / evidenceData.length)}%
+            </div>
+            <div className="text-xs text-gray-600">Relevancia Promedio</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-gray-900">
+              {new Date().getFullYear() - Math.min(...evidenceData.map(e => e.year))}
+            </div>
+            <div className="text-xs text-gray-600">Años de Evidencia</div>
+          </div>
         </div>
       </div>
     </div>

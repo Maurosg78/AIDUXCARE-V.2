@@ -289,3 +289,231 @@ export class ErrorLogger {
     return message;
   }
 }
+
+/**
+ * 🚨 Error Types - AiDuxCare V.2
+ * Tipos para manejo estructurado de errores
+ */
+
+export interface StructuredError extends Error {
+  userMessage: string;
+  technicalDetails?: string;
+  retryable: boolean;
+  fallbackAvailable?: boolean;
+  timestamp?: string;
+  context?: Record<string, unknown>;
+  errorCode?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface ValidationError extends StructuredError {
+  field: string;
+  value: unknown;
+  constraint: string;
+}
+
+export interface NetworkError extends StructuredError {
+  status?: number;
+  endpoint?: string;
+  method?: string;
+}
+
+export interface ServiceError extends StructuredError {
+  service: string;
+  operation: string;
+  dependencies?: string[];
+}
+
+export interface AudioProcessingError extends StructuredError {
+  audioSize?: number;
+  audioDuration?: number;
+  audioFormat?: string;
+  processingStep?: 'transcription' | 'analysis' | 'soap-generation';
+}
+
+/**
+ * Factory para crear errores estructurados
+ */
+export class ErrorFactory {
+  static createValidationError(
+    field: string,
+    value: unknown,
+    constraint: string,
+    userMessage?: string
+  ): ValidationError {
+    return {
+      name: 'ValidationError',
+      message: `Validation failed for field ${field}`,
+      userMessage: userMessage || `El campo ${field} no es válido`,
+      technicalDetails: `Field: ${field}, Value: ${value}, Constraint: ${constraint}`,
+      retryable: false,
+      field,
+      value,
+      constraint,
+      timestamp: new Date().toISOString(),
+      severity: 'medium'
+    };
+  }
+
+  static createNetworkError(
+    endpoint: string,
+    status?: number,
+    userMessage?: string
+  ): NetworkError {
+    return {
+      name: 'NetworkError',
+      message: `Network request failed to ${endpoint}`,
+      userMessage: userMessage || 'Error de conexión. Verifica tu conexión a internet.',
+      technicalDetails: `Endpoint: ${endpoint}, Status: ${status}`,
+      retryable: true,
+      endpoint,
+      status,
+      timestamp: new Date().toISOString(),
+      severity: status && status >= 500 ? 'high' : 'medium'
+    };
+  }
+
+  static createServiceError(
+    service: string,
+    operation: string,
+    originalError?: Error,
+    userMessage?: string
+  ): ServiceError {
+    return {
+      name: 'ServiceError',
+      message: `Service ${service} failed during ${operation}`,
+      userMessage: userMessage || 'Error en el servicio. Intenta de nuevo más tarde.',
+      technicalDetails: originalError?.message || 'Unknown service error',
+      retryable: true,
+      service,
+      operation,
+      timestamp: new Date().toISOString(),
+      severity: 'medium'
+    };
+  }
+
+  static createAudioProcessingError(
+    processingStep: AudioProcessingError['processingStep'],
+    originalError?: Error,
+    audioInfo?: {
+      size?: number;
+      duration?: number;
+      format?: string;
+    }
+  ): AudioProcessingError {
+    const stepMessages = {
+      transcription: 'Error al transcribir el audio',
+      analysis: 'Error al analizar el contenido médico',
+      'soap-generation': 'Error al generar las notas SOAP'
+    };
+
+    return {
+      name: 'AudioProcessingError',
+      message: `Audio processing failed at ${processingStep}`,
+      userMessage: stepMessages[processingStep] || 'Error procesando el audio',
+      technicalDetails: originalError?.message || 'Unknown audio processing error',
+      retryable: true,
+      fallbackAvailable: true,
+      processingStep,
+      audioSize: audioInfo?.size,
+      audioDuration: audioInfo?.duration,
+      audioFormat: audioInfo?.format,
+      timestamp: new Date().toISOString(),
+      severity: 'medium'
+    };
+  }
+}
+
+/**
+ * Utilidades para manejo de errores
+ */
+export class ErrorUtils {
+  /**
+   * Determinar si un error es recuperable
+   */
+  static isRetryable(error: unknown): boolean {
+    if (error && typeof error === 'object' && 'retryable' in error) {
+      return (error as StructuredError).retryable;
+    }
+    return false;
+  }
+
+  /**
+   * Obtener mensaje amigable para el usuario
+   */
+  static getUserMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'userMessage' in error) {
+      return (error as StructuredError).userMessage;
+    }
+    
+    if (error instanceof Error) {
+      return 'Ha ocurrido un error inesperado. Intenta de nuevo.';
+    }
+    
+    return 'Error desconocido. Contacta al soporte técnico.';
+  }
+
+  /**
+   * Obtener detalles técnicos del error
+   */
+  static getTechnicalDetails(error: unknown): string {
+    if (error && typeof error === 'object' && 'technicalDetails' in error) {
+      return (error as StructuredError).technicalDetails || '';
+    }
+    
+    if (error instanceof Error) {
+      return error.message;
+    }
+    
+    return String(error);
+  }
+
+  /**
+   * Verificar si hay fallback disponible
+   */
+  static hasFallback(error: unknown): boolean {
+    if (error && typeof error === 'object' && 'fallbackAvailable' in error) {
+      return (error as StructuredError).fallbackAvailable || false;
+    }
+    return false;
+  }
+
+  /**
+   * Formatear error para logging
+   */
+  static formatForLogging(error: unknown): Record<string, unknown> {
+    const baseInfo = {
+      timestamp: new Date().toISOString(),
+      type: 'unknown'
+    };
+
+    if (error && typeof error === 'object') {
+      const structuredError = error as StructuredError;
+      return {
+        ...baseInfo,
+        type: structuredError.name || 'StructuredError',
+        message: structuredError.message,
+        userMessage: structuredError.userMessage,
+        technicalDetails: structuredError.technicalDetails,
+        retryable: structuredError.retryable,
+        fallbackAvailable: structuredError.fallbackAvailable,
+        severity: structuredError.severity,
+        context: structuredError.context
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        ...baseInfo,
+        type: error.name,
+        message: error.message,
+        stack: error.stack
+      };
+    }
+
+    return {
+      ...baseInfo,
+      message: String(error)
+    };
+  }
+}

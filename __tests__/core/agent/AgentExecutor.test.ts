@@ -6,7 +6,7 @@ import { sendToLLM, LLMProvider, LLMResponse } from '../../../src/core/agent/LLM
 
 // Mock para sendToLLM
 vi.mock('../../../src/core/agent/LLMAdapter', () => ({
-  sendToLLM: vi.fn().mockImplementation((context, provider) => {
+  sendToLLM: vi.fn().mockImplementation(() => {
     return Promise.resolve({
       suggestions: [
         {
@@ -143,14 +143,10 @@ describe('AgentExecutor', () => {
       },
       blocks: []
     };
-    
-    const minimalParams: AgentExecutionParams = {
-      context: minimalContext,
-      provider: 'anthropic'
-    };
+
     
     // No debería lanzar errores
-    const executor = new AgentExecutor(mockAgent, minimalContext, minimalParams.provider);
+    const executor = new AgentExecutor(mockAgent, minimalContext, 'anthropic');
     const suggestions = await executor.execute();
     
     // Verificar que se obtienen sugerencias

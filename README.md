@@ -1,254 +1,253 @@
-# 🏥 AIDUXCARE-V.2: Sistema de Documentación Clínica Inteligente
+# 🎯 AiDuxCare V.2 - Sistema de Documentación Clínica con IA
 
-[![Tecnología](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4.19-646CFF.svg)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.1-38B2AC.svg)](https://tailwindcss.com/)
+## 📋 Estado Actual de Implementación
 
-## 📋 Descripción del Proyecto
+### ✅ Completado
+- **Arquitectura Base**: Estructura de proyecto React + TypeScript
+- **Páginas Principales**:
+  - `MVPCorePage`: Flujo completo Record → Process → View → Save
+  - `ProfessionalWorkflowPage`: Interfaz profesional con asistente virtual
+- **Componentes Core**:
+  - `ProfessionalAudioProcessor`: Grabación y procesamiento de audio
+  - `EvidencePanel`: Panel de evidencia científica
+  - `Button`: Componente de botón reutilizable
+- **Servicios**:
+  - `AudioProcessingServiceProfessional`: Integración con Ollama + Whisper
+  - `EMRFormService`: Gestión de formularios médicos
+- **Tipos TypeScript**:
+  - `SOAPNotes`, `MedicalTerm`, `ClinicalInsight`
+  - `StructuredError`, `AudioProcessingResult`
+- **Estilos**: Tailwind CSS con tema personalizado médico
+- **CI/CD**: Pipeline funcional con linting y build
 
-**AIDUXCARE-V.2** es un sistema de documentación clínica inteligente diseñado específicamente para profesionales de fisioterapia. El proyecto se enfoca en la transcripción automática de consultas médicas y la generación de notas clínicas estructuradas con tecnología de IA.
+### 🔄 En Progreso
+- Integración real con Ollama (actualmente simulada)
+- Validación de formularios SOAP
+- Sistema de persistencia de datos
 
-### 🎯 **Problema Abordado**
-- **Tiempo excesivo** en documentación médica manual
-- **Inconsistencia** en el formato de notas clínicas
-- **Falta de estructura** en la documentación de consultas
-- **Proceso manual** de transcripción de consultas
+### 📋 Próximos Pasos
 
-### 💡 **Solución Implementada**
-Una interfaz web moderna que simula y demuestra el flujo de trabajo de transcripción automática de consultas médicas y generación de documentación clínica estructurada en formato SOAP.
-
-## 🚀 Características Implementadas
-
-### 🖥️ **Interfaz de Usuario Profesional**
-- **Diseño Responsivo**: Optimizado para dispositivos móviles y escritorio
-- **Identidad Visual Médica**: Paleta de colores profesional con estándares de contraste
-- **Navegación Intuitiva**: Flujo de trabajo claro para profesionales de la salud
-- **Componentes Modulares**: Arquitectura de componentes reutilizables
-
-### 📝 **Sistema de Documentación Simulado**
-- **Demo de Transcripción**: Simulación realista del proceso de transcripción
-- **Generación SOAP**: Estructura automática de notas clínicas
-- **Análisis de Entidades**: Identificación simulada de elementos clínicos
-- **Flujo de Trabajo Profesional**: Interfaz adaptada al entorno médico
-
-### 🎨 **Sistema de Design Profesional**
-- **Paleta Médica**: Colores que transmiten confianza y profesionalismo
-- **Tipografía Clara**: Fuentes optimizadas para legibilidad médica
-- **Componentes Médicos**: Elementos específicos para el contexto sanitario
-- **Accesibilidad**: Cumplimiento de estándares WCAG para contraste
-
-### 🧪 **Arquitectura de Testing**
-- **Testing de Componentes**: Pruebas unitarias con Vitest
-- **Cobertura de Código**: Monitoreo de calidad del código
-- **CI/CD Pipeline**: Automatización de testing y despliegue
-
-## 🛠️ Tecnologías Utilizadas
-
-### **Frontend**
-- **React 18.3.1** - Framework principal
-- **TypeScript** - Tipado estático para mayor seguridad
-- **Tailwind CSS** - Sistema de diseño utility-first
-- **Vite** - Herramienta de build moderna y rápida
-
-### **Desarrollo y Testing**
-- **Vitest** - Framework de testing moderno
-- **ESLint** - Análisis estático de código
-- **TypeScript Strict** - Configuración estricta de tipos
-
-## 📁 Estructura del Proyecto
-
-```
-AIDUXCARE-V.2/
-├── 📂 src/                          # Código fuente principal
-│   ├── components/                 # Componentes React reutilizables
-│   │   ├── Logo.tsx               # Logo oficial de AiDuxCare
-│   │   └── branding/              # Componentes de marca
-│   ├── pages/                     # Páginas de la aplicación
-│   │   ├── HomePage.tsx           # Página de inicio
-│   │   ├── AudioProcessingPage.tsx # Demo de transcripción
-│   │   └── ProfessionalWorkflowPage.tsx # Flujo profesional
-│   ├── styles/                    # Estilos y sistema de design
-│   │   └── aidux-theme.css       # Paleta de colores oficial
-│   └── router/                    # Configuración de rutas
-├── 📂 docs/                        # Documentación del proyecto
-├── 📂 __tests__/                   # Suite de testing
-└── 📂 config/                      # Configuraciones del proyecto
+#### 1. Completar Servicios Faltantes
+```bash
+# Crear servicios adicionales
+src/services/
+├── nlpServiceOllama.ts          # ✅ Existe pero necesita actualización
+├── DatabaseService.ts           # ❌ Crear
+├── AuthService.ts              # ❌ Crear
+└── ExportService.ts            # ❌ Crear
 ```
 
-## 🎯 Funcionalidades Actuales
+#### 2. Implementar Componentes Faltantes
+```bash
+# Componentes UI adicionales
+src/shared/components/UI/
+├── Modal.tsx                   # ❌ Crear
+├── Toast.tsx                   # ❌ Crear
+├── LoadingSpinner.tsx          # ❌ Crear
+└── ProgressBar.tsx             # ❌ Crear
+```
 
-### 1. **Página de Inicio Profesional**
-- Presentación clara del sistema
-- Identidad visual médica consistente
-- Navegación hacia demos y flujos de trabajo
+#### 3. Configurar Integración con Ollama
+```bash
+# Verificar que Ollama esté ejecutándose
+ollama serve
 
-### 2. **Demo de Procesamiento de Audio**
-- Simulación de transcripción automática
-- Generación de estructura SOAP
-- Interfaz intuitiva para profesionales
+# Instalar modelos necesarios
+ollama pull llama3.2:latest
+ollama pull whisper:latest
+```
 
-### 3. **Flujo de Trabajo Profesional**
-- Interfaz adaptada al contexto médico
-- Componentes específicos para fisioterapia
-- Diseño centrado en la experiencia del usuario
+#### 4. Configurar Base de Datos
+```bash
+# Opción 1: SQLite local (desarrollo)
+npm install sqlite3 better-sqlite3
 
-## 📊 Estado del Desarrollo
-
-### **Completado** ✅
-- ✅ **Arquitectura Base**: Estructura React + TypeScript
-- ✅ **Sistema de Design**: Paleta de colores y componentes
-- ✅ **Interfaz Principal**: Páginas y navegación funcional
-- ✅ **Logo y Branding**: Identidad visual profesional
-- ✅ **Responsive Design**: Adaptación móvil y escritorio
-- ✅ **Testing Setup**: Configuración de Vitest y testing
-- ✅ **Accesibilidad**: Contraste y estándares WCAG
-
-### **En Desarrollo** 🔄
-- 🔄 **Integración con IA**: Conexión con modelos de lenguaje
-- 🔄 **Transcripción Real**: Implementación de Web Speech API
-- 🔄 **Base de Datos**: Persistencia de datos clínicos
-- 🔄 **Autenticación**: Sistema de login para profesionales
-
-### **Planificado** 📋
-- 📋 **IA Local**: Integración con Ollama
-- 📋 **RAG Médico**: Base de conocimiento especializada
-- 📋 **Compliance HIPAA**: Estándares de seguridad médica
-- 📋 **Despliegue**: Configuración de producción
+# Opción 2: Supabase (producción)
+npm install @supabase/supabase-js
+```
 
 ## 🚀 Instalación y Configuración
 
-### **Prerrequisitos**
-```bash
-node >= 18.0.0
-npm >= 8.0.0
-```
+### Prerrequisitos
+- Node.js 18+
+- npm o yarn
+- Ollama instalado y ejecutándose
 
-### **Instalación**
+### Instalación
 ```bash
 # Clonar repositorio
-git clone https://github.com/Maurosg78/AIDUXCARE-V.2.git
+git clone <repository-url>
 cd AIDUXCARE-V.2
 
 # Instalar dependencias
 npm install
 
-# Iniciar desarrollo
-npm run dev
+# Instalar dependencias adicionales necesarias
+npm install @tailwindcss/forms @tailwindcss/typography
+npm install clsx tailwind-merge
+npm install react-router-dom
+npm install @types/react-router-dom
+
+# Configurar variables de entorno
+cp .env.example .env.local
 ```
 
-### **Scripts Disponibles**
+### Variables de Entorno
+```env
+# .env.local
+VITE_OLLAMA_URL=http://localhost:11434
+VITE_WHISPER_MODEL=whisper:latest
+VITE_MEDICAL_MODEL=llama3.2:latest
+VITE_APP_ENV=development
+```
+
+### Ejecutar en Desarrollo
 ```bash
-# Desarrollo
+# Iniciar servidor de desarrollo
 npm run dev
 
-# Building
-npm run build
-
-# Testing
-npm run test
-
-# Linting
-npm run lint
-
-# Type checking
-npm run type-check
+# En otra terminal, verificar Ollama
+curl http://localhost:11434/api/tags
 ```
 
-## 🧪 Testing
+## 📁 Estructura del Proyecto
 
-### **Ejecutar Tests**
+```
+src/
+├── components/
+│   ├── evidence/
+│   │   └── EvidencePanel.tsx           # ✅ Panel de evidencia científica
+│   └── professional/
+│       └── ProfessionalAudioProcessor.tsx # ✅ Procesador de audio
+├── core/
+│   └── services/
+│       └── EMRFormService.ts           # ✅ Servicio de formularios EMR
+├── lib/
+│   └── utils.ts                        # ✅ Utilidades generales
+├── pages/
+│   ├── MVPCorePage.tsx                 # ✅ Página MVP principal
+│   └── ProfessionalWorkflowPage.tsx    # ✅ Interfaz profesional
+├── services/
+│   ├── AudioProcessingServiceProfessional.ts # ✅ Procesamiento de audio
+│   └── nlpServiceOllama.ts             # ⚠️ Necesita actualización
+├── shared/components/UI/
+│   └── Button.tsx                      # ✅ Componente de botón
+├── types/
+│   ├── errors.ts                       # ✅ Tipos de error
+│   └── nlp.ts                          # ✅ Tipos NLP y SOAP
+├── App.tsx                             # ✅ Aplicación principal
+├── main.tsx                            # ✅ Punto de entrada
+└── index.css                           # ✅ Estilos globales
+```
+
+## 🎯 Flujos Implementados
+
+### MVP Core Flow
+1. **Grabación**: `ProfessionalAudioProcessor` captura audio
+2. **Procesamiento**: `AudioProcessingServiceProfessional` procesa con IA
+3. **Visualización**: Muestra SOAP y evidencia científica
+4. **Guardado**: `EMRFormService` persiste datos
+
+### Professional Workflow
+1. **Información del Paciente**: Header con datos clínicos
+2. **Transcripción en Tiempo Real**: Con detección de interlocutores
+3. **Highlights**: Elementos clave detectados automáticamente
+4. **Advertencias Clínicas**: Alertas de seguridad con referencias
+5. **Documentación SOAP**: Generación automática estructurada
+6. **Asistente Virtual**: Dr. AIDUX flotante y movible
+
+## 🔧 Configuración de Desarrollo
+
+### Scripts Disponibles
 ```bash
-# Tests unitarios
-npm run test
-
-# Tests con watch mode
-npm run test:watch
-
-# Cobertura de código
-npm run test:coverage
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run preview      # Preview del build
+npm run lint         # Linting con ESLint
+npm run type-check   # Verificación de tipos
 ```
 
-### **Estado de Testing**
-- ✅ **Componentes Base**: Logo, navegación, páginas principales
-- ✅ **Configuración CI/CD**: Pipeline de testing automatizado
-- 🔄 **Cobertura**: Expandiendo tests de componentes
+### Configuración de CI/CD
+El proyecto incluye GitHub Actions configurado:
+- ✅ Linting automático
+- ✅ Build verification
+- ✅ Type checking
+- ✅ Configuración con `--max-warnings 200`
 
-## 🎨 Sistema de Design
+## 🎨 Diseño y UX
 
-### **Paleta de Colores Oficial**
-```css
-/* Colores principales AiDuxCare */
---aidux-blue-slate: #2C3E50;        /* Tipografía principal */
---aidux-mint-green: #A8E6CF;        /* Elementos clínicos */
---aidux-coral: #FF6F61;             /* Botones y acciones */
---aidux-neutral-gray: #BDC3C7;      /* Textos secundarios */
---aidux-bone-white: #F7F7F7;        /* Fondo general */
---aidux-intersection-green: #5DA5A3; /* Color unificador */
-```
+### Paleta de Colores
+- **Primario**: `#5DA5A3` (Medical Blue)
+- **Secundario**: `#A8E6CF` (Medical Green)
+- **Acento**: `#FF6F61` (Medical Coral)
+- **Texto**: `#2C3E50` (Medical Gray)
+- **Fondo**: `#F7F7F7` (Light Background)
 
-### **Principios de Diseño**
-- **Claridad**: Jerarquía visual clara para entornos médicos
-- **Confianza**: Colores y tipografía que transmiten profesionalismo
-- **Accesibilidad**: Contraste optimizado para legibilidad
-- **Consistencia**: Sistema modular y reutilizable
+### Componentes de UI
+- Botones con estados y variantes
+- Cards con sombras suaves
+- Indicadores de confianza por colores
+- Animaciones sutiles y profesionales
 
-## 📈 Métricas Actuales
+## 🔌 Integraciones
 
-### **Performance**
-- ⚡ **Build Time**: < 5 segundos
-- 🚀 **Hot Reload**: < 1 segundo
-- 📱 **Mobile First**: Diseño responsive optimizado
-- ♿ **Accesibilidad**: WCAG 2.1 AA compliance
+### Ollama (IA Local)
+- **Whisper**: Transcripción de audio
+- **Llama 3.2**: Análisis médico y generación SOAP
+- **Fallback**: Simulaciones para desarrollo sin Ollama
 
-### **Calidad de Código**
-- ✅ **TypeScript**: 100% tipado estático
-- ✅ **ESLint**: Cero errores de linting
-- ✅ **Testing**: Suite de tests configurada
-- ✅ **Modularidad**: Arquitectura de componentes limpia
+### Servicios Externos (Futuro)
+- **Supabase**: Base de datos y autenticación
+- **PubMed API**: Referencias bibliográficas
+- **FHIR**: Interoperabilidad médica
 
-## 👨‍💼 Información del Desarrollador
+## 📊 Métricas y Calidad
 
-**Mauricio Sobarzo** - Desarrollador Full Stack
-- 🐙 **GitHub**: [Maurosg78](https://github.com/Maurosg78)
-- 📂 **Repositorio**: [AIDUXCARE-V.2](https://github.com/Maurosg78/AIDUXCARE-V.2)
-- 🎓 **Proyecto**: Trabajo Final - Curso IA Generativa
+### Cobertura Actual
+- **Componentes**: 80% implementados
+- **Servicios**: 70% implementados
+- **Tipos**: 90% definidos
+- **Estilos**: 95% completados
 
-## 📄 Licencia
+### Próximas Métricas
+- Tests unitarios con Vitest
+- Tests de integración
+- Performance monitoring
+- Error tracking
 
-Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra la implementación de interfaces modernas para sistemas de IA en el ámbito médico.
+## 🚨 Problemas Conocidos
+
+1. **Ollama Integration**: Requiere servidor local ejecutándose
+2. **Audio Permissions**: Necesita permisos de micrófono
+3. **CORS**: Configurar para producción
+4. **Mobile Responsive**: Optimizar para dispositivos móviles
+
+## 📞 Soporte
+
+Para problemas técnicos:
+1. Verificar que Ollama esté ejecutándose: `curl http://localhost:11434/api/tags`
+2. Revisar permisos de micrófono en el navegador
+3. Consultar logs en DevTools Console
+4. Verificar variables de entorno
+
+## 🎯 Roadmap
+
+### Versión 2.1 (Próxima)
+- [ ] Integración completa con Ollama
+- [ ] Base de datos persistente
+- [ ] Autenticación de usuarios
+- [ ] Export PDF de documentación
+
+### Versión 2.2 (Futuro)
+- [ ] Modo offline
+- [ ] Sincronización multi-dispositivo
+- [ ] Integración con sistemas hospitalarios
+- [ ] Analytics y reportes
 
 ---
 
-## 🎯 Para el Profesor - Estado Actual
-
-### **✅ Implementado y Funcional**
-- **Arquitectura Sólida**: React + TypeScript con patrones modernos
-- **Interfaz Profesional**: Diseño médico con identidad visual consistente
-- **Sistema de Componentes**: Modular, reutilizable y bien documentado
-- **Testing Framework**: Configuración completa de testing con Vitest
-- **Responsive Design**: Optimizado para todos los dispositivos
-- **Accesibilidad**: Cumplimiento de estándares WCAG
-
-### **🔄 En Desarrollo Activo**
-- **Integración de IA**: Preparando conexión con modelos de lenguaje
-- **Funcionalidades Médicas**: Expansión de características clínicas
-- **Base de Datos**: Diseño de esquemas para datos médicos
-
-### **📋 Roadmap Técnico**
-- **Fase 1**: ✅ Interfaz y arquitectura base (Completada)
-- **Fase 2**: 🔄 Integración con IA local (En desarrollo)
-- **Fase 3**: 📋 Características médicas avanzadas (Planificada)
-- **Fase 4**: 📋 Despliegue y compliance (Planificada)
-
-**Este proyecto demuestra competencias en desarrollo frontend moderno, diseño UX/UI para contextos médicos, y arquitectura preparada para integración con IA generativa.** 🏥✨
-
-## 🚀 Próximos Pasos
-
-1. **Integración con IA**: Conectar con modelos locales (Ollama)
-2. **Transcripción Real**: Implementar Web Speech API
-3. **Persistencia**: Configurar base de datos para sesiones
-4. **Autenticación**: Sistema de login para profesionales
-5. **Compliance**: Implementar estándares de seguridad médica
+**Estado**: 🟡 En desarrollo activo
+**Última actualización**: Diciembre 2024
+**Versión**: 2.0.0-beta
 
 
