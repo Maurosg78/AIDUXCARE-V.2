@@ -58,7 +58,7 @@ vi.mock('../../../src/core/agent/AgentExecutor', async () => {
 
 // Mock de AgentContextBuilder.buildAgentContext
 vi.mock('../../../src/core/agent/AgentContextBuilder', () => ({
-  buildAgentContext: vi.fn().mockImplementation((mcpContext) => {
+  buildAgentContext: vi.fn().mockImplementation(() => {
     // Siempre devolver un contexto válido
     return {
       visitId: 'visit-123',
@@ -92,49 +92,7 @@ describe('runClinicalAgent', () => {
     vi.useRealTimers();
   });
 
-  // Datos de prueba: contexto MCP ficticio válido
-  const validMcpContext: MCPContext = {
-    contextual: {
-      source: 'test',
-      data: [
-        {
-          id: 'ctx-1',
-          timestamp: '2023-01-01T12:00:00Z',
-          type: 'contextual',
-          content: 'Prueba contextual'
-        }
-      ]
-    },
-    persistent: {
-      source: 'test',
-      data: [
-        {
-          id: 'per-1',
-          timestamp: '2023-01-01T12:00:00Z',
-          type: 'persistent',
-          content: 'Prueba persistente'
-        }
-      ]
-    },
-    semantic: {
-      source: 'test',
-      data: [
-        {
-          id: 'sem-1',
-          timestamp: '2023-01-01T12:00:00Z',
-          type: 'semantic',
-          content: 'Prueba semántica'
-        }
-      ]
-    }
-  };
 
-  // Datos de prueba: contexto MCP vacío
-  const emptyMcpContext: MCPContext = {
-    contextual: { source: 'test', data: [] },
-    persistent: { source: 'test', data: [] },
-    semantic: { source: 'test', data: [] }
-  };
 
   it('debería completar el flujo completo con un contexto válido', async () => {
     const result = await runClinicalAgent('visit-123');

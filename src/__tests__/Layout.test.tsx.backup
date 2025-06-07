@@ -85,9 +85,12 @@ describe('Layout Component', () => {
       </BrowserRouter>
     );
 
-    // Verificar opciones de menú
-    expect(screen.getByText('Inicio')).toBeInTheDocument();
-    expect(screen.getByText('Cerrar sesión')).toBeInTheDocument();
+    // Verificar opciones de menú principales que están siempre visibles
+    expect(screen.getByText('🎯 MVP Core')).toBeInTheDocument();
+    expect(screen.getByText('Calendario')).toBeInTheDocument();
+    expect(screen.getByText('Pacientes')).toBeInTheDocument();
+    expect(screen.getByText('Notas')).toBeInTheDocument();
+    expect(screen.getByText('Demo')).toBeInTheDocument();
   });
 
   it('contiene un botón de logout', () => {

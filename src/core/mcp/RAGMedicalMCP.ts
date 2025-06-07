@@ -124,7 +124,7 @@ export class PubMedSearchService {
               id: `pubmed_${uid}`,
               title: article.title || '',
               abstract: await this.getAbstract(uid), // Obtener abstract separadamente
-              authors: article.authors?.map((a: any) => a.name) || [],
+              authors: article.authors?.map((a: { name: string }) => a.name) || [],
               journal: article.fulljournalname || article.source || '',
               publication_date: article.pubdate || '',
               doi: article.doi || undefined,

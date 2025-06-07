@@ -1,4 +1,3 @@
-// import type { SuggestionType } from './agent'; // Si no se usa, eliminar o comentar
 import { SuggestionField } from './agent';
 
 /**

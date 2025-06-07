@@ -11,7 +11,7 @@ vi.mock('../../../core/auth/supabaseClient', () => ({
 }));
 
 // Aplicamos un tipo más genérico para evitar problemas de linter
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type PostgrestMock = any;
 
 describe('AgentContextBuilder', () => {

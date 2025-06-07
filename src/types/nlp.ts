@@ -37,12 +37,38 @@ export interface ClinicalEntity {
 // === NOTAS SOAP ===
 
 export interface SOAPNotes {
-  subjective: string;   // S: Lo que reporta el paciente
-  objective: string;    // O: Observaciones objetivas del fisioterapeuta
-  assessment: string;   // A: Análisis/evaluación profesional
-  plan: string;         // P: Plan de tratamiento
-  generated_at: Date;
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
   confidence_score?: number;
+  generated_at?: string;
+  visit_id?: string;
+  patient_id?: string;
+  professional_id?: string;
+  medical_terms?: MedicalTerm[];
+  clinical_insights?: ClinicalInsight[];
+}
+
+export interface MedicalTerm {
+  term: string;
+  category: 'symptom' | 'diagnosis' | 'treatment' | 'medication' | 'anatomy' | 'procedure';
+  confidence: number;
+  position?: number;
+  synonyms?: string[];
+  icd10_code?: string;
+  snomed_code?: string;
+}
+
+export interface ClinicalInsight {
+  id: string;
+  type: 'risk_factor' | 'contraindication' | 'recommendation' | 'warning' | 'observation';
+  description: string;
+  confidence: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  evidence_level?: 'I' | 'II' | 'III' | 'IV' | 'V';
+  references?: string[];
+  actionable: boolean;
 }
 
 // === TRANSCRIPCIÓN PROCESADA ===
@@ -298,4 +324,198 @@ export const CONFIDENCE_THRESHOLDS = {
   HIGH: 0.8,
   MEDIUM: 0.6,
   LOW: 0.3
-} as const; 
+} as const;
+
+export interface TranscriptionSegment {
+  id: string;
+  speaker: 'professional' | 'patient' | 'unknown';
+  start_time: number;
+  end_time: number;
+  text: string;
+  confidence: number;
+  language?: string;
+  medical_terms?: MedicalTerm[];
+}
+
+export interface NLPAnalysisResult {
+  transcription: string;
+  segments: TranscriptionSegment[];
+  medical_terms: MedicalTerm[];
+  clinical_insights: ClinicalInsight[];
+  soap_notes: SOAPNotes;
+  confidence_score: number;
+  processing_time: number;
+  language_detected: string;
+  quality_metrics: QualityMetrics;
+}
+
+export interface QualityMetrics {
+  audio_quality: 'excellent' | 'good' | 'fair' | 'poor';
+  transcription_accuracy: number;
+  medical_term_coverage: number;
+  soap_completeness: number;
+  clinical_relevance: number;
+}
+
+export interface EntityExtraction {
+  entities: MedicalEntity[];
+  relationships: EntityRelationship[];
+  confidence: number;
+}
+
+export interface MedicalEntity {
+  id: string;
+  text: string;
+  label: string;
+  start: number;
+  end: number;
+  confidence: number;
+  normalized_form?: string;
+  ontology_id?: string;
+}
+
+export interface EntityRelationship {
+  source_entity: string;
+  target_entity: string;
+  relationship_type: string;
+  confidence: number;
+}
+
+export interface ClinicalContext {
+  specialty: string;
+  patient_demographics?: {
+    age?: number;
+    gender?: string;
+    conditions?: string[];
+  };
+  session_type: 'initial_evaluation' | 'follow_up' | 'treatment' | 'discharge';
+  previous_notes?: SOAPNotes[];
+  treatment_goals?: string[];
+}
+
+export interface NLPProcessingOptions {
+  language: 'es' | 'en' | 'auto';
+  medical_specialty?: string;
+  include_entity_extraction: boolean;
+  include_clinical_insights: boolean;
+  soap_format: 'standard' | 'detailed' | 'brief';
+  confidence_threshold: number;
+  context?: ClinicalContext;
+}
+
+/**
+ * Utilidades para trabajar con tipos NLP
+ */
+export class NLPUtils {
+  /**
+   * Validar completitud de notas SOAP
+   */
+  static validateSOAPCompleteness(soap: SOAPNotes): {
+    isComplete: boolean;
+    missingFields: string[];
+    completenessScore: number;
+  } {
+    const requiredFields = ['subjective', 'objective', 'assessment', 'plan'];
+    const missingFields = requiredFields.filter(field => 
+      !soap[field as keyof SOAPNotes] || 
+      (soap[field as keyof SOAPNotes] as string).trim().length === 0
+    );
+
+    const completenessScore = (requiredFields.length - missingFields.length) / requiredFields.length;
+
+    return {
+      isComplete: missingFields.length === 0,
+      missingFields,
+      completenessScore
+    };
+  }
+
+  /**
+   * Calcular puntuación de confianza promedio
+   */
+  static calculateAverageConfidence(terms: MedicalTerm[]): number {
+    if (terms.length === 0) return 0;
+    const sum = terms.reduce((acc, term) => acc + term.confidence, 0);
+    return sum / terms.length;
+  }
+
+  /**
+   * Filtrar términos médicos por confianza
+   */
+  static filterTermsByConfidence(
+    terms: MedicalTerm[], 
+    threshold: number = 0.7
+  ): MedicalTerm[] {
+    return terms.filter(term => term.confidence >= threshold);
+  }
+
+  /**
+   * Agrupar términos por categoría
+   */
+  static groupTermsByCategory(terms: MedicalTerm[]): Record<string, MedicalTerm[]> {
+    return terms.reduce((groups, term) => {
+      const category = term.category;
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(term);
+      return groups;
+    }, {} as Record<string, MedicalTerm[]>);
+  }
+
+  /**
+   * Extraer insights críticos
+   */
+  static getCriticalInsights(insights: ClinicalInsight[]): ClinicalInsight[] {
+    return insights.filter(insight => 
+      insight.severity === 'critical' || insight.severity === 'high'
+    );
+  }
+
+  /**
+   * Formatear duración de segmento
+   */
+  static formatSegmentDuration(segment: TranscriptionSegment): string {
+    const duration = segment.end_time - segment.start_time;
+    const minutes = Math.floor(duration / 60);
+    const seconds = Math.floor(duration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Generar resumen de análisis
+   */
+  static generateAnalysisSummary(result: NLPAnalysisResult): {
+    totalTerms: number;
+    highConfidenceTerms: number;
+    criticalInsights: number;
+    soapCompleteness: number;
+    overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  } {
+    const totalTerms = result.medical_terms.length;
+    const highConfidenceTerms = this.filterTermsByConfidence(result.medical_terms, 0.8).length;
+    const criticalInsights = this.getCriticalInsights(result.clinical_insights).length;
+    const soapValidation = this.validateSOAPCompleteness(result.soap_notes);
+
+    // Calcular calidad general
+    const qualityScore = (
+      result.confidence_score * 0.3 +
+      soapValidation.completenessScore * 0.3 +
+      result.quality_metrics.clinical_relevance * 0.4
+    );
+
+    let overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+    if (qualityScore >= 0.9) overallQuality = 'excellent';
+    else if (qualityScore >= 0.7) overallQuality = 'good';
+    else if (qualityScore >= 0.5) overallQuality = 'fair';
+    else overallQuality = 'poor';
+
+    return {
+      totalTerms,
+      highConfidenceTerms,
+      criticalInsights,
+      soapCompleteness: soapValidation.completenessScore,
+      overallQuality
+    };
+  }
+} 

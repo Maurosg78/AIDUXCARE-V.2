@@ -8,6 +8,7 @@ const Layout = () => {
   const location = useLocation();
   
   const navigation = [
+    { name: '🎯 MVP Core', href: '/mvp-core', icon: 'target' },
     { name: 'Calendario', href: '/professional-workflow', icon: 'calendar' },
     { name: 'Pacientes', href: '/patients', icon: 'users' },
     { name: 'Notas', href: '/notes', icon: 'document' },
@@ -65,6 +66,11 @@ const Layout = () => {
                   {item.icon === 'microphone' && (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                    </svg>
+                  )}
+                  {item.icon === 'target' && (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                   )}
                   <span>{item.name}</span>

@@ -24,14 +24,24 @@ export default defineConfig({
       "@headlessui/react": path.resolve(__dirname, "./src/lib/headless-ui.tsx"),
       "@tanstack/react-virtual": path.resolve(__dirname, "./src/lib/tanstack-virtual-mock.ts"),
       "use-sync-external-store": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts"),
-      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
+      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts"),
+      "@/components": path.resolve(__dirname, "./src/components"),
+      "@/pages": path.resolve(__dirname, "./src/pages"),
+      "@/services": path.resolve(__dirname, "./src/services"),
+      "@/types": path.resolve(__dirname, "./src/types"),
+      "@/lib": path.resolve(__dirname, "./src/lib"),
+      "@/shared": path.resolve(__dirname, "./src/shared"),
+      "@/core": path.resolve(__dirname, "./src/core"),
     }
   },
   // Mejorar la configuración de dependencias
   optimizeDeps: {
     include: [
       '@tanstack/react-virtual',
-      '@supabase/supabase-js'
+      '@supabase/supabase-js',
+      'react',
+      'react-dom',
+      'react-router-dom'
     ],
     esbuildOptions: {
       define: {
@@ -41,28 +51,50 @@ export default defineConfig({
   },
   // Configuración del servidor de desarrollo
   server: {
-    port: 5174,
+    port: 3000,
     strictPort: false,
     open: true,
-    host: true
+    host: true,
+    cors: true,
+    proxy: {
+      // Proxy para Ollama en desarrollo
+      '/api/ollama': {
+        target: 'http://localhost:11434',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ollama/, '/api'),
+      },
+    },
   },
   // Optimización del build
   build: {
-    sourcemap: false,
+    outDir: 'dist',
+    sourcemap: true,
     // Optimizaciones de bundle
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['clsx', 'tailwind-merge'],
+        },
       }
     },
     // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
-    minify: 'esbuild',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     target: 'esnext'
   },
   define: {
     // Eliminar referencias a service workers que causan errores
     'self': 'globalThis',
-    'global': 'globalThis'
+    'global': 'globalThis',
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   }
 });

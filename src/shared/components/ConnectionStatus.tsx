@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import supabase from '@/core/auth/supabaseClient';
-// import { testDirectConnection } from '@/core/auth/directClient';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 interface ErrorWithMessage {
