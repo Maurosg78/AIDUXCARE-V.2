@@ -89,14 +89,14 @@ export const WelcomePage: React.FC = () => {
 
           {/* Título Principal - Comunicación de Valor Dual */}
           <h1 
-            className="text-7xl md:text-8xl font-thin mb-6 leading-none tracking-tight"
+            className="text-5xl md:text-6xl font-light mb-6 leading-tight tracking-tight"
             style={{ color: '#2C3E50' }}
           >
             EMR Inteligente
           </h1>
           
           <h2 
-            className="text-6xl md:text-7xl font-medium mb-12 leading-none"
+            className="text-4xl md:text-5xl font-medium mb-10 leading-tight"
             style={{ 
               background: 'linear-gradient(135deg, #5DA5A3, #A8E6CF)', 
               WebkitBackgroundClip: 'text', 
@@ -109,7 +109,7 @@ export const WelcomePage: React.FC = () => {
 
           {/* Propuesta de Valor Profesional */}
           <p 
-            className="text-2xl mb-20 max-w-4xl mx-auto leading-relaxed font-light"
+            className="text-xl mb-16 max-w-3xl mx-auto leading-relaxed"
             style={{ color: '#6B7280' }}
           >
             La primera plataforma que une gestión inteligente de historiales médicos con 
@@ -184,10 +184,10 @@ export const WelcomePage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold mb-6" style={{ color: '#2C3E50' }}>
+              <h3 className="text-xl font-semibold mb-4" style={{ color: '#2C3E50' }}>
                 Transcripción Inteligente
               </h3>
-              <p className="text-lg leading-relaxed" style={{ color: '#6B7280' }}>
+              <p className="text-base leading-relaxed" style={{ color: '#6B7280' }}>
                 Captura automática de sesiones clínicas con detección de highlights en tiempo real
               </p>
             </div>
@@ -212,10 +212,10 @@ export const WelcomePage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold mb-6" style={{ color: '#2C3E50' }}>
+              <h3 className="text-xl font-semibold mb-4" style={{ color: '#2C3E50' }}>
                 SOAP Automático
               </h3>
-              <p className="text-lg leading-relaxed" style={{ color: '#6B7280' }}>
+              <p className="text-base leading-relaxed" style={{ color: '#6B7280' }}>
                 Generación inteligente de documentación clínica siguiendo estándares profesionales
               </p>
             </div>
@@ -240,10 +240,10 @@ export const WelcomePage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold mb-6" style={{ color: '#2C3E50' }}>
+              <h3 className="text-xl font-semibold mb-4" style={{ color: '#2C3E50' }}>
                 Privacidad Total
               </h3>
-              <p className="text-lg leading-relaxed" style={{ color: '#6B7280' }}>
+              <p className="text-base leading-relaxed" style={{ color: '#6B7280' }}>
                 Almacenamiento local seguro sin comprometer la confidencialidad del paciente
               </p>
             </div>

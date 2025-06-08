@@ -597,19 +597,31 @@ PLAN:
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6 min-h-64">
-                {soapContent ? (
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-gray-900 leading-relaxed">
-                    {soapContent}
-                  </pre>
-                ) : (
-                  <div className="text-center py-12 text-gray-400">
-                    <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p className="text-lg font-medium mb-2">SOAP pendiente de generación</p>
-                    <p className="text-sm">Selecciona highlights y genera la documentación</p>
-                  </div>
-                )}
+                <textarea
+                  value={soapContent || `DOCUMENTACIÓN SOAP MANUAL - ${new Date().toLocaleDateString()}
+Paciente: ${patientData.name} (${patientData.age} años)
+
+SUBJETIVO:
+• [Escribir síntomas y quejas del paciente]
+
+OBJETIVO:
+• [Escribir hallazgos de la evaluación]
+
+EVALUACIÓN:
+• [Escribir diagnóstico y análisis clínico]
+
+PLAN:
+• [Escribir plan de tratamiento]`}
+                  onChange={(e) => setSOAPContent(e.target.value)}
+                  className="w-full h-96 resize-none border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-lg p-4"
+                  style={{ 
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#374151'
+                  }}
+                  placeholder="Escribe aquí tu documentación SOAP..."
+                />
               </div>
 
               {soapContent && (
