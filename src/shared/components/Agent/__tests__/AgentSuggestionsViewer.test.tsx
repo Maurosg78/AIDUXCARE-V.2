@@ -45,24 +45,24 @@ describe('AgentSuggestionsViewer', () => {
   const defaultProps = {
     visitId: 'test-visit-id',
     suggestions: [
-      {
-        id: 'suggestion-1',
+    {
+      id: 'suggestion-1',
         type: 'recommendation' as SuggestionType,
         content: 'Considerar radiografía de tórax',
         field: 'diagnosis' as SuggestionField,
-        sourceBlockId: 'block-1',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
+      sourceBlockId: 'block-1',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
         id: 'suggestion-2',
         type: 'warning' as SuggestionType,
         content: 'Monitorizar presión arterial',
         field: 'vitals' as SuggestionField,
         sourceBlockId: 'block-2',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
     ],
     userId: 'test-user-id',
     patientId: 'test-patient-id',
@@ -145,7 +145,7 @@ describe('AgentSuggestionsViewer', () => {
     fireEvent.click(toggleButton);
 
     // Esperar a que se muestren las sugerencias
-    await waitFor(() => {
+      await waitFor(() => {
       expect(screen.getByTestId(`suggestion-${defaultProps.suggestions[0].id}`)).toBeInTheDocument();
     });
 
@@ -160,8 +160,8 @@ describe('AgentSuggestionsViewer', () => {
 
     // Verificar que se llamó a AuditLogger con el error (CORREGIDO)
     expect(mockAuditLog).toHaveBeenCalledWith(
-      'suggestion_integration_error',
-      expect.objectContaining({
+          'suggestion_integration_error',
+          expect.objectContaining({
         error: 'Error de conexión al integrar la sugerencia',
         patientId: defaultProps.patientId,
         suggestionId: defaultProps.suggestions[0].id,
@@ -169,9 +169,9 @@ describe('AgentSuggestionsViewer', () => {
         suggestionType: defaultProps.suggestions[0].type,
         userId: defaultProps.userId,
         visitId: defaultProps.visitId
-      })
-    );
-  });
+          })
+        );
+      });
 
   it('debe ser accesible', () => {
     render(<AgentSuggestionsViewer {...defaultProps} />);

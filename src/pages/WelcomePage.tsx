@@ -87,12 +87,12 @@ export const WelcomePage: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Navegar a la nueva página completa del paciente
-    navigate('/patient-complete');
+    navigate('/patient-data');
   }, [navigate]);
 
   const handleAccessPortal = useCallback(() => {
-    // Navegar directamente a la página completa del paciente
-    navigate('/patient-complete');
+    // Navegar a la página de datos del paciente (nuevo flujo)
+    navigate('/patient-data');
   }, [navigate]);
 
   return (
