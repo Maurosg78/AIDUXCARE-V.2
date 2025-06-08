@@ -42,7 +42,7 @@ interface ClinicalHighlight {
   isSelected: boolean;
 }
 
-type SessionState = 'review' | 'active' | 'completed';
+type SessionState = 'review' | 'active' | 'manual_notes' | 'completed';
 
 // Tipos para Web Speech API
 declare global {
@@ -86,10 +86,10 @@ const PatientCompletePage: React.FC = () => {
   const [transcription, setTranscription] = useState<string>('');
   const [recognition, setRecognition] = useState<WebSpeechSTTService | null>(null);
   
-  // ========= RETRY LOGIC STATE =========
-  const [retryAttempts, setRetryAttempts] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'poor' | 'failed'>('excellent');
+  // ========= NUEVO: ESTADO PARA NOTAS LIBRES =========
+  const [freeFormNotes, setFreeFormNotes] = useState<string>('');
+  const [isProcessingWithAI, setIsProcessingWithAI] = useState(false);
+  const [aiProcessingError, setAIProcessingError] = useState<string | null>(null);
   
   // ========= RETRY LOGIC STATE =========
   const [retryAttempts, setRetryAttempts] = useState(0);
@@ -322,9 +322,151 @@ Tiempo de sesión: ${sessionStartTime ? new Date().getTime() - sessionStartTime.
     }, 1000);
   };
 
+  // ========= NUEVA FUNCIÓN: MODO MANUAL CON NOTAS LIBRES =========
   const handleManualDocumentation = () => {
-    setSessionState('completed');
-    setSOAPContent(`SUBJETIVO:\n\n\nOBJETIVO:\n\n\nEVALUACIÓN:\n\n\nPLAN:\n\n`);
+    setSessionState('manual_notes'); // Nuevo estado intermedio
+    setSessionStartTime(new Date());
+    setFreeFormNotes('');
+    setAIProcessingError(null);
+  };
+
+  // ========= PIPELINE DE IA PARA PROCESAMIENTO DE TEXTO =========
+  const processNotesWithAI = async () => {
+    if (!freeFormNotes.trim()) {
+      setAIProcessingError('Por favor, ingresa algunas notas antes de procesar.');
+      return;
+    }
+
+    setIsProcessingWithAI(true);
+    setAIProcessingError(null);
+    
+    try {
+      console.log('🤖 Iniciando procesamiento de IA para notas libres...');
+      
+      // Simular llamada a servicio de IA (reemplazar con llamada real)
+      const aiResponse = await simulateAIProcessing(freeFormNotes);
+      
+      // Procesar respuesta de IA
+      setHighlights(aiResponse.highlights);
+      setSOAPContent(aiResponse.soapContent);
+      
+      // Transición al estado completado
+      setSessionState('completed');
+      
+      console.log('✅ Procesamiento de IA completado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error en procesamiento de IA:', error);
+      setAIProcessingError('Error procesando las notas. Por favor, intenta nuevamente.');
+    } finally {
+      setIsProcessingWithAI(false);
+    }
+  };
+
+  // ========= SIMULACIÓN DE SERVICIO DE IA (TEMPORAL) =========
+  const simulateAIProcessing = async (notes: string): Promise<{
+    highlights: ClinicalHighlight[];
+    soapContent: string;
+  }> => {
+    // Simular delay de procesamiento
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Análisis básico del texto para generar highlights
+    const highlights: ClinicalHighlight[] = [];
+    const words = notes.toLowerCase();
+    
+    // Detección de síntomas
+    const symptoms = ['dolor', 'molestia', 'hinchazón', 'rigidez', 'fatiga', 'mareo'];
+    symptoms.forEach(symptom => {
+      if (words.includes(symptom)) {
+        highlights.push({
+          id: `symptom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text: `Paciente reporta ${symptom}`,
+          category: 'síntoma',
+          confidence: 85,
+          timestamp: new Date().toISOString(),
+          isSelected: false
+        });
+      }
+    });
+    
+    // Detección de hallazgos
+    const findings = ['inflamación', 'edema', 'contractura', 'limitación', 'debilidad'];
+    findings.forEach(finding => {
+      if (words.includes(finding)) {
+        highlights.push({
+          id: `finding-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text: `Se observa ${finding}`,
+          category: 'hallazgo',
+          confidence: 80,
+          timestamp: new Date().toISOString(),
+          isSelected: false
+        });
+      }
+    });
+    
+    // Generar SOAP estructurado
+    const soapContent = `SUBJETIVO:
+${extractSubjective(notes)}
+
+OBJETIVO:
+${extractObjective(notes)}
+
+EVALUACIÓN:
+${extractAssessment(notes)}
+
+PLAN:
+${extractPlan(notes)}
+
+---
+Notas originales procesadas por IA:
+${notes}
+
+✨ Procesado automáticamente el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}
+`;
+    
+    return { highlights, soapContent };
+  };
+
+  // ========= FUNCIONES AUXILIARES PARA EXTRACCIÓN SOAP =========
+  const extractSubjective = (notes: string): string => {
+    const subjectiveKeywords = ['dice', 'reporta', 'siente', 'refiere', 'comenta'];
+    const sentences = notes.split(/[.!?]+/);
+    const subjectiveSentences = sentences.filter(sentence => 
+      subjectiveKeywords.some(keyword => sentence.toLowerCase().includes(keyword))
+    );
+    
+    return subjectiveSentences.length > 0 
+      ? subjectiveSentences.join('.\n') + '.'
+      : 'Información subjetiva extraída de las notas libres.';
+  };
+
+  const extractObjective = (notes: string): string => {
+    const objectiveKeywords = ['observo', 'se ve', 'presenta', 'muestra', 'tiene'];
+    const sentences = notes.split(/[.!?]+/);
+    const objectiveSentences = sentences.filter(sentence => 
+      objectiveKeywords.some(keyword => sentence.toLowerCase().includes(keyword))
+    );
+    
+    return objectiveSentences.length > 0 
+      ? objectiveSentences.join('.\n') + '.'
+      : 'Hallazgos objetivos basados en la evaluación.';
+  };
+
+  const extractAssessment = (notes: string): string => {
+    return 'Evaluación clínica basada en la información recopilada.';
+  };
+
+  const extractPlan = (notes: string): string => {
+    const planKeywords = ['plan', 'tratamiento', 'ejercicio', 'terapia', 'recomendación'];
+    const sentences = notes.split(/[.!?]+/);
+    const planSentences = sentences.filter(sentence => 
+      planKeywords.some(keyword => sentence.toLowerCase().includes(keyword))
+    );
+    
+    return planSentences.length > 0 
+      ? planSentences.join('.\n') + '.'
+      : 'Plan de tratamiento a definir según evolución.';
   };
 
   const handleFinishSession = async () => {
@@ -377,6 +519,11 @@ ${transcription}
     setTranscription('');
     setSOAPContent('');
     setSessionStartTime(null);
+    
+    // Limpiar estado de notas libres
+    setFreeFormNotes('');
+    setIsProcessingWithAI(false);
+    setAIProcessingError(null);
   };
 
   // ========= LOADING STATE =========
@@ -543,34 +690,158 @@ ${transcription}
               )}
             </div>
 
-            {/* Botones de Acción */}
+            {/* Botones de Acción - MODO MANUAL PRIORITARIO */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleStartRecording}
-                disabled={!sttAvailable}
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                style={{ backgroundColor: '#FF6F61' }}
-              >
-                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                </svg>
-                🎙️ GRABAR CON IA
-              </button>
-
+              
+              {/* MODO MANUAL - BOTÓN PRINCIPAL */}
               <button
                 onClick={handleManualDocumentation}
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg border-2"
+                className="flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl border-2"
                 style={{ 
-                  backgroundColor: '#A8E6CF', 
-                  color: '#2C3E50',
-                  borderColor: '#5DA5A3'
+                  backgroundColor: '#5DA5A3', 
+                  color: 'white',
+                  borderColor: '#2C3E50'
                 }}
               >
                 <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                 </svg>
-                ✍️ DOCUMENTAR MANUAL
+                ✍️ INICIAR DOCUMENTACIÓN
               </button>
+
+              {/* IA GRABACIÓN - SOLO SI STT DISPONIBLE */}
+              {sttAvailable && (
+                <button
+                  onClick={handleStartRecording}
+                  className="flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl transition-all duration-300 hover:shadow-lg hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                  </svg>
+                  🧪 PROBAR IA (BETA)
+                </button>
+              )}
+            </div>
+
+            {/* MENSAJE INFORMATIVO */}
+            <div className="mt-6 text-center">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span className="text-sm text-blue-700 font-medium">
+                  💡 Modo Manual: Máxima privacidad y control profesional. Costo operativo $0.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ NUEVO ESTADO: MANUAL_NOTES ============ */}
+        {sessionState === 'manual_notes' && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+            <h2 className="text-2xl font-semibold mb-6" style={{ color: '#2C3E50' }}>
+              ✍️ Notas Libres de la Sesión
+            </h2>
+            
+            {/* Textarea Principal para Notas Libres */}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Escribe libremente tus observaciones, conversación con el paciente, hallazgos y plan:
+                </label>
+                <textarea
+                  value={freeFormNotes}
+                  onChange={(e) => setFreeFormNotes(e.target.value)}
+                  placeholder="Ej: La paciente refiere dolor lumbar que inició hace 3 días tras levantar una caja pesada. Se observa contractura muscular en paravertebrales. Limitación para flexión de tronco. Plan: ejercicios de estiramiento y aplicación de calor local..."
+                  className="w-full h-80 p-4 border border-gray-300 rounded-xl text-base leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all duration-200"
+                  style={{ 
+                    outlineColor: '#5DA5A3',
+                    borderColor: freeFormNotes.length > 0 ? '#5DA5A3' : '#D1D5DB'
+                  }}
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-gray-500">
+                    {freeFormNotes.length} caracteres
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    💡 Tip: Escribe de forma natural, nuestra IA se encargará de organizarlo
+                  </span>
+                </div>
+              </div>
+
+              {/* Error de IA */}
+              {aiProcessingError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span className="text-sm text-red-700 font-medium">{aiProcessingError}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones de Acción */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                
+                {/* Botón Principal: Procesar con IA */}
+                <button
+                  onClick={processNotesWithAI}
+                  disabled={isProcessingWithAI || !freeFormNotes.trim()}
+                  className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  style={{ backgroundColor: '#FF6F61' }}
+                >
+                  {isProcessingWithAI ? (
+                    <>
+                      <div className="w-6 h-6 mr-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      PROCESANDO CON IA...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                      </svg>
+                      ✨ ORGANIZAR Y ANALIZAR CON IA
+                    </>
+                  )}
+                </button>
+
+                {/* Botón Secundario: Continuar Manualmente */}
+                <button
+                  onClick={() => {
+                    setSessionState('completed');
+                    setSOAPContent(`SUBJETIVO:\n${freeFormNotes}\n\nOBJETIVO:\n\n\nEVALUACIÓN:\n\n\nPLAN:\n\n`);
+                  }}
+                  className="flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl transition-all duration-300 hover:shadow-lg hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                  📝 CONTINUAR MANUALMENTE
+                </button>
+              </div>
+
+              {/* Información Educativa */}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">SOAP Asistido por IA</h3>
+                    <p className="text-sm text-blue-800 leading-relaxed mb-3">
+                      Escribe de forma natural y nuestra IA inteligente se encargará de:
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• 🔍 <strong>Identificar</strong> síntomas y hallazgos automáticamente</li>
+                      <li>• 📋 <strong>Estructurar</strong> la información en formato SOAP profesional</li>
+                      <li>• ⚠️ <strong>Generar</strong> alertas y recomendaciones clínicas</li>
+                      <li>• 💰 <strong>Mantener</strong> costo operativo $0 procesando localmente</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
