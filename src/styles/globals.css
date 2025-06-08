@@ -1,0 +1,192 @@
+/* Paleta de Colores Oficial AIDUX - Claridad Clínica */
+:root {
+  /* Colores Oficiales AIDUX */
+  --aidux-blue-slate: #2C3E50;
+  --aidux-mint-green: #A8E6CF;
+  --aidux-coral: #FF6F61;
+  --aidux-intersection-green: #5DA5A3;
+  
+  /* Escala de Grises Profesional (Apple-inspired) */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  
+  /* Tipografía Apple-style */
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  
+  /* Espaciado Profesional */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Shadows Elegantes */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Bordes Profesionales */
+  --border-radius: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-width: 1px;
+  
+  /* Transiciones Suaves */
+  --transition: all 0.2s ease-in-out;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-primary);
+  color: var(--aidux-blue-slate);
+  background-color: var(--gray-50);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Clases Utilitarias Profesionales */
+.text-primary { color: var(--aidux-blue-slate); }
+.text-success { color: var(--aidux-mint-green); }
+.text-warning { color: var(--aidux-coral); }
+.text-accent { color: var(--aidux-intersection-green); }
+
+.bg-primary { background-color: var(--aidux-blue-slate); }
+.bg-success { background-color: var(--aidux-mint-green); }
+.bg-warning { background-color: var(--aidux-coral); }
+.bg-accent { background-color: var(--aidux-intersection-green); }
+
+/* Botones Profesionales */
+.btn-primary {
+  background-color: var(--aidux-intersection-green);
+  color: white;
+  border: none;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #4A8B89;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--aidux-blue-slate);
+  border: var(--border-width) solid var(--gray-300);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: var(--aidux-intersection-green);
+  color: var(--aidux-intersection-green);
+}
+
+/* Inputs Elegantes */
+.input-elegant {
+  width: 100%;
+  padding: var(--space-md);
+  border: var(--border-width) solid var(--gray-300);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-family: var(--font-primary);
+  transition: var(--transition);
+  background-color: white;
+}
+
+.input-elegant:focus {
+  outline: none;
+  border-color: var(--aidux-intersection-green);
+  box-shadow: 0 0 0 3px rgba(93, 165, 163, 0.1);
+}
+
+/* Cards Profesionales */
+.card-elegant {
+  background-color: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: var(--border-width) solid var(--gray-200);
+  padding: var(--space-xl);
+  transition: var(--transition);
+}
+
+.card-elegant:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Texto Profesional */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--aidux-blue-slate);
+  line-height: 1.2;
+  margin-bottom: var(--space-md);
+}
+
+h1 { font-size: 2.5rem; font-weight: 300; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+
+p {
+  color: var(--gray-600);
+  margin-bottom: var(--space-md);
+}
+
+/* Layouts Profesionales */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.page-header {
+  background-color: white;
+  border-bottom: var(--border-width) solid var(--gray-200);
+  padding: var(--space-lg) 0;
+}
+
+/* Estados y Feedback */
+.loading-elegant {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gray-300);
+  border-radius: 50%;
+  border-top-color: var(--aidux-intersection-green);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsivo Elegante */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--space-md);
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+} 
