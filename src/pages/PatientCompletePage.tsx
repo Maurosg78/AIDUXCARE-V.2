@@ -341,23 +341,66 @@ Tiempo de sesión: ${sessionStartTime ? new Date().getTime() - sessionStartTime.
     setAIProcessingError(null);
     
     try {
-      console.log('🤖 Iniciando procesamiento de IA para notas libres...');
+      console.log('🤖 Iniciando procesamiento de IA con Llama 3.2...');
       
-      // Simular llamada a servicio de IA (reemplazar con llamada real)
-      const aiResponse = await simulateAIProcessing(freeFormNotes);
+      // Importar dinámicamente el servicio de procesamiento
+      const { textProcessingService } = await import('../services/TextProcessingService');
       
-      // Procesar respuesta de IA
-      setHighlights(aiResponse.highlights);
-      setSOAPContent(aiResponse.soapContent);
+      // Verificar salud de Ollama antes de procesar
+      const isOllamaHealthy = await textProcessingService.checkOllamaHealth();
+      if (!isOllamaHealthy) {
+        throw new Error('Ollama no está disponible. Verifica que esté ejecutándose en localhost:11434');
+      }
       
-      // Transición al estado completado
+      // Procesar texto con IA real
+      const result = await textProcessingService.processTextToSOAP(freeFormNotes);
+      
+      // Formatear SOAP para el editor
+      const formattedSOAP = `SUBJETIVO:
+${result.soapStructure.subjetivo}
+
+OBJETIVO:
+${result.soapStructure.objetivo}
+
+EVALUACIÓN:
+${result.soapStructure.evaluacion}
+
+PLAN:
+${result.soapStructure.plan}
+
+---
+Notas originales:
+${freeFormNotes}
+
+✨ Procesado por IA en ${result.processingTime}ms - ${new Date().toLocaleString()}`;
+
+      // Actualizar estado con resultados reales
+      setSOAPContent(formattedSOAP);
+      setHighlights(result.highlights);
       setSessionState('completed');
       
-      console.log('✅ Procesamiento de IA completado exitosamente');
+      // Mostrar advertencias si las hay
+      if (result.warnings.length > 0) {
+        console.warn('⚠️ Advertencias clínicas detectadas:', result.warnings);
+      }
+      
+      console.log(`✅ Procesamiento de IA completado en ${result.processingTime}ms`);
       
     } catch (error) {
       console.error('❌ Error en procesamiento de IA:', error);
-      setAIProcessingError('Error procesando las notas. Por favor, intenta nuevamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      // Fallback a simulación si falla la IA real
+      console.log('🔄 Fallback a simulación de IA...');
+      try {
+        const aiResponse = await simulateAIProcessing(freeFormNotes);
+        setHighlights(aiResponse.highlights);
+        setSOAPContent(aiResponse.soapContent);
+        setSessionState('completed');
+        setAIProcessingError(`IA no disponible. Usando análisis local: ${errorMessage}`);
+      } catch (fallbackError) {
+        setAIProcessingError(`Error crítico: ${errorMessage}`);
+      }
     } finally {
       setIsProcessingWithAI(false);
     }
