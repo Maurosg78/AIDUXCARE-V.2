@@ -363,9 +363,9 @@ PLAN:
         {/* NAVEGACIÓN DE ESTADOS */}
         <div className="mt-4 flex space-x-1 bg-gray-100 rounded-lg p-1">
           {[
-            { mode: 'review' as ViewMode, label: '📋 Revisar Historia', icon: '📋' },
-            { mode: 'active' as ViewMode, label: '🎙️ Sesión Activa', icon: '🎙️' },
-            { mode: 'completed' as ViewMode, label: '💾 Finalizar SOAP', icon: '💾' }
+                  { mode: 'review' as ViewMode, label: 'Revisar Historia', icon: 'review' },
+      { mode: 'active' as ViewMode, label: 'Sesión Activa', icon: 'microphone' },
+      { mode: 'completed' as ViewMode, label: 'Finalizar SOAP', icon: 'document' }
           ].map(({ mode, label, icon }) => (
             <button
               key={mode}
@@ -436,7 +436,7 @@ PLAN:
             {/* TRANSCRIPCIÓN EN TIEMPO REAL */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">🎙️ Transcripción en Tiempo Real</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Transcripción en Tiempo Real</h3>
                 <span className={`px-3 py-1 rounded-full text-xs ${
                   isListening ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
                 }`}>
@@ -469,7 +469,7 @@ PLAN:
                           <div className="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">🎙️ Grabación activa</p>
+                      <p className="text-sm text-gray-600 mb-2">Grabación activa</p>
                       <p className="text-xs text-gray-500">Comienza a hablar...</p>
                     </div>
                   </div>
@@ -516,7 +516,7 @@ PLAN:
             {/* HIGHLIGHTS DETECTADOS */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">✨ Highlights Detectados</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Highlights Detectados</h3>
                 <span className="text-sm text-gray-500">{highlights.length} elementos</span>
               </div>
 
@@ -585,7 +585,7 @@ PLAN:
             {/* SOAP GENERADO */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">📋 Documentación SOAP</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Documentación SOAP</h3>
                 <div className="flex items-center space-x-2">
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
                     ✅ Generado automáticamente

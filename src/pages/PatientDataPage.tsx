@@ -97,7 +97,7 @@ export const PatientDataPage: React.FC = () => {
       
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-gray-900 mb-2">
+          <h1 className="text-3xl font-light mb-2" style={{ color: '#2C3E50' }}>
             Nuevo Paciente
           </h1>
           <p className="text-gray-600">
@@ -107,7 +107,7 @@ export const PatientDataPage: React.FC = () => {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
           <div className="space-y-6">
-            <h2 className="text-xl font-medium text-gray-900 mb-6">
+            <h2 className="text-xl font-medium mb-6" style={{ color: '#2C3E50' }}>
               Datos del Paciente
             </h2>
             
@@ -121,7 +121,19 @@ export const PatientDataPage: React.FC = () => {
                   name="nombre"
                   value={patientData.nombre}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg transition-colors"
+                  style={{
+                    outline: 'none',
+                    borderColor: '#E5E7EB'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#5DA5A3';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(93, 165, 163, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#E5E7EB';
+                    e.target.style.boxShadow = 'none';
+                  }}
                   placeholder="Nombre y apellidos"
                   autoFocus
                 />

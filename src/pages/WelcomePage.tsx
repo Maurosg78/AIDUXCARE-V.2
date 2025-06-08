@@ -20,7 +20,7 @@ export const WelcomePage: React.FC = () => {
               <span className="text-white font-bold text-lg">A</span>
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-blue-slate">AiDuxCare</h1>
+              <h1 className="text-xl font-semibold" style={{ color: '#2C3E50' }}>AiDuxCare</h1>
               <p className="text-sm text-gray-500">EMR + IA Clínica</p>
             </div>
           </div>
@@ -28,13 +28,17 @@ export const WelcomePage: React.FC = () => {
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => navigate('/auth')}
-              className="px-4 py-2 text-gray-600 hover:text-blue-slate transition-colors"
+              className="px-4 py-2 text-gray-600 transition-colors"
+              style={{ color: '#6B7280' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#2C3E50'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}
             >
               Acceder
             </button>
             <button 
               onClick={() => navigate('/auth')}
-              className="px-6 py-2 bg-intersection-green text-white rounded-lg hover:bg-opacity-90 transition-all hover:transform hover:scale-105"
+              className="px-6 py-2 text-white rounded-lg hover:bg-opacity-90 transition-all hover:transform hover:scale-105"
+              style={{ backgroundColor: '#5DA5A3' }}
             >
               Comenzar
             </button>
@@ -46,7 +50,7 @@ export const WelcomePage: React.FC = () => {
       <main className="relative px-6 py-20">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge de Credibilidad */}
-          <div className="inline-flex items-center space-x-2 bg-mint-green bg-opacity-20 text-intersection-green px-4 py-2 rounded-full text-sm font-medium mb-8">
+          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium mb-8" style={{ backgroundColor: 'rgba(168, 230, 207, 0.2)', color: '#5DA5A3' }}>
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
@@ -54,10 +58,10 @@ export const WelcomePage: React.FC = () => {
           </div>
 
           {/* Título Principal - Tipografía Apple */}
-          <h1 className="text-5xl md:text-6xl font-light text-blue-slate mb-6 leading-tight">
+          <h1 className="text-5xl md:text-6xl font-light mb-6 leading-tight" style={{ color: '#2C3E50' }}>
             EMR Inteligente
             <br />
-            <span className="bg-gradient-to-r from-intersection-green to-mint-green bg-clip-text text-transparent font-medium">
+            <span className="font-medium" style={{ background: 'linear-gradient(to right, #5DA5A3, #A8E6CF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               + Copiloto Clínico IA
             </span>
           </h1>
@@ -73,16 +77,17 @@ export const WelcomePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <button
               onClick={() => navigate('/auth')}
-              className="px-8 py-4 bg-intersection-green text-white text-lg font-medium rounded-xl hover:bg-opacity-90 transition-all hover:transform hover:scale-105 shadow-lg"
+              className="px-8 py-4 text-white text-lg font-medium rounded-xl hover:bg-opacity-90 transition-all hover:transform hover:scale-105 shadow-lg"
+              style={{ backgroundColor: '#5DA5A3' }}
             >
-              🎯 Probar Demo Interactivo
+              Probar Demo Interactivo
             </button>
             
             <button
               onClick={() => navigate('/auth')} 
               className="px-8 py-4 border-2 border-gray-200 text-blue-slate text-lg font-medium rounded-xl hover:border-intersection-green hover:text-intersection-green transition-all"
             >
-              📋 Acceder al Portal Médico
+              Acceder al Portal Médico
             </button>
           </div>
 
