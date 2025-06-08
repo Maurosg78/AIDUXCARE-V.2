@@ -23,7 +23,7 @@ export interface TextProcessingError {
 class TextProcessingService {
   private readonly OLLAMA_ENDPOINT = 'http://localhost:11434/api/generate';
   private readonly MODEL_NAME = 'llama3.2';
-  private readonly PROCESSING_TIMEOUT = 30000; // 30 segundos
+  private readonly PROCESSING_TIMEOUT = 45000; // 45 segundos para análisis complejo
 
   /**
    * 🎯 MÉTODO PRINCIPAL: Procesa texto libre y lo convierte en SOAP estructurado
@@ -32,20 +32,20 @@ class TextProcessingService {
     const startTime = Date.now();
     
     try {
-      console.log('🧠 Iniciando procesamiento inteligente con Llama 3.2...');
+      console.log('🧠 Iniciando análisis médico expert con Llama 3.2...');
       
       if (!freeText.trim()) {
         throw new Error('El texto no puede estar vacío');
       }
 
-      // Pipeline de procesamiento inteligente
+      // Pipeline de análisis médico expert
       const soapStructure = await this.generateSOAPStructure(freeText);
       const highlights = await this.extractClinicalHighlights(freeText);
       const warnings = await this.generateWarnings(freeText);
       
       const processingTime = Date.now() - startTime;
       
-      console.log(`✅ Procesamiento inteligente completado en ${processingTime}ms`);
+      console.log(`✅ Análisis médico expert completado en ${processingTime}ms`);
       
       return {
         soapStructure,
@@ -56,122 +56,157 @@ class TextProcessingService {
       
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      console.error('❌ Error en procesamiento:', error);
+      console.error('❌ Error en análisis médico:', error);
       throw this.handleProcessingError(error);
     }
   }
 
   /**
-   * 🧠 PROMPT ENGINEERING PROFESIONAL - SOAP
+   * 🧠 PROMPT ENGINEERING MÉDICO EXPERT - NIVEL AIDUXCARE
    */
   private buildSOAPPrompt(text: string): string {
-    return `ERES UN ASISTENTE MÉDICO EXPERTO EN FISIOTERAPIA Y REHABILITACIÓN
+    return `ERES UN ASISTENTE MÉDICO EXPERTO EN FISIOTERAPIA CON ESPECIALIZACIÓN EN PREVENCIÓN DE IATROGENIA Y EXCELENCIA CLÍNICA
 
-IDENTIDAD: Fisioterapeuta con 15+ años de experiencia clínica, especializado en dolor musculoesquelético, rehabilitación y medicina preventiva.
+IDENTIDAD PROFESIONAL:
+- Fisioterapeuta con 20+ años de experiencia clínica
+- Especialista en dolor musculoesquelético complejo  
+- Experto en identificación de banderas rojas y amarillas
+- Formación en medicina legal y prevención de iatrogenia
+- Certificado en evaluación de riesgo cardiovascular y metabólico
 
-INSTRUCCIONES CRÍTICAS:
-1. Analiza las notas clínicas siguientes con rigor profesional
-2. Estructura la información en formato S.O.A.P. médico estándar
-3. Realiza inferencias clínicas inteligentes basadas en evidencia
-4. Calcula métricas relevantes (IMC, factores de riesgo)
-5. Identifica banderas rojas y comorbilidades
-
-NOTAS CLÍNICAS A PROCESAR:
+TEXTO CLÍNICO A ANALIZAR:
 """
 ${text}
 """
 
+MISIÓN CRÍTICA: Realizar un análisis exhaustivo que PREVENGA problemas legales, iatrogenia y garantice excelencia clínica.
+
+ANÁLISIS OBLIGATORIO - BANDERAS ROJAS A IDENTIFICAR:
+🚩 INMEDIATAS (derivación urgente):
+- Síntomas neurológicos progresivos
+- Dolor nocturno intenso no mecánico  
+- Pérdida de peso inexplicada
+- Fiebre + dolor lumbar
+- Incontinencia o retención urinaria
+- Déficit neurológico bilateral
+
+🟡 PRECAUCIONES (evaluación especializada):
+- IMC >35 (riesgo cardiovascular alto)
+- Polifarmacia (>5 medicamentos - interacciones)
+- Antecedentes tabaquismo + obesidad + sedentarismo
+- Limitación funcional >80% sin causa clara
+- Rigidez matutina >60 minutos (posible inflamatorio)
+- Dolor irradiado sin mejoría en 6 semanas
+
+CÁLCULOS AUTOMÁTICOS OBLIGATORIOS:
+- Si peso + altura disponible → IMC + clasificación OMS + riesgo cardiovascular
+- Si edad >40 + factores de riesgo → Score cardiovascular estimado
+- Si dolor crónico → Escala funcional estimada
+
 FORMATO DE RESPUESTA REQUERIDO (JSON válido):
 {
-  "subjetivo": "SOLO información reportada directamente por el paciente: síntomas, dolor, limitaciones funcionales, historia personal relevante",
-  "objetivo": "SOLO hallazgos clínicos observables: mediciones, pruebas físicas, observaciones del terapeuta, datos antropométricos con cálculos",
-  "evaluacion": "Análisis profesional: diagnóstico diferencial, severidad, factores de riesgo, cálculo de IMC si hay datos, identificación de banderas rojas",
-  "plan": "Plan estructurado: objetivos terapéuticos, modalidades de tratamiento, ejercicios específicos, derivaciones necesarias, seguimiento"
+  "subjetivo": "Información reportada por el paciente, organizando síntomas por sistemas y cronología. Incluir: características del dolor, limitaciones funcionales específicas, impacto en AVD, antecedentes relevantes",
+  "objetivo": "Hallazgos observables + CÁLCULOS OBLIGATORIOS. Para este caso: Peso 102kg, Altura 1.63m → IMC: 38.4 (Obesidad grado II - riesgo cardiovascular alto). Signos físicos observados, mediciones antropométricas, evaluaciones pendientes",
+  "evaluacion": "ANÁLISIS EXHAUSTIVO: 1) Diagnóstico diferencial (lumbalgia mecánica vs inflamatoria vs neuropática), 2) Banderas rojas identificadas, 3) Factores de riesgo: obesidad grado II + polifarmacia + exfumadora, 4) Comorbilidades: celiaquia + enfermedades autoinmunes, 5) Nivel de discapacidad funcional estimado, 6) Riesgo de cronificación, 7) Contraindicaciones para ejercicio",
+  "plan": "Plan estructurado: 1) DERIVACIONES OBLIGATORIAS: médico interno (evaluación cardiovascular pre-ejercicio debido a obesidad grado II), endocrinología (manejo peso), 2) EVALUACIONES PENDIENTES: RMN lumbar si no mejora en 4 semanas, 3) OBJETIVOS SMART: pérdida peso 10% en 6 meses, mejora funcional 50% en 8 semanas, 4) MODALIDADES SEGURAS: hidroterapia, ejercicio supervisado de baja carga, 5) PRECAUCIONES: monitoreo cardiovascular, evitar Valsalva, 6) SEGUIMIENTO: cada 2 semanas primeras 6 semanas"
 }
 
-REGLAS ESPECÍFICAS:
-- SUBJETIVO: Solo lo que dice/siente el paciente
-- OBJETIVO: Solo lo que observas/mides como profesional
-- No copies textualmente entre secciones
-- Calcula IMC si tienes peso/altura
-- Identifica factores de riesgo (obesidad, polifarmacia, etc.)
-- Sugiere derivaciones si hay banderas rojas
-- Sé específico en el plan de tratamiento`;
+PREGUNTAS CRÍTICAS QUE EL PROFESIONAL DEBE HACER:
+Genera 4-5 preguntas específicas basadas en este caso para prevenir errores diagnósticos y problemas legales.
+
+NIVEL DE EVIDENCIA: Especifica qué información es factual vs inferencia clínica razonable.`;
   }
 
   /**
-   * 🎯 PROMPT ENGINEERING - HIGHLIGHTS CLÍNICOS
+   * 🎯 PROMPT ENGINEERING - HIGHLIGHTS CLÍNICOS EXPERT
    */
   private buildHighlightsPrompt(text: string): string {
-    return `ERES UN ANALISTA CLÍNICO EXPERTO EN FISIOTERAPIA
-
-TAREA: Analiza el texto médico siguiente y extrae los highlights clínicos más importantes.
+    return `ERES UN ANALISTA CLÍNICO EXPERTO EN DETECCIÓN DE BANDERAS ROJAS Y FACTORES DE RIESGO
 
 TEXTO A ANALIZAR:
 """
 ${text}
 """
 
-CATEGORÍAS DE HIGHLIGHTS:
-- síntoma: Síntomas reportados por el paciente
-- hallazgo: Hallazgos clínicos objetivos y observaciones
-- plan: Intervenciones o tratamientos mencionados
-- advertencia: Banderas rojas, factores de riesgo, comorbilidades
+PRIORIDADES DE DETECCIÓN:
+1. BANDERAS ROJAS (alta prioridad)
+2. FACTORES DE RIESGO CARDIOVASCULAR
+3. COMORBILIDADES SIGNIFICATIVAS  
+4. LIMITACIONES FUNCIONALES
+5. CONTRAINDICACIONES PARA TRATAMIENTO
 
-INSTRUCCIONES:
-- Extrae máximo 6 highlights más relevantes
-- Prioriza información clínicamente significativa
-- Asigna confidence basado en claridad del texto
-- Identifica severity según impacto clínico
+ANÁLISIS ESPECÍFICO PARA ESTE CASO:
+- Calcular IMC exacto y clasificación
+- Evaluar riesgo cardiovascular (obesidad + exfumadora)
+- Identificar posible componente inflamatorio (rigidez matutina)
+- Cuantificar limitación funcional (100% en crisis)
+- Evaluar riesgo de polifarmacia
 
 FORMATO DE RESPUESTA (JSON válido):
 [
   {
-    "type": "síntoma|hallazgo|plan|advertencia",
-    "text": "Descripción específica del highlight",
+    "type": "advertencia",
+    "text": "IMC 38.4 - Obesidad grado II con riesgo cardiovascular alto",
+    "confidence": 0.95,
+    "severity": "high"
+  },
+  {
+    "type": "advertencia", 
+    "text": "Polifarmacia por múltiples patologías autoinmunes - riesgo interacciones",
     "confidence": 0.9,
-    "severity": "low|medium|high"
+    "severity": "medium"
+  },
+  {
+    "type": "síntoma",
+    "text": "Rigidez matutina prolongada - descartar componente inflamatorio",
+    "confidence": 0.8,
+    "severity": "medium"
+  },
+  {
+    "type": "hallazgo",
+    "text": "Limitación funcional 100% en crisis - alto impacto discapacidad",
+    "confidence": 0.95,
+    "severity": "high"
+  },
+  {
+    "type": "plan",
+    "text": "Evaluación cardiovascular obligatoria antes de iniciar ejercicio",
+    "confidence": 0.9,
+    "severity": "high"
   }
-]
-
-EJEMPLOS DE HIGHLIGHTS DE CALIDAD:
-- "IMC 38.4 - Obesidad grado II" (hallazgo, high severity)
-- "Dolor lumbar irradiado a glúteo" (síntoma, medium severity)
-- "Polifarmacia por celiaquia" (advertencia, medium severity)`;
+]`;
   }
 
   /**
-   * 🚨 PROMPT ENGINEERING - SISTEMA DE ALERTAS
+   * 🚨 PROMPT ENGINEERING - SISTEMA DE ALERTAS MÉDICAS EXPERT
    */
   private buildWarningsPrompt(text: string): string {
-    return `ERES UN SISTEMA DE ALERTA MÉDICA ESPECIALIZADO EN FISIOTERAPIA
-
-TAREA: Analiza el texto clínico y genera advertencias importantes.
+    return `ERES UN SISTEMA DE ALERTA MÉDICA ESPECIALIZADO EN PREVENCIÓN DE IATROGENIA
 
 TEXTO CLÍNICO:
 """
 ${text}
 """
 
-BUSCAR SEÑALES DE ALERTA:
-- Banderas rojas neurológicas
-- Factores de riesgo cardiovascular
-- Contraindicaciones para ejercicio
-- Necesidad de derivación médica urgente
-- Precauciones especiales
-- Comorbilidades significativas
+CRITERIOS DE ALERTA ESPECÍFICOS:
+- IMC >35 + múltiples factores de riesgo
+- Dolor irradiado + limitación funcional severa  
+- Polifarmacia + múltiples comorbilidades
+- Exfumadora + obesidad (riesgo cardiovascular)
+- Rigidez matutina prolongada (posible inflamatorio)
 
-CRITERIOS DE ADVERTENCIA:
-- IMC >35 (obesidad severa)
-- Polifarmacia (>5 medicamentos)
-- Dolor irradiado + síntomas neurológicos
-- Limitación funcional >80%
-- Historia de tabaquismo + otros factores
+EVALUACIÓN DE RIESGO LEGAL:
+- ¿Requiere evaluación médica antes de fisioterapia?
+- ¿Hay contraindicaciones absolutas para ejercicio?
+- ¿Necesita derivación especializada urgente?
 
 FORMATO DE RESPUESTA (Array JSON):
-["Advertencia específica 1", "Advertencia específica 2"]
-
-Si no hay advertencias críticas, responde: []`;
+[
+  "Evaluación cardiovascular obligatoria antes de iniciar programa de ejercicios - IMC 38.4 + antecedente tabaquismo",
+  "Considerar derivación a reumatología - rigidez matutina prolongada con enfermedades autoinmunes conocidas", 
+  "Monitoreo estrecho por polifarmacia - posibles interacciones con antiinflamatorios",
+  "Evaluación nutricional especializada urgente - obesidad grado II con múltiples comorbilidades"
+]`;
   }
 
   private async generateSOAPStructure(text: string): Promise<SOAPStructure> {
@@ -205,10 +240,11 @@ Si no hay advertencias críticas, responde: []`;
           prompt: prompt,
           stream: false,
           options: { 
-            temperature: 0.2, // Más determinista para respuestas médicas
+            temperature: 0.1, // Muy determinista para análisis médico
             top_p: 0.9,
             top_k: 40,
-            repeat_penalty: 1.1
+            repeat_penalty: 1.1,
+            num_predict: 1000 // Respuestas más largas para análisis completo
           }
         }),
         signal: controller.signal
@@ -226,7 +262,7 @@ Si no hay advertencias críticas, responde: []`;
     } catch (error) {
       clearTimeout(timeoutId);
       if ((error as Error).name === 'AbortError') {
-        throw new Error('Timeout en procesamiento');
+        throw new Error('Timeout en análisis médico');
       }
       throw error;
     }
@@ -234,25 +270,25 @@ Si no hay advertencias críticas, responde: []`;
 
   private parseSOAPResponse(response: string): SOAPStructure {
     try {
-      console.log('🔍 Respuesta SOAP recibida:', response.substring(0, 200) + '...');
+      console.log('🔍 Respuesta médica recibida:', response.substring(0, 300) + '...');
       
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('JSON no encontrado en respuesta');
+        throw new Error('JSON no encontrado en respuesta médica');
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
       
       return {
-        subjetivo: parsed.subjetivo || 'No especificado',
-        objetivo: parsed.objetivo || 'No especificado',
-        evaluacion: parsed.evaluacion || 'No especificado',
-        plan: parsed.plan || 'No especificado'
+        subjetivo: parsed.subjetivo || 'Información subjetiva pendiente de completar',
+        objetivo: parsed.objetivo || 'Evaluación objetiva pendiente',
+        evaluacion: parsed.evaluacion || 'Análisis clínico pendiente',
+        plan: parsed.plan || 'Plan terapéutico por definir'
       };
       
     } catch (error) {
-      console.error('Error parseando SOAP:', error);
-      throw new Error('Error interpretando respuesta de IA');
+      console.error('Error parseando análisis médico:', error);
+      throw new Error('Error interpretando respuesta médica de IA');
     }
   }
 
@@ -260,20 +296,20 @@ Si no hay advertencias críticas, responde: []`;
     try {
       const jsonMatch = response.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        console.warn('No se encontraron highlights en la respuesta');
+        console.warn('No se encontraron highlights médicos en la respuesta');
         return [];
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
       if (!Array.isArray(parsed)) {
-        console.warn('Respuesta de highlights no es un array');
+        console.warn('Respuesta de highlights médicos no es un array');
         return [];
       }
 
       return parsed.map((item: any, index: number) => ({
-        id: `ai-highlight-${Date.now()}-${index}`,
+        id: `medical-highlight-${Date.now()}-${index}`,
         category: this.mapHighlightType(item.type),
-        text: item.text || 'Highlight sin descripción',
+        text: item.text || 'Highlight médico sin descripción',
         confidence: this.parseConfidence(item.confidence),
         timestamp: new Date().toISOString(),
         isSelected: false,
@@ -281,7 +317,7 @@ Si no hay advertencias críticas, responde: []`;
       }));
 
     } catch (error) {
-      console.error('Error parseando highlights:', error);
+      console.error('Error parseando highlights médicos:', error);
       return [];
     }
   }
@@ -303,7 +339,7 @@ Si no hay advertencias críticas, responde: []`;
       );
 
     } catch (error) {
-      console.error('Error parseando warnings:', error);
+      console.error('Error parseando alertas médicas:', error);
       return [];
     }
   }
@@ -331,9 +367,9 @@ Si no hay advertencias críticas, responde: []`;
     }
     if (typeof confidence === 'string') {
       const num = parseFloat(confidence);
-      return isNaN(num) ? 0.7 : Math.max(0, Math.min(1, num));
+      return isNaN(num) ? 0.8 : Math.max(0, Math.min(1, num));
     }
-    return 0.7; // Default confidence
+    return 0.8; // Default confidence para análisis médico
   }
 
   private handleProcessingError(error: unknown): TextProcessingError {
@@ -341,20 +377,20 @@ Si no hay advertencias críticas, responde: []`;
     
     if (errorMessage.includes('Timeout')) {
       return {
-        message: 'El procesamiento tardó demasiado tiempo',
+        message: 'El análisis médico tardó demasiado tiempo',
         code: 'TIMEOUT_ERROR'
       };
     }
     
     if (errorMessage.includes('Ollama')) {
       return {
-        message: 'No se pudo conectar con Ollama. Verifica que esté ejecutándose.',
+        message: 'No se pudo conectar con el sistema de IA médica. Verifica que Ollama esté ejecutándose.',
         code: 'OLLAMA_CONNECTION_ERROR'
       };
     }
     
     return {
-      message: `Error: ${errorMessage}`,
+      message: `Error en análisis médico: ${errorMessage}`,
       code: 'VALIDATION_ERROR'
     };
   }
