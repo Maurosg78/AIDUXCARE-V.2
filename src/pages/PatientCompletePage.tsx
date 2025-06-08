@@ -136,8 +136,6 @@ export const PatientCompletePage: React.FC = () => {
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [transcription, setTranscription] = useState<string>('');
   const [recognition, setRecognition] = useState<any>(null);
-  const [transcription, setTranscription] = useState<string>('');
-  const [recognition, setRecognition] = useState<any>(null);
 
   // ========= FUNCIONES DE TRANSICIÓN =========
   const handleViewModeChange = useCallback(async (newMode: ViewMode) => {
