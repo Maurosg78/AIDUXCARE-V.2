@@ -21,7 +21,7 @@ if (!supabaseAnonKey) {
 }
 
 // Validar que la URL tenga el formato correcto
-if (!supabaseUrl.includes('supabase.co')) {
+if (!supabaseUrl.includes('supabase.co') && !supabaseUrl.includes('localhost')) {
   throw new Error(`❌ URL de Supabase inválida: ${supabaseUrl}`);
 }
 

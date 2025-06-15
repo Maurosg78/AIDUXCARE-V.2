@@ -1,14 +1,13 @@
 /**
- * 📝 Patient Data Page - AiDuxCare V.2
- * Página para capturar datos básicos del paciente
- * Diseño minimalista estilo Apple
+ * 📝 Patient Data Page - IDENTIDAD VISUAL OFICIAL AIDUXCARE
+ * Página para capturar datos básicos del paciente con diseño oficial
  */
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { localStorageService } from "@/services/LocalStorageService";
-import TherapistHeader from "@/components/TherapistHeader";
+import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 
 interface PatientBasicData {
   nombre: string;
@@ -24,7 +23,7 @@ interface PatientBasicData {
 
 export const PatientDataPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentTherapist } = useAuth();
+  const { currentTherapist, logout } = useAuth();
 
   const [patientData, setPatientData] = useState<PatientBasicData>({
     nombre: "",
@@ -38,8 +37,8 @@ export const PatientDataPage: React.FC = () => {
     antecedentes: ""
   });
 
-  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -49,24 +48,12 @@ export const PatientDataPage: React.FC = () => {
     }));
   };
 
-  const handleNext = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSubmitting(true);
     
-    // Guardar datos del paciente en LocalStorage para transferir a PatientCompletePage
+    // Preparar datos del paciente
     const patientForStorage = {
-      id: `patient_${Date.now()}`,
       name: patientData.nombre,
       age: parseInt(patientData.edad) || 0,
       phone: patientData.telefono,
@@ -75,161 +62,355 @@ export const PatientDataPage: React.FC = () => {
       allergies: patientData.alergias ? patientData.alergias.split(',').map(a => a.trim()) : [],
       medications: patientData.medicamentos ? patientData.medicamentos.split(',').map(m => m.trim()) : [],
       clinicalHistory: patientData.antecedentes,
-      derivadoPor: patientData.derivadoPor,
-      createdAt: new Date().toISOString()
+      derivadoPor: patientData.derivadoPor
     };
 
-    // Guardar en LocalStorage con clave temporal
-    localStorage.setItem('aiduxcare_current_patient', JSON.stringify(patientForStorage));
+    try {
+      // 1. Guardar paciente en la lista permanente usando LocalStorageService
+      const savedPatient = localStorageService.savePatient(patientForStorage);
+      
+      if (!savedPatient) {
+        throw new Error('No se pudo guardar el paciente');
+      }
+
+      console.log('✅ Paciente guardado en lista permanente:', savedPatient);
+
+      // 2. También guardar temporalmente para PatientCompletePage
+      localStorage.setItem('aiduxcare_current_patient', JSON.stringify(savedPatient));
     
-    setTimeout(() => {
-      navigate("/patient-complete");
-    }, 1000);
+      // Mostrar mensaje de éxito
+      setShowSuccess(true);
+      
+      // 3. Navegar a la página de completar datos después de mostrar éxito
+      setTimeout(() => {
+        navigate("/patient-complete");
+      }, 1500);
+
+    } catch (error) {
+      console.error('❌ Error al guardar paciente:', error);
+      setIsSubmitting(false);
+      alert('Error al guardar el paciente. Por favor, inténtalo de nuevo.');
+    }
   };
 
-  const canProceedStep1 = patientData.nombre.trim() && patientData.edad.trim();
-  const canProceedStep2 = patientData.motivoConsulta.trim();
-  const canSubmit = canProceedStep1 && canProceedStep2;
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
+
+  const canSubmit = patientData.nombre.trim() && patientData.email.trim() && patientData.motivoConsulta.trim();
+  const totalPatients = localStorageService.getAllPatients().length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TherapistHeader />
-      
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-light mb-2" style={{ color: '#2C3E50' }}>
-            Nuevo Paciente
-          </h1>
-          <p className="text-gray-600">
-            Información básica para iniciar la atención
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#A8E6CF]/10">
+      {/* Header con identidad oficial */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-[#BDC3C7]/20 sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo y título */}
+            <div className="flex items-center space-x-4">
+              <AiDuxCareLogo size="sm" />
+              <div>
+                <h1 className="text-xl font-bold text-[#2C3E50]">AiDuxCare</h1>
+                <p className="text-sm text-[#2C3E50]/70">EMR Inteligente</p>
+              </div>
+            </div>
+
+            {/* Info del terapeuta y acciones */}
+            <div className="flex items-center space-x-4">
+              {currentTherapist && (
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-medium text-[#2C3E50]">{currentTherapist.name}</p>
+                  <p className="text-xs text-[#2C3E50]/60">Profesional de la salud</p>
+                </div>
+              )}
+              <button
+                onClick={() => navigate('/patients')}
+                className="text-[#5DA5A3] hover:text-[#4A8280] transition-colors"
+                title="Volver a lista de pacientes"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-[#5DA5A3] hover:text-[#4A8280] transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Mensaje de éxito */}
+      {showSuccess && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-[#A8E6CF] border border-[#5DA5A3] text-[#2C3E50] px-6 py-3 rounded-xl shadow-lg animate-bounce">
+          <div className="flex items-center space-x-3">
+            <svg className="w-6 h-6 text-[#5DA5A3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-medium">¡Paciente guardado exitosamente!</span>
+            <span className="text-sm opacity-70">Total: {totalPatients + 1} pacientes</span>
+          </div>
+        </div>
+      )}
+
+      {/* Contenido principal */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header de sección */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#5DA5A3] to-[#4A8280] rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-[#2C3E50]">👤 Nuevo Paciente</h2>
+              <p className="text-[#2C3E50]/70">Información básica para iniciar la atención</p>
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-          <div className="space-y-6">
-            <h2 className="text-xl font-medium mb-6" style={{ color: '#2C3E50' }}>
-              Datos del Paciente
-            </h2>
-            
+        {/* Formulario */}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Datos básicos */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-[#BDC3C7]/20 p-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-[#A8E6CF]/30 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#5DA5A3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-[#2C3E50]">Datos del Paciente</h3>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre Completo *
+              {/* Nombre Completo */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">
+                  Nombre Completo <span className="text-[#FF6F61]">*</span>
                 </label>
                 <input
                   type="text"
                   name="nombre"
                   value={patientData.nombre}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg transition-colors"
-                  style={{
-                    outline: 'none',
-                    borderColor: '#E5E7EB'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#5DA5A3';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(93, 165, 163, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#E5E7EB';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                  placeholder="Nombre y apellidos"
-                  autoFocus
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="Ej: Andrea González"
+                  required
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Edad *
-                </label>
-                <input
-                  type="number"
-                  name="edad"
-                  value={patientData.edad}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Años"
-                  min="1"
-                  max="120"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Motivo de Consulta *
-                </label>
-                <textarea
-                  name="motivoConsulta"
-                  value={patientData.motivoConsulta}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                  placeholder="¿Qué te trae hoy?"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={patientData.telefono}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="+56 9 1234 5678"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+              {/* Email */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">
+                  Email <span className="text-[#FF6F61]">*</span>
                 </label>
                 <input
                   type="email"
                   name="email"
                   value={patientData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="correo@ejemplo.com"
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="andrea.gonzalez@email.com"
+                  required
+                />
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">Teléfono</label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={patientData.telefono}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="Ej: +56 9 8765 4321"
+                />
+              </div>
+
+              {/* Edad */}
+              <div>
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">Edad</label>
+                <input
+                  type="number"
+                  name="edad"
+                  value={patientData.edad}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="Años"
+                  min="0"
+                  max="120"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-100">
-            <button
-              onClick={() => navigate("/")}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Cancelar
-            </button>
+          {/* Información clínica */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-[#BDC3C7]/20 p-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-[#A8E6CF]/30 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#5DA5A3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-[#2C3E50]">Información Clínica</h3>
+            </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit || isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Guardando...</span>
-                </>
-              ) : (
-                <span>Iniciar Atención</span>
-              )}
-            </button>
+            <div className="space-y-6">
+              {/* Motivo de Consulta */}
+              <div>
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">
+                  Motivo de Consulta <span className="text-[#FF6F61]">*</span>
+                </label>
+                <textarea
+                  name="motivoConsulta"
+                  value={patientData.motivoConsulta}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all resize-none"
+                  placeholder="Describe el motivo principal de la consulta..."
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Alergias */}
+                <div>
+                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">Alergias</label>
+                  <input
+                    type="text"
+                    name="alergias"
+                    value={patientData.alergias}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="Separar con comas"
+                  />
+                </div>
+
+                {/* Medicamentos */}
+                <div>
+                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">Medicamentos</label>
+                  <input
+                    type="text"
+                    name="medicamentos"
+                    value={patientData.medicamentos}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="Separar con comas"
+                  />
+                </div>
+              </div>
+
+              {/* Antecedentes Clínicos */}
+              <div>
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">Antecedentes Clínicos</label>
+                <textarea
+                  name="antecedentes"
+                  value={patientData.antecedentes}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all resize-none"
+                  placeholder="Historial médico relevante..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Derivado Por */}
+              <div>
+                <label className="block text-sm font-medium text-[#2C3E50] mb-2">Derivado Por</label>
+                <input
+                  type="text"
+                  name="derivadoPor"
+                  value={patientData.derivadoPor}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white border border-[#BDC3C7]/30 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="Médico o institución que deriva"
+                />
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
-            Los datos se guardan localmente de forma segura
-          </p>
-        </div>
-      </div>
+          {/* Sistema en Vivo */}
+          <div className="bg-gradient-to-r from-[#A8E6CF]/20 to-[#5DA5A3]/10 rounded-2xl p-6 border border-[#5DA5A3]/20">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-[#5DA5A3] rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-[#2C3E50]">Sistema en Vivo</h3>
+            </div>
+            <p className="text-[#2C3E50]/70 mb-4">
+              Los datos se guardarán en la base de datos y estarán disponibles para futuras consultas.
+            </p>
+            <div className="flex items-center space-x-2 text-sm text-[#2C3E50]/60">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Datos guardados localmente</span>
+            </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <button
+              type="button"
+              onClick={() => navigate('/patients')}
+              className="px-6 py-3 bg-white border border-[#BDC3C7]/30 text-[#2C3E50] rounded-xl hover:bg-[#F7F7F7] transition-colors flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <span>Ver Lista de Pacientes</span>
+            </button>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/patients')}
+                className="px-6 py-3 bg-[#BDC3C7]/20 text-[#2C3E50] rounded-xl hover:bg-[#BDC3C7]/30 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmit || isSubmitting}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Guardar Paciente</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Información adicional */}
+          <div className="text-center">
+            <p className="text-sm text-[#2C3E50]/60">
+              📊 Pacientes registrados: <span className="font-semibold">{totalPatients}</span>
+            </p>
+            <p className="text-xs text-[#2C3E50]/50 mt-1">
+              💾 Datos guardados localmente
+            </p>
+          </div>
+        </form>
+      </main>
     </div>
   );
 };

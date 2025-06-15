@@ -383,7 +383,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
             <span className="font-medium">Formato:</span> WebM/Opus
           </div>
           <div>
-            <span className="font-medium">IA:</span> Ollama + Whisper
+                            <span className="font-medium">IA:</span> Google Cloud AI + Whisper
           </div>
         </div>
       </div>

@@ -1,0 +1,1 @@
+const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setFormData(prev => ({ ...prev, [name]: value })); e.target.focus(); }, []);

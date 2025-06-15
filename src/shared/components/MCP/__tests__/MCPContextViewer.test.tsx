@@ -83,7 +83,7 @@ describe('MCPContextViewer', () => {
       <MCPContextViewer
         context={mockContext}
         editable={false}
-        onSave={jest.fn()}
+        onSave={vi.fn()}
       />
     );
 
@@ -100,7 +100,7 @@ describe('MCPContextViewer', () => {
       <MCPContextViewer
         context={mockContext}
         editable={false}
-        onSave={jest.fn()}
+        onSave={vi.fn()}
       />
     );
 
@@ -121,7 +121,7 @@ describe('MCPContextViewer', () => {
       <MCPContextViewer
         context={mockContext}
         editable={false}
-        onSave={jest.fn()}
+        onSave={vi.fn()}
       />
     );
 
@@ -134,7 +134,7 @@ describe('MCPContextViewer', () => {
       <MCPContextViewer
         context={mockContext}
         editable={true}
-        onSave={jest.fn()}
+        onSave={vi.fn()}
       />
     );
 

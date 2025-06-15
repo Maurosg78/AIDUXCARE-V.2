@@ -1,17 +1,18 @@
 /**
  * 🔐 Authentication Page - AiDuxCare V.2
- * Página unificada para login, registro y selección de terapeutas
- * Diseño moderno con UX optimizada
+ * Página de autenticación con identidad visual oficial
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { RegisterData } from '@/services/LocalAuthService';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 
-type AuthMode = 'login' | 'register' | 'select';
+type AuthMode = 'select' | 'login' | 'register';
 
 const AuthenticationPage: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     isAuthenticated, 
     isLoading, 
@@ -21,7 +22,11 @@ const AuthenticationPage: React.FC = () => {
     getAllTherapists 
   } = useAuth();
 
-  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  // Usar ref para evitar problemas con StrictMode
+  const hasRedirected = useRef(false);
+  const isMounted = useRef(true);
+
+  const [authMode, setAuthMode] = useState<AuthMode>('select');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,333 +36,439 @@ const AuthenticationPage: React.FC = () => {
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTherapists, setAvailableTherapists] = useState<string[]>([]);
+  const [isVisible, setIsVisible] = useState(false);
 
-  // ========= EFECTOS =========
-
+  // Cleanup en unmount
   useEffect(() => {
-    // Cargar terapeutas disponibles para modo select
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Inicialización
+  useEffect(() => {
+    if (!isMounted.current) return;
+    
+    setIsVisible(true);
     const therapists = getAllTherapists();
     setAvailableTherapists(therapists);
     
-    // Si hay terapeutas disponibles, mostrar selector
-    if (therapists.length > 0 && authMode === 'login') {
-      setAuthMode('select');
+    if (therapists.length === 0) {
+      setAuthMode('register');
     }
-  }, [getAllTherapists, authMode]);
+  }, [getAllTherapists]);
 
-  // Redirigir si ya está autenticado
-  if (isAuthenticated) {
-    return <Navigate to="/patient-complete" replace />;
-  }
+  // Manejar redirección cuando el usuario está autenticado
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !hasRedirected.current && isMounted.current) {
+      hasRedirected.current = true;
+      console.log('🔄 Redirigiendo a /patients...');
+      navigate('/patients', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
-  // ========= HANDLERS =========
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isMounted.current) return;
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Limpiar errores al escribir
-    if (errors.length > 0) {
-      setErrors([]);
-    }
-  };
+  }, []);
+
+  const handleModeChange = useCallback((mode: AuthMode) => {
+    if (!isMounted.current) return;
+    setAuthMode(mode);
+    setErrors([]);
+    setFormData({ name: '', email: '', specialization: '', licenseNumber: '' });
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isMounted.current || isSubmitting) return;
+    
     if (!formData.name.trim()) {
-      setErrors(['Por favor ingresa tu nombre']);
+      setErrors(['Por favor ingresa tu nombre de perfil.']);
       return;
     }
-
+    
     setIsSubmitting(true);
     setErrors([]);
-
+    
     try {
       const result = await login(formData.name.trim());
+      if (!isMounted.current) return;
       
       if (!result.success) {
-        setErrors([result.error || 'Error en el login']);
+        setErrors([result.error || 'Nombre de perfil no encontrado.']);
       }
     } catch (error) {
+      if (!isMounted.current) return;
       setErrors(['Error interno. Por favor intenta nuevamente.']);
     } finally {
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isMounted.current || isSubmitting) return;
     
-    if (!formData.name.trim()) {
-      setErrors(['Por favor ingresa tu nombre']);
+    if (!formData.name.trim() || !formData.specialization.trim()) {
+      setErrors(['Nombre y Especialización son campos obligatorios.']);
       return;
     }
-
+    
     setIsSubmitting(true);
     setErrors([]);
-
+    
     try {
       const registerData: RegisterData = {
         name: formData.name.trim(),
         email: formData.email.trim() || undefined,
-        specialization: formData.specialization.trim() || undefined,
+        specialization: formData.specialization.trim(),
         licenseNumber: formData.licenseNumber.trim() || undefined
       };
-
+      
       const result = await register(registerData);
+      if (!isMounted.current) return;
       
       if (!result.success) {
-        setErrors([result.error || 'Error en el registro']);
+        setErrors([result.error || 'Este nombre de perfil ya existe.']);
       }
     } catch (error) {
+      if (!isMounted.current) return;
       setErrors(['Error interno. Por favor intenta nuevamente.']);
     } finally {
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleTherapistSelect = async (therapistName: string) => {
+    if (!isMounted.current || isSubmitting) return;
+    
     setIsSubmitting(true);
     setErrors([]);
-
+    
     try {
       const result = await switchTherapist(therapistName);
+      if (!isMounted.current) return;
       
       if (!result.success) {
-        setErrors([result.error || 'Error al seleccionar terapeuta']);
-        setIsSubmitting(false);
+        setErrors([result.error || 'Error al seleccionar el perfil del terapeuta.']);
       }
     } catch (error) {
+      if (!isMounted.current) return;
       setErrors(['Error interno. Por favor intenta nuevamente.']);
-      setIsSubmitting(false);
+    } finally {
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  // ========= COMPONENTES DE FORMULARIO =========
-
-  const LoginForm = () => (
-    <form onSubmit={handleLogin} className="space-y-6">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nombre del Terapeuta
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Ingresa tu nombre completo"
-          disabled={isSubmitting}
-          autoFocus
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={isSubmitting || !formData.name.trim()}
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-      >
-        {isSubmitting ? 'Accediendo...' : 'Acceder'}
-      </button>
-
-      <p className="text-center text-sm text-gray-600">
-        ¿Primera vez usando AiDuxCare?{' '}
-        <button
-          type="button"
-          onClick={() => setAuthMode('register')}
-          className="text-blue-600 hover:text-blue-700 font-medium"
-        >
-          Registrarse
-        </button>
-      </p>
-    </form>
-  );
-
-  const RegisterForm = () => (
-    <form onSubmit={handleRegister} className="space-y-6">
-      <div>
-        <label htmlFor="reg-name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nombre Completo *
-        </label>
-        <input
-          type="text"
-          id="reg-name"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Tu nombre profesional"
-          disabled={isSubmitting}
-          autoFocus
-        />
-      </div>
-
-      <div>
-        <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700 mb-2">
-          Email (Opcional)
-        </label>
-        <input
-          type="email"
-          id="reg-email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="tu@email.com"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="reg-specialization" className="block text-sm font-medium text-gray-700 mb-2">
-          Especialización (Opcional)
-        </label>
-        <input
-          type="text"
-          id="reg-specialization"
-          name="specialization"
-          value={formData.specialization}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Ej: Fisioterapia"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="reg-licenseNumber" className="block text-sm font-medium text-gray-700 mb-2">
-          Número de Colegiado (Opcional)
-        </label>
-        <input
-          type="text"
-          id="reg-licenseNumber"
-          name="licenseNumber"
-          value={formData.licenseNumber}
-          onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Número de colegiado"
-          disabled={isSubmitting}
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={isSubmitting || !formData.name.trim()}
-        className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-      >
-        {isSubmitting ? 'Registrando...' : 'Registrarse'}
-      </button>
-
-      <p className="text-center text-sm text-gray-600">
-        ¿Ya tienes una cuenta?{' '}
-        <button
-          type="button"
-          onClick={() => setAuthMode('login')}
-          className="text-blue-600 hover:text-blue-700 font-medium"
-        >
-          Iniciar Sesión
-        </button>
-      </p>
-    </form>
-  );
-
-  const TherapistSelector = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Selecciona tu perfil de terapeuta
-        </h3>
-        <div className="space-y-3">
-          {availableTherapists.map((therapistName) => (
-            <button
-              key={therapistName}
-              onClick={() => handleTherapistSelect(therapistName)}
-              disabled={isSubmitting}
-              className="w-full p-4 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">{therapistName}</span>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t pt-6">
-        <button
-          type="button"
-          onClick={() => setAuthMode('register')}
-          className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors font-medium"
-        >
-          + Crear nuevo perfil de terapeuta
-        </button>
-      </div>
-    </div>
-  );
-
-  // ========= RENDER =========
-
+  // Si está cargando, mostrar spinner
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-center">Cargando...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#A8E6CF]/10 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#5DA5A3] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#2C3E50] text-lg">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si ya está autenticado, mostrar mensaje de redirección
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#A8E6CF]/10 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#5DA5A3] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#2C3E50] text-lg">Redirigiendo...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+    <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#A8E6CF]/10 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden">
+      {/* Elementos decorativos de fondo con colores oficiales */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-40 h-40 lg:w-80 lg:h-80 bg-[#5DA5A3]/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 lg:w-80 lg:h-80 bg-[#FF6F61]/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      <div className={`w-full max-w-md lg:max-w-lg relative z-10 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
+        {/* Header con logo oficial */}
+        <div className="text-center mb-6 lg:mb-8">
+          <div className="flex justify-center mb-4 lg:mb-6">
+            <AiDuxCareLogo size="lg" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">AiDuxCare V.2</h1>
-          <p className="text-gray-600 mt-2">
-            {authMode === 'login' && 'Inicia sesión para continuar'}
+          <h1 className="text-2xl lg:text-3xl font-bold text-[#2C3E50] mb-2">AiDuxCare</h1>
+          <p className="text-[#2C3E50]/70 text-sm lg:text-base">
+            {authMode === 'select' && 'Selecciona tu perfil profesional'}
+            {authMode === 'login' && 'Accede a tu perfil'}
             {authMode === 'register' && 'Crea tu perfil profesional'}
-            {authMode === 'select' && 'Bienvenido de vuelta'}
           </p>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        {/* Main Card con diseño oficial */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl lg:rounded-3xl shadow-2xl border border-[#BDC3C7]/20 p-6 lg:p-8">
           {/* Error Messages */}
           {errors.length > 0 && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-[#FF6F61]/10 border border-[#FF6F61]/20 rounded-xl">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-5 h-5 bg-[#FF6F61] rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="text-[#FF6F61] font-semibold">Error</span>
+              </div>
               {errors.map((error, index) => (
-                <p key={index} className="text-red-600 text-sm">{error}</p>
+                <p key={index} className="text-[#2C3E50] text-sm">{error}</p>
               ))}
             </div>
           )}
 
-          {/* Forms */}
-          {authMode === 'login' && <LoginForm />}
-          {authMode === 'register' && <RegisterForm />}
-          {authMode === 'select' && <TherapistSelector />}
+          {/* Content based on mode */}
+          {authMode === 'select' && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-xl lg:text-2xl font-bold text-[#2C3E50] mb-2">Perfiles Disponibles</h2>
+                <p className="text-[#2C3E50]/70 text-sm">Selecciona tu perfil para continuar</p>
+              </div>
+              
+              <div className="space-y-3">
+                {availableTherapists.map((therapist, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleTherapistSelect(therapist)}
+                    disabled={isSubmitting}
+                    className="w-full p-4 text-left bg-gradient-to-r from-[#F7F7F7] to-[#A8E6CF]/20 hover:from-[#A8E6CF]/20 hover:to-[#A8E6CF]/30 border border-[#BDC3C7]/30 hover:border-[#5DA5A3]/50 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#5DA5A3] to-[#4A8280] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="text-white font-bold text-lg">
+                          {therapist.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-[#2C3E50] group-hover:text-[#5DA5A3] transition-colors">{therapist}</p>
+                        <p className="text-sm text-[#2C3E50]/60">Fisioterapeuta Profesional</p>
+                      </div>
+                      <svg className="w-5 h-5 text-[#BDC3C7] group-hover:text-[#5DA5A3] group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-6 border-t border-[#BDC3C7]/30">
+                <button
+                  onClick={() => handleModeChange('register')}
+                  className="btn-primary w-full group"
+                >
+                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Crear Nuevo Perfil
+                </button>
+              </div>
+            </div>
+          )}
+
+          {authMode === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="text-center mb-6">
+                <h2 className="text-xl lg:text-2xl font-bold text-[#2C3E50] mb-2">Bienvenido de vuelta</h2>
+                <p className="text-[#2C3E50]/70 text-sm">Ingresa tu nombre de perfil para continuar</p>
+              </div>
+
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-[#2C3E50] mb-3">
+                  Nombre del Perfil
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-[#F7F7F7] border border-[#BDC3C7]/50 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                  placeholder="Ingresa tu nombre de perfil"
+                  disabled={isSubmitting}
+                  autoFocus
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isSubmitting || !formData.name.trim()}
+                className="btn-primary w-full group"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                    Accediendo...
+                  </>
+                ) : (
+                  <>
+                    <span>Acceder</span>
+                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </button>
+              
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('register')}
+                  className="text-[#5DA5A3] hover:text-[#4A8280] font-medium text-sm transition-colors"
+                >
+                  ¿No tienes un perfil? Crear uno nuevo
+                </button>
+              </div>
+            </form>
+          )}
+
+          {authMode === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-6">
+              <div className="text-center mb-6">
+                <h2 className="text-xl lg:text-2xl font-bold text-[#2C3E50] mb-2">Crear Perfil Profesional</h2>
+                <p className="text-[#2C3E50]/70 text-sm">Completa tu información para comenzar</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label htmlFor="reg-name" className="block text-sm font-semibold text-[#2C3E50] mb-2">
+                    Nombre Completo *
+                  </label>
+                  <input
+                    type="text"
+                    id="reg-name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-[#F7F7F7] border border-[#BDC3C7]/50 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="Tu nombre profesional"
+                    disabled={isSubmitting}
+                    autoFocus
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="reg-specialization" className="block text-sm font-semibold text-[#2C3E50] mb-2">
+                    Especialización *
+                  </label>
+                  <input
+                    type="text"
+                    id="reg-specialization"
+                    name="specialization"
+                    value={formData.specialization}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-[#F7F7F7] border border-[#BDC3C7]/50 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="Ej: Fisioterapia Deportiva, Neurológica..."
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="reg-email" className="block text-sm font-semibold text-[#2C3E50] mb-2">
+                    Email (Opcional)
+                  </label>
+                  <input
+                    type="email"
+                    id="reg-email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-[#F7F7F7] border border-[#BDC3C7]/50 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="tu@email.com"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="reg-license" className="block text-sm font-semibold text-[#2C3E50] mb-2">
+                    Número de Colegiado (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="reg-license"
+                    name="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-[#F7F7F7] border border-[#BDC3C7]/50 rounded-xl text-[#2C3E50] placeholder-[#2C3E50]/50 focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent transition-all"
+                    placeholder="Número de colegiado"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isSubmitting || !formData.name.trim() || !formData.specialization.trim()}
+                className="btn-primary w-full group"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                    Creando Perfil...
+                  </>
+                ) : (
+                  <>
+                    <span>Crear Perfil</span>
+                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </button>
+              
+              {availableTherapists.length > 0 && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('select')}
+                    className="text-[#5DA5A3] hover:text-[#4A8280] font-medium text-sm transition-colors"
+                  >
+                    ¿Ya tienes un perfil? Seleccionar existente
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>AiDuxCare V.2 - Herramienta profesional para fisioterapeutas</p>
-          <p className="mt-2">Almacenamiento local seguro - Sin dependencias externas</p>
+        {/* Footer con colores oficiales */}
+        <div className="text-center mt-6 lg:mt-8">
+          <div className="flex flex-wrap items-center justify-center gap-4 lg:gap-6 text-sm text-[#2C3E50]/60">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-[#5DA5A3] rounded-full"></div>
+              <span>Datos seguros</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-[#A8E6CF] rounded-full"></div>
+              <span>Privacidad total</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-[#FF6F61] rounded-full"></div>
+              <span>GDPR compliant</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default AuthenticationPage; 
+export default AuthenticationPage;

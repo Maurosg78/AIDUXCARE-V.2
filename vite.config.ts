@@ -63,6 +63,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ollama/, '/api'),
       },
+      // Proxy para la Cloud Function de pacientes
+      '/api': {
+        target: 'https://createpatient-53031427369.us-central1.run.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: true,
+      },
     },
   },
   // Optimización del build

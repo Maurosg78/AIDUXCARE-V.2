@@ -85,32 +85,32 @@ export interface ErrorRecoveryStrategy {
  */
 export class StructuredErrorFactory {
   
-  static createOllamaError(
+  static createGoogleCloudError(
     originalError: Error,
     processingId: string,
     userId?: string,
     visitId?: string
   ): StructuredError {
     return {
-      id: `ollama-error-${Date.now()}`,
+      id: `google-cloud-error-${Date.now()}`,
       category: ErrorCategory.AI_SERVICE_ERROR,
       severity: ErrorSeverity.HIGH,
-      message: 'Error en el servicio de procesamiento de lenguaje natural',
+      message: 'Error en el servicio de Google Cloud AI',
       userMessage: 'Hubo un problema al generar las notas SOAP. Por favor, intente de nuevo.',
-      technicalDetails: `Ollama service failure: ${originalError.message}`,
+      technicalDetails: `Google Cloud AI service failure: ${originalError.message}`,
       timestamp: new Date().toISOString(),
-      source: 'AudioProcessingServiceProfessional',
+      source: 'TextProcessingService',
       userId,
       visitId,
       processingId,
       originalError,
       stack: originalError.stack,
       metadata: {
-        service: 'ollama',
-        endpoint: 'processTranscript'
+        service: 'google-cloud-ai',
+        endpoint: 'processTextToSOAP'
       },
       retryable: true,
-      fallbackAvailable: true,
+      fallbackAvailable: false,
       logLevel: 'error'
     };
   }

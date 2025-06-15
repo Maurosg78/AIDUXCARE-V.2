@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para la colección de pacientes
+    // Fase 1: Sin autenticación (solo para desarrollo)
+    match /patients/{patientId} {
+      allow read, write: if true;
+    }
+    
+    // Denegar acceso a todas las demás colecciones por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

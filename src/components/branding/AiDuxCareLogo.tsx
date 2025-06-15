@@ -8,10 +8,10 @@ interface AiDuxCareLogoProps {
 }
 
 const sizeMap = {
-  sm: { width: 60, height: 40, fontSize: '0.875rem' },
-  md: { width: 120, height: 80, fontSize: '1.25rem' },
-  lg: { width: 180, height: 120, fontSize: '1.875rem' },
-  xl: { width: 240, height: 160, fontSize: '2.5rem' }
+  sm: { width: 60, height: 60, fontSize: '0.875rem' },
+  md: { width: 80, height: 80, fontSize: '1.25rem' },
+  lg: { width: 120, height: 120, fontSize: '1.875rem' },
+  xl: { width: 160, height: 160, fontSize: '2.5rem' }
 };
 
 export const AiDuxCareLogo: React.FC<AiDuxCareLogoProps> = ({
@@ -25,107 +25,66 @@ export const AiDuxCareLogo: React.FC<AiDuxCareLogoProps> = ({
   const LogoIcon = () => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 120 80" 
+      viewBox="0 0 120 120" 
       width={width} 
       height={height}
       className="aidux-logo-icon"
     >
-      {/* Definiciones para las intersecciones */}
       <defs>
-        {/* Gradiente para intersecciones */}
-        <linearGradient id="intersectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{stopColor: 'var(--aidux-intersection-green)', stopOpacity: 1}} />
-          <stop offset="100%" style={{stopColor: 'var(--aidux-intersection-green-dark)', stopOpacity: 1}} />
+        {/* Gradiente principal del logo */}
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#5DA5A3" />
+          <stop offset="50%" stopColor="#4A8280" />
+          <stop offset="100%" stopColor="#3A6B69" />
         </linearGradient>
+        
+        {/* Gradiente más suave para la línea */}
+        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#5DA5A3" />
+          <stop offset="100%" stopColor="#4A8280" />
+        </linearGradient>
+        
+        {/* Sombra sutil */}
+        <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.1"/>
+        </filter>
       </defs>
       
-      {/* Círculo IA (azul) - Tecnología, análisis */}
-      <circle 
-        cx="30" 
-        cy="40" 
-        r="18" 
-        fill="none" 
-        stroke="var(--aidux-blue-slate)" 
-        strokeWidth="3" 
-        opacity="0.9"
-      />
-      
-      {/* Círculo Seguridad Clínica (verde menta) - Salud */}
+      {/* Círculo principal con forma de "C" estilizada */}
       <circle 
         cx="60" 
-        cy="25" 
-        r="18" 
+        cy="60" 
+        r="35" 
         fill="none" 
-        stroke="var(--aidux-mint-green)" 
-        strokeWidth="3" 
+        stroke="url(#logoGradient)" 
+        strokeWidth="8" 
+        strokeLinecap="round"
+        strokeDasharray="190 30"
+        strokeDashoffset="15"
+        filter="url(#logoShadow)"
+        opacity="0.95"
+      />
+      
+      {/* Línea horizontal interna */}
+      <rect 
+        x="35" 
+        y="57" 
+        width="50" 
+        height="6" 
+        rx="3" 
+        fill="url(#lineGradient)"
+        filter="url(#logoShadow)"
         opacity="0.9"
       />
       
-      {/* Círculo Cuidado Humano (coral) - Cuidado */}
+      {/* Punto de acento sutil */}
       <circle 
-        cx="60" 
-        cy="55" 
-        r="18" 
-        fill="none" 
-        stroke="var(--aidux-coral)" 
-        strokeWidth="3" 
-        opacity="0.9"
-      />
-      
-      {/* Intersecciones con color unificado */}
-      {/* Intersección IA + Seguridad */}
-      <path 
-        d="M 42 32 A 18 18 0 0 1 48 25 A 18 18 0 0 1 42 32" 
-        fill="var(--aidux-intersection-green)" 
-        opacity="0.8"
-      />
-      
-      {/* Intersección IA + Cuidado */}
-      <path 
-        d="M 42 48 A 18 18 0 0 1 48 55 A 18 18 0 0 1 42 48" 
-        fill="var(--aidux-intersection-green)" 
-        opacity="0.8"
-      />
-      
-      {/* Intersección Seguridad + Cuidado */}
-      <path 
-        d="M 60 37 A 18 18 0 0 1 60 43 A 18 18 0 0 1 60 37" 
-        fill="var(--aidux-intersection-green)" 
-        opacity="0.8"
-      />
-      
-      {/* Intersección central (donde se unen los tres) */}
-      <circle 
-        cx="50" 
-        cy="40" 
-        r="4" 
-        fill="var(--aidux-intersection-green)" 
-        opacity="1"
-      />
-      
-      {/* Iconos simbólicos sutiles */}
-      {/* IA: punto tecnológico */}
-      <circle 
-        cx="30" 
-        cy="40" 
+        cx="85" 
+        cy="35" 
         r="2" 
-        fill="var(--aidux-blue-slate)" 
-        opacity="0.6"
+        fill="#5DA5A3" 
+        opacity="0.7"
       />
-      
-      {/* Seguridad: cruz médica pequeña */}
-      <g transform="translate(60,25)" opacity="0.6">
-        <rect x="-1" y="-4" width="2" height="8" fill="var(--aidux-mint-green-dark)"/>
-        <rect x="-4" y="-1" width="8" height="2" fill="var(--aidux-mint-green-dark)"/>
-      </g>
-      
-      {/* Cuidado: corazón pequeño */}
-      <g transform="translate(60,55)" opacity="0.6">
-        <path 
-          d="M-3,-1 C-3,-3 -1,-3 0,-1 C1,-3 3,-3 3,-1 C3,0 0,3 0,3 C0,3 -3,0 -3,-1 Z" 
-          fill="var(--aidux-coral-dark)"
-        />
-      </g>
     </svg>
   );
 
@@ -136,7 +95,7 @@ export const AiDuxCareLogo: React.FC<AiDuxCareLogoProps> = ({
         fontFamily: 'var(--font-family-heading)',
         fontSize,
         fontWeight: 600,
-        color: 'var(--aidux-blue-slate)',
+        color: '#2C3E50',
         letterSpacing: '-0.02em'
       }}
     >

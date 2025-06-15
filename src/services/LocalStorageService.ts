@@ -12,10 +12,27 @@ import {
   ClinicalHighlight 
 } from '@/types/session';
 
+// Tipo para pacientes
+interface Patient {
+  id: string;
+  name: string;
+  age: number;
+  phone: string;
+  email: string;
+  condition: string;
+  allergies: string[];
+  medications: string[];
+  clinicalHistory: string;
+  derivadoPor?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 class LocalStorageService {
   private readonly STORAGE_PREFIX = 'aiduxcare_v2_';
   private readonly THERAPIST_KEY = 'therapist_data';
   private readonly SESSIONS_KEY = 'sessions';
+  private readonly PATIENTS_KEY = 'patients';
   private readonly VERSION = '2.0.0';
 
   // ========= GESTIÓN DE TERAPEUTAS =========
@@ -254,6 +271,121 @@ class LocalStorageService {
       return this.saveTherapistData(therapist);
     } catch (error) {
       console.error('❌ Error al actualizar highlight:', error);
+      return false;
+    }
+  }
+
+  // ========= GESTIÓN DE PACIENTES =========
+
+  /**
+   * Obtener lista de todos los pacientes
+   */
+  getAllPatients(): Patient[] {
+    try {
+      const data = localStorage.getItem(this.getStorageKey(this.PATIENTS_KEY));
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('❌ Error al obtener lista de pacientes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Guardar nuevo paciente
+   */
+  savePatient(patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>): Patient | null {
+    try {
+      const patients = this.getAllPatients();
+      
+      const newPatient: Patient = {
+        ...patientData,
+        id: `patient_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      patients.push(newPatient);
+      
+      localStorage.setItem(
+        this.getStorageKey(this.PATIENTS_KEY), 
+        JSON.stringify(patients)
+      );
+
+      console.log('✅ Paciente guardado exitosamente:', newPatient.name);
+      return newPatient;
+    } catch (error) {
+      console.error('❌ Error al guardar paciente:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtener paciente por ID
+   */
+  getPatientById(patientId: string): Patient | null {
+    try {
+      const patients = this.getAllPatients();
+      return patients.find(p => p.id === patientId) || null;
+    } catch (error) {
+      console.error('❌ Error al obtener paciente:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Actualizar paciente existente
+   */
+  updatePatient(patientId: string, updates: Partial<Patient>): boolean {
+    try {
+      const patients = this.getAllPatients();
+      const patientIndex = patients.findIndex(p => p.id === patientId);
+      
+      if (patientIndex === -1) {
+        console.error('❌ Paciente no encontrado:', patientId);
+        return false;
+      }
+
+      patients[patientIndex] = {
+        ...patients[patientIndex],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(
+        this.getStorageKey(this.PATIENTS_KEY), 
+        JSON.stringify(patients)
+      );
+
+      console.log('✅ Paciente actualizado exitosamente:', patientId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error al actualizar paciente:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Eliminar paciente
+   */
+  deletePatient(patientId: string): boolean {
+    try {
+      const patients = this.getAllPatients();
+      const filteredPatients = patients.filter(p => p.id !== patientId);
+      
+      if (patients.length === filteredPatients.length) {
+        console.error('❌ Paciente no encontrado para eliminar:', patientId);
+        return false;
+      }
+
+      localStorage.setItem(
+        this.getStorageKey(this.PATIENTS_KEY), 
+        JSON.stringify(filteredPatients)
+      );
+
+      console.log('✅ Paciente eliminado exitosamente:', patientId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error al eliminar paciente:', error);
       return false;
     }
   }

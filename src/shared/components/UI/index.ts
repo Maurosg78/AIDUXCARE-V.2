@@ -1,36 +1,51 @@
-// Sistema de Diseño AiDuxCare V.2
-// Exportaciones centralizadas para componentes de UI profesionales
+/**
+ * UI COMPONENTS INDEX - AIDUXCARE DESIGN SYSTEM
+ * Exportaciones centralizadas del sistema de diseño
+ */
 
-// Tipografía sistemática
+// === COMPONENTES DE TIPOGRAFÍA ===
+export * from './Typography';
+
+// === COMPONENTES DE ICONOGRAFÍA ===
+export * from './Icon';
+
+// === COMPONENTES DE BOTONES ===
+export * from './Button';
+
+// === COMPONENTES DE TARJETAS ===
 export { 
-  Heading, 
-  Subheading, 
-  BodyText, 
-  SmallText, 
-  HighlightText 
-} from './Typography';
+  Card,
+  CardHeader,
+  CardTitle as UICardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  type CardVariant,
+  type CardSize,
+  // Componentes especializados para wireframes
+  BenefitCard,
+  ClinicalCard,
+  PatientInfoCard,
+  ClinicalDataCard
+} from './Card';
 
-// Iconografía profesional
-export { Icon } from './Icon';
-export type { IconName } from './Icon';
-
-// Otros componentes UI existentes
-export { Button } from './Button';
-export { Card } from './Card';
-export { Modal } from './Modal';
-export { Input } from './Input';
-export { Textarea } from './Textarea';
+// === COMPONENTES DE FORMULARIOS ===
+export * from './Input';
+export * from './Textarea';
 export { Select } from './Select';
 export { Checkbox } from './Checkbox';
 export { Radio } from './Radio';
 export { Switch } from './Switch';
+
+// === COMPONENTES DE INTERFAZ ===
+export { Modal } from './Modal';
+export { Drawer } from './Drawer';
 export { Tabs } from './Tabs';
+export { default as Accordion } from './Accordion';
 export { Tooltip } from './Tooltip';
+export { Alert } from './Alert';
 export { Badge } from './Badge';
 export { Avatar } from './Avatar';
-export { Alert } from './Alert';
-export { Accordion } from './Accordion';
-export { Drawer } from './Drawer';
-export { LoadingSpinner } from './LoadingSpinner';
+export { default as LoadingSpinner } from './LoadingSpinner';
+export { default as ActionPanel } from './ActionPanel';
 export { ToggleButton } from './ToggleButton';
-export { ActionPanel } from './ActionPanel'; 

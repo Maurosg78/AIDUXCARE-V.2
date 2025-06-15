@@ -1,42 +1,26 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// NOTA: El setup de dotenv se mueve al archivo jest.setup.cjs
+// para asegurar que se ejecute en el entorno de test antes que nada.
+
 export default defineConfig({
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "../src")
-    }
-  },
+  plugins: [react()],
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [path.resolve(__dirname, '../src/setupTests.ts')],
-    include: [
-      '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      '**/*.eval.test.{js,ts,jsx,tsx}'
-    ],
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/temp_backup/**',
-      '**/.{idea,git,cache,output,temp}/**',
-      '**/evals/future_evals/**',
-      '**/__tests__/future_evals/**'
-    ],
+    // Este archivo de setup es crucial. Se ejecuta antes que todos los tests.
+    setupFiles: './config/jest.setup.cjs', 
     coverage: {
-      reporter: ['text', 'lcov', 'html'],
-      reportsDirectory: path.resolve(__dirname, '../coverage'),
-      exclude: [
-        'node_modules/',
-        'src/setupTests.ts',
-        '**/*.d.ts',
-        '**/*.test.ts',
-        '**/*.test.tsx',
-        '**/__tests__/**',
-        '**/__mocks__/**',
-        '**/evals/**',
-        '**/*.eval.test.ts'
-      ]
-    }
-  }
-}); 
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
+  },
+  resolve: {
+    alias: {
+      // Configuración del alias '@' para que las importaciones funcionen en los tests
+      '@': path.resolve(__dirname, '../src'), 
+    },
+  },
+});

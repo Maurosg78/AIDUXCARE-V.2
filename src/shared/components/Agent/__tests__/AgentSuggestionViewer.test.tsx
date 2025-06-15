@@ -1,13 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
 import { EMRFormService } from '@/services/EMRFormService';
 import { trackMetric } from '@/services/UsageAnalyticsService';
 import { AuditLogger } from '@/services/AuditLogger';
 
 // Mocks
-jest.mock('@/services/EMRFormService');
-jest.mock('@/services/UsageAnalyticsService');
-jest.mock('@/services/AuditLogger');
+vi.mock('@/services/EMRFormService');
+vi.mock('@/services/UsageAnalyticsService');
+vi.mock('@/services/AuditLogger');
 
 describe.skip('AgentSuggestionViewer', () => {
   const mockProps = {
@@ -36,12 +37,12 @@ describe.skip('AgentSuggestionViewer', () => {
         severity: 1
       }
     ],
-    onSuggestionAccepted: jest.fn(),
-    onSuggestionRejected: jest.fn()
+    onSuggestionAccepted: vi.fn(),
+    onSuggestionRejected: vi.fn()
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('debe renderizar correctamente la lista de sugerencias', () => {
@@ -52,8 +53,8 @@ describe.skip('AgentSuggestionViewer', () => {
   });
 
   it('debe manejar la integración de sugerencias correctamente', async () => {
-    const mockInsertSuggestion = jest.fn().mockResolvedValue(true);
-    (EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
+    const mockInsertSuggestion = vi.fn().mockResolvedValue(true);
+    (EMRFormService.insertSuggestion as any).mockImplementation(mockInsertSuggestion);
 
     render(<AgentSuggestionsViewer {...mockProps} />);
 
@@ -116,8 +117,8 @@ describe.skip('AgentSuggestionViewer', () => {
   });
 
   it('debe manejar errores de integración correctamente', async () => {
-    const mockInsertSuggestion = jest.fn().mockRejectedValue(new Error('Error de integración'));
-    (EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
+    const mockInsertSuggestion = vi.fn().mockRejectedValue(new Error('Error de integración'));
+    (EMRFormService.insertSuggestion as any).mockImplementation(mockInsertSuggestion);
 
     render(<AgentSuggestionsViewer {...mockProps} />);
 

@@ -3,20 +3,39 @@
  * Centraliza todas las configuraciones del sistema
  */
 
+// Función auxiliar para obtener variables de entorno
+function getEnvVar(key: string, defaultValue: string = ''): string {
+  // En navegador (Vite)
+  if (typeof window !== 'undefined' && import.meta?.env) {
+    return import.meta.env[key] || defaultValue;
+  }
+  
+  // En Node.js
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || defaultValue;
+  }
+  
+  return defaultValue;
+}
+
 // Variables de Supabase
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_URL = getEnvVar('VITE_SUPABASE_URL');
+export const SUPABASE_ANON_KEY = getEnvVar('VITE_SUPABASE_ANON_KEY');
 
 // Variables de APIs de IA
-export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-export const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
+export const OPENAI_API_KEY = getEnvVar('VITE_OPENAI_API_KEY');
+export const HUGGINGFACE_API_KEY = getEnvVar('VITE_HUGGINGFACE_API_KEY');
+
+// Variables de Google Cloud AI (Configuración principal)
+export const GOOGLE_CLOUD_PROJECT_ID = getEnvVar('VITE_GOOGLE_CLOUD_PROJECT_ID');
+export const GOOGLE_CLOUD_LOCATION = getEnvVar('VITE_GOOGLE_CLOUD_LOCATION', 'us-central1');
+export const GOOGLE_CLOUD_CREDENTIALS = getEnvVar('VITE_GOOGLE_CLOUD_CREDENTIALS');
 
 // Variables de entorno de la aplicación
-export const APP_ENVIRONMENT = import.meta.env.VITE_APP_ENVIRONMENT || 'development';
+export const APP_ENVIRONMENT = getEnvVar('VITE_APP_ENVIRONMENT', 'development');
 
-// Configuración de Ollama (local)
-const OLLAMA_DEFAULT_URL = 'http://localhost:11434';
-const OLLAMA_DEFAULT_MODEL = 'llama3.2:3b';
+// Configuración de Google Cloud AI
+const GOOGLE_CLOUD_DEFAULT_MODEL = 'gemini-1.5-pro';
 
 /**
  * Configuración completa del entorno
@@ -36,9 +55,11 @@ export const ENV_CONFIG = {
     huggingface: {
       apiKey: HUGGINGFACE_API_KEY
     },
-    ollama: {
-      url: OLLAMA_DEFAULT_URL,
-      model: OLLAMA_DEFAULT_MODEL
+    google: {
+      projectId: GOOGLE_CLOUD_PROJECT_ID,
+      location: GOOGLE_CLOUD_LOCATION,
+      credentials: GOOGLE_CLOUD_CREDENTIALS,
+      model: GOOGLE_CLOUD_DEFAULT_MODEL
     }
   },
   
@@ -59,7 +80,9 @@ export function validateEnvironment(): {
 } {
   const required = [
     { key: 'VITE_SUPABASE_URL', value: SUPABASE_URL },
-    { key: 'VITE_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY }
+    { key: 'VITE_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY },
+    { key: 'VITE_GOOGLE_CLOUD_PROJECT_ID', value: GOOGLE_CLOUD_PROJECT_ID },
+    { key: 'VITE_GOOGLE_CLOUD_CREDENTIALS', value: GOOGLE_CLOUD_CREDENTIALS }
   ];
 
   const missing = required
@@ -73,10 +96,12 @@ export function validateEnvironment(): {
 }
 
 // Log de diagnóstico en desarrollo
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+if (typeof window !== 'undefined' && ENV_CONFIG.app.isDevelopment) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
   console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- GOOGLE_CLOUD_CREDENTIALS: ${GOOGLE_CLOUD_CREDENTIALS ? 'OK ✅' : 'MISSING ❌'}`);
   
   // Intentar validar la URL
   if (SUPABASE_URL) {

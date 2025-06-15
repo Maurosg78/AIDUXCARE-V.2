@@ -1,35 +1,24 @@
-// jest.setup.cjs
+require('dotenv').config({ path: '.env.test' });
 require('@testing-library/jest-dom');
 
-// Mock para fetch global
-global.fetch = jest.fn();
+// Configuración global para los tests
+global.console = {
+  ...console,
+  // Desactivar logs en los tests
+  log: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+};
 
-// Mock para localStorage
-Object.defineProperty(window, 'localStorage', {
-  value: {
-    getItem: jest.fn(),
-    setItem: jest.fn(),
-    removeItem: jest.fn(),
-    clear: jest.fn()
-  },
-  writable: true
-});
-
-// Mock para matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
-
-// Suprimir errores de consola durante las pruebas
-console.error = jest.fn();
-console.warn = jest.fn(); 
+// Mock de las variables de entorno
+process.env.VITE_SUPABASE_URL = 'http://localhost:54321';
+process.env.VITE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+process.env.VITE_OPENAI_API_KEY = 'sk-test-key';
+process.env.VITE_OPENAI_MODEL = 'gpt-4';
+process.env.VITE_OPENAI_TEMPERATURE = '0.7';
+process.env.VITE_OPENAI_MAX_TOKENS = '2000';
+process.env.VITE_OPENAI_TOP_P = '1';
+process.env.VITE_OPENAI_FREQUENCY_PENALTY = '0';
+process.env.VITE_OPENAI_PRESENCE_PENALTY = '0';

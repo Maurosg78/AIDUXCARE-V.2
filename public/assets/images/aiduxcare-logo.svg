@@ -1,0 +1,24 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Círculo principal con buen contraste -->
+  <circle 
+    cx="60" 
+    cy="60" 
+    r="30" 
+    fill="none" 
+    stroke="#34C759" 
+    stroke-width="6" 
+    stroke-linecap="round"
+    stroke-dasharray="160 25"
+    stroke-dashoffset="15"
+  />
+  
+  <!-- Línea horizontal interna más visible -->
+  <rect 
+    x="40" 
+    y="57" 
+    width="40" 
+    height="6" 
+    rx="3" 
+    fill="#34C759"
+  />
+</svg> 
