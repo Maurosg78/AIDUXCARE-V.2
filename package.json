@@ -101,6 +101,7 @@
     "chalk": "^4.1.2",
     "color-name": "^2.0.0",
     "cross-spawn": "^7.0.3",
+    "depcheck": "^1.4.7",
     "dotenv": "^16.5.0",
     "esbuild": "^0.25.4",
     "eslint": "^8.55.0",
