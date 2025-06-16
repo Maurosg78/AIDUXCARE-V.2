@@ -1,55 +1,77 @@
 /**
- * 🏥 AIDUXCARE - PÁGINA DE BIENVENIDA COMPACTA
- * El primer AI-EMR diseñado para fortalecer a nuestro personal de salud
+ * 🏠 WelcomePage - AiDuxCare V.2  
+ * Página de bienvenida con presentación de funcionalidades
+ * REFACTORIZADA: Usa hooks con cleanup automático para eliminar memory leaks
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
+import { AiDuxCareLogo } from '@/components/branding/AiDuxCareLogo';
 import { useAuth } from '@/contexts/AuthContext';
+import { useInterval } from '@/hooks/useInterval';
 
+// ============== INTERFACES ===============
+interface CarouselSlide {
+  id: string;
+  title: string;
+  description: string;
+  type: 'transcription' | 'analysis' | 'soap';
+  features: string[];
+}
+
+// ============== COMPONENTE PRINCIPAL ===============
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  
   const [isVisible, setIsVisible] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const carouselSlides = [
+  // Datos del carrusel
+  const carouselSlides: CarouselSlide[] = [
     {
-      title: "Transcripción Inteligente",
-      description: "IA médica que comprende terminología clínica especializada",
-      mockup: "transcription",
-      highlight: "99.2% Precisión"
+      id: 'transcription',
+      title: 'Transcripción Inteligente',
+      description: 'Reconocimiento de voz especializado en terminología médica con IA avanzada',
+      type: 'transcription',
+      features: ['Reconocimiento en tiempo real', 'Terminología médica especializada', 'Múltiples hablantes']
     },
     {
-      title: "Análisis en Tiempo Real",
-      description: "Detección automática de patrones y alertas médicas",
-      mockup: "analysis",
-      highlight: "Análisis Instantáneo"
+      id: 'analysis',
+      title: 'Análisis Clínico IA',
+      description: 'Detección automática de patrones clínicos y alertas médicas inteligentes',
+      type: 'analysis',
+      features: ['Detección de patrones', 'Alertas automáticas', 'Análisis contextual']
     },
     {
-      title: "Documentación SOAP",
-      description: "Notas estructuradas generadas automáticamente",
-      mockup: "soap",
-      highlight: "Escritura Mínima"
+      id: 'soap',
+      title: 'Notas SOAP Automáticas',
+      description: 'Generación automática de documentación clínica estructurada y profesional',
+      type: 'soap',
+      features: ['Generación automática', 'Estructura profesional', 'Revisión inteligente']
     }
   ];
 
+  // ============== EFECTOS ===============
+  
   useEffect(() => {
     setTimeout(() => setIsVisible(true), 300);
-    
-    // Carrusel automático cada 5 segundos (más tiempo para leer)
-    const interval = setInterval(() => {
+  }, []);
+
+  // REFACTORIZADO: Usar hook useInterval con cleanup automático
+  useInterval(
+    () => {
       setIsTransitioning(true);
       setTimeout(() => {
         setCurrentSlide(prev => (prev + 1) % carouselSlides.length);
         setIsTransitioning(false);
       }, 500);
-    }, 5000);
+    },
+    5000 // Carrusel cada 5 segundos
+  );
 
-    return () => clearInterval(interval);
-  }, []);
+  // ============== MANEJADORES ===============
 
   const handleSlideChange = (index: number) => {
     if (index !== currentSlide && !isTransitioning) {
@@ -68,6 +90,8 @@ const WelcomePage: React.FC = () => {
       navigate('/auth');
     }
   };
+
+  // ============== RENDER HELPERS ===============
 
   const renderMockupContent = (slideType: string) => {
     switch (slideType) {
@@ -219,6 +243,8 @@ const WelcomePage: React.FC = () => {
     }
   };
 
+  // ============== RENDER ===============
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 relative overflow-hidden">
       
@@ -233,168 +259,156 @@ const WelcomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <AiDuxCareLogo size="md" variant="icon" />
-              <div>
-                <div className="text-xl font-bold text-slate-800">AiDuxCare</div>
-                <div className="text-xs text-slate-500 font-medium">AI-EMR Platform</div>
+              <AiDuxCareLogo size="sm" />
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-slate-900">AiDuxCare</h1>
+                <p className="text-xs text-slate-600">Plataforma EMR con IA Médica</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-200/50">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-emerald-700">Sistema Activo</span>
-              </div>
-              
-              <button
-                onClick={handleGetStarted}
-                className="bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-              >
-                Acceder al Sistema
-              </button>
+            <div className="flex items-center space-x-3">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => navigate('/clinical')}
+                  className="btn-primary px-4 py-2 text-sm"
+                >
+                  Ir al Dashboard
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="text-slate-600 hover:text-[#5DA5A3] font-medium text-sm transition-colors"
+                >
+                  Iniciar Sesión
+                </button>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section Compacto - Todo visible en una pantalla */}
-      <main className="relative z-10 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Sección principal con transición */}
+      <main className={`relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             
-            {/* Contenido Principal Compacto */}
-            <div className={`space-y-6 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-              
-              {/* Badge principal */}
-              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#5DA5A3]/15 to-[#A8E6CF]/15 rounded-full border border-[#5DA5A3]/30">
-                <div className="w-2 h-2 bg-[#5DA5A3] rounded-full animate-pulse mr-3"></div>
-                <span className="text-sm font-bold text-[#2C3E50]">EL PRIMER AI-EMR PARA PERSONAL DE SALUD</span>
-              </div>
-              
-              {/* Título principal más compacto */}
-              <div className="space-y-4">
-                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black text-slate-900 leading-tight">
-                  Más tiempo para los pacientes,
-                  <span className="block bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] bg-clip-text text-transparent">
-                    menos para el papeleo
-                  </span>
+            {/* Contenido izquierdo */}
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-[#5DA5A3]/10 to-[#A8E6CF]/10 rounded-full border border-[#5DA5A3]/20">
+                  <span className="text-[#5DA5A3] text-sm font-semibold">🚀 Próxima Generación EMR</span>
+                </div>
+                
+                <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 leading-tight">
+                  Revoluciona tu
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF]"> práctica médica</span>
+                  <br />con IA especializada
                 </h1>
                 
-                <p className="text-lg lg:text-xl text-slate-600 leading-relaxed font-medium max-w-xl">
-                  El primer AI-EMR diseñado para <strong className="text-[#5DA5A3]">fortalecer a nuestro personal de salud</strong>. 
-                  Transforma cada consulta en documentación clínica perfecta mediante inteligencia artificial especializada.
+                <p className="text-lg text-slate-600 leading-relaxed">
+                  La primera plataforma EMR con inteligencia artificial diseñada específicamente para profesionales de la salud. 
+                  Transcripción inteligente, análisis clínico automatizado y documentación SOAP en segundos.
                 </p>
               </div>
 
-              {/* Características clave en línea */}
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2 bg-white/70 px-4 py-2 rounded-lg border border-slate-200/50 shadow-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-semibold text-slate-700">99.2% Precisión</span>
+              {/* Estadísticas destacadas */}
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#5DA5A3]">95%</div>
+                  <div className="text-sm text-slate-600">Precisión IA</div>
                 </div>
-                <div className="flex items-center space-x-2 bg-white/70 px-4 py-2 rounded-lg border border-slate-200/50 shadow-sm">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-semibold text-slate-700">Escritura Mínima</span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#5DA5A3]">60%</div>
+                  <div className="text-sm text-slate-600">Tiempo Ahorrado</div>
                 </div>
-                <div className="flex items-center space-x-2 bg-white/70 px-4 py-2 rounded-lg border border-slate-200/50 shadow-sm">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                  <span className="text-sm font-semibold text-slate-700">60min Ahorro</span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#5DA5A3]">24/7</div>
+                  <div className="text-sm text-slate-600">Disponibilidad</div>
                 </div>
               </div>
 
-              {/* CTA compacto */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              {/* CTA Principal */}
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleGetStarted}
-                  className="group bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] text-white px-8 py-3 rounded-xl font-bold text-lg shadow-xl hover:shadow-[#5DA5A3]/30 hover:scale-105 transition-all duration-300"
+                  className="btn-primary px-8 py-4 text-lg font-semibold"
                 >
-                  <span className="flex items-center justify-center">
-                    Comenzar Gratis
-                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
+                  Comenzar Ahora
                 </button>
-              </div>
-
-              {/* Métricas de confianza compactas */}
-              <div className="flex items-center space-x-8 pt-4 text-sm text-slate-600">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3] text-lg">500+</span>
-                  <span>Profesionales</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3] text-lg">24/7</span>
-                  <span>Soporte</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3] text-lg">2min</span>
-                  <span>Setup</span>
-                </div>
+                <button
+                  onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 hover:text-[#5DA5A3] transition-colors"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Ver Demo
+                </button>
               </div>
             </div>
 
-            {/* Carrusel Explicativo Mejorado */}
-            <div className={`relative ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`} style={{animationDelay: '0.3s'}}>
-              <div className="relative max-w-md mx-auto">
-                
-                {/* Dispositivo principal con carrusel */}
-                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200/50 transform hover:scale-105 transition-transform duration-500">
-                  
-                  {/* Header del sistema con título dinámico */}
-                  <div className="bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-white font-bold text-sm">{carouselSlides[currentSlide].title}</div>
-                          <div className="text-white/90 text-xs">{carouselSlides[currentSlide].description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1 bg-white/20 px-2 py-1 rounded-full">
-                        <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                        <span className="text-white text-xs font-bold">ACTIVO</span>
-                      </div>
+            {/* Contenido derecho - Carrusel mejorado */}
+            <div className="lg:pl-8">
+              <div className="relative">
+                {/* Dispositivo mockup */}
+                <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                  {/* Header del dispositivo */}
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                      <div className="flex-1"></div>
+                      <div className="text-xs text-slate-500 font-mono">aiduxcare.com</div>
                     </div>
                   </div>
                   
-                  {/* Contenido dinámico del carrusel con transiciones horizontales suaves */}
-                  <div className="bg-gradient-to-b from-white to-slate-50 h-80 relative overflow-hidden">
-                    <div 
-                      className={`absolute inset-0 p-4 space-y-4 transition-all duration-700 ease-in-out ${
-                        isTransitioning 
-                          ? 'opacity-0 transform translate-x-8' 
-                          : 'opacity-1 transform translate-x-0'
-                      }`}
-                    >
-                      {renderMockupContent(carouselSlides[currentSlide].mockup)}
+                  {/* Contenido del carrusel */}
+                  <div className="h-80 p-6 overflow-hidden">
+                    <div className={`h-full transition-all duration-500 ${isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+                      {renderMockupContent(carouselSlides[currentSlide].type)}
                     </div>
                   </div>
                 </div>
-                
-                {/* Elementos flotantes dinámicos */}
-                <div className="absolute -top-3 -right-3 bg-gradient-to-r from-[#FF6F61] to-[#E55A50] text-white px-3 py-1.5 rounded-lg font-bold shadow-lg text-sm transition-all duration-500">
-                  {carouselSlides[currentSlide].highlight}
-                </div>
-                <div className="absolute -bottom-3 -left-3 bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] text-white px-3 py-1.5 rounded-lg font-bold shadow-lg text-sm">
-                  IA Médica
-                </div>
-                
-                {/* Indicadores del carrusel mejorados */}
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  {carouselSlides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSlideChange(index)}
-                      className={`h-2 rounded-full transition-all duration-500 hover:bg-[#4A8280] ${
-                        index === currentSlide ? 'bg-[#5DA5A3] w-8' : 'bg-slate-300 w-2'
-                      }`}
-                    />
-                  ))}
+
+                {/* Indicadores y navegación del carrusel */}
+                <div className="mt-6 space-y-4">
+                  {/* Información del slide actual */}
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">
+                      {carouselSlides[currentSlide].title}
+                    </h3>
+                    <p className="text-slate-600 text-sm">
+                      {carouselSlides[currentSlide].description}
+                    </p>
+                  </div>
+
+                  {/* Indicadores de progreso */}
+                  <div className="flex justify-center space-x-2">
+                    {carouselSlides.map((slide, index) => (
+                      <button
+                        key={slide.id}
+                        onClick={() => handleSlideChange(index)}
+                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                          index === currentSlide 
+                            ? 'bg-[#5DA5A3] w-8' 
+                            : 'bg-slate-300 hover:bg-slate-400'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Features del slide actual */}
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {carouselSlides[currentSlide].features.map((feature, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 bg-[#5DA5A3]/10 text-[#5DA5A3] text-xs font-medium rounded-full border border-[#5DA5A3]/20"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -402,123 +416,71 @@ const WelcomePage: React.FC = () => {
         </div>
       </main>
 
-      {/* Sección de beneficios compacta */}
-      <section className="relative z-10 py-12 bg-gradient-to-r from-white to-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-3">
-              Diseñado para profesionales médicos exigentes
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Cada funcionalidad pensada para la realidad de la consulta médica
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-white rounded-xl shadow-lg border border-slate-200/50 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] rounded-xl flex items-center justify-center mx-auto mb-4">
+      {/* Sección de demostración */}
+      <section id="demo-section" className="relative z-10 py-20 bg-gradient-to-b from-transparent to-slate-50/50">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-6">
+            Experimenta el futuro de la atención médica
+          </h2>
+          <p className="text-lg text-slate-600 mb-12 max-w-3xl mx-auto">
+            Nuestro sistema de IA médica combina tecnologías avanzadas de reconocimiento de voz, 
+            procesamiento de lenguaje natural y análisis clínico para transformar completamente 
+            tu flujo de trabajo clínico.
+          </p>
+
+          {/* Grid de características */}
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Transcripción IA</h3>
-              <p className="text-slate-600 text-sm">Comprende terminología médica especializada</p>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Transcripción Médica IA</h3>
+              <p className="text-slate-600 text-sm">
+                Reconocimiento de voz optimizado para terminología médica con precisión del 95% y detección automática de hablantes.
+              </p>
             </div>
-            
-            <div className="text-center p-6 bg-white rounded-xl shadow-lg border border-slate-200/50 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#A8E6CF] to-[#5DA5A3] rounded-xl flex items-center justify-center mx-auto mb-4">
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Análisis Clínico Inteligente</h3>
+              <p className="text-slate-600 text-sm">
+                Detección automática de patrones clínicos, alertas médicas y recomendaciones basadas en evidencia científica.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">SOAP Automático</h3>
-              <p className="text-slate-600 text-sm">Notas estructuradas en tiempo real</p>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Documentación SOAP</h3>
+              <p className="text-slate-600 text-sm">
+                Generación automática de notas SOAP estructuradas y profesionales listas para revisión en segundos.
+              </p>
             </div>
-            
-            <div className="text-center p-6 bg-white rounded-xl shadow-lg border border-slate-200/50 hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#FF6F61] to-[#E55A50] rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Ahorro Real</h3>
-              <p className="text-slate-600 text-sm">60 minutos diarios para tus pacientes</p>
-            </div>
+          </div>
+
+          {/* CTA Final */}
+          <div className="mt-16">
+            <button
+              onClick={handleGetStarted}
+              className="btn-primary px-8 py-4 text-lg font-semibold mx-auto"
+            >
+              Comenzar Gratis por 30 Días
+            </button>
+            <p className="text-sm text-slate-500 mt-4">
+              Sin tarjeta de crédito requerida • Configuración en menos de 5 minutos
+            </p>
           </div>
         </div>
       </section>
-
-      {/* Footer con CTA Potente */}
-      <footer className="relative z-10 py-16 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          
-          {/* CTA Principal del Footer */}
-          <div className="mb-12">
-            <h2 className="text-3xl lg:text-4xl font-black text-white mb-4">
-              ¿Listo para transformar tu práctica médica?
-            </h2>
-            <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-              Únete a más de <strong className="text-white">500 profesionales</strong> que ya dedican más tiempo a sus pacientes y menos al papeleo
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <button
-                onClick={handleGetStarted}
-                className="group bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] text-white px-10 py-4 rounded-2xl font-black text-xl shadow-2xl hover:shadow-[#5DA5A3]/30 hover:scale-105 transition-all duration-300"
-              >
-                <span className="flex items-center justify-center">
-                  Comenzar Gratis Ahora
-                  <svg className="w-6 h-6 ml-3 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </span>
-              </button>
-              
-              <div className="text-slate-400 text-sm">
-                <div className="flex items-center space-x-4">
-                  <span>✓ Sin tarjeta de crédito</span>
-                  <span>✓ Setup en 2 minutos</span>
-                  <span>✓ Soporte 24/7</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Información de la empresa */}
-          <div className="border-t border-slate-700 pt-8">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="flex items-center space-x-3">
-                <AiDuxCareLogo size="sm" variant="icon" />
-                <div className="text-2xl font-bold text-white">AiDuxCare</div>
-              </div>
-              <p className="text-slate-400 text-lg">
-                <strong className="text-white">"Más tiempo para los pacientes, menos para el papeleo"</strong>
-              </p>
-              <p className="text-slate-500 text-sm">
-                El primer AI-EMR diseñado para fortalecer a nuestro personal de salud
-              </p>
-              
-              {/* Estadísticas finales */}
-              <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-slate-400 pt-4">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3]">500+</span>
-                  <span>Profesionales activos</span>
-                </div>
-                <span>•</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3]">99.2%</span>
-                  <span>Precisión clínica</span>
-                </div>
-                <span>•</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-[#5DA5A3]">60min</span>
-                  <span>Ahorro diario promedio</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

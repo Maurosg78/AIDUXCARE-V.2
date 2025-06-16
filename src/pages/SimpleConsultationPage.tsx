@@ -1,21 +1,20 @@
 /**
- * 🏥 SIMPLE CONSULTATION PAGE - Consulta Clínica Práctica
- * 
- * Página de consulta simplificada para MVP:
- * - Información básica del paciente
- * - Transcripción en tiempo real
- * - Generación de notas SOAP
- * - Navegación fluida
+ * 🏥 SimpleConsultationPage - AiDuxCare V.2  
+ * Página de consulta simplificada con transcripción y análisis IA
+ * REFACTORIZADA: Usa servicios centralizados para eliminar memory leaks
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AiDuxCareLogo } from '@/components/branding/AiDuxCareLogo';
+import AiDuxVirtualAssistant from '@/components/chat/AiDuxVirtualAssistant';
 import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/services/LocalStorageService';
-import AiDuxVirtualAssistant from '../components/chat/AiDuxVirtualAssistant';
-import { GuideQuestionsService } from '../core/consultation/GuideQuestions';
+import { GuideQuestionsService } from '@/core/consultation/GuideQuestions';
+import TranscriptionService from '@/services/core/TranscriptionService';
+import { useInterval } from '@/hooks/useInterval';
 
+// ============== INTERFACES ===============
 interface Patient {
   id: string;
   name: string;
@@ -43,14 +42,15 @@ interface ConsultationState {
   guideQuestions: any[];
   showGuideQuestions: boolean;
   questionResponses: Record<string, string>;
-  transcriptionInterval: NodeJS.Timeout | null;
+  recordingTime: number;
 }
 
+// ============== COMPONENTE PRINCIPAL ===============
 const SimpleConsultationPage: React.FC = () => {
-  const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { patientId } = useParams<{ patientId: string }>();
   const { currentTherapist } = useAuth();
-
+  
   const [state, setState] = useState<ConsultationState>({
     patient: null,
     isRecording: false,
@@ -65,12 +65,17 @@ const SimpleConsultationPage: React.FC = () => {
     consultationStarted: false,
     currentQuestionIndex: 0,
     guideQuestions: [],
-    showGuideQuestions: false,
+    showGuideQuestions: true,
     questionResponses: {},
-    transcriptionInterval: null
+    recordingTime: 0
   });
 
-  // Cargar datos del paciente y preguntas guía
+  // Servicio de transcripción centralizado
+  const [transcriptionService] = useState(() => TranscriptionService.getInstance());
+
+  // ============== EFECTOS ===============
+  
+  // Cargar datos del paciente y configurar servicio
   useEffect(() => {
     if (!patientId) {
       navigate('/clinical');
@@ -96,16 +101,40 @@ const SimpleConsultationPage: React.FC = () => {
       guideQuestions,
       showGuideQuestions: guideQuestions.length > 0
     }));
-  }, [patientId, navigate]);
 
-  // Limpiar intervalo al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (state.transcriptionInterval) {
-        clearInterval(state.transcriptionInterval);
+    // Configurar servicio de transcripción
+    transcriptionService.configure({
+      language: 'es',
+      simulationMode: true,
+      enableSpeakerDetection: true
+    });
+
+    // Configurar callbacks del servicio
+    transcriptionService.setCallbacks({
+      onStateChange: (transcriptionState) => {
+        setState(prev => ({
+          ...prev,
+          isRecording: transcriptionState.isRecording,
+          transcription: transcriptionState.currentText,
+          recordingTime: transcriptionState.recordingTime
+        }));
+      },
+      onSegmentComplete: (segment) => {
+        console.log('🎤 Nuevo segmento transcrito:', segment.content);
+      },
+      onError: (error) => {
+        console.error('❌ Error en transcripción:', error);
+        alert('Error en la transcripción: ' + error);
       }
+    });
+
+    // Cleanup al desmontar
+    return () => {
+      transcriptionService.cleanup();
     };
-  }, [state.transcriptionInterval]);
+  }, [patientId, navigate, transcriptionService]);
+
+  // ============== MANEJADORES ===============
 
   const handleStartConsultation = () => {
     setState(prev => ({ ...prev, consultationStarted: true }));
@@ -139,52 +168,25 @@ const SimpleConsultationPage: React.FC = () => {
     setState(prev => ({ ...prev, showGuideQuestions: !prev.showGuideQuestions }));
   };
 
-  const handleStartRecording = () => {
-    // Limpiar intervalo anterior si existe
-    if (state.transcriptionInterval) {
-      clearInterval(state.transcriptionInterval);
+  // REFACTORIZADO: Usar servicio centralizado
+  const handleStartRecording = async () => {
+    try {
+      await transcriptionService.startRecording();
+    } catch (error) {
+      console.error('Error iniciando grabación:', error);
+      alert('Error al iniciar la grabación');
     }
-
-    setState(prev => ({ ...prev, isRecording: true, transcription: '' }));
-    
-    // REFACTORIZADA: Usar servicio centralizado de transcripción
-    // TODO: Migrar a useTranscription hook
-    const sampleTexts = [
-      "Paciente refiere dolor lumbar que ha mejorado significativamente desde la última sesión.",
-      "Movilidad aumentada, puede realizar actividades diarias sin limitación importante.",
-      "Dolor actual 3/10, previamente era 7/10.",
-      "No presenta signos de alarma neurológica.",
-      "Adherencia al tratamiento domiciliario buena."
-    ];
-
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      if (currentIndex < sampleTexts.length) {
-        setState(prev => ({
-          ...prev,
-          transcription: prev.transcription + (prev.transcription ? ' ' : '') + sampleTexts[currentIndex]
-        }));
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-        setState(prev => ({ ...prev, transcriptionInterval: null }));
-      }
-    }, 3000);
-
-    setState(prev => ({ ...prev, transcriptionInterval: interval }));
   };
 
-  const handleStopRecording = () => {
-    // Limpiar intervalo de transcripción
-    if (state.transcriptionInterval) {
-      clearInterval(state.transcriptionInterval);
+  // REFACTORIZADO: Usar servicio centralizado
+  const handleStopRecording = async () => {
+    try {
+      const segments = await transcriptionService.stopRecording();
+      console.log('🎯 Transcripción completada:', segments.length, 'segmentos');
+    } catch (error) {
+      console.error('Error deteniendo grabación:', error);
+      alert('Error al detener la grabación');
     }
-    
-    setState(prev => ({ 
-      ...prev, 
-      isRecording: false,
-      transcriptionInterval: null
-    }));
   };
 
   const handleGenerateSOAP = async () => {
@@ -195,21 +197,21 @@ const SimpleConsultationPage: React.FC = () => {
 
     setState(prev => ({ ...prev, isGeneratingSOAP: true }));
 
-    // Simulación de generación SOAP (en producción sería IA real)
-    setTimeout(() => {
-      const soapNote = {
-        subjective: "Paciente refiere dolor lumbar que ha mejorado significativamente desde la última sesión. Dolor actual 3/10, previamente era 7/10. Puede realizar actividades diarias sin limitación importante.",
-        objective: "Paciente colaborador, movilidad aumentada. No presenta signos de alarma neurológica. Adherencia al tratamiento domiciliario buena. Examen físico sin hallazgos relevantes.",
-        assessment: "Evolución favorable del cuadro álgico lumbar. Respuesta positiva al tratamiento instaurado. Sin complicaciones asociadas.",
-        plan: "Continuar con tratamiento actual. Ejercicios domiciliarios según protocolo. Control en 2 semanas. Derivar a especialista si empeoramiento."
-      };
+    // Simulación mejorada de generación SOAP
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-      setState(prev => ({
-        ...prev,
-        soapNote,
-        isGeneratingSOAP: false
-      }));
-    }, 2000);
+    const soapNote = {
+      subjective: "Paciente refiere dolor lumbar que ha mejorado significativamente desde la última sesión. Dolor actual 3/10, previamente era 7/10. Puede realizar actividades diarias sin limitación importante.",
+      objective: "Paciente colaborador, movilidad aumentada. No presenta signos de alarma neurológica. Adherencia al tratamiento domiciliario buena. Examen físico sin hallazgos relevantes.",
+      assessment: "Evolución favorable del cuadro álgico lumbar. Respuesta positiva al tratamiento instaurado. Sin complicaciones asociadas.",
+      plan: "Continuar con tratamiento actual. Ejercicios domiciliarios según protocolo. Control en 2 semanas. Derivar a especialista si empeoramiento."
+    };
+
+    setState(prev => ({
+      ...prev,
+      soapNote,
+      isGeneratingSOAP: false
+    }));
   };
 
   const handleSaveConsultation = () => {
@@ -219,8 +221,19 @@ const SimpleConsultationPage: React.FC = () => {
   };
 
   const handleBackToPatients = () => {
+    // Limpiar servicio antes de navegar
+    transcriptionService.cleanup();
     navigate('/clinical');
   };
+
+  // Formatear tiempo de grabación
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ============== RENDER ===============
 
   const currentQuestion = state.guideQuestions[state.currentQuestionIndex];
   const progress = state.guideQuestions.length > 0 
@@ -262,13 +275,21 @@ const SimpleConsultationPage: React.FC = () => {
             
             <div className="flex items-center space-x-3">
               {state.consultationStarted && (
-                <button
-                  onClick={handleSaveConsultation}
-                  className="btn-primary px-4 py-2 text-sm"
-                  disabled={!state.soapNote.subjective}
-                >
-                  Guardar Consulta
-                </button>
+                <>
+                  {state.isRecording && (
+                    <div className="flex items-center space-x-2 text-red-500">
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium">{formatTime(state.recordingTime)}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleSaveConsultation}
+                    className="btn-primary px-4 py-2 text-sm"
+                    disabled={!state.soapNote.subjective}
+                  >
+                    Guardar Consulta
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -336,134 +357,111 @@ const SimpleConsultationPage: React.FC = () => {
         ) : (
           /* Pantalla de Consulta Activa */
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Panel de Transcripción con Preguntas Guía */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
-              {/* Preguntas Guía */}
-              {state.guideQuestions.length > 0 && state.showGuideQuestions && (
-                <div className="bg-[#5DA5A3]/10 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-[#2C3E50]">Pregunta Guía {state.currentQuestionIndex + 1}/{state.guideQuestions.length}</h4>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-[#5DA5A3] h-2 rounded-full transition-all"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-[#2C3E50]/60">{progress}%</span>
-                    </div>
+            {/* Panel de Transcripción */}
+            <div className="space-y-6">
+              {/* Controles de Grabación */}
+              <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#2C3E50]">Transcripción en Tiempo Real</h3>
+                  <div className="flex items-center space-x-2">
+                    {!state.isRecording ? (
+                      <button
+                        onClick={handleStartRecording}
+                        className="btn-primary px-4 py-2 text-sm"
+                      >
+                        🎤 Iniciar Grabación
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStopRecording}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                      >
+                        ⏹️ Detener Grabación
+                      </button>
+                    )}
                   </div>
-                  
-                  {currentQuestion && (
-                    <div>
-                      <p className="text-[#2C3E50] font-medium mb-3">{currentQuestion.question}</p>
-                      <div className="flex items-center space-x-2">
+                </div>
+
+                {/* Área de Transcripción */}
+                <div className="bg-[#F8F9FA] border border-[#BDC3C7]/20 rounded-lg p-4 min-h-[200px]">
+                  {state.transcription ? (
+                    <p className="text-[#2C3E50] leading-relaxed">{state.transcription}</p>
+                  ) : (
+                    <p className="text-[#2C3E50]/50 italic">
+                      {state.isRecording 
+                        ? "Escuchando... La transcripción aparecerá aquí en tiempo real"
+                        : "Presiona 'Iniciar Grabación' para comenzar la transcripción"
+                      }
+                    </p>
+                  )}
+                </div>
+
+                {/* Botón Generar SOAP */}
+                {state.transcription && (
+                  <div className="mt-4">
+                    <button
+                      onClick={handleGenerateSOAP}
+                      disabled={state.isGeneratingSOAP}
+                      className="btn-primary px-4 py-2 text-sm w-full"
+                    >
+                      {state.isGeneratingSOAP ? 'Generando SOAP...' : '📝 Generar Nota SOAP'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Preguntas Guía */}
+              {state.guideQuestions.length > 0 && (
+                <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[#2C3E50]">Preguntas Guía</h3>
+                    <button
+                      onClick={toggleGuideQuestions}
+                      className="text-[#5DA5A3] hover:text-[#4A8B89] transition-colors"
+                    >
+                      {state.showGuideQuestions ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                  </div>
+
+                  {state.showGuideQuestions && currentQuestion && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-[#2C3E50]/60">
+                          Pregunta {state.currentQuestionIndex + 1} de {state.guideQuestions.length}
+                        </span>
+                        <div className="w-32 bg-[#F1F2F6] rounded-full h-2">
+                          <div 
+                            className="bg-[#5DA5A3] h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#5DA5A3]/10 border border-[#5DA5A3]/20 rounded-lg p-4">
+                        <p className="text-[#2C3E50] font-medium">{currentQuestion.question}</p>
+                        {currentQuestion.rationale && (
+                          <p className="text-[#2C3E50]/60 text-sm mt-2">{currentQuestion.rationale}</p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between">
                         <button
                           onClick={handlePrevQuestion}
                           disabled={state.currentQuestionIndex === 0}
-                          className="px-3 py-1 text-sm bg-white border border-[#BDC3C7]/30 rounded hover:bg-[#F7F7F7] disabled:opacity-50"
+                          className="text-[#5DA5A3] hover:text-[#4A8B89] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           ← Anterior
                         </button>
                         <button
                           onClick={handleNextQuestion}
                           disabled={state.currentQuestionIndex === state.guideQuestions.length - 1}
-                          className="px-3 py-1 text-sm bg-white border border-[#BDC3C7]/30 rounded hover:bg-[#F7F7F7] disabled:opacity-50"
+                          className="text-[#5DA5A3] hover:text-[#4A8B89] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Siguiente →
-                        </button>
-                        <button
-                          onClick={toggleGuideQuestions}
-                          className="px-3 py-1 text-sm text-[#5DA5A3] hover:text-[#4A8280] transition-colors"
-                        >
-                          Ocultar
                         </button>
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Toggle de Preguntas Guía */}
-              {state.guideQuestions.length > 0 && !state.showGuideQuestions && (
-                <button
-                  onClick={toggleGuideQuestions}
-                  className="w-full p-3 bg-[#5DA5A3]/10 border border-[#5DA5A3]/20 rounded-lg text-[#5DA5A3] hover:bg-[#5DA5A3]/20 transition-colors mb-4"
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    <span>Mostrar Preguntas Guía ({state.guideQuestions.length})</span>
-                  </div>
-                </button>
-              )}
-
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[#2C3E50]">Transcripción en Tiempo Real</h3>
-                <div className="flex items-center space-x-2">
-                  {state.isRecording && (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-red-600 font-medium">Grabando</span>
-                    </div>
-                  )}
-                  {!state.isRecording ? (
-                    <button
-                      onClick={handleStartRecording}
-                      className="btn-primary px-4 py-2 text-sm"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                      </svg>
-                      Iniciar Grabación
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleStopRecording}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                      </svg>
-                      Detener
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-[#F7F7F7] rounded-lg p-4 min-h-[300px] max-h-[400px] overflow-y-auto">
-                {state.transcription ? (
-                  <p className="text-[#2C3E50] leading-relaxed">{state.transcription}</p>
-                ) : (
-                  <p className="text-[#2C3E50]/40 italic">
-                    {state.isRecording ? 'Escuchando...' : 'Presiona "Iniciar Grabación" para comenzar la transcripción'}
-                  </p>
-                )}
-              </div>
-              
-              {state.transcription && (
-                <div className="mt-4">
-                  <button
-                    onClick={handleGenerateSOAP}
-                    disabled={state.isGeneratingSOAP}
-                    className="btn-primary w-full py-3"
-                  >
-                    {state.isGeneratingSOAP ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Generando Nota SOAP...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Generar Nota SOAP
-                      </>
-                    )}
-                  </button>
                 </div>
               )}
             </div>
@@ -472,77 +470,48 @@ const SimpleConsultationPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
               <h3 className="text-lg font-semibold text-[#2C3E50] mb-4">Nota SOAP</h3>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">
-                    <span className="text-[#5DA5A3] font-bold">S</span>ubjetivo
-                  </label>
-                  <textarea
-                    value={state.soapNote.subjective}
-                    onChange={(e) => setState(prev => ({
-                      ...prev,
-                      soapNote: { ...prev.soapNote, subjective: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 border border-[#BDC3C7]/30 rounded-md focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent"
-                    rows={3}
-                    placeholder="Información subjetiva del paciente..."
-                  />
+              {state.isGeneratingSOAP ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-[#5DA5A3] border-t-transparent rounded-full animate-spin mr-3"></div>
+                  <span className="text-[#2C3E50]">Generando nota SOAP con IA...</span>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">
-                    <span className="text-[#5DA5A3] font-bold">O</span>bjetivo
-                  </label>
-                  <textarea
-                    value={state.soapNote.objective}
-                    onChange={(e) => setState(prev => ({
-                      ...prev,
-                      soapNote: { ...prev.soapNote, objective: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 border border-[#BDC3C7]/30 rounded-md focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent"
-                    rows={3}
-                    placeholder="Observaciones objetivas..."
-                  />
+              ) : state.soapNote.subjective ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-[#2C3E50] mb-2">Subjetivo (S)</h4>
+                    <p className="text-[#2C3E50]/80 bg-[#F8F9FA] p-3 rounded border">{state.soapNote.subjective}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#2C3E50] mb-2">Objetivo (O)</h4>
+                    <p className="text-[#2C3E50]/80 bg-[#F8F9FA] p-3 rounded border">{state.soapNote.objective}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#2C3E50] mb-2">Evaluación (A)</h4>
+                    <p className="text-[#2C3E50]/80 bg-[#F8F9FA] p-3 rounded border">{state.soapNote.assessment}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#2C3E50] mb-2">Plan (P)</h4>
+                    <p className="text-[#2C3E50]/80 bg-[#F8F9FA] p-3 rounded border">{state.soapNote.plan}</p>
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">
-                    <span className="text-[#5DA5A3] font-bold">A</span>ssessment
-                  </label>
-                  <textarea
-                    value={state.soapNote.assessment}
-                    onChange={(e) => setState(prev => ({
-                      ...prev,
-                      soapNote: { ...prev.soapNote, assessment: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 border border-[#BDC3C7]/30 rounded-md focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent"
-                    rows={3}
-                    placeholder="Evaluación y diagnóstico..."
-                  />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-[#5DA5A3]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-[#5DA5A3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-[#2C3E50]/60">
+                    La nota SOAP se generará automáticamente cuando haya transcripción disponible
+                  </p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#2C3E50] mb-2">
-                    <span className="text-[#5DA5A3] font-bold">P</span>lan
-                  </label>
-                  <textarea
-                    value={state.soapNote.plan}
-                    onChange={(e) => setState(prev => ({
-                      ...prev,
-                      soapNote: { ...prev.soapNote, plan: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 border border-[#BDC3C7]/30 rounded-md focus:ring-2 focus:ring-[#5DA5A3] focus:border-transparent"
-                    rows={3}
-                    placeholder="Plan de tratamiento..."
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Asistente Virtual Flotante */}
+      {/* Asistente Virtual */}
       <AiDuxVirtualAssistant />
     </div>
   );
