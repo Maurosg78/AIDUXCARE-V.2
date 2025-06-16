@@ -141,7 +141,7 @@ const SmartDashboard: React.FC = () => {
   }, []);
 
   const handlePatientSelect = (patientId: string) => {
-    navigate(`/patient/${patientId}/pre-consultation`);
+    navigate(`/patient/${patientId}/consultation`);
   };
 
   const handleNewSession = () => {

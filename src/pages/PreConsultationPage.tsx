@@ -86,7 +86,11 @@ const PreConsultationPage: React.FC = () => {
           '¿Ha tenido episodios de dolor nocturno?',
           '¿Qué actividades le generan más molestias?',
           '¿Ha notado irradiación del dolor hacia las piernas?',
-          '¿Cómo está su estado de ánimo respecto al tratamiento?'
+          '¿Cómo está su estado de ánimo respecto al tratamiento?',
+          '¿Ha tenido que tomar medicamentos para el dolor esta semana?',
+          '¿Siente rigidez matutina en la zona lumbar?',
+          '¿El dolor interfiere con sus actividades laborales?',
+          '¿Ha notado mejoría con las técnicas de relajación?'
         ],
         riskFactors: [
           'Dolor aumentó de 6/10 a 8/10 en última semana',

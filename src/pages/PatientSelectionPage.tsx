@@ -240,7 +240,7 @@ const PatientSelectionPage: React.FC = () => {
   }, [patients, searchState]);
 
   const handlePatientSelect = (patientId: string) => {
-    navigate(`/patient/${patientId}/pre-consultation`);
+    navigate(`/patient/${patientId}/consultation`);
   };
 
   const handleStartSession = (patientId: string) => {

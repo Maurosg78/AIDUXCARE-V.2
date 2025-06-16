@@ -2,12 +2,15 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AuthGuard } from '@/components/AuthGuard';
 import AuthenticationPage from '@/pages/AuthenticationPage';
 import WelcomePage from '@/pages/WelcomePage';
+import ClinicalWorkflowPage from '@/pages/ClinicalWorkflowPage';
 import SmartDashboard from '@/pages/SmartDashboard';
 import PatientSelectionPage from '@/pages/PatientSelectionPage';
 import PreConsultationPage from '@/pages/PreConsultationPage';
 import PatientListPage from '@/pages/PatientListPage';
 import { PatientDataPage } from '@/pages/PatientDataPage';
 import PatientCompletePage from '@/pages/PatientCompletePage';
+import IntegratedConsultationPage from '@/pages/IntegratedConsultationPage';
+import SimpleConsultationPage from '@/pages/SimpleConsultationPage';
 
 export const router = createBrowserRouter([
   // 🏠 WELCOME PAGE - Primera Impresión
@@ -26,7 +29,17 @@ export const router = createBrowserRouter([
     element: <AuthenticationPage />
   },
   
-  // 🎯 SMART DASHBOARD - Centro de Comando IA
+  // 🏥 CLINICAL WORKFLOW - Dashboard Clínico Real (NUEVO)
+  {
+    path: '/clinical',
+    element: (
+      <AuthGuard>
+        <ClinicalWorkflowPage />
+      </AuthGuard>
+    )
+  },
+  
+  // 🎯 SMART DASHBOARD - Centro de Comando IA (Demo/Presentación)
   {
     path: '/dashboard',
     element: (
@@ -34,6 +47,12 @@ export const router = createBrowserRouter([
         <SmartDashboard />
       </AuthGuard>
     )
+  },
+  
+  // Redirección por defecto después del login al flujo clínico
+  {
+    path: '/main',
+    element: <Navigate to="/clinical" replace />
   },
   
   // 👥 PATIENT SELECTION - Búsqueda Inteligente
@@ -46,7 +65,27 @@ export const router = createBrowserRouter([
     )
   },
   
-  // 📋 PRE-CONSULTATION - Preparación IA
+  // 🏥 SIMPLE CONSULTATION - Consulta Práctica (NUEVO MVP)
+  {
+    path: '/patient/:patientId/simple-consultation',
+    element: (
+      <AuthGuard>
+        <SimpleConsultationPage />
+      </AuthGuard>
+    )
+  },
+  
+  // 🏥 INTEGRATED CONSULTATION - Vista Unificada (NUEVA ARQUITECTURA)
+  {
+    path: '/patient/:patientId/consultation',
+    element: (
+      <AuthGuard>
+        <IntegratedConsultationPage />
+      </AuthGuard>
+    )
+  },
+  
+  // 📋 PRE-CONSULTATION - Preparación IA (Legacy)
   {
     path: '/patient/:id/pre-consultation',
     element: (
@@ -56,7 +95,7 @@ export const router = createBrowserRouter([
     )
   },
   
-  // 🎤 ACTIVE SESSION - Consulta en Vivo
+  // 🎤 ACTIVE SESSION - Consulta en Vivo (Legacy)
   {
     path: '/patient/:id/session',
     element: (
@@ -66,7 +105,7 @@ export const router = createBrowserRouter([
     )
   },
   
-  // ✅ POST-CONSULTATION - Revisión y Envío
+  // ✅ POST-CONSULTATION - Revisión y Envío (Legacy)
   {
     path: '/patient/:id/review',
     element: (
@@ -86,10 +125,14 @@ export const router = createBrowserRouter([
     )
   },
   
-  // 🎮 DEMO INTERACTIVO
+  // 🎮 DEMO INTERACTIVO - Dashboard con datos demo
   {
     path: '/demo',
-    element: <WelcomePage /> // Por ahora redirige a welcome, luego crearemos demo específico
+    element: (
+      <AuthGuard>
+        <SmartDashboard />
+      </AuthGuard>
+    )
   },
   
   // Rutas legacy mantenidas para compatibilidad
@@ -121,18 +164,18 @@ export const router = createBrowserRouter([
   // Redirecciones inteligentes para rutas obsoletas
   {
     path: '/patient-list',
-    element: <Navigate to="/patient-selection" replace />
+    element: <Navigate to="/clinical" replace />
   },
   {
     path: '/patient-data',
-    element: <Navigate to="/patient-selection" replace />
+    element: <Navigate to="/clinical" replace />
   },
   {
     path: '/patient-complete',
-    element: <Navigate to="/dashboard" replace />
+    element: <Navigate to="/clinical" replace />
   },
   {
     path: '/session',
-    element: <Navigate to="/dashboard" replace />
+    element: <Navigate to="/clinical" replace />
   }
 ]);

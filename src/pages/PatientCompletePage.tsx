@@ -18,6 +18,30 @@ import {
   ClinicalEntity as ClinicalEntityType
 } from '../services/ClinicalAssistantService';
 
+// === NUEVAS INTERFACES PARA PREGUNTAS INTELIGENTES ===
+interface SmartQuestion {
+  id: string;
+  text: string;
+  category: 'followup' | 'clarification' | 'assessment' | 'treatment';
+  priority: 'high' | 'medium' | 'low';
+  triggeredBy: string; // Qué parte de la transcripción la activó
+  confidence: number;
+  isFromPreparation?: boolean;
+  timestamp: Date;
+}
+
+interface QuestionSuggestionEngine {
+  isActive: boolean;
+  currentSuggestions: SmartQuestion[];
+  usedQuestions: string[];
+  preparationQuestions: string[];
+  contextAnalysis: {
+    lastAnalyzedSegment: string;
+    detectedTopics: string[];
+    missingInformation: string[];
+  };
+}
+
 // Tipos simplificados para evitar dependencias problemáticas
 interface Patient {
   id: string;
@@ -121,6 +145,8 @@ interface WorkplaceState {
     analysisResult: ClinicalAnalysisResult | null;
     error: string | null;
   };
+  // === NUEVO ESTADO PARA PREGUNTAS INTELIGENTES ===
+  smartQuestions: QuestionSuggestionEngine;
 }
 
 // === UTILIDADES ===
@@ -193,6 +219,17 @@ const PatientCompletePage: React.FC = () => {
       isAnalyzing: false,
       analysisResult: null,
       error: null
+    },
+    smartQuestions: {
+      isActive: false,
+      currentSuggestions: [],
+      usedQuestions: [],
+      preparationQuestions: [],
+      contextAnalysis: {
+        lastAnalyzedSegment: '',
+        detectedTopics: [],
+        missingInformation: []
+      }
     }
   });
 
@@ -848,6 +885,17 @@ const PatientCompletePage: React.FC = () => {
         isAnalyzing: false,
         analysisResult: null,
         error: null
+      },
+      smartQuestions: {
+        isActive: false,
+        currentSuggestions: [],
+        usedQuestions: [],
+        preparationQuestions: [],
+        contextAnalysis: {
+          lastAnalyzedSegment: '',
+          detectedTopics: [],
+          missingInformation: []
+        }
       }
     });
   };
@@ -1000,6 +1048,158 @@ const PatientCompletePage: React.FC = () => {
       performClinicalAnalysis();
     }
   }, [workplace.session.status, workplace.session.entities.length]);
+
+  // === FUNCIONES PARA PREGUNTAS INTELIGENTES ===
+  
+  // Cargar preguntas de preparación
+  useEffect(() => {
+    const loadPreparationQuestions = () => {
+      try {
+        const preparationData = localStorage.getItem(`preparation-${id}`);
+        if (preparationData) {
+          const { selectedQuestions } = JSON.parse(preparationData);
+          setWorkplace(prev => ({
+            ...prev,
+            smartQuestions: {
+              ...prev.smartQuestions,
+              preparationQuestions: selectedQuestions || [],
+              isActive: true
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Error cargando preguntas de preparación:', error);
+      }
+    };
+
+    if (id) {
+      loadPreparationQuestions();
+    }
+  }, [id]);
+
+  // Analizar transcripción en tiempo real para generar preguntas
+  useEffect(() => {
+    if (workplace.session.status === 'ACTIVE' && workplace.activeListening.currentTranscript) {
+      const analyzeTranscriptForQuestions = () => {
+        const transcript = workplace.activeListening.currentTranscript;
+        const newSuggestions = generateSmartQuestions(transcript);
+        
+        if (newSuggestions.length > 0) {
+          setWorkplace(prev => ({
+            ...prev,
+            smartQuestions: {
+              ...prev.smartQuestions,
+              currentSuggestions: [
+                ...prev.smartQuestions.currentSuggestions,
+                ...newSuggestions
+              ].slice(-5) // Mantener solo las 5 más recientes
+            }
+          }));
+        }
+      };
+
+      // Analizar cada 3 segundos durante la sesión activa
+      const interval = setInterval(analyzeTranscriptForQuestions, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [workplace.session.status, workplace.activeListening.currentTranscript]);
+
+  const generateSmartQuestions = (transcript: string): SmartQuestion[] => {
+    const questions: SmartQuestion[] = [];
+    const lowerTranscript = transcript.toLowerCase();
+    
+    // Si hay muy poca transcripción, generar preguntas de ejemplo
+    if (transcript.length < 50) {
+      questions.push({
+        id: `demo_${Date.now()}_1`,
+        text: '¿Puede describir la intensidad del dolor del 1 al 10?',
+        category: 'assessment',
+        priority: 'high',
+        triggeredBy: 'inicio de sesión',
+        confidence: 0.9,
+        timestamp: new Date()
+      });
+      return questions;
+    }
+    
+    // Detectar patrones y generar preguntas contextuales
+    const patterns = [
+      {
+        keywords: ['dolor', 'duele', 'molesta'],
+        question: '¿Puede describir mejor la intensidad del dolor del 1 al 10?',
+        category: 'assessment' as const,
+        priority: 'high' as const
+      },
+      {
+        keywords: ['mejor', 'peor', 'cambio'],
+        question: '¿Desde cuándo nota este cambio?',
+        category: 'followup' as const,
+        priority: 'medium' as const
+      },
+      {
+        keywords: ['medicamento', 'pastilla', 'tratamiento'],
+        question: '¿Ha tomado algún medicamento para esto?',
+        category: 'treatment' as const,
+        priority: 'high' as const
+      },
+      {
+        keywords: ['noche', 'dormir', 'sueño'],
+        question: '¿El problema afecta su calidad de sueño?',
+        category: 'assessment' as const,
+        priority: 'medium' as const
+      },
+      {
+        keywords: ['trabajo', 'actividad', 'ejercicio'],
+        question: '¿Qué actividades específicas le resultan más difíciles?',
+        category: 'assessment' as const,
+        priority: 'medium' as const
+      }
+    ];
+
+    patterns.forEach(pattern => {
+      const hasKeywords = pattern.keywords.some(keyword => 
+        lowerTranscript.includes(keyword)
+      );
+      
+      if (hasKeywords && !workplace.smartQuestions.usedQuestions.includes(pattern.question)) {
+        questions.push({
+          id: `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          text: pattern.question,
+          category: pattern.category,
+          priority: pattern.priority,
+          triggeredBy: pattern.keywords.find(k => lowerTranscript.includes(k)) || '',
+          confidence: 0.8,
+          timestamp: new Date()
+        });
+      }
+    });
+
+    return questions;
+  };
+
+  const handleQuestionUsed = (questionId: string) => {
+    const question = workplace.smartQuestions.currentSuggestions.find(q => q.id === questionId);
+    if (question) {
+      setWorkplace(prev => ({
+        ...prev,
+        smartQuestions: {
+          ...prev.smartQuestions,
+          usedQuestions: [...prev.smartQuestions.usedQuestions, question.text],
+          currentSuggestions: prev.smartQuestions.currentSuggestions.filter(q => q.id !== questionId)
+        }
+      }));
+    }
+  };
+
+  const handleQuestionDismissed = (questionId: string) => {
+    setWorkplace(prev => ({
+      ...prev,
+      smartQuestions: {
+        ...prev.smartQuestions,
+        currentSuggestions: prev.smartQuestions.currentSuggestions.filter(q => q.id !== questionId)
+      }
+    }));
+  };
 
   // === RENDERS CONDICIONALES ===
   if (isLoading) {
@@ -1410,6 +1610,139 @@ const PatientCompletePage: React.FC = () => {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* === PREGUNTAS INTELIGENTES DURANTE SESIÓN ACTIVA === */}
+                {workplace.session.status === 'ACTIVE' && (
+                  <div className="mt-4 space-y-3">
+                    {/* DEBUG: Mostrar estado actual */}
+                    <div className="p-2 bg-yellow-100 rounded text-xs">
+                      <strong>DEBUG:</strong> isActive: {workplace.smartQuestions.isActive ? 'true' : 'false'}, 
+                      Preparadas: {workplace.smartQuestions.preparationQuestions.length}, 
+                      Sugerencias: {workplace.smartQuestions.currentSuggestions.length}
+                    </div>
+
+                    {/* Preguntas de Preparación */}
+                    {workplace.smartQuestions.preparationQuestions.length > 0 && (
+                      <div className="p-4 bg-gradient-to-r from-[#5DA5A3]/10 to-[#A8E6CF]/10 rounded-lg border border-[#5DA5A3]/20">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <svg className="w-4 h-4 text-[#5DA5A3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <h4 className="font-medium text-[#2C3E50] text-sm">Preguntas Preparadas</h4>
+                          <span className="text-xs bg-[#5DA5A3]/20 text-[#5DA5A3] px-2 py-1 rounded-full">
+                            {workplace.smartQuestions.preparationQuestions.length}
+                          </span>
+                        </div>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {workplace.smartQuestions.preparationQuestions.slice(0, 3).map((question, index) => (
+                            <div key={index} className="flex items-start space-x-2 p-2 bg-white/50 rounded text-sm">
+                              <span className="text-[#5DA5A3] font-medium">•</span>
+                              <span className="text-[#2C3E50] flex-1">{question}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preguntas Sugeridas por IA en Tiempo Real */}
+                    {workplace.smartQuestions.currentSuggestions.length > 0 && (
+                      <div className="p-4 bg-gradient-to-r from-[#FF6F61]/10 to-[#E5574A]/10 rounded-lg border border-[#FF6F61]/20">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <div className="w-2 h-2 bg-[#FF6F61] rounded-full animate-pulse"></div>
+                          <svg className="w-4 h-4 text-[#FF6F61]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          <h4 className="font-medium text-[#2C3E50] text-sm">IA Sugiere Preguntar</h4>
+                          <span className="text-xs bg-[#FF6F61]/20 text-[#FF6F61] px-2 py-1 rounded-full">
+                            TIEMPO REAL
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {workplace.smartQuestions.currentSuggestions.slice(0, 2).map((suggestion) => (
+                            <div key={suggestion.id} className="flex items-start justify-between p-3 bg-white/70 rounded-lg border border-[#FF6F61]/10">
+                              <div className="flex-1 space-y-1">
+                                <p className="text-sm text-[#2C3E50] font-medium">{suggestion.text}</p>
+                                <div className="flex items-center space-x-2 text-xs">
+                                  <span className={`px-2 py-1 rounded-full ${
+                                    suggestion.priority === 'high' ? 'bg-[#FF6F61]/20 text-[#FF6F61]' :
+                                    suggestion.priority === 'medium' ? 'bg-[#A8E6CF]/20 text-[#5DA5A3]' :
+                                    'bg-[#BDC3C7]/20 text-[#2C3E50]'
+                                  }`}>
+                                    {suggestion.priority === 'high' ? 'Alta' : 
+                                     suggestion.priority === 'medium' ? 'Media' : 'Baja'} prioridad
+                                  </span>
+                                  <span className="text-[#2C3E50]/60">
+                                    Activada por: "{suggestion.triggeredBy}"
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex space-x-1 ml-3">
+                                <button
+                                  onClick={() => handleQuestionUsed(suggestion.id)}
+                                  className="p-1.5 text-[#5DA5A3] hover:bg-[#5DA5A3]/10 rounded transition-colors"
+                                  title="Marcar como usada"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleQuestionDismissed(suggestion.id)}
+                                  className="p-1.5 text-[#BDC3C7] hover:bg-[#BDC3C7]/10 rounded transition-colors"
+                                  title="Descartar"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Estadísticas de preguntas */}
+                        <div className="mt-3 pt-3 border-t border-[#FF6F61]/10 flex items-center justify-between text-xs">
+                          <span className="text-[#2C3E50]/60">
+                            {workplace.smartQuestions.usedQuestions.length} preguntas utilizadas
+                          </span>
+                          <span className="text-[#FF6F61] font-medium">
+                            {workplace.smartQuestions.currentSuggestions.length} pendientes
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mensaje cuando no hay preguntas activas */}
+                    {workplace.smartQuestions.currentSuggestions.length === 0 && 
+                     workplace.smartQuestions.preparationQuestions.length === 0 && (
+                      <div className="p-4 bg-[#A8E6CF]/10 rounded-lg border border-[#A8E6CF]/20">
+                        <div className="w-8 h-8 bg-[#A8E6CF]/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <svg className="w-4 h-4 text-[#5DA5A3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm text-[#2C3E50]/60 text-center mb-3">
+                          La IA analizará la conversación y sugerirá preguntas relevantes
+                        </p>
+                        
+                        {/* Preguntas de ejemplo para demostración */}
+                        <div className="space-y-2">
+                          <h5 className="text-xs font-medium text-[#2C3E50] mb-2">Preguntas de ejemplo (habla para activar IA):</h5>
+                          {[
+                            '¿Cómo ha evolucionado el dolor desde la última sesión?',
+                            '¿Ha realizado los ejercicios en casa regularmente?',
+                            '¿Qué actividades le generan más molestias?'
+                          ].map((question, index) => (
+                            <div key={index} className="flex items-start space-x-2 p-2 bg-white/50 rounded text-xs">
+                              <span className="text-[#5DA5A3] font-medium">•</span>
+                              <span className="text-[#2C3E50]/70 flex-1">{question}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

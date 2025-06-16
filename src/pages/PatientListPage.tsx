@@ -155,10 +155,6 @@ const PatientListPage: React.FC = () => {
             {/* Logo y título */}
             <div className="flex items-center space-x-4">
               <AiDuxCareLogo size="sm" />
-              <div>
-                <h1 className="text-xl font-bold text-[#2C3E50]">AiDuxCare</h1>
-                <p className="text-sm text-[#2C3E50]/70">EMR Inteligente</p>
-              </div>
             </div>
 
             {/* Info del terapeuta y acciones */}

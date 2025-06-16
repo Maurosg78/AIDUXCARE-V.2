@@ -20,9 +20,9 @@ interface Patient {
   phone: string;
   email: string;
   condition: string;
-  allergies: string[];
-  medications: string[];
-  clinicalHistory: string;
+  allergies?: string[];
+  medications?: string[];
+  clinicalHistory?: string;
   derivadoPor?: string;
   createdAt: string;
   updatedAt: string;
@@ -291,28 +291,39 @@ class LocalStorageService {
   }
 
   /**
-   * Guardar nuevo paciente
+   * Guardar paciente nuevo
    */
-  savePatient(patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>): Patient | null {
+  savePatient(patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'> | Patient): Patient | null {
     try {
+      let patient: Patient;
+      
+      if ('id' in patientData) {
+        // Es un paciente completo
+        patient = patientData as Patient;
+      } else {
+        // Es datos para crear nuevo paciente
+        patient = {
+          id: `patient-${Date.now()}`,
+          ...patientData,
+          allergies: patientData.allergies || [],
+          medications: patientData.medications || [],
+          clinicalHistory: patientData.clinicalHistory || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+
       const patients = this.getAllPatients();
+      const existingIndex = patients.findIndex(p => p.id === patient.id);
       
-      const newPatient: Patient = {
-        ...patientData,
-        id: `patient_${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      if (existingIndex >= 0) {
+        patients[existingIndex] = { ...patient, updatedAt: new Date().toISOString() };
+      } else {
+        patients.push(patient);
+      }
 
-      patients.push(newPatient);
-      
-      localStorage.setItem(
-        this.getStorageKey(this.PATIENTS_KEY), 
-        JSON.stringify(patients)
-      );
-
-      console.log('✅ Paciente guardado exitosamente:', newPatient.name);
-      return newPatient;
+      localStorage.setItem(this.getStorageKey(this.PATIENTS_KEY), JSON.stringify(patients));
+      return patient;
     } catch (error) {
       console.error('❌ Error al guardar paciente:', error);
       return null;
