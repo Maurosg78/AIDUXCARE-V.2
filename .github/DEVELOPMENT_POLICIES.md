@@ -61,6 +61,14 @@ Mantener un codebase limpio, escalable y de alta calidad mediante políticas aut
 ✅ docs/API_REFERENCE.md        # Referencia de API
 ✅ docs/DEPLOYMENT.md           # Guía de despliegue
 ✅ .github/DEVELOPMENT_POLICIES.md # Este archivo
+
+🎯 DOCUMENTOS ESTRATÉGICOS PROTEGIDOS:
+✅ PLAN_NEGOCIOS_AIDUXCARE_V3.md    # Plan maestro para inversores
+✅ PROJECT_STATUS.md                # Hoja de ruta y gestión
+✅ RESUMEN_DECISIONES_CEO_CTO.md    # Decisiones estratégicas
+✅ INFORME_MVP_INVERSORES.md        # Estado técnico MVP
+✅ INFORME_AUDITORIA_IA.md          # Evaluación técnica IA
+✅ INFORME_TECNICO_AUDITORIA_IA.md  # Auditoría técnica IA
 ```
 
 ### **Documentación Prohibida**

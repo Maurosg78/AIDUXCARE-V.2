@@ -7,6 +7,16 @@ const { execSync } = require('child_process');
 
 console.log('🧹 INICIANDO LIMPIEZA SEMANAL AUTOMATIZADA\n');
 
+// 🎯 DOCUMENTOS ESTRATÉGICOS PROTEGIDOS (NUNCA ELIMINAR)
+const PROTECTED_STRATEGIC_DOCS = [
+  'PLAN_NEGOCIOS_AIDUXCARE_V3.md',
+  'PROJECT_STATUS.md',
+  'RESUMEN_DECISIONES_CEO_CTO.md',
+  'INFORME_MVP_INVERSORES.md',
+  'INFORME_AUDITORIA_IA.md',
+  'INFORME_TECNICO_AUDITORIA_IA.md'
+];
+
 const FORBIDDEN_PATTERNS = [
   // Archivos temporales y backups
   /\.backup\./,
@@ -27,7 +37,7 @@ const FORBIDDEN_PATTERNS = [
   /^debug-/,
   /^example-/,
   
-  // Documentación temporal
+  // Documentación temporal (EXCLUYE PROTEGIDOS)
   /^INFORME_.*\.md$/,
   /^PLAN_.*\.md$/,
   /^RESUMEN_.*\.md$/,
@@ -92,6 +102,12 @@ function findProblematicFiles(dir, basePath = '') {
           problematic.push(...findProblematicFiles(fullPath, relativePath));
         }
       } else {
+        // 🛡️ PROTECCIÓN: Verificar si es documento estratégico
+        if (PROTECTED_STRATEGIC_DOCS.includes(item)) {
+          console.log(`🛡️ PROTEGIDO: ${relativePath} (documento estratégico)`);
+          continue; // Saltar verificación de patrones prohibidos
+        }
+        
         // Verificar archivos prohibidos
         if (FORBIDDEN_PATTERNS.some(pattern => pattern.test(item))) {
           problematic.push({

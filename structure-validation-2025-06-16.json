@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-06-16T15:19:03.475Z",
+  "timestamp": "2025-06-16T15:28:35.343Z",
   "score": 97,
   "summary": {
     "totalChecks": 9,
@@ -12,9 +12,9 @@
   "warnings": [
     {
       "type": "excess_documentation",
-      "path": "PROJECT_STATUS.md, __tests__/evals/README.md, docs/CLEANUP_COMPLETED.md, docs/PROFESOR-EVALUATION-GUIDE.md, docs/architecture/API_SPEC.md, docs/architecture/DATA_MODEL.md, docs/decisions/ADR-Cloud_AI_Selection.md, functions/MIGRATION_GUIDE.md, functions/README.md, src/__mocks__/supabase/README.md, src/shared/components/Agent/README.md, src/shared/components/Agent/__tests__/future_evals/README.md",
+      "path": "__tests__/evals/README.md, docs/CLEANUP_COMPLETED.md, docs/PROFESOR-EVALUATION-GUIDE.md, docs/architecture/API_SPEC.md, docs/architecture/DATA_MODEL.md, docs/decisions/ADR-Cloud_AI_Selection.md, functions/MIGRATION_GUIDE.md, functions/README.md, src/__mocks__/supabase/README.md, src/shared/components/Agent/README.md, src/shared/components/Agent/__tests__/future_evals/README.md",
       "severity": "warning",
-      "reason": "12 archivo(s) de documentación no esencial"
+      "reason": "11 archivo(s) de documentación no esencial"
     }
   ]
 }

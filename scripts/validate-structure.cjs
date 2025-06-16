@@ -52,7 +52,14 @@ class StructureValidator {
       'docs/ARCHITECTURE.md',
       'docs/API_REFERENCE.md',
       'docs/DEPLOYMENT.md',
-      '.github/DEVELOPMENT_POLICIES.md'
+      '.github/DEVELOPMENT_POLICIES.md',
+      // 🎯 DOCUMENTOS ESTRATÉGICOS PROTEGIDOS
+      'PLAN_NEGOCIOS_AIDUXCARE_V3.md',
+      'PROJECT_STATUS.md',
+      'RESUMEN_DECISIONES_CEO_CTO.md',
+      'INFORME_MVP_INVERSORES.md',
+      'INFORME_AUDITORIA_IA.md',
+      'INFORME_TECNICO_AUDITORIA_IA.md'
     ];
   }
   
@@ -157,11 +164,29 @@ class StructureValidator {
     const allMdFiles = this.findMarkdownFiles('.');
     const excessDocumentation = [];
     
+    // Lista de documentos estratégicos protegidos
+    const strategicDocs = [
+      'PLAN_NEGOCIOS_AIDUXCARE_V3.md',
+      'PROJECT_STATUS.md',
+      'RESUMEN_DECISIONES_CEO_CTO.md',
+      'INFORME_MVP_INVERSORES.md',
+      'INFORME_AUDITORIA_IA.md',
+      'INFORME_TECNICO_AUDITORIA_IA.md'
+    ];
+    
     for (const mdFile of allMdFiles) {
       if (!this.allowedDocumentation.includes(mdFile)) {
+        const fileName = path.basename(mdFile);
+        
+        // 🛡️ PROTECCIÓN: Verificar si es documento estratégico
+        if (strategicDocs.includes(fileName)) {
+          console.log(`🛡️ PROTEGIDO: ${mdFile} (documento estratégico)`);
+          continue; // No evaluar como prohibido
+        }
+        
         // Verificar si es un patrón temporal prohibido
         const isTemporaryDoc = /^(INFORME_|PLAN_|RESUMEN_|IMPLEMENTACION_|MIGRACION_|CORRECCION_|HOJA_DE_RUTA_|FLUJO_|CONFIGURACION_).*\.md$/
-          .test(path.basename(mdFile));
+          .test(fileName);
         
         if (isTemporaryDoc) {
           this.violations.push({
@@ -187,16 +212,20 @@ class StructureValidator {
       console.log(`⚠️ Documentación excesiva: ${excessDocumentation.length} archivos`);
     }
     
-    // Verificar ratio de documentación
+    // Verificar ratio de documentación (excluyendo documentos estratégicos del conteo negativo)
     const sourceFiles = this.countSourceFiles('.');
-    const docRatio = allMdFiles.length / (sourceFiles || 1);
+    const nonStrategicDocs = allMdFiles.filter(file => {
+      const fileName = path.basename(file);
+      return !strategicDocs.includes(fileName);
+    });
+    const docRatio = nonStrategicDocs.length / (sourceFiles || 1);
     
     if (docRatio > 0.15) {
       this.warnings.push({
         type: 'high_documentation_ratio',
         path: 'proyecto',
         severity: 'warning',
-        reason: `Ratio de documentación muy alto: ${(docRatio * 100).toFixed(1)}% (>15%)`
+        reason: `Ratio de documentación no estratégica muy alto: ${(docRatio * 100).toFixed(1)}% (>15%)`
       });
       console.log(`⚠️ Ratio de documentación alto: ${(docRatio * 100).toFixed(1)}%`);
     }
