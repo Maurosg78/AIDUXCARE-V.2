@@ -147,7 +147,8 @@ const SimpleConsultationPage: React.FC = () => {
 
     setState(prev => ({ ...prev, isRecording: true, transcription: '' }));
     
-    // Simulación de transcripción (en producción sería Web Speech API o Google Cloud)
+    // REFACTORIZADA: Usar servicio centralizado de transcripción
+    // TODO: Migrar a useTranscription hook
     const sampleTexts = [
       "Paciente refiere dolor lumbar que ha mejorado significativamente desde la última sesión.",
       "Movilidad aumentada, puede realizar actividades diarias sin limitación importante.",
