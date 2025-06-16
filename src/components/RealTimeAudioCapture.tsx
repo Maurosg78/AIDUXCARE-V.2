@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AudioCaptureServiceReal, CaptureSession, CaptureStatus } from '../services/AudioCaptureServiceReal';
 import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
 import { WebSpeechSTTService } from '../services/WebSpeechSTTService';
+import { useInterval } from '@/hooks/useInterval';
 
 interface RealTimeAudioCaptureProps {
   onCaptureComplete?: (segments: TranscriptionSegment[]) => void;
@@ -32,7 +33,6 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   
   const audioCaptureRef = useRef<AudioCaptureServiceReal | null>(null);
-  const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Inicializar servicio de captura
   useEffect(() => {
@@ -67,32 +67,19 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       if (audioCaptureRef.current) {
         audioCaptureRef.current.cleanup();
       }
-      if (statsIntervalRef.current) {
-        clearInterval(statsIntervalRef.current);
-      }
     };
   }, [language, onTranscriptionUpdate]);
 
-  // Actualizar estadísticas en tiempo real
-  useEffect(() => {
-    if (captureStatus === 'recording' && audioCaptureRef.current) {
-      statsIntervalRef.current = setInterval(() => {
-        const stats = audioCaptureRef.current?.getSessionStats();
-        if (stats) {
-          setSessionStats(stats);
-        }
-      }, 1000);
-    } else if (statsIntervalRef.current) {
-      clearInterval(statsIntervalRef.current);
-      statsIntervalRef.current = null;
-    }
-
-    return () => {
-      if (statsIntervalRef.current) {
-        clearInterval(statsIntervalRef.current);
+  // REFACTORIZADO: Actualizar estadísticas usando hook centralizado
+  useInterval(
+    () => {
+      const stats = audioCaptureRef.current?.getSessionStats();
+      if (stats) {
+        setSessionStats(stats);
       }
-    };
-  }, [captureStatus]);
+    },
+    captureStatus === 'recording' && audioCaptureRef.current ? 1000 : null
+  );
 
   const handleStartCapture = async () => {
     if (!audioCaptureRef.current) return;

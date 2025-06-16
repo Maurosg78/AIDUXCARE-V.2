@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { audioCaptureService, TranscriptionSegment } from '@/core/audio/AudioCaptureService';
+import { useInterval } from '@/hooks/useInterval';
 
 interface AudioListenerProps {
   onCaptureComplete: (transcription: TranscriptionSegment[]) => void;
@@ -7,11 +8,19 @@ interface AudioListenerProps {
 
 /**
  * Componente para controlar la captura de audio y visualizar el estado
+ * REFACTORIZADO: Usa useInterval para eliminar memory leaks
  */
 const AudioListener: React.FC<AudioListenerProps> = ({ onCaptureComplete }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [timerId, setTimerId] = useState<number | null>(null);
+
+  // REFACTORIZADO: Timer usando hook centralizado
+  useInterval(
+    () => {
+      setElapsedTime(prev => prev + 1);
+    },
+    isCapturing ? 1000 : null
+  );
 
   // Iniciar la captura de audio
   const startCapture = () => {
@@ -20,28 +29,16 @@ const AudioListener: React.FC<AudioListenerProps> = ({ onCaptureComplete }) => {
     audioCaptureService.startCapture();
     setIsCapturing(true);
     setElapsedTime(0);
-
-    // Iniciar un contador para mostrar el tiempo transcurrido
-    const id = window.setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-    }, 1000);
-    
-    setTimerId(id);
   };
 
   // Detener la captura y procesar los resultados
   const stopCapture = () => {
     if (!isCapturing) return;
 
-    // Limpiar el timer
-    if (timerId !== null) {
-      window.clearInterval(timerId);
-      setTimerId(null);
-    }
-
     // Detener la captura y obtener resultados
     const transcription = audioCaptureService.stopCapture();
     setIsCapturing(false);
+    setElapsedTime(0);
     
     // Notificar al componente padre con los resultados
     onCaptureComplete(transcription);
