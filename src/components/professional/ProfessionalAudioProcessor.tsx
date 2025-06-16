@@ -1,12 +1,14 @@
 /**
  * 🎙️ Professional Audio Processor - AiDuxCare V.2
  * Componente para grabación y procesamiento de audio con IA
+ * REFACTORIZADO: Usa hooks centralizados para eliminar memory leaks
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AudioProcessingServiceProfessional, AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
 import { Button } from '@/shared/components/UI/Button';
 import { StructuredError } from '@/types/errors';
+import { useInterval } from '@/hooks/useInterval';
 
 interface ProfessionalAudioProcessorProps {
   visitId: string;
@@ -41,8 +43,36 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // REFACTORIZADO: Timer usando requestAnimationFrame para mejor rendimiento
+  useEffect(() => {
+    let animationId: number;
+    
+    if (audioState.isRecording) {
+      const updateTimer = () => {
+        setAudioState(prev => ({
+          ...prev,
+          recordingTime: prev.recordingTime + 1,
+          audioLevel: Math.random() * 100 // Simulación del nivel de audio
+        }));
+        
+        setTimeout(() => {
+          if (audioState.isRecording) {
+            animationId = requestAnimationFrame(updateTimer);
+          }
+        }, 1000);
+      };
+      
+      animationId = requestAnimationFrame(updateTimer);
+    }
+    
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [audioState.isRecording]);
 
   /**
    * Iniciar grabación de audio
@@ -91,15 +121,6 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         recordingTime: 0
       }));
       
-      // Iniciar timer
-      intervalRef.current = setInterval(() => {
-        setAudioState(prev => ({
-          ...prev,
-          recordingTime: prev.recordingTime + 1,
-          audioLevel: Math.random() * 100 // Simulación del nivel de audio
-        }));
-      }, 1000);
-      
     } catch (error) {
       console.error('❌ Error al iniciar grabación:', error);
       onError({
@@ -117,12 +138,6 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && audioState.isRecording) {
       mediaRecorderRef.current.stop();
-      
-      // Limpiar timer
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
       
       // Detener stream
       if (streamRef.current) {
@@ -205,10 +220,6 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
    */
   const resetRecording = useCallback(() => {
     // Limpiar estados
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -227,9 +238,6 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
