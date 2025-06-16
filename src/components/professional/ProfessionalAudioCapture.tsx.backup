@@ -1,12 +1,10 @@
 /**
- * 🎙️ Professional Audio Capture - AiDuxCare V.2
- * Captura de audio profesional sin memory leaks
- * REFACTORIZADO: Eliminados todos los setInterval problemáticos
+ * 🎤 Professional Audio Capture - Captura de Audio Real
+ * Componente para capturar audio en tiempo real para el workflow clínico
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/shared/components/UI/Button';
-import { useInterval } from '@/hooks/useInterval';
 
 interface ProfessionalAudioCaptureProps {
   onRecordingComplete: (audioBlob: Blob) => void;
@@ -21,74 +19,62 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [audioPermission, setAudioPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
-
+  const [audioPermission, setAudioPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-
-  // REFACTORIZADO: Timer usando hook centralizado
-  useInterval(
-    () => {
-      setRecordingTime(prev => prev + 1);
-    },
-    isRecording ? 1000 : null
-  );
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Solicitar permisos de micrófono
+   * Solicita permisos de micrófono
    */
   const requestMicrophonePermission = useCallback(async () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioPermission('granted');
+      return stream;
     } catch (error) {
-      console.error('❌ Error al solicitar permisos de micrófono:', error);
+      console.error('Error accessing microphone:', error);
       setAudioPermission('denied');
+      return null;
     }
   }, []);
-
-  /**
-   * Verifica permisos automáticamente al montar
-   */
-  useEffect(() => {
-    requestMicrophonePermission();
-  }, [requestMicrophonePermission]);
 
   /**
    * Inicia la grabación
    */
   const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await requestMicrophonePermission();
+    if (!stream) return;
+
+    audioChunksRef.current = [];
+    setRecordingTime(0);
+
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+      onRecordingComplete(audioBlob);
       
-      audioChunksRef.current = [];
-      setRecordingTime(0);
+      // Detener todas las pistas de audio
+      stream.getTracks().forEach(track => track.stop());
+    };
 
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start(100); // Grabar en chunks de 100ms
+    setIsRecording(true);
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        onRecordingComplete(audioBlob);
-        
-        // Detener todas las pistas de audio
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start(100); // Grabar en chunks de 100ms
-      setIsRecording(true);
-      
-    } catch (error) {
-      console.error('❌ Error al iniciar grabación:', error);
-      setAudioPermission('denied');
-    }
-  }, [onRecordingComplete]);
+    // Iniciar timer
+    timerRef.current = setInterval(() => {
+      setRecordingTime(prev => prev + 1);
+    }, 1000);
+  }, [onRecordingComplete, requestMicrophonePermission]);
 
   /**
    * Detiene la grabación
@@ -97,6 +83,11 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   }, [isRecording]);
 
@@ -110,21 +101,28 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   };
 
   /**
-   * REFACTORIZADO: Simulación simplificada sin setInterval
+   * Simula una grabación para testing (fallback si no hay micrófono)
    */
   const simulateRecording = useCallback(() => {
     setIsRecording(true);
     setRecordingTime(0);
     
-    // Usar timeout simple en lugar de interval
-    setTimeout(() => {
-      setIsRecording(false);
-      setRecordingTime(0);
-      
-      // Crear blob simulado
-      const simulatedBlob = new Blob(['simulated audio'], { type: 'audio/wav' });
-      onRecordingComplete(simulatedBlob);
-    }, 3000);
+    // Simular grabación de 3 segundos
+    const timer = setInterval(() => {
+      setRecordingTime(prev => {
+        if (prev >= 3) {
+          clearInterval(timer);
+          setIsRecording(false);
+          
+          // Crear blob simulado
+          const simulatedBlob = new Blob(['simulated audio'], { type: 'audio/wav' });
+          onRecordingComplete(simulatedBlob);
+          
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 1000);
   }, [onRecordingComplete]);
 
   return (
