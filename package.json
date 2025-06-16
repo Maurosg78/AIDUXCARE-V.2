@@ -42,7 +42,11 @@
     "test:rag-solo": "tsx scripts/test-rag-solo.ts",
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
     "test:text-processing": "tsx scripts/test-text-processing-service.ts",
-    "analyze": "node scripts/analyze-bundle.cjs"
+    "analyze": "node scripts/analyze-bundle.cjs",
+    "cleanup:weekly": "node scripts/cleanup-weekly.cjs",
+    "audit:files": "node scripts/audit-files.cjs",
+    "validate:structure": "node scripts/validate-structure.cjs",
+    "maintenance:full": "npm run cleanup:weekly && npm run audit:files && npm run validate:structure"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

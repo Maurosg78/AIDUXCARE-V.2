@@ -1,0 +1,45 @@
+{
+  "auditTimestamp": "2025-06-16T15:19:03.111Z",
+  "summary": {
+    "totalFiles": 423,
+    "totalDirectories": 133,
+    "codeQualityScore": 100,
+    "buildTime": "3.94",
+    "buildSuccess": true
+  },
+  "breakdown": {
+    "filesByExtension": {
+      ".local": 1,
+      ".json": 15,
+      "": 3,
+      ".md": 14,
+      ".yml": 2,
+      ".ts": 164,
+      ".tsx": 169,
+      ".cjs": 14,
+      ".js": 13,
+      ".rules": 1,
+      ".example": 1,
+      ".log": 1,
+      ".map": 6,
+      ".yaml": 1,
+      ".html": 2,
+      ".svg": 2,
+      ".ico": 1,
+      ".sql": 1,
+      ".sh": 3,
+      ".css": 5,
+      ".backup": 3,
+      ".backup-fase3": 1
+    },
+    "sourceFiles": 286,
+    "testFiles": 53,
+    "configFiles": 16,
+    "documentationFiles": 14
+  },
+  "issues": {
+    "suspiciousFiles": [],
+    "largeFiles": []
+  },
+  "recommendations": []
+}

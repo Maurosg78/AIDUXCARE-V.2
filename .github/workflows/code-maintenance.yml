@@ -1,0 +1,244 @@
+name: 🧹 Code Maintenance & Quality Assurance
+
+on:
+  # Ejecutar en cada push a main
+  push:
+    branches: [ main, master ]
+  
+  # Ejecutar en cada PR
+  pull_request:
+    branches: [ main, master ]
+  
+  # Ejecutar semanalmente (lunes a las 9 AM UTC)
+  schedule:
+    - cron: '0 9 * * 1'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # 🔍 Auditoría y Limpieza Semanal
+  weekly-cleanup:
+    name: 📊 Weekly Cleanup & Audit
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci --force
+        
+      - name: 🧹 Execute Weekly Cleanup
+        run: npm run cleanup:weekly
+        continue-on-error: true
+        
+      - name: 📊 Execute File Audit
+        run: npm run audit:files
+        continue-on-error: true
+        
+      - name: 📏 Validate Structure
+        run: npm run validate:structure
+        continue-on-error: true
+        
+      - name: 📄 Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maintenance-reports-${{ github.run_number }}
+          path: |
+            cleanup-report.json
+            audit-report-*.json
+            structure-validation-*.json
+          retention-days: 30
+
+  # 🔒 Validación de Estructura en PRs
+  pr-structure-validation:
+    name: 🔍 PR Structure Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci --force
+        
+      - name: 🔍 Check for Prohibited Patterns
+        run: |
+          echo "🔍 Verificando patrones prohibidos en archivos nuevos..."
+          
+          # Verificar archivos modificados en el PR
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          echo "📁 Archivos modificados:"
+          echo "$CHANGED_FILES"
+          
+          # Verificar patrones prohibidos
+          VIOLATIONS=""
+          
+          for file in $CHANGED_FILES; do
+            if [[ "$file" =~ \.backup\. ]]; then
+              VIOLATIONS="$VIOLATIONS\n❌ Archivo backup prohibido: $file"
+            fi
+            if [[ "$file" =~ \.old\. ]]; then
+              VIOLATIONS="$VIOLATIONS\n❌ Archivo .old prohibido: $file"
+            fi
+            if [[ "$file" =~ -copy\. ]]; then
+              VIOLATIONS="$VIOLATIONS\n⚠️ Archivo copia detectado: $file"
+            fi
+            if [[ "$file" =~ ^INFORME_.*\.md$ ]]; then
+              VIOLATIONS="$VIOLATIONS\n❌ Documentación temporal prohibida: $file"
+            fi
+          done
+          
+          if [ ! -z "$VIOLATIONS" ]; then
+            echo -e "\n🚨 VIOLACIONES DETECTADAS:$VIOLATIONS"
+            echo -e "\n📋 Por favor, corrige estos problemas antes de continuar."
+            exit 1
+          else
+            echo "✅ No se detectaron violaciones de políticas"
+          fi
+          
+      - name: 📏 Structure Validation
+        run: npm run validate:structure
+        
+      - name: 🧪 Build Test
+        run: npm run build
+        
+      - name: ✅ Quality Gate
+        run: |
+          echo "🎯 Verificando calidad general..."
+          
+          # Verificar que el build fue exitoso
+          if [ ! -d "dist" ]; then
+            echo "❌ Build falló - directorio dist no encontrado"
+            exit 1
+          fi
+          
+          echo "✅ Todas las verificaciones de calidad pasaron"
+
+  # 🔧 Build y Test en Push
+  build-and-test:
+    name: 🔧 Build & Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci --force
+        
+      - name: 🔍 Lint Check
+        run: npm run lint
+        continue-on-error: true
+        
+      - name: 🧪 Type Check
+        run: npm run type-check
+        continue-on-error: true
+        
+      - name: 🔧 Build Production
+        run: npm run build
+        
+      - name: 📊 Quick Structure Check
+        run: npm run validate:structure
+        continue-on-error: true
+        
+      - name: 💾 Cache Build
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: build-${{ github.sha }}
+          
+  # 📈 Métricas de Calidad
+  quality-metrics:
+    name: 📈 Quality Metrics
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci --force
+        
+      - name: 📊 Generate Quality Report
+        run: |
+          echo "📊 Generando métricas de calidad..."
+          
+          # Contar archivos por tipo
+          TS_FILES=$(find src -name "*.ts" -o -name "*.tsx" | wc -l)
+          TEST_FILES=$(find . -name "*.test.*" -o -name "*.spec.*" | wc -l)
+          CONFIG_FILES=$(find . -maxdepth 2 -name "*.config.*" | wc -l)
+          MD_FILES=$(find . -name "*.md" | wc -l)
+          
+          echo "📈 MÉTRICAS DE CALIDAD:"
+          echo "• Archivos TypeScript: $TS_FILES"
+          echo "• Archivos de test: $TEST_FILES"
+          echo "• Archivos de config: $CONFIG_FILES"
+          echo "• Archivos de documentación: $MD_FILES"
+          
+          # Calcular ratios
+          if [ $TS_FILES -gt 0 ]; then
+            TEST_RATIO=$(echo "scale=2; $TEST_FILES * 100 / $TS_FILES" | bc -l)
+            DOC_RATIO=$(echo "scale=2; $MD_FILES * 100 / $TS_FILES" | bc -l)
+            
+            echo "• Ratio de tests: ${TEST_RATIO}%"
+            echo "• Ratio de documentación: ${DOC_RATIO}%"
+            
+            # Verificar umbrales de calidad
+            if (( $(echo "$DOC_RATIO > 15" | bc -l) )); then
+              echo "⚠️ ADVERTENCIA: Ratio de documentación alto (>15%)"
+            fi
+            
+            if (( $(echo "$TEST_RATIO < 10" | bc -l) )); then
+              echo "⚠️ ADVERTENCIA: Ratio de tests bajo (<10%)"
+            fi
+          fi
+          
+      - name: 📄 Archive Quality Report
+        run: |
+          echo "Timestamp: $(date)" > quality-metrics.txt
+          echo "Commit: ${{ github.sha }}" >> quality-metrics.txt
+          echo "Branch: ${{ github.ref_name }}" >> quality-metrics.txt
+          
+      - name: 📤 Upload Metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-metrics-${{ github.run_number }}
+          path: quality-metrics.txt
+          retention-days: 30 
