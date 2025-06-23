@@ -4,9 +4,9 @@
  * Integración con Google Cloud Healthcare NLP API
  */
 
-import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import * as admin from 'firebase-admin';
+import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
+import * as admin from "firebase-admin";
 
 // Google Cloud Healthcare NLP client (production setup)
 // TODO: Install @google-cloud/healthcare package for production
@@ -32,23 +32,23 @@ interface EntityMetadata {
   description?: string;
 }
 
-type EntityType = 
-  | 'SYMPTOM'           // Síntomas (dolor de cabeza, fiebre)
-  | 'MEDICATION'        // Medicamentos (paracetamol, ibuprofeno)
-  | 'ANATOMY'           // Anatomía (corazón, pulmón, brazo)
-  | 'CONDITION'         // Condiciones (diabetes, hipertensión)
-  | 'PROCEDURE'         // Procedimientos (cirugía, biopsia)
-  | 'TEST'              // Exámenes (radiografía, análisis de sangre)
-  | 'DOSAGE'            // Dosificaciones (500mg, dos veces al día)
-  | 'TEMPORAL'          // Referencias temporales (ayer, hace una semana)
-  | 'SEVERITY'          // Severidad (leve, severo, agudo)
-  | 'OTHER';            // Otros términos médicos
+type EntityType =
+  | "SYMPTOM"           // Síntomas (dolor de cabeza, fiebre)
+  | "MEDICATION"        // Medicamentos (paracetamol, ibuprofeno)
+  | "ANATOMY"           // Anatomía (corazón, pulmón, brazo)
+  | "CONDITION"         // Condiciones (diabetes, hipertensión)
+  | "PROCEDURE"         // Procedimientos (cirugía, biopsia)
+  | "TEST"              // Exámenes (radiografía, análisis de sangre)
+  | "DOSAGE"            // Dosificaciones (500mg, dos veces al día)
+  | "TEMPORAL"          // Referencias temporales (ayer, hace una semana)
+  | "SEVERITY"          // Severidad (leve, severo, agudo)
+  | "OTHER";            // Otros términos médicos
 
 interface AnalysisRequest {
   text: string;
   sessionId: string;
   patientId: string;
-  language?: 'es' | 'en';
+  language?: "es" | "en";
   options?: {
     includeConfidenceThreshold?: number;
     enableMedicationExtraction?: boolean;
@@ -69,23 +69,23 @@ interface AnalysisResponse {
 
 // === CONFIGURACIÓN DE GOOGLE CLOUD HEALTHCARE NLP ===
 const HEALTHCARE_CONFIG = {
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'aiduxcare-mvp-prod',
-  location: 'us-central1',
-  dataset: 'aiduxcare-nlp-dataset',
-  fhirStore: 'aiduxcare-fhir-store',
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || "aiduxcare-mvp-prod",
+  location: "us-central1",
+  dataset: "aiduxcare-nlp-dataset",
+  fhirStore: "aiduxcare-fhir-store",
   // Costo aproximado por 1000 caracteres (actualizar según pricing actual)
-  costPer1000Chars: 0.0005 // $0.0005 USD por 1000 caracteres
+  costPer1000Chars: 0.0005, // $0.0005 USD por 1000 caracteres
 };
 
 // === SIMULACIÓN DE ENTIDADES PARA MVP ===
 // Esta función simula la respuesta de Google Cloud Healthcare NLP
 // TODO: Reemplazar con llamada real a la API en producción
-const simulateGoogleHealthcareNLP = async (text: string, language: string): Promise<ClinicalEntity[]> => {
+const simulateGoogleHealthcareNLP = async (text: string): Promise<ClinicalEntity[]> => {
   // Simular delay de API real
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+  await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 2000));
 
   const entities: ClinicalEntity[] = [];
-  
+
   // Patrones para diferentes tipos de entidades en español
   const entityPatterns = {
     SYMPTOM: [
@@ -96,7 +96,7 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
       /cansancio/gi,
       /fatiga/gi,
       /malestar/gi,
-      /inflamación/gi
+      /inflamación/gi,
     ],
     MEDICATION: [
       /paracetamol/gi,
@@ -105,7 +105,7 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
       /omeprazol/gi,
       /simvastatina/gi,
       /metformina/gi,
-      /losartán/gi
+      /losartán/gi,
     ],
     ANATOMY: [
       /cabeza/gi,
@@ -116,7 +116,7 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
       /pierna/gi,
       /espalda/gi,
       /pecho/gi,
-      /abdomen/gi
+      /abdomen/gi,
     ],
     CONDITION: [
       /diabetes/gi,
@@ -125,14 +125,14 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
       /artritis/gi,
       /migraña/gi,
       /ansiedad/gi,
-      /depresión/gi
+      /depresión/gi,
     ],
     DOSAGE: [
       /\d+\s*mg/gi,
       /\d+\s*gramos?/gi,
       /una\s+vez\s+al\s+día/gi,
       /dos\s+veces\s+al\s+día/gi,
-      /cada\s+\d+\s+horas/gi
+      /cada\s+\d+\s+horas/gi,
     ],
     TEMPORAL: [
       /ayer/gi,
@@ -140,13 +140,13 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
       /hace\s+un?\s+mes/gi,
       /desde\s+hace/gi,
       /por\s+la\s+mañana/gi,
-      /por\s+la\s+noche/gi
-    ]
+      /por\s+la\s+noche/gi,
+    ],
   };
 
   // Buscar entidades en el texto
   Object.entries(entityPatterns).forEach(([type, patterns]) => {
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       let match;
       while ((match = pattern.exec(text)) !== null) {
         const entity: ClinicalEntity = {
@@ -158,8 +158,8 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
           endOffset: match.index + match[0].length,
           metadata: {
             preferredTerm: match[0].toLowerCase(),
-            description: `Entidad médica detectada: ${type.toLowerCase()}`
-          }
+            description: `Entidad médica detectada: ${type.toLowerCase()}`,
+          },
         };
         entities.push(entity);
       }
@@ -172,22 +172,22 @@ const simulateGoogleHealthcareNLP = async (text: string, language: string): Prom
 // === ENDPOINT PRINCIPAL ===
 export const analyzeClinicalEntities = async (req: Request, res: Response): Promise<void> => {
   const startTime = Date.now();
-  
+
   try {
     // Validar y extraer datos de la request
     const {
       text,
       sessionId,
       patientId,
-      language = 'es',
-      options = {}
+      language = "es",
+      options = {},
     }: AnalysisRequest = req.body;
 
     // Validaciones básicas
     if (!text || !sessionId || !patientId) {
       res.status(400).json({
         success: false,
-        error: 'Faltan parámetros requeridos: text, sessionId, patientId'
+        error: "Faltan parámetros requeridos: text, sessionId, patientId",
       });
       return;
     }
@@ -197,7 +197,7 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
     if (text.length > MAX_TEXT_LENGTH) {
       res.status(400).json({
         success: false,
-        error: `Texto demasiado largo. Máximo ${MAX_TEXT_LENGTH} caracteres. Recibido: ${text.length}`
+        error: `Texto demasiado largo. Máximo ${MAX_TEXT_LENGTH} caracteres. Recibido: ${text.length}`,
       });
       return;
     }
@@ -206,26 +206,26 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
     const costEstimate = (charactersProcessed / 1000) * HEALTHCARE_CONFIG.costPer1000Chars;
 
     // Log de auditoría - Control de costos
-    console.log('💰 [COST TRACKING] Análisis de entidades iniciado:', {
+    console.log("💰 [COST TRACKING] Análisis de entidades iniciado:", {
       sessionId,
       patientId,
       charactersProcessed,
       costEstimateUSD: costEstimate,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
-            // Log en Firestore para tracking de costos
-        await getDb().collection('nlp_usage_logs').add({
+    // Log en Firestore para tracking de costos
+    await getDb().collection("nlp_usage_logs").add({
       sessionId,
       patientId,
       charactersProcessed,
       costEstimate,
       language,
       timestamp: new Date(),
-      type: 'clinical_entities_analysis'
+      type: "clinical_entities_analysis",
     });
 
-    console.log('🧠 Iniciando análisis de entidades clínicas...');
+    console.log("🧠 Iniciando análisis de entidades clínicas...");
     console.log(`📊 Texto a procesar: ${charactersProcessed} caracteres`);
     console.log(`🌍 Idioma: ${language}`);
     console.log(`💰 Costo estimado: $${costEstimate.toFixed(4)} USD`);
@@ -240,13 +240,13 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
     // const [response] = await healthcare.projects.locations.services.nlp.analyzeEntities(request);
 
     // Por ahora, usar simulación para MVP
-    const entities = await simulateGoogleHealthcareNLP(text, language);
+    const entities = await simulateGoogleHealthcareNLP(text);
 
     console.log(`✅ Análisis completado: ${entities.length} entidades encontradas`);
 
     // Filtrar por threshold de confianza si se especifica
     const confidenceThreshold = options.includeConfidenceThreshold || 0.7;
-    const filteredEntities = entities.filter(entity => entity.confidence >= confidenceThreshold);
+    const filteredEntities = entities.filter((entity) => entity.confidence >= confidenceThreshold);
 
     console.log(`🎯 Entidades filtradas por confianza (>=${confidenceThreshold}): ${filteredEntities.length}`);
 
@@ -260,7 +260,7 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
       processingTime,
       charactersProcessed,
       costEstimate,
-      language
+      language,
     });
 
     // Log de métricas por tipo de entidad
@@ -269,7 +269,7 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
       return acc;
     }, {} as Record<string, number>);
 
-    console.log('📈 Métricas de entidades por tipo:', entityCounts);
+    console.log("📈 Métricas de entidades por tipo:", entityCounts);
 
     // Respuesta exitosa
     const response: AnalysisResponse = {
@@ -278,20 +278,19 @@ export const analyzeClinicalEntities = async (req: Request, res: Response): Prom
       entities: filteredEntities,
       processingTime,
       charactersProcessed,
-      costEstimate
+      costEstimate,
     };
 
     res.status(200).json(response);
-
   } catch (error) {
-    console.error('❌ Error en análisis de entidades clínicas:', error);
-    
+    console.error("❌ Error en análisis de entidades clínicas:", error);
+
     const processingTime = Date.now() - startTime;
-    
+
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Error interno del servidor',
-      processingTime
+      error: error instanceof Error ? error.message : "Error interno del servidor",
+      processingTime,
     });
   }
 };
@@ -304,7 +303,7 @@ async function saveAnalysisToFirestore({
   processingTime,
   charactersProcessed,
   costEstimate,
-  language
+  language,
 }: {
   sessionId: string;
   patientId: string;
@@ -315,7 +314,7 @@ async function saveAnalysisToFirestore({
   language: string;
 }): Promise<void> {
   try {
-    await getDb().collection('clinical_analyses').add({
+    await getDb().collection("clinical_analyses").add({
       sessionId,
       patientId,
       entities,
@@ -325,15 +324,15 @@ async function saveAnalysisToFirestore({
       language,
       createdAt: new Date(),
       totalEntities: entities.length,
-      entityTypes: [...new Set(entities.map(e => e.type))],
-      averageConfidence: entities.length > 0 
-        ? entities.reduce((sum, e) => sum + e.confidence, 0) / entities.length 
-        : 0
+      entityTypes: [...new Set(entities.map((e) => e.type))],
+      averageConfidence: entities.length > 0
+        ? entities.reduce((sum, e) => sum + e.confidence, 0) / entities.length
+        : 0,
     });
 
-    console.log('💾 Análisis guardado en Firestore correctamente');
+    console.log("💾 Análisis guardado en Firestore correctamente");
   } catch (error) {
-    console.error('❌ Error al guardar análisis en Firestore:', error);
+    console.error("❌ Error al guardar análisis en Firestore:", error);
     throw error;
   }
 }
@@ -342,25 +341,25 @@ async function saveAnalysisToFirestore({
 export const getClinicalAnalysis = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sessionId } = req.params;
-    
+
     if (!sessionId) {
       res.status(400).json({
         success: false,
-        error: 'sessionId es requerido'
+        error: "sessionId es requerido",
       });
       return;
     }
 
-    const snapshot = await getDb().collection('clinical_analyses')
-      .where('sessionId', '==', sessionId)
-      .orderBy('createdAt', 'desc')
+    const snapshot = await getDb().collection("clinical_analyses")
+      .where("sessionId", "==", sessionId)
+      .orderBy("createdAt", "desc")
       .limit(1)
       .get();
 
     if (snapshot.empty) {
       res.status(404).json({
         success: false,
-        error: 'No se encontró análisis para la sesión especificada'
+        error: "No se encontró análisis para la sesión especificada",
       });
       return;
     }
@@ -371,14 +370,13 @@ export const getClinicalAnalysis = async (req: Request, res: Response): Promise<
     res.status(200).json({
       success: true,
       id: analysisDoc.id,
-      ...analysisData
+      ...analysisData,
     });
-
   } catch (error) {
-    console.error('❌ Error al obtener análisis clínico:', error);
+    console.error("❌ Error al obtener análisis clínico:", error);
     res.status(500).json({
       success: false,
-      error: 'Error interno del servidor'
+      error: "Error interno del servidor",
     });
   }
 };
@@ -386,55 +384,54 @@ export const getClinicalAnalysis = async (req: Request, res: Response): Promise<
 // === ENDPOINT PARA ESTADÍSTICAS DE USO Y COSTOS ===
 export const getNLPUsageStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { timeframe = '24h' } = req.query;
-    
+    const { timeframe = "24h" } = req.query;
+
     // Calcular fecha de inicio según timeframe
-    let startDate = new Date();
+    const startDate = new Date();
     switch (timeframe) {
-      case '1h':
-        startDate.setHours(startDate.getHours() - 1);
-        break;
-      case '24h':
-        startDate.setDate(startDate.getDate() - 1);
-        break;
-      case '7d':
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(startDate.getDate() - 30);
-        break;
-      default:
-        startDate.setDate(startDate.getDate() - 1);
+    case "1h":
+      startDate.setHours(startDate.getHours() - 1);
+      break;
+    case "24h":
+      startDate.setDate(startDate.getDate() - 1);
+      break;
+    case "7d":
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case "30d":
+      startDate.setDate(startDate.getDate() - 30);
+      break;
+    default:
+      startDate.setDate(startDate.getDate() - 1);
     }
 
-    const snapshot = await getDb().collection('nlp_usage_logs')
-      .where('timestamp', '>=', startDate)
+    const snapshot = await getDb().collection("nlp_usage_logs")
+      .where("timestamp", ">=", startDate)
       .get();
 
-    const logs = snapshot.docs.map(doc => doc.data());
-    
+    const logs = snapshot.docs.map((doc) => doc.data());
+
     const stats = {
       totalCalls: logs.length,
       totalCharactersProcessed: logs.reduce((sum, log) => sum + (log.charactersProcessed || 0), 0),
       totalCostEstimate: logs.reduce((sum, log) => sum + (log.costEstimate || 0), 0),
-      averageCharactersPerCall: logs.length > 0 
-        ? logs.reduce((sum, log) => sum + (log.charactersProcessed || 0), 0) / logs.length 
+      averageCharactersPerCall: logs.length > 0
+        ? logs.reduce((sum, log) => sum + (log.charactersProcessed || 0), 0) / logs.length
         : 0,
       timeframe,
       periodStart: startDate.toISOString(),
-      periodEnd: new Date().toISOString()
+      periodEnd: new Date().toISOString(),
     };
 
     res.status(200).json({
       success: true,
-      stats
+      stats,
     });
-
   } catch (error) {
-    console.error('❌ Error al obtener estadísticas de uso:', error);
+    console.error("❌ Error al obtener estadísticas de uso:", error);
     res.status(500).json({
       success: false,
-      error: 'Error interno del servidor'
+      error: "Error interno del servidor",
     });
   }
-}; 
+};

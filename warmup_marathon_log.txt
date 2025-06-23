@@ -3901,3 +3901,2244 @@
 🎉 Campaña de calentamiento completada exitosamente
 ==================================================================================
 
+
+==================================================================================
+[2025-06-23 09:09:55] ITERACIÓN #2
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:09:55.247Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 289ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 220ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 221ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 217ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 234ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:14:21] ITERACIÓN #46
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:14:21.805Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 295ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 219ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 213ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 221ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 216ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 233ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:20:06] ITERACIÓN #3
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:20:06.599Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 316ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 211ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 211ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 214ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 235ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:24:33] ITERACIÓN #47
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:24:34.050Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 386ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 205ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 212ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 226ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 249ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:30:17] ITERACIÓN #4
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:30:18.036Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 289ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 211ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 209ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 216ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 230ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:34:45] ITERACIÓN #48
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:34:45.491Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 290ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 232ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 228ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 238ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:40:33] ITERACIÓN #5
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:40:33.981Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 313ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 213ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 236ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 207ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 237ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 09:45:05] ITERACIÓN #49
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T07:45:05.926Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 281ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 226ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 213ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 218ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 211ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 230ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 10:02:44] ITERACIÓN #6
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T08:02:44.294Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 260538ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 208ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 199ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 184ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 166ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 52259ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 10:11:29] ITERACIÓN #50
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T08:11:29.124Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 214ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 168ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 195ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 195ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 190ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 192ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 10:17:15] ITERACIÓN #7
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T08:17:15.762Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 268ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 171ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 184ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 168ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 201ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 10:50:10] ITERACIÓN #51
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T08:50:10.832Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 1754ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 193ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 184ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 185ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 204ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 504ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 11:31:50] ITERACIÓN #8
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T09:31:51.002Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 1683ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 231ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 190ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 187ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 200ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 498ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 11:36:16] ITERACIÓN #52
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T09:36:16.962Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 252ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 216ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 197ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 183ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 194ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 208ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 11:46:16] ITERACIÓN #9
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T09:46:16.223Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 340ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 212ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 249ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 205ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 230ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 247ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 11:50:40] ITERACIÓN #53
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T09:50:40.693Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 278ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 230ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 205ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 232ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 232ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 11:56:27] ITERACIÓN #10
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T09:56:27.669Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 321ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 859ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 292ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 255ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 216ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 389ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:01:11] ITERACIÓN #54
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:01:11.896Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 243ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 220ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 231ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 326ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 237ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 251ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:06:59] ITERACIÓN #11
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:06:59.716Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 329ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 217ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 315ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 229ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 261ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:11:23] ITERACIÓN #55
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:11:23.399Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 242ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 221ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 223ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 218ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 246ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 230ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:17:23] ITERACIÓN #12
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:17:23.373Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 295ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 211ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 212ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 221ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 231ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 234ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:21:46] ITERACIÓN #56
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:21:46.824Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 289ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 214ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 215ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 214ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 237ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 234ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:27:34] ITERACIÓN #13
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:27:34.736Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 470ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 288ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 226ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 246ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 233ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 293ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:31:58] ITERACIÓN #57
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:31:58.261Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 331ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 222ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 260ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 230ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 235ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 256ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:37:46] ITERACIÓN #14
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:37:46.384Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 297ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 220ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 232ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 223ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 231ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 241ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:42:09] ITERACIÓN #58
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:42:09.733Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 282ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 220ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 232ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 220ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 236ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+
+
+==================================================================================
+[2025-06-23 12:47:57] ITERACIÓN #15
+==================================================================================
+🔥 INICIANDO CAMPAÑA DE CALENTAMIENTO
+🔥 Sesiones programadas: 1
+🔥 Intervalo entre sesiones: 1 minutos
+🔥 Proyecto objetivo: aiduxcare-mvp-prod
+================================================================================
+
+🔥 SESIÓN DE CALENTAMIENTO #1
+🔥 Timestamp: 2025-06-23T10:47:58.205Z
+🔥 Proyecto: aiduxcare-mvp-prod
+🔥 Objetivo: Generar actividad en Cloud Translation API
+================================================================================
+
+📋 Ejecutando Caso 1 - Dolor Lumbar...
+✅ Status: 200
+⏱️  Tiempo: 338ms
+🔍 Entidades: 4
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 2 - Lesión de Hombro...
+✅ Status: 200
+⏱️  Tiempo: 224ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 3 - Síntomas Múltiples...
+✅ Status: 200
+⏱️  Tiempo: 290ms
+🔍 Entidades: 3
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 4 - Problema Cervical...
+✅ Status: 200
+⏱️  Tiempo: 223ms
+🔍 Entidades: 1
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📋 Ejecutando Caso 5 - Lesión Deportiva...
+✅ Status: 200
+⏱️  Tiempo: 214ms
+🔍 Entidades: 2
+📝 Secciones SOAP: 4
+🔄 Método: Enhanced Basic Processor (Principal)
+🔥 Calentamiento: Cloud Translation API - Calentamiento ejecutado obligatoriamente
+🔥 Estado warmupStatus: COMPLETED
+
+📊 RESUMEN DE LA SESIÓN
+==================================================
+✅ Tests exitosos: 5/5
+🔍 Total entidades detectadas: 12
+📝 Total secciones SOAP: 20
+⏱️  Tiempo promedio: 258ms
+🔥 Actividad de calentamiento: ✅ EJECUTADA
+
+💾 Resultados guardados en: warmup-session-1-2025-06-23.json
+
+🎯 RESUMEN FINAL DE LA CAMPAÑA
+==================================================
+🔥 Sesiones completadas: 1
+📋 Tests totales: 5
+✅ Tests exitosos: 5/5
+🔍 Total entidades procesadas: 12
+🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES
+🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima
+
+🎉 Campaña de calentamiento completada exitosamente
+==================================================================================
+

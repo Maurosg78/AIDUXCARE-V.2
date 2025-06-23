@@ -3,13 +3,13 @@ import * as admin from "firebase-admin";
 import * as express from "express";
 import * as cors from "cors";
 import clinicalNLPRoutes from "./routes/clinicalNLP";
-import { 
+import {
   transcribeAudio,
-  getTranscriptionHistory
+  getTranscriptionHistory,
 } from "./api/transcription";
 import {
   processNLPAnalysis,
-  getNLPAnalysisStatus
+  getNLPAnalysisStatus,
 } from "./api/nlp-analysis";
 
 admin.initializeApp();
@@ -17,14 +17,14 @@ admin.initializeApp();
 const app = express();
 
 // Configuración CORS más permisiva para desarrollo
-app.use(cors({ 
+app.use(cors({
   origin: true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const patientsCollection = admin.firestore().collection("patients");
@@ -34,10 +34,11 @@ app.post("/patients", async (req, res) => {
   try {
     const patientData = req.body;
 
-    if (!patientData.name || !patientData.email || !patientData.phone || !patientData.birthDate || !patientData.reasonForConsultation) {
+    if (!patientData.name || !patientData.email || !patientData.phone ||
+        !patientData.birthDate || !patientData.reasonForConsultation) {
       res.status(400).json({
         error: "Missing required fields",
-        details: "name, email, phone, birthDate, and reasonForConsultation are required"
+        details: "name, email, phone, birthDate, and reasonForConsultation are required",
       });
       return;
     }
@@ -45,7 +46,7 @@ app.post("/patients", async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(patientData.email)) {
       res.status(400).json({
-        error: "Invalid email format"
+        error: "Invalid email format",
       });
       return;
     }
@@ -54,7 +55,7 @@ app.post("/patients", async (req, res) => {
     if (!phoneRegex.test(patientData.phone)) {
       res.status(400).json({
         error: "Invalid phone format",
-        details: "Phone must be in format: +56 9 XXXX XXXX"
+        details: "Phone must be in format: +56 9 XXXX XXXX",
       });
       return;
     }
@@ -63,13 +64,13 @@ app.post("/patients", async (req, res) => {
     const patientRef = await patientsCollection.add({
       ...patientData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     });
 
     const patientDoc = await patientRef.get();
     const patient = {
       id: patientDoc.id,
-      ...patientDoc.data()
+      ...patientDoc.data(),
     };
 
     res.status(201).json(patient);
@@ -77,7 +78,7 @@ app.post("/patients", async (req, res) => {
     console.error("Error creating patient:", error);
     res.status(500).json({
       error: "Internal server error",
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -86,7 +87,7 @@ app.post("/patients", async (req, res) => {
 app.get("/patients", async (req, res) => {
   try {
     const snapshot = await patientsCollection.get();
-    const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const patients = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(patients);
   } catch (error) {
     console.error("Error in GET /patients:", error);
@@ -150,12 +151,12 @@ app.use("/clinical-nlp", clinicalNLPRoutes);
 
 // === ENDPOINT DE SALUD ===
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: 'healthy',
+  res.json({
+    status: "healthy",
     timestamp: new Date().toISOString(),
-    service: 'aiduxcare-api-v2',
-    version: '2.0.0',
-    environment: 'production'
+    service: "aiduxcare-api-v2",
+    version: "2.0.0",
+    environment: "production",
   });
 });
 
@@ -172,4 +173,4 @@ export const api = onRequest({
 export {
   getTranscriptionHistory,
   // ... otros exports ...
-}; 
+};
