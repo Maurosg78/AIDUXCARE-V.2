@@ -3,20 +3,17 @@
  * Rutas para los endpoints de transcripción con Google Speech-to-Text
  */
 
-import * as express from 'express';
-import {
-  processTranscription,
-  getTranscriptionStatus
-} from '../api/transcription';
+import { Router } from 'express';
+import { transcribeAudio, getTranscriptionHistory } from '../api/transcription';
 
-const router = express.Router();
+const router = Router();
 
 // === ENDPOINTS PRINCIPALES ===
 
-// POST /api/transcription - Procesar audio y devolver transcripción
-router.post('/', processTranscription);
+// POST /api/transcription - Transcribir audio
+router.post('/', transcribeAudio);
 
-// GET /api/transcription/status/:sessionId - Obtener estado de transcripción
-router.get('/status/:sessionId', getTranscriptionStatus);
+// GET /api/transcription/history/:sessionId - Obtener historial de transcripción
+router.get('/history/:sessionId', getTranscriptionHistory);
 
 export default router; 

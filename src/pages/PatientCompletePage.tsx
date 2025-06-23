@@ -184,7 +184,7 @@ const localStorageService = {
 };
 
 const PatientCompletePage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -243,11 +243,11 @@ const PatientCompletePage: React.FC = () => {
   // Cargar datos del paciente
   useEffect(() => {
     const loadPatientData = async () => {
-      if (!id) {
+      if (!patientId) {
         setError('ID de paciente no proporcionado');
         setIsLoading(false);
-        return;
-      }
+      return;
+    }
 
       try {
         setIsLoading(true);
@@ -257,7 +257,7 @@ const PatientCompletePage: React.FC = () => {
         
         // Buscar paciente en localStorage
         const patients = localStorageService.getAllPatients();
-        const foundPatient = patients.find(p => p.id === id);
+        const foundPatient = patients.find(p => p.id === patientId);
         
         if (!foundPatient) {
           throw new Error('Paciente no encontrado');
@@ -273,7 +273,7 @@ const PatientCompletePage: React.FC = () => {
     };
     
     loadPatientData();
-  }, [id, navigate]);
+  }, [patientId, navigate]);
 
   // REFACTORIZADO: Timer para duración de sesión usando hook centralizado
   useInterval(
@@ -1036,7 +1036,7 @@ const PatientCompletePage: React.FC = () => {
   useEffect(() => {
     const loadPreparationQuestions = () => {
       try {
-        const preparationData = localStorage.getItem(`preparation-${id}`);
+        const preparationData = localStorage.getItem(`preparation-${patientId}`);
         if (preparationData) {
           const { selectedQuestions } = JSON.parse(preparationData);
           setWorkplace(prev => ({
@@ -1053,10 +1053,10 @@ const PatientCompletePage: React.FC = () => {
       }
     };
 
-    if (id) {
+    if (patientId) {
       loadPreparationQuestions();
     }
-  }, [id]);
+  }, [patientId]);
 
   // REFACTORIZADO: Analizar transcripción usando hook centralizado
   useInterval(
@@ -1226,8 +1226,8 @@ const PatientCompletePage: React.FC = () => {
               <div>
                 <h1 className="text-xl font-bold text-[#2C3E50]">AiDuxCare</h1>
                 <p className="text-sm text-[#2C3E50]/70">EMR Inteligente</p>
-              </div>
-            </div>
+          </div>
+        </div>
 
             {/* Info del terapeuta y acciones */}
             <div className="flex items-center space-x-4">
@@ -1268,7 +1268,7 @@ const PatientCompletePage: React.FC = () => {
                   {patient.name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
+            <div>
                 <h2 className="text-xl font-semibold text-[#2C3E50]">{patient.name}</h2>
                 <p className="text-sm text-[#2C3E50]/70">
                   {patient.age} años • {patient.condition}
@@ -1298,8 +1298,8 @@ const PatientCompletePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
+            </div>
+            
       {/* Asistente AiDux - Solo visible al hacer clic */}
       {showAssistant && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1441,10 +1441,10 @@ const PatientCompletePage: React.FC = () => {
 
               {/* Métricas */}
               <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
+            <div>
                   <div className="text-2xl font-bold text-[#2C3E50]">
                     {workplace.session.transcription.length}
-                  </div>
+            </div>
                   <div className="text-xs text-[#2C3E50]/60">Notas</div>
                 </div>
                 <div>
@@ -1458,12 +1458,12 @@ const PatientCompletePage: React.FC = () => {
                     {formatDuration(workplace.session.duration)}
                   </div>
                   <div className="text-xs text-[#2C3E50]/60">Tiempo</div>
-                </div>
-              </div>
+          </div>
+        </div>
 
               {/* Acciones */}
               <div className="mt-6 space-y-3">
-                <button
+          <button
                   disabled
                   className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-[#BDC3C7]/20 text-[#BDC3C7] rounded-lg cursor-not-allowed"
                 >
@@ -1481,9 +1481,9 @@ const PatientCompletePage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
                   <span className="text-sm">Volver</span>
-                </button>
-              </div>
-            </div>
+          </button>
+        </div>
+      </div>
           </div>
 
           {/* Panel Central: Transcripción */}
@@ -1869,4 +1869,4 @@ const PatientCompletePage: React.FC = () => {
   );
 };
 
-export default PatientCompletePage;
+export default PatientCompletePage; 

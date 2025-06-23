@@ -1,10 +1,4 @@
-// Tipos para Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+// Tipos para Web Speech API - Versión simplificada sin conflictos
 
 export interface SpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -68,12 +62,4 @@ export interface SpeechGrammar {
   weight: number;
 }
 
-declare var SpeechRecognition: {
-  prototype: SpeechRecognition;
-  new(): SpeechRecognition;
-};
-
-declare var webkitSpeechRecognition: {
-  prototype: SpeechRecognition;
-  new(): SpeechRecognition;
-}; 
+// Eliminadas declaraciones conflictivas de SpeechRecognition 

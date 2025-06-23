@@ -32,6 +32,17 @@ export default defineConfig({
       "@/lib": path.resolve(__dirname, "./src/lib"),
       "@/shared": path.resolve(__dirname, "./src/shared"),
       "@/core": path.resolve(__dirname, "./src/core"),
+      // POLYFILLS PARA WINSTON Y NODE.JS MODULES
+      "util": "util",
+      "os": "os-browserify/browser",
+      "path": "path-browserify",
+      "fs": "browserify-fs",
+      "http": "stream-http",
+      "https": "https-browserify",
+      "zlib": "browserify-zlib",
+      "events": "events",
+      "buffer": "buffer",
+      "stream": "stream-browserify"
     }
   },
   // Mejorar la configuración de dependencias
@@ -41,7 +52,11 @@ export default defineConfig({
       '@supabase/supabase-js',
       'react',
       'react-dom',
-      'react-router-dom'
+      'react-router-dom',
+      // INCLUIR POLYFILLS
+      'util',
+      'events',
+      'buffer'
     ],
     esbuildOptions: {
       define: {
@@ -53,22 +68,15 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: false,
-    open: true,
+    open: false,
     host: true,
     cors: true,
     proxy: {
-      // Proxy para Ollama en desarrollo
-      '/api/ollama': {
-        target: 'http://localhost:11434',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/ollama/, '/api'),
-      },
-      // Proxy para la Cloud Function de pacientes
       '/api': {
-        target: 'https://createpatient-53031427369.us-central1.run.app',
+        // Apuntamos directamente a la función desplegada en Google Cloud
+        target: 'https://us-central1-aiduxcare-mvp-prod.cloudfunctions.net',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: true,
+        // No necesitamos reescribir la ruta, ya que la estructura coincide
       },
     },
   },
@@ -91,14 +99,19 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: false, // MANTENER CONSOLE PARA UAT
         drop_debugger: true,
       },
     },
     target: 'esnext'
   },
   define: {
-    // Eliminar referencias a service workers que causan errores
+    // POLYFILLS PARA COMPATIBILIDAD NAVEGADOR
+    'process.env': {},
+    'process.platform': '"browser"',
+    'process.version': '"v18.0.0"',
+    'process.versions': '{}',
+    'process.browser': 'true',
     'self': 'globalThis',
     'global': 'globalThis',
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),

@@ -195,7 +195,7 @@ const PatientSelectionPage: React.FC = () => {
 
   useEffect(() => {
     // Filtrado y búsqueda inteligente
-    let filtered = patients.filter(patient => {
+    const filtered = patients.filter(patient => {
       // Búsqueda por texto
       const matchesQuery = searchState.query === '' || 
         patient.name.toLowerCase().includes(searchState.query.toLowerCase()) ||
@@ -414,7 +414,7 @@ const PatientSelectionPage: React.FC = () => {
             <div
               key={patient.id}
               className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20 hover:shadow-xl transition-all cursor-pointer"
-              onClick={() => handlePatientSelect(patient.id)}
+                                                        role="button" tabIndex={0} onClick={() => handlePatientSelect(patient.id)} onKeyDown={(e) => e.key === "Enter" && handlePatientSelect(patient.id)}
             >
               {/* Header del paciente */}
               <div className="flex items-start justify-between mb-4">

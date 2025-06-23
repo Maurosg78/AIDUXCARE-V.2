@@ -95,7 +95,7 @@ const simulateGoogleHealthcareNLP = async (text, language) => {
                     id: (0, uuid_1.v4)(),
                     text: match[0],
                     type: type,
-                    confidence: 0.7 + Math.random() * 0.3,
+                    confidence: 0.7 + Math.random() * 0.3, // Confianza entre 70-100%
                     startOffset: match.index,
                     endOffset: match.index + match[0].length,
                     metadata: {

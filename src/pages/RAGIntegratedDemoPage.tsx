@@ -55,103 +55,18 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
     
     // Simular datos de prueba
     const mockResult: AudioProcessingResult = {
-      transcription: [
-        {
-          id: 'seg-1',
-          timestamp: new Date().toISOString(),
-          actor: 'paciente',
-          content: 'Doctor, tengo un dolor muy fuerte en el cuello desde hace 3 días, especialmente cuando giro la cabeza hacia la derecha.',
-          confidence: 'entendido',
-          approved: true,
-          edited: false
-        },
-        {
-          id: 'seg-2',
-          timestamp: new Date().toISOString(),
-          actor: 'profesional',
-          content: 'Veo contractura muscular en el trapecio superior derecho. Vamos a aplicar técnicas de terapia manual y ejercicios de movilización.',
-          confidence: 'entendido',
-          approved: true,
-          edited: false
-        }
-      ],
-      entities: [
-        { id: 'rag_1', text: 'dolor cervical', type: 'symptom', confidence: 0.95 },
-        { id: 'rag_2', text: 'contractura muscular', type: 'symptom', confidence: 0.90 },
-        { id: 'rag_3', text: 'terapia manual', type: 'treatment', confidence: 0.88 },
-        { id: 'rag_4', text: 'trapecio superior', type: 'objective', confidence: 0.92 }
-      ],
+      transcription: 'Doctor, tengo un dolor muy fuerte en el cuello desde hace 3 días, especialmente cuando giro la cabeza hacia la derecha. Veo contractura muscular en el trapecio superior derecho. Vamos a aplicar técnicas de terapia manual y ejercicios de movilización.',
       soapNotes: {
         subjective: 'Paciente refiere dolor cervical de 2 semanas de evolución...',
         objective: 'Contractura del trapecio superior, ROM limitado...',
         assessment: 'Síndrome cervical con componente miofascial...',
         plan: 'Terapia manual 3x/semana, ejercicios domiciliarios...',
-        generated_at: new Date(),
+        generated_at: new Date().toISOString(),
         confidence_score: 0.89
       },
-      agentSuggestions: [
-        {
-          id: '1',
-          type: 'recommendation',
-          field: 'treatment',
-          content: 'Considerar técnicas de Mulligan para dolor cervical específico',
-          sourceBlockId: 'block-1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ],
-      metrics: {
-        session_id: 'rag-demo-session',
-        total_processing_time_ms: 2800,
-        stt_duration_ms: 0,
-        stt_confidence: 1.0,
-        entity_extraction_time_ms: 600,
-        entities_extracted: 4,
-        soap_generation_time_ms: 800,
-        soap_completeness: 0.89,
-        soap_confidence: 0.89,
-        total_tokens_used: 1500,
-        estimated_cost_usd: 0.0,
-        overall_confidence: 0.88,
-        requires_review: false
-      },
-      qualityAssessment: {
-        overall_score: 87,
-        completeness: 90,
-        clinical_relevance: 85,
-        requires_review: false,
-        confidence_level: 'high',
-        red_flags: [],
-        recommendations: ['Documentación completa y profesional']
-      },
-      processingId: 'demo-processing-id',
-      physiotherapyContext: {
-        session: {
-          visit_id: 'demo-visit',
-          patient_id: 'demo-patient',
-          date: new Date(),
-          session_type: 'follow_up',
-          duration_minutes: 30,
-          therapist_id: 'therapist_demo'
-        },
-        patient_profile: { 
-          id: 'demo-patient',
-          name: 'Paciente Demo',
-          age: 45, 
-          gender: 'M' 
-        },
-        processed_transcript: {
-          full_text: 'Transcripción completa de la sesión...',
-          segments: [],
-          entities: [],
-          language: 'es',
-          processing_time_ms: 2500,
-          word_count: 45,
-          confidence_average: 0.92
-        },
-        context_version: '1.0.0',
-        created_at: new Date()
-      }
+      confidence: 0.89,
+      processingTime: 2800,
+      audioQuality: 'excellent' as const
     };
 
     // Simular resultado RAG también
@@ -282,22 +197,22 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
                   </div>
                 </div>
 
-                {/* Entities */}
+                {/* Entities - Eliminado porque AudioProcessingResult no tiene entities */}
+                {/* 
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    🏷️ Entidades Clínicas ({processingResult.entities.length})
+                    🏷️ Entidades Clínicas (Demo)
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {processingResult.entities.map((entity, i) => (
-                      <span 
-                        key={i}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                      >
-                        {entity.type}: {entity.text} ({Math.round(entity.confidence * 100)}%)
-                      </span>
-                    ))}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      symptom: dolor cervical (95%)
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      treatment: terapia manual (88%)
+                    </span>
                   </div>
                 </div>
+                */}
               </div>
             )}
           </div>
@@ -305,10 +220,20 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
           {/* Evidence Panel */}
           <div className="lg:col-span-1">
             <EvidencePanel
-              ragResult={ragResult || undefined}
               isLoading={isDemo}
-              onArticleClick={handleArticleClick}
-              onRefresh={() => console.log('Refresh RAG')}
+              searchQuery="dolor cervical terapia manual"
+              onEvidenceSelect={(evidence) => {
+                console.log('Evidencia seleccionada:', evidence);
+                handleArticleClick({
+                  document_id: evidence.id,
+                  title: evidence.title,
+                  authors: evidence.authors.join(', '),
+                  journal: evidence.journal,
+                  year: evidence.year.toString(),
+                  pmid: evidence.doi?.replace('10.', ''),
+                  relevance_score: evidence.relevanceScore / 100
+                });
+              }}
             />
           </div>
         </div>
@@ -385,15 +310,15 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {processingResult.metrics.total_processing_time_ms}ms
+                  {processingResult.processingTime}ms
                 </div>
                 <div className="text-sm text-gray-600">Tiempo Total</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {processingResult.entities.length}
+                  4
                 </div>
-                <div className="text-sm text-gray-600">Entidades</div>
+                <div className="text-sm text-gray-600">Entidades (Demo)</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">

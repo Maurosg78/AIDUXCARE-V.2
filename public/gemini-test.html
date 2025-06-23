@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Integración Gemini 1.5 Pro</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; margin: 20px; background-color: #f0f2f5; color: #1c1e21; }
+        .container { max-width: 800px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #0056b3; }
+        h1 { text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; }
+        .test-case { background: #f9f9f9; padding: 20px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .result { background: #e8f5e9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid #4CAF50; }
+        .error { background: #ffebee; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 5px solid #f44336; }
+        .loading { color: #666; font-style: italic; padding: 15px; text-align: center; }
+        button { background-color: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; margin-right: 10px; }
+        button:hover { background-color: #0056b3; }
+        pre { background: #eef1f3; padding: 10px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Integración Gemini 1.5 Pro</h1>
+        <h2>📋 Caso: Fisioterapia con Banderas Rojas</h2>
+        
+        <div class="test-case">
+            <h3>📝 Transcripción de Prueba:</h3>
+            <p>PACIENTE: Doctor, tengo un dolor terrible en el cuello que me está matando. Empezó hace como 3 semanas cuando me desperté una mañana y no podía mover la cabeza. El dolor es insoportable, especialmente por la noche cuando me acuesto. A veces siento como si me estuviera ahogando y tengo dificultad para tragar. También noto que se me duermen los brazos cuando duermo y tengo mareos constantes. Ayer tuve un episodio donde perdí el equilibrio y casi me caigo. El dolor se irradia hacia el hombro derecho y siento como pinchazos en la mano. No puedo dormir bien porque cualquier posición me duele. También he notado que mi visión se ha vuelto borrosa últimamente. ¿Crees que puede ser algo grave?</p>
+            
+            <h3>👨‍⚕️ Configuración:</h3>
+            <ul>
+                <li><strong>Profesional:</strong> PHYSIOTHERAPIST</li>
+                <li><strong>País:</strong> ES</li>
+                <li><strong>Estado:</strong> Madrid</li>
+            </ul>
+            
+            <button onclick="runPipelineTest()">🚀 Ejecutar Test (Pipeline Completo)</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Este script ahora llama directamente al endpoint del backend.
+        // Se elimina la dependencia de cualquier servicio de frontend para simplificar la depuración.
+        
+        const testConfig = {
+            transcription: `PACIENTE: Doctor, tengo un dolor terrible en el cuello que me está matando. Empezó hace como 3 semanas cuando me desperté una mañana y no podía mover la cabeza. El dolor es insoportable, especialmente por la noche cuando me acuesto. A veces siento como si me estuviera ahogando y tengo dificultad para tragar. También noto que se me duermen los brazos cuando duermo y tengo mareos constantes. Ayer tuve un episodio donde perdí el equilibrio y casi me caigo. El dolor se irradia hacia el hombro derecho y siento como pinchazos en la mano. No puedo dormir bien porque cualquier posición me duele. También he notado que mi visión se ha vuelto borrosa últimamente. ¿Crees que puede ser algo grave?`,
+            professionalRole: 'PHYSIOTHERAPIST',
+            location: { country: 'ES', state: 'Madrid' }
+        };
+
+        async function runPipelineTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Contactando endpoint /api/nlp-analysis...</div>';
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/api/nlp-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transcriptionText: testConfig.transcription,
+                        segments: [],
+                        professionalRole: testConfig.professionalRole,
+                        location: testConfig.location,
+                    })
+                });
+
+                const processingTime = Date.now() - startTime;
+                const pipelineResult = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(`Error del Servidor: ${response.status} - ${pipelineResult.message || 'Error desconocido'}`);
+                }
+
+                const validations = {
+                    "Respuesta del Backend Recibida": !!pipelineResult,
+                    "Tiempo de Procesamiento Aceptable (<15s)": processingTime < 15000,
+                    "Clasificación SOAP Generada": !!pipelineResult && !!pipelineResult.soap,
+                    "Banderas Rojas Detectadas": !!pipelineResult && !!pipelineResult.redFlags && pipelineResult.redFlags.length > 0,
+                    "Recomendaciones Generadas": !!pipelineResult && !!pipelineResult.recommendations
+                };
+                
+                const allValid = Object.values(validations).every(v => v);
+                
+                resultsDiv.innerHTML = `
+                    <div class="result">
+                        <h3>✅ Respuesta del Backend Recibida</h3>
+                        <p><strong>Tiempo total:</strong> ${processingTime}ms</p>
+                        <p><strong>Veredicto:</strong> ${allValid ? 'ÉXITO' : 'FALLIDO'}</p>
+                        <h4>📊 Resultado Completo:</h4>
+                        <pre>${JSON.stringify(pipelineResult, null, 2)}</pre>
+                        <h4>🔍 Validaciones:</h4>
+                        <pre>${JSON.stringify(validations, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error("Error en la llamada a la API:", error);
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error al contactar el Backend</h3>
+                        <p><strong>Mensaje:</strong> ${error.message}</p>
+                        <p>Revisa la consola del navegador y la terminal donde corre Vite para ver los logs del servidor.</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Adjuntar la función al objeto window para que sea accesible desde el HTML
+        window.runPipelineTest = runPipelineTest;
+    </script>
+</body>
+</html>

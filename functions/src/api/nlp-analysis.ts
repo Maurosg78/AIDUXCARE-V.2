@@ -8,21 +8,27 @@ import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import * as admin from 'firebase-admin';
 import { healthcare } from '@googleapis/healthcare';
+import { GoogleAuth } from 'google-auth-library';
 
 // === CONFIGURACIÓN REAL DE GOOGLE CLOUD HEALTHCARE NLP ===
 const initializeHealthcareClient = () => {
   try {
     const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCLOUD_PROJECT || 'aiduxcare-mvp-prod';
     
-    // Inicializar cliente de Healthcare API
+    // Autenticación automática para Google Cloud Functions
+    // En producción, Google Cloud Functions maneja la autenticación automáticamente
+    const auth = new GoogleAuth();
+
+    // Inicializar cliente de Healthcare API con la autenticación explícita
     const healthcareClient = healthcare({
-      version: 'v1'
+      version: 'v1beta1',
+      auth: auth as any,
     });
 
-    console.log(`✅ Healthcare NLP Client inicializado para proyecto: ${projectId}`);
+    console.log(`✅ Healthcare NLP Client inicializado explícitamente para proyecto: ${projectId}`);
     return healthcareClient;
   } catch (error) {
-    console.error('❌ Error inicializando Healthcare Client:', error);
+    console.error('❌ Error inicializando Healthcare Client explícitamente:', error);
     throw new Error(`Error de configuración de Google Cloud Healthcare: ${error}`);
   }
 };
@@ -170,19 +176,16 @@ export const processNLPAnalysis = async (req: Request, res: Response): Promise<v
     console.log('🔄 Enviando texto a Google Cloud Healthcare NLP...');
     console.log(`📊 Texto length: ${transcriptionText.length} caracteres`);
 
-    // Llamada a la API de Healthcare NLP
-    const parent = `projects/${projectId}/locations/${location}`;
-    
-    const request = {
-      parent: parent,
+    // El nombre completo del recurso del servicio NLP es requerido por la API
+    const nlpService = `projects/${projectId}/locations/${location}/services/nlp`;
+
+    // Realizar análisis de entidades médicas usando el endpoint correcto
+    const response = await healthcareClient.projects.locations.services.nlp.analyzeEntities({
+      nlpService: nlpService,
       requestBody: {
         documentContent: transcriptionText,
-        licenseType: 'HEALTHCARE_NLP'
-      }
-    };
-
-    // Realizar análisis de entidades médicas
-    const response = await healthcareClient.projects.locations.services.nlp.analyzeEntities(request);
+      },
+    });
     
     if (!response.data || !response.data.entities) {
       console.log('⚠️ No se encontraron entidades médicas');

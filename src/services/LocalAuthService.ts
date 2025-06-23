@@ -69,6 +69,9 @@ class LocalAuthService {
           this.generateTherapistId(therapistName),
           therapistName
         );
+        
+        // NUEVO: Asignar rol OWNER para UAT
+        therapist.role = this.determineUserRole(therapistName);
       }
 
       // Actualizar último acceso
@@ -114,6 +117,9 @@ class LocalAuthService {
         registerData.email
       );
 
+      // NUEVO: Asignar rol OWNER automáticamente para UAT
+      therapist.role = this.determineUserRole(registerData.name, registerData.email);
+
       // Agregar datos adicionales si se proporcionaron
       if (registerData.specialization || registerData.licenseNumber) {
         therapist.preferences = {
@@ -121,8 +127,9 @@ class LocalAuthService {
           specialization: registerData.specialization,
           licenseNumber: registerData.licenseNumber
         };
-        localStorageService.saveTherapistData(therapist);
       }
+      
+      localStorageService.saveTherapistData(therapist);
 
       // Establecer sesión actual
       this.currentSession = therapist;
@@ -279,6 +286,83 @@ class LocalAuthService {
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  }
+
+  // ========= SISTEMA DE ROLES =========
+
+  /**
+   * Verifica si el usuario actual tiene rol OWNER
+   */
+  isOwner(): boolean {
+    return this.currentSession?.role === 'OWNER';
+  }
+
+  /**
+   * Verifica si el usuario puede realizar una acción sin límites
+   */
+  hasUnlimitedAccess(): boolean {
+    return this.isOwner();
+  }
+
+  /**
+   * Asigna rol OWNER al usuario actual (para UAT)
+   */
+  promoteToOwner(): boolean {
+    if (this.currentSession) {
+      this.currentSession.role = 'OWNER';
+      localStorageService.saveTherapistData(this.currentSession);
+      console.log('✅ Usuario promovido a OWNER para UAT');
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Determina el rol del usuario según el nombre/email
+   */
+  private determineUserRole(name: string, email?: string): 'OWNER' | 'PROFESSIONAL' | 'TRIAL' {
+    // Para UAT, asignar OWNER automáticamente
+    const ownerIndicators = [
+      'mauricio', 'cto', 'owner', 'admin', 'test',
+      'aiduxcare', 'demo', 'fisio', 'physio',
+      // NUEVOS INDICADORES PARA UAT
+      'sobarzo', 'mauricio sobarzo', 'dr. mauricio',
+      'fisioterapeuta', 'uattest', 'uat_test',
+      'developer', 'dev', 'testing', 'qa'
+    ];
+    
+    const nameOrEmail = `${name.toLowerCase()} ${email?.toLowerCase() || ''}`;
+    
+    // Log detallado para UAT
+    console.log(`🔍 UAT: Analizando usuario para rol OWNER`);
+    console.log(`👤 Nombre: "${name}"`);
+    console.log(`📧 Email: "${email || 'no proporcionado'}"`);
+    console.log(`🔎 Texto de búsqueda: "${nameOrEmail}"`);
+    
+    const matchedIndicators = ownerIndicators.filter(indicator => 
+      nameOrEmail.includes(indicator)
+    );
+    
+    if (matchedIndicators.length > 0) {
+      console.log(`🔑 UAT: Asignando rol OWNER - Indicadores encontrados: ${matchedIndicators.join(', ')}`);
+      return 'OWNER';
+    }
+    
+    console.log(`👥 UAT: Asignando rol PROFESSIONAL - No se encontraron indicadores OWNER`);
+    return 'PROFESSIONAL';
+  }
+
+  /**
+   * MÉTODO PARA UAT: Fuerza la asignación de OWNER al usuario actual
+   */
+  forceOwnerRole(): boolean {
+    if (this.currentSession) {
+      console.log('🚀 UAT: Forzando rol OWNER para testing');
+      this.currentSession.role = 'OWNER';
+      localStorageService.saveTherapistData(this.currentSession);
+      return true;
+    }
+    return false;
   }
 }
 

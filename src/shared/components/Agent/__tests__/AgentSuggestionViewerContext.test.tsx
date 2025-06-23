@@ -23,12 +23,12 @@ vi.mock('@/services/EMRFormService', () => ({
 }));
 
 vi.mock('@/services/UsageAnalyticsService', () => ({
-  trackMetric: (...args: any[]) => mockTrackMetric(...args)
+  trackMetric: (...args: unknown[]) => mockTrackMetric(...args)
 }));
 
 vi.mock('@/services/AuditLogger', () => ({
   AuditLogger: {
-    log: (...args: any[]) => mockAuditLog(...args)
+    log: (...args: unknown[]) => mockAuditLog(...args)
   }
 }));
 

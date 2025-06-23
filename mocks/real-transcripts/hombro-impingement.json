@@ -1,0 +1,104 @@
+{
+  "metadata": {
+    "caseId": "hombro-003",
+    "specialty": "fisioterapia",
+    "patientAge": 38,
+    "sessionDuration": "30min",
+    "transcriptionSource": "real-consultation",
+    "complexity": "moderate",
+    "description": "Consulta de fisioterapia para síndrome de impingement subacromial con limitación funcional"
+  },
+  "rawTranscription": "no puedo levantar el brazo por encima de la cabeza, me duele mucho por la noche cuando duermo sobre ese lado test de Neer positivo, arco doloroso entre 60 y 120 grados de abducción, crepitación en articulación glenohumeral el cuadro es compatible con síndrome de impingement subacromial grado II comenzamos con técnicas de movilización articular y fortalecimiento del manguito rotador",
+  "expectedOutput": {
+    "segments": [
+      {
+        "text": "no puedo levantar el brazo por encima de la cabeza",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.95,
+        "reasoning": "Limitación funcional específica reportada por el paciente.",
+        "entities": [
+          { "category": "anatomy", "value": "brazo" },
+          { "category": "limitation", "value": "no puedo levantar" },
+          { "category": "reference", "value": "por encima de la cabeza" }
+        ]
+      },
+      {
+        "text": "me duele mucho por la noche cuando duermo sobre ese lado",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.93,
+        "reasoning": "Dolor nocturno posicional, característico del impingement subacromial.",
+        "entities": [
+          { "category": "symptom", "value": "dolor nocturno" },
+          { "category": "trigger", "value": "dormir sobre ese lado" },
+          { "category": "severity", "value": "mucho" }
+        ]
+      },
+      {
+        "text": "test de Neer positivo",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.96,
+        "reasoning": "Prueba diagnóstica específica para impingement subacromial.",
+        "entities": [
+          { "category": "test", "value": "test de Neer" },
+          { "category": "result", "value": "positivo" }
+        ]
+      },
+      {
+        "text": "arco doloroso entre 60 y 120 grados de abducción",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.94,
+        "reasoning": "Hallazgo objetivo específico del rango de movimiento doloroso.",
+        "entities": [
+          { "category": "finding", "value": "arco doloroso" },
+          { "category": "range", "value": "60-120 grados" },
+          { "category": "motion", "value": "abducción" }
+        ]
+      },
+      {
+        "text": "crepitación en articulación glenohumeral",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.89,
+        "reasoning": "Hallazgo palpatorio objetivo durante el examen articular.",
+        "entities": [
+          { "category": "finding", "value": "crepitación" },
+          { "category": "anatomy", "value": "articulación glenohumeral" }
+        ]
+      },
+      {
+        "text": "el cuadro es compatible con síndrome de impingement subacromial grado II",
+        "speaker": "TERAPEUTA",
+        "section": "A",
+        "confidence": 0.97,
+        "reasoning": "Diagnóstico específico con gradación basado en hallazgos clínicos.",
+        "entities": [
+          { "category": "diagnosis", "value": "síndrome de impingement subacromial" },
+          { "category": "grade", "value": "grado II" }
+        ]
+      },
+      {
+        "text": "comenzamos con técnicas de movilización articular y fortalecimiento del manguito rotador",
+        "speaker": "TERAPEUTA",
+        "section": "P",
+        "confidence": 0.94,
+        "reasoning": "Plan de tratamiento específico para impingement subacromial.",
+        "entities": [
+          { "category": "treatment", "value": "movilización articular" },
+          { "category": "treatment", "value": "fortalecimiento manguito rotador" }
+        ]
+      }
+    ],
+    "fullAssessment": "Síndrome de impingement subacromial grado II con limitación funcional significativa y dolor nocturno. Test de Neer positivo y arco doloroso característico. Plan: movilización articular progresiva y fortalecimiento específico del manguito rotador."
+  },
+  "qualityMetrics": {
+    "soapDistribution": { "S": 2, "O": 3, "A": 1, "P": 1 },
+    "speakerAccuracy": 0.94,
+    "entityCount": 15,
+    "averageConfidence": 0.94,
+    "processingTimeMs": 92
+  }
+} 

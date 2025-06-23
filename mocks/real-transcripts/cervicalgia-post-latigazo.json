@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "caseId": "cervicalgia-001",
+    "specialty": "fisioterapia",
+    "patientAge": 34,
+    "sessionDuration": "25min",
+    "transcriptionSource": "real-consultation",
+    "complexity": "moderate",
+    "description": "Consulta de fisioterapia para cervicalgia post-latigazo con cefalea asociada"
+  },
+  "rawTranscription": "me cuesta mucho girar el cuello hacia la derecha, sobre todo por las mañanas también he tenido dolor de cabeza que empieza en la base del cráneo y sube al palpar la musculatura suboccipital derecha, el paciente refiere molestia intensa hay rigidez moderada en rotación cervical derecha el cuadro es compatible con síndrome post latigazo cervical, con irritación miofascial en región cervical derecha recomiendo terapia manual, tecarterapia y ejercicios de movilidad controlada cada 48 horas",
+  "expectedOutput": {
+    "segments": [
+      {
+        "text": "me cuesta mucho girar el cuello hacia la derecha, sobre todo por las mañanas",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.96,
+        "reasoning": "Síntoma subjetivo expresado por paciente. Se refiere a limitación funcional con patrón temporal.",
+        "entities": [
+          { "category": "anatomy", "value": "cuello" },
+          { "category": "severity", "value": "mucho" },
+          { "category": "temporal", "value": "por las mañanas" }
+        ]
+      },
+      {
+        "text": "también he tenido dolor de cabeza que empieza en la base del cráneo y sube",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.93,
+        "reasoning": "Descripción subjetiva de cefalea de origen cervicogénico.",
+        "entities": [
+          { "category": "symptom", "value": "dolor de cabeza" },
+          { "category": "anatomy", "value": "base del cráneo" }
+        ]
+      },
+      {
+        "text": "al palpar la musculatura suboccipital derecha, el paciente refiere molestia intensa",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.91,
+        "reasoning": "Observación objetiva durante examen físico (palpación).",
+        "entities": [
+          { "category": "procedure", "value": "palpación" },
+          { "category": "anatomy", "value": "musculatura suboccipital derecha" }
+        ]
+      },
+      {
+        "text": "hay rigidez moderada en rotación cervical derecha",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.89,
+        "reasoning": "Hallazgo durante examen físico, limitación de rango de movimiento.",
+        "entities": [
+          { "category": "anatomy", "value": "cervical" },
+          { "category": "motion", "value": "rotación" }
+        ]
+      },
+      {
+        "text": "el cuadro es compatible con síndrome post latigazo cervical, con irritación miofascial en región cervical derecha",
+        "speaker": "TERAPEUTA",
+        "section": "A",
+        "confidence": 0.97,
+        "reasoning": "Impresión diagnóstica basada en hallazgos subjetivos y objetivos.",
+        "entities": [
+          { "category": "diagnosis", "value": "síndrome post latigazo cervical" }
+        ]
+      },
+      {
+        "text": "recomiendo terapia manual, tecarterapia y ejercicios de movilidad controlada cada 48 horas",
+        "speaker": "TERAPEUTA",
+        "section": "P",
+        "confidence": 0.94,
+        "reasoning": "Indicación clara de tratamiento dentro de la planificación terapéutica.",
+        "entities": [
+          { "category": "treatment", "value": "terapia manual" },
+          { "category": "treatment", "value": "tecarterapia" },
+          { "category": "treatment", "value": "ejercicios de movilidad" }
+        ]
+      }
+    ],
+    "fullAssessment": "Cuadro clínico compatible con síndrome post latigazo cervical, con compromiso funcional de la movilidad cervical derecha e hipertonía suboccipital. Dolor de origen cervicogénico y rigidez matutina. No se evidencian signos neurológicos. Plan: terapia física conservadora."
+  },
+  "qualityMetrics": {
+    "soapDistribution": { "S": 2, "O": 2, "A": 1, "P": 1 },
+    "speakerAccuracy": 0.95,
+    "entityCount": 12,
+    "averageConfidence": 0.93,
+    "processingTimeMs": 85
+  }
+} 

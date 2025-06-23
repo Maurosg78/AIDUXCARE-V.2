@@ -1,181 +1,108 @@
+import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { AuthGuard } from '@/components/AuthGuard';
-import AuthenticationPage from '@/pages/AuthenticationPage';
-import WelcomePage from '@/pages/WelcomePage';
-import ClinicalWorkflowPage from '@/pages/ClinicalWorkflowPage';
-import SmartDashboard from '@/pages/SmartDashboard';
-import PatientSelectionPage from '@/pages/PatientSelectionPage';
-import PreConsultationPage from '@/pages/PreConsultationPage';
-import PatientListPage from '@/pages/PatientListPage';
-import { PatientDataPage } from '@/pages/PatientDataPage';
-import PatientCompletePage from '@/pages/PatientCompletePage';
-import IntegratedConsultationPage from '@/pages/IntegratedConsultationPage';
-import SimpleConsultationPage from '@/pages/SimpleConsultationPage';
+import Layout from '../components/Layout';
 
+// Páginas principales
+import WelcomePage from '../pages/WelcomePage';
+import AuthenticationPage from '../pages/AuthenticationPage';
+import PatientListPage from '../pages/PatientListPage';
+import PatientDetailPage from '../features/patient/PatientDetailPage';
+import VisitDetailPage from '../features/visits/[id]/VisitDetailPage';
+import { VisitNewPage } from '../features/visits/new/VisitNewPage';
+import DemoVisitPage from '../features/demo/DemoVisitPage';
+import DashboardPage from '../features/admin/DashboardPage';
+import PatientPortalPage from '../features/patient/PatientPortalPage';
+import AccessDeniedPage from '../features/auth/AccessDeniedPage';
+
+// Demos de transcripción
+import EnhancedTranscriptionDemo from '../pages/EnhancedTranscriptionDemo';
+import RealWorldDemo from '../pages/RealWorldDemo';
+import TestIntegrationPage from '../pages/TestIntegrationPage';
+import BufferedTranscriptionDemo from '../pages/BufferedTranscriptionDemo';
+import ChunkedTranscriptionDemo from '../pages/ChunkedTranscriptionDemo';
+import SimpleChunkingDemo from '../pages/SimpleChunkingDemo';
+import TestPage from '../pages/TestPage';
+import WorkModeDemoPage from '../pages/WorkModeDemoPage';
+
+// ROUTER SIMPLIFICADO - FUNCIONAL
 export const router = createBrowserRouter([
-  // 🏠 WELCOME PAGE - Primera Impresión
   {
     path: '/',
-    element: <WelcomePage />
-  },
-  {
-    path: '/welcome',
-    element: <WelcomePage />
-  },
-  
-  // 🔐 AUTHENTICATION - Login Inteligente
-  {
-    path: '/auth',
-    element: <AuthenticationPage />
-  },
-  
-  // 🏥 CLINICAL WORKFLOW - Dashboard Clínico Real (NUEVO)
-  {
-    path: '/clinical',
-    element: (
-      <AuthGuard>
-        <ClinicalWorkflowPage />
-      </AuthGuard>
-    )
-  },
-  
-  // 🎯 SMART DASHBOARD - Centro de Comando IA (Demo/Presentación)
-  {
-    path: '/dashboard',
-    element: (
-      <AuthGuard>
-        <SmartDashboard />
-      </AuthGuard>
-    )
-  },
-  
-  // Redirección por defecto después del login al flujo clínico
-  {
-    path: '/main',
-    element: <Navigate to="/clinical" replace />
-  },
-  
-  // 👥 PATIENT SELECTION - Búsqueda Inteligente
-  {
-    path: '/patient-selection',
-    element: (
-      <AuthGuard>
-        <PatientSelectionPage />
-      </AuthGuard>
-    )
-  },
-  
-  // 🏥 SIMPLE CONSULTATION - Consulta Práctica (NUEVO MVP)
-  {
-    path: '/patient/:patientId/simple-consultation',
-    element: (
-      <AuthGuard>
-        <SimpleConsultationPage />
-      </AuthGuard>
-    )
-  },
-  
-  // 🏥 INTEGRATED CONSULTATION - Vista Unificada (NUEVA ARQUITECTURA)
-  {
-    path: '/patient/:patientId/consultation',
-    element: (
-      <AuthGuard>
-        <IntegratedConsultationPage />
-      </AuthGuard>
-    )
-  },
-  
-  // 📋 PRE-CONSULTATION - Preparación IA (Legacy)
-  {
-    path: '/patient/:id/pre-consultation',
-    element: (
-      <AuthGuard>
-        <PreConsultationPage />
-      </AuthGuard>
-    )
-  },
-  
-  // 🎤 ACTIVE SESSION - Consulta en Vivo (Legacy)
-  {
-    path: '/patient/:id/session',
-    element: (
-      <AuthGuard>
-        <PatientCompletePage />
-      </AuthGuard>
-    )
-  },
-  
-  // ✅ POST-CONSULTATION - Revisión y Envío (Legacy)
-  {
-    path: '/patient/:id/review',
-    element: (
-      <AuthGuard>
-        <PatientCompletePage />
-      </AuthGuard>
-    )
-  },
-  
-  // ⚠️ PRIORITY REVIEW - Alertas de Riesgo
-  {
-    path: '/patient/:patientName/priority-review',
-    element: (
-      <AuthGuard>
-        <PatientCompletePage />
-      </AuthGuard>
-    )
-  },
-  
-  // 🎮 DEMO INTERACTIVO - Dashboard con datos demo
-  {
-    path: '/demo',
-    element: (
-      <AuthGuard>
-        <SmartDashboard />
-      </AuthGuard>
-    )
-  },
-  
-  // Rutas legacy mantenidas para compatibilidad
-  {
-    path: '/patients',
-    element: (
-      <AuthGuard>
-        <PatientListPage />
-      </AuthGuard>
-    )
-  },
-  {
-    path: '/patient/new',
-    element: (
-      <AuthGuard>
-        <PatientDataPage />
-      </AuthGuard>
-    )
-  },
-  {
-    path: '/patient/:id',
-    element: (
-      <AuthGuard>
-        <PatientCompletePage />
-      </AuthGuard>
-    )
-  },
-  
-  // Redirecciones inteligentes para rutas obsoletas
-  {
-    path: '/patient-list',
-    element: <Navigate to="/clinical" replace />
-  },
-  {
-    path: '/patient-data',
-    element: <Navigate to="/clinical" replace />
-  },
-  {
-    path: '/patient-complete',
-    element: <Navigate to="/clinical" replace />
-  },
-  {
-    path: '/session',
-    element: <Navigate to="/clinical" replace />
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <WelcomePage />
+      },
+      {
+        path: 'auth',
+        element: <AuthenticationPage />
+      },
+      {
+        path: 'patients',
+        element: <PatientListPage />
+      },
+      {
+        path: 'patient/:id',
+        element: <PatientDetailPage />
+      },
+      {
+        path: 'visit/:id',
+        element: <VisitDetailPage />
+      },
+      {
+        path: 'visit/new',
+        element: <VisitNewPage />
+      },
+      {
+        path: 'demo-visit',
+        element: <DemoVisitPage />
+      },
+      {
+        path: 'dashboard',
+        element: <DashboardPage />
+      },
+      {
+        path: 'portal',
+        element: <PatientPortalPage />
+      },
+      {
+        path: 'access-denied',
+        element: <AccessDeniedPage />
+      },
+      // === DEMOS DE TRANSCRIPCIÓN ===
+      {
+        path: 'enhanced-demo',
+        element: <EnhancedTranscriptionDemo />
+      },
+      {
+        path: 'real-world-demo',
+        element: <RealWorldDemo />
+      },
+      {
+        path: 'test-integration',
+        element: <TestIntegrationPage />
+      },
+      {
+        path: 'buffered-demo',
+        element: <BufferedTranscriptionDemo />
+      },
+      {
+        path: 'chunked-demo',
+        element: <ChunkedTranscriptionDemo />
+      },
+      {
+        path: 'simple-demo',
+        element: <SimpleChunkingDemo />
+      },
+      {
+        path: 'test',
+        element: <TestPage />
+      },
+      {
+        path: 'work-mode-demo',
+        element: <WorkModeDemoPage />
+      }
+    ]
   }
 ]);

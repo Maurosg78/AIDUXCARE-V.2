@@ -493,4 +493,4 @@ REGLAS IMPORTANTES:
   }
 }
 
-export const textProcessingService = new TextProcessingService(); 
+export const textProcessingService = new TextProcessingService();

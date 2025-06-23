@@ -1,16 +1,14 @@
 /**
- * 🤖 AIDUX VIRTUAL ASSISTANT - Ventana Directa a LLM Médico
+ * 🤖 AIDUX VIRTUAL ASSISTANT - UAT VERSION
  * 
- * Asistente virtual que conecta directamente con LLM médico/genérico:
- * - Sin respuestas precargadas
- * - Consultas técnicas especializadas (TENS, tecarterapia, etc.)
- * - Configuración de equipos médicos
- * - Protocolos clínicos avanzados
- * - Evita salir del portal para consultas IA
+ * Asistente virtual optimizado para UAT:
+ * - Botón minimizar funcional
+ * - Sin logos duplicados
+ * - Interface clínica limpia
+ * - Consultas técnicas especializadas
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AiDuxCareLogo } from '../branding/AiDuxCareLogo';
 
 interface ChatMessage {
   id: string;
@@ -22,6 +20,7 @@ interface ChatMessage {
 
 interface VirtualAssistantState {
   isOpen: boolean;
+  isMinimized: boolean;
   isTyping: boolean;
   messages: ChatMessage[];
   inputValue: string;
@@ -30,6 +29,7 @@ interface VirtualAssistantState {
 const AiDuxVirtualAssistant: React.FC = () => {
   const [state, setState] = useState<VirtualAssistantState>({
     isOpen: false,
+    isMinimized: false,
     isTyping: false,
     messages: [],
     inputValue: ''
@@ -45,18 +45,18 @@ const AiDuxVirtualAssistant: React.FC = () => {
 
   // Focus en el input cuando se abre
   useEffect(() => {
-    if (state.isOpen && inputRef.current) {
+    if (state.isOpen && !state.isMinimized && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [state.isOpen]);
+  }, [state.isOpen, state.isMinimized]);
 
   // Mostrar mensaje de bienvenida solo cuando se abre por primera vez
   useEffect(() => {
-    if (state.isOpen && state.messages.length === 0) {
+    if (state.isOpen && !state.isMinimized && state.messages.length === 0) {
       const timer = setTimeout(() => {
         const welcomeMessage: ChatMessage = {
           id: 'welcome',
-          message: '🤖 Soy AIDUX, tu asistente médico especializado. Puedo ayudarte con:\n\n• Configuración de equipos (TENS, tecarterapia, ultrasonido)\n• Protocolos clínicos específicos\n• Parámetros de tratamiento\n• Consultas técnicas avanzadas\n\n¿En qué puedo asistirte?',
+          message: '🤖 Soy AIDUX, tu asistente médico especializado para fisioterapia.\n\nPuedo ayudarte con:\n• Configuración TENS, ultrasonido, tecarterapia\n• Protocolos clínicos específicos\n• Parámetros de tratamiento\n• Consultas técnicas avanzadas\n\n¿En qué puedo asistirte?',
           sender: 'aidux',
           timestamp: new Date(),
           type: 'text'
@@ -69,10 +69,26 @@ const AiDuxVirtualAssistant: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [state.isOpen]);
+  }, [state.isOpen, state.isMinimized]);
 
   const toggleChat = () => {
-    setState(prev => ({ ...prev, isOpen: !prev.isOpen }));
+    setState(prev => ({ 
+      ...prev, 
+      isOpen: !prev.isOpen,
+      isMinimized: false 
+    }));
+  };
+
+  const minimizeChat = () => {
+    setState(prev => ({ ...prev, isMinimized: true }));
+  };
+
+  const maximizeChat = () => {
+    setState(prev => ({ ...prev, isMinimized: false }));
+  };
+
+  const closeChat = () => {
+    setState(prev => ({ ...prev, isOpen: false, isMinimized: false }));
   };
 
   const sendMessage = async () => {
@@ -219,61 +235,124 @@ Esto me permitirá generar protocolos y parámetros más precisos para tu caso.
 
   return (
     <>
-      {/* Botón Flotante Mejorado */}
+      {/* Botón Flotante Principal */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={toggleChat}
           className={`w-16 h-16 rounded-full shadow-xl transition-all duration-300 ${
             state.isOpen 
-              ? 'bg-red-500 hover:bg-red-600 scale-95' 
+              ? 'bg-[#5DA5A3] hover:bg-[#4A8280] scale-95' 
               : 'bg-gradient-to-br from-[#5DA5A3] via-[#4A8280] to-[#3D6B69] hover:scale-110 hover:shadow-2xl'
           }`}
         >
-          {state.isOpen ? (
-            <svg className="w-7 h-7 text-white mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-2">
-              <div className="w-8 h-8 mb-1 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-              </div>
-              <span className="text-xs text-white font-bold tracking-wide bg-black/20 px-2 py-0.5 rounded-full">
-                AIDUX
-              </span>
+          <div className="flex flex-col items-center justify-center p-2">
+            <div className="w-8 h-8 mb-1 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
             </div>
-          )}
+            <span className="text-xs text-white font-bold tracking-wide bg-black/20 px-2 py-0.5 rounded-full">
+              AIDUX
+            </span>
+          </div>
         </button>
 
-        {/* Indicador de notificación mejorado */}
+        {/* Indicador de notificación */}
         {!state.isOpen && (
           <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#FF6F61] to-[#E55A50] rounded-full flex items-center justify-center notification-pulse shadow-lg">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
-            </svg>
+            <span className="text-xs text-white font-bold">!</span>
           </div>
         )}
       </div>
 
-      {/* Panel de Chat */}
-      {state.isOpen && (
+      {/* Panel de Chat Minimizado */}
+      {state.isOpen && state.isMinimized && (
+        <div className="fixed bottom-24 right-6 w-[300px] bg-white rounded-xl shadow-xl border border-[#BDC3C7]/20 z-40">
+          <div 
+            className="bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] p-3 rounded-t-xl cursor-pointer hover:from-[#4A8280] hover:to-[#5DA5A3] transition-all"
+            onClick={maximizeChat}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-sm">AIDUX Assistant</h3>
+                  <p className="text-white/90 text-xs">Click para expandir</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    maximizeChat();
+                  }}
+                  className="p-1 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
+                  title="Maximizar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l-2-2m0 0l2-2m-2 2l6 0m6 0l2-2m0 0l-2 2m2-2l-6 0" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeChat();
+                  }}
+                  className="p-1 text-white/80 hover:text-white hover:bg-red-500/50 rounded transition-colors"
+                  title="Cerrar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Panel de Chat Completo */}
+      {state.isOpen && !state.isMinimized && (
         <div className="fixed bottom-24 right-6 w-[420px] h-[550px] bg-white rounded-xl shadow-2xl border border-[#BDC3C7]/20 z-40 flex flex-col chat-bounce-enter">
-          {/* Header Mejorado */}
+          {/* Header con controles UAT */}
           <div className="bg-gradient-to-r from-[#5DA5A3] via-[#4A8280] to-[#3D6B69] p-4 rounded-t-xl">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">AIDUX Assistant</h3>
+                  <p className="text-white/90 text-sm">Fisioterapia Especializada</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-white font-bold text-lg">AIDUX Assistant</h3>
-                <p className="text-white/90 text-sm">LLM Médico Especializado</p>
-              </div>
-              <div className="ml-auto">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={minimizeChat}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  title="Minimizar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  </svg>
+                </button>
+                <button
+                  onClick={closeChat}
+                  className="p-2 text-white/80 hover:text-white hover:bg-red-500/50 rounded-full transition-colors"
+                  title="Cerrar"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>

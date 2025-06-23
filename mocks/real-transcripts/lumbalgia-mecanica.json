@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "caseId": "lumbalgia-002",
+    "specialty": "fisioterapia",
+    "patientAge": 42,
+    "sessionDuration": "20min",
+    "transcriptionSource": "real-consultation",
+    "complexity": "simple",
+    "description": "Consulta de fisioterapia para lumbalgia mecánica aguda post-esfuerzo"
+  },
+  "rawTranscription": "el dolor me empezó después de cargar unas cajas pesadas en el trabajo, ahora no puedo ni agacharme contractura evidente en paravertebrales L4-L5, test de Lasègue negativo bilateral el cuadro sugiere lumbalgia mecánica aguda sin compromiso radicular iniciamos con termoterapia y ejercicios de Williams modificados",
+  "expectedOutput": {
+    "segments": [
+      {
+        "text": "el dolor me empezó después de cargar unas cajas pesadas en el trabajo",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.94,
+        "reasoning": "Relato subjetivo del inicio traumático con factor desencadenante laboral.",
+        "entities": [
+          { "category": "symptom", "value": "dolor" },
+          { "category": "trigger", "value": "cargar cajas pesadas" },
+          { "category": "context", "value": "trabajo" }
+        ]
+      },
+      {
+        "text": "ahora no puedo ni agacharme",
+        "speaker": "PACIENTE",
+        "section": "S",
+        "confidence": 0.91,
+        "reasoning": "Limitación funcional subjetiva reportada por el paciente.",
+        "entities": [
+          { "category": "limitation", "value": "no puedo agacharme" },
+          { "category": "severity", "value": "ni" }
+        ]
+      },
+      {
+        "text": "contractura evidente en paravertebrales L4-L5",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.92,
+        "reasoning": "Hallazgo objetivo en examen físico con localización anatómica específica.",
+        "entities": [
+          { "category": "anatomy", "value": "paravertebrales L4-L5" },
+          { "category": "finding", "value": "contractura" }
+        ]
+      },
+      {
+        "text": "test de Lasègue negativo bilateral",
+        "speaker": "TERAPEUTA",
+        "section": "O",
+        "confidence": 0.88,
+        "reasoning": "Resultado de prueba diagnóstica específica para descartar compromiso radicular.",
+        "entities": [
+          { "category": "test", "value": "test de Lasègue" },
+          { "category": "result", "value": "negativo bilateral" }
+        ]
+      },
+      {
+        "text": "el cuadro sugiere lumbalgia mecánica aguda sin compromiso radicular",
+        "speaker": "TERAPEUTA",
+        "section": "A",
+        "confidence": 0.95,
+        "reasoning": "Impresión diagnóstica basada en anamnesis y examen físico.",
+        "entities": [
+          { "category": "diagnosis", "value": "lumbalgia mecánica aguda" },
+          { "category": "exclusion", "value": "sin compromiso radicular" }
+        ]
+      },
+      {
+        "text": "iniciamos con termoterapia y ejercicios de Williams modificados",
+        "speaker": "TERAPEUTA",
+        "section": "P",
+        "confidence": 0.93,
+        "reasoning": "Plan de tratamiento específico para lumbalgia mecánica.",
+        "entities": [
+          { "category": "treatment", "value": "termoterapia" },
+          { "category": "treatment", "value": "ejercicios de Williams modificados" }
+        ]
+      }
+    ],
+    "fullAssessment": "Lumbalgia mecánica aguda post-esfuerzo con contractura paravertebral L4-L5. Ausencia de signos de compromiso radicular. Pronóstico favorable con tratamiento conservador."
+  },
+  "qualityMetrics": {
+    "soapDistribution": { "S": 2, "O": 2, "A": 1, "P": 1 },
+    "speakerAccuracy": 0.92,
+    "entityCount": 11,
+    "averageConfidence": 0.92,
+    "processingTimeMs": 78
+  }
+} 

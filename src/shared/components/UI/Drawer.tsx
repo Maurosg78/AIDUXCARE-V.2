@@ -71,7 +71,7 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-          onClick={handleBackdropClick}
+          role="button" tabIndex={0} onClick={handleBackdropClick} onKeyDown={(e) => e.key === "Enter" && onClose()}
           aria-hidden="true"
         />
 

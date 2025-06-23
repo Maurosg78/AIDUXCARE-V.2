@@ -22,7 +22,7 @@ interface CarouselSlide {
 // ============== COMPONENTE PRINCIPAL ===============
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   
   const [isVisible, setIsVisible] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -55,9 +55,14 @@ const WelcomePage: React.FC = () => {
 
   // ============== EFECTOS ===============
   
+  // SEGURIDAD UAT: Logout forzado al cargar Welcome Page
   useEffect(() => {
+    if (isAuthenticated) {
+      console.log('🔒 Welcome Page: Forzando logout por seguridad UAT');
+      logout();
+    }
     setTimeout(() => setIsVisible(true), 300);
-  }, []);
+  }, [isAuthenticated, logout]);
 
   // REFACTORIZADO: Usar hook useInterval con cleanup automático
   useInterval(
@@ -84,11 +89,13 @@ const WelcomePage: React.FC = () => {
   };
 
   const handleGetStarted = () => {
-    if (isAuthenticated) {
-      navigate('/clinical');
-    } else {
-      navigate('/auth');
-    }
+    // NAVEGACIÓN UNIFICADA PARA UAT: Siempre ir a /auth
+    navigate('/auth');
+  };
+
+  const handleDemoEnhanced = () => {
+    // Navegar a la demostración de transcripción mejorada
+    navigate('/enhanced-demo');
   };
 
   // ============== RENDER HELPERS ===============
@@ -195,7 +202,7 @@ const WelcomePage: React.FC = () => {
         );
       
       case 'soap':
-        return (
+  return (
           <>
             {/* SOAP Preview */}
             <div className="bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
@@ -262,26 +269,17 @@ const WelcomePage: React.FC = () => {
               <AiDuxCareLogo size="sm" />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-bold text-slate-900">AiDuxCare</h1>
-                <p className="text-xs text-slate-600">Plataforma EMR con IA Médica</p>
-              </div>
+                <p className="text-xs text-slate-600">Asistente Clínico Cognitivo con IA Especializada</p>
             </div>
-            
+          </div>
+          
             <div className="flex items-center space-x-3">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => navigate('/clinical')}
-                  className="btn-primary px-4 py-2 text-sm"
-                >
-                  Ir al Dashboard
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="text-slate-600 hover:text-[#5DA5A3] font-medium text-sm transition-colors"
-                >
-                  Iniciar Sesión
-                </button>
-              )}
+            <button 
+              onClick={() => navigate('/auth')}
+                className="text-slate-600 hover:text-[#5DA5A3] font-medium text-sm transition-colors"
+            >
+                Iniciar Sesión
+            </button>
             </div>
           </div>
         </div>
@@ -296,19 +294,25 @@ const WelcomePage: React.FC = () => {
             <div className="space-y-8">
               <div className="space-y-6">
                 <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-[#5DA5A3]/10 to-[#A8E6CF]/10 rounded-full border border-[#5DA5A3]/20">
-                  <span className="text-[#5DA5A3] text-sm font-semibold">🚀 Próxima Generación EMR</span>
-                </div>
-                
+                  <span className="text-[#5DA5A3] text-sm font-semibold">🚀 Asistente Clínico Cognitivo con IA Especializada</span>
+          </div>
+
                 <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 leading-tight">
-                  Revoluciona tu
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF]"> práctica médica</span>
-                  <br />con IA especializada
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF]">Más tiempo con el paciente,</span>
+                  <br />menos con el papeleo
                 </h1>
                 
                 <p className="text-lg text-slate-600 leading-relaxed">
                   La primera plataforma EMR con inteligencia artificial diseñada específicamente para profesionales de la salud. 
                   Transcripción inteligente, análisis clínico automatizado y documentación SOAP en segundos.
                 </p>
+
+                {/* LEMA OFICIAL AIDUXCARE */}
+                <div className="bg-gradient-to-r from-[#5DA5A3]/5 to-[#A8E6CF]/5 rounded-lg p-4 border border-[#5DA5A3]/20">
+                  <p className="text-[#5DA5A3] font-semibold text-lg italic text-center">
+                    "Más tiempo con el paciente, menos con el papeleo"
+                  </p>
+                </div>
               </div>
 
               {/* Estadísticas destacadas */}
@@ -327,23 +331,21 @@ const WelcomePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* CTA Principal */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
+              {/* CTA Principal - INICIAR SESIÓN */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
                   onClick={handleGetStarted}
                   className="btn-primary px-8 py-4 text-lg font-semibold"
-                >
-                  Comenzar Ahora
-                </button>
-                <button
-                  onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-slate-700 hover:text-[#5DA5A3] transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Ver Demo
-                </button>
+            >
+                  Iniciar Sesión
+            </button>
+            
+            <button
+                  onClick={() => navigate('/enhanced-demo')}
+                  className="px-8 py-4 text-lg font-semibold bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+                  🚀 Demo Transcripción Mejorada
+            </button>
               </div>
             </div>
 
@@ -360,9 +362,9 @@ const WelcomePage: React.FC = () => {
                       <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                       <div className="flex-1"></div>
                       <div className="text-xs text-slate-500 font-mono">aiduxcare.com</div>
-                    </div>
-                  </div>
-                  
+              </div>
+            </div>
+
                   {/* Contenido del carrusel */}
                   <div className="h-80 p-6 overflow-hidden">
                     <div className={`h-full transition-all duration-500 ${isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
@@ -415,72 +417,6 @@ const WelcomePage: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* Sección de demostración */}
-      <section id="demo-section" className="relative z-10 py-20 bg-gradient-to-b from-transparent to-slate-50/50">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">
-            Experimenta el futuro de la atención médica
-          </h2>
-          <p className="text-lg text-slate-600 mb-12 max-w-3xl mx-auto">
-            Nuestro sistema de IA médica combina tecnologías avanzadas de reconocimiento de voz, 
-            procesamiento de lenguaje natural y análisis clínico para transformar completamente 
-            tu flujo de trabajo clínico.
-          </p>
-
-          {/* Grid de características */}
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Transcripción Médica IA</h3>
-              <p className="text-slate-600 text-sm">
-                Reconocimiento de voz optimizado para terminología médica con precisión del 95% y detección automática de hablantes.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Análisis Clínico Inteligente</h3>
-              <p className="text-slate-600 text-sm">
-                Detección automática de patrones clínicos, alertas médicas y recomendaciones basadas en evidencia científica.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#5DA5A3] to-[#A8E6CF] rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Documentación SOAP</h3>
-              <p className="text-slate-600 text-sm">
-                Generación automática de notas SOAP estructuradas y profesionales listas para revisión en segundos.
-              </p>
-            </div>
-          </div>
-
-          {/* CTA Final */}
-          <div className="mt-16">
-            <button
-              onClick={handleGetStarted}
-              className="btn-primary px-8 py-4 text-lg font-semibold mx-auto"
-            >
-              Comenzar Gratis por 30 Días
-            </button>
-            <p className="text-sm text-slate-500 mt-4">
-              Sin tarjeta de crédito requerida • Configuración en menos de 5 minutos
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

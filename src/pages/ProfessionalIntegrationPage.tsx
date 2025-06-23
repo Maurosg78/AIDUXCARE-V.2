@@ -125,7 +125,7 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
    */
   const handleProcessingComplete = useCallback((result: AudioProcessingResult) => {
     setProcessingResult(result);
-    setSuggestions(result.agentSuggestions || []);
+    setSuggestions([]);
     setError(null);
 
     // Auditoría de procesamiento exitoso
@@ -140,9 +140,9 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
 
     // Métrica de integración completa
     trackMetric('suggestions_generated', {
-      processingTime: result.processingTime,
-      confidence: result.confidence,
-      audioQuality: result.audioQuality
+      suggestionId: `audio_processing_${Date.now()}`,
+      suggestionType: 'info' as const,
+      suggestionField: 'transcription'
     }, userId, visitId);
 
   }, [userId, visitId, patientId]);
@@ -403,10 +403,12 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
               Sugerencias del Agente IA
             </h2>
             <AgentSuggestionsViewer
+              visitId={visitId}
               suggestions={suggestions}
-              onAccept={handleSuggestionAccepted}
-              onReject={handleSuggestionRejected}
-              onNewSuggestions={handleSuggestionsGenerated}
+              onSuggestionAccepted={handleSuggestionAccepted}
+              onSuggestionRejected={handleSuggestionRejected}
+              userId={userId}
+              patientId={patientId}
             />
           </div>
         </div>

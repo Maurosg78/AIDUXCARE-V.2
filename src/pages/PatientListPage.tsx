@@ -17,9 +17,9 @@ interface Patient {
   phone: string;
   email: string;
   condition: string;
-  allergies: string[];
-  medications: string[];
-  clinicalHistory: string;
+  allergies?: string[];      // Opcional para compatibilidad
+  medications?: string[];    // Opcional para compatibilidad  
+  clinicalHistory?: string;  // Opcional para compatibilidad
   derivadoPor?: string;
   createdAt: string;
   updatedAt: string;
@@ -283,7 +283,7 @@ const PatientListPage: React.FC = () => {
             {filteredPatients.map((patient) => (
               <div 
                 key={patient.id} 
-                onClick={() => handlePatientClick(patient.id)}
+                role="button" tabIndex={0} onClick={() => handlePatientClick(patient.id)} onKeyDown={(e) => e.key === "Enter" && handlePatientClick(patient.id)}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-[#BDC3C7]/20 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
               >
                 <div className="flex items-start justify-between mb-4">

@@ -26,19 +26,19 @@ const mockTrackMetric = vi.fn();
 
 vi.mock('@/core/services/EMRFormService', () => ({
   EMRFormService: {
-    insertSuggestion: (...args: any[]) => mockInsertSuggestion(...args),
-    mapSuggestionTypeToEMRSection: (...args: any[]) => mockMapSuggestionTypeToEMRSection(...args)
+    insertSuggestion: (...args: unknown[]) => mockInsertSuggestion(...args),
+    mapSuggestionTypeToEMRSection: (...args: unknown[]) => mockMapSuggestionTypeToEMRSection(...args)
   }
 }));
 
 vi.mock('@/core/audit/AuditLogger', () => ({
   AuditLogger: {
-    log: (...args: any[]) => mockAuditLog(...args)
+    log: (...args: unknown[]) => mockAuditLog(...args)
   }
 }));
 
 vi.mock('@/services/UsageAnalyticsService', () => ({
-  trackMetric: (...args: any[]) => mockTrackMetric(...args)
+  trackMetric: (...args: unknown[]) => mockTrackMetric(...args)
 }));
 
 describe('AgentSuggestionsViewer', () => {

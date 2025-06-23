@@ -78,6 +78,7 @@ export interface TherapistLocalData {
   therapistId: string;
   name: string;
   email?: string;
+  role?: 'OWNER' | 'PROFESSIONAL' | 'TRIAL';
   
   // Sesiones locales
   sessions: LocalStorageSession[];
@@ -88,6 +89,8 @@ export interface TherapistLocalData {
     highlightThreshold: number; // 0-1
     defaultCategories: string[];
     soapTemplate?: string;
+    specialization?: string;
+    licenseNumber?: string;
   };
   
   // Estadísticas locales

@@ -88,7 +88,7 @@ export function configureSupabaseMock(options: {
 /**
  * Crea una respuesta simulada de Supabase con datos y sin error
  */
-export function mockSuccessResponse(data: any) {
+export function mockSuccessResponse(data: unknown) {
   return { data, error: null };
 }
 

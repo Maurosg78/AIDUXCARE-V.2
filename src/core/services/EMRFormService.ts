@@ -73,7 +73,7 @@ export class EMRFormService {
       const formData = {
         content: JSON.stringify(content),
         form_type: 'SOAP' as const,
-        status: 'draft' as const,
+        status: 'DRAFT' as const,
         visit_id: emrForm.visitId,
         patient_id: emrForm.patientId,
         professional_id: emrForm.professionalId,
@@ -97,14 +97,16 @@ export class EMRFormService {
       AuditLogger.log('EMR_FORM_UPDATED', {
         userId,
         formId: emrForm.id,
-        visitId: emrForm.visitId
+        visitId: emrForm.visitId,
+        patientId: emrForm.patientId
       });
 
       // Tracking de métricas
-      trackMetric('emr_form_update', {
-        userId,
-        timestamp: new Date().toISOString()
-      });
+      trackMetric('suggestions_generated', {
+        suggestionId: emrForm.id || 'unknown',
+        suggestionType: 'info',
+        suggestionField: 'form_update'
+      }, userId, emrForm.visitId);
 
       return true;
     } catch (error) {
@@ -137,7 +139,7 @@ export class EMRFormService {
             plan: '',
             notes: ''
           }),
-          status: 'draft' as const,
+          status: 'DRAFT' as const,
           visit_id: visitId,
           patient_id: patientId,
           professional_id: userId,
@@ -167,7 +169,7 @@ export class EMRFormService {
       const updatedFormData = {
         content: JSON.stringify(content),
         form_type: 'SOAP' as const,
-        status: 'draft' as const,
+        status: 'DRAFT' as const,
         visit_id: visitId,
         patient_id: patientId,
         professional_id: userId,
@@ -177,7 +179,14 @@ export class EMRFormService {
       await formDataSourceSupabase.updateForm(form.id, updatedFormData);
 
       // Log de auditoría
-      AuditLogger.logSuggestionIntegration(suggestion.id, userId, 'integrated');
+      AuditLogger.logSuggestionIntegration(
+        userId,
+        visitId,
+        suggestion.id,
+        'info',
+        suggestion.content,
+        'plan'
+      );
 
       return true;
     } catch (error) {

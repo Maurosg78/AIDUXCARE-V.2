@@ -1,11 +1,11 @@
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as express from "express";
 import * as cors from "cors";
 import clinicalNLPRoutes from "./routes/clinicalNLP";
 import { 
-  processTranscription, 
-  getTranscriptionStatus
+  transcribeAudio,
+  getTranscriptionHistory
 } from "./api/transcription";
 import {
   processNLPAnalysis,
@@ -15,9 +15,17 @@ import {
 admin.initializeApp();
 
 const app = express();
-// Usar el middleware de CORS para permitir todas las peticiones
-app.use(cors({ origin: true }));
-app.use(express.json());
+
+// Configuración CORS más permisiva para desarrollo
+app.use(cors({ 
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 const patientsCollection = admin.firestore().collection("patients");
 
@@ -130,25 +138,38 @@ app.delete("/patients/:id", async (req, res) => {
 });
 
 // === RUTAS DE TRANSCRIPCIÓN ===
-app.post("/api/transcription", processTranscription);
-app.get("/api/transcription/status/:sessionId", getTranscriptionStatus);
+app.post("/transcription", transcribeAudio);
+app.get("/transcription/history/:sessionId", getTranscriptionHistory);
 
 // === RUTAS DE NLP ===
-app.post("/api/nlp-analysis", processNLPAnalysis);
-app.get("/api/nlp-analysis/status/:sessionId", getNLPAnalysisStatus);
+app.post("/nlp-analysis", processNLPAnalysis);
+app.get("/nlp-analysis/status/:sessionId", getNLPAnalysisStatus);
 
 // === RUTAS DE CLINICAL NLP ===
-app.use("/api/clinical-nlp", clinicalNLPRoutes);
+app.use("/clinical-nlp", clinicalNLPRoutes);
 
 // === ENDPOINT DE SALUD ===
 app.get("/health", (req, res) => {
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'aiduxcare-patients-api',
-    version: '1.0.0'
+    service: 'aiduxcare-api-v2',
+    version: '2.0.0',
+    environment: 'production'
   });
 });
 
-// Exporta la aplicación de Express como una Cloud Function
-export const api = functions.https.onRequest(app); 
+// Exporta la aplicación como Cloud Function Gen 2
+export const api = onRequest({
+  region: "us-east1",
+  memory: "256MiB",
+  cpu: 1,
+  timeoutSeconds: 60,
+  maxInstances: 10,
+  cors: true,
+}, app);
+
+export {
+  getTranscriptionHistory,
+  // ... otros exports ...
+}; 

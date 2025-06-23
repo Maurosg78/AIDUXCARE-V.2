@@ -8,8 +8,6 @@ import React, { useState, useCallback } from 'react';
 import { ProfessionalAudioProcessor } from '@/components/professional/ProfessionalAudioProcessor';
 import EvidencePanel from '@/components/evidence/EvidencePanel';
 import ClinicalInsightsPanel from '@/components/insights/ClinicalInsightsPanel';
-import PromptTestingWidget from '@/components/testing/PromptTestingWidget';
-import { AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
 import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
 import { 
   ClinicalInsightSummary, 
@@ -18,6 +16,93 @@ import {
   ProactiveRecommendation 
 } from '@/core/ai/ClinicalInsightsEngine';
 import { Button } from '@/shared/components/UI/Button';
+
+// Tipo específico para AdvancedAIDemoPage con todas las propiedades necesarias
+interface AdvancedAudioProcessingResult {
+  transcription: Array<{
+    id: string;
+    content: string;
+    timestamp: string;
+    actor: string;
+    confidence: number;
+  }>;
+  entities: Array<{
+    id: string;
+    type: string;
+    text: string;
+    confidence: number;
+  }>;
+  soapNotes: {
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+    generated_at: string;
+    confidence_score: number;
+  };
+  agentSuggestions: Array<{
+    id: string;
+    type: string;
+    field: string;
+    content: string;
+    sourceBlockId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  metrics: {
+    session_id: string;
+    total_processing_time_ms: number;
+    stt_duration_ms: number;
+    stt_confidence: number;
+    entity_extraction_time_ms: number;
+    entities_extracted: number;
+    soap_generation_time_ms: number;
+    soap_completeness: number;
+    soap_confidence: number;
+    total_tokens_used: number;
+    estimated_cost_usd: number;
+    overall_confidence: number;
+    requires_review: boolean;
+  };
+  qualityAssessment: {
+    overall_score: number;
+    completeness: number;
+    clinical_relevance: number;
+    requires_review: boolean;
+    confidence_level: string;
+    red_flags: string[];
+    recommendations: string[];
+  };
+  processingId: string;
+  physiotherapyContext: {
+    session: {
+      visit_id: string;
+      patient_id: string;
+      date: Date;
+      session_type: string;
+      duration_minutes: number;
+      therapist_id: string;
+    };
+    patient_profile: {
+      id: string;
+      name: string;
+      age: number;
+      gender: string;
+    };
+    processed_transcript: {
+      full_text: string;
+      segments: any[];
+      entities: any[];
+      language: string;
+      processing_time_ms: number;
+      word_count: number;
+      confidence_average: number;
+    };
+    context_version: string;
+    created_at: Date;
+  };
+  clinicalInsights: ClinicalInsightSummary;
+}
 
 interface AdvancedAIDemoPageProps {
   visitId?: string;
@@ -30,7 +115,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
   userId = 'demo_user_ai',
   patientId = `demo_patient_ai_${Date.now()}`
 }) => {
-  const [processingResult, setProcessingResult] = useState<AudioProcessingResult | null>(null);
+  const [processingResult, setProcessingResult] = useState<AdvancedAudioProcessingResult | null>(null);
   const [ragResult, setRagResult] = useState<RAGQueryResult | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<CitationReference | null>(null);
   const [isRunningDemo, setIsRunningDemo] = useState(false);
@@ -39,7 +124,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
   /**
    * Maneja resultado del procesamiento avanzado
    */
-  const handleAdvancedProcessingComplete = useCallback((result: AudioProcessingResult) => {
+  const handleAdvancedProcessingComplete = useCallback((result: any) => {
     console.log('🧠 Procesamiento IA avanzado completado:', result);
     setProcessingResult(result);
     
@@ -77,35 +162,35 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
     }
 
     // Datos de demo altamente realistas para Fase 5
-    const mockAdvancedResult: AudioProcessingResult = {
+    const mockAdvancedResult: AdvancedAudioProcessingResult = {
       transcription: [
         {
           id: 'adv_ts_1',
           content: "Paciente Carlos refiere dolor cervical persistente desde hace 3 semanas tras episodio de latigazo cervical en accidente de tráfico",
           timestamp: new Date(Date.now()).toISOString(),
           actor: 'paciente',
-          confidence: 'entendido'
+          confidence: 0.95
         },
         {
           id: 'adv_ts_2',
           content: "Evaluación física revela limitación significativa en rotación derecha, contractura del trapecio superior y puntos gatillo activos",
           timestamp: new Date(Date.now() + 15000).toISOString(),
           actor: 'profesional', 
-          confidence: 'entendido'
+          confidence: 0.92
         },
         {
           id: 'adv_ts_3',
           content: "Aplicamos técnicas de Mulligan para articulación C1-C2, liberación miofascial instrumentada y ejercicios de control motor",
           timestamp: new Date(Date.now() + 30000).toISOString(),
           actor: 'profesional',
-          confidence: 'entendido'
+          confidence: 0.88
         },
         {
           id: 'adv_ts_4',
           content: "El paciente reporta alivio del 60% inmediatamente post-tratamiento, especialmente en la rotación cervical",
           timestamp: new Date(Date.now() + 45000).toISOString(),
           actor: 'profesional',
-          confidence: 'entendido'
+          confidence: 0.90
         }
       ],
       entities: [
@@ -121,7 +206,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
         objective: 'Contractura evidente del trapecio superior bilateral. ROM cervical limitado 40%. Test de Spurling positivo bilateral.',
         assessment: 'Latigazo cervical post-traumático con componente muscular predominante. Compromiso biomecánico C1-C2.',
         plan: 'Técnicas de Mulligan específicas C1-C2, liberación miofascial instrumentada, programa ejercicios domiciliarios.',
-        generated_at: new Date(),
+        generated_at: new Date().toISOString(),
         confidence_score: 0.92
       },
       agentSuggestions: [
@@ -423,7 +508,10 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
               userId={userId}
               patientId={patientId}
               onProcessingComplete={handleAdvancedProcessingComplete}
-              className="h-full"
+              onError={(error) => {
+                console.error('❌ Error en ProfessionalAudioProcessor:', error);
+                setDemoStep('Error en el procesamiento de audio');
+              }}
             />
           </div>
 
@@ -432,11 +520,21 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
             
             {/* Evidence Panel */}
             <EvidencePanel
-              ragResult={ragResult || undefined}
               isLoading={isRunningDemo}
-              onArticleClick={setSelectedArticle}
-              onRefresh={() => console.log('Refresh RAG')}
-              className="h-96"
+              searchQuery="dolor lumbar fisioterapia"
+              onEvidenceSelect={(evidence) => {
+                console.log('Evidencia seleccionada:', evidence);
+                // Convertir EvidenceItem a CitationReference si necesario
+                setSelectedArticle({
+                  document_id: evidence.id,
+                  title: evidence.title,
+                  authors: evidence.authors.join(', '),
+                  journal: evidence.journal,
+                  year: evidence.year.toString(),
+                  pmid: evidence.doi?.replace('10.', ''),
+                  relevance_score: evidence.relevanceScore / 100
+                });
+              }}
             />
 
             {/* Processing Results */}
@@ -481,7 +579,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
               onPatternClick={handlePatternClick}
               onAlertAction={handleAlertAction}
               onRecommendationAccept={handleRecommendationAccept}
-              className="h-full"
+              
             />
           </div>
         </div>
@@ -586,7 +684,6 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
       </div>
       
       {/* Prompt Testing Widget para A/B Testing */}
-      <PromptTestingWidget />
     </div>
   );
 };

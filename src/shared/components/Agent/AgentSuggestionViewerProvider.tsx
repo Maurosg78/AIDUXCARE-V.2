@@ -39,8 +39,18 @@ const AgentSuggestionViewerProvider: React.FC<AgentSuggestionViewerProviderProps
       setError(null);
       
       // Primero intentamos insertar la sugerencia
+      const suggestionToIntegrate = {
+        id: suggestion.id,
+        content: suggestion.content,
+        type: 'CLINICAL' as any, // Mapear tipo apropiadamente
+        sourceBlockId: suggestion.sourceBlockId || '',
+        field: suggestion.field || 'notes',
+        suggestionType: 'CLINICAL' as any,
+        suggestionField: suggestion.field || 'notes'
+      };
+      
       const insertResult = await EMRFormService.insertSuggestion(
-        suggestion,
+        suggestionToIntegrate,
         visitId,
         patientId,
         userId

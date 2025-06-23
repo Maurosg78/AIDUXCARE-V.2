@@ -1,0 +1,1 @@
+console.log('🚨 FORZANDO RECREACIÓN DE MAURICIO'); localStorage.removeItem('aiduxcare_registered_users'); localStorage.removeItem('aiduxcare_therapists'); localStorage.removeItem('aiduxcare_current_therapist'); console.log('✅ localStorage limpiado'); location.reload();

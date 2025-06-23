@@ -2,11 +2,12 @@ import '@testing-library/jest-dom';
 import { vi, expect, beforeAll, afterEach } from 'vitest';
 
 // Configurar expect globalmente
-global.expect = expect;
+(globalThis as any).expect = expect;
 
 // Configurar crypto para las pruebas
 global.crypto = {
-  getRandomValues: (arr) => {
+  getRandomValues: (arr: Uint8Array | Uint16Array | Uint32Array | null) => {
+    if (!arr) return null;
     for (let i = 0; i < arr.length; i++) {
       arr[i] = Math.floor(Math.random() * 256);
     }

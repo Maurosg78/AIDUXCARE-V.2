@@ -32,10 +32,10 @@ vi.mock("@/core/dataSources/formDataSourceSupabase", () => {
     getFormById: vi.fn().mockImplementation(async (formId: string) => {
       return mockForm;
     }),
-    createForm: vi.fn().mockImplementation(async (formData: any) => {
+    createForm: vi.fn().mockImplementation(async (formData: unknown) => {
       return mockForm;
     }),
-    updateForm: vi.fn().mockImplementation(async (formId: string, formData: any) => {
+    updateForm: vi.fn().mockImplementation(async (formId: string, formData: unknown) => {
       return mockForm;
     }),
     deleteForm: vi.fn().mockImplementation(async (formId: string) => {
@@ -75,7 +75,10 @@ const mockForm = {
   }),
   updated_at: "2023-01-01T00:00:00Z",
   created_at: "2023-01-01T00:00:00Z",
-  status: "draft"
+  status: "draft",
+  name: "SOAP Form",
+  version: "1.0",
+  fields: []
 };
 
 describe("EMRFormService", () => {
@@ -110,7 +113,7 @@ describe("EMRFormService", () => {
       const suggestion: SuggestionToIntegrate = {
         id: "sugg-1",
         content: "Test suggestion",
-        type: "recommendation",
+        type: "CLINICAL",
         sourceBlockId: "block-1"
       };
 
@@ -137,7 +140,7 @@ describe("EMRFormService", () => {
       const suggestion: SuggestionToIntegrate = {
         id: "sugg-1",
         content: "Test suggestion",
-        type: "recommendation",
+        type: "CLINICAL",
         sourceBlockId: "block-1"
       };
 
@@ -184,7 +187,7 @@ describe("EMRFormService", () => {
     const suggestion = { 
       id: "sug-1", 
       content: "Nueva sugerencia", 
-      type: "recommendation" as const, 
+      type: "CLINICAL" as const, 
       sourceBlockId: "block-1" 
     };
     
@@ -202,7 +205,7 @@ describe("EMRFormService", () => {
       const suggestion: SuggestionToIntegrate = {
         id: "sugg-duplicate",
         content: "Sugerencia duplicada",
-        type: "recommendation",
+        type: "CLINICAL",
         sourceBlockId: "block-duplicate"
       };
       const result1 = await EMRFormService.insertSuggestion(suggestion, "visit-1", "patient-1", "user-1");

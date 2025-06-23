@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 /**
  * Interface que define la estructura de datos de un paciente en el sistema.
  * Este modelo es utilizado tanto en el frontend como en el backend para
@@ -34,10 +32,9 @@ export interface Patient {
 
   /**
    * Fecha de nacimiento del paciente.
-   * Almacenada como Timestamp de Firestore para mantener
-   * consistencia en las zonas horarias.
+   * Almacenada como Date para mantener consistencia.
    */
-  birthDate: Timestamp;
+  birthDate: Date;
 
   /**
    * Motivo de la consulta del paciente.
@@ -49,15 +46,15 @@ export interface Patient {
 
   /**
    * Fecha y hora de creación del registro del paciente.
-   * Autogenerado por Firestore al crear el documento.
+   * Autogenerado al crear el documento.
    */
-  createdAt: Timestamp;
+  createdAt: Date;
 
   /**
    * Fecha y hora de la última actualización del registro.
-   * Actualizado automáticamente por Firestore en cada modificación.
+   * Actualizado automáticamente en cada modificación.
    */
-  updatedAt: Timestamp;
+  updatedAt: Date;
 }
 
 /**

@@ -298,7 +298,7 @@ const PreConsultationPage: React.FC = () => {
                         ? 'border-[#5DA5A3] bg-[#5DA5A3]/10'
                         : 'border-[#BDC3C7]/30 hover:border-[#5DA5A3]/50'
                     }`}
-                    onClick={() => toggleQuestion(question)}
+                    role="button" tabIndex={0} onClick={() => toggleQuestion(question)} onKeyDown={(e) => e.key === "Enter" && toggleQuestion(question)}
                   >
                     <div className="flex items-start space-x-2">
                       <div className={`w-4 h-4 rounded border-2 flex-shrink-0 mt-0.5 ${
@@ -331,7 +331,7 @@ const PreConsultationPage: React.FC = () => {
                         ? 'border-[#A8E6CF] bg-[#A8E6CF]/10'
                         : 'border-[#BDC3C7]/30 hover:border-[#A8E6CF]/50'
                     }`}
-                    onClick={() => toggleTest(test)}
+                    role="button" tabIndex={0} onClick={() => toggleTest(test)} onKeyDown={(e) => e.key === "Enter" && toggleTest(test)}
                   >
                     <div className="flex items-start space-x-2">
                       <div className={`w-4 h-4 rounded border-2 flex-shrink-0 mt-0.5 ${

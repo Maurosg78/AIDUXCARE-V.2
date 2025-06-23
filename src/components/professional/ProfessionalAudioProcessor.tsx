@@ -5,9 +5,14 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { AudioProcessingServiceProfessional, AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
+import { AudioProcessingServiceProfessional } from '@/services/AudioProcessingServiceProfessional';
+import { AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
+import { TranscriptionResult } from '@/types/audio';
+import { AuditLogger } from '@/services/AuditLogger';
 import { Button } from '@/shared/components/UI/Button';
-import { StructuredError } from '@/types/errors';
+import { Card } from '@/shared/components/UI/Card';
+import LoadingSpinner from '@/shared/components/UI/LoadingSpinner';
+import { Icon } from '@/shared/components/UI/Icon';
 import { useInterval } from '@/hooks/useInterval';
 
 interface ProfessionalAudioProcessorProps {
@@ -128,7 +133,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         technicalDetails: error instanceof Error ? error.message : 'Error desconocido',
         retryable: true,
         fallbackAvailable: false
-      } as StructuredError);
+      });
     }
   }, [onError]);
 
@@ -163,7 +168,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         technicalDetails: 'Audio chunks array is empty',
         retryable: true,
         fallbackAvailable: false
-      } as StructuredError);
+      });
       return;
     }
 

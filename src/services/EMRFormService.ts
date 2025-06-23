@@ -1,4 +1,4 @@
-import type { SuggestionToIntegrate } from '@/core/services/EMRFormService';
+import type { SuggestionToIntegrate } from '@/types/forms';
 
 export class EMRFormService {
   static async insertSuggestion(

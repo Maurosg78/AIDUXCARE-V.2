@@ -1,0 +1,167 @@
+{
+  "version": "1.0.0",
+  "description": "Prompts modulares para Gemini 1.5 Pro - Clasificación SOAP especializada",
+  "lastUpdated": "2025-06-16",
+  "author": "AiDuxCare Development Team",
+  
+  "prompts": {
+    "soap_classification_fisioterapia": {
+      "name": "Clasificación SOAP - Fisioterapia",
+      "version": "1.0.0",
+      "specialty": "fisioterapia",
+      "systemContext": {
+        "role": "clinical_assistant",
+        "specialty": "fisioterapia",
+        "version": "1.0.0",
+        "instructions": [
+          "Eres un asistente clínico especializado en fisioterapia con experiencia en documentación SOAP",
+          "Tu tarea es clasificar segmentos de transcripción médica en las secciones S.O.A.P.",
+          "Debes identificar automáticamente si el hablante es PACIENTE o TERAPEUTA",
+          "Usa terminología específica de fisioterapia y rehabilitación",
+          "Identifica patrones de movimiento, dolor, limitaciones funcionales y hallazgos objetivos",
+          "Genera razonamiento clínico basado en evidencia para cada clasificación",
+          "Mantén alta precisión en la identificación de banderas rojas neurológicas y ortopédicas"
+        ]
+      },
+      "inputSchema": {
+        "transcription": "string",
+        "entities": "ClinicalEntity[]",
+        "speakerInfo": "SpeakerInfo[]",
+        "previousContext": "string?"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": { "type": "string" },
+                "speaker": { "type": "string", "enum": ["PACIENTE", "TERAPEUTA"] },
+                "section": { "type": "string", "enum": ["S", "O", "A", "P"] },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                "reasoning": { "type": "string" },
+                "entities": { "type": "object" }
+              },
+              "required": ["text", "speaker", "section", "confidence", "reasoning"]
+            }
+          },
+          "fullAssessment": { "type": "string" },
+          "speakerAccuracy": { "type": "number" },
+          "processingMetrics": {
+            "type": "object",
+            "properties": {
+              "totalSegments": { "type": "number" },
+              "soapDistribution": { "type": "object" },
+              "entityCount": { "type": "number" },
+              "averageConfidence": { "type": "number" },
+              "processingTimeMs": { "type": "number" }
+            }
+          }
+        },
+        "required": ["segments", "fullAssessment", "speakerAccuracy", "processingMetrics"]
+      },
+      "examples": [
+        {
+          "input": {
+            "transcription": "Me duele mucho la espalda baja desde hace dos semanas. El dolor me baja hasta la pierna derecha y empeora cuando me siento. No puedo dormir bien por las noches.",
+            "entities": [
+              { "id": "1", "text": "espalda baja", "type": "anatomy", "confidence": 0.9 },
+              { "id": "2", "text": "dolor", "type": "symptom", "confidence": 0.95 },
+              { "id": "3", "text": "pierna derecha", "type": "anatomy", "confidence": 0.9 },
+              { "id": "4", "text": "dos semanas", "type": "temporal", "confidence": 0.8 }
+            ]
+          },
+          "output": {
+            "segments": [
+              {
+                "text": "Me duele mucho la espalda baja desde hace dos semanas. El dolor me baja hasta la pierna derecha y empeora cuando me siento. No puedo dormir bien por las noches.",
+                "speaker": "PACIENTE",
+                "section": "S",
+                "confidence": 0.95,
+                "reasoning": "Paciente reporta síntomas subjetivos: dolor lumbar con irradiación a miembro inferior derecho, patrón temporal de 2 semanas, agravación con sedestación y alteración del sueño. Patrón típico de lumbociatalgia.",
+                "entities": {
+                  "anatomy": ["espalda baja", "pierna derecha"],
+                  "symptom": ["dolor"],
+                  "temporal": ["dos semanas"],
+                  "severity": ["mucho"]
+                }
+              }
+            ],
+            "fullAssessment": "Cuadro clínico compatible con lumbociatalgia derecha de 2 semanas de evolución, con patrón mecánico y alteración del sueño.",
+            "speakerAccuracy": 0.95
+          }
+        }
+      ],
+      "specialtyPatterns": {
+        "terminology": [
+          "lumbalgia", "cervicalgia", "dorsalgia", "lumbociatalgia", "cervicobraquialgia",
+          "contractura", "espasmo", "rigidez", "limitación", "dolor", "molestia",
+          "movilidad", "flexibilidad", "fuerza", "resistencia", "equilibrio",
+          "coordinación", "propriocepción", "funcionalidad", "actividades de la vida diaria"
+        ],
+        "assessmentPatterns": [
+          "Test de Lasègue", "Test de Spurling", "Test de Valsalva", "Test de compresión",
+          "Rango de movimiento", "Fuerza muscular", "Sensibilidad", "Reflejos",
+          "Marcha", "Equilibrio", "Coordinación", "Funcionalidad"
+        ],
+        "redFlags": [
+          "pérdida de control de esfínteres", "incontinencia", "anestesia en silla de montar",
+          "debilidad progresiva", "pérdida de peso inexplicada", "dolor nocturno",
+          "fiebre", "trauma reciente", "edad mayor de 50 años", "antecedentes de cáncer"
+        ]
+      }
+    }
+  },
+  
+  "configuration": {
+    "defaultSettings": {
+      "temperature": 0.3,
+      "topP": 0.8,
+      "topK": 40,
+      "maxOutputTokens": 2048,
+      "stopSequences": ["```", "END", "FIN"]
+    },
+    "safetySettings": [
+      {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+      }
+    ],
+    "auditConfiguration": {
+      "auditMode": "HYBRID",
+      "logging": {
+        "enabled": true,
+        "level": "INFO",
+        "includePrompts": true,
+        "includeResponses": true,
+        "includeMetrics": true
+      },
+      "fallback": {
+        "enabled": true,
+        "threshold": 0.7,
+        "maxRetries": 3,
+        "fallbackMethod": "HEURISTIC"
+      },
+      "validation": {
+        "enabled": true,
+        "schemaValidation": true,
+        "confidenceValidation": true,
+        "contentValidation": true
+      }
+    }
+  }
+}

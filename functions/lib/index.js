@@ -1,18 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.api = void 0;
-const functions = require("firebase-functions");
+exports.getTranscriptionHistory = exports.api = void 0;
+const https_1 = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
 const clinicalNLP_1 = require("./routes/clinicalNLP");
 const transcription_1 = require("./api/transcription");
+Object.defineProperty(exports, "getTranscriptionHistory", { enumerable: true, get: function () { return transcription_1.getTranscriptionHistory; } });
 const nlp_analysis_1 = require("./api/nlp-analysis");
 admin.initializeApp();
 const app = express();
-// Usar el middleware de CORS para permitir todas las peticiones
-app.use(cors({ origin: true }));
-app.use(express.json());
+// Configuración CORS más permisiva para desarrollo
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 const patientsCollection = admin.firestore().collection("patients");
 // Define la ruta POST para crear un paciente
 app.post("/patients", async (req, res) => {
@@ -110,22 +117,30 @@ app.delete("/patients/:id", async (req, res) => {
     }
 });
 // === RUTAS DE TRANSCRIPCIÓN ===
-app.post("/api/transcription", transcription_1.processTranscription);
-app.get("/api/transcription/status/:sessionId", transcription_1.getTranscriptionStatus);
+app.post("/transcription", transcription_1.transcribeAudio);
+app.get("/transcription/history/:sessionId", transcription_1.getTranscriptionHistory);
 // === RUTAS DE NLP ===
-app.post("/api/nlp-analysis", nlp_analysis_1.processNLPAnalysis);
-app.get("/api/nlp-analysis/status/:sessionId", nlp_analysis_1.getNLPAnalysisStatus);
+app.post("/nlp-analysis", nlp_analysis_1.processNLPAnalysis);
+app.get("/nlp-analysis/status/:sessionId", nlp_analysis_1.getNLPAnalysisStatus);
 // === RUTAS DE CLINICAL NLP ===
-app.use("/api/clinical-nlp", clinicalNLP_1.default);
+app.use("/clinical-nlp", clinicalNLP_1.default);
 // === ENDPOINT DE SALUD ===
 app.get("/health", (req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        service: 'aiduxcare-patients-api',
-        version: '1.0.0'
+        service: 'aiduxcare-api-v2',
+        version: '2.0.0',
+        environment: 'production'
     });
 });
-// Exporta la aplicación de Express como una Cloud Function
-exports.api = functions.https.onRequest(app);
+// Exporta la aplicación como Cloud Function Gen 2
+exports.api = (0, https_1.onRequest)({
+    region: "us-east1",
+    memory: "256MiB",
+    cpu: 1,
+    timeoutSeconds: 60,
+    maxInstances: 10,
+    cors: true,
+}, app);
 //# sourceMappingURL=index.js.map

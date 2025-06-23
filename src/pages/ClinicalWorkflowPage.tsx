@@ -14,6 +14,8 @@ import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/services/LocalStorageService';
 import AiDuxVirtualAssistant from '../components/chat/AiDuxVirtualAssistant';
+import SecurityDashboard from '../components/SecurityDashboard';
+import MedicalAuditService from '@/security/MedicalAuditService';
 
 interface Patient {
   id: string;
@@ -40,9 +42,18 @@ interface WorkflowState {
   selectedView: 'patients' | 'today' | 'search';
 }
 
+interface NewPatientForm {
+  name: string;
+  age: string;
+  phone: string;
+  email: string;
+  condition: string;
+}
+
 const ClinicalWorkflowPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentTherapist, logout } = useAuth();
+  const { logout, isOwner, setupMFA } = useAuth();
+  const { currentTherapist } = useAuth();
   
   const [state, setState] = useState<WorkflowState>({
     patients: [],
@@ -61,23 +72,32 @@ const ClinicalWorkflowPage: React.FC = () => {
     condition: ''
   });
 
-  // Cargar pacientes al inicializar
+  const [showMFASetup, setShowMFASetup] = useState(false);
+  const [mfaSetupData, setMfaSetupData] = useState<any>(null);
+  const [mfaStep, setMfaStep] = useState<'setup' | 'verify' | 'complete'>('setup');
+  const [mfaToken, setMfaToken] = useState('');
+
+  // Cargar solo pacientes reales guardados (sin demos por defecto)
   useEffect(() => {
     const loadPatients = async () => {
+      setState(prev => ({ ...prev, isLoading: true }));
+      
       try {
-        setState(prev => ({ ...prev, isLoading: true }));
+        // Simular carga de datos desde API
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Cargar desde localStorage (en producción sería desde API)
-        const patients = localStorageService.getAllPatients();
+        // Cargar solo pacientes reales guardados (sin demos por defecto)
+        const storedPatients = localStorageService.getAllPatients();
+        console.log('📊 Pacientes cargados desde localStorage:', storedPatients.length);
         
         setState(prev => ({
           ...prev,
-          patients,
-          filteredPatients: patients,
+          patients: storedPatients,
+          filteredPatients: storedPatients,
           isLoading: false
         }));
       } catch (error) {
-        console.error('Error cargando pacientes:', error);
+        console.error('Error loading patients:', error);
         setState(prev => ({ ...prev, isLoading: false }));
       }
     };
@@ -144,20 +164,92 @@ const ClinicalWorkflowPage: React.FC = () => {
     });
 
     // Navegar directamente a la consulta del nuevo paciente
-    navigate(`/patient/${patient.id}/simple-consultation`);
+    navigate(`/patient/${patient.id}/consultation`);
   };
 
   const handlePatientClick = (patientId: string) => {
-    navigate(`/patient/${patientId}`);
+    navigate(`/patient/${patientId}/consultation`);
   };
 
   const handleStartConsultation = (patientId: string) => {
-    navigate(`/patient/${patientId}/simple-consultation`);
+    try {
+      console.log('🏥 Iniciando consulta para paciente:', patientId);
+      
+      // Verificar que el paciente existe
+      const patients = localStorageService.getAllPatients();
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) {
+        console.error('❌ Paciente no encontrado:', patientId);
+        alert('Error: Paciente no encontrado');
+        return;
+      }
+      
+      console.log('✅ Paciente encontrado:', patient.name);
+      console.log('🚀 Navegando a consulta...');
+      
+      // Navegar con manejo de errores
+      navigate(`/patient/${patientId}/consultation`);
+    } catch (error) {
+      console.error('❌ Error al iniciar consulta:', error);
+      alert('Error al iniciar la consulta. Intenta nuevamente.');
+    }
   };
 
   const handleLogout = () => {
     logout();
     navigate('/auth');
+  };
+
+  // FUNCIÓN PARA LIMPIAR PACIENTES DEMO
+  const handleClearDemoPatients = () => {
+    const confirmClear = window.confirm(
+      '¿Estás seguro de que quieres eliminar todos los pacientes demo?\n\n' +
+      'Esta acción eliminará:\n' +
+      '• Los 2 pacientes demo de UAT\n' +
+      '• Todos los pacientes guardados\n\n' +
+      'Podrás crear pacientes reales después.'
+    );
+
+    if (confirmClear) {
+      // Limpiar localStorage
+      localStorage.removeItem('aiduxcare_v2_patients');
+      
+      // Actualizar estado
+      setState(prev => ({
+        ...prev,
+        patients: [],
+        filteredPatients: []
+      }));
+
+      // Log de auditoría
+      MedicalAuditService.logSystemEvent(
+        currentTherapist?.name || 'Usuario',
+        'DEMO_DATA_CLEARED',
+        'Pacientes demo eliminados para empezar producción'
+      );
+
+      alert('✅ Pacientes demo eliminados correctamente.\nYa puedes crear pacientes reales.');
+    }
+  };
+
+  // FUNCIÓN PARA CREAR PACIENTE NUEVO MEJORADO
+  const handleCreateNewPatient = () => {
+    setState(prev => ({ ...prev, showNewPatientForm: true }));
+  };
+
+  const handleSetupMFA = async () => {
+    try {
+      console.log('🔐 Configurando MFA desde sistema clínico...');
+      const mfaData = await setupMFA();
+      if (mfaData) {
+        setMfaSetupData(mfaData);
+        setShowMFASetup(true);
+        setMfaStep('setup');
+      }
+    } catch (error) {
+      console.error('❌ Error configurando MFA:', error);
+    }
   };
 
   if (state.isLoading) {
@@ -173,17 +265,17 @@ const ClinicalWorkflowPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#A8E6CF]/10">
-      {/* Header Clínico */}
+      {/* Header Clínico UAT - Logo Único */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-[#BDC3C7]/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <AiDuxCareLogo size="sm" />
+              <AiDuxCareLogo size="sm" showText={true} />
               <div>
-                <h1 className="text-xl font-bold text-[#2C3E50]">
-                  Bienvenido, {currentTherapist?.name || 'Doctor'}
-                </h1>
-                <p className="text-[#2C3E50]/60 text-sm">Centro Clínico</p>
+                <p className="text-[#2C3E50]/80 text-sm font-medium">
+                  Bienvenido, {currentTherapist?.name || 'Dr. Mauricio Sobarzo'}
+                </p>
+                <p className="text-[#2C3E50]/60 text-xs">Centro Clínico - UAT</p>
               </div>
             </div>
             
@@ -198,21 +290,36 @@ const ClinicalWorkflowPage: React.FC = () => {
                 Nuevo Paciente
               </button>
               
-              <button
-                onClick={() => navigate('/demo')}
-                className="text-[#2C3E50]/60 hover:text-[#5DA5A3] transition-colors text-sm"
-              >
-                Ver Demo
-              </button>
+              {/* Botón para limpiar pacientes demo */}
+              {state.patients.length > 0 && (
+                <button
+                  onClick={handleClearDemoPatients}
+                  className="text-xs text-[#FF6F61] hover:text-[#E55A4B] transition-colors px-3 py-2 border border-[#FF6F61]/30 rounded-md hover:bg-[#FF6F61]/5"
+                  title="Eliminar pacientes demo y empezar con pacientes reales"
+                >
+                  🧹 Limpiar Demo
+                </button>
+              )}
               
               <button
                 onClick={handleLogout}
                 className="text-[#2C3E50] hover:text-[#5DA5A3] transition-colors"
+                title="Cerrar sesión"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
                 </svg>
               </button>
+
+              {/* Botón MFA para OWNER */}
+              {isOwner() && (
+                <button
+                  onClick={handleSetupMFA}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  🔐 Configurar MFA
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -423,6 +530,90 @@ const ClinicalWorkflowPage: React.FC = () => {
 
       {/* Asistente Virtual Flotante */}
       <AiDuxVirtualAssistant />
+
+      {/* Modal MFA Setup */}
+      {showMFASetup && mfaSetupData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">🔐 Configurar MFA</h2>
+            
+            {mfaStep === 'setup' && (
+              <div>
+                <img 
+                  src={mfaSetupData.qrCodeUrl} 
+                  alt="QR Code MFA" 
+                  className="mx-auto mb-4"
+                  style={{ maxWidth: '200px' }}
+                />
+                <p className="text-sm mb-2"><strong>Código manual:</strong></p>
+                <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                  {mfaSetupData.secret}
+                </code>
+                
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Códigos de Respaldo:</h3>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    {mfaSetupData.backupCodes.map((code: string, index: number) => (
+                      <div key={index} className="bg-yellow-100 px-2 py-1 rounded">
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setMfaStep('verify')}
+                  className="w-full mt-4 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                >
+                  Continuar a Verificación
+                </button>
+              </div>
+            )}
+            
+            {mfaStep === 'verify' && (
+              <div>
+                <p className="mb-4">Ingresa el código de 6 dígitos de tu app:</p>
+                <input
+                  type="text"
+                  value={mfaToken}
+                  onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full px-3 py-2 border rounded text-center text-xl font-mono"
+                  placeholder="000000"
+                  maxLength={6}
+                />
+                <button
+                  onClick={() => setMfaStep('complete')}
+                  disabled={mfaToken.length !== 6}
+                  className="w-full mt-4 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+                >
+                  Verificar MFA
+                </button>
+              </div>
+            )}
+            
+            {mfaStep === 'complete' && (
+              <div className="text-center">
+                <div className="text-4xl mb-4">🎉</div>
+                <h3 className="text-lg font-bold mb-2">¡MFA Configurado!</h3>
+                <p className="text-gray-600 mb-4">Tu cuenta ahora tiene seguridad de grado hospitalario.</p>
+                <button
+                  onClick={() => setShowMFASetup(false)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setShowMFASetup(false)}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

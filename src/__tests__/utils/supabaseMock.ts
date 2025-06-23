@@ -7,13 +7,13 @@ export type SupabaseResponse<T = any> = {
 
 export type SupabaseBuilder = {
   select: (columns?: string) => SupabaseBuilder;
-  insert: (data: any) => SupabaseBuilder;
-  update: (data: any) => SupabaseBuilder;
+  insert: (data: unknown) => SupabaseBuilder;
+  update: (data: unknown) => SupabaseBuilder;
   delete: () => SupabaseBuilder;
-  eq: (column: string, value: any) => SupabaseBuilder;
-  in: (column: string, values: any[]) => SupabaseBuilder;
-  gt: (column: string, value: any) => SupabaseBuilder;
-  lt: (column: string, value: any) => SupabaseBuilder;
+  eq: (column: string, value: unknown) => SupabaseBuilder;
+  in: (column: string, values: unknown[]) => SupabaseBuilder;
+  gt: (column: string, value: unknown) => SupabaseBuilder;
+  lt: (column: string, value: unknown) => SupabaseBuilder;
   or: (conditions: string) => SupabaseBuilder;
   single: () => Promise<SupabaseResponse>;
   then: (callback: (response: SupabaseResponse) => any) => Promise<any>;

@@ -303,7 +303,7 @@ const SmartDashboard: React.FC = () => {
                         ? 'bg-[#FFA726]/10 border-[#FFA726] hover:bg-[#FFA726]/20'
                         : 'bg-[#FFD54F]/10 border-[#FFD54F] hover:bg-[#FFD54F]/20'
                     }`}
-                    onClick={() => handleViewAlert(alert.id)}
+                    role="button" tabIndex={0} onClick={() => handleViewAlert(alert.id)} onKeyDown={(e) => e.key === "Enter" && handleViewAlert(alert.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -341,7 +341,7 @@ const SmartDashboard: React.FC = () => {
                   <div
                     key={patient.id}
                     className="p-4 rounded-xl border border-[#BDC3C7]/20 hover:border-[#5DA5A3]/30 cursor-pointer transition-all hover:shadow-md"
-                    onClick={() => handlePatientSelect(patient.id)}
+                    role="button" tabIndex={0} onClick={() => handlePatientSelect(patient.id)} onKeyDown={(e) => e.key === "Enter" && handlePatientSelect(patient.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

@@ -1,0 +1,61 @@
+{
+  "sessionNumber": 1,
+  "timestamp": "2025-06-22T23:51:39.763Z",
+  "results": [
+    {
+      "testCase": "Caso 1 - Dolor Lumbar",
+      "status": 200,
+      "processingTime": 320,
+      "entitiesFound": 4,
+      "soapSections": 4,
+      "methodUsed": "Enhanced Basic Processor (Principal)",
+      "warmupActivity": "Cloud Translation API - Calentamiento ejecutado obligatoriamente",
+      "warmupStatus": "COMPLETED",
+      "success": true
+    },
+    {
+      "testCase": "Caso 2 - Lesión de Hombro",
+      "status": 200,
+      "processingTime": 368,
+      "entitiesFound": 2,
+      "soapSections": 4,
+      "methodUsed": "Enhanced Basic Processor (Principal)",
+      "warmupActivity": "Cloud Translation API - Calentamiento ejecutado obligatoriamente",
+      "warmupStatus": "COMPLETED",
+      "success": true
+    },
+    {
+      "testCase": "Caso 3 - Síntomas Múltiples",
+      "status": 200,
+      "processingTime": 220,
+      "entitiesFound": 3,
+      "soapSections": 4,
+      "methodUsed": "Enhanced Basic Processor (Principal)",
+      "warmupActivity": "Cloud Translation API - Calentamiento ejecutado obligatoriamente",
+      "warmupStatus": "COMPLETED",
+      "success": true
+    },
+    {
+      "testCase": "Caso 4 - Problema Cervical",
+      "status": 200,
+      "processingTime": 218,
+      "entitiesFound": 1,
+      "soapSections": 4,
+      "methodUsed": "Enhanced Basic Processor (Principal)",
+      "warmupActivity": "Cloud Translation API - Calentamiento ejecutado obligatoriamente",
+      "warmupStatus": "COMPLETED",
+      "success": true
+    },
+    {
+      "testCase": "Caso 5 - Lesión Deportiva",
+      "status": 200,
+      "processingTime": 214,
+      "entitiesFound": 2,
+      "soapSections": 4,
+      "methodUsed": "Enhanced Basic Processor (Principal)",
+      "warmupActivity": "Cloud Translation API - Calentamiento ejecutado obligatoriamente",
+      "warmupStatus": "COMPLETED",
+      "success": true
+    }
+  ]
+}
