@@ -1,5 +1,5 @@
 /**
- * 🎯 GUIDE QUESTIONS - Sistema de Preguntas Guía Contextuales
+ * TARGET: GUIDE QUESTIONS - Sistema de Preguntas Guía Contextuales
  * 
  * Sistema inteligente que sugiere preguntas específicas basadas en:
  * - Condición del paciente

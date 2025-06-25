@@ -73,7 +73,7 @@ export const PatientDataPage: React.FC = () => {
         throw new Error('No se pudo guardar el paciente');
       }
 
-      console.log('✅ Paciente guardado en lista permanente:', savedPatient);
+      console.log('SUCCESS: Paciente guardado en lista permanente:', savedPatient);
 
       // 2. También guardar temporalmente para PatientCompletePage
       localStorage.setItem('aiduxcare_current_patient', JSON.stringify(savedPatient));
@@ -87,7 +87,7 @@ export const PatientDataPage: React.FC = () => {
       }, 1500);
 
     } catch (error) {
-      console.error('❌ Error al guardar paciente:', error);
+      console.error('ERROR: Error al guardar paciente:', error);
       setIsSubmitting(false);
       alert('Error al guardar el paciente. Por favor, inténtalo de nuevo.');
     }
@@ -170,7 +170,7 @@ export const PatientDataPage: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-[#2C3E50]">👤 Nuevo Paciente</h2>
+              <h2 className="text-3xl font-bold text-[#2C3E50]">USER: Nuevo Paciente</h2>
               <p className="text-[#2C3E50]/70">Información básica para iniciar la atención</p>
             </div>
           </div>
@@ -403,7 +403,7 @@ export const PatientDataPage: React.FC = () => {
           {/* Información adicional */}
           <div className="text-center">
             <p className="text-sm text-[#2C3E50]/60">
-              📊 Pacientes registrados: <span className="font-semibold">{totalPatients}</span>
+              STATS: Pacientes registrados: <span className="font-semibold">{totalPatients}</span>
             </p>
             <p className="text-xs text-[#2C3E50]/50 mt-1">
               💾 Datos guardados localmente

@@ -198,26 +198,26 @@ for (let i = 0; i < tests.length; i++) {
   try {
     console.log(`🔍 [${testNumber}] ${test.name}...`);
     const result = test.test();
-    console.log(`✅ [${testNumber}] EXITOSO: ${result}\n`);
+    console.log(`SUCCESS: [${testNumber}] EXITOSO: ${result}\n`);
     passedTests++;
   } catch (error) {
-    console.log(`❌ [${testNumber}] FALLIDO: ${error.message}\n`);
+    console.log(`ERROR: [${testNumber}] FALLIDO: ${error.message}\n`);
     failedTests++;
   }
 }
 
 // Resumen final
-console.log('📊 RESUMEN DE VALIDACIÓN:');
+console.log('STATS: RESUMEN DE VALIDACIÓN:');
 console.log(`• Tests exitosos: ${passedTests}`);
 console.log(`• Tests fallidos: ${failedTests}`);
 console.log(`• Total ejecutados: ${tests.length}`);
 
 if (failedTests === 0) {
   console.log('\n🎉 ¡VALIDACIÓN COMPLETADA EXITOSAMENTE!');
-  console.log('✅ Es seguro proceder con la eliminación definitiva de _deprecated/');
+  console.log('SUCCESS: Es seguro proceder con la eliminación definitiva de _deprecated/');
   process.exit(0);
 } else {
   console.log('\n⚠️  SE DETECTARON PROBLEMAS');
-  console.log('❌ NO ES SEGURO proceder hasta resolver los errores');
+  console.log('ERROR: NO ES SEGURO proceder hasta resolver los errores');
   process.exit(1);
 } 

@@ -19,7 +19,7 @@ console.log('- supabaseUrl value:', supabaseUrl);
 console.log('- supabaseAnonKey length:', supabaseAnonKey?.length);
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('❌ Variables de entorno de Supabase no encontradas en .env.local');
+  throw new Error('ERROR: Variables de entorno de Supabase no encontradas en .env.local');
 }
 
 // Cliente para testing
@@ -35,7 +35,7 @@ export async function testSupabaseConnection() {
   console.log('🔧 Iniciando test de conexión Supabase...');
   
   // Información de configuración
-  console.log('📋 Configuración actual:');
+  console.log('NOTES: Configuración actual:');
   console.log('- URL:', supabaseUrl);
   console.log('- Key (primeros 20 chars):', supabaseAnonKey?.substring(0, 20) + '...');
   
@@ -43,9 +43,9 @@ export async function testSupabaseConnection() {
     // Test 1: Verificar sesión
     const { data: session, error: sessionError } = await testSupabaseClient.auth.getSession();
     if (sessionError) {
-      console.error('❌ Error de sesión:', sessionError);
+      console.error('ERROR: Error de sesión:', sessionError);
     } else {
-      console.log('✅ Sesión OK:', session?.session ? 'Activa' : 'Anónima');
+      console.log('SUCCESS: Sesión OK:', session?.session ? 'Activa' : 'Anónima');
     }
 
     // Test 2: Verificar acceso a tabla simple
@@ -56,10 +56,10 @@ export async function testSupabaseConnection() {
       .limit(1);
     
     if (error) {
-      console.error('❌ Error de consulta:', error);
+      console.error('ERROR: Error de consulta:', error);
       return false;
     } else {
-      console.log('✅ Consulta exitosa. Registros encontrados:', data?.length || 0);
+      console.log('SUCCESS: Consulta exitosa. Registros encontrados:', data?.length || 0);
       return true;
     }
   } catch (err) {

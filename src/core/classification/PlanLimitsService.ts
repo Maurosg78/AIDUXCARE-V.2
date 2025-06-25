@@ -1,5 +1,5 @@
 /**
- * 🎯 Servicio de Límites por Plan - AiDuxCare V.2
+ * TARGET: Servicio de Límites por Plan - AiDuxCare V.2
  * 
  * Controla el uso de consultas según el plan del usuario y la clasificación
  * Implementa los límites específicos por especialidad y tipo de consulta
@@ -88,7 +88,7 @@ export class PlanLimitsService {
       if (planLimits.emergencyConsultations !== -1 && 
           currentUsage.emergencyConsultations >= planLimits.emergencyConsultations) {
         // Permitir emergencias pero notificar límite
-        console.warn('⚠️ Límite de emergencias alcanzado, pero se permite por seguridad');
+        console.warn('WARNING: Límite de emergencias alcanzado, pero se permite por seguridad');
       }
       return { allowed: true, remainingQuota };
     }

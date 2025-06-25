@@ -1,5 +1,5 @@
 /**
- * 🧠 SOAP CLASSIFIER V2.0 - SISTEMA DE ASISTENCIA CLÍNICA HOSPITALARIO
+ * AI: SOAP CLASSIFIER V2.0 - SISTEMA DE ASISTENCIA CLÍNICA HOSPITALARIO
  * 
  * Clasificador inteligente frase-por-frase usando Gemini 1.5 Pro
  * Incluye modo auditoría, sistema de fallback y evaluación automática
@@ -453,7 +453,7 @@ export class SOAPClassifierV2Service {
     specialty: string
   ): Promise<any> {
     
-    console.log('🔄 Ejecutando sistema de fallback robusto...');
+    console.log('RELOAD: Ejecutando sistema de fallback robusto...');
     
     try {
       // Nivel 1: Fallback heurístico avanzado
@@ -465,22 +465,22 @@ export class SOAPClassifierV2Service {
       
       // Nivel 2: Si falla, usar clasificación básica
       if (!heuristicResult || heuristicResult.classifiedSegments.length === 0) {
-        console.log('⚠️ Fallback nivel 1 falló, usando nivel 2...');
+        console.log('WARNING: Fallback nivel 1 falló, usando nivel 2...');
         return await this.generateBasicHeuristicClassification(transcription, specialty);
       }
       
       // Nivel 3: Validación de calidad mínima
       const qualityCheck = this.validateFallbackQuality(heuristicResult);
       if (!qualityCheck.isValid) {
-        console.log('⚠️ Calidad insuficiente, usando clasificación de emergencia...');
+        console.log('WARNING: Calidad insuficiente, usando clasificación de emergencia...');
         return await this.generateEmergencyClassification(transcription);
       }
       
-      console.log('✅ Fallback exitoso con calidad:', qualityCheck.score);
+      console.log('SUCCESS: Fallback exitoso con calidad:', qualityCheck.score);
       return heuristicResult;
       
     } catch (error) {
-      console.error('❌ Error en fallback, usando clasificación de emergencia:', error);
+      console.error('ERROR: Error en fallback, usando clasificación de emergencia:', error);
       return await this.generateEmergencyClassification(transcription);
     }
   }

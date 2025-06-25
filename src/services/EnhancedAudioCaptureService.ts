@@ -1,11 +1,11 @@
 /**
- * 🎙️ ENHANCED AUDIO CAPTURE SERVICE - VERSIÓN MEJORADA
+ * MIC: ENHANCED AUDIO CAPTURE SERVICE - VERSIÓN MEJORADA
  * 
  * Soluciona los problemas críticos identificados:
- * 1. ✅ Calidad de audio mejorada con configuración profesional
- * 2. ✅ Identificación inteligente de interlocutores
- * 3. ✅ Transcripción visible en tiempo real
- * 4. ✅ Preparado para integración con IA SOAP
+ * 1. SUCCESS: Calidad de audio mejorada con configuración profesional
+ * 2. SUCCESS: Identificación inteligente de interlocutores
+ * 3. SUCCESS: Transcripción visible en tiempo real
+ * 4. SUCCESS: Preparado para integración con IA SOAP
  * 
  * @author AiDuxCare Team
  * @date Junio 2025
@@ -541,7 +541,7 @@ export class EnhancedAudioCaptureService {
     }
     
     if (this.qualityMetrics.backgroundNoise > 0.2) {
-      recommendations.push('🏠 Busca un lugar más silencioso');
+      recommendations.push('HOME: Busca un lugar más silencioso');
     }
     
     if (this.speakers.size < 2 && Date.now() - this.lastSpeechTime > 10000) {
@@ -568,7 +568,7 @@ export class EnhancedAudioCaptureService {
     };
     
     // TODO: Integrar con SOAPClassifierV2Service
-    console.log('📋 Segmento listo para clasificación SOAP:', soapReadySegment);
+    console.log('NOTES: Segmento listo para clasificación SOAP:', soapReadySegment);
   }
 
   /**

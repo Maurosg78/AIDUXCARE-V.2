@@ -96,7 +96,7 @@ const AuthenticationPage: React.FC = () => {
         console.log('🔍 Usuario Mauricio no encontrado, creando automáticamente...');
         createMauricioUser();
       } else {
-        console.log('✅ Usuario Mauricio ya existe');
+        console.log('SUCCESS: Usuario Mauricio ya existe');
       }
     };
 
@@ -120,10 +120,10 @@ const AuthenticationPage: React.FC = () => {
     };
   }, [searchParams]);
 
-  // ✅ REDIRECCIÓN AUTOMÁTICA CUANDO SE AUTENTICA Y MFA COMPLETO
+  // SUCCESS: REDIRECCIÓN AUTOMÁTICA CUANDO SE AUTENTICA Y MFA COMPLETO
   useEffect(() => {
     if (isAuthenticated && !isLoading && !requiresMFA) {
-      console.log('🚀 Usuario autenticado y MFA completo, redirigiendo al dashboard...');
+      console.log('LAUNCH: Usuario autenticado y MFA completo, redirigiendo al dashboard...');
       navigate('/clinical', { replace: true });
     } else if (isAuthenticated && requiresMFA) {
       console.log('🔐 Usuario autenticado pero requiere MFA - permaneciendo en configuración');
@@ -139,9 +139,9 @@ const AuthenticationPage: React.FC = () => {
         try {
           const mfaData = await setupMFA();
           setMfaSetupData(mfaData);
-          console.log('✅ Datos MFA generados automáticamente');
+          console.log('SUCCESS: Datos MFA generados automáticamente');
         } catch (error) {
-          console.error('❌ Error en configuración automática MFA:', error);
+          console.error('ERROR: Error en configuración automática MFA:', error);
         }
       };
       autoSetupMFA();
@@ -219,7 +219,7 @@ const AuthenticationPage: React.FC = () => {
     localStorage.removeItem('aiduxcare_password_resets');
     localStorage.removeItem('aiduxcare_therapists');
     localStorage.removeItem('aiduxcare_current_therapist');
-    setSuccessMessage('✅ Datos limpiados. Ahora puedes registrarte desde cero.');
+    setSuccessMessage('SUCCESS: Datos limpiados. Ahora puedes registrarte desde cero.');
     setTimeout(() => {
       setSuccessMessage('');
       createMauricioUser();
@@ -277,7 +277,7 @@ const AuthenticationPage: React.FC = () => {
       const therapistExists = existingTherapists.find((t: any) => t.name === mauricioUser.name);
       
       if (!therapistExists) {
-        console.log('🔄 Sincronizando con sistema de terapeutas...');
+        console.log('RELOAD: Sincronizando con sistema de terapeutas...');
         
         // Crear terapeuta compatible
         const therapistId = `therapist-mauricio-${Date.now()}`;
@@ -298,10 +298,10 @@ const AuthenticationPage: React.FC = () => {
         
         // Guardar terapeuta
         localStorageService.saveTherapistData(therapist);
-        console.log('✅ Sistema de autenticación configurado correctamente');
+        console.log('SUCCESS: Sistema de autenticación configurado correctamente');
       }
       
-      console.log('✅ Usuario administrador creado exitosamente');
+      console.log('SUCCESS: Usuario administrador creado exitosamente');
       
       // Mostrar credenciales de forma segura
       showDevelopmentCredentials();
@@ -311,12 +311,12 @@ const AuthenticationPage: React.FC = () => {
       console.log('🔐 Verificación del sistema:', verification ? 'OK' : 'ERROR');
       
       if (!verification) {
-        console.error('❌ ERROR CRÍTICO: Fallo en el sistema de autenticación');
+        console.error('ERROR: ERROR CRÍTICO: Fallo en el sistema de autenticación');
         throw new Error('Error en la configuración del sistema');
       }
       
     } catch (error) {
-      console.error('❌ Error configurando usuario administrador:', error);
+      console.error('ERROR: Error configurando usuario administrador:', error);
     }
   };
 
@@ -334,14 +334,14 @@ const AuthenticationPage: React.FC = () => {
       await createMauricioUser();
       
       // 3. Mostrar mensaje SIN CREDENCIALES
-      setSuccessMessage('✅ Usuario administrador recreado exitosamente. Contacta al administrador para obtener credenciales.');
+      setSuccessMessage('SUCCESS: Usuario administrador recreado exitosamente. Contacta al administrador para obtener credenciales.');
       
       setTimeout(() => {
         setSuccessMessage('');
       }, 5000);
       
     } catch (error) {
-      console.error('❌ Error en recreación forzada:', error);
+      console.error('ERROR: Error en recreación forzada:', error);
       setErrors(['Error al recrear usuario. Ver consola para detalles.']);
     }
   };
@@ -413,12 +413,12 @@ const AuthenticationPage: React.FC = () => {
         // Sistema profesional - no exponer credenciales
         
         setSuccessMessage(
-          `✅ Registro exitoso!\n\n` +
-          `👤 Usuario registrado: ${newUser.email}\n` +
-          `🔑 Clave temporal enviada por email seguro\n` +
+          `SUCCESS: Registro exitoso!\n\n` +
+          `USER: Usuario registrado: ${newUser.email}\n` +
+          `KEY: Clave temporal enviada por email seguro\n` +
           `⏰ Válida por: 24 horas\n` +
           `🔒 Rol asignado: ${role}\n\n` +
-          `⚠️ IMPORTANTE: Cambia tu clave después del primer login.\n` +
+          `WARNING: IMPORTANTE: Cambia tu clave después del primer login.\n` +
           `📧 Contacta al administrador para obtener credenciales.`
         );
 
@@ -466,22 +466,22 @@ const AuthenticationPage: React.FC = () => {
       const result = await login(formData.username.trim(), formData.password.trim());
 
       if (result.success) {
-        console.log('✅ Autenticación médica exitosa');
+        console.log('SUCCESS: Autenticación médica exitosa');
         
         // Verificar si requiere MFA
         if (requiresMFA) {
-          console.log('⚠️ Requiere verificación MFA');
+          console.log('WARNING: Requiere verificación MFA');
           setShowMFAPrompt(true);
         } else {
-          console.log('🚀 Redirigiendo a sistema clínico...');
+          console.log('LAUNCH: Redirigiendo a sistema clínico...');
           navigate('/clinical');
         }
       } else {
-        console.error('❌ Error de autenticación:', result.error);
+        console.error('ERROR: Error de autenticación:', result.error);
         setErrors([result.error || 'Error de autenticación médica']);
       }
     } catch (error) {
-      console.error('❌ Error en proceso de login:', error);
+      console.error('ERROR: Error en proceso de login:', error);
       setErrors(['Error interno del sistema médico']);
     } finally {
       setIsSubmitting(false);
@@ -572,7 +572,7 @@ const AuthenticationPage: React.FC = () => {
       
       saveUser(user);
 
-      setSuccessMessage('✅ Contraseña cambiada exitosamente. Ahora puedes iniciar sesión.');
+      setSuccessMessage('SUCCESS: Contraseña cambiada exitosamente. Ahora puedes iniciar sesión.');
       
       // Limpiar formulario y cambiar a login
       setFormData({
@@ -620,7 +620,7 @@ const AuthenticationPage: React.FC = () => {
       const user = findUserByEmail(formData.resetEmail.trim());
       
       if (!user) {
-        setErrors(['❌ Email no registrado. Verifica tu email o regístrate primero.']);
+        setErrors(['ERROR: Email no registrado. Verifica tu email o regístrate primero.']);
         return;
       }
 
@@ -629,7 +629,7 @@ const AuthenticationPage: React.FC = () => {
       
       if (result.success) {
         setSuccessMessage(
-          `✅ ${result.message}\n\n` +
+          `SUCCESS: ${result.message}\n\n` +
           `📧 Se ha enviado un email a: ${user.email}\n` +
           `⏰ El link será válido por 1 hora\n\n` +
           `💡 En desarrollo, revisa la consola del navegador para ver el link.`
@@ -667,7 +667,7 @@ const AuthenticationPage: React.FC = () => {
       console.log('🔐 currentTherapist:', currentTherapist);
       
       if (!currentTherapist) {
-        console.error('❌ No hay currentTherapist disponible');
+        console.error('ERROR: No hay currentTherapist disponible');
         setErrors(['Error: Usuario no autenticado']);
         return;
       }
@@ -678,18 +678,18 @@ const AuthenticationPage: React.FC = () => {
       console.log('🔐 Resultado setupMFA:', mfaData);
       
       if (mfaData) {
-        console.log('✅ MFA data recibido, configurando estado...');
+        console.log('SUCCESS: MFA data recibido, configurando estado...');
         setMfaSetupData(mfaData);
         setShowMFASetup(true);
         setMfaStep('setup');
-        console.log('✅ MFA configurado, mostrando QR code');
+        console.log('SUCCESS: MFA configurado, mostrando QR code');
       } else {
-        console.error('❌ setupMFA retornó null o undefined');
+        console.error('ERROR: setupMFA retornó null o undefined');
         setErrors(['Error al configurar la autenticación de dos factores. Intenta nuevamente.']);
       }
     } catch (error) {
-      console.error('❌ Error en handleSetupMFA:', error);
-      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('ERROR: Error en handleSetupMFA:', error);
+      console.error('ERROR: Error stack:', error instanceof Error ? error.stack : 'No stack');
       setErrors(['Error crítico al configurar MFA: ' + (error instanceof Error ? error.message : String(error))]);
     }
   };
@@ -716,7 +716,7 @@ const AuthenticationPage: React.FC = () => {
         setErrors(['Código inválido. Verifica el código en tu aplicación de autenticación.']);
       }
     } catch (error) {
-      console.error('❌ Error verificando MFA:', error);
+      console.error('ERROR: Error verificando MFA:', error);
       setErrors(['Error al verificar el código MFA']);
     }
   };
@@ -736,13 +736,13 @@ const AuthenticationPage: React.FC = () => {
       const result = await loginWithMFA(formData.username, formData.password, mfaToken);
       
       if (result.success) {
-        setSuccessMessage('✅ Autenticación exitosa con MFA');
+        setSuccessMessage('SUCCESS: Autenticación exitosa con MFA');
         navigate('/clinical');
       } else {
         setErrors([result.error || 'Error en autenticación MFA']);
       }
     } catch (error) {
-      console.error('❌ Error en login MFA:', error);
+      console.error('ERROR: Error en login MFA:', error);
       setErrors(['Error en autenticación con MFA']);
     } finally {
       setIsSubmitting(false);
@@ -770,7 +770,7 @@ const AuthenticationPage: React.FC = () => {
                 onClick={handleSetupMFA}
                 className="w-full bg-[#5DA5A3] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#4A8280] transition-colors"
               >
-                🚀 Generar Configuración MFA
+                LAUNCH: Generar Configuración MFA
               </button>
             </div>
           </div>
@@ -863,7 +863,7 @@ const AuthenticationPage: React.FC = () => {
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                  <h3 className="font-semibold text-yellow-900 mb-2">🔑 Códigos de Respaldo</h3>
+                  <h3 className="font-semibold text-yellow-900 mb-2">KEY: Códigos de Respaldo</h3>
                   <p className="text-yellow-800 text-sm mb-3">
                     Guarda estos códigos en un lugar seguro. Puedes usarlos si pierdes acceso a tu teléfono:
                   </p>
@@ -880,7 +880,7 @@ const AuthenticationPage: React.FC = () => {
                   onClick={() => setMfaStep('verify')}
                   className="w-full bg-[#5DA5A3] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#4A8280] transition-colors"
                 >
-                  ✅ He guardado los códigos, continuar
+                  SUCCESS: He guardado los códigos, continuar
                 </button>
               </>
             )}
@@ -943,7 +943,7 @@ const AuthenticationPage: React.FC = () => {
                 </p>
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                   <p className="text-green-800 text-sm">
-                    ✅ Acceso completo habilitado<br/>
+                    SUCCESS: Acceso completo habilitado<br/>
                     🔐 Estándares HIPAA cumplidos<br/>
                     🏥 Listo para uso clínico
                   </p>
@@ -1409,7 +1409,7 @@ const AuthenticationPage: React.FC = () => {
                 className="text-xs text-[#5DA5A3] hover:text-[#4A8280] transition-colors block mx-auto"
                 title="Recrear usuario Mauricio automáticamente"
               >
-                👤 Recrear Usuario Mauricio
+                USER: Recrear Usuario Mauricio
             </button>
               
         <button

@@ -173,7 +173,7 @@ class EmailService {
             </div>
             
             <div class="security-info">
-              <strong>🛡️ Información de Seguridad:</strong>
+              <strong>SECURITY: Información de Seguridad:</strong>
               <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Este enlace es válido hasta: <strong>${expiresDate}</strong></li>
                 <li>Solo puedes usar este enlace una vez</li>

@@ -13,10 +13,10 @@ const GlobalNavigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const menuItems = [
-    { path: '/', label: '🏠 Inicio', description: 'Página principal' },
-    { path: '/patient/new', label: '👤 Nuevo Paciente', description: 'Registrar paciente' },
-    { path: '/patients', label: '📋 Lista Pacientes', description: 'Ver todos los pacientes' },
-    { path: '/session', label: '🎙️ Sesión Activa', description: 'Workflow principal' },
+    { path: '/', label: 'HOME: Inicio', description: 'Página principal' },
+    { path: '/patient/new', label: 'USER: Nuevo Paciente', description: 'Registrar paciente' },
+    { path: '/patients', label: 'NOTES: Lista Pacientes', description: 'Ver todos los pacientes' },
+    { path: '/session', label: 'MIC: Sesión Activa', description: 'Workflow principal' },
     { path: '/patient-complete', label: '📄 Ficha Completa', description: 'Ver ficha del paciente' },
   ];
 
@@ -47,7 +47,7 @@ const GlobalNavigation: React.FC = () => {
         {/* Navegación Central */}
         <div className="nav-center">
           <div className="current-page">
-            <span className="page-icon">{currentPage?.label.split(' ')[0] || '🏠'}</span>
+            <span className="page-icon">{currentPage?.label.split(' ')[0] || 'HOME:'}</span>
             <span className="page-name">{currentPage?.label.split(' ').slice(1).join(' ') || 'Inicio'}</span>
           </div>
         </div>

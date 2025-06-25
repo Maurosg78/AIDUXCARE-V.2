@@ -1,5 +1,5 @@
 /**
- * 🗄️ Local Storage Service - AiDuxCare V.2
+ * DATA: Local Storage Service - AiDuxCare V.2
  * Gestión de almacenamiento local sin audio
  * Enfoque: highlights + SOAP únicamente
  */
@@ -45,7 +45,7 @@ class LocalStorageService {
       const data = localStorage.getItem(this.getStorageKey(this.THERAPIST_KEY));
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('❌ Error al obtener datos del terapeuta:', error);
+      console.error('ERROR: Error al obtener datos del terapeuta:', error);
       return null;
     }
   }
@@ -68,7 +68,7 @@ class LocalStorageService {
       
       return true;
     } catch (error) {
-      console.error('❌ Error al guardar datos del terapeuta:', error);
+      console.error('ERROR: Error al guardar datos del terapeuta:', error);
       return false;
     }
   }
@@ -149,7 +149,7 @@ class LocalStorageService {
       return this.saveTherapistData(therapist);
       
     } catch (error) {
-      console.error('❌ Error al guardar sesión:', error);
+      console.error('ERROR: Error al guardar sesión:', error);
       return false;
     }
   }
@@ -168,7 +168,7 @@ class LocalStorageService {
 
       return session ? session.sessionData : null;
     } catch (error) {
-      console.error('❌ Error al obtener sesión:', error);
+      console.error('ERROR: Error al obtener sesión:', error);
       return null;
     }
   }
@@ -191,7 +191,7 @@ class LocalStorageService {
         hasSOAP: !!session.sessionData.soapNotes
       }));
     } catch (error) {
-      console.error('❌ Error al obtener sesiones:', error);
+      console.error('ERROR: Error al obtener sesiones:', error);
       return [];
     }
   }
@@ -211,7 +211,7 @@ class LocalStorageService {
       this.updateTherapistStats(therapist);
       return this.saveTherapistData(therapist);
     } catch (error) {
-      console.error('❌ Error al eliminar sesión:', error);
+      console.error('ERROR: Error al eliminar sesión:', error);
       return false;
     }
   }
@@ -238,7 +238,7 @@ class LocalStorageService {
 
       return this.saveTherapistData(therapist);
     } catch (error) {
-      console.error('❌ Error al agregar highlight:', error);
+      console.error('ERROR: Error al agregar highlight:', error);
       return false;
     }
   }
@@ -270,7 +270,7 @@ class LocalStorageService {
 
       return this.saveTherapistData(therapist);
     } catch (error) {
-      console.error('❌ Error al actualizar highlight:', error);
+      console.error('ERROR: Error al actualizar highlight:', error);
       return false;
     }
   }
@@ -285,7 +285,7 @@ class LocalStorageService {
       const data = localStorage.getItem(this.getStorageKey(this.PATIENTS_KEY));
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('❌ Error al obtener lista de pacientes:', error);
+      console.error('ERROR: Error al obtener lista de pacientes:', error);
       return [];
     }
   }
@@ -325,7 +325,7 @@ class LocalStorageService {
       localStorage.setItem(this.getStorageKey(this.PATIENTS_KEY), JSON.stringify(patients));
       return patient;
     } catch (error) {
-      console.error('❌ Error al guardar paciente:', error);
+      console.error('ERROR: Error al guardar paciente:', error);
       return null;
     }
   }
@@ -338,7 +338,7 @@ class LocalStorageService {
       const patients = this.getAllPatients();
       return patients.find(p => p.id === patientId) || null;
     } catch (error) {
-      console.error('❌ Error al obtener paciente:', error);
+      console.error('ERROR: Error al obtener paciente:', error);
       return null;
     }
   }
@@ -352,7 +352,7 @@ class LocalStorageService {
       const patientIndex = patients.findIndex(p => p.id === patientId);
       
       if (patientIndex === -1) {
-        console.error('❌ Paciente no encontrado:', patientId);
+        console.error('ERROR: Paciente no encontrado:', patientId);
         return false;
       }
 
@@ -367,10 +367,10 @@ class LocalStorageService {
         JSON.stringify(patients)
       );
 
-      console.log('✅ Paciente actualizado exitosamente:', patientId);
+      console.log('SUCCESS: Paciente actualizado exitosamente:', patientId);
       return true;
     } catch (error) {
-      console.error('❌ Error al actualizar paciente:', error);
+      console.error('ERROR: Error al actualizar paciente:', error);
       return false;
     }
   }
@@ -384,7 +384,7 @@ class LocalStorageService {
       const filteredPatients = patients.filter(p => p.id !== patientId);
       
       if (patients.length === filteredPatients.length) {
-        console.error('❌ Paciente no encontrado para eliminar:', patientId);
+        console.error('ERROR: Paciente no encontrado para eliminar:', patientId);
         return false;
       }
 
@@ -393,10 +393,10 @@ class LocalStorageService {
         JSON.stringify(filteredPatients)
       );
 
-      console.log('✅ Paciente eliminado exitosamente:', patientId);
+      console.log('SUCCESS: Paciente eliminado exitosamente:', patientId);
       return true;
     } catch (error) {
-      console.error('❌ Error al eliminar paciente:', error);
+      console.error('ERROR: Error al eliminar paciente:', error);
       return false;
     }
   }
@@ -425,7 +425,7 @@ class LocalStorageService {
         percentage: (totalSize / estimatedLimit) * 100
       };
     } catch (error) {
-      console.error('❌ Error al calcular tamaño de almacenamiento:', error);
+      console.error('ERROR: Error al calcular tamaño de almacenamiento:', error);
       return { used: 0, total: 0, percentage: 0 };
     }
   }
@@ -456,7 +456,7 @@ class LocalStorageService {
 
       return removedCount;
     } catch (error) {
-      console.error('❌ Error al limpiar datos antiguos:', error);
+      console.error('ERROR: Error al limpiar datos antiguos:', error);
       return 0;
     }
   }
@@ -481,7 +481,7 @@ class LocalStorageService {
 
       return JSON.stringify(exportData, null, 2);
     } catch (error) {
-      console.error('❌ Error al exportar datos:', error);
+      console.error('ERROR: Error al exportar datos:', error);
       return null;
     }
   }

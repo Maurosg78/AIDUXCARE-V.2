@@ -48,9 +48,17 @@ async function testRedFlagsDetection() {
     });
     console.log('\n' + '=' .repeat(80));
 
-    // Detectar banderas rojas
-    console.log('🚨 DETECTANDO BANDERAS ROJAS...');
-    const redFlags = await clinicalAssistantService.detectRedFlags(entities, patient);
+    // Contexto profesional mock para pruebas automáticas
+    const professionalContext = {
+      role: 'PHYSIOTHERAPIST',
+      country: 'SPAIN',
+      state: 'METROPOLITANA',
+      specializations: ['Prueba'],
+      certifications: [],
+      licenseNumber: 'TEST-0000'
+    };
+    // Llamada corregida para evitar error de compilación
+    const redFlags = await clinicalAssistantService.detectRedFlags(entities, patient, professionalContext);
     
     console.log(`\n✅ BANDERAS ROJAS DETECTADAS: ${redFlags.length}`);
     console.log('=' .repeat(80));

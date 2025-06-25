@@ -14,22 +14,22 @@ const PROFESSIONAL_USER_ID = 'demo@aiduxcare.com';
 // Función principal
 async function main() {
   try {
-    console.log('🚀 SIMULANDO creación de datos clínicos reales...');
+    console.log('LAUNCH: SIMULANDO creación de datos clínicos reales...');
     
     // 1. Simular búsqueda de profesional
     console.log(`Buscando profesional con email: ${PROFESSIONAL_USER_ID}...`);
     const professionalId = uuidv4();
-    console.log(`✅ ID de profesional encontrado: ${professionalId}`);
+    console.log(`SUCCESS: ID de profesional encontrado: ${professionalId}`);
     
     // 2. Simular búsqueda de usuario paciente
     console.log(`Buscando usuario paciente con email: ${PATIENT_USER_ID}...`);
     const patientUserId = uuidv4();
-    console.log(`✅ ID de usuario paciente encontrado: ${patientUserId}`);
+    console.log(`SUCCESS: ID de usuario paciente encontrado: ${patientUserId}`);
     
     // 3. Simular creación del paciente
     const patientId = uuidv4();
     console.log(`Creando paciente Andrea Bultó (29 años)...`);
-    console.log(`✅ Paciente creado con ID: ${patientId}`);
+    console.log(`SUCCESS: Paciente creado con ID: ${patientId}`);
     
     // 4. Simular creación de visita inicial
     const initialVisitId = uuidv4();
@@ -37,29 +37,29 @@ async function main() {
     initialVisitDate.setDate(initialVisitDate.getDate() - 7); // 7 días atrás
     
     console.log(`Creando visita inicial (fecha: ${initialVisitDate.toISOString()})...`);
-    console.log(`✅ Visita inicial creada con ID: ${initialVisitId}`);
+    console.log(`SUCCESS: Visita inicial creada con ID: ${initialVisitId}`);
     
     // 5. Simular creación de formulario clínico para visita inicial
     const initialFormId = uuidv4();
     console.log('Creando formulario SOAP para visita inicial...');
-    console.log(`✅ Formulario clínico creado con ID: ${initialFormId}`);
+    console.log(`SUCCESS: Formulario clínico creado con ID: ${initialFormId}`);
     
     // 6. Simular creación de visita de seguimiento
     const followUpVisitId = uuidv4();
     const followUpVisitDate = new Date(); // Fecha actual
     
     console.log(`Creando visita de seguimiento (fecha: ${followUpVisitDate.toISOString()})...`);
-    console.log(`✅ Visita de seguimiento creada con ID: ${followUpVisitId}`);
+    console.log(`SUCCESS: Visita de seguimiento creada con ID: ${followUpVisitId}`);
     
     // 7. Simular creación de formulario borrador para seguimiento
     const followUpFormId = uuidv4();
     console.log('Creando formulario SOAP borrador para visita de seguimiento...');
-    console.log(`✅ Formulario borrador creado con ID: ${followUpFormId}`);
+    console.log(`SUCCESS: Formulario borrador creado con ID: ${followUpFormId}`);
     
     // 8. Simular creación de registro de auditoría
     const auditLogId = uuidv4();
     console.log('Creando registro de auditoría...');
-    console.log(`✅ Registro de auditoría creado con ID: ${auditLogId}`);
+    console.log(`SUCCESS: Registro de auditoría creado con ID: ${auditLogId}`);
     
     // Resumen final
     console.log('\n🏥 SIMULACIÓN de datos clínicos reales completada:');
@@ -93,7 +93,7 @@ async function main() {
     console.log('3. Configurar correctamente el archivo .env con estas credenciales');
     
   } catch (error) {
-    console.error('❌ ERROR en la simulación:', error);
+    console.error('ERROR: ERROR en la simulación:', error);
   }
 }
 

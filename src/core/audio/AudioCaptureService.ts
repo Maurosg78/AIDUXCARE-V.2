@@ -195,7 +195,7 @@ export class AudioCaptureService {
     const pacienteSegments = approvedSegments.filter(s => s.actor === 'paciente');
     const acompañanteSegments = approvedSegments.filter(s => s.actor === 'acompañante');
 
-    let content = '🔊 **Resumen de consulta (transcripción asistida)**\n\n';
+    let content = 'SOUND: **Resumen de consulta (transcripción asistida)**\n\n';
 
     if (profesionalSegments.length > 0) {
       content += '**Profesional sanitario:**\n';

@@ -32,7 +32,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runMigration() {
   try {
-    console.log('🔄 Iniciando migración de tabla metrics_by_visit...');
+    console.log('RELOAD: Iniciando migración de tabla metrics_by_visit...');
 
     // Leer el archivo SQL
     const sqlFilePath = join(__dirname, 'create_metrics_table.sql');
@@ -57,31 +57,31 @@ async function runMigration() {
       if (verifyError.code === 'PGRST204') {
         console.log('⚠️ La tabla metrics_by_visit existe pero está vacía.');
       } else if (verifyError.code === 'PGRST405') {
-        console.error('❌ La tabla metrics_by_visit no existe. Por favor, ejecuta el SQL en Supabase.');
+        console.error('ERROR: La tabla metrics_by_visit no existe. Por favor, ejecuta el SQL en Supabase.');
       } else {
         console.warn('⚠️ No se pudo verificar la tabla: ' + verifyError.message);
       }
     } else {
-      console.log(`✅ Verificación exitosa. La tabla metrics_by_visit existe ${data ? 'y contiene datos.' : 'pero está vacía.'}`);
+      console.log(`SUCCESS: Verificación exitosa. La tabla metrics_by_visit existe ${data ? 'y contiene datos.' : 'pero está vacía.'}`);
     }
 
     // Generar métricas para Andrea Bultó si se especifica
     if (process.argv.includes('--generate-andrea-metrics')) {
-      console.log('🔄 Generando métricas para Andrea Bultó...');
+      console.log('RELOAD: Generando métricas para Andrea Bultó...');
       
       // Importar y ejecutar el script de forma dinámica
       try {
         // Utilizamos dynamic import para módulos ESM
         const generateMetricsModule = await import('./generateAndreaMetrics.js');
         await generateMetricsModule.default();
-        console.log('✅ Métricas para Andrea Bultó generadas exitosamente.');
+        console.log('SUCCESS: Métricas para Andrea Bultó generadas exitosamente.');
       } catch (err) {
-        console.error('❌ Error al generar métricas para Andrea Bultó:', err);
+        console.error('ERROR: Error al generar métricas para Andrea Bultó:', err);
       }
     }
 
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('ERROR: Error:', error.message);
     process.exit(1);
   }
 }

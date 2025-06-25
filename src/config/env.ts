@@ -97,19 +97,19 @@ export function validateEnvironment(): {
 
 // Log de diagnóstico en desarrollo
 if (typeof window !== 'undefined' && ENV_CONFIG.app.isDevelopment) {
-  console.log('⚠️ Información de configuración (solo visible en desarrollo):');
-  console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- GOOGLE_CLOUD_CREDENTIALS: ${GOOGLE_CLOUD_CREDENTIALS ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log('WARNING: Información de configuración (solo visible en desarrollo):');
+  console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK SUCCESS:' : 'MISSING ERROR:'}`);
+  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK SUCCESS:' : 'MISSING ERROR:'}`);
+  console.log(`- GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID ? 'OK SUCCESS:' : 'MISSING ERROR:'}`);
+  console.log(`- GOOGLE_CLOUD_CREDENTIALS: ${GOOGLE_CLOUD_CREDENTIALS ? 'OK SUCCESS:' : 'MISSING ERROR:'}`);
   
   // Intentar validar la URL
   if (SUPABASE_URL) {
     try {
       new URL(SUPABASE_URL);
-      console.log('- URL format: VALID ✅');
+      console.log('- URL format: VALID SUCCESS:');
     } catch (e) {
-      console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
+      console.error('- URL format: INVALID ERROR: - La URL de Supabase no es válida');
     }
   }
 }

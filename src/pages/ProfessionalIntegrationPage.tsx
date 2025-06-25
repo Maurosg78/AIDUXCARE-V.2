@@ -222,9 +222,9 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
   const renderSystemStatus = () => {
     const getStatusIcon = (status: 'checking' | 'healthy' | 'unhealthy') => {
       switch (status) {
-        case 'checking': return '🔄';
-        case 'healthy': return '✅';
-        case 'unhealthy': return '❌';
+        case 'checking': return 'RELOAD:';
+        case 'healthy': return 'SUCCESS:';
+        case 'unhealthy': return 'ERROR:';
       }
     };
 
@@ -364,7 +364,7 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
           <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <span className="text-red-400">❌</span>
+                <span className="text-red-400">ERROR:</span>
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">
@@ -417,7 +417,7 @@ export const ProfessionalIntegrationPage: React.FC<ProfessionalIntegrationPagePr
         <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
           <div className="text-center">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              🤖 <strong>Powered by Google Cloud AI</strong> - Escalable y Preciso
+              BOT: <strong>Powered by Google Cloud AI</strong> - Escalable y Preciso
             </h3>
             <p className="text-sm text-gray-600">
               Pipeline completo de análisis médico con Vertex AI y Gemini-1.5-pro

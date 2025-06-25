@@ -35,28 +35,28 @@ const SimpleConsultationPage: React.FC = () => {
         console.log('🏥 SIMPLE: Cargando paciente simplificado:', patientId);
         
         if (!patientId) {
-          console.warn('❌ No patientId, navegando a /clinical');
+          console.warn('ERROR: No patientId, navegando a /clinical');
           navigate('/clinical');
           return;
         }
 
         const patients = localStorageService.getAllPatients();
-        console.log('📊 Total pacientes encontrados:', patients.length);
+        console.log('STATS: Total pacientes encontrados:', patients.length);
         
         const foundPatient = patients.find(p => p.id === patientId);
 
         if (!foundPatient) {
-          console.error('❌ Paciente no encontrado:', patientId);
+          console.error('ERROR: Paciente no encontrado:', patientId);
           setError('Paciente no encontrado');
           setTimeout(() => navigate('/clinical'), 2000);
           return;
         }
 
-        console.log('✅ Paciente cargado exitosamente:', foundPatient.name);
+        console.log('SUCCESS: Paciente cargado exitosamente:', foundPatient.name);
         setPatient(foundPatient);
         setError(null);
       } catch (err) {
-        console.error('❌ Error cargando paciente:', err);
+        console.error('ERROR: Error cargando paciente:', err);
         setError('Error al cargar paciente');
         setTimeout(() => navigate('/clinical'), 2000);
       } finally {
@@ -159,10 +159,10 @@ const SimpleConsultationPage: React.FC = () => {
             </div>
             
             <div className="text-green-700 mb-4">
-              <p className="mb-2">✅ La página de consulta se ha cargado sin errores</p>
-              <p className="mb-2">✅ No hay logout automático</p>
-              <p className="mb-2">✅ El paciente se cargó correctamente: <strong>{patient.name}</strong></p>
-              <p className="mb-2">✅ La autenticación se mantiene estable</p>
+              <p className="mb-2">SUCCESS: La página de consulta se ha cargado sin errores</p>
+              <p className="mb-2">SUCCESS: No hay logout automático</p>
+              <p className="mb-2">SUCCESS: El paciente se cargó correctamente: <strong>{patient.name}</strong></p>
+              <p className="mb-2">SUCCESS: La autenticación se mantiene estable</p>
             </div>
 
             <div className="bg-white rounded-md p-4 border border-green-200">
@@ -207,7 +207,7 @@ const SimpleConsultationPage: React.FC = () => {
               }}
               className="btn-primary px-6 py-2"
             >
-              ✅ Confirmar Funcionamiento
+              SUCCESS: Confirmar Funcionamiento
             </button>
           </div>
         </div>

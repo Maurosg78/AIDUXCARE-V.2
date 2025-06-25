@@ -34,9 +34,9 @@ const AuthDebugPage: React.FC = () => {
       const stored = localStorage.getItem('aiduxcare_registered_users');
       const parsedUsers = stored ? JSON.parse(stored) : [];
       setUsers(parsedUsers);
-      addDebugInfo(`📊 Cargados ${parsedUsers.length} usuarios del localStorage`);
+      addDebugInfo(`STATS: Cargados ${parsedUsers.length} usuarios del localStorage`);
     } catch (error) {
-      addDebugInfo(`❌ Error cargando usuarios: ${error}`);
+      addDebugInfo(`ERROR: Error cargando usuarios: ${error}`);
     }
   };
 
@@ -46,7 +46,7 @@ const AuthDebugPage: React.FC = () => {
 
   const testPasswordHash = () => {
     if (!testPassword) {
-      addDebugInfo('❌ Ingresa una contraseña para probar');
+      addDebugInfo('ERROR: Ingresa una contraseña para probar');
       return;
     }
 
@@ -54,18 +54,18 @@ const AuthDebugPage: React.FC = () => {
     addDebugInfo(`🔐 Hash generado para "${testPassword}": ${hash}`);
 
     const verification = MedicalEncryptionService.verifyPassword(testPassword, hash);
-    addDebugInfo(`✅ Verificación del hash: ${verification ? 'CORRECTA' : 'INCORRECTA'}`);
+    addDebugInfo(`SUCCESS: Verificación del hash: ${verification ? 'CORRECTA' : 'INCORRECTA'}`);
   };
 
   const testUserLogin = () => {
     const user = users.find(u => u.email.toLowerCase() === testEmail.toLowerCase());
     
     if (!user) {
-      addDebugInfo(`❌ Usuario no encontrado: ${testEmail}`);
+      addDebugInfo(`ERROR: Usuario no encontrado: ${testEmail}`);
       return;
     }
 
-    addDebugInfo(`👤 Usuario encontrado: ${user.name} (${user.email})`);
+    addDebugInfo(`USER: Usuario encontrado: ${user.name} (${user.email})`);
     addDebugInfo(`🔒 Rol: ${user.role}, Temporal: ${user.isTemporary}`);
     
     if (testPassword) {
@@ -100,7 +100,7 @@ const AuthDebugPage: React.FC = () => {
     
     localStorage.setItem('aiduxcare_registered_users', JSON.stringify(newUsers));
     setUsers(newUsers);
-    addDebugInfo(`✅ Usuario de prueba creado: ${testUser.email} / password: test123`);
+    addDebugInfo(`SUCCESS: Usuario de prueba creado: ${testUser.email} / password: test123`);
   };
 
   const clearUserData = () => {
@@ -121,13 +121,13 @@ const AuthDebugPage: React.FC = () => {
       
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      addDebugInfo('✅ Todos los datos de usuario limpiados exitosamente');
-      addDebugInfo('🔄 Recarga la página para empezar limpio');
+      addDebugInfo('SUCCESS: Todos los datos de usuario limpiados exitosamente');
+      addDebugInfo('RELOAD: Recarga la página para empezar limpio');
       
       // Recargar usuarios después de limpiar
       setTimeout(loadUsers, 500);
     } catch (error) {
-      addDebugInfo(`❌ Error limpiando datos: ${error}`);
+      addDebugInfo(`ERROR: Error limpiando datos: ${error}`);
     }
   };
 
@@ -137,9 +137,9 @@ const AuthDebugPage: React.FC = () => {
       localStorage.removeItem('aiduxcare_v2_patients');
       localStorage.removeItem('aiduxcare_v2_sessions');
       
-      addDebugInfo('✅ Datos de pacientes limpiados');
+      addDebugInfo('SUCCESS: Datos de pacientes limpiados');
     } catch (error) {
-      addDebugInfo(`❌ Error limpiando datos: ${error}`);
+      addDebugInfo(`ERROR: Error limpiando datos: ${error}`);
     }
   };
 
@@ -149,19 +149,19 @@ const AuthDebugPage: React.FC = () => {
       
       // Verificar datos en localStorage
       const patients = localStorage.getItem('aiduxcare_v2_patients');
-      addDebugInfo(`📊 Pacientes en localStorage: ${patients ? 'SÍ' : 'NO'}`);
+      addDebugInfo(`STATS: Pacientes en localStorage: ${patients ? 'SÍ' : 'NO'}`);
       
       if (patients) {
         const parsedPatients = JSON.parse(patients);
         addDebugInfo(`👥 Total pacientes: ${parsedPatients.length}`);
         
         if (parsedPatients.length > 0) {
-          addDebugInfo(`🎯 Primer paciente: ${parsedPatients[0].name} (ID: ${parsedPatients[0].id})`);
+          addDebugInfo(`TARGET: Primer paciente: ${parsedPatients[0].name} (ID: ${parsedPatients[0].id})`);
         }
       }
       
     } catch (error) {
-      addDebugInfo(`❌ Error en test: ${error}`);
+      addDebugInfo(`ERROR: Error en test: ${error}`);
     }
   };
 
@@ -182,14 +182,14 @@ const AuthDebugPage: React.FC = () => {
                 onClick={loadUsers}
                 className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
               >
-                🔄 Recargar Usuarios
+                RELOAD: Recargar Usuarios
               </button>
               
               <button
                 onClick={createTestUser}
                 className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
               >
-                👤 Crear Usuario de Prueba
+                USER: Crear Usuario de Prueba
               </button>
               
               <button
@@ -203,7 +203,7 @@ const AuthDebugPage: React.FC = () => {
                 onClick={clearUserData}
                 className="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
               >
-                👤 Limpiar Datos de Usuario
+                USER: Limpiar Datos de Usuario
               </button>
               
               <button
@@ -294,7 +294,7 @@ const AuthDebugPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-2">
-                        {user.isTemporary ? '⏰ Sí' : '✅ No'}
+                        {user.isTemporary ? '⏰ Sí' : 'SUCCESS: No'}
                       </td>
                       <td className="px-4 py-2">
                         {new Date(user.createdAt).toLocaleDateString()}

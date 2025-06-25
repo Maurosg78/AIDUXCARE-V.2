@@ -9,8 +9,8 @@ const transcription_1 = require("../api/transcription");
 const router = (0, express_1.Router)();
 // === ENDPOINTS PRINCIPALES ===
 // POST /api/transcription - Transcribir audio
-router.post('/', transcription_1.transcribeAudio);
+router.post("/", transcription_1.transcribeAudio);
 // GET /api/transcription/history/:sessionId - Obtener historial de transcripción
-router.get('/history/:sessionId', transcription_1.getTranscriptionHistory);
+router.get("/history/:sessionId", transcription_1.getTranscriptionHistory);
 exports.default = router;
 //# sourceMappingURL=transcription.js.map

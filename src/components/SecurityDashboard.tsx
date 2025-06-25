@@ -1,5 +1,5 @@
 /**
- * 🛡️ SECURITY DASHBOARD - MEDICAL SECURITY MONITORING
+ * SECURITY: SECURITY DASHBOARD - MEDICAL SECURITY MONITORING
  * Panel de monitoreo de seguridad médica en tiempo real
  * Auditoría + Alertas + Estadísticas de seguridad
  */
@@ -48,12 +48,12 @@ const SecurityDashboard: React.FC = () => {
   const getEventTypeIcon = (type: string) => {
     switch (type) {
       case 'AUTHENTICATION': return '🔐';
-      case 'PATIENT_RECORD_ACCESS': return '👤';
+      case 'PATIENT_RECORD_ACCESS': return 'USER:';
       case 'DATA_MODIFICATION': return '✏️';
       case 'EMERGENCY_ACCESS': return '🚨';
       case 'SYSTEM_CONFIGURATION': return '⚙️';
-      case 'SECURITY_INCIDENT': return '🛡️';
-      default: return '📋';
+      case 'SECURITY_INCIDENT': return 'SECURITY:';
+      default: return 'NOTES:';
     }
   };
 

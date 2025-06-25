@@ -1,5 +1,5 @@
 /**
- * 🧠 AiDuxCare - Clinical Insights Engine
+ * AI: AiDuxCare - Clinical Insights Engine
  * Motor de IA avanzado para generar insights clínicos, detección de patrones,
  * alertas médicas y recomendaciones proactivas
  */
@@ -113,7 +113,7 @@ export class ClinicalInsightsEngine {
     const sessionKey = `${sessionData.patientId}_${sessionData.visitId}`;
 
     try {
-      console.log('🧠 Generando insights clínicos avanzados...');
+      console.log('AI: Generando insights clínicos avanzados...');
 
       // 1. Análisis de patrones clínicos
       const patterns = await this.detectClinicalPatterns(sessionData.entities, sessionData.soapNotes);
@@ -168,11 +168,11 @@ export class ClinicalInsightsEngine {
         overallScore: overallAssessment.quality_score
       });
 
-      console.log(`✅ Insights generados: ${insights.processing_metadata.insights_generated} total`);
+      console.log(`SUCCESS: Insights generados: ${insights.processing_metadata.insights_generated} total`);
       return enrichedInsights;
 
     } catch (error) {
-      console.error('❌ Error generando insights clínicos:', error);
+      console.error('ERROR: Error generando insights clínicos:', error);
       
       // Fallback con insights básicos
       return {

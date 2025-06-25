@@ -466,7 +466,7 @@ const PatientSelectionPage: React.FC = () => {
 
               {/* Insights de IA */}
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-[#5DA5A3] mb-2">🤖 Insights IA:</h4>
+                <h4 className="text-sm font-medium text-[#5DA5A3] mb-2">BOT: Insights IA:</h4>
                 <div className="space-y-1">
                   {patient.aiInsights.slice(0, 2).map((insight, index) => (
                     <p key={index} className="text-xs text-[#2C3E50]/70 pl-2 border-l-2 border-[#5DA5A3]/20">

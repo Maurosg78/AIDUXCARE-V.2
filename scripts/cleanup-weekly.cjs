@@ -131,8 +131,8 @@ function performCleanup() {
   const problematic = findProblematicFiles('.');
   
   if (problematic.length === 0) {
-    console.log('✅ EXCELENTE: No se encontraron archivos problemáticos');
-    console.log('✅ El codebase cumple con todas las políticas de limpieza');
+    console.log('SUCCESS: EXCELENTE: No se encontraron archivos problemáticos');
+    console.log('SUCCESS: El codebase cumple con todas las políticas de limpieza');
     return true;
   }
   
@@ -166,10 +166,10 @@ function generateCleanupReport() {
     console.log('🔧 Verificando estado del build...');
     execSync('npm run build', { stdio: 'pipe' });
     report.buildStatus = 'success';
-    console.log('✅ Build exitoso');
+    console.log('SUCCESS: Build exitoso');
   } catch (error) {
     report.buildStatus = 'failed';
-    console.log('❌ Build falló');
+    console.log('ERROR: Build falló');
     report.recommendations.push('Corregir errores de build antes de continuar');
   }
   
@@ -192,7 +192,7 @@ function generateCleanupReport() {
 try {
   const report = generateCleanupReport();
   
-  console.log('\n📊 RESUMEN DE LIMPIEZA SEMANAL:');
+  console.log('\nSTATS: RESUMEN DE LIMPIEZA SEMANAL:');
   console.log(`• Timestamp: ${report.timestamp}`);
   console.log(`• Build Status: ${report.buildStatus}`);
   console.log(`• Cleanup Status: ${report.cleanupStatus}`);
@@ -209,6 +209,6 @@ try {
   }
   
 } catch (error) {
-  console.error('❌ Error durante la limpieza:', error.message);
+  console.error('ERROR: Error durante la limpieza:', error.message);
   process.exit(1);
 } 

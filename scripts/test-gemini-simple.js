@@ -14,9 +14,9 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('🚀 INICIANDO PRUEBA DE INTEGRACIÓN GEMINI 1.5 PRO');
+console.log('LAUNCH: INICIANDO PRUEBA DE INTEGRACIÓN GEMINI 1.5 PRO');
 console.log('📋 Caso: Fisioterapia con Banderas Rojas');
-console.log('⏰', new Date().toISOString());
+console.log('TIME:', new Date().toISOString());
 console.log('');
 
 // Configuración del test
@@ -113,12 +113,12 @@ async function testGeminiIntegration() {
     
     const processingTime = Date.now() - startTime;
     
-    console.log('✅ Respuesta de Gemini recibida');
+    console.log('SUCCESS: Respuesta de Gemini recibida');
     console.log('⏱️  Tiempo de procesamiento:', processingTime + 'ms');
-    console.log('📊 Resultado Gemini:', JSON.stringify(geminiResult, null, 2));
+    console.log('STATS: Resultado Gemini:', JSON.stringify(geminiResult, null, 2));
     
     // Procesamiento completo del pipeline
-    console.log('\\n🔄 Ejecutando pipeline completo...');
+    console.log('\\nRELOAD: Ejecutando pipeline completo...');
     const pipelineStart = Date.now();
     
     const pipelineResult = await processor.processTranscription(
@@ -129,9 +129,9 @@ async function testGeminiIntegration() {
     
     const pipelineTime = Date.now() - pipelineStart;
     
-    console.log('✅ Pipeline completado');
+    console.log('SUCCESS: Pipeline completado');
     console.log('⏱️  Tiempo total pipeline:', pipelineTime + 'ms');
-    console.log('📊 Resultado pipeline:', JSON.stringify(pipelineResult, null, 2));
+    console.log('STATS: Resultado pipeline:', JSON.stringify(pipelineResult, null, 2));
     
     // Validación de resultados
     console.log('\\n🔍 Validando resultados...');
@@ -152,14 +152,14 @@ async function testGeminiIntegration() {
     
     if (allValid) {
       console.log('\\n🎉 ¡PRUEBA EXITOSA!');
-      console.log('✅ Integración Gemini 1.5 Pro funcionando correctamente');
-      console.log('✅ Pipeline completo operativo');
-      console.log('✅ Tiempos de respuesta aceptables');
-      console.log('✅ Banderas rojas detectadas');
-      console.log('✅ Recomendaciones generadas');
+      console.log('SUCCESS: Integración Gemini 1.5 Pro funcionando correctamente');
+      console.log('SUCCESS: Pipeline completo operativo');
+      console.log('SUCCESS: Tiempos de respuesta aceptables');
+      console.log('SUCCESS: Banderas rojas detectadas');
+      console.log('SUCCESS: Recomendaciones generadas');
     } else {
-      console.log('\\n❌ PRUEBA FALLIDA');
-      console.log('❌ Algunas validaciones no pasaron');
+      console.log('\\nERROR: PRUEBA FALLIDA');
+      console.log('ERROR: Algunas validaciones no pasaron');
     }
     
     return {
@@ -174,7 +174,7 @@ async function testGeminiIntegration() {
     };
     
   } catch (error) {
-    console.error('❌ Error en test:', error);
+    console.error('ERROR: Error en test:', error);
     return {
       success: false,
       error: error.message
@@ -202,7 +202,7 @@ testGeminiIntegration();
     // Limpiar archivo temporal
     await fs.unlink(testFile);
     
-    console.log('\n📊 RESUMEN DE LA PRUEBA');
+    console.log('\nSTATS: RESUMEN DE LA PRUEBA');
     console.log('========================');
     console.log(`📋 Caso: ${testConfig.caseName}`);
     console.log(`👨‍⚕️  Profesional: ${testConfig.professionalRole}`);
@@ -210,11 +210,11 @@ testGeminiIntegration();
     console.log(`🚩 Banderas esperadas: ${testConfig.expectedFlags.length}`);
     console.log(`📝 SOAP esperado: ${Object.keys(testConfig.expectedSOAP).length} secciones`);
     
-    console.log('\n✅ PRUEBA COMPLETADA');
+    console.log('\nSUCCESS: PRUEBA COMPLETADA');
     console.log('📤 Informe enviado al CTO para aprobación final');
     
   } catch (error) {
-    console.error('❌ Error ejecutando test:', error);
+    console.error('ERROR: Error ejecutando test:', error);
     console.log('\n🔧 SOLUCIÓN DE PROBLEMAS:');
     console.log('1. Verificar credenciales de Google Cloud');
     console.log('2. Verificar conexión a internet');

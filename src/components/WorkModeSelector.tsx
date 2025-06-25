@@ -1,5 +1,5 @@
 /**
- * 🎯 WORK MODE SELECTOR - Selector de Modos de Trabajo Flexibles
+ * TARGET: WORK MODE SELECTOR - Selector de Modos de Trabajo Flexibles
  * 
  * Componente que permite al profesional elegir cómo quiere trabajar:
  * 1. Asistente en Vivo - Transcripción en tiempo real durante la consulta

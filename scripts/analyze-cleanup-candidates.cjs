@@ -165,7 +165,7 @@ function generateReport() {
   
   const analysis = analyzeDirectory('./');
   
-  console.log('📊 RESUMEN EJECUTIVO:');
+  console.log('STATS: RESUMEN EJECUTIVO:');
   console.log(`• Archivos candidatos: ${analysis.files.length}`);
   console.log(`• Directorios candidatos: ${analysis.directories.length}`);
   console.log(`• Elementos sospechosos: ${analysis.suspicious.length}`);
@@ -208,7 +208,7 @@ function generateReport() {
     });
   }
   
-  console.log('\n✅ Análisis completado. Revisar candidatos antes de proceder.');
+  console.log('\nSUCCESS: Análisis completado. Revisar candidatos antes de proceder.');
 }
 
 // Ejecutar análisis

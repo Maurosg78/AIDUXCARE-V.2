@@ -23,11 +23,11 @@ export default function SimpleChunkingDemo() {
         });
       },
       onChunkProcessed: (result: SimpleChunkResult) => {
-        console.log('🎯 Chunk procesado:', result);
+        console.log('TARGET: Chunk procesado:', result);
         setChunks(prev => [...prev, result]);
       },
       onError: (error: string) => {
-        console.error('❌ Error en chunking:', error);
+        console.error('ERROR: Error en chunking:', error);
         alert(`Error: ${error}`);
       }
     });
@@ -84,7 +84,7 @@ export default function SimpleChunkingDemo() {
         textAlign: 'center'
       }}>
         <h1 style={{ color: '#15803d', margin: '0 0 10px 0', fontSize: '28px' }}>
-          ✅ NO más sílaba por sílaba - Chunking Semántico
+          SUCCESS: NO más sílaba por sílaba - Chunking Semántico
         </h1>
         <p style={{ color: '#166534', margin: '0', fontSize: '16px' }}>
           <strong>MAURICIO_AGGRESSIVE:</strong> 50 palabras mín • 3000ms pausa • interimResults=false
@@ -111,7 +111,7 @@ export default function SimpleChunkingDemo() {
               cursor: isRecording ? 'not-allowed' : 'pointer'
             }}
           >
-            {isRecording ? '🔴 Grabando...' : '🎙️ Iniciar'}
+            {isRecording ? 'RED: Grabando...' : 'MIC: Iniciar'}
           </button>
           
           <button
@@ -126,7 +126,7 @@ export default function SimpleChunkingDemo() {
               cursor: !isRecording ? 'not-allowed' : 'pointer'
             }}
           >
-            ⏹️ Detener
+            STOP: Detener
           </button>
           
           <button onClick={handleClear} style={{
@@ -137,7 +137,7 @@ export default function SimpleChunkingDemo() {
             borderRadius: '6px',
             cursor: 'pointer'
           }}>
-            🗑️ Limpiar
+            TRASH: Limpiar
           </button>
         </div>
 
@@ -146,7 +146,7 @@ export default function SimpleChunkingDemo() {
           padding: '15px',
           borderRadius: '6px'
         }}>
-          <strong>📊 Buffer:</strong> {bufferStatus.currentWords}/50 palabras • 
+          <strong>STATS: Buffer:</strong> {bufferStatus.currentWords}/50 palabras • 
           Estado: {bufferStatus.isWaiting ? 'Acumulando' : 'Detenido'}
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function SimpleChunkingDemo() {
           borderRadius: '8px',
           marginBottom: '20px'
         }}>
-          <h3 style={{ marginTop: '0' }}>🎯 Transcripción Acumulada</h3>
+          <h3 style={{ marginTop: '0' }}>TARGET: Transcripción Acumulada</h3>
           <div style={{ 
             backgroundColor: 'white',
             padding: '15px',

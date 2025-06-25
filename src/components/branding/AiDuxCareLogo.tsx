@@ -20,7 +20,11 @@ export const AiDuxCareLogo: React.FC<AiDuxCareLogoProps> = ({
   className = '',
   showText = true
 }) => {
-  const { width, height, fontSize } = sizeMap[size];
+  const sizeConfig = sizeMap[size] || sizeMap['md'];
+  if (!sizeMap[size]) {
+    console.warn(`AiDuxCareLogo: tamaño desconocido "${size}", usando 'md' por defecto.`);
+  }
+  const { width, height, fontSize } = sizeConfig;
 
   const LogoIcon = () => (
     <svg 

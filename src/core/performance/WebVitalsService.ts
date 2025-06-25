@@ -40,7 +40,7 @@ export class WebVitalsService {
       
       // Log para desarrollo
       if (import.meta.env.DEV) {
-        console.log(`🎯 Web Vital: ${metric.name}`, {
+        console.log(`TARGET: Web Vital: ${metric.name}`, {
           value: Math.round(metric.value),
           rating: metric.rating,
           entries: metric.entries

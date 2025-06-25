@@ -13,7 +13,7 @@ console.log('⚙️ Usando cliente Supabase centralizado (vía singleton)...');
 
 // Verificar que el singleton esté inicializado
 if (!isSupabaseInitialized()) {
-  console.warn('⚠️ Cliente Supabase no inicializado correctamente');
+  console.warn('WARNING: Cliente Supabase no inicializado correctamente');
 }
 
 // Re-exportar el cliente único para compatibilidad total

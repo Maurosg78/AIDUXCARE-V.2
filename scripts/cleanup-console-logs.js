@@ -11,7 +11,7 @@ const path = require('path');
 // Configuración
 const ALLOWED_CONSOLE_PATTERNS = [
   // Permitir logs de error críticos
-  /console\.error\(['"`]❌.*['"`]/,
+  /console\.error\(['"`]ERROR:.*['"`]/,
   /console\.error\(['"`]Error.*['"`]/,
   // Permitir logs de configuración en desarrollo
   /if.*\.env\.DEV.*console\./,
@@ -32,9 +32,9 @@ const DIRECTORIES_TO_CLEAN = [
 const CONSOLE_PATTERNS_TO_REMOVE = [
   // Logs informativos que exponen datos
   /console\.log\(['"`]🔐.*['"`]/,
-  /console\.log\(['"`]✅.*['"`]/,
-  /console\.log\(['"`]🚀.*['"`]/,
-  /console\.log\(['"`]📊.*['"`]/,
+  /console\.log\(['"`]SUCCESS:.*['"`]/,
+  /console\.log\(['"`]LAUNCH:.*['"`]/,
+  /console\.log\(['"`]STATS:.*['"`]/,
   /console\.log\(['"`]🏥.*['"`]/,
   /console\.log\(['"`]🔍.*['"`]/,
   /console\.log\(['"`]📋.*['"`]/,
@@ -42,7 +42,7 @@ const CONSOLE_PATTERNS_TO_REMOVE = [
   /console\.log\(['"`]📝.*['"`]/,
   /console\.log\(['"`]🧠.*['"`]/,
   /console\.log\(['"`]💡.*['"`]/,
-  /console\.log\(['"`]🔄.*['"`]/,
+  /console\.log\(['"`]RELOAD:.*['"`]/,
   // Logs que podrían exponer credenciales
   /console\.log.*email.*password/i,
   /console\.log.*credential/i,
@@ -111,13 +111,13 @@ function cleanFile(filePath) {
         .join('\n');
       
       fs.writeFileSync(filePath, finalContent, 'utf8');
-      console.log(`✅ Limpiado: ${filePath}`);
+      console.log(`SUCCESS: Limpiado: ${filePath}`);
       return true;
     }
     
     return false;
   } catch (error) {
-    console.error(`❌ Error limpiando ${filePath}:`, error.message);
+    console.error(`ERROR: Error limpiando ${filePath}:`, error.message);
     return false;
   }
 }
@@ -166,18 +166,18 @@ function main() {
     console.log(`   Archivos procesados: ${result.total}, Modificados: ${result.cleaned}\n`);
   }
   
-  console.log('📊 RESUMEN DE LIMPIEZA:');
+  console.log('STATS: RESUMEN DE LIMPIEZA:');
   console.log(`   Total archivos procesados: ${totalFiles}`);
   console.log(`   Archivos modificados: ${totalCleaned}`);
   console.log(`   Porcentaje limpiado: ${((totalCleaned / totalFiles) * 100).toFixed(1)}%`);
   
   if (totalCleaned > 0) {
-    console.log('\n✅ LIMPIEZA COMPLETADA');
+    console.log('\nSUCCESS: LIMPIEZA COMPLETADA');
     console.log('🔒 Logs sensibles eliminados para cumplir estándares profesionales');
     console.log('🛠️ Logs de desarrollo comentados con prefijo // DEV:');
     console.log('⚠️ Logs críticos de error preservados');
   } else {
-    console.log('\n✅ NO SE REQUIRIÓ LIMPIEZA');
+    console.log('\nSUCCESS: NO SE REQUIRIÓ LIMPIEZA');
     console.log('🎯 El código ya cumple con los estándares profesionales');
   }
 }

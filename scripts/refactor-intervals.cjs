@@ -23,7 +23,7 @@ filesToRefactor.forEach(filePath => {
   
   const fullPath = path.join(process.cwd(), filePath);
   if (!fs.existsSync(fullPath)) {
-    console.log(`❌ Archivo no encontrado: ${filePath}`);
+    console.log(`ERROR: Archivo no encontrado: ${filePath}`);
     return;
   }
   
@@ -38,7 +38,7 @@ filesToRefactor.forEach(filePath => {
     if (lastImportIndex !== -1) {
       const endOfLastImport = content.indexOf('\n', lastImportIndex);
       content = content.slice(0, endOfLastImport + 1) + importLine + '\n' + content.slice(endOfLastImport + 1);
-      console.log(`✅ Añadido import useInterval en ${filePath}`);
+      console.log(`SUCCESS: Añadido import useInterval en ${filePath}`);
     }
   }
   
@@ -66,7 +66,7 @@ filesToRefactor.forEach(filePath => {
   
   if (modified) {
     fs.writeFileSync(fullPath, content);
-    console.log(`✅ Refactorizado: ${filePath}`);
+    console.log(`SUCCESS: Refactorizado: ${filePath}`);
   } else {
     console.log(`⚠️ No se encontraron patrones para refactorizar en: ${filePath}`);
   }

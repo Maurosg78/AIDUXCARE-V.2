@@ -1,5 +1,5 @@
 /**
- * 🚀 RAG Integrated Demo Page - AiDuxCare V.2
+ * LAUNCH: RAG Integrated Demo Page - AiDuxCare V.2
  * Demostración completa del pipeline: Audio → STT → NLP → RAG → SOAP → UI
  */
 
@@ -30,7 +30,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
    * Maneja resultado del procesamiento de audio
    */
   const handleProcessingComplete = useCallback((result: AudioProcessingResult) => {
-    console.log('📋 Procesamiento completado:', result);
+    console.log('NOTES: Procesamiento completado:', result);
     setProcessingResult(result);
     
     // Extraer resultado RAG si está disponible
@@ -111,7 +111,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🚀 AiDuxCare V.2 - Demo Integrado RAG + NLP
+            LAUNCH: AiDuxCare V.2 - Demo Integrado RAG + NLP
           </h1>
           <p className="text-lg text-gray-600 mb-4">
             Pipeline completo: Audio → Transcripción → NLP → RAG → SOAP + Evidencia Científica
@@ -168,7 +168,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
                 
                 {/* SOAP Notes */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Notas SOAP Generadas</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">NOTES: Notas SOAP Generadas</h3>
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-gray-800">Subjetivo (S)</h4>
@@ -201,7 +201,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
                 {/* 
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    🏷️ Entidades Clínicas (Demo)
+                    TAG: Entidades Clínicas (Demo)
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -306,7 +306,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
         {/* Footer Stats */}
         {processingResult && (
           <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Métricas de Performance</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">STATS: Métricas de Performance</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">

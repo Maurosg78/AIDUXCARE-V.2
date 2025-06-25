@@ -148,10 +148,10 @@ export async function createPatient(patientData: CreatePatientRequest): Promise<
       body: JSON.stringify(patientData),
     });
     
-    console.log('✅ Paciente creado exitosamente:', patient);
+    console.log('SUCCESS: Paciente creado exitosamente:', patient);
     return patient;
   } catch (error) {
-    console.error('❌ Error al crear paciente:', error);
+    console.error('ERROR: Error al crear paciente:', error);
     throw error;
   }
 }
@@ -165,10 +165,10 @@ export async function getPatientById(patientId: string): Promise<Patient> {
   try {
     const patient = await apiRequest<Patient>(`/patients/${patientId}`);
     
-    console.log('✅ Paciente obtenido exitosamente:', patient);
+    console.log('SUCCESS: Paciente obtenido exitosamente:', patient);
     return patient;
   } catch (error) {
-    console.error('❌ Error al obtener paciente:', error);
+    console.error('ERROR: Error al obtener paciente:', error);
     throw error;
   }
 }
@@ -188,10 +188,10 @@ export async function updatePatient(
       body: JSON.stringify(updateData),
     });
     
-    console.log('✅ Paciente actualizado exitosamente:', patient);
+    console.log('SUCCESS: Paciente actualizado exitosamente:', patient);
     return patient;
   } catch (error) {
-    console.error('❌ Error al actualizar paciente:', error);
+    console.error('ERROR: Error al actualizar paciente:', error);
     throw error;
   }
 }
@@ -200,16 +200,16 @@ export async function updatePatient(
  * DELETE /patients/:id - Eliminar paciente (soft delete)
  */
 export async function deletePatient(patientId: string): Promise<void> {
-  console.log('🗑️ Eliminando paciente:', patientId);
+  console.log('TRASH: Eliminando paciente:', patientId);
   
   try {
     await apiRequest<void>(`/patients/${patientId}`, {
       method: 'DELETE',
     });
     
-    console.log('✅ Paciente eliminado exitosamente');
+    console.log('SUCCESS: Paciente eliminado exitosamente');
   } catch (error) {
-    console.error('❌ Error al eliminar paciente:', error);
+    console.error('ERROR: Error al eliminar paciente:', error);
     throw error;
   }
 }
@@ -218,15 +218,15 @@ export async function deletePatient(patientId: string): Promise<void> {
  * GET /patients - Listar todos los pacientes activos
  */
 export async function listPatients(): Promise<Patient[]> {
-  console.log('📋 Listando pacientes activos');
+  console.log('NOTES: Listando pacientes activos');
   
   try {
     const patients = await apiRequest<Patient[]>('/patients');
     
-    console.log('✅ Pacientes obtenidos exitosamente:', patients.length);
+    console.log('SUCCESS: Pacientes obtenidos exitosamente:', patients.length);
     return patients;
   } catch (error) {
-    console.error('❌ Error al listar pacientes:', error);
+    console.error('ERROR: Error al listar pacientes:', error);
     throw error;
   }
 }
@@ -250,10 +250,10 @@ export async function checkApiHealth(): Promise<{
       version: string;
     }>('/health');
     
-    console.log('✅ API funcionando correctamente:', health);
+    console.log('SUCCESS: API funcionando correctamente:', health);
     return health;
   } catch (error) {
-    console.error('❌ Error en health check:', error);
+    console.error('ERROR: Error en health check:', error);
     throw error;
   }
 }

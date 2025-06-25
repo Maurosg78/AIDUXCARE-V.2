@@ -1,5 +1,5 @@
 /**
- * 🧠 ADVANCED SOAP CLASSIFIER - Clasificador SOAP Avanzado
+ * AI: ADVANCED SOAP CLASSIFIER - Clasificador SOAP Avanzado
  * 
  * Basado en recomendaciones de ChatGPT para mejorar la clasificación
  * automática de conversaciones médicas en secciones S.O.A.P.

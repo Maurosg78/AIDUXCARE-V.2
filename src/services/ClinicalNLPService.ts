@@ -1,5 +1,5 @@
 /**
- * 🧠 CLINICAL NLP SERVICE
+ * AI: CLINICAL NLP SERVICE
  * Servicio para análisis de entidades clínicas usando Google Cloud Healthcare NLP
  * Conecta el frontend con el backend de análisis de texto médico
  */
@@ -79,8 +79,8 @@ export class ClinicalNLPService {
    */
   static async analyzeText(request: AnalysisRequest): Promise<AnalysisResponse> {
     try {
-      console.log('🧠 Iniciando análisis de entidades clínicas...');
-      console.log(`📊 Texto: ${request.text.length} caracteres`);
+      console.log('AI: Iniciando análisis de entidades clínicas...');
+      console.log(`STATS: Texto: ${request.text.length} caracteres`);
       console.log(`🆔 Sesión: ${request.sessionId}`);
       
       const response = await fetch(`${API_BASE_URL}/clinical-nlp/analyze`, {
@@ -98,7 +98,7 @@ export class ClinicalNLPService {
 
       const result: AnalysisResponse = await response.json();
       
-      console.log('✅ Análisis completado:', {
+      console.log('SUCCESS: Análisis completado:', {
         entitiesFound: result.entities.length,
         processingTime: result.processingTime,
         costEstimate: result.costEstimate
@@ -107,7 +107,7 @@ export class ClinicalNLPService {
       return result;
       
     } catch (error) {
-      console.error('❌ Error en análisis de entidades:', error);
+      console.error('ERROR: Error en análisis de entidades:', error);
       throw error;
     }
   }
@@ -127,7 +127,7 @@ export class ClinicalNLPService {
       return await response.json();
       
     } catch (error) {
-      console.error('❌ Error al obtener análisis:', error);
+      console.error('ERROR: Error al obtener análisis:', error);
       throw error;
     }
   }
@@ -148,7 +148,7 @@ export class ClinicalNLPService {
       return result.stats;
       
     } catch (error) {
-      console.error('❌ Error al obtener estadísticas:', error);
+      console.error('ERROR: Error al obtener estadísticas:', error);
       throw error;
     }
   }

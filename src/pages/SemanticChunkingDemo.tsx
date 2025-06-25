@@ -137,7 +137,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
     }));
 
     try {
-      console.log('🧠 Iniciando procesamiento semántico...');
+      console.log('AI: Iniciando procesamiento semántico...');
       
       const result = await processorRef.current.processFullTranscript(
         state.fullTranscript,
@@ -157,10 +157,10 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
         isProcessing: false 
       }));
 
-      console.log('✅ Procesamiento completado:', result);
+      console.log('SUCCESS: Procesamiento completado:', result);
 
     } catch (error) {
-      console.error('❌ Error en procesamiento:', error);
+      console.error('ERROR: Error en procesamiento:', error);
       setState(prev => ({ 
         ...prev, 
         error: `Error: ${error}`,
@@ -281,13 +281,13 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
         {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🧠 Chunking Semántico vs Palabra por Palabra
+            AI: Chunking Semántico vs Palabra por Palabra
           </h1>
           <p className="text-gray-600">
             Implementación de la visión de Mauricio: captura completa → chunking inteligente → análisis contextual
           </p>
           <div className="mt-2 text-sm text-blue-600">
-            ✅ Mantiene coherencia narrativa • ✅ Entiende causalidad clínica • ✅ Procesa negaciones e ironía
+            SUCCESS: Mantiene coherencia narrativa • SUCCESS: Entiende causalidad clínica • SUCCESS: Procesa negaciones e ironía
           </div>
         </div>
 
@@ -351,7 +351,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
 
           {/* Ejemplos */}
           <div className="bg-white rounded-lg shadow-sm border p-4">
-            <h3 className="text-lg font-semibold mb-3">📋 Ejemplos</h3>
+            <h3 className="text-lg font-semibold mb-3">NOTES: Ejemplos</h3>
             
             <div className="space-y-2">
               <button
@@ -364,13 +364,13 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                 onClick={() => handleLoadExample('psicologia')}
                 className="w-full text-left p-2 rounded bg-green-50 hover:bg-green-100 text-sm"
               >
-                🧠 Psicología - Ansiedad
+                AI: Psicología - Ansiedad
               </button>
               <button
                 onClick={() => handleLoadExample('compleja')}
                 className="w-full text-left p-2 rounded bg-yellow-50 hover:bg-yellow-100 text-sm"
               >
-                🔄 Caso Complejo - Multi
+                RELOAD: Caso Complejo - Multi
               </button>
             </div>
           </div>
@@ -378,7 +378,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
           {/* Estadísticas */}
           {state.stats && (
             <div className="bg-white rounded-lg shadow-sm border p-4">
-              <h3 className="text-lg font-semibold mb-3">📊 Estadísticas</h3>
+              <h3 className="text-lg font-semibold mb-3">STATS: Estadísticas</h3>
               
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -411,7 +411,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                 disabled={state.isProcessing || !state.fullTranscript.trim()}
                 className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium disabled:bg-gray-400 hover:bg-blue-700 transition-colors"
               >
-                {state.isProcessing ? '🔄 Procesando...' : '🧠 Procesar Semántico'}
+                {state.isProcessing ? 'RELOAD: Procesando...' : 'AI: Procesar Semántico'}
               </button>
               
               {state.result && (
@@ -420,7 +420,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                   disabled={state.isProcessing}
                   className="w-full bg-green-600 text-white px-4 py-2 rounded-lg font-medium disabled:bg-gray-400 hover:bg-green-700 transition-colors"
                 >
-                  ⚖️ Comparar Enfoques
+                  LEGAL: Comparar Enfoques
                 </button>
               )}
               
@@ -443,7 +443,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
         {state.error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <span className="text-red-600 mr-2">❌</span>
+              <span className="text-red-600 mr-2">ERROR:</span>
               <span className="text-red-800">{state.error}</span>
             </div>
           </div>
@@ -473,7 +473,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
         {comparisonResult && (
           <div className="bg-white rounded-lg shadow-sm border mb-6">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">⚖️ Comparación: Palabra por Palabra vs Semántico</h3>
+              <h3 className="text-lg font-semibold">LEGAL: Comparación: Palabra por Palabra vs Semántico</h3>
             </div>
             
             <div className="p-4">
@@ -481,7 +481,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                 
                 {/* Enfoque Palabra por Palabra */}
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-red-800 mb-3">❌ Palabra por Palabra</h4>
+                  <h4 className="font-semibold text-red-800 mb-3">ERROR: Palabra por Palabra</h4>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -514,7 +514,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
 
                 {/* Enfoque Semántico */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-3">✅ Chunking Semántico</h4>
+                  <h4 className="font-semibold text-green-800 mb-3">SUCCESS: Chunking Semántico</h4>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -550,7 +550,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
 
               {/* Métricas de Mejora */}
               <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800 mb-3">📈 Mejoras Conseguidas</h4>
+                <h4 className="font-semibold text-blue-800 mb-3">METRICS: Mejoras Conseguidas</h4>
                 
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
@@ -647,16 +647,16 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                       <h4 className="font-medium text-gray-700 mb-2">Análisis Narrativo:</h4>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className={`p-2 rounded ${state.selectedChunk.narrative.hasTemporalMarkers ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.narrative.hasTemporalMarkers ? '✅' : '❌'} Marcadores temporales
+                          {state.selectedChunk.narrative.hasTemporalMarkers ? 'SUCCESS:' : 'ERROR:'} Marcadores temporales
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.narrative.hasCausalRelations ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.narrative.hasCausalRelations ? '✅' : '❌'} Relaciones causales
+                          {state.selectedChunk.narrative.hasCausalRelations ? 'SUCCESS:' : 'ERROR:'} Relaciones causales
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.narrative.hasNegations ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.narrative.hasNegations ? '⚠️' : '❌'} Negaciones
+                          {state.selectedChunk.narrative.hasNegations ? 'WARNING:' : 'ERROR:'} Negaciones
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.narrative.hasCorrections ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.narrative.hasCorrections ? '⚠️' : '❌'} Correcciones
+                          {state.selectedChunk.narrative.hasCorrections ? 'WARNING:' : 'ERROR:'} Correcciones
                         </div>
                       </div>
                     </div>
@@ -666,16 +666,16 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                       <h4 className="font-medium text-gray-700 mb-2">Contexto Clínico:</h4>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasSymptoms ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.clinicalContext.hasSymptoms ? '📋' : '❌'} Síntomas
+                          {state.selectedChunk.clinicalContext.hasSymptoms ? 'NOTES:' : 'ERROR:'} Síntomas
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasExamination ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.clinicalContext.hasExamination ? '🔍' : '❌'} Examen
+                          {state.selectedChunk.clinicalContext.hasExamination ? '🔍' : 'ERROR:'} Examen
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasAssessment ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.clinicalContext.hasAssessment ? '🎯' : '❌'} Assessment
+                          {state.selectedChunk.clinicalContext.hasAssessment ? 'TARGET:' : 'ERROR:'} Assessment
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasPlan ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.clinicalContext.hasPlan ? '📋' : '❌'} Plan
+                          {state.selectedChunk.clinicalContext.hasPlan ? 'NOTES:' : 'ERROR:'} Plan
                         </div>
                       </div>
                     </div>
@@ -699,7 +699,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
             {/* Resultado SOAP Fusionado */}
             <div className="bg-white rounded-lg shadow-sm border">
               <div className="p-4 border-b">
-                <h3 className="text-lg font-semibold">🧠 SOAP Fusionado</h3>
+                <h3 className="text-lg font-semibold">AI: SOAP Fusionado</h3>
                 <p className="text-sm text-gray-600">Resultado coherente del análisis semántico</p>
               </div>
               
@@ -723,7 +723,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                     {/* Assessment Fusionado */}
                     {state.result.mergedSOAP.fullAssessment && (
                       <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                        <h4 className="font-semibold text-indigo-800 mb-2">📋 Assessment Fusionado</h4>
+                        <h4 className="font-semibold text-indigo-800 mb-2">NOTES: Assessment Fusionado</h4>
                         <p className="text-sm text-indigo-700">
                           {state.result.mergedSOAP.fullAssessment}
                         </p>
@@ -732,7 +732,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 py-8">
-                    <div className="text-3xl mb-2">🔄</div>
+                    <div className="text-3xl mb-2">RELOAD:</div>
                     <p>Procese una transcripción para ver resultados</p>
                   </div>
                 )}

@@ -3,20 +3,20 @@ import React from 'react';
 export default function TestPage() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#2563eb' }}>🎯 AiDuxCare V.2 - Sistema Funcionando</h1>
+      <h1 style={{ color: '#2563eb' }}>TARGET: AiDuxCare V.2 - Sistema Funcionando</h1>
       
       <div style={{ backgroundColor: '#f0f9ff', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
-        <h2>✅ Estado del Sistema</h2>
+        <h2>SUCCESS: Estado del Sistema</h2>
         <ul>
-          <li>✅ Servidor ejecutándose correctamente</li>
-          <li>✅ Router funcionando</li>
-          <li>✅ Páginas cargando</li>
-          <li>✅ SimpleChunkingService implementado</li>
+          <li>SUCCESS: Servidor ejecutándose correctamente</li>
+          <li>SUCCESS: Router funcionando</li>
+          <li>SUCCESS: Páginas cargando</li>
+          <li>SUCCESS: SimpleChunkingService implementado</li>
         </ul>
       </div>
 
       <div style={{ backgroundColor: '#ecfdf5', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
-        <h2>🎯 Problema Sílaba por Sílaba: RESUELTO</h2>
+        <h2>TARGET: Problema Sílaba por Sílaba: RESUELTO</h2>
         <p><strong>Configuración MAURICIO_AGGRESSIVE:</strong></p>
         <ul>
           <li>🔹 Mínimo 50 palabras antes de procesar</li>

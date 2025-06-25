@@ -60,10 +60,10 @@ export const VoiceRecognitionStatus: React.FC<VoiceRecognitionStatusProps> = ({ 
   }, [onStatusChange]);
 
   const getStatusIcon = () => {
-    if (!isSupported) return '❌';
+    if (!isSupported) return 'ERROR:';
     if (permissionStatus === 'denied') return '🚫';
     if (networkStatus === 'offline') return '📡';
-    return '✅';
+    return 'SUCCESS:';
   };
 
   const getStatusMessage = () => {

@@ -78,7 +78,7 @@ export const SpeechDiagnostic: React.FC = () => {
           hasReceived = true;
           setDiagnosticInfo(prev => ({ 
             ...prev, 
-            testResult: `✅ Transcripción exitosa: "${segment.content}"`
+            testResult: `SUCCESS: Transcripción exitosa: "${segment.content}"`
           }));
           sttService.stopTranscription();
           setIsTestingSTT(false);
@@ -87,21 +87,21 @@ export const SpeechDiagnostic: React.FC = () => {
           setDiagnosticInfo(prev => ({ 
             ...prev, 
             lastError: error,
-            testResult: `❌ Error específico: ${error}`
+            testResult: `ERROR: Error específico: ${error}`
           }));
           setIsTestingSTT(false);
         },
         onStart: () => {
           setDiagnosticInfo(prev => ({ 
             ...prev, 
-            testResult: '🎙️ Micrófono iniciado - Di "Hola" para probar'
+            testResult: 'MIC: Micrófono iniciado - Di "Hola" para probar'
           }));
         },
         onEnd: () => {
           if (!hasReceived) {
             setDiagnosticInfo(prev => ({ 
               ...prev, 
-              testResult: '⚠️ Sesión terminó sin transcripción - Intenta hablar más alto'
+              testResult: 'WARNING: Sesión terminó sin transcripción - Intenta hablar más alto'
             }));
           }
           setIsTestingSTT(false);
@@ -116,7 +116,7 @@ export const SpeechDiagnostic: React.FC = () => {
           if (!hasReceived) {
             setDiagnosticInfo(prev => ({ 
               ...prev, 
-              testResult: '⏱️ Tiempo agotado - No se detectó habla'
+              testResult: 'TIME: Tiempo agotado - No se detectó habla'
             }));
           }
         }
@@ -133,7 +133,7 @@ export const SpeechDiagnostic: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: boolean) => status ? '✅' : '❌';
+  const getStatusIcon = (status: boolean) => status ? 'SUCCESS:' : 'ERROR:';
   const getStatusColor = (status: boolean) => status ? 'text-green-600' : 'text-red-600';
 
   return (
@@ -192,7 +192,7 @@ export const SpeechDiagnostic: React.FC = () => {
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {isTestingSTT ? '🎙️ Probando...' : 'Probar Transcripción'}
+            {isTestingSTT ? 'MIC: Probando...' : 'Probar Transcripción'}
           </button>
         </div>
 

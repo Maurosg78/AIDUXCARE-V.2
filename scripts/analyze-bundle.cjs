@@ -11,16 +11,16 @@ function analyzeBundleSize() {
   const assetsPath = path.join(distPath, 'assets');
   
   if (!fs.existsSync(distPath)) {
-    console.error('❌ Directorio dist no encontrado. Ejecuta npm run build primero.');
+    console.error('ERROR: Directorio dist no encontrado. Ejecuta npm run build primero.');
     process.exit(1);
   }
 
   if (!fs.existsSync(assetsPath)) {
-    console.error('❌ Directorio dist/assets no encontrado.');
+    console.error('ERROR: Directorio dist/assets no encontrado.');
     process.exit(1);
   }
 
-  console.log('📊 ANÁLISIS DEL BUNDLE - AiDuxCare V.2\n');
+  console.log('STATS: ANÁLISIS DEL BUNDLE - AiDuxCare V.2\n');
   console.log('=' .repeat(50));
 
   const files = fs.readdirSync(assetsPath, { withFileTypes: true });
@@ -63,12 +63,12 @@ function analyzeBundleSize() {
     console.log(`🎨 CSS       ${file.name.padEnd(35)} ${sizeKB.padStart(8)} KB`);
   });
 
-  console.log('\n📈 RESUMEN:');
+  console.log('\nMETRICS: RESUMEN:');
   console.log('=' .repeat(50));
   console.log(`📦 Total archivos JS: ${jsFiles.length}`);
   console.log(`🎨 Total archivos CSS: ${cssFiles.length}`);
-  console.log(`📊 Tamaño total: ${(totalSize / 1024).toFixed(2)} KB`);
-  console.log(`📊 Tamaño total: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`STATS: Tamaño total: ${(totalSize / 1024).toFixed(2)} KB`);
+  console.log(`STATS: Tamaño total: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
 
   // Análisis de chunks
   console.log('\n🔍 ANÁLISIS DE CHUNKS:');
@@ -113,19 +113,19 @@ function analyzeBundleSize() {
   if (totalSize > 500 * 1024) {
     console.log('⚠️  Bundle total > 500KB. Considera optimizaciones adicionales.');
   } else {
-    console.log('✅ Tamaño del bundle está dentro de límites recomendados.');
+    console.log('SUCCESS: Tamaño del bundle está dentro de límites recomendados.');
   }
 
-  console.log('\n🚀 OPTIMIZACIONES APLICADAS:');
+  console.log('\nLAUNCH: OPTIMIZACIONES APLICADAS:');
   console.log('-'.repeat(50));
-  console.log('✅ Code splitting implementado');
-  console.log('✅ Lazy loading de rutas');
-  console.log('✅ Chunks de vendor separados');
-  console.log('✅ Minificación con esbuild');
-  console.log('✅ Tree shaking habilitado');
+  console.log('SUCCESS: Code splitting implementado');
+  console.log('SUCCESS: Lazy loading de rutas');
+  console.log('SUCCESS: Chunks de vendor separados');
+  console.log('SUCCESS: Minificación con esbuild');
+  console.log('SUCCESS: Tree shaking habilitado');
   
   if (fs.existsSync(path.join(distPath, 'stats.html'))) {
-    console.log('✅ Bundle analyzer disponible en dist/stats.html');
+    console.log('SUCCESS: Bundle analyzer disponible en dist/stats.html');
   }
 
   console.log('\n' + '=' .repeat(50));

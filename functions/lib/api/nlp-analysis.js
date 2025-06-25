@@ -13,20 +13,20 @@ const google_auth_library_1 = require("google-auth-library");
 // === CONFIGURACIÓN REAL DE GOOGLE CLOUD HEALTHCARE NLP ===
 const initializeHealthcareClient = () => {
     try {
-        const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCLOUD_PROJECT || 'aiduxcare-mvp-prod';
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCLOUD_PROJECT || "aiduxcare-mvp-prod";
         // Autenticación automática para Google Cloud Functions
         // En producción, Google Cloud Functions maneja la autenticación automáticamente
         const auth = new google_auth_library_1.GoogleAuth();
         // Inicializar cliente de Healthcare API con la autenticación explícita
         const healthcareClient = (0, healthcare_1.healthcare)({
-            version: 'v1beta1',
+            version: "v1beta1",
             auth: auth,
         });
         console.log(`✅ Healthcare NLP Client inicializado explícitamente para proyecto: ${projectId}`);
         return healthcareClient;
     }
     catch (error) {
-        console.error('❌ Error inicializando Healthcare Client explícitamente:', error);
+        console.error("❌ Error inicializando Healthcare Client explícitamente:", error);
         throw new Error(`Error de configuración de Google Cloud Healthcare: ${error}`);
     }
 };
@@ -35,42 +35,50 @@ const healthcareClient = initializeHealthcareClient();
 // === MAPEO DE CATEGORÍAS DE ENTIDADES ===
 const mapEntityCategory = (googleCategory) => {
     const categoryMap = {
-        'SYMPTOM': 'SYMPTOM',
-        'SIGN_SYMPTOM': 'SYMPTOM',
-        'MEDICATION': 'MEDICATION',
-        'MEDICINE': 'MEDICATION',
-        'ANATOMY': 'BODY_PART',
-        'BODY_PART': 'BODY_PART',
-        'MEDICAL_CONDITION': 'CONDITION',
-        'CONDITION': 'CONDITION',
-        'MEDICAL_PROCEDURE': 'TREATMENT',
-        'PROCEDURE': 'TREATMENT',
-        'TREATMENT': 'TREATMENT',
-        'VITAL_SIGN': 'VITAL_SIGN',
-        'TIME': 'TEMPORAL',
-        'TEMPORAL': 'TEMPORAL',
-        'SEVERITY': 'SEVERITY',
-        'FREQUENCY': 'FREQUENCY'
+        "SYMPTOM": "SYMPTOM",
+        "SIGN_SYMPTOM": "SYMPTOM",
+        "MEDICATION": "MEDICATION",
+        "MEDICINE": "MEDICATION",
+        "ANATOMY": "BODY_PART",
+        "BODY_PART": "BODY_PART",
+        "MEDICAL_CONDITION": "CONDITION",
+        "CONDITION": "CONDITION",
+        "MEDICAL_PROCEDURE": "TREATMENT",
+        "PROCEDURE": "TREATMENT",
+        "TREATMENT": "TREATMENT",
+        "VITAL_SIGN": "VITAL_SIGN",
+        "TIME": "TEMPORAL",
+        "TEMPORAL": "TEMPORAL",
+        "SEVERITY": "SEVERITY",
+        "FREQUENCY": "FREQUENCY",
     };
-    return categoryMap[googleCategory.toUpperCase()] || 'OTHER';
+    return categoryMap[googleCategory.toUpperCase()] || "OTHER";
 };
 // === ANÁLISIS INTELIGENTE DE SECCIONES SOAP ===
 const classifySOAPSection = (text, speakerRole) => {
     const subjectivePatterns = [
-        /me duele/i, /siento/i, /tengo/i, /desde hace/i, /cuando/i, /dolor/i,
-        /molesta/i, /incomoda/i, /no puedo/i, /dificultad/i
+        /me duele/i,
+        /siento/i,
+        /tengo/i,
+        /desde hace/i,
+        /cuando/i,
+        /dolor/i,
+        /molesta/i,
+        /incomoda/i,
+        /no puedo/i,
+        /dificultad/i,
     ];
     const objectivePatterns = [
         /observo/i, /palpo/i, /examino/i, /rango de movimiento/i, /flexión/i,
-        /extensión/i, /contractura/i, /inflamación visible/i, /edema/i
+        /extensión/i, /contractura/i, /inflamación visible/i, /edema/i,
     ];
     const assessmentPatterns = [
         /diagnóstico/i, /evaluación/i, /considero/i, /parece/i, /probable/i,
-        /compatible con/i, /sugiere/i, /indica/i
+        /compatible con/i, /sugiere/i, /indica/i,
     ];
     const planPatterns = [
         /tratamiento/i, /plan/i, /recomiendo/i, /debe/i, /ejercicios/i,
-        /terapia/i, /próxima sesión/i, /continuar/i, /medicación/i
+        /terapia/i, /próxima sesión/i, /continuar/i, /medicación/i,
     ];
     // Contar coincidencias
     const subjectiveScore = subjectivePatterns.reduce((score, pattern) => score + (pattern.test(text) ? 1 : 0), 0);
@@ -79,34 +87,34 @@ const classifySOAPSection = (text, speakerRole) => {
     const planScore = planPatterns.reduce((score, pattern) => score + (pattern.test(text) ? 1 : 0), 0);
     // Determinar sección basada en puntuación y rol del hablante
     const scores = [
-        { section: 'SUBJECTIVE', score: subjectiveScore + (speakerRole === 'PATIENT' ? 2 : 0) },
-        { section: 'OBJECTIVE', score: objectiveScore + (speakerRole === 'THERAPIST' ? 1 : 0) },
-        { section: 'ASSESSMENT', score: assessmentScore + (speakerRole === 'THERAPIST' ? 2 : 0) },
-        { section: 'PLAN', score: planScore + (speakerRole === 'THERAPIST' ? 2 : 0) }
+        { section: "SUBJECTIVE", score: subjectiveScore + (speakerRole === "PATIENT" ? 2 : 0) },
+        { section: "OBJECTIVE", score: objectiveScore + (speakerRole === "THERAPIST" ? 1 : 0) },
+        { section: "ASSESSMENT", score: assessmentScore + (speakerRole === "THERAPIST" ? 2 : 0) },
+        { section: "PLAN", score: planScore + (speakerRole === "THERAPIST" ? 2 : 0) },
     ];
-    const maxScore = Math.max(...scores.map(s => s.score));
-    const bestSection = scores.find(s => s.score === maxScore);
-    return (bestSection === null || bestSection === void 0 ? void 0 : bestSection.section) || 'SUBJECTIVE';
+    const maxScore = Math.max(...scores.map((s) => s.score));
+    const bestSection = scores.find((s) => s.score === maxScore);
+    return (bestSection === null || bestSection === void 0 ? void 0 : bestSection.section) || "SUBJECTIVE";
 };
 // === PROCESAMIENTO PRINCIPAL DE NLP ===
 const processNLPAnalysis = async (req, res) => {
     const startTime = Date.now();
     try {
-        console.log('🧠 Iniciando análisis NLP con Google Cloud Healthcare...');
+        console.log("🧠 Iniciando análisis NLP con Google Cloud Healthcare...");
         // Validar datos de entrada
         const { transcriptionText, sessionId, segments } = req.body;
         if (!transcriptionText) {
             res.status(400).json({
                 success: false,
-                error: 'Texto de transcripción es requerido'
+                error: "Texto de transcripción es requerido",
             });
             return;
         }
         const currentSessionId = sessionId || (0, uuid_1.v4)();
         // === LLAMADA REAL A GOOGLE CLOUD HEALTHCARE NLP ===
-        const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'aiduxcare-mvp-prod';
-        const location = 'us-central1'; // Región donde está disponible Healthcare NLP
-        console.log('🔄 Enviando texto a Google Cloud Healthcare NLP...');
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || "aiduxcare-mvp-prod";
+        const location = "us-central1"; // Región donde está disponible Healthcare NLP
+        console.log("🔄 Enviando texto a Google Cloud Healthcare NLP...");
         console.log(`📊 Texto length: ${transcriptionText.length} caracteres`);
         // El nombre completo del recurso del servicio NLP es requerido por la API
         const nlpService = `projects/${projectId}/locations/${location}/services/nlp`;
@@ -118,7 +126,7 @@ const processNLPAnalysis = async (req, res) => {
             },
         });
         if (!response.data || !response.data.entities) {
-            console.log('⚠️ No se encontraron entidades médicas');
+            console.log("⚠️ No se encontraron entidades médicas");
             res.json({
                 success: true,
                 data: {
@@ -130,11 +138,11 @@ const processNLPAnalysis = async (req, res) => {
                         medications: [],
                         bodyParts: [],
                         treatments: [],
-                        assessments: []
+                        assessments: [],
                     },
                     processingTime: Date.now() - startTime,
-                    overallConfidence: 0
-                }
+                    overallConfidence: 0,
+                },
             });
             return;
         }
@@ -145,20 +153,20 @@ const processNLPAnalysis = async (req, res) => {
             var _a, _b, _c, _d;
             const medicalEntity = {
                 id: `entity_${currentSessionId}_${index}`,
-                text: entity.mentionText || '',
-                category: mapEntityCategory(entity.type || 'OTHER'),
+                text: entity.mentionText || "",
+                category: mapEntityCategory(entity.type || "OTHER"),
                 confidence: entity.confidence || 0.5,
                 startOffset: ((_a = entity.mentionId) === null || _a === void 0 ? void 0 : _a.beginOffset) || 0,
                 endOffset: ((_b = entity.mentionId) === null || _b === void 0 ? void 0 : _b.endOffset) || 0,
                 linkedEntities: ((_c = entity.linkedEntities) === null || _c === void 0 ? void 0 : _c.map((linked) => ({
-                    entityId: linked.entityId || '',
-                    textExtraction: linked.textExtraction || ''
+                    entityId: linked.entityId || "",
+                    textExtraction: linked.textExtraction || "",
                 }))) || [],
                 attributes: ((_d = entity.attributes) === null || _d === void 0 ? void 0 : _d.map((attr) => ({
-                    type: attr.type || '',
-                    value: attr.value || '',
-                    confidence: attr.confidence || 0.5
-                }))) || []
+                    type: attr.type || "",
+                    value: attr.value || "",
+                    confidence: attr.confidence || 0.5,
+                }))) || [],
             };
             entities.push(medicalEntity);
             totalConfidence += medicalEntity.confidence;
@@ -168,38 +176,38 @@ const processNLPAnalysis = async (req, res) => {
         if (segments && Array.isArray(segments)) {
             segments.forEach((segment) => {
                 var _a;
-                const speakerRole = ((_a = segment.speaker) === null || _a === void 0 ? void 0 : _a.role) || 'UNKNOWN';
+                const speakerRole = ((_a = segment.speaker) === null || _a === void 0 ? void 0 : _a.role) || "UNKNOWN";
                 const soapSection = classifySOAPSection(segment.text, speakerRole);
                 // Filtrar entidades relevantes para este segmento
-                const segmentEntities = entities.filter(entity => entity.startOffset >= segment.startOffset &&
+                const segmentEntities = entities.filter((entity) => entity.startOffset >= segment.startOffset &&
                     entity.endOffset <= segment.endOffset);
                 soapSections.push({
                     section: soapSection,
                     content: segment.text,
                     entities: segmentEntities,
                     confidence: segment.confidence || 0.5,
-                    speakerRole: speakerRole
+                    speakerRole: speakerRole,
                 });
             });
         }
         // === RESUMEN CLÍNICO ===
         const clinicalSummary = {
             primarySymptoms: entities
-                .filter(e => e.category === 'SYMPTOM')
-                .map(e => e.text)
+                .filter((e) => e.category === "SYMPTOM")
+                .map((e) => e.text)
                 .slice(0, 5),
             medications: entities
-                .filter(e => e.category === 'MEDICATION')
-                .map(e => e.text),
+                .filter((e) => e.category === "MEDICATION")
+                .map((e) => e.text),
             bodyParts: entities
-                .filter(e => e.category === 'BODY_PART')
-                .map(e => e.text),
+                .filter((e) => e.category === "BODY_PART")
+                .map((e) => e.text),
             treatments: entities
-                .filter(e => e.category === 'TREATMENT')
-                .map(e => e.text),
+                .filter((e) => e.category === "TREATMENT")
+                .map((e) => e.text),
             assessments: soapSections
-                .filter(s => s.section === 'ASSESSMENT')
-                .map(s => s.content)
+                .filter((s) => s.section === "ASSESSMENT")
+                .map((s) => s.content),
         };
         const result = {
             sessionId: currentSessionId,
@@ -207,25 +215,25 @@ const processNLPAnalysis = async (req, res) => {
             soapSections,
             clinicalSummary,
             processingTime: Date.now() - startTime,
-            overallConfidence: entities.length > 0 ? totalConfidence / entities.length : 0
+            overallConfidence: entities.length > 0 ? totalConfidence / entities.length : 0,
         };
         // === GUARDAR EN FIRESTORE ===
         const db = admin.firestore();
-        await db.collection('nlp-analysis').doc(currentSessionId).set(Object.assign(Object.assign({}, result), { timestamp: admin.firestore.FieldValue.serverTimestamp(), status: 'completed' }));
+        await db.collection("nlp-analysis").doc(currentSessionId).set(Object.assign(Object.assign({}, result), { timestamp: admin.firestore.FieldValue.serverTimestamp(), status: "completed" }));
         console.log(`✅ Análisis NLP completado en ${result.processingTime}ms`);
         console.log(`📊 Entidades: ${entities.length}, Secciones SOAP: ${soapSections.length}`);
         res.json({
             success: true,
-            data: result
+            data: result,
         });
     }
     catch (error) {
-        console.error('❌ Error en análisis NLP:', error);
+        console.error("❌ Error en análisis NLP:", error);
         res.status(500).json({
             success: false,
-            error: 'Error procesando análisis NLP',
-            details: error instanceof Error ? error.message : 'Error desconocido',
-            processingTime: Date.now() - startTime
+            error: "Error procesando análisis NLP",
+            details: error instanceof Error ? error.message : "Error desconocido",
+            processingTime: Date.now() - startTime,
         });
     }
 };
@@ -235,24 +243,24 @@ const getNLPAnalysisStatus = async (req, res) => {
     try {
         const { sessionId } = req.params;
         const db = admin.firestore();
-        const doc = await db.collection('nlp-analysis').doc(sessionId).get();
+        const doc = await db.collection("nlp-analysis").doc(sessionId).get();
         if (!doc.exists) {
             res.status(404).json({
                 success: false,
-                error: 'Análisis NLP no encontrado'
+                error: "Análisis NLP no encontrado",
             });
             return;
         }
         res.json({
             success: true,
-            data: doc.data()
+            data: doc.data(),
         });
     }
     catch (error) {
-        console.error('❌ Error obteniendo estado NLP:', error);
+        console.error("❌ Error obteniendo estado NLP:", error);
         res.status(500).json({
             success: false,
-            error: 'Error obteniendo estado de análisis NLP'
+            error: "Error obteniendo estado de análisis NLP",
         });
     }
 };

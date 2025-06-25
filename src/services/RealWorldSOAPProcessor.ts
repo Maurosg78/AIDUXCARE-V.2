@@ -589,23 +589,23 @@ export default class RealWorldSOAPProcessor {
 
     if (anatomyTerms.includes('cuello') || anatomyTerms.includes('cervical')) {
       if (symptoms.includes('dolor')) {
-        assessment = 'Cervicalgia con limitación funcional de la movilidad cervical. ';
+        assessment = 'Disfunción cervical que requiere evaluación fisioterapéutica detallada. ';
         if (findings.includes('rigidez') || findings.includes('contractura')) {
-          assessment += 'Componente muscular evidente. ';
+          assessment += 'Limitación de movimiento documentada. ';
         }
       }
     } else if (anatomyTerms.includes('lumbar') || anatomyTerms.includes('espalda baja')) {
       if (symptoms.includes('dolor')) {
-        assessment = 'Lumbalgia mecánica con contractura de musculatura paravertebral. ';
+        assessment = 'Disfunción lumbar que requiere abordaje fisioterapéutico conservador. ';
         if (allEntities.includes('post-traumático')) {
-          assessment += 'De origen post-esfuerzo. ';
+          assessment += 'Asociado a esfuerzo físico. ';
         }
       }
     } else if (anatomyTerms.includes('hombro') || anatomyTerms.includes('glenohumeral')) {
       if (symptoms.includes('dolor')) {
-        assessment = 'Síndrome doloroso del hombro con limitación funcional. ';
+        assessment = 'Disfunción funcional de hombro que requiere evaluación específica. ';
         if (allEntities.includes('nocturno')) {
-          assessment += 'Compatible con impingement subacromial. ';
+          assessment += 'Con componente nocturno que requiere investigación adicional. ';
         }
       }
     }

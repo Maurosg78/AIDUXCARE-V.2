@@ -64,7 +64,7 @@ class TextProcessingService {
     this.location = ENV_CONFIG.ai.google.location;
     this.modelName = ENV_CONFIG.ai.google.model;
 
-    console.log(`🤖 TextProcessingService inicializado con Google Cloud AI (${this.modelName})`);
+    console.log(`BOT: TextProcessingService inicializado con Google Cloud AI (${this.modelName})`);
   }
 
   /**
@@ -107,7 +107,7 @@ class TextProcessingService {
         }
       });
 
-      console.log(`✅ Cliente Google Cloud AI inicializado (Proyecto: ${this.projectId})`);
+      console.log(`SUCCESS: Cliente Google Cloud AI inicializado (Proyecto: ${this.projectId})`);
     }
   }
 
@@ -205,7 +205,7 @@ REGLAS IMPORTANTES:
   }
 
   /**
-   * 🎯 MÉTODO PRINCIPAL: Procesa transcripción + entidades y genera SOAP avanzado
+   * TARGET: MÉTODO PRINCIPAL: Procesa transcripción + entidades y genera SOAP avanzado
    */
   async processTextToSOAP(
     transcription: string, 
@@ -217,7 +217,7 @@ REGLAS IMPORTANTES:
         throw new Error('La transcripción no puede estar vacía');
       }
 
-      console.log(`🔄 Procesando transcripción con ${clinicalEntities.length} entidades clínicas...`);
+      console.log(`RELOAD: Procesando transcripción con ${clinicalEntities.length} entidades clínicas...`);
       
       // Generar estructura SOAP avanzada
       const result = await this.generateAdvancedSOAPStructure(transcription, clinicalEntities);
@@ -227,7 +227,7 @@ REGLAS IMPORTANTES:
       
       const processingTime = Date.now() - startTime;
       
-      console.log(`✅ SOAP generado exitosamente en ${processingTime}ms (confianza: ${(result.confidence * 100).toFixed(1)}%)`);
+      console.log(`SUCCESS: SOAP generado exitosamente en ${processingTime}ms (confianza: ${(result.confidence * 100).toFixed(1)}%)`);
       
       return {
         soapStructure: result.soapStructure,
@@ -239,7 +239,7 @@ REGLAS IMPORTANTES:
       };
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      console.error(`❌ Error procesando transcripción en ${processingTime}ms:`, error);
+      console.error(`ERROR: Error procesando transcripción en ${processingTime}ms:`, error);
       throw this.handleProcessingError(error);
     }
   }
@@ -462,9 +462,9 @@ REGLAS IMPORTANTES:
   public async testConnection(): Promise<string> {
     try {
       const response = await this.processTextWithGoogleAI('Responde solo: "Conexión exitosa con Google Cloud AI"');
-      return `✅ Google Cloud AI: ${response}`;
+      return `SUCCESS: Google Cloud AI: ${response}`;
     } catch (error) {
-      return `❌ Google Cloud AI: ${(error as Error).message}`;
+      return `ERROR: Google Cloud AI: ${(error as Error).message}`;
     }
   }
 

@@ -4,7 +4,7 @@
  * En producción, estas credenciales deben ser manejadas por variables de entorno
  */
 
-// ⚠️ IMPORTANTE: En producción, usar variables de entorno
+// WARNING: IMPORTANTE: En producción, usar variables de entorno
 const ADMIN_CONFIG = {
   email: process.env.ADMIN_EMAIL || 'admin@aiduxcare.com',
   defaultPassword: process.env.ADMIN_PASSWORD || 'admin123',

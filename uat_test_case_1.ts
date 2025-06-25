@@ -63,9 +63,19 @@ async function runTestCase1() {
     });
     console.log('\n' + '=' .repeat(80));
     
+    // Contexto profesional para el test
+    const professionalContext = {
+      role: 'PHYSIOTHERAPIST' as const,
+      country: 'SPAIN' as const,
+      state: 'METROPOLITANA' as const,
+      specializations: ['Neurología', 'Traumatología'],
+      certifications: ['Fisioterapia Neurológica'],
+      licenseNumber: 'FIS-12345'
+    };
+    
     // Detectar banderas rojas
     console.log('🚨 DETECTANDO BANDERAS ROJAS...');
-    const redFlags = await clinicalAssistantService.detectRedFlags(testCase1.entities, testCase1.patient);
+    const redFlags = await clinicalAssistantService.detectRedFlags(testCase1.entities, testCase1.patient, professionalContext);
     
     console.log(`\n✅ BANDERAS ROJAS DETECTADAS: ${redFlags.length}`);
     console.log('=' .repeat(80));

@@ -1,5 +1,5 @@
 /**
- * 🎤 Servicio Centralizado de Transcripción - AiDuxCare V.2
+ * AUDIO: Servicio Centralizado de Transcripción - AiDuxCare V.2
  * REFACTOR: Unifica todas las implementaciones de transcripción dispersas
  * Elimina duplicación en SimpleConsultationPage, AudioCaptureService, etc.
  */
@@ -125,7 +125,7 @@ export class TranscriptionService {
    */
   public async startRecording(): Promise<void> {
     if (this.state.isRecording) {
-      console.warn('⚠️ Ya hay una grabación en progreso');
+      console.warn('WARNING: Ya hay una grabación en progreso');
       return;
     }
 
@@ -149,7 +149,7 @@ export class TranscriptionService {
    */
   public async stopRecording(): Promise<TranscriptionSegment[]> {
     if (!this.state.isRecording) {
-      console.warn('⚠️ No hay grabación activa');
+      console.warn('WARNING: No hay grabación activa');
       return this.state.segments;
     }
 

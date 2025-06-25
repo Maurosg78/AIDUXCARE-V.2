@@ -439,7 +439,7 @@ class MedicalAuditService {
       const recentEvents = this.auditEvents.slice(-1000);
       localStorage.setItem('medical_audit_backup', JSON.stringify(recentEvents));
     } catch (error) {
-      logger.error('❌ Error guardando audit backup:', error);
+      logger.error('ERROR: Error guardando audit backup:', error);
     }
   }
 

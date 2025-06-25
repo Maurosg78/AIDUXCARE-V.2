@@ -69,7 +69,7 @@ const BUTTON_TEXTS = {
  */
 const SUGGESTION_STYLES: Record<SuggestionType, { icon: string; colorClass: string }> = {
   recommendation: { icon: '💡', colorClass: 'bg-blue-50 border-blue-200' },
-  warning: { icon: '⚠️', colorClass: 'bg-yellow-50 border-yellow-200' },
+  warning: { icon: 'WARNING:', colorClass: 'bg-yellow-50 border-yellow-200' },
   info: { icon: 'ℹ️', colorClass: 'bg-green-50 border-green-200' },
   diagnostic: { icon: '🔍', colorClass: 'bg-purple-50 border-purple-200' },
   treatment: { icon: '💊', colorClass: 'bg-indigo-50 border-indigo-200' },

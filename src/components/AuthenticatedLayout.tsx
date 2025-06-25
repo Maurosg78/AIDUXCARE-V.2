@@ -1,0 +1,1 @@
+// AuthenticatedLayout component

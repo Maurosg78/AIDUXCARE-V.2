@@ -85,7 +85,7 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
       case 'recommendation':
         return '💡';
       case 'warning':
-        return '⚠️';
+        return 'WARNING:';
       case 'info':
         return 'ℹ️';
     }
@@ -153,7 +153,7 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
             <p className="text-gray-800 mb-2">{suggestion.content}</p>
 
             <div className="flex items-center justify-between text-sm text-gray-500">
-              <span>✅ Integrado</span>
+              <span>SUCCESS: Integrado</span>
               <span>Por: {suggestion.accepted_by}</span>
             </div>
           </div>

@@ -1,0 +1,87 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient2)"/>
+  
+  <!-- Doctor Figure -->
+  <g transform="translate(120, 60)">
+    <!-- Head -->
+    <circle cx="80" cy="35" r="28" fill="#E8B896"/>
+    
+    <!-- Hair -->
+    <path d="M52 20 Q80 5 108 20 Q112 25 108 32 Q80 15 52 32 Q48 25 52 20" fill="#654321"/>
+    
+    <!-- Headset -->
+    <path d="M55 25 Q80 15 105 25" stroke="#2D3748" stroke-width="4" fill="none"/>
+    <circle cx="50" cy="30" r="8" fill="#2D3748"/>
+    <circle cx="110" cy="30" r="8" fill="#2D3748"/>
+    
+    <!-- Microphone -->
+    <rect x="45" y="40" width="3" height="15" fill="#2D3748"/>
+    <rect x="42" y="42" width="9" height="4" rx="2" fill="#5DA5A3"/>
+    
+    <!-- Lab Coat -->
+    <rect x="50" y="63" width="60" height="130" rx="10" fill="white" stroke="#E2E8F0" stroke-width="2"/>
+    
+    <!-- Shirt -->
+    <rect x="60" y="73" width="40" height="35" fill="#4A90E2"/>
+    
+    <!-- Arms -->
+    <ellipse cx="40" cy="110" rx="10" ry="30" fill="white"/>
+    <ellipse cx="120" cy="110" rx="10" ry="30" fill="white"/>
+    
+    <!-- Hands -->
+    <circle cx="40" cy="140" r="7" fill="#E8B896"/>
+    <circle cx="120" cy="140" r="7" fill="#E8B896"/>
+    
+    <!-- Clipboard -->
+    <rect x="100" y="120" width="25" height="35" rx="3" fill="#8B4513"/>
+    <rect x="103" y="123" width="19" height="29" fill="white"/>
+    
+    <!-- Writing on clipboard -->
+    <rect x="105" y="125" width="15" height="1.5" fill="#5DA5A3"/>
+    <rect x="105" y="128" width="12" height="1.5" fill="#CBD5E0"/>
+    <rect x="105" y="131" width="14" height="1.5" fill="#CBD5E0"/>
+    <rect x="105" y="134" width="10" height="1.5" fill="#5DA5A3"/>
+    <rect x="105" y="137" width="13" height="1.5" fill="#CBD5E0"/>
+    <rect x="105" y="140" width="11" height="1.5" fill="#CBD5E0"/>
+    <rect x="105" y="143" width="15" height="1.5" fill="#5DA5A3"/>
+    
+    <!-- Pen -->
+    <rect x="115" y="118" width="2" height="12" fill="#2D3748"/>
+    <circle cx="116" cy="116" r="1" fill="#5DA5A3"/>
+    
+    <!-- ID Badge -->
+    <rect x="55" y="78" width="15" height="10" rx="2" fill="#5DA5A3"/>
+    <rect x="57" y="80" width="11" height="2" fill="white"/>
+    <rect x="57" y="83" width="8" height="1" fill="white"/>
+    <rect x="57" y="85" width="9" height="1" fill="white"/>
+  </g>
+  
+  <!-- Sound Waves -->
+  <g opacity="0.3">
+    <path d="M30 120 Q40 110 50 120 Q60 130 70 120" stroke="#5DA5A3" stroke-width="2" fill="none"/>
+    <path d="M25 130 Q40 115 55 130 Q70 145 85 130" stroke="#5DA5A3" stroke-width="2" fill="none"/>
+    <path d="M20 140 Q40 120 60 140 Q80 160 100 140" stroke="#5DA5A3" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Medical Background Elements -->
+  <g opacity="0.1">
+    <!-- EKG Line -->
+    <path d="M300 180 L320 180 L325 160 L330 200 L335 150 L340 210 L345 180 L380 180" stroke="#5DA5A3" stroke-width="2" fill="none"/>
+    
+    <!-- Medical Plus -->
+    <g transform="translate(320, 220)">
+      <rect x="12" y="2" width="6" height="20" fill="#5DA5A3"/>
+      <rect x="2" y="12" width="20" height="6" fill="#5DA5A3"/>
+    </g>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="bgGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0F9F8"/>
+      <stop offset="50%" stop-color="#E8F5F4"/>
+      <stop offset="100%" stop-color="#F8FDFC"/>
+    </linearGradient>
+  </defs>
+</svg> 

@@ -257,7 +257,7 @@ export const ProfessorDemoPage: React.FC = () => {
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-green-600 text-2xl">⚕️</span>
+                  <span className="text-green-600 text-2xl">MEDICAL:</span>
                 </div>
                 <h4 className="font-semibold text-slate-800 mb-2">Impacto Clínico</h4>
                 <p className="text-sm text-slate-600">
@@ -267,7 +267,7 @@ export const ProfessorDemoPage: React.FC = () => {
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-purple-600 text-2xl">📊</span>
+                  <span className="text-purple-600 text-2xl">STATS:</span>
                 </div>
                 <h4 className="font-semibold text-slate-800 mb-2">Metodología</h4>
                 <p className="text-sm text-slate-600">

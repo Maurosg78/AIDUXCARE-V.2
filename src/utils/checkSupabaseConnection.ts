@@ -71,15 +71,15 @@ export async function logSupabaseConnectionStatus(): Promise<void> {
     
     if (result.isConnected) {
       console.log(
-        `✅ Conexión a Supabase OK: ${result.url} (${result.latency}ms)`
+        `SUCCESS: Conexión a Supabase OK: ${result.url} (${result.latency}ms)`
       );
     } else {
       console.error(
-        `❌ Error conectando a Supabase: ${result.url}\n  ${result.error}`
+        `ERROR: Error conectando a Supabase: ${result.url}\n  ${result.error}`
       );
     }
   } catch (e) {
-    console.error('❌ Error intentando verificar conexión:', e);
+    console.error('ERROR: Error intentando verificar conexión:', e);
   }
 }
 

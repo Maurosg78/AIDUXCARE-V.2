@@ -1,5 +1,5 @@
 /**
- * 🎙️ Professional Audio Processor - AiDuxCare V.2
+ * MIC: Professional Audio Processor - AiDuxCare V.2
  * Componente para grabación y procesamiento de audio con IA
  * REFACTORIZADO: Usa hooks centralizados para eliminar memory leaks
  */
@@ -84,7 +84,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
    */
   const startRecording = useCallback(async () => {
     try {
-      console.log('🎙️ Iniciando grabación de audio...');
+      console.log('MIC: Iniciando grabación de audio...');
       
       // Solicitar acceso al micrófono
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -113,7 +113,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
       };
       
       mediaRecorder.onstop = () => {
-        console.log('🎙️ Grabación detenida, procesando audio...');
+        console.log('MIC: Grabación detenida, procesando audio...');
         handleRecordingComplete();
       };
       
@@ -127,7 +127,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
       }));
       
     } catch (error) {
-      console.error('❌ Error al iniciar grabación:', error);
+      console.error('ERROR: Error al iniciar grabación:', error);
       onError({
         userMessage: 'No se pudo acceder al micrófono. Verifica los permisos.',
         technicalDetails: error instanceof Error ? error.message : 'Error desconocido',
@@ -181,7 +181,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
       // Crear blob de audio
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
-      console.log('🔄 Enviando audio para procesamiento...', {
+      console.log('RELOAD: Enviando audio para procesamiento...', {
         size: audioBlob.size,
         type: audioBlob.type,
         duration: audioState.recordingTime
@@ -199,7 +199,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         }
       );
 
-      console.log('✅ Audio procesado exitosamente:', result);
+      console.log('SUCCESS: Audio procesado exitosamente:', result);
       
       setAudioState(prev => ({
         ...prev,
@@ -209,7 +209,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
       onProcessingComplete(result);
 
     } catch (error) {
-      console.error('❌ Error procesando audio:', error);
+      console.error('ERROR: Error procesando audio:', error);
       
       setAudioState(prev => ({
         ...prev,
@@ -321,7 +321,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         {!audioState.isRecording && !audioState.isProcessing && audioState.hasRecording && (
           <div className="space-y-1">
             <div className="text-lg font-semibold text-green-600">
-              ✅ Grabación Completada
+              SUCCESS: Grabación Completada
             </div>
             <div className="text-sm text-gray-600">
               Duración: {formatTime(audioState.recordingTime)}
@@ -352,7 +352,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
                     d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
             </svg>
-            🎙️ Iniciar Grabación
+            MIC: Iniciar Grabación
           </Button>
         )}
 
@@ -364,7 +364,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="6" width="12" height="12" rx="2"/>
             </svg>
-            ⏹️ Detener y Procesar
+            STOP: Detener y Procesar
           </Button>
         )}
 
@@ -375,7 +375,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
             disabled={audioState.isProcessing}
             className="flex items-center gap-2 px-4 py-3"
           >
-            🔄 Nueva Grabación
+            RELOAD: Nueva Grabación
           </Button>
         )}
       </div>
@@ -385,9 +385,9 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
         <div className="grid grid-cols-2 gap-4">
           <div>
             <span className="font-medium">Estado:</span>
-            {audioState.isRecording ? ' 🔴 Grabando' :
-             audioState.isProcessing ? ' 🔄 Procesando' :
-             audioState.hasRecording ? ' ✅ Completado' : ' ⚪ Esperando'}
+            {audioState.isRecording ? ' RED: Grabando' :
+             audioState.isProcessing ? ' RELOAD: Procesando' :
+             audioState.hasRecording ? ' SUCCESS: Completado' : ' ⚪ Esperando'}
           </div>
           <div>
             <span className="font-medium">Calidad:</span> Alta (44.1kHz)

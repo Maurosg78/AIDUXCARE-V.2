@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiduxcare-api
+  namespace: aiduxcare-prod
+  labels:
+    app: aiduxcare-api
+    version: v2.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aiduxcare-api
+  template:
+    metadata:
+      labels:
+        app: aiduxcare-api
+        version: v2.0.0
+    spec:
+      containers:
+      - name: aiduxcare-api
+        image: gcr.io/aiduxcare-mvp-prod/aiduxcare-api:v2.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: GOOGLE_CLOUD_PROJECT_ID
+          value: "aiduxcare-mvp-prod"
+        - name: VERTEX_AI_ENDPOINT
+          value: "us-central1-aiplatform.googleapis.com"
+        - name: GEMINI_MODEL
+          value: "gemini-1.5-pro"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: credentials
+          mountPath: /secrets
+          readOnly: true
+      volumes:
+      - name: credentials
+        secret:
+          secretName: aiduxcare-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiduxcare-api-service
+  namespace: aiduxcare-prod
+spec:
+  selector:
+    app: aiduxcare-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aiduxcare-api-hpa
+  namespace: aiduxcare-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aiduxcare-api
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60 

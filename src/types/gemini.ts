@@ -1,5 +1,5 @@
 /**
- * 🧠 TIPOS PARA INTEGRACIÓN CON GEMINI 1.5 PRO
+ * AI: TIPOS PARA INTEGRACIÓN CON GEMINI 1.5 PRO
  * 
  * Interfaces TypeScript para la configuración y uso de Gemini 1.5 Pro
  * en el sistema de clasificación SOAP y análisis clínico.

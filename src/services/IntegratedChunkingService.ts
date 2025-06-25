@@ -1,5 +1,5 @@
 /**
- * 🎯 SERVICIO INTEGRADO DE CHUNKING - Implementación exacta de Mauricio
+ * TARGET: SERVICIO INTEGRADO DE CHUNKING - Implementación exacta de Mauricio
  * Combina BufferedTranscriptionService con chunking semántico por utterances
  * OBJETIVO VITAL: Eliminar procesamiento "sílaba por sílaba" completamente
  */
@@ -98,8 +98,8 @@ export class IntegratedChunkingService {
     this.config = { ...this.config, ...customConfig };
     this.soapProcessor = new RealWorldSOAPProcessor();
     
-    console.log('🎯 Iniciando servicio integrado de chunking');
-    console.log('📊 Configuración buffer:', this.config.bufferConfig);
+    console.log('TARGET: Iniciando servicio integrado de chunking');
+    console.log('STATS: Configuración buffer:', this.config.bufferConfig);
     console.log('📦 Configuración chunking:', this.config.chunkingConfig);
     
     this.initializeBufferService();
@@ -112,7 +112,7 @@ export class IntegratedChunkingService {
     const bufferCallbacks: TranscriptionCallbacks = {
       onRealTimeUpdate: (text: string, speaker: string) => {
         // Mostrar transcripción en tiempo real pero NO procesar
-        console.log(`🎤 Tiempo real: ${speaker} - "${text}"`);
+        console.log(`AUDIO: Tiempo real: ${speaker} - "${text}"`);
       },
       
       onBufferedSegment: (segment: BufferedSegment) => {
@@ -121,12 +121,12 @@ export class IntegratedChunkingService {
       },
       
       onSOAPProcessing: (segments: BufferedSegment[]) => {
-        console.log(`🧠 Solicitud SOAP para ${segments.length} segmentos - USANDO CHUNKING`);
+        console.log(`AI: Solicitud SOAP para ${segments.length} segmentos - USANDO CHUNKING`);
         this.handleSOAPProcessingRequest(segments);
       },
       
       onError: (error: string) => {
-        console.error('❌ Error en buffer:', error);
+        console.error('ERROR: Error en buffer:', error);
         if (this.userCallbacks.onError) {
           this.userCallbacks.onError(new Error(error));
         }
@@ -149,7 +149,7 @@ export class IntegratedChunkingService {
       return;
     }
 
-    console.log(`✅ Segmento válido recibido: ${segment.wordCount} palabras`);
+    console.log(`SUCCESS: Segmento válido recibido: ${segment.wordCount} palabras`);
     console.log(`📄 Contenido: "${segment.text}"`);
     
     // Acumular segmento
@@ -166,7 +166,7 @@ export class IntegratedChunkingService {
    * HANDLER VITAL: Procesar con chunking en lugar de SOAP directo
    */
   private async handleSOAPProcessingRequest(segments: BufferedSegment[]): Promise<void> {
-    console.log('🔄 Interceptando solicitud SOAP - Aplicando CHUNKING en su lugar');
+    console.log('RELOAD: Interceptando solicitud SOAP - Aplicando CHUNKING en su lugar');
     
     // Agregar segmentos faltantes
     for (const segment of segments) {
@@ -192,14 +192,14 @@ export class IntegratedChunkingService {
     const startTime = Date.now();
 
     try {
-      console.log('\n🎯 === INICIANDO CHUNKING SEGÚN MAURICIO ===');
+      console.log('\nTARGET: === INICIANDO CHUNKING SEGÚN MAURICIO ===');
       console.log(`📄 Procesando ${this.accumulatedSegments.length} segmentos buffered`);
       console.log(`📝 Transcripción completa: ${this.fullTranscript.length} caracteres`);
 
       // PASO 1: Convertir transcripción completa a utterances
       console.log('\n📝 PASO 1: Convirtiendo a utterances...');
       const utterances = parseTranscriptToUtterances(this.fullTranscript);
-      console.log(`✅ ${utterances.length} utterances creadas`);
+      console.log(`SUCCESS: ${utterances.length} utterances creadas`);
 
       // PASO 2: Crear chunks con solapamiento (especificación exacta de Mauricio)
       console.log('\n📦 PASO 2: Creando chunks con solapamiento...');
@@ -209,19 +209,19 @@ export class IntegratedChunkingService {
         this.config.chunkingConfig.overlap       // Default: 2 utterances overlap
       );
       
-      console.log(`✅ ${chunks.length} chunks creados`);
+      console.log(`SUCCESS: ${chunks.length} chunks creados`);
       
       // Debug del chunking
       debugChunking(chunks);
       verifyOverlap(chunks);
 
       // PASO 3: Procesar cada chunk con LLM
-      console.log('\n🧠 PASO 3: Procesando chunks...');
+      console.log('\nAI: PASO 3: Procesando chunks...');
       const chunkResults: ChunkSOAPResult[] = [];
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        console.log(`\n🔄 Procesando ${chunk.id} (${i + 1}/${chunks.length})`);
+        console.log(`\nRELOAD: Procesando ${chunk.id} (${i + 1}/${chunks.length})`);
         
         try {
           const chunkStartTime = Date.now();
@@ -270,7 +270,7 @@ export class IntegratedChunkingService {
 
           chunkResults.push(chunkResult);
 
-          console.log(`✅ ${chunk.id} completado: ${soapResult.segments.length} segmentos SOAP, confianza: ${confidence.toFixed(2)}`);
+          console.log(`SUCCESS: ${chunk.id} completado: ${soapResult.segments.length} segmentos SOAP, confianza: ${confidence.toFixed(2)}`);
 
           // Callback por chunk procesado
           if (this.userCallbacks.onChunkProcessed) {
@@ -278,7 +278,7 @@ export class IntegratedChunkingService {
           }
 
         } catch (error) {
-          console.error(`❌ Error procesando ${chunk.id}:`, error);
+          console.error(`ERROR: Error procesando ${chunk.id}:`, error);
           // Continuar con el siguiente chunk
         }
       }
@@ -296,11 +296,11 @@ export class IntegratedChunkingService {
         chunkingStats
       };
 
-      console.log('\n📊 === RESULTADOS FINALES ===');
-      console.log(`⏱️ Tiempo total: ${totalProcessingTime}ms`);
+      console.log('\nSTATS: === RESULTADOS FINALES ===');
+      console.log(`TIME: Tiempo total: ${totalProcessingTime}ms`);
       console.log(`📦 Chunks procesados: ${chunks.length}`);
-      console.log(`📈 Eficiencia: ${chunkingStats.processingEfficiency.toFixed(2)}x`);
-      console.log(`📊 Tamaño promedio chunk: ${chunkingStats.averageChunkSize.toFixed(1)} utterances`);
+      console.log(`METRICS: Eficiencia: ${chunkingStats.processingEfficiency.toFixed(2)}x`);
+      console.log(`STATS: Tamaño promedio chunk: ${chunkingStats.averageChunkSize.toFixed(1)} utterances`);
 
       // Callback resultado completo
       if (this.userCallbacks.onBatchCompleted) {
@@ -310,10 +310,10 @@ export class IntegratedChunkingService {
       // Limpiar acumuladores para siguiente batch
       this.resetAccumulators();
 
-      console.log('🎯 === FIN CHUNKING ===\n');
+      console.log('TARGET: === FIN CHUNKING ===\n');
 
     } catch (error) {
-      console.error('❌ Error en procesamiento chunking:', error);
+      console.error('ERROR: Error en procesamiento chunking:', error);
       if (this.userCallbacks.onError) {
         this.userCallbacks.onError(error as Error);
       }
@@ -392,8 +392,8 @@ export class IntegratedChunkingService {
    * Iniciar grabación con chunking integrado
    */
   async startRecording(): Promise<void> {
-    console.log('🎤 Iniciando grabación con chunking integrado');
-    console.log(`📊 Config: min ${this.config.bufferConfig.minWordCount} palabras por segmento`);
+    console.log('AUDIO: Iniciando grabación con chunking integrado');
+    console.log(`STATS: Config: min ${this.config.bufferConfig.minWordCount} palabras por segmento`);
     console.log(`📦 Chunking: ${this.config.chunkingConfig.chunkSize} utterances, ${this.config.chunkingConfig.overlap} overlap`);
     
     this.resetAccumulators();
@@ -478,7 +478,7 @@ export class IntegratedChunkingService {
       this.bufferService.updateConfig(newConfig.bufferConfig);
     }
     
-    console.log('📊 Configuración actualizada:', this.config);
+    console.log('STATS: Configuración actualizada:', this.config);
   }
 
   /**

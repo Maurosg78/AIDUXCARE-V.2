@@ -1,5 +1,5 @@
 /**
- * 📊 SOAP METRICS DASHBOARD - PANEL DE MÉTRICAS DE PRECISIÓN
+ * STATS: SOAP METRICS DASHBOARD - PANEL DE MÉTRICAS DE PRECISIÓN
  * 
  * Dashboard para visualizar métricas de precisión SOAP y análisis de auditoría
  * 
@@ -113,9 +113,9 @@ const SOAPMetricsDashboard: React.FC<SOAPMetricsDashboardProps> = ({
       {/* Tabs */}
       <div className="flex space-x-1 mb-6 bg-[#F7F7F7] p-1 rounded-lg">
         {[
-          { id: 'overview', label: 'Resumen', icon: '📊' },
+          { id: 'overview', label: 'Resumen', icon: 'STATS:' },
           { id: 'details', label: 'Detalles', icon: '🔍' },
-          { id: 'errors', label: 'Errores', icon: '⚠️' },
+          { id: 'errors', label: 'Errores', icon: 'WARNING:' },
           { id: 'recommendations', label: 'Recomendaciones', icon: '💡' }
         ].map((tab) => (
           <button
@@ -185,7 +185,7 @@ const SOAPMetricsDashboard: React.FC<SOAPMetricsDashboardProps> = ({
             {/* Alertas */}
             {errorPatterns.length > 0 && (
               <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-red-800 mb-2">⚠️ Alertas Detectadas</h4>
+                <h4 className="font-semibold text-red-800 mb-2">WARNING: Alertas Detectadas</h4>
                 <div className="space-y-2">
                   {errorPatterns.slice(0, 3).map((pattern, index) => (
                     <div key={index} className="text-sm text-red-700">
@@ -348,7 +348,7 @@ const SOAPMetricsDashboard: React.FC<SOAPMetricsDashboardProps> = ({
 
             {/* Acciones Sugeridas */}
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-              <h4 className="font-semibold text-green-800 mb-3">✅ Acciones Sugeridas</h4>
+              <h4 className="font-semibold text-green-800 mb-3">SUCCESS: Acciones Sugeridas</h4>
               <div className="space-y-2">
                 <div className="text-sm text-green-700">
                   • Revisar clasificaciones de baja confianza

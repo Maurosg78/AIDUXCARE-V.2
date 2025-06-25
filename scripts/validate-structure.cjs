@@ -71,7 +71,7 @@ class StructureValidator {
       this.summary.totalChecks++;
       if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
         this.summary.passedChecks++;
-        console.log(`✅ Directorio requerido: ${dir}`);
+        console.log(`SUCCESS: Directorio requerido: ${dir}`);
       } else {
         this.violations.push({
           type: 'missing_directory',
@@ -79,7 +79,7 @@ class StructureValidator {
           severity: 'violation',
           reason: 'Directorio requerido faltante'
         });
-        console.log(`❌ Directorio faltante: ${dir}`);
+        console.log(`ERROR: Directorio faltante: ${dir}`);
       }
     }
     
@@ -88,7 +88,7 @@ class StructureValidator {
       this.summary.totalChecks++;
       if (fs.existsSync(file) && fs.statSync(file).isFile()) {
         this.summary.passedChecks++;
-        console.log(`✅ Archivo requerido: ${file}`);
+        console.log(`SUCCESS: Archivo requerido: ${file}`);
       } else {
         this.violations.push({
           type: 'missing_file',
@@ -96,7 +96,7 @@ class StructureValidator {
           severity: 'violation',
           reason: 'Archivo requerido faltante'
         });
-        console.log(`❌ Archivo faltante: ${file}`);
+        console.log(`ERROR: Archivo faltante: ${file}`);
       }
     }
   }
@@ -137,7 +137,7 @@ class StructureValidator {
             if (severity === 'violation') {
               this.violations.push(issue);
               this.summary.violations++;
-              console.log(`❌ VIOLACIÓN: ${relativePath} - ${reason}`);
+              console.log(`ERROR: VIOLACIÓN: ${relativePath} - ${reason}`);
             } else {
               this.warnings.push(issue);
               this.summary.warnings++;
@@ -195,7 +195,7 @@ class StructureValidator {
             severity: 'violation',
             reason: 'Documentación temporal prohibida'
           });
-          console.log(`❌ Documentación prohibida: ${mdFile}`);
+          console.log(`ERROR: Documentación prohibida: ${mdFile}`);
         } else {
           excessDocumentation.push(mdFile);
         }
@@ -299,7 +299,7 @@ class StructureValidator {
   }
   
   generateReport() {
-    console.log('\n📊 REPORTE DE VALIDACIÓN DE ESTRUCTURA');
+    console.log('\nSTATS: REPORTE DE VALIDACIÓN DE ESTRUCTURA');
     console.log('='.repeat(50));
     
     // Ejecutar todas las verificaciones
@@ -309,7 +309,7 @@ class StructureValidator {
     
     const score = this.calculateScore();
     
-    console.log('\n📈 RESUMEN:');
+    console.log('\nMETRICS: RESUMEN:');
     console.log(`• Score de estructura: ${score}/100`);
     console.log(`• Total de verificaciones: ${this.summary.totalChecks}`);
     console.log(`• Verificaciones pasadas: ${this.summary.passedChecks}`);
@@ -370,17 +370,17 @@ try {
   
   // Determinar código de salida
   if (report.violations.length > 0) {
-    console.log('\n❌ VALIDACIÓN FALLÓ: Violaciones críticas encontradas');
+    console.log('\nERROR: VALIDACIÓN FALLÓ: Violaciones críticas encontradas');
     process.exit(1);
   } else if (report.warnings.length > 3) {
     console.log('\n⚠️ VALIDACIÓN CON ADVERTENCIAS: Muchas advertencias encontradas');
     process.exit(0);
   } else {
-    console.log('\n✅ VALIDACIÓN EXITOSA: Estructura conforme a políticas');
+    console.log('\nSUCCESS: VALIDACIÓN EXITOSA: Estructura conforme a políticas');
     process.exit(0);
   }
   
 } catch (error) {
-  console.error('❌ Error durante la validación:', error.message);
+  console.error('ERROR: Error durante la validación:', error.message);
   process.exit(1);
 } 

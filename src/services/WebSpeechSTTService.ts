@@ -118,7 +118,7 @@ export class WebSpeechSTTService {
     
     // Eventos básicos de logging
     this.recognition.onstart = () => {
-      console.log('🎙️ Reconocimiento de voz iniciado');
+      console.log('MIC: Reconocimiento de voz iniciado');
       this.isListening = true;
       this.logSimple('stt.webspeech.started', { 
         provider: 'browser_native',
@@ -128,7 +128,7 @@ export class WebSpeechSTTService {
     };
     
     this.recognition.onend = () => {
-      console.log('🎙️ Reconocimiento de voz finalizado');
+      console.log('MIC: Reconocimiento de voz finalizado');
       this.isListening = false;
       this.logSimple('stt.webspeech.ended', { 
         provider: 'browser_native',
@@ -137,7 +137,7 @@ export class WebSpeechSTTService {
     };
     
     this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('❌ Error en reconocimiento:', event.error);
+      console.error('ERROR: Error en reconocimiento:', event.error);
       this.isListening = false;
       this.logSimple('stt.webspeech.error', { 
         error: event.error,
@@ -186,7 +186,7 @@ export class WebSpeechSTTService {
       // Iniciar reconocimiento
       this.recognition.start();
       
-      console.log('🚀 Transcripción en tiempo real iniciada - GRATIS con Web Speech API');
+      console.log('LAUNCH: Transcripción en tiempo real iniciada - GRATIS con Web Speech API');
       
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
@@ -253,7 +253,7 @@ export class WebSpeechSTTService {
     };
 
     this.recognition.onspeechstart = () => {
-      console.log('🗣️ Habla detectada');
+      console.log('SPEECH: Habla detectada');
       options.onSpeechStart?.();
     };
 
@@ -287,7 +287,7 @@ export class WebSpeechSTTService {
       this.currentStream = null;
     }
 
-    console.log('⏹️ Transcripción detenida');
+    console.log('STOP: Transcripción detenida');
     
     this.logSimple('stt.webspeech.stopped', {
       sessionId: this.sessionId,
@@ -310,7 +310,7 @@ export class WebSpeechSTTService {
         }
       });
       
-      console.log('✅ Acceso al micrófono concedido');
+      console.log('SUCCESS: Acceso al micrófono concedido');
       
     } catch (error) {
       const errorMsg = 'Acceso al micrófono denegado. Por favor, permite el acceso para usar la transcripción.';
@@ -428,16 +428,16 @@ export class WebSpeechSTTService {
     const compatibility = this.getBrowserCompatibility();
     
     return `
-⚠️ Tu navegador (${compatibility.browserName}) ${compatibility.isSupported ? 'tiene soporte limitado' : 'no soporta'} Web Speech API.
+WARNING: Tu navegador (${compatibility.browserName}) ${compatibility.isSupported ? 'tiene soporte limitado' : 'no soporta'} Web Speech API.
 
 🔧 Para usar transcripción en tiempo real GRATUITA:
 
-✅ Navegadores Recomendados:
+SUCCESS: Navegadores Recomendados:
 • Google Chrome (mejor opción)
 • Microsoft Edge
 • Firefox (funcionalidad limitada)
 
-❌ No Compatible:
+ERROR: No Compatible:
 • Safari
 • Navegadores móviles antiguos
 

@@ -91,14 +91,14 @@ export const BufferedTranscriptionDemo: React.FC = () => {
       bufferedSegments: [...prev.bufferedSegments, segment]
     }));
 
-    console.log(`✅ Segmento buffered: ${segment.wordCount} palabras | ${segment.speaker}`);
+    console.log(`SUCCESS: Segmento buffered: ${segment.wordCount} palabras | ${segment.speaker}`);
   };
 
   const handleSOAPProcessing = async (segments: BufferedSegment[]) => {
     if (!soapProcessor.current) return;
 
     try {
-      console.log(`🧠 Procesando ${segments.length} segmentos con SOAP...`);
+      console.log(`AI: Procesando ${segments.length} segmentos con SOAP...`);
 
       // Convertir segmentos a texto para procesamiento
       const fullTranscription = segments.map(s => s.text).join(' ');
@@ -111,7 +111,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
         soapResults: [...prev.soapResults, soapResult]
       }));
 
-      console.log(`✅ SOAP completado: ${soapResult.segments.length} segmentos clasificados`);
+      console.log(`SUCCESS: SOAP completado: ${soapResult.segments.length} segmentos clasificados`);
 
     } catch (error) {
       console.error('Error procesando SOAP:', error);
@@ -233,8 +233,8 @@ export const BufferedTranscriptionDemo: React.FC = () => {
 
   const getSpeakerIcon = (speaker: string) => {
     switch (speaker) {
-      case 'PATIENT': return '🧑‍🦽';
-      case 'THERAPIST': return '👩‍⚕️';
+      case 'PATIENT': return 'PERSON:‍🦽';
+      case 'THERAPIST': return 'NURSE:';
       default: return '❓';
     }
   };
@@ -258,7 +258,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
         {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🎤 Transcripción con Buffer Inteligente
+            AUDIO: Transcripción con Buffer Inteligente
           </h1>
           <p className="text-gray-600">
             Acumula transcripción hasta formar párrafos completos, luego procesa con SOAP para evitar análisis sílaba por sílaba
@@ -279,7 +279,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
                   disabled={state.isRecording}
                   className="flex-1 bg-red-600 text-white px-4 py-3 rounded-lg font-medium disabled:bg-gray-400 hover:bg-red-700 transition-colors"
                 >
-                  {state.isRecording ? '🔴 Grabando...' : '🎤 Iniciar Grabación'}
+                  {state.isRecording ? 'RED: Grabando...' : 'AUDIO: Iniciar Grabación'}
                 </button>
                 
                 <button
@@ -287,7 +287,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
                   disabled={!state.isRecording}
                   className="flex-1 bg-gray-600 text-white px-4 py-3 rounded-lg font-medium disabled:bg-gray-400 hover:bg-gray-700 transition-colors"
                 >
-                  ⏹️ Detener
+                  STOP: Detener
                 </button>
               </div>
               
@@ -302,9 +302,9 @@ export const BufferedTranscriptionDemo: React.FC = () => {
             {/* Estado de la grabación */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
               <div className="text-sm space-y-1">
-                <div>⏱️ Duración: <span className="font-mono">{formatDuration(state.duration)}</span></div>
-                <div>🎯 Segmentos: <span className="font-mono">{state.bufferedSegments.length}</span></div>
-                <div>🧠 Análisis SOAP: <span className="font-mono">{state.soapResults.length}</span></div>
+                <div>TIME: Duración: <span className="font-mono">{formatDuration(state.duration)}</span></div>
+                <div>TARGET: Segmentos: <span className="font-mono">{state.bufferedSegments.length}</span></div>
+                <div>AI: Análisis SOAP: <span className="font-mono">{state.soapResults.length}</span></div>
               </div>
             </div>
           </div>
@@ -362,7 +362,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
 
           {/* Estado del Buffer */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold mb-4">📊 Estado del Buffer</h3>
+            <h3 className="text-lg font-semibold mb-4">STATS: Estado del Buffer</h3>
             
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -394,7 +394,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
         {state.error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <span className="text-red-600 mr-2">❌</span>
+              <span className="text-red-600 mr-2">ERROR:</span>
               <span className="text-red-800">{state.error}</span>
             </div>
           </div>
@@ -432,7 +432,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">
-                    <div className="text-4xl mb-2">🎤</div>
+                    <div className="text-4xl mb-2">AUDIO:</div>
                     <p>Esperando transcripción...</p>
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
         {state.soapResults.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">🧠 Análisis SOAP</h3>
+              <h3 className="text-lg font-semibold">AI: Análisis SOAP</h3>
               <p className="text-sm text-gray-600">Procesamiento inteligente de párrafos completos</p>
             </div>
             

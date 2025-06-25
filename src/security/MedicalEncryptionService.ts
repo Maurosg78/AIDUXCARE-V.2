@@ -142,7 +142,7 @@ class MedicalEncryptionService {
         }
 
       } catch (error) {
-        console.error(`❌ Error descifrando campo ${fieldName}:`, error);
+        console.error(`ERROR: Error descifrando campo ${fieldName}:`, error);
       }
     });
 

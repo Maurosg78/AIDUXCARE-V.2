@@ -8,7 +8,7 @@ const Layout = () => {
   const location = useLocation();
   
   const navigation = [
-    { name: '🎯 MVP Core', href: '/mvp-core', icon: 'target' },
+    { name: 'TARGET: MVP Core', href: '/mvp-core', icon: 'target' },
     { name: 'Calendario', href: '/professional-workflow', icon: 'calendar' },
     { name: 'Pacientes', href: '/patients', icon: 'users' },
     { name: 'Notas', href: '/notes', icon: 'document' },

@@ -99,7 +99,7 @@ const PlansPage: React.FC = () => {
       price: { monthly: 29, annual: 290 },
       originalPrice: 79,
       specialty: 'EARLY_ADOPTER',
-      icon: '🚀',
+      icon: 'LAUNCH:',
       color: 'bg-gradient-to-r from-orange-500 to-red-500',
       gradient: 'from-orange-500/10 to-red-500/10',
       limits: {
@@ -133,7 +133,7 @@ const PlansPage: React.FC = () => {
       subtitle: 'IA Especializada en Salud Mental',
       price: { monthly: 79, annual: 790 },
       specialty: 'PSYCHOLOGY',
-      icon: '🧠',
+      icon: 'AI:',
       color: 'bg-gradient-to-r from-purple-500 to-pink-500',
       gradient: 'from-purple-500/10 to-pink-500/10',
       limits: {
@@ -165,7 +165,7 @@ const PlansPage: React.FC = () => {
       subtitle: 'IA Especializada en Fisioterapia',
       price: { monthly: 69, annual: 690 },
       specialty: 'PHYSIO',
-      icon: '🏃‍♂️',
+      icon: 'RUNNER:',
       color: 'bg-gradient-to-r from-green-500 to-blue-500',
       gradient: 'from-green-500/10 to-blue-500/10',
       limits: {
@@ -196,7 +196,7 @@ const PlansPage: React.FC = () => {
       subtitle: 'IA Adaptativa Multi-Especialidad',
       price: { monthly: 59, annual: 590 },
       specialty: 'GENERAL',
-      icon: '🩺',
+      icon: 'MEDICAL:',
       color: 'bg-gradient-to-r from-blue-500 to-teal-500',
       gradient: 'from-blue-500/10 to-teal-500/10',
       limits: {
@@ -348,7 +348,7 @@ const PlansPage: React.FC = () => {
             absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white
             ${plan.isEarlyAccess ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-[#5DA5A3] to-[#4A8280]'}
           `}>
-            {plan.isEarlyAccess ? '🚀 OFERTA LIMITADA' : '⭐ MÁS POPULAR'}
+            {plan.isEarlyAccess ? 'LAUNCH: OFERTA LIMITADA' : 'STAR: MÁS POPULAR'}
           </div>
         )}
 
@@ -413,9 +413,9 @@ const PlansPage: React.FC = () => {
                 <li key={feature.id} className="flex items-start space-x-2">
                   <span className={`
                     text-xs mt-0.5 
-                    ${feature.isHighlight ? '⭐' : feature.isSpecialty ? '🎯' : '✅'}
+                    ${feature.isHighlight ? 'STAR:' : feature.isSpecialty ? 'TARGET:' : 'SUCCESS:'}
                   `}>
-                    {feature.isHighlight ? '⭐' : feature.isSpecialty ? '🎯' : '✅'}
+                    {feature.isHighlight ? 'STAR:' : feature.isSpecialty ? 'TARGET:' : 'SUCCESS:'}
                   </span>
                   <div className="flex-1">
                     <span className={`text-sm ${feature.isHighlight ? 'font-semibold text-[#5DA5A3]' : 'text-[#2C3E50]'}`}>
@@ -592,7 +592,7 @@ const PlansPage: React.FC = () => {
               onClick={() => setShowComparison(true)}
               className="px-6 py-3 bg-white/80 backdrop-blur-sm text-[#2C3E50] border border-[#BDC3C7]/30 rounded-xl hover:bg-[#F7F7F7] transition-colors"
             >
-              📊 Comparar Todas las Características
+              STATS: Comparar Todas las Características
             </button>
           </div>
         </div>
@@ -607,7 +607,7 @@ const PlansPage: React.FC = () => {
                 <p className="text-sm text-[#2C3E50]/70">ISO 27001 + HIPAA + GDPR compliant</p>
               </div>
               <div>
-                <div className="text-3xl mb-2">🎯</div>
+                <div className="text-3xl mb-2">TARGET:</div>
                 <h4 className="font-semibold text-[#2C3E50] mb-2">IA Especializada</h4>
                 <p className="text-sm text-[#2C3E50]/70">Entrenad específicamente por disciplina médica</p>
               </div>

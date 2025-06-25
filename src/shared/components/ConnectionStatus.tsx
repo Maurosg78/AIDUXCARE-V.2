@@ -26,12 +26,12 @@ export const ConnectionStatus = () => {
         if (!singletonTest.error) {
           setStatus('connected');
           setErrorInfo(null);
-          setDetails('✅ Conexión exitosa con cliente Singleton');
-          console.log('✅ Cliente Singleton funcionando');
+          setDetails('SUCCESS: Conexión exitosa con cliente Singleton');
+          console.log('SUCCESS: Cliente Singleton funcionando');
           return;
         } 
         
-        console.log('❌ Cliente Singleton falló:', singletonTest.error);
+        console.log('ERROR: Cliente Singleton falló:', singletonTest.error);
         
         // 2. Si falló el método directo, intentar con el cliente oficial
         console.log('MÉTODO 2: Probando con el cliente oficial de Supabase...');
@@ -58,7 +58,7 @@ export const ConnectionStatus = () => {
               console.error(`Error en tabla ${table}:`, error);
               lastError = error;
             } else {
-              console.log(`✅ Conexión exitosa con tabla ${table}`);
+              console.log(`SUCCESS: Conexión exitosa con tabla ${table}`);
               successfulTable = table;
               break;
             }
@@ -119,14 +119,14 @@ export const ConnectionStatus = () => {
       
       {status === 'connected' && (
         <div className="connected">
-          <p className="text-green-600">✅ Conexión a Supabase activa</p>
+          <p className="text-green-600">SUCCESS: Conexión a Supabase activa</p>
           {details && <p className="text-sm text-gray-600">{details}</p>}
         </div>
       )}
       
       {status === 'error' && (
         <div className="error">
-          <p className="text-red-600">❌ Error en la conexión a Supabase</p>
+          <p className="text-red-600">ERROR: Error en la conexión a Supabase</p>
           {errorInfo && <p className="text-sm text-red-500">{errorInfo}</p>}
           
           <div className="mt-4 bg-gray-100 p-3 rounded text-xs">

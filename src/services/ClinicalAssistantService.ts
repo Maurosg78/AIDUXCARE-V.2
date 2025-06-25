@@ -249,7 +249,7 @@ class ClinicalAssistantService {
       return redFlags.sort((a, b) => this.getSeverityWeight(b.severity) - this.getSeverityWeight(a.severity));
       
     } catch (error) {
-      console.error('❌ Error detectando banderas rojas:', error);
+      console.error('ERROR: Error detectando banderas rojas:', error);
       return [];
     }
   }
@@ -280,7 +280,7 @@ class ClinicalAssistantService {
           id: `med-allergy-${Date.now()}-${Math.random()}`,
           type: 'MEDICATION_ALLERGY',
           severity: 'CRITICAL',
-          title: '⚠️ ALERTA: Conflicto Medicamento-Alergia',
+          title: 'WARNING: ALERTA: Conflicto Medicamento-Alergia',
           description: `El paciente tiene alergia a "${allergy}" y se mencionó "${medication.text}" en la consulta.`,
           recommendation: contextualRec.recommendation,
           soapNote: contextualRec.soapNote,
@@ -326,7 +326,7 @@ class ClinicalAssistantService {
           id: `contraindication-${Date.now()}-${Math.random()}`,
           type: 'CONTRAINDICATION',
           severity: conflict.severity,
-          title: `⚠️ Posible Contraindicación: ${entity.text}`,
+          title: `WARNING: Posible Contraindicación: ${entity.text}`,
           description: conflict.description,
           recommendation: contextualRec.recommendation,
           soapNote: contextualRec.soapNote,
@@ -428,12 +428,12 @@ class ClinicalAssistantService {
         });
       });
 
-      console.log(`📋 Plantillas de examen sugeridas: ${templates.length} en ${Date.now() - startTime}ms`);
+      console.log(`NOTES: Plantillas de examen sugeridas: ${templates.length} en ${Date.now() - startTime}ms`);
       
       return templates.sort((a, b) => this.getPriorityWeight(b.priority) - this.getPriorityWeight(a.priority));
       
     } catch (error) {
-      console.error('❌ Error sugiriendo plantillas de examen:', error);
+      console.error('ERROR: Error sugiriendo plantillas de examen:', error);
       return [];
     }
   }
@@ -469,11 +469,11 @@ class ClinicalAssistantService {
         processingTime
       };
 
-      console.log(`✅ Análisis clínico completado en ${processingTime}ms`);
+      console.log(`SUCCESS: Análisis clínico completado en ${processingTime}ms`);
       return result;
 
     } catch (error) {
-      console.error('❌ Error en análisis clínico:', error);
+      console.error('ERROR: Error en análisis clínico:', error);
       return {
         redFlags: [],
         examTemplates: [],
@@ -1115,7 +1115,7 @@ class ClinicalAssistantService {
       case 'PHYSIOTHERAPIST':
         if (entityType === 'MEDICATION') {
           return {
-            recommendation: `⚠️ ALERTA: ${entityName} puede estar contraindicado. Recomendar consulta con médico tratante para evaluación de medicación.`,
+            recommendation: `WARNING: ALERTA: ${entityName} puede estar contraindicado. Recomendar consulta con médico tratante para evaluación de medicación.`,
             soapNote: `Hallazgo: Posible contraindicación medicamentosa con ${entityName}. Recomendación: Derivar a médico tratante para evaluación.`
           };
         } else if (entityType === 'CRITICAL_SYMPTOM') {
@@ -1142,7 +1142,7 @@ class ClinicalAssistantService {
         
       case 'NURSE':
         return {
-          recommendation: `📋 DOCUMENTAR: ${entityName} requiere atención especial. Registrar en ficha y notificar al médico responsable.`,
+          recommendation: `NOTES: DOCUMENTAR: ${entityName} requiere atención especial. Registrar en ficha y notificar al médico responsable.`,
           soapNote: `Documentación: ${entityName} detectado. Acción: Notificar al médico responsable.`
         };
         
@@ -1578,7 +1578,7 @@ class ClinicalAssistantService {
           id: `med-alert-${Date.now()}-${Math.random()}`,
           type: 'DOSAGE_WARNING',
           severity: 'MEDIUM',
-          title: `⚠️ Medicamento pendiente: ${prescription.medicationName}`,
+          title: `WARNING: Medicamento pendiente: ${prescription.medicationName}`,
           description: `El medicamento ${prescription.medicationName} debería haber sido administrado según la prescripción`,
           recommendation: 'Verificar administración y documentar en ficha',
           soapNote: `Alerta: Medicamento ${prescription.medicationName} pendiente de administración`,
@@ -1730,7 +1730,7 @@ class ClinicalAssistantService {
           id: `interaction-${Date.now()}-${Math.random()}`,
           type: 'INTERACTION',
           severity: interaction.severity,
-          title: `⚠️ Interacción Medicamentosa: ${indication.title} + ${med}`,
+          title: `WARNING: Interacción Medicamentosa: ${indication.title} + ${med}`,
           description: interaction.description,
           recommendation: interaction.recommendation,
           evidenceLevel: interaction.evidenceLevel,
@@ -1783,7 +1783,7 @@ class ClinicalAssistantService {
             id: `blindspot-${Date.now()}-${Math.random()}`,
             type: 'BLIND_SPOT',
             severity: 'MEDIUM',
-            title: '👁️ Punto Ciego: Indicación Medicamentosa',
+            title: 'EYE: Punto Ciego: Indicación Medicamentosa',
             description: 'Como fisioterapeuta, no puedes prescribir medicamentos. Verificar que la indicación sea del médico.',
             recommendation: 'Confirmar que la indicación proviene del médico tratante',
             professionalContext: ['PHYSIOTHERAPIST'],
@@ -1800,7 +1800,7 @@ class ClinicalAssistantService {
             id: `blindspot-${Date.now()}-${Math.random()}`,
             type: 'BLIND_SPOT',
             severity: 'MEDIUM',
-            title: '👁️ Punto Ciego: Orden de Examen',
+            title: 'EYE: Punto Ciego: Orden de Examen',
             description: 'Como enfermero, no puedes ordenar exámenes. Verificar que la orden sea del médico.',
             recommendation: 'Confirmar que la orden proviene del médico responsable',
             professionalContext: ['NURSE'],
@@ -1829,7 +1829,7 @@ class ClinicalAssistantService {
         id: `legal-${Date.now()}-${Math.random()}`,
         type: 'LEGAL_RISK',
         severity: 'CRITICAL',
-        title: '⚖️ Riesgo Legal: Prescripción de Medicamentos',
+        title: 'LEGAL: Riesgo Legal: Prescripción de Medicamentos',
         description: 'Prescribir medicamentos sin autorización puede tener consecuencias legales graves',
         recommendation: 'Solo administrar medicamentos con prescripción médica válida',
         legalImplications: ['Ejercicio ilegal de la medicina', 'Responsabilidad civil', 'Sanciones profesionales'],

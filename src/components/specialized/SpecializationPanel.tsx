@@ -1,5 +1,5 @@
 /**
- * 🎯 SPECIALIZATION PANEL - PANEL DE ESPECIALIZACIÓN INTELIGENTE
+ * TARGET: SPECIALIZATION PANEL - PANEL DE ESPECIALIZACIÓN INTELIGENTE
  * 
  * Muestra la especialización activa, límites del plan, optimización de costos
  * y características específicas por disciplina médica
@@ -69,13 +69,13 @@ const SpecializationPanel: React.FC<SpecializationPanelProps> = ({
   const getSpecialtyIcon = (specialty: MedicalSpecialty) => {
     switch (specialty) {
       case 'PSICOLOGIA':
-        return '🧠';
+        return 'AI:';
       case 'FISIOTERAPIA':
-        return '🏃‍♂️';
+        return 'RUNNER:';
       case 'MEDICINA_GENERAL':
-        return '🩺';
+        return 'MEDICAL:';
       default:
-        return '⚕️';
+        return 'MEDICAL:';
     }
   };
 
@@ -97,11 +97,11 @@ const SpecializationPanel: React.FC<SpecializationPanelProps> = ({
       case 'INICIAL':
         return '🆕';
       case 'SEGUIMIENTO':
-        return '🔄';
+        return 'RELOAD:';
       case 'EMERGENCIA':
         return '🚨';
       default:
-        return '📋';
+        return 'NOTES:';
     }
   };
 
@@ -281,7 +281,7 @@ const SpecializationPanel: React.FC<SpecializationPanelProps> = ({
       {usageStats && getUsagePercentage() >= 90 && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center space-x-2">
-            <span className="text-lg">⚠️</span>
+            <span className="text-lg">WARNING:</span>
             <div className="flex-1">
               <p className="text-sm font-medium text-red-800">
                 Límite casi alcanzado

@@ -1,5 +1,5 @@
 /**
- * 🎯 Clasificador Inteligente de Consultas - AiDuxCare V.2
+ * TARGET: Clasificador Inteligente de Consultas - AiDuxCare V.2
  * 
  * Sistema que analiza automáticamente el contexto de una consulta médica para:
  * 1. Determinar el tipo: INICIAL, SEGUIMIENTO, EMERGENCIA
@@ -108,7 +108,7 @@ export class ConsultationClassifier {
       )
     };
     
-    console.log(`✅ Consulta clasificada: ${consultationType} - ${specialty} (${result.confidence}% confianza)`);
+    console.log(`SUCCESS: Consulta clasificada: ${consultationType} - ${specialty} (${result.confidence}% confianza)`);
     console.log(`💰 Costo optimizado: €${costOptimization.cost} (${costOptimization.optimization})`);
     
     return result;
@@ -230,8 +230,8 @@ export class ConsultationClassifier {
     );
     
     if (detectedTerms.length > 0) {
-      console.log(`🎯 UAT Fisioterapia: ${detectedTerms.length} términos detectados:`, detectedTerms.slice(0, 5));
-      console.log(`📊 Términos más relevantes: ${detectedTerms.slice(0, 3).join(', ')}`);
+      console.log(`TARGET: UAT Fisioterapia: ${detectedTerms.length} términos detectados:`, detectedTerms.slice(0, 5));
+      console.log(`STATS: Términos más relevantes: ${detectedTerms.slice(0, 3).join(', ')}`);
     }
     
     // PARA UAT: SIEMPRE RETORNAR FISIOTERAPIA con logging detallado
@@ -625,7 +625,7 @@ export class ConsultationClassifier {
     specializedSOAP: any;
     costSummary: any;
   }> {
-    console.log('🔄 Iniciando procesamiento especializado de consulta...');
+    console.log('RELOAD: Iniciando procesamiento especializado de consulta...');
     
     // 1. Clasificar consulta
     const classification = await this.classifyConsultation(context);
@@ -657,9 +657,9 @@ export class ConsultationClassifier {
       estimatedMonthlyCost: classification.costOptimization.cost * 30 // Estimación
     };
 
-    console.log('✅ Procesamiento especializado completado');
+    console.log('SUCCESS: Procesamiento especializado completado');
     console.log(`💰 Costo de consulta: €${costSummary.currentConsultationCost}`);
-    console.log(`📊 Optimización: ${costSummary.optimization}`);
+    console.log(`STATS: Optimización: ${costSummary.optimization}`);
 
     return {
       classification,
@@ -730,7 +730,7 @@ export class ConsultationClassifier {
     let accessToken = process.env.GOOGLE_CLOUD_ACCESS_TOKEN;
     if (!accessToken && GOOGLE_CLOUD_CREDENTIALS) {
       // Si hay credenciales de servicio, obtener token
-      const { GoogleAuth } = require('google-auth-library');
+      // const { GoogleAuth } = require('google-auth-library'); // ⛔ Solo usar en backend Node.js, nunca en frontend React
       const auth = new GoogleAuth({
         credentials: JSON.parse(GOOGLE_CLOUD_CREDENTIALS),
         scopes: ['https://www.googleapis.com/auth/cloud-platform']
@@ -758,7 +758,7 @@ export class ConsultationClassifier {
       cost = (json.usage?.totalTokenCount || 0) * 0.000125; // Ejemplo: $0.000125/token
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error('❌ Error en classifyWithGemini:', errorMsg);
+      console.error('ERROR: Error en classifyWithGemini:', errorMsg);
       throw err;
     }
     const t1 = Date.now();
@@ -766,7 +766,7 @@ export class ConsultationClassifier {
 
     // Logging de métricas
     console.log('🔗 Gemini 1.5 Pro - Vertex AI: llamada completada');
-    console.log(`⏱️ Tiempo de inferencia: ${elapsedMs} ms`);
+    console.log(`TIME: Tiempo de inferencia: ${elapsedMs} ms`);
     console.log(`💸 Costo estimado: $${cost.toFixed(4)}`);
     if (result) {
       console.log('📦 Respuesta Gemini:', JSON.stringify(result).substring(0, 500));

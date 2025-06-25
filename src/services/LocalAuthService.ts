@@ -87,7 +87,7 @@ class LocalAuthService {
       };
 
     } catch (error) {
-      console.error('❌ Error en autenticación:', error);
+      console.error('ERROR: Error en autenticación:', error);
       return {
         success: false,
         error: 'Error interno de autenticación'
@@ -140,7 +140,7 @@ class LocalAuthService {
       };
 
     } catch (error) {
-      console.error('❌ Error en registro:', error);
+      console.error('ERROR: Error en registro:', error);
       return {
         success: false,
         error: 'Error interno en el registro'
@@ -175,7 +175,7 @@ class LocalAuthService {
       };
 
     } catch (error) {
-      console.error('❌ Error al cambiar terapeuta:', error);
+      console.error('ERROR: Error al cambiar terapeuta:', error);
       return {
         success: false,
         error: 'Error interno al cambiar terapeuta'
@@ -203,7 +203,7 @@ class LocalAuthService {
       const current = localStorageService.getCurrentTherapist();
       return current ? [current.name] : [];
     } catch (error) {
-      console.error('❌ Error al obtener terapeutas:', error);
+      console.error('ERROR: Error al obtener terapeutas:', error);
       return [];
     }
   }
@@ -230,7 +230,7 @@ class LocalAuthService {
 
       return false;
     } catch (error) {
-      console.error('❌ Error al eliminar terapeuta:', error);
+      console.error('ERROR: Error al eliminar terapeuta:', error);
       return false;
     }
   }
@@ -311,7 +311,7 @@ class LocalAuthService {
     if (this.currentSession) {
       this.currentSession.role = 'OWNER';
       localStorageService.saveTherapistData(this.currentSession);
-      console.log('✅ Usuario promovido a OWNER para UAT');
+      console.log('SUCCESS: Usuario promovido a OWNER para UAT');
       return true;
     }
     return false;
@@ -335,7 +335,7 @@ class LocalAuthService {
     
     // Log detallado para UAT
     console.log(`🔍 UAT: Analizando usuario para rol OWNER`);
-    console.log(`👤 Nombre: "${name}"`);
+    console.log(`USER: Nombre: "${name}"`);
     console.log(`📧 Email: "${email || 'no proporcionado'}"`);
     console.log(`🔎 Texto de búsqueda: "${nameOrEmail}"`);
     
@@ -344,7 +344,7 @@ class LocalAuthService {
     );
     
     if (matchedIndicators.length > 0) {
-      console.log(`🔑 UAT: Asignando rol OWNER - Indicadores encontrados: ${matchedIndicators.join(', ')}`);
+      console.log(`KEY: UAT: Asignando rol OWNER - Indicadores encontrados: ${matchedIndicators.join(', ')}`);
       return 'OWNER';
     }
     
@@ -357,7 +357,7 @@ class LocalAuthService {
    */
   forceOwnerRole(): boolean {
     if (this.currentSession) {
-      console.log('🚀 UAT: Forzando rol OWNER para testing');
+      console.log('LAUNCH: UAT: Forzando rol OWNER para testing');
       this.currentSession.role = 'OWNER';
       localStorageService.saveTherapistData(this.currentSession);
       return true;

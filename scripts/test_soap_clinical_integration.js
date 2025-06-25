@@ -204,7 +204,7 @@ async function testIntegration(
     const totalTime = Date.now() - startTime;
 
     // Mostrar resultados
-    console.log('✅ RESULTADOS DEL PIPELINE:');
+    console.log('SUCCESS: RESULTADOS DEL PIPELINE:');
     console.log(`   • Tiempo total: ${totalTime}ms`);
     console.log(`   • Segmentos SOAP: ${result.soapResult.segments.length}`);
     console.log(`   • Entidades clínicas: ${result.integrationMetrics.entityExtractionCount}`);
@@ -250,7 +250,7 @@ async function testIntegration(
 
     // Resumen ejecutivo
     const summary = mockSOAPClinicalIntegrationService.getProcessingSummary(result);
-    console.log('\n📊 RESUMEN EJECUTIVO:');
+    console.log('\nSTATS: RESUMEN EJECUTIVO:');
     console.log(`   • Total segmentos: ${summary.totalSegments}`);
     console.log(`   • Bandera roja detectada: ${summary.hasRedFlags ? 'SÍ' : 'NO'}`);
     console.log(`   • Nivel de confianza: ${(summary.confidenceLevel * 100).toFixed(1)}%`);
@@ -258,7 +258,7 @@ async function testIntegration(
 
     // Validar resultado esperado
     const testPassed = expectedRedFlag ? summary.hasRedFlags : !summary.hasRedFlags;
-    console.log(`\n${testPassed ? '✅' : '❌'} TEST ${testPassed ? 'PASSED' : 'FAILED'}: ${caseName}`);
+    console.log(`\n${testPassed ? 'SUCCESS:' : 'ERROR:'} TEST ${testPassed ? 'PASSED' : 'FAILED'}: ${caseName}`);
     
     if (!testPassed) {
       console.log(`   Esperado: ${expectedRedFlag ? 'Bandera roja detectada' : 'Sin bandera roja'}`);
@@ -273,7 +273,7 @@ async function testIntegration(
     };
 
   } catch (error) {
-    console.log(`❌ ERROR en ${caseName}:`, error.message);
+    console.log(`ERROR: ERROR en ${caseName}:`, error.message);
     return {
       passed: false,
       error: error.message
@@ -283,7 +283,7 @@ async function testIntegration(
 
 // === EJECUCIÓN DE TODAS LAS PRUEBAS ===
 async function runAllTests() {
-  console.log('🚀 INICIANDO SUITE DE PRUEBAS CRÍTICAS');
+  console.log('LAUNCH: INICIANDO SUITE DE PRUEBAS CRÍTICAS');
   console.log('=====================================\n');
 
   const results = [];
@@ -311,7 +311,7 @@ async function runAllTests() {
   results.push(test2Result);
 
   // Resumen final
-  console.log('\n📊 RESUMEN FINAL DE PRUEBAS');
+  console.log('\nSTATS: RESUMEN FINAL DE PRUEBAS');
   console.log('===========================');
   
   const passedTests = results.filter(r => r.passed).length;
@@ -322,7 +322,7 @@ async function runAllTests() {
   
   if (passedTests === totalTests) {
     console.log('\n🎉 ¡TODAS LAS PRUEBAS PASARON!');
-    console.log('✅ La integración SOAP-Clínica está lista para UAT');
+    console.log('SUCCESS: La integración SOAP-Clínica está lista para UAT');
   } else {
     console.log('\n⚠️ Algunas pruebas fallaron');
     console.log('🔧 Revisar implementación antes de UAT');

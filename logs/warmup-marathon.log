@@ -1,0 +1,387 @@
+[2025-06-24T08:23:32.365Z] [START] 🚀 INICIANDO MARATÓN AUTOMATIZADA VERTEX AI
+[2025-06-24T08:23:32.373Z] [INFO] 📊 Sesiones previas: 0
+[2025-06-24T08:23:32.374Z] [INFO] ✅ Tasa de éxito: 0%
+[2025-06-24T08:23:32.374Z] [INFO] ⏰ Intervalo: 10 minutos
+[2025-06-24T08:23:32.374Z] [INFO] 🎯 Máximo sesiones: 100
+[2025-06-24T08:23:32.378Z] [SESSION] 🔥 Iniciando sesión de calentamiento #1
+[2025-06-24T08:23:35.209Z] [ERROR] ❌ Sesión #1 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T08:23:35.209Z] [METRICS] ⏱️ Latencia: 2831ms
+[2025-06-24T08:23:35.210Z] [STATS] 📊 Estadísticas: 0/1 exitosas (0.00%)
+[2025-06-24T08:23:35.210Z] [TIME] ⏰ Duración total: 0h 0m
+[2025-06-24T08:33:35.188Z] [SESSION] 🔥 Iniciando sesión de calentamiento #2
+[2025-06-24T08:33:36.097Z] [ERROR] ❌ Sesión #2 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T08:33:36.098Z] [METRICS] ⏱️ Latencia: 909ms
+[2025-06-24T08:33:36.098Z] [STATS] 📊 Estadísticas: 0/2 exitosas (0.00%)
+[2025-06-24T08:33:36.098Z] [TIME] ⏰ Duración total: 0h 10m
+[2025-06-24T08:43:35.169Z] [SESSION] 🔥 Iniciando sesión de calentamiento #3
+[2025-06-24T08:43:36.036Z] [ERROR] ❌ Sesión #3 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T08:43:36.036Z] [METRICS] ⏱️ Latencia: 868ms
+[2025-06-24T08:43:36.037Z] [STATS] 📊 Estadísticas: 0/3 exitosas (0.00%)
+[2025-06-24T08:43:36.037Z] [TIME] ⏰ Duración total: 0h 20m
+[2025-06-24T08:53:35.151Z] [SESSION] 🔥 Iniciando sesión de calentamiento #4
+[2025-06-24T08:53:36.061Z] [ERROR] ❌ Sesión #4 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T08:53:36.061Z] [METRICS] ⏱️ Latencia: 910ms
+[2025-06-24T08:53:36.061Z] [STATS] 📊 Estadísticas: 0/4 exitosas (0.00%)
+[2025-06-24T08:53:36.061Z] [TIME] ⏰ Duración total: 0h 30m
+[2025-06-24T09:03:35.158Z] [SESSION] 🔥 Iniciando sesión de calentamiento #5
+[2025-06-24T09:03:36.083Z] [ERROR] ❌ Sesión #5 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:03:36.083Z] [METRICS] ⏱️ Latencia: 927ms
+[2025-06-24T09:03:36.083Z] [STATS] 📊 Estadísticas: 0/5 exitosas (0.00%)
+[2025-06-24T09:03:36.084Z] [TIME] ⏰ Duración total: 0h 40m
+[2025-06-24T09:13:35.141Z] [SESSION] 🔥 Iniciando sesión de calentamiento #6
+[2025-06-24T09:13:36.033Z] [ERROR] ❌ Sesión #6 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:13:36.034Z] [METRICS] ⏱️ Latencia: 893ms
+[2025-06-24T09:13:36.034Z] [STATS] 📊 Estadísticas: 0/6 exitosas (0.00%)
+[2025-06-24T09:13:36.034Z] [TIME] ⏰ Duración total: 0h 50m
+[2025-06-24T09:23:35.131Z] [SESSION] 🔥 Iniciando sesión de calentamiento #7
+[2025-06-24T09:23:36.203Z] [ERROR] ❌ Sesión #7 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:23:36.204Z] [METRICS] ⏱️ Latencia: 1074ms
+[2025-06-24T09:23:36.204Z] [STATS] 📊 Estadísticas: 0/7 exitosas (0.00%)
+[2025-06-24T09:23:36.204Z] [TIME] ⏰ Duración total: 1h 0m
+[2025-06-24T09:33:35.115Z] [SESSION] 🔥 Iniciando sesión de calentamiento #8
+[2025-06-24T09:33:36.055Z] [ERROR] ❌ Sesión #8 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:33:36.057Z] [METRICS] ⏱️ Latencia: 942ms
+[2025-06-24T09:33:36.057Z] [STATS] 📊 Estadísticas: 0/8 exitosas (0.00%)
+[2025-06-24T09:33:36.057Z] [TIME] ⏰ Duración total: 1h 10m
+[2025-06-24T09:43:35.062Z] [SESSION] 🔥 Iniciando sesión de calentamiento #9
+[2025-06-24T09:43:36.028Z] [ERROR] ❌ Sesión #9 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:43:36.029Z] [METRICS] ⏱️ Latencia: 965ms
+[2025-06-24T09:43:36.029Z] [STATS] 📊 Estadísticas: 0/9 exitosas (0.00%)
+[2025-06-24T09:43:36.029Z] [TIME] ⏰ Duración total: 1h 20m
+[2025-06-24T09:53:35.052Z] [SESSION] 🔥 Iniciando sesión de calentamiento #10
+[2025-06-24T09:53:35.959Z] [ERROR] ❌ Sesión #10 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T09:53:35.960Z] [METRICS] ⏱️ Latencia: 908ms
+[2025-06-24T09:53:35.960Z] [STATS] 📊 Estadísticas: 0/10 exitosas (0.00%)
+[2025-06-24T09:53:35.960Z] [TIME] ⏰ Duración total: 1h 30m
+[2025-06-24T10:03:35.063Z] [SESSION] 🔥 Iniciando sesión de calentamiento #11
+[2025-06-24T10:03:35.962Z] [ERROR] ❌ Sesión #11 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T10:03:35.963Z] [METRICS] ⏱️ Latencia: 897ms
+[2025-06-24T10:03:35.963Z] [STATS] 📊 Estadísticas: 0/11 exitosas (0.00%)
+[2025-06-24T10:03:35.964Z] [TIME] ⏰ Duración total: 1h 40m
+[2025-06-24T10:13:35.049Z] [SESSION] 🔥 Iniciando sesión de calentamiento #12
+[2025-06-24T10:13:35.948Z] [ERROR] ❌ Sesión #12 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T10:13:35.949Z] [METRICS] ⏱️ Latencia: 899ms
+[2025-06-24T10:13:35.949Z] [STATS] 📊 Estadísticas: 0/12 exitosas (0.00%)
+[2025-06-24T10:13:35.950Z] [TIME] ⏰ Duración total: 1h 50m
+[2025-06-24T10:23:35.044Z] [SESSION] 🔥 Iniciando sesión de calentamiento #13
+[2025-06-24T10:23:36.095Z] [ERROR] ❌ Sesión #13 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T10:23:36.095Z] [METRICS] ⏱️ Latencia: 1063ms
+[2025-06-24T10:23:36.096Z] [STATS] 📊 Estadísticas: 0/13 exitosas (0.00%)
+[2025-06-24T10:23:36.097Z] [TIME] ⏰ Duración total: 2h 0m
+[2025-06-24T10:33:35.053Z] [SESSION] 🔥 Iniciando sesión de calentamiento #14
+[2025-06-24T10:33:35.979Z] [ERROR] ❌ Sesión #14 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T10:33:35.979Z] [METRICS] ⏱️ Latencia: 941ms
+[2025-06-24T10:33:35.979Z] [STATS] 📊 Estadísticas: 0/14 exitosas (0.00%)
+[2025-06-24T10:33:35.980Z] [TIME] ⏰ Duración total: 2h 10m
+[2025-06-24T10:43:35.025Z] [SESSION] 🔥 Iniciando sesión de calentamiento #15
+[2025-06-24T10:43:35.934Z] [ERROR] ❌ Sesión #15 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T10:43:35.935Z] [METRICS] ⏱️ Latencia: 910ms
+[2025-06-24T10:43:35.935Z] [STATS] 📊 Estadísticas: 0/15 exitosas (0.00%)
+[2025-06-24T10:43:35.935Z] [TIME] ⏰ Duración total: 2h 20m
+[2025-06-24T11:09:45.955Z] [SESSION] 🔥 Iniciando sesión de calentamiento #16
+[2025-06-24T11:09:46.829Z] [ERROR] ❌ Sesión #16 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:09:46.830Z] [METRICS] ⏱️ Latencia: 881ms
+[2025-06-24T11:09:46.830Z] [STATS] 📊 Estadísticas: 0/16 exitosas (0.00%)
+[2025-06-24T11:09:46.830Z] [TIME] ⏰ Duración total: 2h 46m
+[2025-06-24T11:19:45.943Z] [SESSION] 🔥 Iniciando sesión de calentamiento #17
+[2025-06-24T11:19:47.070Z] [ERROR] ❌ Sesión #17 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:19:47.071Z] [METRICS] ⏱️ Latencia: 1139ms
+[2025-06-24T11:19:47.072Z] [STATS] 📊 Estadísticas: 0/17 exitosas (0.00%)
+[2025-06-24T11:19:47.072Z] [TIME] ⏰ Duración total: 2h 56m
+[2025-06-24T11:29:45.947Z] [SESSION] 🔥 Iniciando sesión de calentamiento #18
+[2025-06-24T11:29:46.790Z] [ERROR] ❌ Sesión #18 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:29:46.791Z] [METRICS] ⏱️ Latencia: 854ms
+[2025-06-24T11:29:46.791Z] [STATS] 📊 Estadísticas: 0/18 exitosas (0.00%)
+[2025-06-24T11:29:46.791Z] [TIME] ⏰ Duración total: 3h 6m
+[2025-06-24T11:39:45.947Z] [SESSION] 🔥 Iniciando sesión de calentamiento #19
+[2025-06-24T11:39:46.819Z] [ERROR] ❌ Sesión #19 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:39:46.820Z] [METRICS] ⏱️ Latencia: 881ms
+[2025-06-24T11:39:46.821Z] [STATS] 📊 Estadísticas: 0/19 exitosas (0.00%)
+[2025-06-24T11:39:46.821Z] [TIME] ⏰ Duración total: 3h 16m
+[2025-06-24T11:49:45.875Z] [SESSION] 🔥 Iniciando sesión de calentamiento #20
+[2025-06-24T11:49:46.690Z] [ERROR] ❌ Sesión #20 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:49:46.690Z] [METRICS] ⏱️ Latencia: 816ms
+[2025-06-24T11:49:46.690Z] [STATS] 📊 Estadísticas: 0/20 exitosas (0.00%)
+[2025-06-24T11:49:46.691Z] [TIME] ⏰ Duración total: 3h 26m
+[2025-06-24T11:59:45.863Z] [SESSION] 🔥 Iniciando sesión de calentamiento #21
+[2025-06-24T11:59:46.686Z] [ERROR] ❌ Sesión #21 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T11:59:46.687Z] [METRICS] ⏱️ Latencia: 830ms
+[2025-06-24T11:59:46.687Z] [STATS] 📊 Estadísticas: 0/21 exitosas (0.00%)
+[2025-06-24T11:59:46.687Z] [TIME] ⏰ Duración total: 3h 36m
+[2025-06-24T12:09:45.866Z] [SESSION] 🔥 Iniciando sesión de calentamiento #22
+[2025-06-24T12:09:46.194Z] [ERROR] ❌ Sesión #22 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:09:46.195Z] [METRICS] ⏱️ Latencia: 331ms
+[2025-06-24T12:09:46.195Z] [STATS] 📊 Estadísticas: 0/22 exitosas (0.00%)
+[2025-06-24T12:09:46.195Z] [TIME] ⏰ Duración total: 3h 46m
+[2025-06-24T12:19:45.830Z] [SESSION] 🔥 Iniciando sesión de calentamiento #23
+[2025-06-24T12:19:46.890Z] [ERROR] ❌ Sesión #23 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:19:46.891Z] [METRICS] ⏱️ Latencia: 1060ms
+[2025-06-24T12:19:46.891Z] [STATS] 📊 Estadísticas: 0/23 exitosas (0.00%)
+[2025-06-24T12:19:46.891Z] [TIME] ⏰ Duración total: 3h 56m
+[2025-06-24T12:29:45.822Z] [SESSION] 🔥 Iniciando sesión de calentamiento #24
+[2025-06-24T12:29:46.658Z] [ERROR] ❌ Sesión #24 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:29:46.658Z] [METRICS] ⏱️ Latencia: 843ms
+[2025-06-24T12:29:46.658Z] [STATS] 📊 Estadísticas: 0/24 exitosas (0.00%)
+[2025-06-24T12:29:46.658Z] [TIME] ⏰ Duración total: 4h 6m
+[2025-06-24T12:39:45.822Z] [SESSION] 🔥 Iniciando sesión de calentamiento #25
+[2025-06-24T12:39:46.680Z] [ERROR] ❌ Sesión #25 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:39:46.681Z] [METRICS] ⏱️ Latencia: 871ms
+[2025-06-24T12:39:46.681Z] [STATS] 📊 Estadísticas: 0/25 exitosas (0.00%)
+[2025-06-24T12:39:46.681Z] [TIME] ⏰ Duración total: 4h 16m
+[2025-06-24T12:49:45.836Z] [SESSION] 🔥 Iniciando sesión de calentamiento #26
+[2025-06-24T12:49:46.743Z] [ERROR] ❌ Sesión #26 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:49:46.744Z] [METRICS] ⏱️ Latencia: 938ms
+[2025-06-24T12:49:46.744Z] [STATS] 📊 Estadísticas: 0/26 exitosas (0.00%)
+[2025-06-24T12:49:46.744Z] [TIME] ⏰ Duración total: 4h 26m
+[2025-06-24T12:59:45.834Z] [SESSION] 🔥 Iniciando sesión de calentamiento #27
+[2025-06-24T12:59:46.774Z] [ERROR] ❌ Sesión #27 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T12:59:46.779Z] [METRICS] ⏱️ Latencia: 956ms
+[2025-06-24T12:59:46.779Z] [STATS] 📊 Estadísticas: 0/27 exitosas (0.00%)
+[2025-06-24T12:59:46.779Z] [TIME] ⏰ Duración total: 4h 36m
+[2025-06-24T13:09:45.809Z] [SESSION] 🔥 Iniciando sesión de calentamiento #28
+[2025-06-24T13:09:46.710Z] [ERROR] ❌ Sesión #28 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:09:46.710Z] [METRICS] ⏱️ Latencia: 909ms
+[2025-06-24T13:09:46.711Z] [STATS] 📊 Estadísticas: 0/28 exitosas (0.00%)
+[2025-06-24T13:09:46.711Z] [TIME] ⏰ Duración total: 4h 46m
+[2025-06-24T13:19:45.738Z] [SESSION] 🔥 Iniciando sesión de calentamiento #29
+[2025-06-24T13:19:46.756Z] [ERROR] ❌ Sesión #29 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:19:46.756Z] [METRICS] ⏱️ Latencia: 1019ms
+[2025-06-24T13:19:46.757Z] [STATS] 📊 Estadísticas: 0/29 exitosas (0.00%)
+[2025-06-24T13:19:46.757Z] [TIME] ⏰ Duración total: 4h 56m
+[2025-06-24T13:29:45.743Z] [SESSION] 🔥 Iniciando sesión de calentamiento #30
+[2025-06-24T13:29:46.583Z] [ERROR] ❌ Sesión #30 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:29:46.583Z] [METRICS] ⏱️ Latencia: 847ms
+[2025-06-24T13:29:46.583Z] [STATS] 📊 Estadísticas: 0/30 exitosas (0.00%)
+[2025-06-24T13:29:46.584Z] [TIME] ⏰ Duración total: 5h 6m
+[2025-06-24T13:39:45.728Z] [SESSION] 🔥 Iniciando sesión de calentamiento #31
+[2025-06-24T13:39:46.569Z] [ERROR] ❌ Sesión #31 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:39:46.570Z] [METRICS] ⏱️ Latencia: 842ms
+[2025-06-24T13:39:46.570Z] [STATS] 📊 Estadísticas: 0/31 exitosas (0.00%)
+[2025-06-24T13:39:46.570Z] [TIME] ⏰ Duración total: 5h 16m
+[2025-06-24T13:49:45.762Z] [SESSION] 🔥 Iniciando sesión de calentamiento #32
+[2025-06-24T13:49:46.605Z] [ERROR] ❌ Sesión #32 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:49:46.606Z] [METRICS] ⏱️ Latencia: 855ms
+[2025-06-24T13:49:46.607Z] [STATS] 📊 Estadísticas: 0/32 exitosas (0.00%)
+[2025-06-24T13:49:46.607Z] [TIME] ⏰ Duración total: 5h 26m
+[2025-06-24T13:59:45.734Z] [SESSION] 🔥 Iniciando sesión de calentamiento #33
+[2025-06-24T13:59:46.567Z] [ERROR] ❌ Sesión #33 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T13:59:46.568Z] [METRICS] ⏱️ Latencia: 834ms
+[2025-06-24T13:59:46.568Z] [STATS] 📊 Estadísticas: 0/33 exitosas (0.00%)
+[2025-06-24T13:59:46.568Z] [TIME] ⏰ Duración total: 5h 36m
+[2025-06-24T14:09:45.717Z] [SESSION] 🔥 Iniciando sesión de calentamiento #34
+[2025-06-24T14:09:46.574Z] [ERROR] ❌ Sesión #34 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:09:46.578Z] [METRICS] ⏱️ Latencia: 859ms
+[2025-06-24T14:09:46.578Z] [STATS] 📊 Estadísticas: 0/34 exitosas (0.00%)
+[2025-06-24T14:09:46.578Z] [TIME] ⏰ Duración total: 5h 46m
+[2025-06-24T14:19:45.701Z] [SESSION] 🔥 Iniciando sesión de calentamiento #35
+[2025-06-24T14:19:46.228Z] [ERROR] ❌ Sesión #35 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:19:46.229Z] [METRICS] ⏱️ Latencia: 529ms
+[2025-06-24T14:19:46.229Z] [STATS] 📊 Estadísticas: 0/35 exitosas (0.00%)
+[2025-06-24T14:19:46.229Z] [TIME] ⏰ Duración total: 5h 56m
+[2025-06-24T14:29:45.689Z] [SESSION] 🔥 Iniciando sesión de calentamiento #36
+[2025-06-24T14:29:46.512Z] [ERROR] ❌ Sesión #36 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:29:46.512Z] [METRICS] ⏱️ Latencia: 830ms
+[2025-06-24T14:29:46.512Z] [STATS] 📊 Estadísticas: 0/36 exitosas (0.00%)
+[2025-06-24T14:29:46.512Z] [TIME] ⏰ Duración total: 6h 6m
+[2025-06-24T14:39:45.671Z] [SESSION] 🔥 Iniciando sesión de calentamiento #37
+[2025-06-24T14:39:46.536Z] [ERROR] ❌ Sesión #37 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:39:46.536Z] [METRICS] ⏱️ Latencia: 876ms
+[2025-06-24T14:39:46.537Z] [STATS] 📊 Estadísticas: 0/37 exitosas (0.00%)
+[2025-06-24T14:39:46.537Z] [TIME] ⏰ Duración total: 6h 16m
+[2025-06-24T14:49:45.631Z] [SESSION] 🔥 Iniciando sesión de calentamiento #38
+[2025-06-24T14:49:46.475Z] [ERROR] ❌ Sesión #38 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:49:46.475Z] [METRICS] ⏱️ Latencia: 852ms
+[2025-06-24T14:49:46.475Z] [STATS] 📊 Estadísticas: 0/38 exitosas (0.00%)
+[2025-06-24T14:49:46.475Z] [TIME] ⏰ Duración total: 6h 26m
+[2025-06-24T14:59:45.603Z] [SESSION] 🔥 Iniciando sesión de calentamiento #39
+[2025-06-24T14:59:46.420Z] [ERROR] ❌ Sesión #39 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T14:59:46.421Z] [METRICS] ⏱️ Latencia: 818ms
+[2025-06-24T14:59:46.421Z] [STATS] 📊 Estadísticas: 0/39 exitosas (0.00%)
+[2025-06-24T14:59:46.421Z] [TIME] ⏰ Duración total: 6h 36m
+[2025-06-24T15:09:45.577Z] [SESSION] 🔥 Iniciando sesión de calentamiento #40
+[2025-06-24T15:09:46.427Z] [ERROR] ❌ Sesión #40 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:09:46.428Z] [METRICS] ⏱️ Latencia: 853ms
+[2025-06-24T15:09:46.428Z] [STATS] 📊 Estadísticas: 0/40 exitosas (0.00%)
+[2025-06-24T15:09:46.428Z] [TIME] ⏰ Duración total: 6h 46m
+[2025-06-24T15:19:45.567Z] [SESSION] 🔥 Iniciando sesión de calentamiento #41
+[2025-06-24T15:19:46.599Z] [ERROR] ❌ Sesión #41 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:19:46.599Z] [METRICS] ⏱️ Latencia: 1042ms
+[2025-06-24T15:19:46.599Z] [STATS] 📊 Estadísticas: 0/41 exitosas (0.00%)
+[2025-06-24T15:19:46.600Z] [TIME] ⏰ Duración total: 6h 56m
+[2025-06-24T15:29:45.834Z] [SESSION] 🔥 Iniciando sesión de calentamiento #42
+[2025-06-24T15:29:46.795Z] [ERROR] ❌ Sesión #42 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:29:46.796Z] [METRICS] ⏱️ Latencia: 984ms
+[2025-06-24T15:29:46.796Z] [STATS] 📊 Estadísticas: 0/42 exitosas (0.00%)
+[2025-06-24T15:29:46.796Z] [TIME] ⏰ Duración total: 7h 6m
+[2025-06-24T15:39:45.801Z] [SESSION] 🔥 Iniciando sesión de calentamiento #43
+[2025-06-24T15:39:46.633Z] [ERROR] ❌ Sesión #43 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:39:46.634Z] [METRICS] ⏱️ Latencia: 837ms
+[2025-06-24T15:39:46.634Z] [STATS] 📊 Estadísticas: 0/43 exitosas (0.00%)
+[2025-06-24T15:39:46.634Z] [TIME] ⏰ Duración total: 7h 16m
+[2025-06-24T15:49:45.832Z] [SESSION] 🔥 Iniciando sesión de calentamiento #44
+[2025-06-24T15:49:46.673Z] [ERROR] ❌ Sesión #44 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:49:46.673Z] [METRICS] ⏱️ Latencia: 843ms
+[2025-06-24T15:49:46.673Z] [STATS] 📊 Estadísticas: 0/44 exitosas (0.00%)
+[2025-06-24T15:49:46.673Z] [TIME] ⏰ Duración total: 7h 26m
+[2025-06-24T15:59:45.846Z] [SESSION] 🔥 Iniciando sesión de calentamiento #45
+[2025-06-24T15:59:46.734Z] [ERROR] ❌ Sesión #45 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-24T15:59:46.735Z] [METRICS] ⏱️ Latencia: 889ms
+[2025-06-24T15:59:46.735Z] [STATS] 📊 Estadísticas: 0/45 exitosas (0.00%)
+[2025-06-24T15:59:46.735Z] [TIME] ⏰ Duración total: 7h 36m
+[2025-06-25T05:34:54.108Z] [START] LAUNCH: INICIANDO MARATÓN AUTOMATIZADA VERTEX AI
+[2025-06-25T05:34:54.110Z] [INFO] STATS: Sesiones previas: 45
+[2025-06-25T05:34:54.110Z] [INFO] SUCCESS: Tasa de éxito: 0.00%
+[2025-06-25T05:34:54.110Z] [INFO] TIME: Intervalo: 10 minutos
+[2025-06-25T05:34:54.110Z] [INFO] 🎯 Máximo sesiones: 100
+[2025-06-25T05:34:54.110Z] [SESSION] 🔥 Iniciando sesión de calentamiento #46
+[2025-06-25T05:34:57.603Z] [ERROR] ERROR: Sesión #46 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T05:34:57.605Z] [METRICS] ⏱️ Latencia: 3482ms
+[2025-06-25T05:34:57.605Z] [STATS] STATS: Estadísticas: 0/46 exitosas (0.00%)
+[2025-06-25T05:34:57.605Z] [TIME] TIME: Duración total: 21h 11m
+[2025-06-25T05:44:57.595Z] [SESSION] 🔥 Iniciando sesión de calentamiento #47
+[2025-06-25T05:44:58.427Z] [ERROR] ERROR: Sesión #47 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T05:44:58.428Z] [METRICS] ⏱️ Latencia: 838ms
+[2025-06-25T05:44:58.428Z] [STATS] STATS: Estadísticas: 0/47 exitosas (0.00%)
+[2025-06-25T05:44:58.428Z] [TIME] TIME: Duración total: 21h 21m
+[2025-06-25T05:54:57.596Z] [SESSION] 🔥 Iniciando sesión de calentamiento #48
+[2025-06-25T05:54:58.408Z] [ERROR] ERROR: Sesión #48 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T05:54:58.409Z] [METRICS] ⏱️ Latencia: 814ms
+[2025-06-25T05:54:58.409Z] [STATS] STATS: Estadísticas: 0/48 exitosas (0.00%)
+[2025-06-25T05:54:58.409Z] [TIME] TIME: Duración total: 21h 31m
+[2025-06-25T06:04:57.575Z] [SESSION] 🔥 Iniciando sesión de calentamiento #49
+[2025-06-25T06:04:58.410Z] [ERROR] ERROR: Sesión #49 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T06:04:58.411Z] [METRICS] ⏱️ Latencia: 834ms
+[2025-06-25T06:04:58.411Z] [STATS] STATS: Estadísticas: 0/49 exitosas (0.00%)
+[2025-06-25T06:04:58.411Z] [TIME] TIME: Duración total: 21h 41m
+[2025-06-25T06:29:54.925Z] [SESSION] 🔥 Iniciando sesión de calentamiento #50
+[2025-06-25T06:29:55.755Z] [ERROR] ERROR: Sesión #50 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T06:29:55.756Z] [METRICS] ⏱️ Latencia: 837ms
+[2025-06-25T06:29:55.756Z] [STATS] STATS: Estadísticas: 0/50 exitosas (0.00%)
+[2025-06-25T06:29:55.756Z] [TIME] TIME: Duración total: 22h 6m
+[2025-06-25T07:00:19.115Z] [SESSION] 🔥 Iniciando sesión de calentamiento #51
+[2025-06-25T07:00:19.761Z] [ERROR] ERROR: Sesión #51 falló: [VertexAI.GoogleAuthError]: 
+Unable to authenticate your request        
+Depending on your run time environment, you can get authentication by        
+- if in local instance or cloud shell: `!gcloud auth login`        
+- if in Colab:        
+    -`from google.colab import auth`        
+    -`auth.authenticate_user()`        
+- if in service account or other: please follow guidance in https://cloud.google.com/docs/authentication
+[2025-06-25T07:00:19.762Z] [METRICS] ⏱️ Latencia: 650ms
+[2025-06-25T07:00:19.762Z] [STATS] STATS: Estadísticas: 0/51 exitosas (0.00%)
+[2025-06-25T07:00:19.762Z] [TIME] TIME: Duración total: 22h 36m
+[2025-06-25T07:44:40.020Z] [SESSION] 🔥 Iniciando sesión de calentamiento #52
+[2025-06-25T07:44:41.062Z] [ERROR] ERROR: Sesión #52 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T07:44:41.064Z] [METRICS] ⏱️ Latencia: 1044ms
+[2025-06-25T07:44:41.064Z] [STATS] STATS: Estadísticas: 0/52 exitosas (0.00%)
+[2025-06-25T07:44:41.064Z] [TIME] TIME: Duración total: 23h 21m
+[2025-06-25T07:54:40.004Z] [SESSION] 🔥 Iniciando sesión de calentamiento #53
+[2025-06-25T07:54:41.016Z] [ERROR] ERROR: Sesión #53 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T07:54:41.017Z] [METRICS] ⏱️ Latencia: 1015ms
+[2025-06-25T07:54:41.017Z] [STATS] STATS: Estadísticas: 0/53 exitosas (0.00%)
+[2025-06-25T07:54:41.017Z] [TIME] TIME: Duración total: 23h 31m
+[2025-06-25T08:53:43.750Z] [SESSION] 🔥 Iniciando sesión de calentamiento #54
+[2025-06-25T08:53:45.043Z] [ERROR] ERROR: Sesión #54 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T08:53:45.044Z] [METRICS] ⏱️ Latencia: 1297ms
+[2025-06-25T08:53:45.044Z] [STATS] STATS: Estadísticas: 0/54 exitosas (0.00%)
+[2025-06-25T08:53:45.044Z] [TIME] TIME: Duración total: 24h 30m
+[2025-06-25T09:03:43.735Z] [SESSION] 🔥 Iniciando sesión de calentamiento #55
+[2025-06-25T09:03:44.557Z] [ERROR] ERROR: Sesión #55 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T09:03:44.558Z] [METRICS] ⏱️ Latencia: 827ms
+[2025-06-25T09:03:44.558Z] [STATS] STATS: Estadísticas: 0/55 exitosas (0.00%)
+[2025-06-25T09:03:44.558Z] [TIME] TIME: Duración total: 24h 40m
+[2025-06-25T09:21:13.165Z] [SESSION] 🔥 Iniciando sesión de calentamiento #56
+[2025-06-25T09:21:14.084Z] [ERROR] ERROR: Sesión #56 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T09:21:14.085Z] [METRICS] ⏱️ Latencia: 921ms
+[2025-06-25T09:21:14.085Z] [STATS] STATS: Estadísticas: 0/56 exitosas (0.00%)
+[2025-06-25T09:21:14.085Z] [TIME] TIME: Duración total: 24h 57m
+[2025-06-25T09:49:27.878Z] [SESSION] 🔥 Iniciando sesión de calentamiento #57
+[2025-06-25T09:49:28.992Z] [ERROR] ERROR: Sesión #57 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T09:49:28.993Z] [METRICS] ⏱️ Latencia: 1117ms
+[2025-06-25T09:49:28.993Z] [STATS] STATS: Estadísticas: 0/57 exitosas (0.00%)
+[2025-06-25T09:49:28.994Z] [TIME] TIME: Duración total: 25h 25m
+[2025-06-25T10:01:15.671Z] [SESSION] 🔥 Iniciando sesión de calentamiento #58
+[2025-06-25T10:01:16.028Z] [ERROR] ERROR: Sesión #58 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T10:01:16.028Z] [METRICS] ⏱️ Latencia: 358ms
+[2025-06-25T10:01:16.028Z] [STATS] STATS: Estadísticas: 0/58 exitosas (0.00%)
+[2025-06-25T10:01:16.028Z] [TIME] TIME: Duración total: 25h 37m
+[2025-06-25T10:17:25.577Z] [SESSION] 🔥 Iniciando sesión de calentamiento #59
+[2025-06-25T10:17:26.580Z] [ERROR] ERROR: Sesión #59 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T10:17:26.582Z] [METRICS] ⏱️ Latencia: 1008ms
+[2025-06-25T10:17:26.582Z] [STATS] STATS: Estadísticas: 0/59 exitosas (0.00%)
+[2025-06-25T10:17:26.582Z] [TIME] TIME: Duración total: 25h 53m
+[2025-06-25T10:30:26.747Z] [SESSION] 🔥 Iniciando sesión de calentamiento #60
+[2025-06-25T10:30:27.740Z] [ERROR] ERROR: Sesión #60 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T10:30:27.742Z] [METRICS] ⏱️ Latencia: 994ms
+[2025-06-25T10:30:27.743Z] [STATS] STATS: Estadísticas: 0/60 exitosas (0.00%)
+[2025-06-25T10:30:27.743Z] [TIME] TIME: Duración total: 26h 6m
+[2025-06-25T10:40:26.731Z] [SESSION] 🔥 Iniciando sesión de calentamiento #61
+[2025-06-25T10:40:27.781Z] [ERROR] ERROR: Sesión #61 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T10:40:27.782Z] [METRICS] ⏱️ Latencia: 1052ms
+[2025-06-25T10:40:27.782Z] [STATS] STATS: Estadísticas: 0/61 exitosas (0.00%)
+[2025-06-25T10:40:27.782Z] [TIME] TIME: Duración total: 26h 16m
+[2025-06-25T10:54:44.176Z] [SESSION] 🔥 Iniciando sesión de calentamiento #62
+[2025-06-25T10:54:45.261Z] [ERROR] ERROR: Sesión #62 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T10:54:45.262Z] [METRICS] ⏱️ Latencia: 1096ms
+[2025-06-25T10:54:45.263Z] [STATS] STATS: Estadísticas: 0/62 exitosas (0.00%)
+[2025-06-25T10:54:45.263Z] [TIME] TIME: Duración total: 26h 31m
+[2025-06-25T11:30:59.726Z] [SESSION] 🔥 Iniciando sesión de calentamiento #63
+[2025-06-25T11:31:00.598Z] [ERROR] ERROR: Sesión #63 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T11:31:00.599Z] [METRICS] ⏱️ Latencia: 876ms
+[2025-06-25T11:31:00.599Z] [STATS] STATS: Estadísticas: 0/63 exitosas (0.00%)
+[2025-06-25T11:31:00.599Z] [TIME] TIME: Duración total: 27h 7m
+[2025-06-25T11:40:59.676Z] [SESSION] 🔥 Iniciando sesión de calentamiento #64
+[2025-06-25T11:41:00.548Z] [ERROR] ERROR: Sesión #64 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T11:41:00.549Z] [METRICS] ⏱️ Latencia: 874ms
+[2025-06-25T11:41:00.549Z] [STATS] STATS: Estadísticas: 0/64 exitosas (0.00%)
+[2025-06-25T11:41:00.549Z] [TIME] TIME: Duración total: 27h 17m
+[2025-06-25T12:14:13.898Z] [SESSION] 🔥 Iniciando sesión de calentamiento #65
+[2025-06-25T12:14:14.954Z] [ERROR] ERROR: Sesión #65 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T12:14:14.955Z] [METRICS] ⏱️ Latencia: 1060ms
+[2025-06-25T12:14:14.955Z] [STATS] STATS: Estadísticas: 0/65 exitosas (0.00%)
+[2025-06-25T12:14:14.955Z] [TIME] TIME: Duración total: 27h 50m
+[2025-06-25T12:27:30.601Z] [SESSION] 🔥 Iniciando sesión de calentamiento #66
+[2025-06-25T12:27:31.453Z] [ERROR] ERROR: Sesión #66 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T12:27:31.454Z] [METRICS] ⏱️ Latencia: 855ms
+[2025-06-25T12:27:31.454Z] [STATS] STATS: Estadísticas: 0/66 exitosas (0.00%)
+[2025-06-25T12:27:31.454Z] [TIME] TIME: Duración total: 28h 3m
+[2025-06-25T12:39:42.827Z] [SESSION] 🔥 Iniciando sesión de calentamiento #67
+[2025-06-25T12:39:43.672Z] [ERROR] ERROR: Sesión #67 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T12:39:43.674Z] [METRICS] ⏱️ Latencia: 848ms
+[2025-06-25T12:39:43.674Z] [STATS] STATS: Estadísticas: 0/67 exitosas (0.00%)
+[2025-06-25T12:39:43.674Z] [TIME] TIME: Duración total: 28h 16m
+[2025-06-25T12:49:42.805Z] [SESSION] 🔥 Iniciando sesión de calentamiento #68
+[2025-06-25T12:49:43.619Z] [ERROR] ERROR: Sesión #68 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T12:49:43.620Z] [METRICS] ⏱️ Latencia: 817ms
+[2025-06-25T12:49:43.620Z] [STATS] STATS: Estadísticas: 0/68 exitosas (0.00%)
+[2025-06-25T12:49:43.620Z] [TIME] TIME: Duración total: 28h 26m
+[2025-06-25T13:03:59.981Z] [SESSION] 🔥 Iniciando sesión de calentamiento #69
+[2025-06-25T13:04:00.824Z] [ERROR] ERROR: Sesión #69 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T13:04:00.825Z] [METRICS] ⏱️ Latencia: 848ms
+[2025-06-25T13:04:00.826Z] [STATS] STATS: Estadísticas: 0/69 exitosas (0.00%)
+[2025-06-25T13:04:00.826Z] [TIME] TIME: Duración total: 28h 40m
+[2025-06-25T13:16:56.308Z] [SESSION] 🔥 Iniciando sesión de calentamiento #70
+[2025-06-25T13:16:57.438Z] [ERROR] ERROR: Sesión #70 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T13:16:57.439Z] [METRICS] ⏱️ Latencia: 1131ms
+[2025-06-25T13:16:57.439Z] [STATS] STATS: Estadísticas: 0/70 exitosas (0.00%)
+[2025-06-25T13:16:57.439Z] [TIME] TIME: Duración total: 28h 53m
+[2025-06-25T13:43:57.648Z] [SESSION] 🔥 Iniciando sesión de calentamiento #71
+[2025-06-25T13:43:58.496Z] [ERROR] ERROR: Sesión #71 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T13:43:58.498Z] [METRICS] ⏱️ Latencia: 854ms
+[2025-06-25T13:43:58.498Z] [STATS] STATS: Estadísticas: 0/71 exitosas (0.00%)
+[2025-06-25T13:43:58.498Z] [TIME] TIME: Duración total: 29h 20m
+[2025-06-25T13:53:57.640Z] [SESSION] 🔥 Iniciando sesión de calentamiento #72
+[2025-06-25T13:53:58.551Z] [ERROR] ERROR: Sesión #72 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T13:53:58.552Z] [METRICS] ⏱️ Latencia: 916ms
+[2025-06-25T13:53:58.552Z] [STATS] STATS: Estadísticas: 0/72 exitosas (0.00%)
+[2025-06-25T13:53:58.552Z] [TIME] TIME: Duración total: 29h 30m
+[2025-06-25T14:03:57.581Z] [SESSION] 🔥 Iniciando sesión de calentamiento #73
+[2025-06-25T14:03:58.397Z] [ERROR] ERROR: Sesión #73 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T14:03:58.398Z] [METRICS] ⏱️ Latencia: 821ms
+[2025-06-25T14:03:58.398Z] [STATS] STATS: Estadísticas: 0/73 exitosas (0.00%)
+[2025-06-25T14:03:58.398Z] [TIME] TIME: Duración total: 29h 40m
+[2025-06-25T14:13:57.563Z] [SESSION] 🔥 Iniciando sesión de calentamiento #74
+[2025-06-25T14:13:58.620Z] [ERROR] ERROR: Sesión #74 falló: [VertexAI.ClientError]: got status: 404 Not Found. {"error":{"code":404,"message":"Publisher Model `projects/aiduxcare-mvp-prod/locations/us-central1/publishers/google/models/gemini-1.5-pro` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions","status":"NOT_FOUND"}}
+[2025-06-25T14:13:58.621Z] [METRICS] ⏱️ Latencia: 1058ms
+[2025-06-25T14:13:58.621Z] [STATS] STATS: Estadísticas: 0/74 exitosas (0.00%)
+[2025-06-25T14:13:58.621Z] [TIME] TIME: Duración total: 29h 50m

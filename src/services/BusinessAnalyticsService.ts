@@ -1,5 +1,5 @@
 /**
- * 📊 BUSINESS ANALYTICS SERVICE
+ * STATS: BUSINESS ANALYTICS SERVICE
  * Sistema completo de métricas KPI para plan de negocios e inversores
  * Basado en PLAN_NEGOCIOS_AIDUXCARE_V3.md
  */
@@ -372,11 +372,11 @@ export class BusinessAnalyticsService {
     }
     
     if (financial.gross_margin < 65) {
-      alerts.push('⚠️ Margen bruto por debajo del objetivo (68%)');
+      alerts.push('WARNING: Margen bruto por debajo del objetivo (68%)');
     }
     
     if (financial.ltv_cac_ratio < 4.0) {
-      alerts.push('📊 Ratio LTV/CAC por debajo del objetivo (4.2x)');
+      alerts.push('STATS: Ratio LTV/CAC por debajo del objetivo (4.2x)');
     }
 
     return alerts;
@@ -391,11 +391,11 @@ export class BusinessAnalyticsService {
     const market = await this.calculateMarketMetrics();
     
     if (users.specialty_plan_adoption < 70) {
-      opportunities.push('📈 Incrementar adopción de planes especializados (objetivo 70%)');
+      opportunities.push('METRICS: Incrementar adopción de planes especializados (objetivo 70%)');
     }
     
     if (market.market_penetration_spain < 1) {
-      opportunities.push('🎯 Expandir penetración de mercado en España (potencial 35x)');
+      opportunities.push('TARGET: Expandir penetración de mercado en España (potencial 35x)');
     }
     
     if (users.upsell_rate < 25) {

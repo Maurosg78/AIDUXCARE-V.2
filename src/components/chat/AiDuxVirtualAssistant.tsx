@@ -1,5 +1,5 @@
 /**
- * 🤖 AIDUX VIRTUAL ASSISTANT - UAT VERSION
+ * BOT: AIDUX VIRTUAL ASSISTANT - UAT VERSION
  * 
  * Asistente virtual optimizado para UAT:
  * - Botón minimizar funcional
@@ -56,7 +56,7 @@ const AiDuxVirtualAssistant: React.FC = () => {
       const timer = setTimeout(() => {
         const welcomeMessage: ChatMessage = {
           id: 'welcome',
-          message: '🤖 Soy AIDUX, tu asistente médico especializado para fisioterapia.\n\nPuedo ayudarte con:\n• Configuración TENS, ultrasonido, tecarterapia\n• Protocolos clínicos específicos\n• Parámetros de tratamiento\n• Consultas técnicas avanzadas\n\n¿En qué puedo asistirte?',
+          message: 'BOT: Soy AIDUX, tu asistente médico especializado para fisioterapia.\n\nPuedo ayudarte con:\n• Configuración TENS, ultrasonido, tecarterapia\n• Protocolos clínicos específicos\n• Parámetros de tratamiento\n• Consultas técnicas avanzadas\n\n¿En qué puedo asistirte?',
           sender: 'aidux',
           timestamp: new Date(),
           type: 'text'

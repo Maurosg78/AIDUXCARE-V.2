@@ -3,7 +3,7 @@
  * Valida el pipeline completo usando Node.js puro
  */
 
-console.log('🚀 Iniciando Tests del RealWorldSOAPProcessor');
+console.log('LAUNCH: Iniciando Tests del RealWorldSOAPProcessor');
 console.log('=' .repeat(60));
 
 // Simular el comportamiento del RealWorldSOAPProcessor
@@ -128,14 +128,14 @@ function runTestCase(testCase) {
   const result = simulateSOAPProcessing(testCase.input);
   
   // Mostrar resultados
-  console.log(`✅ Segmentos procesados: ${result.segments.length}`);
+  console.log(`SUCCESS: Segmentos procesados: ${result.segments.length}`);
   console.log(`👥 Precisión hablantes: ${(result.speakerAccuracy * 100).toFixed(1)}%`);
   console.log(`🎯 Confianza promedio: ${(result.processingMetrics.averageConfidence * 100).toFixed(1)}%`);
   console.log(`⚡ Tiempo procesamiento: ${result.processingMetrics.processingTimeMs}ms`);
   
   // Mostrar distribución SOAP
   const soapDist = result.processingMetrics.soapDistribution;
-  console.log(`📊 Distribución SOAP: S:${soapDist.S || 0} O:${soapDist.O || 0} A:${soapDist.A || 0} P:${soapDist.P || 0}`);
+  console.log(`STATS: Distribución SOAP: S:${soapDist.S || 0} O:${soapDist.O || 0} A:${soapDist.A || 0} P:${soapDist.P || 0}`);
   
   // Mostrar entidades extraídas
   const allEntities = result.segments.flatMap(s => s.entities);
@@ -152,9 +152,9 @@ function runTestCase(testCase) {
   const assessmentMatch = result.fullAssessment.toLowerCase().includes(testCase.expected.assessment.toLowerCase());
   
   console.log(`\n📋 Validación:`);
-  console.log(`  ${segmentMatch ? '✅' : '❌'} Segmentos: Esperado ~${testCase.expected.segments}, Obtenido ${result.segments.length}`);
-  console.log(`  ${entityMatch ? '✅' : '❌'} Entidades: Encontradas ${testCase.expected.entities.filter(e => allEntities.includes(e)).length}/${testCase.expected.entities.length}`);
-  console.log(`  ${assessmentMatch ? '✅' : '❌'} Assessment: Contiene "${testCase.expected.assessment}"`);
+  console.log(`  ${segmentMatch ? 'SUCCESS:' : 'ERROR:'} Segmentos: Esperado ~${testCase.expected.segments}, Obtenido ${result.segments.length}`);
+  console.log(`  ${entityMatch ? 'SUCCESS:' : 'ERROR:'} Entidades: Encontradas ${testCase.expected.entities.filter(e => allEntities.includes(e)).length}/${testCase.expected.entities.length}`);
+  console.log(`  ${assessmentMatch ? 'SUCCESS:' : 'ERROR:'} Assessment: Contiene "${testCase.expected.assessment}"`);
   
   return { segmentMatch, entityMatch, assessmentMatch };
 }
@@ -170,25 +170,25 @@ testCases.forEach(testCase => {
 });
 
 console.log('\n' + '=' .repeat(60));
-console.log('📊 RESUMEN FINAL');
+console.log('STATS: RESUMEN FINAL');
 console.log('=' .repeat(60));
 console.log(`🧪 Casos de prueba: ${testCases.length}`);
-console.log(`✅ Validaciones exitosas: ${passedTests}/${totalTests} (${(passedTests/totalTests*100).toFixed(1)}%)`);
+console.log(`SUCCESS: Validaciones exitosas: ${passedTests}/${totalTests} (${(passedTests/totalTests*100).toFixed(1)}%)`);
 
 const overallSuccess = (passedTests / totalTests) >= 0.8;
-console.log(`\n🎯 RESULTADO FINAL: ${overallSuccess ? '✅ EXITOSO' : '❌ NECESITA MEJORAS'}`);
+console.log(`\n🎯 RESULTADO FINAL: ${overallSuccess ? 'SUCCESS: EXITOSO' : 'ERROR: NECESITA MEJORAS'}`);
 
 if (overallSuccess) {
   console.log('🎉 El RealWorldSOAPProcessor está funcionando correctamente!');
-  console.log('📈 Listo para integrar con TestIntegrationPage.tsx');
+  console.log('METRICS: Listo para integrar con TestIntegrationPage.tsx');
 } else {
   console.log('⚠️  El processor necesita ajustes antes de producción.');
 }
 
 console.log('\n📝 Próximos pasos:');
-console.log('  1. ✅ RealWorldSOAPProcessor implementado');
-console.log('  2. 🔄 Integrar con TestIntegrationPage.tsx');
+console.log('  1. SUCCESS: RealWorldSOAPProcessor implementado');
+console.log('  2. RELOAD: Integrar con TestIntegrationPage.tsx');
 console.log('  3. 🎨 Mostrar resultados con highlights visuales');
-console.log('  4. 📊 Exponer métricas de confianza');
+console.log('  4. STATS: Exponer métricas de confianza');
 
 process.exit(overallSuccess ? 0 : 1); 

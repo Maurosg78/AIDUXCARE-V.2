@@ -36,9 +36,9 @@ let filesOk = true;
 criticalFiles.forEach(file => {
   const fullPath = path.join(process.cwd(), file);
   if (fs.existsSync(fullPath)) {
-    console.log(`✅ ${file} - OK`);
+    console.log(`SUCCESS: ${file} - OK`);
   } else {
-    console.log(`❌ ${file} - MISSING`);
+    console.log(`ERROR: ${file} - MISSING`);
     filesOk = false;
   }
 });
@@ -48,10 +48,10 @@ results.files = filesOk;
 console.log('\n2. VERIFICANDO COMPILACIÓN...');
 try {
   execSync('npx tsc --noEmit', { stdio: 'pipe' });
-  console.log('✅ Build TypeScript exitoso');
+  console.log('SUCCESS: Build TypeScript exitoso');
   results.build = true;
 } catch (error) {
-  console.log('❌ Error en compilación TypeScript');
+  console.log('ERROR: Error en compilación TypeScript');
   console.log(error.stdout.toString());
   results.build = false;
 }
@@ -75,11 +75,11 @@ componentsToCheck.forEach(({ file, shouldHave, shouldNotHave }) => {
     const hasProblematicInterval = content.includes(shouldNotHave);
     
     if (hasCorrectHook && !hasProblematicInterval) {
-      console.log(`✅ ${file} - Migrado a servicios centralizados`);
+      console.log(`SUCCESS: ${file} - Migrado a servicios centralizados`);
     } else if (!hasProblematicInterval) {
       console.log(`⚠️ ${file} - Sin intervalos problemáticos pero no migrado`);
     } else {
-      console.log(`❌ ${file} - Aún contiene setInterval`);
+      console.log(`ERROR: ${file} - Aún contiene setInterval`);
       intervalsOk = false;
     }
   }
@@ -91,7 +91,7 @@ console.log('\n4. VERIFICANDO SERVIDOR...');
 try {
   const response = execSync('curl -s -o /dev/null -w "%{http_code}" http://localhost:3002/', { encoding: 'utf8' });
   if (response.trim() === '200') {
-    console.log('✅ Servidor respondiendo correctamente');
+    console.log('SUCCESS: Servidor respondiendo correctamente');
     results.server = true;
   } else {
     console.log(`⚠️ Servidor responde con código: ${response.trim()}`);
@@ -121,7 +121,7 @@ importsToCheck.forEach(({ file, imports }) => {
     
     imports.forEach(importName => {
       if (content.includes(importName)) {
-        console.log(`✅ ${file} - Import ${importName} OK`);
+        console.log(`SUCCESS: ${file} - Import ${importName} OK`);
       } else {
         console.log(`⚠️ ${file} - Import ${importName} no encontrado`);
         fileOk = false;
@@ -135,25 +135,25 @@ results.imports = importsOk;
 
 // RESUMEN FINAL
 console.log('\n==================================================');
-console.log('📊 RESUMEN FINAL');
+console.log('STATS: RESUMEN FINAL');
 console.log('==================================================');
-console.log(`${results.files ? '✅' : '❌'} FILES: ${results.files ? 'PASS' : 'FAIL'}`);
-console.log(`${results.build ? '✅' : '❌'} BUILD: ${results.build ? 'PASS' : 'FAIL'}`);
-console.log(`${results.intervals ? '✅' : '❌'} INTERVALS: ${results.intervals ? 'PASS' : 'FAIL'}`);
-console.log(`${results.server ? '✅' : '❌'} SERVER: ${results.server ? 'PASS' : 'FAIL'}`);
-console.log(`${results.imports ? '✅' : '❌'} IMPORTS: ${results.imports ? 'PASS' : 'FAIL'}`);
+console.log(`${results.files ? 'SUCCESS:' : 'ERROR:'} FILES: ${results.files ? 'PASS' : 'FAIL'}`);
+console.log(`${results.build ? 'SUCCESS:' : 'ERROR:'} BUILD: ${results.build ? 'PASS' : 'FAIL'}`);
+console.log(`${results.intervals ? 'SUCCESS:' : 'ERROR:'} INTERVALS: ${results.intervals ? 'PASS' : 'FAIL'}`);
+console.log(`${results.server ? 'SUCCESS:' : 'ERROR:'} SERVER: ${results.server ? 'PASS' : 'FAIL'}`);
+console.log(`${results.imports ? 'SUCCESS:' : 'ERROR:'} IMPORTS: ${results.imports ? 'PASS' : 'FAIL'}`);
 
 const totalTests = Object.keys(results).length;
 const passedTests = Object.values(results).filter(Boolean).length;
 
-console.log(`\n📈 RESULTADO: ${passedTests}/${totalTests} tests pasaron (${Math.round(passedTests/totalTests*100)}%)`);
+console.log(`\nMETRICS: RESULTADO: ${passedTests}/${totalTests} tests pasaron (${Math.round(passedTests/totalTests*100)}%)`);
 
 if (passedTests === totalTests) {
   console.log('\n🎉 ¡TODOS LOS TESTS PASARON!');
-  console.log('✅ Es SEGURO continuar con Fase 3');
+  console.log('SUCCESS: Es SEGURO continuar con Fase 3');
 } else {
   console.log('\n⚠️ ALGUNOS TESTS FALLARON');
-  console.log('❌ Revisar antes de continuar');
+  console.log('ERROR: Revisar antes de continuar');
 }
 
 console.log('\n==================================================');

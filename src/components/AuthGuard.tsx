@@ -1,5 +1,5 @@
 /**
- * 🛡️ Auth Guard Component - AiDuxCare V.2 MEDICAL SECURITY
+ * SECURITY: Auth Guard Component - AiDuxCare V.2 MEDICAL SECURITY
  * Componente para proteger rutas con seguridad hospitalaria
  * HIPAA/GDPR Compliant - Enterprise Grade Protection
  */
@@ -29,7 +29,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   } = useAuth();
 
   // DEBUG: Logs para monitoreo de seguridad
-  console.log('🛡️ AuthGuard - Estado de seguridad médica:', {
+  console.log('SECURITY: AuthGuard - Estado de seguridad médica:', {
     isAuthenticated,
     isLoading,
     requiresMFA,
@@ -55,11 +55,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   if (secureToken) {
     console.log('🔐 Token seguro encontrado, longitud:', secureToken.length);
   } else {
-    console.log('❌ NO hay token seguro en localStorage');
+    console.log('ERROR: NO hay token seguro en localStorage');
   }
 
   if (isLoading) {
-    console.log('🛡️ AuthGuard - Verificando credenciales médicas...');
+    console.log('SECURITY: AuthGuard - Verificando credenciales médicas...');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -75,7 +75,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   }
 
   if (!isAuthenticated) {
-    console.log('🛡️ AuthGuard - ❌ NO autenticado, redirigiendo a /auth');
+    console.log('SECURITY: AuthGuard - ERROR: NO autenticado, redirigiendo a /auth');
     console.log('🔍 MOTIVO DE REDIRECCIÓN:', {
       'isAuthenticated': isAuthenticated,
       'hasSecureToken': !!localStorage.getItem('aiduxcare_secure_token'),
@@ -87,7 +87,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   // Verificar MFA si es requerido - SEGURIDAD HOSPITALARIA COMPLETA
   if (requiresMFA) {
-    console.log('🛡️ AuthGuard - MFA requerido, redirigiendo a configuración');
+    console.log('SECURITY: AuthGuard - MFA requerido, redirigiendo a configuración');
     return (
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -126,7 +126,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
     
     if (!hasAllPermissions) {
-      console.log('🛡️ AuthGuard - ❌ Permisos insuficientes:', {
+      console.log('SECURITY: AuthGuard - ERROR: Permisos insuficientes:', {
         required: requiredPermissions,
         missing: requiredPermissions.filter(p => !hasPermission(p))
       });
@@ -166,7 +166,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     const requiredLevel = roleHierarchy[minimumRole];
     
     if (currentLevel < requiredLevel) {
-      console.log('🛡️ AuthGuard - ❌ Rol insuficiente:', {
+      console.log('SECURITY: AuthGuard - ERROR: Rol insuficiente:', {
         current: currentRole,
         required: minimumRole
       });
@@ -175,7 +175,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     }
   }
 
-  console.log('🛡️ AuthGuard - ✅ ACCESO AUTORIZADO - Seguridad médica verificada');
+  console.log('SECURITY: AuthGuard - SUCCESS: ACCESO AUTORIZADO - Seguridad médica verificada');
   console.log(`🔐 Nivel de seguridad: ${securityLevel} | Rol: ${getCurrentRole()}`);
   
   return <>{children}</>;

@@ -54,7 +54,7 @@ const TestIntegrationPage: React.FC = () => {
         generateAssessment: true
       });
 
-      console.log('🚀 Procesando transcripción:', currentCase.name);
+      console.log('LAUNCH: Procesando transcripción:', currentCase.name);
       
       // Procesar transcripción
       const result = await processor.processTranscription(currentCase.rawTranscription);
@@ -65,10 +65,10 @@ const TestIntegrationPage: React.FC = () => {
       setProcessingResults(result);
       setProcessingLog(log);
       
-      console.log('✅ Procesamiento completado:', result);
+      console.log('SUCCESS: Procesamiento completado:', result);
       
     } catch (error) {
-      console.error('❌ Error en procesamiento:', error);
+      console.error('ERROR: Error en procesamiento:', error);
       setProcessingResults({ error: error.message });
     } finally {
       setIsProcessing(false);
@@ -82,7 +82,7 @@ const TestIntegrationPage: React.FC = () => {
   };
 
   const getSpeakerIcon = (speaker: string) => {
-    return speaker === 'PACIENTE' ? '🧑‍🦽' : '👨‍⚕️';
+    return speaker === 'PACIENTE' ? 'PERSON:‍🦽' : 'DOCTOR:';
   };
 
   const getSectionColor = (section: string) => {
@@ -113,7 +113,7 @@ const TestIntegrationPage: React.FC = () => {
         {/* Selector de Casos */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            📋 Casos de Prueba Disponibles
+            NOTES: Casos de Prueba Disponibles
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {REAL_WORLD_TEST_CASES.map((testCase, index) => (
@@ -142,7 +142,7 @@ const TestIntegrationPage: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
-              🔄 Procesamiento en Tiempo Real
+              RELOAD: Procesamiento en Tiempo Real
             </h2>
             <div className="flex gap-4">
               <label className="flex items-center gap-2">
@@ -163,7 +163,7 @@ const TestIntegrationPage: React.FC = () => {
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {isProcessing ? '🔄 Procesando...' : '🚀 Procesar Transcripción'}
+                {isProcessing ? 'RELOAD: Procesando...' : 'LAUNCH: Procesar Transcripción'}
               </button>
             </div>
           </div>
@@ -194,7 +194,7 @@ const TestIntegrationPage: React.FC = () => {
             {/* Métricas Generales */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                📊 Métricas de Procesamiento
+                STATS: Métricas de Procesamiento
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -226,7 +226,7 @@ const TestIntegrationPage: React.FC = () => {
               {/* Distribución SOAP */}
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-gray-700 mb-3">
-                  📈 Distribución SOAP
+                  METRICS: Distribución SOAP
                 </h3>
                 <div className="flex gap-4">
                   {Object.entries(processingResults.processingMetrics.soapDistribution).map(([section, count]) => (
@@ -268,7 +268,7 @@ const TestIntegrationPage: React.FC = () => {
 
                     {/* Razonamiento */}
                     <div className="mb-3">
-                      <h4 className="text-sm font-medium text-gray-600 mb-1">🧠 Razonamiento:</h4>
+                      <h4 className="text-sm font-medium text-gray-600 mb-1">AI: Razonamiento:</h4>
                       <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
                         {segment.reasoning}
                       </p>
@@ -276,7 +276,7 @@ const TestIntegrationPage: React.FC = () => {
 
                     {/* Entidades Extraídas */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-600 mb-2">🏷️ Entidades Extraídas:</h4>
+                      <h4 className="text-sm font-medium text-gray-600 mb-2">TAG: Entidades Extraídas:</h4>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(segment.entities).map(([category, entities]: [string, string[]]) => 
                           entities.length > 0 && (
@@ -325,7 +325,7 @@ const TestIntegrationPage: React.FC = () => {
                 }}
                 onSave={(data) => {
                   console.log('💾 Datos SOAP guardados:', data);
-                  alert('✅ Datos SOAP guardados correctamente');
+                  alert('SUCCESS: Datos SOAP guardados correctamente');
                 }}
               />
             </div>
@@ -336,7 +336,7 @@ const TestIntegrationPage: React.FC = () => {
         {processingResults?.error && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-red-800 mb-2">❌ Error en Procesamiento</h3>
+              <h3 className="text-lg font-medium text-red-800 mb-2">ERROR: Error en Procesamiento</h3>
               <p className="text-red-700">{processingResults.error}</p>
             </div>
           </div>
@@ -346,7 +346,7 @@ const TestIntegrationPage: React.FC = () => {
         {processingLog.length > 0 && (
           <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              📋 Log de Procesamiento (Auditoría)
+              NOTES: Log de Procesamiento (Auditoría)
             </h2>
             <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
               <div className="font-mono text-sm space-y-1">

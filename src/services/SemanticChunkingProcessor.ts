@@ -1,5 +1,5 @@
 /**
- * 🧠 AiDuxCare - Procesador de Chunking Semántico
+ * AI: AiDuxCare - Procesador de Chunking Semántico
  * Implementa la visión de Mauricio: captura completa → chunking inteligente → análisis contextual
  * Evita el problema de "palabra por palabra" manteniendo coherencia narrativa
  */
@@ -105,7 +105,7 @@ export class SemanticChunkingProcessor {
   ): Promise<ChunkedSOAPResult> {
     const startTime = Date.now();
     
-    console.log('🧠 Iniciando procesamiento con chunking semántico...');
+    console.log('AI: Iniciando procesamiento con chunking semántico...');
     console.log(`📄 Transcripción completa: ${fullTranscript.length} caracteres`);
 
     try {
@@ -129,8 +129,8 @@ export class SemanticChunkingProcessor {
       // PASO 5: Calcular métricas de coherencia
       const metadata = this.calculateCoherenceMetrics(chunks, processedChunks, startTime);
 
-      console.log(`✅ Procesamiento completado en ${metadata.processingTime}ms`);
-      console.log(`📊 Coherencia narrativa: ${Math.round(metadata.narrativeCoherence * 100)}%`);
+      console.log(`SUCCESS: Procesamiento completado en ${metadata.processingTime}ms`);
+      console.log(`STATS: Coherencia narrativa: ${Math.round(metadata.narrativeCoherence * 100)}%`);
       console.log(`🏥 Coherencia clínica: ${Math.round(metadata.clinicalCoherence * 100)}%`);
 
       return {
@@ -145,7 +145,7 @@ export class SemanticChunkingProcessor {
       };
 
     } catch (error) {
-      console.error('❌ Error en procesamiento semántico:', error);
+      console.error('ERROR: Error en procesamiento semántico:', error);
       throw new Error(`Error en chunking semántico: ${error}`);
     }
   }
@@ -159,7 +159,7 @@ export class SemanticChunkingProcessor {
 
     // Dividir en oraciones preservando diálogos
     const sentences = this.splitIntoSentences(transcript);
-    console.log(`📋 ${sentences.length} oraciones identificadas`);
+    console.log(`NOTES: ${sentences.length} oraciones identificadas`);
 
     const chunks: SemanticChunk[] = [];
     let currentIndex = 0;
@@ -363,13 +363,13 @@ export class SemanticChunkingProcessor {
    * PASO 2A: Procesar chunks en paralelo (más rápido)
    */
   private async processChunksInParallel(chunks: SemanticChunk[]): Promise<ChunkProcessingResult[]> {
-    console.log(`🚀 Procesando ${chunks.length} chunks en paralelo...`);
+    console.log(`LAUNCH: Procesando ${chunks.length} chunks en paralelo...`);
 
     const promises = chunks.map(async (chunk, index) => {
       try {
         return await this.processChunkWithContext(chunk, chunks);
       } catch (error) {
-        console.error(`❌ Error procesando chunk ${index}:`, error);
+        console.error(`ERROR: Error procesando chunk ${index}:`, error);
         return this.createErrorResult(chunk);
       }
     });
@@ -381,7 +381,7 @@ export class SemanticChunkingProcessor {
    * PASO 2B: Procesar chunks secuencialmente (más contexto)
    */
   private async processChunksSequentially(chunks: SemanticChunk[]): Promise<ChunkProcessingResult[]> {
-    console.log(`🔄 Procesando ${chunks.length} chunks secuencialmente...`);
+    console.log(`RELOAD: Procesando ${chunks.length} chunks secuencialmente...`);
 
     const results: ChunkProcessingResult[] = [];
     
@@ -389,9 +389,9 @@ export class SemanticChunkingProcessor {
       try {
         const result = await this.processChunkWithContext(chunks[i], chunks, results);
         results.push(result);
-        console.log(`✅ Chunk ${i + 1}/${chunks.length} procesado`);
+        console.log(`SUCCESS: Chunk ${i + 1}/${chunks.length} procesado`);
       } catch (error) {
-        console.error(`❌ Error procesando chunk ${i}:`, error);
+        console.error(`ERROR: Error procesando chunk ${i}:`, error);
         results.push(this.createErrorResult(chunks[i]));
       }
     }
@@ -627,7 +627,7 @@ export class SemanticChunkingProcessor {
    * PASO 3: Fusionar resultados manteniendo coherencia narrativa
    */
   private mergeChunkedResults(processedChunks: ChunkProcessingResult[], chunks: SemanticChunk[]): ProcessingResult {
-    console.log('🔄 Fusionando resultados con coherencia narrativa...');
+    console.log('RELOAD: Fusionando resultados con coherencia narrativa...');
 
     // Combinar todos los segmentos SOAP
     const allSegments = processedChunks.flatMap(result => result.soapResult.segments);
@@ -916,7 +916,7 @@ export class SemanticChunkingProcessor {
    */
   updateConfig(newConfig: Partial<ChunkingConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('📊 Configuración de chunking actualizada:', this.config);
+    console.log('STATS: Configuración de chunking actualizada:', this.config);
   }
 
   /**

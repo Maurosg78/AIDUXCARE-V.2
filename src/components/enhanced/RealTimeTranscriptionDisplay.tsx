@@ -257,8 +257,8 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
 
   const getSpeakerIcon = (speaker: string) => {
     switch (speaker) {
-      case 'PATIENT': return '👤';
-      case 'THERAPIST': return '👨‍⚕️';
+      case 'PATIENT': return 'USER:';
+      case 'THERAPIST': return 'DOCTOR:';
       default: return '❓';
     }
   };
@@ -292,14 +292,14 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
                 onClick={startRecording}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                🎙️ Iniciar
+                MIC: Iniciar
               </button>
             ) : (
               <button
                 onClick={stopRecording}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                ⏹️ Detener
+                STOP: Detener
               </button>
             )}
 
@@ -308,14 +308,14 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
               className="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
               disabled={isRecording}
             >
-              🗑️
+              TRASH:
             </button>
           </div>
         </div>
 
         {error && (
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-red-800 text-sm">❌ {error}</div>
+            <div className="text-red-800 text-sm">ERROR: {error}</div>
           </div>
         )}
       </div>
@@ -361,7 +361,7 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
       <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
         {segments.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            <div className="text-4xl mb-2">🎙️</div>
+            <div className="text-4xl mb-2">MIC:</div>
             <div>
               {isRecording ? 'Escuchando... Comienza a hablar' : 'Haz clic en "Iniciar" para comenzar'}
             </div>
@@ -416,7 +416,7 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
       {segments.length > 0 && (
         <div className="p-4 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>📊 {segments.filter(s => s.isFinal).length} segmentos finales</div>
+            <div>STATS: {segments.filter(s => s.isFinal).length} segmentos finales</div>
             <div>📝 {segments.reduce((total, s) => total + s.text.split(' ').length, 0)} palabras</div>
           </div>
         </div>

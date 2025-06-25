@@ -1,5 +1,5 @@
 /**
- * 🎯 SMART DASHBOARD - Centro de Comando IA
+ * TARGET: SMART DASHBOARD - Centro de Comando IA
  * Dashboard inteligente con insights en tiempo real
  */
 
@@ -363,7 +363,7 @@ const SmartDashboard: React.FC = () => {
                         <p className="text-xs text-[#2C3E50]/60 mb-3">Última visita: {patient.lastVisit}</p>
                         
                         <div className="space-y-1">
-                          <p className="text-xs font-medium text-[#5DA5A3] mb-1">🤖 Insights IA:</p>
+                          <p className="text-xs font-medium text-[#5DA5A3] mb-1">BOT: Insights IA:</p>
                           {patient.aiInsights.map((insight, index) => (
                             <p key={index} className="text-xs text-[#2C3E50]/70 pl-2 border-l-2 border-[#5DA5A3]/20">
                               • {insight}

@@ -1,0 +1,108 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient3)"/>
+  
+  <!-- Doctor -->
+  <g transform="translate(80, 80)">
+    <!-- Head -->
+    <circle cx="40" cy="25" r="20" fill="#F4C2A1"/>
+    
+    <!-- Hair -->
+    <path d="M20 15 Q40 5 60 15 Q62 20 60 25 Q40 12 20 25 Q18 20 20 15" fill="#4A4A4A"/>
+    
+    <!-- Lab Coat -->
+    <rect x="20" y="45" width="40" height="80" rx="6" fill="white" stroke="#E2E8F0" stroke-width="1"/>
+    
+    <!-- Shirt -->
+    <rect x="25" y="50" width="30" height="20" fill="#5DA5A3"/>
+    
+    <!-- Arms -->
+    <ellipse cx="15" cy="70" rx="5" ry="15" fill="white"/>
+    <ellipse cx="65" cy="70" rx="5" ry="15" fill="white"/>
+    
+    <!-- Hands -->
+    <circle cx="15" cy="85" r="4" fill="#F4C2A1"/>
+    <circle cx="65" cy="85" r="4" fill="#F4C2A1"/>
+    
+    <!-- Stethoscope -->
+    <path d="M30 50 Q30 55 35 55 Q40 55 40 50" stroke="#2D3748" stroke-width="2" fill="none"/>
+    <circle cx="35" cy="58" r="3" fill="#2D3748"/>
+  </g>
+  
+  <!-- Patient -->
+  <g transform="translate(220, 90)">
+    <!-- Head -->
+    <circle cx="40" cy="25" r="18" fill="#E8B896"/>
+    
+    <!-- Hair -->
+    <path d="M22 12 Q40 2 58 12 Q60 17 58 22 Q40 8 22 22 Q20 17 22 12" fill="#8B4513"/>
+    
+    <!-- Clothing -->
+    <rect x="25" y="43" width="30" height="60" rx="5" fill="#4A90E2"/>
+    
+    <!-- Arms -->
+    <ellipse cx="20" cy="60" rx="4" ry="12" fill="#4A90E2"/>
+    <ellipse cx="60" cy="60" rx="4" ry="12" fill="#4A90E2"/>
+    
+    <!-- Hands -->
+    <circle cx="20" cy="72" r="3" fill="#E8B896"/>
+    <circle cx="60" cy="72" r="3" fill="#E8B896"/>
+  </g>
+  
+  <!-- Desk/Table -->
+  <rect x="120" y="200" width="160" height="8" rx="4" fill="#8B4513"/>
+  <rect x="130" y="208" width="8" height="40" fill="#8B4513"/>
+  <rect x="262" y="208" width="8" height="40" fill="#8B4513"/>
+  
+  <!-- Medical Chart on Desk -->
+  <rect x="140" y="180" width="30" height="20" fill="white" stroke="#CBD5E0" stroke-width="1"/>
+  <rect x="142" y="182" width="26" height="2" fill="#5DA5A3"/>
+  <rect x="142" y="186" width="20" height="1" fill="#CBD5E0"/>
+  <rect x="142" y="189" width="24" height="1" fill="#CBD5E0"/>
+  <rect x="142" y="192" width="18" height="1" fill="#CBD5E0"/>
+  <rect x="142" y="195" width="22" height="1" fill="#5DA5A3"/>
+  
+  <!-- Pen -->
+  <rect x="175" y="185" width="1.5" height="10" fill="#2D3748"/>
+  <circle cx="175.75" cy="183" r="0.75" fill="#5DA5A3"/>
+  
+  <!-- Computer/Tablet -->
+  <rect x="200" y="175" width="60" height="25" rx="3" fill="#2D3748"/>
+  <rect x="203" y="178" width="54" height="19" fill="#E2E8F0"/>
+  
+  <!-- Screen Content -->
+  <rect x="205" y="180" width="50" height="2" fill="#5DA5A3"/>
+  <rect x="205" y="184" width="40" height="1" fill="#CBD5E0"/>
+  <rect x="205" y="187" width="45" height="1" fill="#CBD5E0"/>
+  <rect x="205" y="190" width="35" height="1" fill="#CBD5E0"/>
+  <rect x="205" y="193" width="48" height="1" fill="#5DA5A3"/>
+  
+  <!-- Communication Lines -->
+  <g opacity="0.4">
+    <path d="M120 120 Q150 110 180 120" stroke="#5DA5A3" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+    <path d="M180 130 Q150 120 120 130" stroke="#5DA5A3" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+  </g>
+  
+  <!-- Medical Background Elements -->
+  <g opacity="0.1">
+    <!-- Heart -->
+    <path d="M30 250 Q30 240 40 240 Q50 240 50 250 Q50 260 40 270 Q30 260 30 250 Z" fill="#5DA5A3"/>
+    <path d="M40 240 Q50 240 50 250 Q50 240 60 240 Q70 240 70 250 Q70 260 60 270 Q50 260 50 250" fill="#5DA5A3"/>
+    
+    <!-- Medical Cross -->
+    <g transform="translate(350, 50)">
+      <rect x="8" y="2" width="4" height="16" fill="#5DA5A3"/>
+      <rect x="2" y="8" width="16" height="4" fill="#5DA5A3"/>
+    </g>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="bgGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FDFC"/>
+      <stop offset="30%" stop-color="#FFFFFF"/>
+      <stop offset="70%" stop-color="#E8F5F4"/>
+      <stop offset="100%" stop-color="#F0F9F8"/>
+    </linearGradient>
+  </defs>
+</svg> 

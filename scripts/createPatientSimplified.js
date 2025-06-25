@@ -30,14 +30,14 @@ let professionalId, patientUserId;
 // Función principal
 async function main() {
   try {
-    console.log('🚀 Iniciando creación de datos clínicos reales...');
+    console.log('LAUNCH: Iniciando creación de datos clínicos reales...');
     
     // Información simulada para evitar consultas a la base de datos
     // En un entorno real estas IDs vendrían de la base de datos
     professionalId = uuidv4();
     patientUserId = uuidv4();
-    console.log(`✅ Usando ID de profesional simulado: ${professionalId}`);
-    console.log(`✅ Usando ID de usuario paciente simulado: ${patientUserId}`);
+    console.log(`SUCCESS: Usando ID de profesional simulado: ${professionalId}`);
+    console.log(`SUCCESS: Usando ID de usuario paciente simulado: ${patientUserId}`);
     
     // Crear el paciente
     const patientId = uuidv4();
@@ -58,7 +58,7 @@ async function main() {
       throw new Error(`Error al crear el paciente: ${createPatientError.message}`);
     }
     
-    console.log(`✅ Paciente creado con ID: ${patientId}`);
+    console.log(`SUCCESS: Paciente creado con ID: ${patientId}`);
     
     // Crear visita inicial
     const initialVisitId = uuidv4();
@@ -82,7 +82,7 @@ async function main() {
       throw new Error(`Error al crear la visita inicial: ${createVisitError.message}`);
     }
     
-    console.log(`✅ Visita inicial creada con ID: ${initialVisitId}`);
+    console.log(`SUCCESS: Visita inicial creada con ID: ${initialVisitId}`);
     
     // Crear formulario clínico
     const initialFormContent = {
@@ -111,7 +111,7 @@ async function main() {
       throw new Error(`Error al crear el formulario clínico: ${createFormError.message}`);
     }
     
-    console.log(`✅ Formulario clínico creado para la visita inicial`);
+    console.log(`SUCCESS: Formulario clínico creado para la visita inicial`);
     
     // Crear visita de seguimiento
     const followUpVisitId = uuidv4();
@@ -134,7 +134,7 @@ async function main() {
       throw new Error(`Error al crear la visita de seguimiento: ${createFollowUpVisitError.message}`);
     }
     
-    console.log(`✅ Visita de seguimiento creada con ID: ${followUpVisitId}`);
+    console.log(`SUCCESS: Visita de seguimiento creada con ID: ${followUpVisitId}`);
     
     // Crear formulario borrador para seguimiento
     const followUpFormContent = {
@@ -163,7 +163,7 @@ async function main() {
       throw new Error(`Error al crear el formulario para la visita de seguimiento: ${createFollowUpFormError.message}`);
     }
     
-    console.log(`✅ Formulario borrador creado para la visita de seguimiento`);
+    console.log(`SUCCESS: Formulario borrador creado para la visita de seguimiento`);
     
     // Crear registro de auditoría
     const auditLog = {
@@ -188,7 +188,7 @@ async function main() {
       throw new Error(`Error al crear el registro de auditoría: ${createAuditLogError.message}`);
     }
     
-    console.log(`✅ Registro de auditoría creado`);
+    console.log(`SUCCESS: Registro de auditoría creado`);
     
     // Resumen final
     console.log('\n🏥 Datos clínicos reales creados correctamente:');
@@ -197,7 +197,7 @@ async function main() {
     console.log(`- Visita de seguimiento: ${followUpVisitId}`);
     
   } catch (error) {
-    console.error('❌ ERROR:', error);
+    console.error('ERROR: ERROR:', error);
   }
 }
 

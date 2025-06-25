@@ -19,28 +19,28 @@ function App() {
     window.forceOwnerRole = () => {
       const result = localAuthService.forceOwnerRole();
       if (result) {
-        console.log('✅ UAT: Rol OWNER asignado exitosamente');
-        console.log('🔄 Recarga la página para aplicar cambios');
+        console.log('UAT: Rol OWNER asignado exitosamente');
+        console.log('Recarga la página para aplicar cambios');
       } else {
-        console.log('❌ Error: No hay usuario logueado');
+        console.log('Error: No hay usuario logueado');
       }
     };
 
     window.checkUserRole = () => {
       const user = localAuthService.getCurrentTherapist();
       if (user) {
-        console.log('👤 Usuario actual:', user.name);
-        console.log('🔑 Rol:', user.role || 'No asignado');
-        console.log('🛡️ Es OWNER:', localAuthService.isOwner());
-        console.log('🚀 Acceso ilimitado:', localAuthService.hasUnlimitedAccess());
+        console.log('Usuario actual:', user.name);
+        console.log('Rol:', user.role || 'No asignado');
+        console.log('Es OWNER:', localAuthService.isOwner());
+        console.log('Acceso ilimitado:', localAuthService.hasUnlimitedAccess());
       } else {
-        console.log('❌ No hay usuario logueado');
+        console.log('No hay usuario logueado');
       }
     };
 
     // Mensaje de bienvenida UAT
-    console.log('🎯 AiDuxCare V.2 - Modo UAT Activado');
-    console.log('📋 Comandos disponibles:');
+    console.log('AiDuxCare V.2 - Modo UAT Activado');
+    console.log('Comandos disponibles:');
     console.log('  window.forceOwnerRole() - Asignar rol OWNER');
     console.log('  window.checkUserRole() - Verificar rol actual');
   }, []);

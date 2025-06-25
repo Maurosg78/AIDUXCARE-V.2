@@ -379,17 +379,17 @@ export class ClinicalKnowledgeProcessor {
     );
 
     if (anatomyTerms.includes('cuello') && symptomTerms.includes('dolor')) {
-      return 'Cervicalgia con limitación funcional de la movilidad cervical';
+      return 'Disfunción cervical que requiere evaluación fisioterapéutica detallada';
     }
     
     if (anatomyTerms.includes('lumbar') && symptomTerms.includes('dolor')) {
-      return 'Lumbalgia mecánica con contractura de musculatura paravertebral';
+      return 'Disfunción lumbar que requiere abordaje fisioterapéutico conservador';
     }
     
     if (anatomyTerms.includes('hombro') && symptomTerms.includes('dolor')) {
-      return 'Síndrome doloroso del hombro con limitación funcional';
+      return 'Disfunción funcional de hombro que requiere evaluación específica';
     }
 
-    return 'Evaluación clínica pendiente de completar con base en hallazgos documentados';
+    return 'Evaluación fisioterapéutica en proceso. Se requiere más información para determinar plan de tratamiento específico';
   }
 } 

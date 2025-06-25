@@ -68,10 +68,10 @@ function testWorkModeSelector() {
     
     // Verificar que el modo es válido
     if (['LIVE_ASSISTANT', 'POST_CONSULTATION_DICTATION', 'MANUAL_WRITING'].includes(test.mode)) {
-      console.log('   ✅ Modo válido');
+      console.log('   SUCCESS: Modo válido');
       passedTests++;
     } else {
-      console.log('   ❌ Modo inválido');
+      console.log('   ERROR: Modo inválido');
     }
   });
 
@@ -87,10 +87,10 @@ function testWorkModeSelector() {
     const hasTimeEstimate = test.expectedTime.includes('min');
     
     if (hasRequiredFeatures && hasTimeEstimate) {
-      console.log('   ✅ Características completas');
+      console.log('   SUCCESS: Características completas');
       passedTests++;
     } else {
-      console.log('   ❌ Características incompletas');
+      console.log('   ERROR: Características incompletas');
     }
     
     test.expectedFeatures.forEach(feature => {
@@ -116,10 +116,10 @@ function testWorkModeSelector() {
     // Simular verificación de componente
     const componentExists = true; // En realidad verificaríamos la importación
     if (componentExists) {
-      console.log('   ✅ Componente disponible');
+      console.log('   SUCCESS: Componente disponible');
       passedTests++;
     } else {
-      console.log('   ❌ Componente no encontrado');
+      console.log('   ERROR: Componente no encontrado');
     }
   });
 
@@ -134,10 +134,10 @@ function testWorkModeSelector() {
   // Simular verificación de ruta
   const routeExists = true; // En realidad verificaríamos el router
   if (routeExists) {
-    console.log('✅ Ruta configurada');
+    console.log('SUCCESS: Ruta configurada');
     passedTests++;
   } else {
-    console.log('❌ Ruta no configurada');
+    console.log('ERROR: Ruta no configurada');
   }
 
   // Test 5: Verificar filosofía Zero Friction UX
@@ -155,21 +155,21 @@ function testWorkModeSelector() {
   
   console.log('Principios UX verificados:');
   uxPrinciples.forEach((principle, index) => {
-    console.log(`   ${index + 1}. ${principle} ✅`);
+    console.log(`   ${index + 1}. ${principle} SUCCESS:`);
   });
   
-  console.log('✅ Filosofía Zero Friction UX implementada');
+  console.log('SUCCESS: Filosofía Zero Friction UX implementada');
   passedTests++;
 
   // Resumen final
-  console.log('\n📊 RESUMEN DE PRUEBAS');
+  console.log('\nSTATS: RESUMEN DE PRUEBAS');
   console.log('=====================');
   console.log(`Pruebas pasadas: ${passedTests}/${totalTests}`);
   console.log(`Tasa de éxito: ${((passedTests / totalTests) * 100).toFixed(1)}%`);
   
   if (passedTests === totalTests) {
     console.log('\n🎉 ¡TODAS LAS PRUEBAS PASARON!');
-    console.log('✅ WorkModeSelector está listo para UAT');
+    console.log('SUCCESS: WorkModeSelector está listo para UAT');
   } else {
     console.log('\n⚠️  Algunas pruebas fallaron');
     console.log('🔧 Revisar implementación antes de UAT');
@@ -185,7 +185,7 @@ function testWorkModeSelector() {
   console.log('• Nueva especialidad planificada: Quiropráctica');
   console.log('• Filosofía UX: Zero Friction');
   
-  console.log('\n🚀 PRÓXIMOS PASOS');
+  console.log('\nLAUNCH: PRÓXIMOS PASOS');
   console.log('=================');
   console.log('1. Implementar backend para dictado post-consulta');
   console.log('2. Desarrollar análisis de IA en tiempo real');

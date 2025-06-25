@@ -1,0 +1,70 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient)"/>
+  
+  <!-- Doctor Figure -->
+  <g transform="translate(100, 50)">
+    <!-- Head -->
+    <circle cx="100" cy="40" r="25" fill="#F4C2A1"/>
+    
+    <!-- Hair -->
+    <path d="M75 25 Q100 10 125 25 Q130 30 125 35 Q100 20 75 35 Q70 30 75 25" fill="#8B4513"/>
+    
+    <!-- Lab Coat -->
+    <rect x="70" y="65" width="60" height="120" rx="8" fill="white" stroke="#E2E8F0" stroke-width="2"/>
+    
+    <!-- Shirt underneath -->
+    <rect x="80" y="75" width="40" height="30" fill="#5DA5A3"/>
+    
+    <!-- Arms -->
+    <ellipse cx="60" cy="100" rx="8" ry="25" fill="white"/>
+    <ellipse cx="140" cy="100" rx="8" ry="25" fill="white"/>
+    
+    <!-- Hands -->
+    <circle cx="60" cy="125" r="6" fill="#F4C2A1"/>
+    <circle cx="140" cy="125" r="6" fill="#F4C2A1"/>
+    
+    <!-- Tablet in hands -->
+    <rect x="80" y="115" width="40" height="30" rx="4" fill="#2D3748" stroke="#4A5568" stroke-width="1"/>
+    <rect x="83" y="118" width="34" height="24" fill="#E2E8F0"/>
+    
+    <!-- Screen content (medical chart) -->
+    <rect x="85" y="120" width="30" height="2" fill="#5DA5A3"/>
+    <rect x="85" y="124" width="25" height="2" fill="#CBD5E0"/>
+    <rect x="85" y="128" width="28" height="2" fill="#CBD5E0"/>
+    <rect x="85" y="132" width="20" height="2" fill="#5DA5A3"/>
+    <rect x="85" y="136" width="30" height="2" fill="#CBD5E0"/>
+    
+    <!-- Stethoscope -->
+    <path d="M85 75 Q85 85 95 85 Q105 85 105 75" stroke="#2D3748" stroke-width="3" fill="none"/>
+    <circle cx="95" cy="88" r="4" fill="#2D3748"/>
+    
+    <!-- Medical badge -->
+    <rect x="75" y="80" width="12" height="8" rx="2" fill="#5DA5A3"/>
+  </g>
+  
+  <!-- Medical Icons Background -->
+  <g opacity="0.1">
+    <!-- Heart rate line -->
+    <path d="M20 150 L40 150 L50 130 L60 170 L70 120 L80 180 L90 150 L380 150" stroke="#5DA5A3" stroke-width="2" fill="none"/>
+    
+    <!-- Medical cross -->
+    <g transform="translate(320, 80)">
+      <rect x="15" y="5" width="10" height="30" fill="#5DA5A3"/>
+      <rect x="5" y="15" width="30" height="10" fill="#5DA5A3"/>
+    </g>
+    
+    <!-- Pills -->
+    <ellipse cx="50" cy="250" rx="8" ry="4" fill="#5DA5A3"/>
+    <ellipse cx="350" cy="250" rx="8" ry="4" fill="#5DA5A3"/>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FDFC"/>
+      <stop offset="50%" stop-color="#E8F5F4"/>
+      <stop offset="100%" stop-color="#F0F9F8"/>
+    </linearGradient>
+  </defs>
+</svg> 

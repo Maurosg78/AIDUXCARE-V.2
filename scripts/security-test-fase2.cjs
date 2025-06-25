@@ -23,7 +23,7 @@ class SecurityTestSuite {
 
   log(level, message) {
     const timestamp = new Date().toISOString().slice(11, 19);
-    const symbols = { info: '🔍', success: '✅', error: '❌', warning: '⚠️' };
+    const symbols = { info: '🔍', success: 'SUCCESS:', error: 'ERROR:', warning: '⚠️' };
     console.log(`${timestamp} ${symbols[level] || 'ℹ️'} ${message}`);
   }
 
@@ -311,29 +311,29 @@ class SecurityTestSuite {
   // Imprimir resumen final
   printSummary() {
     console.log('\n' + '=' .repeat(60));
-    console.log('📊 RESUMEN DE SECURITY TESTING');
+    console.log('STATS: RESUMEN DE SECURITY TESTING');
     console.log('=' .repeat(60));
     
-    console.log(`✅ Tests Pasados: ${this.results.passed}`);
-    console.log(`❌ Tests Fallidos: ${this.results.failed}`);
+    console.log(`SUCCESS: Tests Pasados: ${this.results.passed}`);
+    console.log(`ERROR: Tests Fallidos: ${this.results.failed}`);
     console.log(`⚠️  Advertencias: ${this.results.warnings}`);
     console.log(`📋 Total Tests: ${this.tests.length}`);
     
     const successRate = ((this.results.passed / this.tests.length) * 100).toFixed(1);
-    console.log(`📈 Tasa de Éxito: ${successRate}%`);
+    console.log(`METRICS: Tasa de Éxito: ${successRate}%`);
     
     console.log('\n📋 DETALLE DE TESTS:');
     this.tests.forEach((test, index) => {
-      const status = test.status === 'PASS' ? '✅' : test.status === 'FAIL' ? '❌' : '⚠️';
+      const status = test.status === 'PASS' ? 'SUCCESS:' : test.status === 'FAIL' ? 'ERROR:' : '⚠️';
       console.log(`${index + 1}. ${status} ${test.name}: ${test.details}`);
     });
     
     if (this.results.failed === 0) {
       console.log('\n🎉 TODOS LOS TESTS CRÍTICOS PASARON');
-      console.log('✅ Es seguro continuar con Fase 3');
+      console.log('SUCCESS: Es seguro continuar con Fase 3');
     } else {
       console.log('\n⚠️  HAY TESTS FALLIDOS');
-      console.log('❌ Revisar problemas antes de continuar');
+      console.log('ERROR: Revisar problemas antes de continuar');
     }
     
     console.log('\n' + '=' .repeat(60));

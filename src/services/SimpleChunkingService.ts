@@ -1,5 +1,5 @@
 /**
- * 🎯 SERVICIO DE CHUNKING SIMPLE Y DIRECTO - Solución Definitiva Mauricio
+ * TARGET: SERVICIO DE CHUNKING SIMPLE Y DIRECTO - Solución Definitiva Mauricio
  * OBJETIVO: Eliminar completamente el procesamiento "sílaba por sílaba"
  * ENFOQUE: Captura completa → Análisis semántico → Chunks contextuales
  */
@@ -100,8 +100,8 @@ export class SimpleChunkingService {
     this.onSessionComplete = callbacks.onSessionComplete;
     this.onError = callbacks.onError;
 
-    console.log('🎯 SimpleChunkingService inicializado');
-    console.log('📊 Config:', this.config);
+    console.log('TARGET: SimpleChunkingService inicializado');
+    console.log('STATS: Config:', this.config);
   }
 
   /**
@@ -132,7 +132,7 @@ export class SimpleChunkingService {
 
     // Event Handlers
     this.recognition.onstart = () => {
-      console.log('🎤 Grabación iniciada - MODO ANTI-FRAGMENTACIÓN');
+      console.log('AUDIO: Grabación iniciada - MODO ANTI-FRAGMENTACIÓN');
       this.isRecording = true;
     };
 
@@ -152,7 +152,7 @@ export class SimpleChunkingService {
         this.sessionWordCount = this.countWords(this.fullTranscript);
         
         console.log(`📝 Texto agregado: "${newText.trim()}"`);
-        console.log(`📊 Total palabras en sesión: ${this.sessionWordCount}`);
+        console.log(`STATS: Total palabras en sesión: ${this.sessionWordCount}`);
         
         // Callback de actualización
         if (this.onSessionUpdate) {
@@ -165,7 +165,7 @@ export class SimpleChunkingService {
     };
 
     this.recognition.onerror = (event: any) => {
-      console.error('❌ Error en reconocimiento:', event.error);
+      console.error('ERROR: Error en reconocimiento:', event.error);
       if (this.onError) {
         this.onError(`Error de reconocimiento: ${event.error}`);
       }
@@ -185,7 +185,7 @@ export class SimpleChunkingService {
 
     // Iniciar
     this.recognition.start();
-    console.log('🎯 Grabación iniciada con configuración anti-fragmentación');
+    console.log('TARGET: Grabación iniciada con configuración anti-fragmentación');
   }
 
   /**
@@ -207,7 +207,7 @@ export class SimpleChunkingService {
     }
 
     if (hasMinimumWords && hasMinimumPause) {
-      console.log('✅ Condiciones cumplidas - Iniciando chunking');
+      console.log('SUCCESS: Condiciones cumplidas - Iniciando chunking');
       this.processSession();
     } else if (hasMinimumWords) {
       // Programar procesamiento cuando se cumpla la pausa
@@ -226,13 +226,13 @@ export class SimpleChunkingService {
    */
   private async processSession(): Promise<void> {
     if (!this.fullTranscript.trim()) {
-      console.log('⚠️ No hay transcripción para procesar');
+      console.log('WARNING: No hay transcripción para procesar');
       return;
     }
 
-    console.log('\n🎯 === PROCESANDO SESIÓN COMPLETA ===');
+    console.log('\nTARGET: === PROCESANDO SESIÓN COMPLETA ===');
     console.log(`📄 Transcripción: ${this.fullTranscript.length} caracteres`);
-    console.log(`📊 Palabras: ${this.sessionWordCount}`);
+    console.log(`STATS: Palabras: ${this.sessionWordCount}`);
 
     try {
       // PASO 1: Convertir a utterances
@@ -266,7 +266,7 @@ export class SimpleChunkingService {
 
         results.push(result);
         
-        console.log(`✅ Chunk ${chunk.id} procesado en ${result.processingTime}ms`);
+        console.log(`SUCCESS: Chunk ${chunk.id} procesado en ${result.processingTime}ms`);
         
         // Callback por chunk
         if (this.onChunkProcessed) {
@@ -283,10 +283,10 @@ export class SimpleChunkingService {
       this.fullTranscript = '';
       this.sessionWordCount = 0;
 
-      console.log('🎯 Sesión procesada completamente');
+      console.log('TARGET: Sesión procesada completamente');
 
     } catch (error) {
-      console.error('❌ Error procesando sesión:', error);
+      console.error('ERROR: Error procesando sesión:', error);
       if (this.onError) {
         this.onError(`Error procesando sesión: ${error}`);
       }
@@ -499,6 +499,6 @@ export class SimpleChunkingService {
 
   updateConfig(newConfig: Partial<SimpleChunkingConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('📊 Configuración actualizada:', this.config);
+    console.log('STATS: Configuración actualizada:', this.config);
   }
 } 

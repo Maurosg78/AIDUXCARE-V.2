@@ -81,17 +81,17 @@ export class AudioCaptureServiceReal {
         onResult: (segment) => this.handleNewSegment(segment),
         onError: (error) => this.handleError(error),
         onStart: () => {
-          console.log('✅ Captura de audio iniciada');
+          console.log('SUCCESS: Captura de audio iniciada');
           this.isCapturing = true;
           this.updateStatus('recording');
         },
         onEnd: () => {
-          console.log('⏹️ Captura de audio finalizada');
+          console.log('STOP: Captura de audio finalizada');
           this.isCapturing = false;
           this.updateStatus('idle');
         },
         onSpeechStart: () => {
-          console.log('🗣️ Habla detectada');
+          console.log('SPEECH: Habla detectada');
         },
         onSpeechEnd: () => {
           console.log('🔇 Fin de habla');
@@ -101,7 +101,7 @@ export class AudioCaptureServiceReal {
       // Iniciar transcripción en tiempo real
       await this.sttService.startRealtimeTranscription(transcriptionOptions);
 
-      console.log('🚀 Captura de audio en tiempo real iniciada - COSTO: $0.00');
+      console.log('LAUNCH: Captura de audio en tiempo real iniciada - COSTO: $0.00');
       
       return this.currentSession;
 
@@ -134,7 +134,7 @@ export class AudioCaptureServiceReal {
       this.currentSession.totalDuration = this.currentSession.endTime.getTime() - this.currentSession.startTime.getTime();
       this.currentSession.segmentsCount = this.segments.length;
 
-      console.log('📊 Sesión de captura finalizada:', {
+      console.log('STATS: Sesión de captura finalizada:', {
         id: this.currentSession.id,
         segmentos: this.segments.length,
         duración: `${Math.round(this.currentSession.totalDuration / 1000)}s`,
@@ -198,7 +198,7 @@ export class AudioCaptureServiceReal {
    * Manejar errores de transcripción
    */
   private handleError(error: string): void {
-    console.error('❌ Error en transcripción:', error);
+    console.error('ERROR: Error en transcripción:', error);
     this.updateStatus('error');
     this.options.onError?.(error);
   }

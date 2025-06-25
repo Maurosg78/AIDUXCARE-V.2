@@ -1,11 +1,11 @@
 /**
- * 🚀 ENHANCED TRANSCRIPTION DEMO - Demostración de Transcripción Mejorada
+ * LAUNCH: ENHANCED TRANSCRIPTION DEMO - Demostración de Transcripción Mejorada
  * 
  * Página que demuestra las mejoras implementadas:
- * 1. ✅ Calidad de audio mejorada
- * 2. ✅ Identificación de interlocutores
- * 3. ✅ Transcripción en tiempo real visible
- * 4. ✅ Clasificación SOAP inteligente con IA V3.0
+ * 1. SUCCESS: Calidad de audio mejorada
+ * 2. SUCCESS: Identificación de interlocutores
+ * 3. SUCCESS: Transcripción en tiempo real visible
+ * 4. SUCCESS: Clasificación SOAP inteligente con IA V3.0
  * 
  * @author AiDuxCare Team + ChatGPT Optimization
  * @date Junio 2025
@@ -335,18 +335,18 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
 
   const getSpeakerIcon = (speaker: string) => {
     switch (speaker) {
-      case 'PATIENT': return '👤';
-      case 'THERAPIST': return '👨‍⚕️';
+      case 'PATIENT': return 'USER:';
+      case 'THERAPIST': return 'DOCTOR:';
       default: return '❓';
     }
   };
 
   const getSectionIcon = (section: string) => {
     switch (section) {
-      case 'S': return '🗣️';
-      case 'O': return '👁️';
-      case 'A': return '🧠';
-      case 'P': return '📋';
+      case 'S': return 'SPEECH:';
+      case 'O': return 'EYE:';
+      case 'A': return 'AI:';
+      case 'P': return 'NOTES:';
       default: return '📄';
     }
   };
@@ -360,7 +360,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
         {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            🚀 Transcripción Mejorada con IA
+            LAUNCH: Transcripción Mejorada con IA
           </h1>
           <p className="text-gray-600">
             Demostración de las mejoras implementadas: calidad de audio, identificación de interlocutores, 
@@ -373,7 +373,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
               <h2 className="text-xl font-semibold text-gray-800">
-                🎙️ Control de Grabación
+                MIC: Control de Grabación
               </h2>
               
               {state.isRecording && (
@@ -391,14 +391,14 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
                   onClick={startRecording}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                 >
-                  🎙️ Iniciar Grabación
+                  MIC: Iniciar Grabación
                 </button>
               ) : (
                 <button
                   onClick={stopRecording}
                   className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 >
-                  ⏹️ Detener
+                  STOP: Detener
                 </button>
               )}
 
@@ -407,7 +407,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
                 className="px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 disabled={state.isRecording}
               >
-                🗑️ Limpiar
+                TRASH: Limpiar
               </button>
             </div>
           </div>
@@ -438,7 +438,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <div className="text-sm text-orange-600 font-medium">Procesando</div>
               <div className="text-2xl font-bold text-orange-800">
-                {state.isProcessing ? '🔄' : '✅'}
+                {state.isProcessing ? 'RELOAD:' : 'SUCCESS:'}
               </div>
             </div>
           </div>
@@ -446,7 +446,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
           {/* ERROR */}
           {state.error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="text-red-800">❌ {state.error}</div>
+              <div className="text-red-800">ERROR: {state.error}</div>
             </div>
           )}
         </div>
@@ -465,7 +465,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
             <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
               {state.segments.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="text-4xl mb-2">🎙️</div>
+                  <div className="text-4xl mb-2">MIC:</div>
                   <div>
                     {state.isRecording ? 'Escuchando... Comienza a hablar' : 'Haz clic en "Iniciar Grabación"'}
                   </div>
@@ -517,11 +517,11 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">
-                🧠 Clasificación SOAP Inteligente
+                AI: Clasificación SOAP Inteligente
               </h3>
               {state.isProcessing && (
                 <div className="text-sm text-blue-600 mt-1">
-                  🔄 Procesando con IA...
+                  RELOAD: Procesando con IA...
                 </div>
               )}
             </div>
@@ -529,7 +529,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
             <div className="p-4 max-h-96 overflow-y-auto">
               {!state.soapResult ? (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="text-4xl mb-2">🧠</div>
+                  <div className="text-4xl mb-2">AI:</div>
                   <div>
                     {state.segments.length === 0 
                       ? 'Inicia la grabación para ver clasificación SOAP'
@@ -542,7 +542,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
                   {/* RESUMEN */}
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <div className="text-sm font-medium text-blue-800 mb-2">
-                      📊 Resumen de Procesamiento
+                      STATS: Resumen de Procesamiento
                     </div>
                     <div className="text-xs text-blue-700 space-y-1">
                       <div>Segmentos procesados: {state.soapResult.summary.processedSegments}</div>
@@ -625,7 +625,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
         {state.soapResult && (
           <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              📈 Estadísticas de Procesamiento
+              METRICS: Estadísticas de Procesamiento
             </h3>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

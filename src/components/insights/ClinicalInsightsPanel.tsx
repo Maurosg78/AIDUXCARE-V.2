@@ -1,5 +1,5 @@
 /**
- * 🧠 ClinicalInsightsPanel - Visualización de Insights Clínicos IA
+ * AI: ClinicalInsightsPanel - Visualización de Insights Clínicos IA
  * Panel avanzado para mostrar patrones, alertas y recomendaciones clínicas
  */
 
@@ -35,8 +35,8 @@ const SeverityBadge: React.FC<{
 
   const icons = {
     info: 'ℹ️',
-    warning: '⚠️',
-    danger: '⚠️',
+    warning: 'WARNING:',
+    danger: 'WARNING:',
     critical: '🚨'
   };
 
@@ -60,7 +60,7 @@ const PriorityBadge: React.FC<{
   const icons = {
     low: '🔵',
     medium: '🟡',
-    high: '🔴'
+    high: 'RED:'
   };
 
   return (
@@ -158,7 +158,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
     return (
       <div className={`clinical-insights-panel bg-gray-50 border border-gray-200 rounded-lg ${className}`}>
         <div className="p-6 text-center">
-          <div className="text-gray-400 text-3xl mb-3">🧠</div>
+          <div className="text-gray-400 text-3xl mb-3">AI:</div>
           <h3 className="text-lg font-medium text-gray-700">Insights No Disponibles</h3>
           <p className="text-sm text-gray-500 mt-1">
             Los insights clínicos se generarán automáticamente después del procesamiento
@@ -178,7 +178,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              🧠 Insights Clínicos
+              AI: Insights Clínicos
             </h3>
             <QualityScore score={insights.overall_assessment.quality_score} size="small" />
           </div>
@@ -201,9 +201,9 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
       {/* Navigation Tabs */}
       <div className="flex border-b border-gray-200">
         {[
-          { key: 'overview', label: '📊 Resumen', count: totalInsights },
+          { key: 'overview', label: 'STATS: Resumen', count: totalInsights },
           { key: 'patterns', label: '🔍 Patrones', count: insights.patterns.length },
-          { key: 'alerts', label: '⚠️ Alertas', count: insights.alerts.length },
+          { key: 'alerts', label: 'WARNING: Alertas', count: insights.alerts.length },
           { key: 'recommendations', label: '💡 Recomendaciones', count: insights.recommendations.length }
         ].map(tab => (
           <button
@@ -368,7 +368,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
           <div className="space-y-3">
             {insights.alerts.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-2xl mb-2">✅</div>
+                <div className="text-2xl mb-2">SUCCESS:</div>
                 <p>No se detectaron alertas clínicas</p>
               </div>
             ) : (

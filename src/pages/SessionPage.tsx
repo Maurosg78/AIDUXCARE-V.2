@@ -1,5 +1,5 @@
 /**
- * 🎙️ SESSION PAGE - AIDUXCARE V.2
+ * MIC: SESSION PAGE - AIDUXCARE V.2
  * Página de sesión activa para el workflow principal
  */
 
@@ -25,7 +25,7 @@ const SessionPage: React.FC = () => {
             onClick={() => navigate("/patients")}
             className="header-action"
           >
-            <span className="action-icon">📋</span>
+            <span className="action-icon">NOTES:</span>
             <span>Lista de Pacientes</span>
           </button>
         </div>
@@ -33,7 +33,7 @@ const SessionPage: React.FC = () => {
         {/* Content */}
         <div className="session-content">
           <div className="empty-state">
-            <div className="empty-icon">🎙️</div>
+            <div className="empty-icon">MIC:</div>
             <h3 className="empty-title">Sesión de Grabación</h3>
             <p className="empty-description">
               Esta funcionalidad estará disponible próximamente.<br/>
@@ -44,14 +44,14 @@ const SessionPage: React.FC = () => {
                 onClick={() => navigate("/patient/new")}
                 className="action-primary"
               >
-                <span className="action-icon">👤</span>
+                <span className="action-icon">USER:</span>
                 <span>Crear Paciente</span>
               </button>
               <button 
                 onClick={() => navigate("/")}
                 className="action-secondary"
               >
-                <span className="action-icon">🏠</span>
+                <span className="action-icon">HOME:</span>
                 <span>Volver al Inicio</span>
               </button>
             </div>

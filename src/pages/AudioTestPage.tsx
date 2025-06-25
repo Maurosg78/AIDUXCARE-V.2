@@ -43,13 +43,13 @@ const AudioTestPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🎤 Prueba de STT en Tiempo Real
+            AUDIO: Prueba de STT en Tiempo Real
           </h1>
           <p className="text-lg text-gray-600">
             Speech-to-Text GRATUITO con Web Speech API - Costo: $0.00
           </p>
           <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-            ✅ 100% Gratuito • Sin límites • Sin APIs de pago
+            SUCCESS: 100% Gratuito • Sin límites • Sin APIs de pago
           </div>
         </div>
 
@@ -67,7 +67,7 @@ const AudioTestPage: React.FC = () => {
         {lastSegment && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <h3 className="text-lg font-medium text-blue-900 mb-2">
-              🔄 Último Segmento Procesado
+              RELOAD: Último Segmento Procesado
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
@@ -103,7 +103,7 @@ const AudioTestPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">
-                📋 Transcripción Completada
+                NOTES: Transcripción Completada
               </h3>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-500">
@@ -153,7 +153,7 @@ const AudioTestPage: React.FC = () => {
             {/* Estadísticas de la transcripción */}
             <div className="mt-6 pt-4 border-t border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-3">
-                📊 Resumen de la Transcripción
+                STATS: Resumen de la Transcripción
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="text-center">
@@ -190,7 +190,7 @@ const AudioTestPage: React.FC = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">✅ Características:</h4>
+              <h4 className="font-medium text-gray-700 mb-2">SUCCESS: Características:</h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• Web Speech API nativa del navegador</li>
                 <li>• Transcripción en tiempo real</li>
@@ -203,11 +203,11 @@ const AudioTestPage: React.FC = () => {
             <div>
               <h4 className="font-medium text-gray-700 mb-2">🌐 Compatibilidad:</h4>
               <ul className="space-y-1 text-gray-600">
-                <li>• ✅ Google Chrome (recomendado)</li>
-                <li>• ✅ Microsoft Edge</li>
-                <li>• ⚠️ Firefox (limitado)</li>
-                <li>• ❌ Safari</li>
-                <li>• ❌ Navegadores móviles antiguos</li>
+                <li>• SUCCESS: Google Chrome (recomendado)</li>
+                <li>• SUCCESS: Microsoft Edge</li>
+                <li>• WARNING: Firefox (limitado)</li>
+                <li>• ERROR: Safari</li>
+                <li>• ERROR: Navegadores móviles antiguos</li>
               </ul>
             </div>
           </div>

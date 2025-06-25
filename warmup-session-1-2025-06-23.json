@@ -1,11 +1,11 @@
 {
   "sessionNumber": 1,
-  "timestamp": "2025-06-23T10:48:09.511Z",
+  "timestamp": "2025-06-23T23:57:18.693Z",
   "results": [
     {
       "testCase": "Caso 1 - Dolor Lumbar",
       "status": 200,
-      "processingTime": 338,
+      "processingTime": 284,
       "entitiesFound": 4,
       "soapSections": 4,
       "methodUsed": "Enhanced Basic Processor (Principal)",
@@ -16,7 +16,7 @@
     {
       "testCase": "Caso 2 - Lesión de Hombro",
       "status": 200,
-      "processingTime": 224,
+      "processingTime": 218,
       "entitiesFound": 2,
       "soapSections": 4,
       "methodUsed": "Enhanced Basic Processor (Principal)",
@@ -27,7 +27,7 @@
     {
       "testCase": "Caso 3 - Síntomas Múltiples",
       "status": 200,
-      "processingTime": 290,
+      "processingTime": 221,
       "entitiesFound": 3,
       "soapSections": 4,
       "methodUsed": "Enhanced Basic Processor (Principal)",
@@ -38,7 +38,7 @@
     {
       "testCase": "Caso 4 - Problema Cervical",
       "status": 200,
-      "processingTime": 223,
+      "processingTime": 210,
       "entitiesFound": 1,
       "soapSections": 4,
       "methodUsed": "Enhanced Basic Processor (Principal)",
@@ -49,7 +49,7 @@
     {
       "testCase": "Caso 5 - Lesión Deportiva",
       "status": 200,
-      "processingTime": 214,
+      "processingTime": 210,
       "entitiesFound": 2,
       "soapSections": 4,
       "methodUsed": "Enhanced Basic Processor (Principal)",

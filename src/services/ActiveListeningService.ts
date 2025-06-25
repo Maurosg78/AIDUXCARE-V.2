@@ -1,5 +1,5 @@
 /**
- * 🎤 ACTIVE LISTENING SERVICE - ESCUCHA ACTIVA COMPLETA
+ * AUDIO: ACTIVE LISTENING SERVICE - ESCUCHA ACTIVA COMPLETA
  * Servicio que integra Frontend (Web Speech API) + Backend (Google Speech-to-Text)
  * Implementa las 3 prioridades estratégicas de la funcionalidad MVP
  */
@@ -94,8 +94,8 @@ export class ActiveListeningService {
     this.isListening = true;
 
     try {
-      console.log('🎤 Iniciando Escucha Activa completa...');
-      console.log(`📋 Sesión: ${this.sessionId}, Paciente: ${this.patientId}`);
+      console.log('AUDIO: Iniciando Escucha Activa completa...');
+      console.log(`NOTES: Sesión: ${this.sessionId}, Paciente: ${this.patientId}`);
 
       // Inicializar métricas
       this.resetSessionMetrics();
@@ -111,12 +111,12 @@ export class ActiveListeningService {
         this.options.onStart();
       }
 
-      console.log('✅ Escucha Activa iniciada correctamente');
+      console.log('SUCCESS: Escucha Activa iniciada correctamente');
 
     } catch (error) {
       this.isListening = false;
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      console.error('❌ Error iniciando Escucha Activa:', errorMessage);
+      console.error('ERROR: Error iniciando Escucha Activa:', errorMessage);
       
       if (this.options.onError) {
         this.options.onError(errorMessage);
@@ -155,13 +155,13 @@ export class ActiveListeningService {
         this.options.onEnd();
       }
 
-      console.log('✅ Escucha Activa detenida correctamente');
-      console.log('📊 Métricas finales:', this.sessionMetrics);
+      console.log('SUCCESS: Escucha Activa detenida correctamente');
+      console.log('STATS: Métricas finales:', this.sessionMetrics);
 
       return this.sessionMetrics;
 
     } catch (error) {
-      console.error('❌ Error deteniendo Escucha Activa:', error);
+      console.error('ERROR: Error deteniendo Escucha Activa:', error);
       this.isListening = false;
       return this.sessionMetrics;
     }
@@ -213,10 +213,10 @@ export class ActiveListeningService {
         this.processAudioChunkWithBackend();
       }, AUDIO_CHUNK_DURATION);
 
-      console.log('✅ Captura de audio inicializada');
+      console.log('SUCCESS: Captura de audio inicializada');
 
     } catch (error) {
-      console.error('❌ Error en captura de audio:', error);
+      console.error('ERROR: Error en captura de audio:', error);
       throw new Error(`Error de captura de audio: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
@@ -226,7 +226,7 @@ export class ActiveListeningService {
    * Configura Web Speech API para transcripción en tiempo real
    */
   private async startLocalTranscription(): Promise<void> {
-    console.log('🗣️ Iniciando transcripción local...');
+    console.log('SPEECH: Iniciando transcripción local...');
 
     await this.webSpeechService.startRealtimeTranscription({
       onResult: (segment) => {
@@ -253,14 +253,14 @@ export class ActiveListeningService {
       },
 
       onError: (error) => {
-        console.error('❌ Error en transcripción local:', error);
+        console.error('ERROR: Error en transcripción local:', error);
         if (this.options.onError) {
           this.options.onError(`Error de transcripción local: ${error}`);
         }
       },
 
       onStart: () => {
-        console.log('✅ Transcripción local iniciada');
+        console.log('SUCCESS: Transcripción local iniciada');
       },
 
       onEnd: () => {
@@ -279,7 +279,7 @@ export class ActiveListeningService {
     }
 
     try {
-      console.log('☁️ Procesando chunk con backend...');
+      console.log('CLOUD: Procesando chunk con backend...');
 
       // Combinar chunks en un solo blob
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
@@ -325,14 +325,14 @@ export class ActiveListeningService {
             this.options.onResult(activeSegment);
           }
 
-          console.log(`☁️ Transcripción backend: "${activeSegment.content}" (${Math.round(activeSegment.confidence * 100)}%)`);
+          console.log(`CLOUD: Transcripción backend: "${activeSegment.content}" (${Math.round(activeSegment.confidence * 100)}%)`);
         }
 
         this.sessionMetrics.backendSyncSuccess++;
       }
 
     } catch (error) {
-      console.error('❌ Error procesando con backend:', error);
+      console.error('ERROR: Error procesando con backend:', error);
       this.sessionMetrics.backendSyncFailed++;
       
       if (this.options.onError) {
@@ -362,7 +362,7 @@ export class ActiveListeningService {
 
     } catch (error) {
       if (retries < MAX_RETRIES) {
-        console.warn(`⚠️ Reintento ${retries + 1}/${MAX_RETRIES} para backend...`);
+        console.warn(`WARNING: Reintento ${retries + 1}/${MAX_RETRIES} para backend...`);
         await new Promise(resolve => setTimeout(resolve, 1000 * (retries + 1))); // Backoff exponencial
         return this.sendToBackendWithRetry(data, retries + 1);
       }

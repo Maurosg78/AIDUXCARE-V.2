@@ -1,5 +1,5 @@
 /**
- * 🎙️ Professional Audio Capture - AiDuxCare V.2
+ * MIC: Professional Audio Capture - AiDuxCare V.2
  * Captura de audio profesional sin memory leaks
  * REFACTORIZADO: Eliminados todos los setInterval problemáticos
  */
@@ -42,7 +42,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioPermission('granted');
     } catch (error) {
-      console.error('❌ Error al solicitar permisos de micrófono:', error);
+      console.error('ERROR: Error al solicitar permisos de micrófono:', error);
       setAudioPermission('denied');
     }
   }, []);
@@ -85,7 +85,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
       setIsRecording(true);
       
     } catch (error) {
-      console.error('❌ Error al iniciar grabación:', error);
+      console.error('ERROR: Error al iniciar grabación:', error);
       setAudioPermission('denied');
     }
   }, [onRecordingComplete]);
@@ -135,7 +135,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
         <div className="mb-4">
           {audioPermission === 'pending' && (
             <div className="text-center">
-              <div className="text-yellow-600 mb-2">🎤 Acceso al micrófono requerido</div>
+              <div className="text-yellow-600 mb-2">AUDIO: Acceso al micrófono requerido</div>
               <Button
                 onClick={requestMicrophonePermission}
                 variant="outline"
@@ -148,7 +148,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
           
           {audioPermission === 'denied' && (
             <div className="text-center">
-              <div className="text-red-600 mb-2">❌ Micrófono no disponible</div>
+              <div className="text-red-600 mb-2">ERROR: Micrófono no disponible</div>
               <Button
                 onClick={simulateRecording}
                 variant="secondary"
@@ -162,7 +162,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
           
           {audioPermission === 'granted' && (
             <div className="text-center">
-              <div className="text-green-600 mb-2">✅ Micrófono listo</div>
+              <div className="text-green-600 mb-2">SUCCESS: Micrófono listo</div>
             </div>
           )}
         </div>
@@ -186,7 +186,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
                 </div>
               ) : (
                 <>
-                  🎙️
+                  MIC:
                   <br />
                   <span className="text-sm">Iniciar</span>
                 </>
@@ -198,7 +198,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
                 onClick={stopRecording}
                 className="w-32 h-32 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white text-xl font-bold shadow-lg animate-pulse"
               >
-                ⏹️
+                STOP:
                 <br />
                 <span className="text-sm">Detener</span>
               </Button>

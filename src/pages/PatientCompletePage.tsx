@@ -291,7 +291,7 @@ const PatientCompletePage: React.FC = () => {
     try {
       if (workplace.session.status === 'READY') {
         // Iniciar sesión
-        console.log('🎙️ Iniciando sesión de grabación...');
+        console.log('MIC: Iniciando sesión de grabación...');
         
         setWorkplace(prev => ({
           ...prev,
@@ -314,7 +314,7 @@ const PatientCompletePage: React.FC = () => {
         
       } else if (workplace.session.status === 'ACTIVE') {
         // Detener sesión y procesar
-        console.log('⏹️ Deteniendo sesión...');
+        console.log('STOP: Deteniendo sesión...');
         
         // Detener la captura real de audio
         stopRealtimeTranscription();
@@ -333,7 +333,7 @@ const PatientCompletePage: React.FC = () => {
         await processSessionData();
       }
     } catch (error) {
-      console.error('❌ Error en control de sesión:', error);
+      console.error('ERROR: Error en control de sesión:', error);
       setWorkplace(prev => ({
         ...prev,
         activeListening: {
@@ -346,7 +346,7 @@ const PatientCompletePage: React.FC = () => {
 
   const processSessionData = async () => {
     try {
-      console.log('🔄 Procesando datos de sesión...');
+      console.log('RELOAD: Procesando datos de sesión...');
       
       // Obtener la transcripción real
       const realTranscript = workplace.activeListening.currentTranscript.trim();
@@ -409,10 +409,10 @@ const PatientCompletePage: React.FC = () => {
         }
       }));
 
-      console.log('✅ Procesamiento completado con transcripción real');
+      console.log('SUCCESS: Procesamiento completado con transcripción real');
       
     } catch (error) {
-      console.error('❌ Error en procesamiento:', error);
+      console.error('ERROR: Error en procesamiento:', error);
       setWorkplace(prev => ({
         ...prev,
         session: { ...prev.session, status: 'READY' },
@@ -591,7 +591,7 @@ const PatientCompletePage: React.FC = () => {
           
           if (event.results[i].isFinal) {
             finalTranscriptAccumulated += transcript + ' ';
-            console.log('🎯 Transcripción final:', transcript);
+            console.log('TARGET: Transcripción final:', transcript);
           } else {
             interimTranscript += transcript;
           }
@@ -608,7 +608,7 @@ const PatientCompletePage: React.FC = () => {
       };
       
       recognitionRef.current.onstart = () => {
-        console.log('🎙️ Reconocimiento de voz iniciado');
+        console.log('MIC: Reconocimiento de voz iniciado');
         setWorkplace(prev => ({
           ...prev,
           activeListening: {
@@ -619,7 +619,7 @@ const PatientCompletePage: React.FC = () => {
       };
       
       recognitionRef.current.onerror = (event: any) => {
-        console.error('❌ Error en reconocimiento de voz:', event.error);
+        console.error('ERROR: Error en reconocimiento de voz:', event.error);
         let errorMessage = 'Error de reconocimiento de voz';
         
         switch (event.error) {
@@ -652,7 +652,7 @@ const PatientCompletePage: React.FC = () => {
       };
       
       recognitionRef.current.onend = () => {
-        console.log('🔄 Reconocimiento terminado, reiniciando...');
+        console.log('RELOAD: Reconocimiento terminado, reiniciando...');
         if (workplace.session.status === 'ACTIVE') {
           // Reiniciar reconocimiento si la sesión sigue activa
           setTimeout(() => {
@@ -667,9 +667,9 @@ const PatientCompletePage: React.FC = () => {
         }
       };
       
-      console.log('✅ Reconocimiento de voz configurado');
+      console.log('SUCCESS: Reconocimiento de voz configurado');
     } else {
-      console.error('❌ Reconocimiento de voz no soportado en este navegador');
+      console.error('ERROR: Reconocimiento de voz no soportado en este navegador');
       setWorkplace(prev => ({
         ...prev,
         activeListening: {
@@ -694,7 +694,7 @@ const PatientCompletePage: React.FC = () => {
   // Captura real de audio del ambiente
   const startRealtimeTranscription = async () => {
     try {
-      console.log('🎙️ Solicitando acceso al micrófono...');
+      console.log('MIC: Solicitando acceso al micrófono...');
       
       // Solicitar acceso al micrófono
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -728,7 +728,7 @@ const PatientCompletePage: React.FC = () => {
       // Iniciar grabación
       mediaRecorderRef.current.start();
       
-      console.log('✅ Captura de audio iniciada correctamente');
+      console.log('SUCCESS: Captura de audio iniciada correctamente');
       
       setWorkplace(prev => ({
         ...prev,
@@ -740,7 +740,7 @@ const PatientCompletePage: React.FC = () => {
       }));
       
     } catch (error) {
-      console.error('❌ Error accediendo al micrófono:', error);
+      console.error('ERROR: Error accediendo al micrófono:', error);
       setWorkplace(prev => ({
         ...prev,
         activeListening: {
@@ -885,7 +885,7 @@ const PatientCompletePage: React.FC = () => {
 
   const performClinicalAnalysis = async () => {
     if (!patient || workplace.session.entities.length === 0) {
-      console.log('⚠️ No hay entidades clínicas para analizar');
+      console.log('WARNING: No hay entidades clínicas para analizar');
       return;
     }
 
@@ -931,7 +931,7 @@ const PatientCompletePage: React.FC = () => {
         clinicalPatient
       );
 
-      console.log('✅ Análisis clínico completado:', analysisResult);
+      console.log('SUCCESS: Análisis clínico completado:', analysisResult);
 
       setWorkplace(prev => ({
         ...prev,
@@ -947,7 +947,7 @@ const PatientCompletePage: React.FC = () => {
       }));
 
     } catch (error) {
-      console.error('❌ Error en análisis clínico:', error);
+      console.error('ERROR: Error en análisis clínico:', error);
       setWorkplace(prev => ({
         ...prev,
         clinicalAssistant: {
@@ -960,7 +960,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleSuggestionAccepted = (suggestion: ClinicalSuggestion) => {
-    console.log('✅ Sugerencia aceptada:', suggestion.title);
+    console.log('SUCCESS: Sugerencia aceptada:', suggestion.title);
     
     setWorkplace(prev => ({
       ...prev,
@@ -972,7 +972,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleSuggestionDismissed = (suggestion: ClinicalSuggestion) => {
-    console.log('❌ Sugerencia descartada:', suggestion.title);
+    console.log('ERROR: Sugerencia descartada:', suggestion.title);
     // Las sugerencias descartadas se manejan en el componente ClinicalAssistantPanel
   };
 
@@ -995,7 +995,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleSOAPEnhancement = (enhancement: any) => {
-    console.log('📋 Mejora SOAP aplicada:', enhancement);
+    console.log('NOTES: Mejora SOAP aplicada:', enhancement);
     // Manejar mejoras automáticas del SOAP
   };
 
@@ -1020,7 +1020,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleSuggestionApplied = (suggestionId: string, section: 'S' | 'O' | 'A' | 'P') => {
-    console.log('✅ Sugerencia aplicada al SOAP:', { suggestionId, section });
+    console.log('SUCCESS: Sugerencia aplicada al SOAP:', { suggestionId, section });
   };
 
   // Ejecutar análisis clínico automáticamente cuando se completa el procesamiento
@@ -1334,7 +1334,7 @@ const PatientCompletePage: React.FC = () => {
                     💡 Generar Plan de Ejercicios
                   </button>
                   <button className="w-full bg-gradient-to-r from-[#A8E6CF] to-[#8BDBB7] text-[#2C3E50] py-2 px-4 rounded-lg text-sm font-medium hover:from-[#8BDBB7] hover:to-[#6ED09F] transition-all">
-                    📋 Sugerencias SOAP
+                    NOTES: Sugerencias SOAP
                   </button>
                 </div>
               </div>

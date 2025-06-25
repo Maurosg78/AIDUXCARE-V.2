@@ -88,7 +88,7 @@ class SpecialtyFeatureService {
       PSICOLOGIA: {
         specialty: 'PSICOLOGIA',
         displayName: 'Psicología',
-        icon: '🧠',
+        icon: 'AI:',
         colorScheme: {
           primary: '#8B7ED8',
           secondary: '#C8B9E8',
@@ -107,7 +107,7 @@ class SpecialtyFeatureService {
       LOGOPEDIA: {
         specialty: 'LOGOPEDIA',
         displayName: 'Logopedia',
-        icon: '🗣️',
+        icon: 'SPEECH:',
         colorScheme: {
           primary: '#FF9F43',
           secondary: '#FFC048',
@@ -167,7 +167,7 @@ class SpecialtyFeatureService {
       ODONTOLOGIA: {
         specialty: 'ODONTOLOGIA',
         displayName: 'Odontología',
-        icon: '🦷',
+        icon: 'DENTAL:',
         colorScheme: {
           primary: '#0984e3',
           secondary: '#74b9ff',
@@ -187,7 +187,7 @@ class SpecialtyFeatureService {
       MEDICINA_GENERAL: {
         specialty: 'MEDICINA_GENERAL',
         displayName: 'Medicina General',
-        icon: '⚕️',
+        icon: 'MEDICAL:',
         colorScheme: {
           primary: '#2C3E50',
           secondary: '#BDC3C7',
@@ -207,7 +207,7 @@ class SpecialtyFeatureService {
       ENFERMERIA: {
         specialty: 'ENFERMERIA',
         displayName: 'Enfermería',
-        icon: '👩‍⚕️',
+        icon: 'NURSE:',
         colorScheme: {
           primary: '#e17055',
           secondary: '#fab1a0',

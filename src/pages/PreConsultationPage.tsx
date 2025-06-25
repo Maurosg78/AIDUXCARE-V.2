@@ -1,5 +1,5 @@
 /**
- * 📋 PRE-CONSULTATION - Preparación IA
+ * NOTES: PRE-CONSULTATION - Preparación IA
  * Preparación inteligente de consultas con insights predictivos
  */
 
@@ -259,7 +259,7 @@ const PreConsultationPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-[#FF6F61] mb-2">⚠️ Alergias</h3>
+                  <h3 className="text-sm font-medium text-[#FF6F61] mb-2">WARNING: Alergias</h3>
                   <ul className="space-y-1">
                     {patient.allergies.map((allergy, index) => (
                       <li key={index} className="text-xs text-[#FF6F61] pl-2 border-l-2 border-[#FF6F61]/20">
@@ -354,7 +354,7 @@ const PreConsultationPage: React.FC = () => {
 
             {/* Opciones de Tratamiento */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20">
-              <h3 className="text-lg font-bold text-[#2C3E50] mb-4">🎯 Opciones de Tratamiento IA</h3>
+              <h3 className="text-lg font-bold text-[#2C3E50] mb-4">TARGET: Opciones de Tratamiento IA</h3>
               <div className="space-y-3">
                 {aiPreparation.treatmentOptions.map((option, index) => (
                   <div key={index} className="p-3 bg-[#5DA5A3]/10 rounded-lg border-l-4 border-[#5DA5A3]">

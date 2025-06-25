@@ -47,11 +47,11 @@ const SimpleConsultationPageBackup: React.FC = () => {
           return;
         }
 
-        console.log('✅ BACKUP: Paciente cargado:', foundPatient.name);
+        console.log('SUCCESS: BACKUP: Paciente cargado:', foundPatient.name);
         setPatient(foundPatient);
         setError(null);
       } catch (err) {
-        console.error('❌ BACKUP: Error cargando paciente:', err);
+        console.error('ERROR: BACKUP: Error cargando paciente:', err);
         setError('Error al cargar paciente');
       } finally {
         setIsLoading(false);
@@ -200,7 +200,7 @@ const SimpleConsultationPageBackup: React.FC = () => {
               
               <button
                 onClick={() => {
-                  console.log('🚀 Navegando a consulta completa para paciente:', patient.id);
+                  console.log('LAUNCH: Navegando a consulta completa para paciente:', patient.id);
                   // Navegar a la página de consulta completa
                   navigate(`/patient/${patient.id}/consultation/complete`);
                 }}

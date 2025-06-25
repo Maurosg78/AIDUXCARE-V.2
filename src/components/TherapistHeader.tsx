@@ -1,5 +1,5 @@
 /**
- * 👨‍⚕️ Therapist Header Component - AiDuxCare V.2
+ * DOCTOR: Therapist Header Component - AiDuxCare V.2
  * Header que muestra información del terapeuta actual
  * Incluye opciones de logout y cambio de usuario
  */

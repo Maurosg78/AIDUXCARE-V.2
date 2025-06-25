@@ -122,13 +122,13 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       case 'idle':
         return '⏸️';
       case 'requesting_permission':
-        return '🔄';
+        return 'RELOAD:';
       case 'recording':
-        return '🔴';
+        return 'RED:';
       case 'stopping':
-        return '⏹️';
+        return 'STOP:';
       case 'error':
-        return '❌';
+        return 'ERROR:';
       default:
         return '❓';
     }
@@ -182,7 +182,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
     return (
       <div className={`p-6 bg-yellow-50 border border-yellow-200 rounded-lg ${className}`}>
         <div className="flex items-center space-x-3 mb-4">
-          <span className="text-2xl">⚠️</span>
+          <span className="text-2xl">WARNING:</span>
           <h3 className="text-lg font-semibold text-yellow-800">
             Navegador No Compatible
           </h3>
@@ -201,7 +201,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
         </div>
 
         <div className="mt-4 p-3 bg-white rounded border">
-          <h4 className="font-medium text-yellow-800 mb-2">✅ Navegadores Compatibles:</h4>
+          <h4 className="font-medium text-yellow-800 mb-2">SUCCESS: Navegadores Compatibles:</h4>
           <ul className="text-sm text-yellow-700 space-y-1">
             <li>• Google Chrome (recomendado)</li>
             <li>• Microsoft Edge</li>
@@ -218,7 +218,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">🎤</span>
+            <span className="text-2xl">AUDIO:</span>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
                 Captura de Audio en Tiempo Real
@@ -246,7 +246,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
               onClick={handleStartCapture}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
             >
-              <span>🎙️</span>
+              <span>MIC:</span>
               <span>Iniciar Captura</span>
             </button>
           ) : (
@@ -255,7 +255,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
               disabled={captureStatus === 'stopping' || captureStatus === 'requesting_permission'}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
-              <span>⏹️</span>
+              <span>STOP:</span>
               <span>Detener Captura</span>
             </button>
           )}
@@ -279,7 +279,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
         {errorMessage && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center space-x-2">
-              <span className="text-red-500">❌</span>
+              <span className="text-red-500">ERROR:</span>
               <span className="text-sm text-red-700">{errorMessage}</span>
             </div>
           </div>
@@ -289,7 +289,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       {/* Estadísticas de sesión */}
       {sessionStats && (
         <div className="p-4 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">📊 Estadísticas de Sesión</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">STATS: Estadísticas de Sesión</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div className="text-center">
               <div className="font-semibold text-lg text-blue-600">{sessionStats.segmentsCount}</div>
@@ -331,7 +331,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
             <div className="text-center py-8 text-gray-500">
               {captureStatus === 'recording' ? (
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="animate-pulse">🎤</span>
+                  <span className="animate-pulse">AUDIO:</span>
                   <span>Esperando audio...</span>
                 </div>
               ) : (

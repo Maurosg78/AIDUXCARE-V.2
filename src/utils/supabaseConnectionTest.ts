@@ -5,7 +5,7 @@ export async function testSupabaseConnection() {
   console.log('🔧 Iniciando test de conexión Supabase...');
   
   // Información de configuración
-  console.log('📋 Configuración actual:');
+  console.log('NOTES: Configuración actual:');
   console.log('- URL:', import.meta.env.VITE_SUPABASE_URL);
   console.log('- Key (primeros 50 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 50) + '...');
   
@@ -13,9 +13,9 @@ export async function testSupabaseConnection() {
     // Test 1: Verificar sesión
     const { data: session, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
-      console.error('❌ Error de sesión:', sessionError);
+      console.error('ERROR: Error de sesión:', sessionError);
     } else {
-      console.log('✅ Sesión OK:', session?.session ? 'Activa' : 'Anónima');
+      console.log('SUCCESS: Sesión OK:', session?.session ? 'Activa' : 'Anónima');
     }
 
     // Test 2: Verificar acceso a tabla simple
@@ -26,10 +26,10 @@ export async function testSupabaseConnection() {
       .limit(1);
     
     if (error) {
-      console.error('❌ Error de consulta:', error);
+      console.error('ERROR: Error de consulta:', error);
       return false;
     } else {
-      console.log('✅ Consulta exitosa. Registros encontrados:', data?.length || 0);
+      console.log('SUCCESS: Consulta exitosa. Registros encontrados:', data?.length || 0);
       return true;
     }
   } catch (err) {
@@ -40,6 +40,6 @@ export async function testSupabaseConnection() {
 
 // Auto-ejecutar en desarrollo
 if (import.meta.env.DEV) {
-  console.log('🚀 Auto-ejecutando test de conexión...');
+  console.log('LAUNCH: Auto-ejecutando test de conexión...');
   testSupabaseConnection();
 } 

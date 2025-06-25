@@ -1,5 +1,6 @@
 /**
  * 🏥 DYNAMIC SOAP EDITOR - SOAP EDITABLE Y DINÁMICO CON MODO AUDITORÍA
+ * 🔍 MODO AUDITORÍA: Indicadores de confianza y controles de reclasificación
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,6 +10,62 @@ import {
   ExamTest, 
   RedFlag 
 } from '../../services/ClinicalAssistantService';
+
+// TARGET: DATOS SIMULADOS PARA TESTING DEL MODO AUDITORÍA
+const MOCK_AUDIT_DATA = {
+  classifiedSegments: [
+    {
+      id: 'seg_1',
+      originalText: 'El paciente refiere dolor lumbar intenso desde hace 3 días',
+      soapSection: 'S' as const,
+      confidence: 0.95,
+      speaker: 'PACIENTE',
+      entities: [{ text: 'dolor lumbar', type: 'SYMPTOM', confidence: 0.9 }]
+    },
+    {
+      id: 'seg_2',
+      originalText: 'Limitación de movilidad en flexión anterior',
+      soapSection: 'O' as const,
+      confidence: 0.78,
+      speaker: 'TERAPEUTA',
+      entities: [{ text: 'limitación movilidad', type: 'FINDING', confidence: 0.85 }]
+    },
+    {
+      id: 'seg_3',
+      originalText: 'Posible lumbalgia mecánica',
+      soapSection: 'A' as const,
+      confidence: 0.65,
+      speaker: 'TERAPEUTA',
+      entities: [{ text: 'lumbalgia mecánica', type: 'DIAGNOSIS', confidence: 0.7 }]
+    },
+    {
+      id: 'seg_4',
+      originalText: 'Se recomienda fisioterapia y reposo relativo',
+      soapSection: 'P' as const,
+      confidence: 0.88,
+      speaker: 'TERAPEUTA',
+      entities: [{ text: 'fisioterapia', type: 'TREATMENT', confidence: 0.9 }]
+    }
+  ],
+  redFlags: [
+    {
+      id: 'rf_1',
+      type: 'NEUROLOGICAL',
+      severity: 'HIGH',
+      title: 'Pérdida de fuerza en extremidades inferiores',
+      description: 'El paciente presenta debilidad muscular que requiere evaluación neurológica inmediata',
+      recommendation: 'Derivar a urgencias para evaluación neurológica completa'
+    },
+    {
+      id: 'rf_2',
+      type: 'PAIN',
+      severity: 'MEDIUM',
+      title: 'Dolor nocturno persistente',
+      description: 'El dolor empeora por la noche y no mejora con reposo',
+      recommendation: 'Considerar evaluación por traumatología'
+    }
+  ]
+};
 
 interface SOAPSection {
   id: string;
@@ -60,6 +117,28 @@ interface ProfessionalFeedback {
   timestamp: string;
 }
 
+interface ClassifiedSegment {
+  id: string;
+  originalText: string;
+  soapSection: 'S' | 'O' | 'A' | 'P';
+  confidence: number;
+  speaker: string;
+  entities: Array<{
+    text: string;
+    type: string;
+    confidence: number;
+  }>;
+}
+
+interface RedFlag {
+  id: string;
+  type: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  title: string;
+  description: string;
+  recommendation: string;
+}
+
 interface DynamicSOAPEditorProps {
   initialSOAP?: {
     subjective: string;
@@ -75,14 +154,8 @@ interface DynamicSOAPEditorProps {
   auditMode?: boolean;
   onAuditAction?: (action: AuditAction) => Promise<void>;
   onFeedbackReport?: (feedback: ProfessionalFeedback) => Promise<void>;
-  classifiedSegments?: Array<{
-    id: string;
-    originalText: string;
-    soapSection: 'S' | 'O' | 'A' | 'P';
-    confidence: number;
-    speaker: string;
-    entities: any[];
-  }>;
+  classifiedSegments?: ClassifiedSegment[];
+  redFlags?: RedFlag[];
 }
 
 const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
@@ -95,7 +168,8 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
   auditMode = false,
   onAuditAction,
   onFeedbackReport,
-  classifiedSegments = []
+  classifiedSegments = MOCK_AUDIT_DATA.classifiedSegments,
+  redFlags = MOCK_AUDIT_DATA.redFlags
 }) => {
 
   const [soapSections, setSOAPSections] = useState<SOAPSection[]>([
@@ -158,13 +232,16 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
   const [auditState, setAuditState] = useState({
     segmentsUnderReview: [] as string[],
     pendingActions: [] as AuditAction[],
-    professionalOverrides: {} as Record<string, 'S' | 'O' | 'A' | 'P'>
+    professionalOverrides: {} as Record<string, 'S' | 'O' | 'A' | 'P'>,
+    showConfidenceIndicators: true,
+    showRedFlags: true
   });
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
 
   useEffect(() => {
     generateSOAPSuggestions();
-  }, [acceptedSuggestions, completedTests]);
+    updateAuditMetadata();
+  }, [acceptedSuggestions, completedTests, classifiedSegments]);
 
   useEffect(() => {
     const currentSOAP = {
@@ -175,6 +252,47 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     };
     onSOAPChange(currentSOAP);
   }, [soapSections, onSOAPChange]);
+
+  const updateAuditMetadata = () => {
+    setSOAPSections(prev => prev.map(section => {
+      const sectionSegments = classifiedSegments.filter(seg => seg.soapSection === section.type);
+      const avgConfidence = sectionSegments.length > 0 
+        ? sectionSegments.reduce((sum, seg) => sum + seg.confidence, 0) / sectionSegments.length
+        : 0.85;
+      
+      const requiresReview = avgConfidence < 0.7 || sectionSegments.some(seg => seg.confidence < 0.6);
+      
+      return {
+        ...section,
+        auditMetadata: {
+          ...section.auditMetadata,
+          confidence: avgConfidence,
+          requiresReview,
+          alternativeClassifications: generateAlternativeClassifications(section.type, sectionSegments)
+        }
+      };
+    }));
+  };
+
+  const generateAlternativeClassifications = (currentSection: 'S' | 'O' | 'A' | 'P', segments: ClassifiedSegment[]) => {
+    const alternatives = [];
+    const sections: ('S' | 'O' | 'A' | 'P')[] = ['S', 'O', 'A', 'P'];
+    
+    sections.forEach(section => {
+      if (section !== currentSection) {
+        const confidence = Math.random() * 0.3 + 0.1; // Simular confianza alternativa
+        if (confidence > 0.2) {
+          alternatives.push({
+            section,
+            confidence,
+            reasoning: `Clasificación alternativa basada en patrones semánticos`
+          });
+        }
+      }
+    });
+    
+    return alternatives.sort((a, b) => b.confidence - a.confidence);
+  };
 
   const generateSOAPSuggestions = () => {
     const newSuggestions: SOAPSuggestion[] = [];
@@ -205,7 +323,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
         const redFlag = suggestion.data as RedFlag;
         const assessmentSuggestion: SOAPSuggestion = {
           id: `assess-${redFlag.id}`,
-          text: `⚠️ Consideración clínica: ${redFlag.description}`,
+          text: `WARNING: Consideración clínica: ${redFlag.description}`,
           source: 'RED_FLAG',
           isApplied: false,
           timestamp: new Date().toISOString()
@@ -225,17 +343,14 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
   };
 
   const getSuggestionSection = (suggestion: SOAPSuggestion): 'S' | 'O' | 'A' | 'P' => {
-    if (suggestion.id.startsWith('obj-')) return 'O';
-    if (suggestion.id.startsWith('assess-')) return 'A';
-    if (suggestion.id.startsWith('plan-')) return 'P';
+    if (suggestion.source === 'TEMPLATE') return 'O';
+    if (suggestion.source === 'RED_FLAG') return 'A';
     return 'S';
   };
 
   const handleSectionEdit = (sectionId: string, isEditing: boolean) => {
     setSOAPSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, isEditing }
-        : section
+      section.id === sectionId ? { ...section, isEditing } : section
     ));
 
     if (isEditing) {
@@ -251,36 +366,26 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
 
   const handleContentChange = (sectionId: string, content: string) => {
     setSOAPSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, content }
-        : section
+      section.id === sectionId ? { ...section, content } : section
     ));
   };
 
   const handleApplySuggestion = (suggestion: SOAPSuggestion, sectionType: 'S' | 'O' | 'A' | 'P') => {
-    setSOAPSections(prev => prev.map(section => {
-      if (section.type === sectionType) {
-        const newContent = section.content 
-          ? `${section.content}\n• ${suggestion.text}`
-          : `• ${suggestion.text}`;
-        
-        return {
-          ...section,
-          content: newContent,
-          suggestions: section.suggestions.map(s => 
-            s.id === suggestion.id ? { ...s, isApplied: true } : s
-          )
-        };
-      }
-      return section;
-    }));
-
-    setPendingSuggestions(prev => prev.map(s => 
-      s.id === suggestion.id ? { ...s, isApplied: true } : s
-    ));
-
-    onSuggestionApplied(suggestion.id, sectionType);
-    console.log('✅ Sugerencia aplicada:', suggestion.text);
+    const targetSection = soapSections.find(s => s.type === sectionType);
+    if (targetSection) {
+      const newContent = targetSection.content 
+        ? `${targetSection.content}\n${suggestion.text}`
+        : suggestion.text;
+      
+      handleContentChange(targetSection.id, newContent);
+      
+      const updatedSuggestion = { ...suggestion, isApplied: true };
+      setPendingSuggestions(prev => prev.map(s => 
+        s.id === suggestion.id ? updatedSuggestion : s
+      ));
+      
+      onSuggestionApplied(suggestion.id, sectionType);
+    }
   };
 
   const handleDismissSuggestion = (suggestionId: string) => {
@@ -291,7 +396,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
       suggestions: section.suggestions.filter(s => s.id !== suggestionId)
     })));
 
-    console.log('❌ Sugerencia descartada:', suggestionId);
+    console.log('ERROR: Sugerencia descartada:', suggestionId);
   };
 
   const autoResize = (textarea: HTMLTextAreaElement) => {
@@ -299,7 +404,6 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     textarea.style.height = textarea.scrollHeight + 'px';
   };
 
-  // NUEVO: Funciones de auditoría
   const handleReclassifySection = async (sectionId: string, newSection: 'S' | 'O' | 'A' | 'P') => {
     const section = soapSections.find(s => s.id === sectionId);
     if (!section || !onAuditAction) return;
@@ -307,7 +411,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     const auditAction: AuditAction = {
       actionType: 'RECLASSIFY',
       originalSection: section.type,
-      newSection: newSection,
+      newSection,
       professionalFeedback: `Reclasificado de ${section.type} a ${newSection}`,
       timestamp: new Date().toISOString()
     };
@@ -324,9 +428,9 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
         }
       }));
 
-      console.log('✅ Sección reclasificada:', sectionId, '→', newSection);
+      console.log('SUCCESS: Sección reclasificada:', sectionId, '→', newSection);
     } catch (error) {
-      console.error('❌ Error en reclasificación:', error);
+      console.error('ERROR: Error en reclasificación:', error);
     }
   };
 
@@ -345,16 +449,16 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
 
     try {
       await onFeedbackReport(professionalFeedback);
-      console.log('✅ Error reportado:', sectionId, errorType);
+      console.log('SUCCESS: Error reportado:', sectionId, errorType);
     } catch (error) {
-      console.error('❌ Error reportando error:', error);
+      console.error('ERROR: Error reportando error:', error);
     }
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-600 bg-green-100';
-    if (confidence >= 0.6) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+    if (confidence >= 0.8) return 'bg-green-500';
+    if (confidence >= 0.6) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   const getConfidenceLabel = (confidence: number) => {
@@ -363,100 +467,120 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     return 'Baja';
   };
 
-  // NUEVO: Componente para controles de auditoría
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'CRITICAL': return 'bg-red-600 border-red-700';
+      case 'HIGH': return 'bg-red-500 border-red-600';
+      case 'MEDIUM': return 'bg-yellow-500 border-yellow-600';
+      case 'LOW': return 'bg-blue-500 border-blue-600';
+      default: return 'bg-gray-500 border-gray-600';
+    }
+  };
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case 'CRITICAL': return '🚨';
+      case 'HIGH': return 'WARNING:';
+      case 'MEDIUM': return '⚡';
+      case 'LOW': return 'ℹ️';
+      default: return 'NOTES:';
+    }
+  };
+
   const AuditControls = ({ section }: { section: SOAPSection }) => {
     const [showReclassifyMenu, setShowReclassifyMenu] = useState(false);
     const [showErrorReport, setShowErrorReport] = useState(false);
     const [errorFeedback, setErrorFeedback] = useState('');
 
-    if (!auditMode) return null;
-
     return (
-      <div className="flex items-center space-x-2">
-        {/* Indicador de confianza */}
-        <div className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(section.auditMetadata?.confidence || 0)}`}>
-          {getConfidenceLabel(section.auditMetadata?.confidence || 0)}: {(section.auditMetadata?.confidence || 0) * 100}%
-        </div>
-
-        {/* Botón de reclasificación */}
-        <div className="relative">
-          <button
-            onClick={() => setShowReclassifyMenu(!showReclassifyMenu)}
-            className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-medium hover:bg-blue-200"
-          >
-            🔄 Reclasificar
-          </button>
+      <div className="audit-controls bg-gray-50 p-3 rounded-lg border-l-4 border-blue-500">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">Confianza IA:</span>
+            <div className={`w-3 h-3 rounded-full ${getConfidenceColor(section.auditMetadata?.confidence || 0)}`}></div>
+            <span className="text-sm text-gray-600">
+              {getConfidenceLabel(section.auditMetadata?.confidence || 0)} 
+              ({Math.round((section.auditMetadata?.confidence || 0) * 100)}%)
+            </span>
+          </div>
           
-          {showReclassifyMenu && (
-            <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              {(['S', 'O', 'A', 'P'] as const).map((sectionType) => (
-                <button
-                  key={sectionType}
-                  onClick={() => {
-                    handleReclassifySection(section.id, sectionType);
-                    setShowReclassifyMenu(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
-                >
-                  → {sectionType}
-                </button>
-              ))}
-            </div>
+          {section.auditMetadata?.requiresReview && (
+            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+              Requiere Revisión
+            </span>
           )}
         </div>
 
-        {/* Botón de reportar error */}
-        <button
-          onClick={() => setShowErrorReport(true)}
-          className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-medium hover:bg-red-200"
-        >
-          ⚠️ Reportar Error
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowReclassifyMenu(!showReclassifyMenu)}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            RELOAD: Reclasificar
+          </button>
+          
+          <button
+            onClick={() => setShowErrorReport(!showErrorReport)}
+            className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          >
+            WARNING: Reportar Error
+          </button>
+        </div>
 
-        {/* Modal de reporte de error */}
-        {showErrorReport && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-              <h4 className="font-semibold mb-4">Reportar Error en {section.title}</h4>
-              
-              <select 
-                className="w-full p-2 border border-gray-300 rounded mb-4"
-                onChange={(e) => setErrorFeedback(e.target.value)}
-              >
-                <option value="">Seleccionar tipo de error...</option>
-                <option value="CLASSIFICATION_ERROR">Error de clasificación</option>
-                <option value="CONTENT_ERROR">Error en contenido</option>
-                <option value="MISSING_INFO">Información faltante</option>
-                <option value="OTHER">Otro</option>
-              </select>
-
-              <textarea
-                placeholder="Describe el problema..."
-                className="w-full p-2 border border-gray-300 rounded mb-4 h-24"
-                value={errorFeedback}
-                onChange={(e) => setErrorFeedback(e.target.value)}
-              />
-
-              <div className="flex justify-end space-x-2">
+        {showReclassifyMenu && (
+          <div className="mt-2 p-2 bg-white border rounded-lg">
+            <p className="text-xs text-gray-600 mb-2">Mover a sección:</p>
+            <div className="flex space-x-1">
+              {(['S', 'O', 'A', 'P'] as const).map(sec => (
                 <button
-                  onClick={() => setShowErrorReport(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded"
-                >
-                  Cancelar
-                </button>
-                <button
+                  key={sec}
                   onClick={() => {
-                    if (errorFeedback) {
-                      handleReportError(section.id, 'OTHER', errorFeedback);
-                      setShowErrorReport(false);
-                      setErrorFeedback('');
-                    }
+                    handleReclassifySection(section.id, sec);
+                    setShowReclassifyMenu(false);
                   }}
-                  className="px-4 py-2 bg-red-500 text-white rounded"
+                  disabled={sec === section.type}
+                  className={`px-2 py-1 text-xs rounded ${
+                    sec === section.type 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
                 >
-                  Reportar
+                  {sec}
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showErrorReport && (
+          <div className="mt-2 p-2 bg-white border rounded-lg">
+            <textarea
+              value={errorFeedback}
+              onChange={(e) => setErrorFeedback(e.target.value)}
+              placeholder="Describe el error encontrado..."
+              className="w-full p-2 text-xs border rounded resize-none"
+              rows={3}
+            />
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={() => {
+                  handleReportError(section.id, 'CLASSIFICATION_ERROR', errorFeedback);
+                  setErrorFeedback('');
+                  setShowErrorReport(false);
+                }}
+                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Enviar Reporte
+              </button>
+              <button
+                onClick={() => {
+                  setErrorFeedback('');
+                  setShowErrorReport(false);
+                }}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         )}
@@ -464,236 +588,224 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     );
   };
 
-  return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20">
-      
-      {/* NUEVO: Header de auditoría */}
-      {auditMode && (
-        <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="font-semibold text-blue-800 flex items-center">
-                🔍 Modo Auditoría Activo
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs">
-                  PROFESIONAL
-                </span>
-              </h4>
-              <p className="text-sm text-blue-600 mt-1">
-                Revise las clasificaciones automáticas y reclasifique si es necesario
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-blue-800">
-                {soapSections.filter(s => (s.auditMetadata?.confidence || 0) > 0.8).length}/{soapSections.length}
+  const ClinicalAlerts = () => {
+    if (!auditState.showRedFlags || redFlags.length === 0) return null;
+
+    return (
+      <div className="clinical-alerts mb-6">
+        <h3 className="text-lg font-semibold text-red-700 mb-3 flex items-center">
+          🚨 Alertas Clínicas ({redFlags.length})
+        </h3>
+        
+        <div className="space-y-3">
+          {redFlags.map(flag => (
+            <div
+              key={flag.id}
+              className={`p-4 rounded-lg border-2 ${getSeverityColor(flag.severity)} text-white`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xl">{getSeverityIcon(flag.severity)}</span>
+                  <h4 className="font-semibold text-lg">{flag.title}</h4>
+                  <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full uppercase">
+                    {flag.severity}
+                  </span>
+                </div>
               </div>
-              <div className="text-xs text-blue-600">Alta confianza</div>
+              
+              <p className="text-sm mb-3 opacity-90">{flag.description}</p>
+              
+              <div className="bg-white bg-opacity-10 p-3 rounded-lg">
+                <p className="text-sm font-medium mb-1">💡 Recomendación:</p>
+                <p className="text-sm">{flag.recommendation}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const ClassifiedSegmentsView = () => {
+    if (!auditMode || !auditState.showConfidenceIndicators) return null;
+
+    return (
+      <div className="classified-segments mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center">
+          🔍 Segmentos Clasificados ({classifiedSegments.length})
+        </h3>
+        
+        <div className="space-y-2">
+          {classifiedSegments.map(segment => (
+            <div
+              key={segment.id}
+              className="p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className={`px-2 py-1 text-xs rounded-full text-white ${
+                      segment.soapSection === 'S' ? 'bg-blue-500' :
+                      segment.soapSection === 'O' ? 'bg-green-500' :
+                      segment.soapSection === 'A' ? 'bg-yellow-500' :
+                      'bg-purple-500'
+                    }`}>
+                      {segment.soapSection}
+                    </span>
+                    <span className="text-xs text-gray-500">({segment.speaker})</span>
+                    <div className={`w-2 h-2 rounded-full ${getConfidenceColor(segment.confidence)}`}></div>
+                    <span className="text-xs text-gray-600">
+                      {Math.round(segment.confidence * 100)}%
+                    </span>
+                  </div>
+                  
+                  <p className="text-sm text-gray-800">{segment.originalText}</p>
+                  
+                  {segment.entities.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {segment.entities.map((entity, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
+                        >
+                          {entity.text} ({entity.type})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="dynamic-soap-editor bg-white rounded-lg shadow-lg p-6">
+      <ClinicalAlerts />
+      <ClassifiedSegmentsView />
+      {auditMode && (
+        <div className="audit-controls-panel mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-blue-800 flex items-center">
+              🔍 Modo Auditoría Activo
+            </h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setAuditState(prev => ({ ...prev, showConfidenceIndicators: !prev.showConfidenceIndicators }))}
+                className={`px-3 py-1 text-xs rounded ${
+                  auditState.showConfidenceIndicators 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {auditState.showConfidenceIndicators ? 'SUCCESS:' : 'ERROR:'} Indicadores
+              </button>
+              <button
+                onClick={() => setAuditState(prev => ({ ...prev, showRedFlags: !prev.showRedFlags }))}
+                className={`px-3 py-1 text-xs rounded ${
+                  auditState.showRedFlags 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-gray-300 text-gray-600'
+                }`}
+              >
+                {auditState.showRedFlags ? 'SUCCESS:' : 'ERROR:'} Alertas
+              </button>
             </div>
           </div>
           
-          {/* Estadísticas de auditoría */}
-          <div className="mt-3 pt-3 border-t border-blue-200">
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <div className="font-medium text-blue-800">Segmentos Clasificados</div>
-                <div className="text-blue-600">{classifiedSegments.length}</div>
-              </div>
-              <div>
-                <div className="font-medium text-blue-800">Confianza Promedio</div>
-                <div className="text-blue-600">
-                  {soapSections.length > 0 
-                    ? Math.round((soapSections.reduce((sum, s) => sum + (s.auditMetadata?.confidence || 0), 0) / soapSections.length) * 100)
-                    : 0}%
-                </div>
-              </div>
-              <div>
-                <div className="font-medium text-blue-800">Reclasificaciones</div>
-                <div className="text-blue-600">{Object.keys(auditState.professionalOverrides).length}</div>
-              </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Segmentos bajo revisión:</span> {auditState.segmentsUnderReview.length}
+            </div>
+            <div>
+              <span className="font-medium">Acciones pendientes:</span> {auditState.pendingActions.length}
             </div>
           </div>
         </div>
       )}
-      
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <svg className="w-5 h-5 text-[#5DA5A3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <h3 className="text-lg font-semibold text-[#2C3E50]">
-            Nota SOAP Dinámica
-            {auditMode && <span className="ml-2 text-sm text-blue-600">(Modo Auditoría)</span>}
-          </h3>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          {pendingSuggestions.filter(s => !s.isApplied).length > 0 && (
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-[#A8E6CF] rounded-full animate-pulse"></div>
-              <span className="text-xs text-[#5DA5A3] font-medium">
-                {pendingSuggestions.filter(s => !s.isApplied).length} sugerencias
-              </span>
-            </div>
-          )}
-          
-          <button
-            onClick={() => setShowSuggestions(!showSuggestions)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-              showSuggestions 
-                ? 'bg-[#5DA5A3] text-white' 
-                : 'bg-[#BDC3C7] text-[#2C3E50]'
-            }`}
-          >
-            {showSuggestions ? '👁️ Ocultar' : '👁️ Mostrar'} Sugerencias
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {soapSections.map((section) => (
-          <div key={section.id} className="border border-[#BDC3C7]/30 rounded-lg overflow-hidden">
-            
-            <div className="bg-[#F7F7F7] px-4 py-3 border-b border-[#BDC3C7]/30">
-              <div className="flex items-center justify-between">
+      <div className="soap-sections space-y-6">
+        {soapSections.map(section => (
+          <div key={section.id} className="soap-section">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-800">{section.title}</h3>
+              
+              {auditMode && section.auditMetadata && (
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-[#5DA5A3]">{section.type}</span>
-                  <h4 className="font-semibold text-[#2C3E50]">{section.title}</h4>
-                  {section.suggestions.filter(s => !s.isApplied).length > 0 && (
-                    <span className="px-2 py-1 bg-[#A8E6CF] text-[#2C3E50] rounded-full text-xs font-medium">
-                      {section.suggestions.filter(s => !s.isApplied).length} sugerencias
-                    </span>
-                  )}
-                  
-                  {/* NUEVO: Indicador de reclasificación profesional */}
-                  {auditState.professionalOverrides[section.id] && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-600 rounded-full text-xs font-medium">
-                      🔄 {auditState.professionalOverrides[section.id]}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {/* NUEVO: Controles de auditoría */}
-                  <AuditControls section={section} />
-                  
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => handleSectionEdit(section.id, !section.isEditing)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                        section.isEditing
-                          ? 'bg-[#5DA5A3] text-white'
-                          : 'bg-[#BDC3C7] text-[#2C3E50] hover:bg-[#A8B2B8]'
-                      }`}
-                    >
-                      {section.isEditing ? '✓ Guardar' : '✏️ Editar'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4">
-              {section.isEditing ? (
-                <textarea
-                  ref={(el) => textareaRefs.current[section.id] = el}
-                  value={section.content}
-                  onChange={(e) => {
-                    handleContentChange(section.id, e.target.value);
-                    autoResize(e.target);
-                  }}
-                  onInput={(e) => autoResize(e.target as HTMLTextAreaElement)}
-                  placeholder={`Escriba el contenido para la sección ${section.title}...`}
-                  className="w-full min-h-[120px] p-3 border border-[#BDC3C7]/30 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#5DA5A3]/30 resize-none"
-                  style={{ overflow: 'hidden' }}
-                />
-              ) : (
-                <div className="min-h-[120px] p-3 bg-[#F9F9F9] rounded-md">
-                  {section.content ? (
-                    <div className="text-sm text-[#2C3E50] whitespace-pre-wrap">
-                      {section.content}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-[#2C3E50]/50 italic">
-                      No hay contenido en esta sección. {!isReadOnly && 'Haga clic en "Editar" para agregar contenido.'}
-                    </div>
-                  )}
+                  <div className={`w-3 h-3 rounded-full ${getConfidenceColor(section.auditMetadata.confidence)}`}></div>
+                  <span className="text-sm text-gray-600">
+                    {Math.round(section.auditMetadata.confidence * 100)}%
+                  </span>
                 </div>
               )}
             </div>
 
-            {showSuggestions && section.suggestions.filter(s => !s.isApplied).length > 0 && (
-              <div className="border-t border-[#BDC3C7]/30 bg-[#A8E6CF]/10 p-4">
-                <h5 className="text-sm font-medium text-[#2C3E50] mb-3">💡 Sugerencias del Asistente:</h5>
-                <div className="space-y-2">
-                  {section.suggestions.filter(s => !s.isApplied).map((suggestion) => (
-                    <div key={suggestion.id} className="flex items-start justify-between p-3 bg-white rounded-md border border-[#A8E6CF]/30">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-xs px-2 py-1 bg-[#5DA5A3]/20 text-[#5DA5A3] rounded">
-                            {suggestion.source === 'TEMPLATE' ? '📋 Plantilla' : 
-                             suggestion.source === 'RED_FLAG' ? '🚨 Alerta' : '🤖 Asistente'}
-                          </span>
-                          <span className="text-xs text-[#2C3E50]/60">
-                            {new Date(suggestion.timestamp).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#2C3E50]">{suggestion.text}</p>
-                      </div>
-                      
-                      {!isReadOnly && (
-                        <div className="flex space-x-2 ml-3">
-                          <button
-                            onClick={() => handleApplySuggestion(suggestion, section.type)}
-                            className="bg-[#5DA5A3] text-white px-2 py-1 rounded text-xs font-medium hover:bg-[#4A8280] transition-colors"
-                          >
-                            ✓ Aplicar
-                          </button>
-                          <button
-                            onClick={() => handleDismissSuggestion(suggestion.id)}
-                            className="bg-[#BDC3C7] text-[#2C3E50] px-2 py-1 rounded text-xs font-medium hover:bg-[#A8B2B8] transition-colors"
-                          >
-                            ✗ Descartar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            {auditMode && <AuditControls section={section} />}
+
+            <div className="content-area">
+              {section.isEditing ? (
+                <textarea
+                  ref={(el) => { textareaRefs.current[section.id] = el; }}
+                  value={section.content}
+                  onChange={(e) => handleContentChange(section.id, e.target.value)}
+                  onBlur={() => handleSectionEdit(section.id, false)}
+                  onInput={(e) => autoResize(e.target as HTMLTextAreaElement)}
+                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={Math.max(3, section.content.split('\n').length)}
+                  disabled={isReadOnly}
+                />
+              ) : (
+                <div
+                  onClick={() => !isReadOnly && handleSectionEdit(section.id, true)}
+                  className={`p-3 border border-gray-300 rounded-lg min-h-[80px] ${
+                    isReadOnly ? 'bg-gray-50' : 'cursor-pointer hover:bg-gray-50'
+                  }`}
+                >
+                  {section.content || (
+                    <span className="text-gray-400 italic">
+                      {isReadOnly ? 'Sin contenido' : 'Haz clic para editar...'}
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-[#BDC3C7]/30">
-        <div className="flex items-center justify-between text-xs text-[#2C3E50]/60">
-          <div className="flex items-center space-x-4">
-            <span>📝 Secciones completadas: {soapSections.filter(s => s.content.trim()).length}/4</span>
-            <span>💡 Sugerencias pendientes: {pendingSuggestions.filter(s => !s.isApplied).length}</span>
-            <span>✅ Sugerencias aplicadas: {pendingSuggestions.filter(s => s.isApplied).length}</span>
-            
-            {/* NUEVO: Estadísticas de auditoría */}
-            {auditMode && (
-              <>
-                <span>🔍 Segmentos auditados: {classifiedSegments.length}</span>
-                <span>🔄 Reclasificaciones: {Object.keys(auditState.professionalOverrides).length}</span>
-                <span>📊 Confianza promedio: {
-                  soapSections.length > 0 
-                    ? Math.round((soapSections.reduce((sum, s) => sum + (s.auditMetadata?.confidence || 0), 0) / soapSections.length) * 100)
-                    : 0}%
-                </span>
-              </>
-            )}
-          </div>
-          <div className="text-right">
-            <span>Última actualización: {new Date().toLocaleTimeString()}</span>
-            {auditMode && (
-              <div className="mt-1">
-                <span className="text-blue-600">🔍 Modo Auditoría Activo</span>
+      {showSuggestions && pendingSuggestions.length > 0 && (
+        <div className="suggestions-panel mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800 mb-3">
+            💡 Sugerencias Disponibles ({pendingSuggestions.length})
+          </h3>
+          
+          <div className="space-y-2">
+            {pendingSuggestions.map(suggestion => (
+              <div key={suggestion.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                <span className="text-sm text-gray-700">{suggestion.text}</span>
+                
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleApplySuggestion(suggestion, getSuggestionSection(suggestion))}
+                    className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                  <button
+                    onClick={() => handleDismissSuggestion(suggestion.id)}
+                    className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                  >
+                    Descartar
+                  </button>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

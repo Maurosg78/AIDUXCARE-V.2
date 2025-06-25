@@ -136,13 +136,13 @@ export class PubMedSearchService {
               source: 'pubmed'
             });
           } catch (articleError) {
-            console.warn(`⚠️ Error procesando artículo ${uid}:`, articleError);
+            console.warn(`WARNING: Error procesando artículo ${uid}:`, articleError);
             // Continuar con el siguiente artículo
           }
         }
       }
       
-      console.log(`✅ Encontrados ${documents.length} artículos en PubMed para: ${query}`);
+      console.log(`SUCCESS: Encontrados ${documents.length} artículos en PubMed para: ${query}`);
       return documents;
       
     } catch (error) {
@@ -380,7 +380,7 @@ export class RAGMedicalMCP {
       // 4. Calcular confianza general
       const confidenceScore = this.calculateOverallConfidence(documents, clinicalQuery);
       
-      console.log(`✅ RAG completado: ${documents.length} documentos, ${allChunks.length} chunks`);
+      console.log(`SUCCESS: RAG completado: ${documents.length} documentos, ${allChunks.length} chunks`);
       
       return {
         query: clinicalQuery,
@@ -539,14 +539,14 @@ export class RAGTestingHelper {
       
       const result = await RAGMedicalMCP.retrieveRelevantKnowledge(query, 'fisioterapia', 3);
       
-      console.log(`✅ Found ${result.citations.length} citations`);
-      console.log(`✅ Generated ${result.relevant_chunks.length} chunks`);
-      console.log(`✅ Confidence: ${Math.round(result.confidence_score * 100)}%`);
-      console.log(`✅ Processing time: ${result.processing_time_ms}ms`);
+      console.log(`SUCCESS: Found ${result.citations.length} citations`);
+      console.log(`SUCCESS: Generated ${result.relevant_chunks.length} chunks`);
+      console.log(`SUCCESS: Confidence: ${Math.round(result.confidence_score * 100)}%`);
+      console.log(`SUCCESS: Processing time: ${result.processing_time_ms}ms`);
       
       // Generar bloques MCP
       const mcpBlocks = RAGMedicalMCP.convertToMCPBlocks(result);
-      console.log(`✅ Generated ${mcpBlocks.length} MCP blocks`);
+      console.log(`SUCCESS: Generated ${mcpBlocks.length} MCP blocks`);
     }
     
     console.log('\n🎉 RAG Pipeline testing completed!');

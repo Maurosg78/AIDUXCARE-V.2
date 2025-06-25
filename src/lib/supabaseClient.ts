@@ -13,16 +13,16 @@ const supabaseServiceRole = import.meta.env.VITE_SUPABASE_SERVICE_ROLE;
 
 // Validación crítica de variables de entorno
 if (!supabaseUrl) {
-  throw new Error('❌ VITE_SUPABASE_URL no está configurada en .env.local');
+  throw new Error('ERROR: VITE_SUPABASE_URL no está configurada en .env.local');
 }
 
 if (!supabaseAnonKey) {
-  throw new Error('❌ VITE_SUPABASE_ANON_KEY no está configurada en .env.local');
+  throw new Error('ERROR: VITE_SUPABASE_ANON_KEY no está configurada en .env.local');
 }
 
 // Validar que la URL tenga el formato correcto
 if (!supabaseUrl.includes('supabase.co') && !supabaseUrl.includes('localhost')) {
-  throw new Error(`❌ URL de Supabase inválida: ${supabaseUrl}`);
+  throw new Error(`ERROR: URL de Supabase inválida: ${supabaseUrl}`);
 }
 
 // Singleton instance holder
@@ -33,11 +33,11 @@ let supabaseInstance: SupabaseClient | null = null;
  */
 function createSupabaseClient(): SupabaseClient {
   if (supabaseInstance) {
-    console.log('🔄 Reutilizando instancia existente de Supabase');
+    console.log('RELOAD: Reutilizando instancia existente de Supabase');
     return supabaseInstance;
   }
 
-  console.log('🚀 Creando nueva instancia de Supabase Singleton');
+  console.log('LAUNCH: Creando nueva instancia de Supabase Singleton');
 
   // TEMPORAL MVP FIX: Usar service role en desarrollo para evitar problemas RLS
   const isDevelopment = import.meta.env.DEV;
@@ -66,7 +66,7 @@ function createSupabaseClient(): SupabaseClient {
   });
 
   // Log de diagnóstico detallado
-  console.log('✅ Supabase Singleton inicializado:', {
+  console.log('SUCCESS: Supabase Singleton inicializado:', {
     url: `${supabaseUrl.substring(0, 30)}...`,
     keyType,
     keyLength: keyToUse.length,
@@ -88,7 +88,7 @@ export function getSupabaseClient(): SupabaseClient {
  * Resetea la instancia Singleton (solo para testing)
  */
 export function resetSupabaseInstance(): void {
-  console.log('🔄 Reseteando instancia de Supabase (testing mode)');
+  console.log('RELOAD: Reseteando instancia de Supabase (testing mode)');
   supabaseInstance = null;
 }
 

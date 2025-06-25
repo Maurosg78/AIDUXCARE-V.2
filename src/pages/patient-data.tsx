@@ -1,5 +1,5 @@
 /**
- * 📋 PATIENT DATA PAGE - AIDUXCARE V.2
+ * NOTES: PATIENT DATA PAGE - AIDUXCARE V.2
  * Página de captura de datos del paciente usando el sistema de diseño
  * Modo DEMO con datos mock para la Fase 0
  */
@@ -92,18 +92,18 @@ const PatientDataPage: React.FC = () => {
         reasonForConsultation: formData.reasonForConsultation.trim(),
     };
 
-      console.log('🔄 Enviando datos al backend:', patientData);
+      console.log('RELOAD: Enviando datos al backend:', patientData);
 
       // Llamar al servicio real para crear el paciente
       const createdPatient = await createPatient(patientData);
       
-      console.log('✅ Paciente creado exitosamente:', createdPatient);
+      console.log('SUCCESS: Paciente creado exitosamente:', createdPatient);
 
       // Navegar a la lista de pacientes para ver el paciente recién creado
       navigate('/patients');
       
     } catch (error) {
-      console.error('❌ Error al crear paciente:', error);
+      console.error('ERROR: Error al crear paciente:', error);
       
       // Usar el servicio de manejo de errores para mostrar mensaje amigable
       const errorMessage = getErrorMessage(error);

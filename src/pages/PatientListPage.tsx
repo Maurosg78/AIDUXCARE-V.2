@@ -1,5 +1,5 @@
 /**
- * 📋 PATIENT LIST PAGE - IDENTIDAD VISUAL OFICIAL AIDUXCARE
+ * NOTES: PATIENT LIST PAGE - IDENTIDAD VISUAL OFICIAL AIDUXCARE
  * Dashboard optimizado con diseño oficial y navegación fluida
  */
 
@@ -42,17 +42,17 @@ const PatientListPage: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        console.log('📋 Cargando lista de pacientes desde LocalStorage...');
+        console.log('NOTES: Cargando lista de pacientes desde LocalStorage...');
         
         // Usar LocalStorageService en lugar de API
         const patientList = localStorageService.getAllPatients();
         
-        console.log('✅ Pacientes cargados exitosamente:', patientList.length);
+        console.log('SUCCESS: Pacientes cargados exitosamente:', patientList.length);
         setPatients(patientList);
         setFilteredPatients(patientList);
         
       } catch (error) {
-        console.error('❌ Error al cargar lista de pacientes:', error);
+        console.error('ERROR: Error al cargar lista de pacientes:', error);
         setError('Error al cargar la lista de pacientes');
       } finally {
         setLoading(false);
@@ -184,7 +184,7 @@ const PatientListPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-[#2C3E50] mb-2">📋 Lista Pacientes</h2>
+              <h2 className="text-3xl font-bold text-[#2C3E50] mb-2">NOTES: Lista Pacientes</h2>
               <p className="text-[#2C3E50]/70">
                 Historias Clínicas • {filteredPatients.length} de {patients.length} registros activos
               </p>

@@ -112,7 +112,7 @@ const SimpleConsultationPageSimple: React.FC = () => {
           </div>
 
           <div className="bg-[#5DA5A3]/5 rounded-lg p-6 border border-[#5DA5A3]/20 mb-6">
-            <h2 className="text-lg font-semibold text-[#2C3E50] mb-4">✅ Consulta Cargada Correctamente</h2>
+            <h2 className="text-lg font-semibold text-[#2C3E50] mb-4">SUCCESS: Consulta Cargada Correctamente</h2>
             <p className="text-[#2C3E50]/70 mb-4">
               Esta es una versión simplificada para verificar que la navegación funciona sin errores.
             </p>

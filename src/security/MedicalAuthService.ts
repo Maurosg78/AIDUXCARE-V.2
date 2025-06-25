@@ -4,8 +4,8 @@
  * TOTP + JWT + Role-Based Access Control
  */
 
-// import * as speakeasy from 'speakeasy';  // ❌ No funciona en navegadores
-// import * as qrcode from 'qrcode';       // ❌ No funciona en navegadores
+// import * as speakeasy from 'speakeasy';  // ERROR: No funciona en navegadores
+// import * as qrcode from 'qrcode';       // ERROR: No funciona en navegadores
 import * as CryptoJS from 'crypto-js';
 import MedicalEncryptionService from './MedicalEncryptionService';
 import MedicalAuditService from './MedicalAuditService';
@@ -121,12 +121,12 @@ class MedicalAuthService {
       const secretArray = new Uint8Array(32);
       crypto.getRandomValues(secretArray);
       const secret = Array.from(secretArray, byte => byte.toString(36)).join('').substring(0, 32);
-      console.log('✅ Secreto generado:', secret ? 'OK' : 'FALLO');
+      console.log('SUCCESS: Secreto generado:', secret ? 'OK' : 'FALLO');
 
       // Generar códigos de backup
       console.log('🔐 Generando códigos de backup...');
       const backupCodes = this.generateBackupCodes();
-      console.log('✅ Códigos backup generados:', backupCodes.length);
+      console.log('SUCCESS: Códigos backup generados:', backupCodes.length);
 
       // Crear QR code simple con URL manual
       console.log('🔐 Generando QR code...');
@@ -136,7 +136,7 @@ class MedicalAuthService {
       
       // Para navegadores, usaremos un servicio de QR online o mostraremos la URL
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpAuthUrl)}`;
-      console.log('✅ QR code generado');
+      console.log('SUCCESS: QR code generado');
 
       // Hash de códigos de backup usando Web Crypto API
       console.log('🔐 Hasheando códigos de backup...');
@@ -149,7 +149,7 @@ class MedicalAuthService {
           return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         })
       );
-      console.log('✅ Códigos hasheados');
+      console.log('SUCCESS: Códigos hasheados');
 
       const mfaSetup: MFASetup = {
         secret: secret,
@@ -167,7 +167,7 @@ class MedicalAuthService {
       }));
       
       localStorage.setItem(`mfa_${userId}`, encryptedConfig);
-      console.log('✅ MFA configurado y guardado exitosamente');
+      console.log('SUCCESS: MFA configurado y guardado exitosamente');
 
       // Auditoría
       MedicalAuditService.logAuthenticationEvent(
@@ -179,7 +179,7 @@ class MedicalAuthService {
 
       return mfaSetup;
     } catch (error) {
-      console.error('❌ Error en setupMFA:', error);
+      console.error('ERROR: Error en setupMFA:', error);
       MedicalAuditService.logAuthenticationEvent(
         userId,
         'MFA_SETUP',
@@ -211,7 +211,7 @@ class MedicalAuthService {
 
       return verified;
     } catch (error) {
-      console.error('❌ Error verificando TOTP:', error);
+      console.error('ERROR: Error verificando TOTP:', error);
       return false;
     }
   }
@@ -238,7 +238,7 @@ class MedicalAuthService {
 
       return isValid;
     } catch (error) {
-      console.error('❌ Error verificando código de backup:', error);
+      console.error('ERROR: Error verificando código de backup:', error);
       return false;
     }
   }
@@ -295,7 +295,7 @@ class MedicalAuthService {
       return authToken;
 
     } catch (error) {
-      console.error('❌ Error en autenticación MFA:', error);
+      console.error('ERROR: Error en autenticación MFA:', error);
       return null;
     }
   }
@@ -373,7 +373,7 @@ class MedicalAuthService {
 
       return decodedPayload;
     } catch (error) {
-      console.error('❌ Error verificando token:', error);
+      console.error('ERROR: Error verificando token:', error);
       return null;
     }
   }
@@ -506,7 +506,7 @@ class MedicalAuthService {
       
       return otp === token;
     } catch (error) {
-      console.error('❌ Error en verificación TOTP:', error);
+      console.error('ERROR: Error en verificación TOTP:', error);
       return false;
     }
   }

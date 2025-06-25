@@ -88,7 +88,7 @@ const ClinicalWorkflowPage: React.FC = () => {
         
         // Cargar solo pacientes reales guardados (sin demos por defecto)
         const storedPatients = localStorageService.getAllPatients();
-        console.log('📊 Pacientes cargados desde localStorage:', storedPatients.length);
+        console.log('STATS: Pacientes cargados desde localStorage:', storedPatients.length);
         
         setState(prev => ({
           ...prev,
@@ -180,18 +180,18 @@ const ClinicalWorkflowPage: React.FC = () => {
       const patient = patients.find(p => p.id === patientId);
       
       if (!patient) {
-        console.error('❌ Paciente no encontrado:', patientId);
+        console.error('ERROR: Paciente no encontrado:', patientId);
         alert('Error: Paciente no encontrado');
         return;
       }
       
-      console.log('✅ Paciente encontrado:', patient.name);
-      console.log('🚀 Navegando a consulta...');
+      console.log('SUCCESS: Paciente encontrado:', patient.name);
+      console.log('LAUNCH: Navegando a consulta...');
       
       // Navegar con manejo de errores
       navigate(`/patient/${patientId}/consultation`);
     } catch (error) {
-      console.error('❌ Error al iniciar consulta:', error);
+      console.error('ERROR: Error al iniciar consulta:', error);
       alert('Error al iniciar la consulta. Intenta nuevamente.');
     }
   };
@@ -229,7 +229,7 @@ const ClinicalWorkflowPage: React.FC = () => {
         'Pacientes demo eliminados para empezar producción'
       );
 
-      alert('✅ Pacientes demo eliminados correctamente.\nYa puedes crear pacientes reales.');
+      alert('SUCCESS: Pacientes demo eliminados correctamente.\nYa puedes crear pacientes reales.');
     }
   };
 
@@ -248,7 +248,7 @@ const ClinicalWorkflowPage: React.FC = () => {
         setMfaStep('setup');
       }
     } catch (error) {
-      console.error('❌ Error configurando MFA:', error);
+      console.error('ERROR: Error configurando MFA:', error);
     }
   };
 

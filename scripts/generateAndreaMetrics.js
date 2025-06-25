@@ -58,7 +58,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Función principal
 async function generateLongitudinalMetrics() {
   try {
-    console.log('🔄 Generando métricas longitudinales simuladas...');
+    console.log('RELOAD: Generando métricas longitudinales simuladas...');
 
     // Generar UUIDs para los IDs necesarios
     const patientId = generateUUID();
@@ -203,8 +203,8 @@ async function generateLongitudinalMetrics() {
         try {
           // Guardar en el almacén local como última opción
           console.log('⚠️ Guardando métricas simuladas solo en memoria local');
-          console.log(`✅ Métricas longitudinales generadas correctamente (solo memoria)`);
-          console.log(`📊 Resumen: ${getEvolutionEmoji(clinicalEvolution)} Evolución clínica: ${clinicalEvolution}`);
+          console.log(`SUCCESS: Métricas longitudinales generadas correctamente (solo memoria)`);
+          console.log(`STATS: Resumen: ${getEvolutionEmoji(clinicalEvolution)} Evolución clínica: ${clinicalEvolution}`);
           console.log(`⏱️ Tiempo estimado ahorrado: ${timeSavedMinutes} minutos`);
           console.log(`⚠️ Nivel de riesgo: ${riskLevel.toUpperCase()}`);
           
@@ -219,12 +219,12 @@ async function generateLongitudinalMetrics() {
           return { success: false };
         }
       } else {
-        console.log(`✅ Métricas longitudinales generadas y guardadas correctamente con SQL directo`);
+        console.log(`SUCCESS: Métricas longitudinales generadas y guardadas correctamente con SQL directo`);
         return { success: true, data: sqlResult };
       }
     } else {
-      console.log(`✅ Métricas longitudinales generadas y guardadas correctamente`);
-      console.log(`📊 Resumen: ${getEvolutionEmoji(clinicalEvolution)} Evolución clínica: ${clinicalEvolution}`);
+      console.log(`SUCCESS: Métricas longitudinales generadas y guardadas correctamente`);
+      console.log(`STATS: Resumen: ${getEvolutionEmoji(clinicalEvolution)} Evolución clínica: ${clinicalEvolution}`);
       console.log(`⏱️ Tiempo estimado ahorrado: ${timeSavedMinutes} minutos`);
       console.log(`⚠️ Nivel de riesgo: ${riskLevel.toUpperCase()}`);
       
@@ -241,17 +241,17 @@ export default generateLongitudinalMetrics;
 
 // Ejecutar directamente si es el script principal
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🚀 Ejecutando generación de métricas longitudinales directamente...');
+  console.log('LAUNCH: Ejecutando generación de métricas longitudinales directamente...');
   generateLongitudinalMetrics()
     .then(result => {
       if (result.success) {
-        console.log('✅ Proceso completado con éxito');
+        console.log('SUCCESS: Proceso completado con éxito');
         if (result.inMemoryOnly) {
           console.log('⚠️ Nota: Los datos solo existen en memoria, no se guardaron en la base de datos');
         }
       } else {
-        console.log('❌ Proceso completado con errores');
+        console.log('ERROR: Proceso completado con errores');
       }
     })
-    .catch(err => console.error('❌ Error en la ejecución:', err));
+    .catch(err => console.error('ERROR: Error en la ejecución:', err));
 } 

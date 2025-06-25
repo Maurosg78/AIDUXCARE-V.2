@@ -2,10 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// 📊 SCRIPT DE AUDITORÍA COMPLETA DE ARCHIVOS
+// STATS: SCRIPT DE AUDITORÍA COMPLETA DE ARCHIVOS
 // Genera reporte detallado del estado del codebase
 
-console.log('📊 INICIANDO AUDITORÍA COMPLETA DE ARCHIVOS\n');
+console.log('STATS: INICIANDO AUDITORÍA COMPLETA DE ARCHIVOS\n');
 
 class CodebaseAuditor {
   constructor() {
@@ -162,17 +162,17 @@ class CodebaseAuditor {
       const startTime = Date.now();
       execSync('npm run build', { stdio: 'pipe' });
       this.stats.buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`✅ Build completado en ${this.stats.buildTime}s`);
+      console.log(`SUCCESS: Build completado en ${this.stats.buildTime}s`);
       return true;
     } catch (error) {
-      console.log('❌ Build falló');
+      console.log('ERROR: Build falló');
       this.stats.buildTime = 'FAILED';
       return false;
     }
   }
   
   generateReport() {
-    console.log('📊 Generando reporte de auditoría...\n');
+    console.log('STATS: Generando reporte de auditoría...\n');
     
     this.analyzeDirectory('.');
     this.stats.codeQualityScore = this.calculateQualityScore();
@@ -257,15 +257,15 @@ class CodebaseAuditor {
   }
   
   printReport(report) {
-    console.log('📊 REPORTE DE AUDITORÍA COMPLETA');
+    console.log('STATS: REPORTE DE AUDITORÍA COMPLETA');
     console.log('='.repeat(50));
     
-    console.log('\n📈 RESUMEN GENERAL:');
+    console.log('\nMETRICS: RESUMEN GENERAL:');
     console.log(`• Total de archivos: ${report.summary.totalFiles}`);
     console.log(`• Total de directorios: ${report.summary.totalDirectories}`);
     console.log(`• Score de calidad: ${report.summary.codeQualityScore}/100`);
     console.log(`• Tiempo de build: ${report.summary.buildTime}s`);
-    console.log(`• Build exitoso: ${report.summary.buildSuccess ? '✅' : '❌'}`);
+    console.log(`• Build exitoso: ${report.summary.buildSuccess ? 'SUCCESS:' : 'ERROR:'}`);
     
     console.log('\n📁 DESGLOSE POR CATEGORÍA:');
     console.log(`• Archivos fuente: ${report.breakdown.sourceFiles}`);
@@ -316,17 +316,17 @@ try {
   
   // Determinar código de salida basado en la calidad
   if (report.summary.codeQualityScore < 70) {
-    console.log('\n❌ AUDITORÍA FALLÓ: Score de calidad muy bajo (<70)');
+    console.log('\nERROR: AUDITORÍA FALLÓ: Score de calidad muy bajo (<70)');
     process.exit(1);
   } else if (report.summary.codeQualityScore < 85) {
     console.log('\n⚠️ AUDITORÍA CON ADVERTENCIAS: Score de calidad bajo (<85)');
     process.exit(0);
   } else {
-    console.log('\n✅ AUDITORÍA EXITOSA: Codebase en excelente estado');
+    console.log('\nSUCCESS: AUDITORÍA EXITOSA: Codebase en excelente estado');
     process.exit(0);
   }
   
 } catch (error) {
-  console.error('❌ Error durante la auditoría:', error.message);
+  console.error('ERROR: Error durante la auditoría:', error.message);
   process.exit(1);
 } 

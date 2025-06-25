@@ -531,7 +531,7 @@ export default class SOAPClinicalIntegrationService {
     const recommendations = [];
     
     if (criticalWarnings.length > 0) {
-      recommendations.push('⚠️ REVISAR ADVERTENCIAS CRÍTICAS: Se detectaron problemas que requieren atención inmediata');
+      recommendations.push('WARNING: REVISAR ADVERTENCIAS CRÍTICAS: Se detectaron problemas que requieren atención inmediata');
     }
     
     if (medicalIndications.treatmentGuidelines.length > 0) {
@@ -539,7 +539,7 @@ export default class SOAPClinicalIntegrationService {
     }
     
     if (soapResult.speakerAccuracy < 0.8) {
-      recommendations.push('🎯 VERIFICAR IDENTIFICACIÓN: La precisión de identificación de hablantes es baja');
+      recommendations.push('TARGET: VERIFICAR IDENTIFICACIÓN: La precisión de identificación de hablantes es baja');
     }
 
     return {

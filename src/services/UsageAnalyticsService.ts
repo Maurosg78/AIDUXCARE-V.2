@@ -509,7 +509,7 @@ export const getEvolutionIndicator = (evolution: 'improved' | 'stable' | 'worsen
   switch (evolution) {
     case 'improved': return '🟢'; // Verde: mejora
     case 'stable': return '🟡';   // Amarillo: estable
-    case 'worsened': return '🔴'; // Rojo: empeoramiento
+    case 'worsened': return 'RED:'; // Rojo: empeoramiento
     default: return '⚪';         // Blanco: desconocido
   }
 };

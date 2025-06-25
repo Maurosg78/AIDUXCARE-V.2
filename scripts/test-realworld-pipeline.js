@@ -64,14 +64,14 @@ async function runTestCase(testCase, processor) {
     const validation = validateResult(result, testCase.expected);
     
     // Mostrar resultados
-    console.log(`✅ Segmentos procesados: ${result.segments.length}`);
+    console.log(`SUCCESS: Segmentos procesados: ${result.segments.length}`);
     console.log(`👥 Precisión hablantes: ${(result.speakerAccuracy * 100).toFixed(1)}%`);
     console.log(`🎯 Confianza promedio: ${(result.processingMetrics.averageConfidence * 100).toFixed(1)}%`);
     console.log(`⚡ Tiempo procesamiento: ${result.processingMetrics.processingTimeMs}ms`);
     
     // Mostrar distribución SOAP
     const soapDist = result.processingMetrics.soapDistribution;
-    console.log(`📊 Distribución SOAP: S:${soapDist.S || 0} O:${soapDist.O || 0} A:${soapDist.A || 0} P:${soapDist.P || 0}`);
+    console.log(`STATS: Distribución SOAP: S:${soapDist.S || 0} O:${soapDist.O || 0} A:${soapDist.A || 0} P:${soapDist.P || 0}`);
     
     // Mostrar entidades extraídas
     const allEntities = result.segments.flatMap(s => Object.values(s.entities).flat());
@@ -85,14 +85,14 @@ async function runTestCase(testCase, processor) {
     // Mostrar validación
     console.log(`\n📋 Validación:`);
     Object.entries(validation).forEach(([key, value]) => {
-      const status = value.passed ? '✅' : '❌';
+      const status = value.passed ? 'SUCCESS:' : 'ERROR:';
       console.log(`  ${status} ${key}: ${value.message}`);
     });
     
     return validation;
     
   } catch (error) {
-    console.error(`❌ Error en ${testCase.name}:`, error.message);
+    console.error(`ERROR: Error en ${testCase.name}:`, error.message);
     return { error: true, message: error.message };
   }
 }
@@ -179,7 +179,7 @@ function calculateOverallStats(results) {
  * Función principal
  */
 async function main() {
-  console.log('🚀 Iniciando Tests del RealWorldSOAPProcessor');
+  console.log('LAUNCH: Iniciando Tests del RealWorldSOAPProcessor');
   console.log('=' .repeat(60));
   
   // Crear instancia del processor
@@ -202,16 +202,16 @@ async function main() {
   const stats = calculateOverallStats(results);
   
   console.log('\n' + '=' .repeat(60));
-  console.log('📊 RESUMEN FINAL');
+  console.log('STATS: RESUMEN FINAL');
   console.log('=' .repeat(60));
   console.log(`🧪 Tests ejecutados: ${stats.totalTests}`);
-  console.log(`✅ Tests exitosos: ${stats.passedTests} (${stats.testSuccessRate.toFixed(1)}%)`);
+  console.log(`SUCCESS: Tests exitosos: ${stats.passedTests} (${stats.testSuccessRate.toFixed(1)}%)`);
   console.log(`📋 Validaciones totales: ${stats.totalValidations}`);
-  console.log(`✅ Validaciones exitosas: ${stats.passedValidations} (${stats.validationSuccessRate.toFixed(1)}%)`);
+  console.log(`SUCCESS: Validaciones exitosas: ${stats.passedValidations} (${stats.validationSuccessRate.toFixed(1)}%)`);
   
   // Determinar resultado final
   const overallSuccess = stats.validationSuccessRate >= 90;
-  console.log(`\n🎯 RESULTADO FINAL: ${overallSuccess ? '✅ EXITOSO' : '❌ NECESITA MEJORAS'}`);
+  console.log(`\n🎯 RESULTADO FINAL: ${overallSuccess ? 'SUCCESS: EXITOSO' : 'ERROR: NECESITA MEJORAS'}`);
   
   if (overallSuccess) {
     console.log('🎉 El RealWorldSOAPProcessor está listo para producción!');
@@ -236,7 +236,7 @@ async function main() {
 // Ejecutar si es llamado directamente
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
-    console.error('❌ Error fatal:', error);
+    console.error('ERROR: Error fatal:', error);
     process.exit(1);
   });
 } 

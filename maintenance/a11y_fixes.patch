@@ -1,0 +1,26 @@
+*** Begin Patch
+*** Update File: src/features/patient/components/ClinicalFilters.tsx
+@@ -70,7 +70,8 @@ export default function ClinicalFilters(...) {
+-      <label>Filtrar por tipo de visita</label>
+-      <select onChange={...} value={...}>
++      <label htmlFor="visit-type-select">Filtrar por tipo de visita</label>
++      <select id="visit-type-select" onChange={...} value={...}>
+*** End Patch
+
+*** Begin Patch
+*** Update File: src/features/patient/PatientPortalPage.tsx
+@@ -138,7 +138,11 @@ function PatientPortalPage(...) {
+-    <div className="visit-card" onClick={() => navigateToVisit(v.id)}>
++    <button
++      type="button"
++      className="visit-card"
++      onClick={() => navigateToVisit(v.id)}
++    >
+*** End Patch
+
+*** Begin Patch
+*** Update File: scripts/createClinicalCase.ts
+@@ -90,7 +90,7 @@ async function main() {
+-  let patientEmail = data.patient.email;
++  const patientEmail = data.patient.email;
+*** End Patch

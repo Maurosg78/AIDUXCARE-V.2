@@ -1,5 +1,5 @@
 /**
- * 🎯 SERVICIO DE CHUNKING VITAL - Especificación exacta de Mauricio
+ * TARGET: SERVICIO DE CHUNKING VITAL - Especificación exacta de Mauricio
  * Divide transcripciones largas en fragmentos semánticamente completos con solapamiento
  * OBJETIVO: Evitar procesamiento "sílaba por sílaba" y preservar contexto clínico
  */
@@ -73,7 +73,7 @@ export function chunkTranscript(
     i += chunkSize - overlap;
   }
 
-  console.log(`✅ Chunking completado: ${chunks.length} chunks creados`);
+  console.log(`SUCCESS: Chunking completado: ${chunks.length} chunks creados`);
   return chunks;
 }
 
@@ -84,7 +84,7 @@ export function chunkTranscriptAdvanced(
   transcript: Utterance[],
   config: ChunkingConfig
 ): Chunk[] {
-  console.log(`🧠 Chunking avanzado con config:`, config);
+  console.log(`AI: Chunking avanzado con config:`, config);
 
   if (config.preserveDialogue) {
     return chunkByDialogueTurns(transcript, config);
@@ -125,7 +125,7 @@ function chunkByDialogueTurns(transcript: Utterance[], config: ChunkingConfig): 
       };
 
       chunks.push(chunk);
-      console.log(`🗣️ Chunk diálogo ${chunk.id}: ${chunk.utterances.length} utterances`);
+      console.log(`SPEECH: Chunk diálogo ${chunk.id}: ${chunk.utterances.length} utterances`);
       
       // Mantener solapamiento
       const overlapStart = Math.max(0, currentChunk.length - config.overlap);
@@ -200,7 +200,7 @@ export function parseTranscriptToUtterances(transcriptText: string): Utterance[]
     }
   }
 
-  console.log(`✅ ${utterances.length} utterances creadas`);
+  console.log(`SUCCESS: ${utterances.length} utterances creadas`);
   return utterances;
 }
 
@@ -258,7 +258,7 @@ function detectSpeakerFromText(text: string): 'PATIENT' | 'THERAPIST' | 'UNKNOWN
  * Procesar chunks con LLM (preparado para Claude/Gemini/GPT)
  */
 export async function processChunkWithLLM(chunk: Chunk): Promise<any> {
-  console.log(`🧠 Procesando ${chunk.id} con ${chunk.utterances.length} utterances`);
+  console.log(`AI: Procesando ${chunk.id} con ${chunk.utterances.length} utterances`);
   
   // Construir texto contextual del chunk
   const chunkText = chunk.utterances
@@ -359,7 +359,7 @@ export function debugChunking(chunks: Chunk[]): void {
  * Verificar solapamiento entre chunks
  */
 export function verifyOverlap(chunks: Chunk[]): void {
-  console.log('\n🔄 === VERIFICACIÓN SOLAPAMIENTO ===');
+  console.log('\nRELOAD: === VERIFICACIÓN SOLAPAMIENTO ===');
   
   for (let i = 0; i < chunks.length - 1; i++) {
     const currentChunk = chunks[i];
@@ -369,7 +369,7 @@ export function verifyOverlap(chunks: Chunk[]): void {
     console.log(`${currentChunk.id} ↔ ${nextChunk.id}: ${overlap} utterances de solapamiento`);
   }
   
-  console.log('🔄 === FIN VERIFICACIÓN ===\n');
+  console.log('RELOAD: === FIN VERIFICACIÓN ===\n');
 }
 
 // === CONFIGURACIONES PREDEFINIDAS ===
@@ -414,7 +414,7 @@ export const CHUNKING_CONFIGS = {
  * EJEMPLO COMPLETO según especificación de Mauricio
  */
 export async function exampleUsage() {
-  console.log('🎯 === EJEMPLO CHUNKING SEGÚN MAURICIO ===\n');
+  console.log('TARGET: === EJEMPLO CHUNKING SEGÚN MAURICIO ===\n');
   
   // 1. Transcripción de ejemplo
   const transcriptText = `
@@ -441,13 +441,13 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
   verifyOverlap(chunks);
   
   // 5. Procesar chunks
-  console.log('🧠 Procesando chunks...\n');
+  console.log('AI: Procesando chunks...\n');
   for (const chunk of chunks) {
     const result = await processChunkWithLLM(chunk);
-    console.log(`✅ ${chunk.id} procesado: ${result.soapClassification.length} clasificaciones SOAP`);
+    console.log(`SUCCESS: ${chunk.id} procesado: ${result.soapClassification.length} clasificaciones SOAP`);
   }
   
-  console.log('\n🎯 === FIN EJEMPLO ===');
+  console.log('\nTARGET: === FIN EJEMPLO ===');
 }
 
 // Exportar configuración por defecto

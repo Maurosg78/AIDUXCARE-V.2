@@ -130,7 +130,7 @@ const PatientCompletePageFixed: React.FC = () => {
         };
         
         recognitionRef.current.onerror = (event: any) => {
-          console.error('❌ Error de reconocimiento:', event.error);
+          console.error('ERROR: Error de reconocimiento:', event.error);
           
           let errorMessage = '';
           switch (event.error) {
@@ -144,13 +144,13 @@ const PatientCompletePageFixed: React.FC = () => {
               errorMessage = '🤫 No se detectó voz. Habla más cerca.';
               break;
             case 'audio-capture':
-              errorMessage = '🎤 Error del micrófono. Verifica la conexión.';
+              errorMessage = 'AUDIO: Error del micrófono. Verifica la conexión.';
               break;
             case 'service-not-allowed':
-              errorMessage = '❌ Servicio no disponible. Prueba modo incógnito.';
+              errorMessage = 'ERROR: Servicio no disponible. Prueba modo incógnito.';
               break;
             default:
-              errorMessage = `⚠️ Error técnico: ${event.error}`;
+              errorMessage = `WARNING: Error técnico: ${event.error}`;
           }
           
           setAudioState(prev => ({
@@ -161,7 +161,7 @@ const PatientCompletePageFixed: React.FC = () => {
         };
         
         recognitionRef.current.onend = () => {
-          console.log('🎤 Reconocimiento terminado');
+          console.log('AUDIO: Reconocimiento terminado');
           setAudioState(prev => ({
             ...prev,
             isRecording: false
@@ -171,7 +171,7 @@ const PatientCompletePageFixed: React.FC = () => {
     } else {
       setAudioState(prev => ({
         ...prev,
-        error: '❌ Tu navegador no soporta reconocimiento de voz. Usa Chrome, Edge o Safari.'
+        error: 'ERROR: Tu navegador no soporta reconocimiento de voz. Usa Chrome, Edge o Safari.'
       }));
     }
     
@@ -194,7 +194,7 @@ const PatientCompletePageFixed: React.FC = () => {
     if (!recognitionRef.current) {
       setAudioState(prev => ({
         ...prev,
-        error: '❌ Reconocimiento de voz no disponible.'
+        error: 'ERROR: Reconocimiento de voz no disponible.'
       }));
       return;
     }
@@ -256,7 +256,7 @@ const PatientCompletePageFixed: React.FC = () => {
         console.error('Error al iniciar reconocimiento:', error);
         setAudioState(prev => ({
           ...prev,
-          error: '❌ Error al iniciar grabación. Recarga la página.',
+          error: 'ERROR: Error al iniciar grabación. Recarga la página.',
           isRecording: false
         }));
       }
@@ -267,14 +267,14 @@ const PatientCompletePageFixed: React.FC = () => {
   const testConnection = () => {
     setAudioState(prev => ({
       ...prev,
-      error: '🔄 Probando conexión...'
+      error: 'RELOAD: Probando conexión...'
     }));
     
     fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' })
       .then(() => {
         setAudioState(prev => ({
           ...prev,
-          error: '✅ Conexión OK. Intenta grabar de nuevo.'
+          error: 'SUCCESS: Conexión OK. Intenta grabar de nuevo.'
         }));
         setTimeout(() => {
           setAudioState(prev => ({
@@ -286,7 +286,7 @@ const PatientCompletePageFixed: React.FC = () => {
       .catch(() => {
         setAudioState(prev => ({
           ...prev,
-          error: '❌ Sin conexión a internet. Revisa tu conexión.'
+          error: 'ERROR: Sin conexión a internet. Revisa tu conexión.'
         }));
       });
   };
@@ -395,7 +395,7 @@ const PatientCompletePageFixed: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8F9FA] to-[#E3F2FD] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-6xl mb-4">⚠️</div>
+          <div className="text-6xl mb-4">WARNING:</div>
           <h2 className="text-xl font-semibold text-[#2C3E50] mb-2">Error</h2>
           <p className="text-[#2C3E50]/70 mb-4">{error}</p>
           <button
@@ -444,7 +444,7 @@ const PatientCompletePageFixed: React.FC = () => {
           <div className="space-y-6">
             {/* Información del Paciente */}
             <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
-              <h3 className="text-lg font-semibold text-[#2C3E50] mb-4">👤 Información del Paciente</h3>
+              <h3 className="text-lg font-semibold text-[#2C3E50] mb-4">USER: Información del Paciente</h3>
               <div className="space-y-3">
                 <div>
                   <span className="text-sm font-medium text-[#2C3E50]/70">Nombre:</span>
@@ -469,7 +469,7 @@ const PatientCompletePageFixed: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-[#2C3E50] mb-4">
-                  🎙️ Grabación de Consulta
+                  MIC: Grabación de Consulta
                 </h3>
                 
                 {audioState.recordingTime > 0 && (
@@ -503,8 +503,8 @@ const PatientCompletePageFixed: React.FC = () => {
                 
                 <p className="text-sm text-[#2C3E50]/60 mb-4 font-medium">
                   {audioState.isRecording 
-                    ? '🔴 GRABANDO... Habla claramente. Haz clic para detener.' 
-                    : '🎤 Haz clic para iniciar grabación de audio'
+                    ? 'RED: GRABANDO... Habla claramente. Haz clic para detener.' 
+                    : 'AUDIO: Haz clic para iniciar grabación de audio'
                   }
                 </p>
                 
@@ -557,7 +557,7 @@ const PatientCompletePageFixed: React.FC = () => {
 
           {/* Panel Derecho - Notas SOAP */}
           <div className="bg-white rounded-lg shadow-sm border border-[#BDC3C7]/20 p-6">
-            <h3 className="text-lg font-semibold text-[#2C3E50] mb-6">📋 Notas SOAP</h3>
+            <h3 className="text-lg font-semibold text-[#2C3E50] mb-6">NOTES: Notas SOAP</h3>
             
             <div className="space-y-6">
               {/* Subjetivo */}

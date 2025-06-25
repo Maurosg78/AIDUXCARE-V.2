@@ -1,5 +1,5 @@
 /**
- * 🏠 Home Page - AiDuxCare V.2
+ * HOME: Home Page - AiDuxCare V.2
  * EMR con asistente IA - Paleta médica suave (como audio page)
  */
 
@@ -64,7 +64,7 @@ export const HomePage: React.FC = () => {
             {/* Content Suave */}
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-teal-50 text-teal-700 mb-8 border border-teal-100">
-                🩺 EMR con Inteligencia Artificial Médica
+                MEDICAL: EMR con Inteligencia Artificial Médica
               </div>
               
               <h1 className="text-5xl lg:text-6xl xl:text-7xl font-black leading-tight mb-8">
@@ -163,8 +163,8 @@ export const HomePage: React.FC = () => {
                           SUGERENCIAS IA
                         </div>
                         <div className="text-sm text-gray-600">💡 Considerar: SCA - Solicitar ECG urgente</div>
-                        <div className="text-sm text-gray-600">📋 SOAP pre-completado para revisión</div>
-                        <div className="text-sm text-gray-600">⚠️ Alertas: Protocolo dolor torácico</div>
+                        <div className="text-sm text-gray-600">NOTES: SOAP pre-completado para revisión</div>
+                        <div className="text-sm text-gray-600">WARNING: Alertas: Protocolo dolor torácico</div>
                       </div>
                       
                       {/* Progress bars suaves */}

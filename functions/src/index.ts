@@ -161,7 +161,7 @@ app.get("/health", (req, res) => {
 });
 
 // Exporta la aplicación como Cloud Function Gen 2
-export const api = onRequest({
+export const aiduxcareApi = onRequest({
   region: "us-east1",
   memory: "256MiB",
   cpu: 1,

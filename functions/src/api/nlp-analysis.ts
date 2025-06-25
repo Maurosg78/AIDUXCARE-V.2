@@ -22,7 +22,7 @@ const initializeHealthcareClient = () => {
     // Inicializar cliente de Healthcare API con la autenticación explícita
     const healthcareClient = healthcare({
       version: "v1beta1",
-      auth: auth as unknown,
+      auth: auth as GoogleAuth,
     });
 
     console.log(`✅ Healthcare NLP Client inicializado explícitamente para proyecto: ${projectId}`);

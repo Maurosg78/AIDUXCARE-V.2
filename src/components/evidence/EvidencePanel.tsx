@@ -257,7 +257,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center text-xs text-gray-500">
-                      <span className="mr-1">🎯</span>
+                      <span className="mr-1">TARGET:</span>
                       {evidence.relevanceScore}%
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
                       onClick={() => onEvidenceSelect?.(evidence)}
                       className="text-xs"
                     >
-                      📋 Agregar a SOAP
+                      NOTES: Agregar a SOAP
                     </Button>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 /**
- * 🔄 Hook useInterval - AiDuxCare V.2
+ * RELOAD: Hook useInterval - AiDuxCare V.2
  * Hook que maneja intervalos con cleanup automático
  * Soluciona el problema de bucles infinitos por intervalos no limpiados
  */

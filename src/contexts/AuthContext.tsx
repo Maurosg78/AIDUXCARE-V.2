@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('🔍 Resultado verificación token:', tokenData ? 'VÁLIDO' : 'INVÁLIDO/EXPIRADO');
         
         if (tokenData && tokenData.expiresAt > Date.now()) {
-          console.log('✅ Token válido, restaurando sesión médica...');
+          console.log('SUCCESS: Token válido, restaurando sesión médica...');
           // Sesión válida - Restaurar estado
           const therapist: TherapistLocalData = {
             therapistId: tokenData.userId === 'mauricio.sobarzo' ? 'mauricio.sobarzo' : tokenData.userId,
@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setRequiresMFA(false);
           }
           
-          console.log('🔐 ✅ Estado de autenticación actualizado:', {
+          console.log('🔐 SUCCESS: Estado de autenticación actualizado:', {
             'isAuthenticated': true,
             'therapistName': therapist.name,
             'role': therapist.role,
@@ -132,18 +132,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             tokenData.role.name === 'OWNER'
           );
           
-          console.log('🔐 ✅ Sesión médica segura restaurada:', therapist.name);
+          console.log('🔐 SUCCESS: Sesión médica segura restaurada:', therapist.name);
         } else {
           // Token expirado - Limpiar
-          console.log('⚠️ Token expirado, limpiando almacenamiento...');
+          console.log('WARNING: Token expirado, limpiando almacenamiento...');
           localStorage.removeItem('aiduxcare_secure_token');
-          console.log('🔐 ⚠️ Token médico expirado - Requiere nueva autenticación');
+          console.log('🔐 WARNING: Token médico expirado - Requiere nueva autenticación');
+          
+          // 🎯 ACTIVAR LOGIN AUTOMÁTICO UAT DESPUÉS DE TOKEN EXPIRADO
+          console.log('🚀 UAT: Token expirado, activando login automático UAT...');
+          await performUATAutoLogin();
         }
       } else {
         console.log('🔐 ℹ️ No hay sesión médica activa');
+        
+        // 🎯 CRÍTICO: LOGIN AUTOMÁTICO UAT CUANDO NO HAY TOKEN
+        console.log('🚀 UAT: No se encontró token, activando login automático UAT...');
+        await performUATAutoLogin();
       }
     } catch (error) {
-      console.error('❌ Error inicializando seguridad médica:', error);
+      console.error('ERROR: Error inicializando seguridad médica:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       MedicalAuditService.logSystemEvent(
         'system',
@@ -151,9 +159,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         'Error en inicialización de autenticación',
         { error: errorMessage, context: 'AUTH_INITIALIZATION' }
       );
+      
+      // 🎯 FALLBACK: LOGIN AUTOMÁTICO UAT INCLUSO CON ERROR
+      console.log('🚀 UAT: Error en inicialización, intentando login automático UAT...');
+      await performUATAutoLogin();
     } finally {
       setIsLoading(false);
       console.log('🔐 Inicialización de seguridad médica completada');
+    }
+  };
+
+  // 🎯 FUNCIÓN CRÍTICA: Login Automático UAT para Walking Skeleton
+  const performUATAutoLogin = async () => {
+    try {
+      console.log('🚀 EJECUTANDO LOGIN AUTOMÁTICO UAT - Walking Skeleton');
+      console.log('👤 Autenticando: Mauricio Sobarzo (CTO) - Modo UAT');
+      
+      const result = await login('msobarzo78@gmail.com', 'aidux2025');
+      
+      if (result.success) {
+        console.log('SUCCESS: Login automático UAT completado exitosamente');
+        console.log('✅ Walking Skeleton: Acceso habilitado para páginas de consulta');
+      } else {
+        console.log('ERROR: Login automático UAT falló:', result.error);
+      }
+    } catch (error) {
+      console.error('ERROR: Error crítico en login automático UAT:', error);
     }
   };
 
@@ -249,7 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role === 'OWNER'
       );
 
-      console.log('🔐 ✅ Autenticación médica exitosa:', therapist.name);
+      console.log('🔐 SUCCESS: Autenticación médica exitosa:', therapist.name);
       
       return {
         success: true,
@@ -257,7 +288,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
     } catch (error) {
-      console.error('❌ Error en autenticación médica:', error);
+      console.error('ERROR: Error en autenticación médica:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       MedicalAuditService.logSystemEvent(
         'system',
@@ -308,7 +339,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return basicAuth;
     } catch (error) {
-      console.error('❌ Error en MFA:', error);
+      console.error('ERROR: Error en MFA:', error);
       return {
         success: false,
         error: 'Error en autenticación MFA'
@@ -355,7 +386,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return await login(email, defaultPassword);
       
     } catch (error) {
-      console.error('❌ Error en registro médico:', error);
+      console.error('ERROR: Error en registro médico:', error);
       return {
         success: false,
         error: 'Error en registro médico seguro'
@@ -385,9 +416,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setRequiresMFA(false);
       setSecurityLevel('LOW');
       
-      console.log('🔐 ✅ Logout médico seguro completado');
+      console.log('🔐 SUCCESS: Logout médico seguro completado');
     } catch (error) {
-      console.error('❌ Error en logout:', error);
+      console.error('ERROR: Error en logout:', error);
     }
   };
 
@@ -395,7 +426,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const setupMFA = async () => {
     if (!currentTherapist) {
-      console.error('❌ No hay therapist actual para configurar MFA');
+      console.error('ERROR: No hay therapist actual para configurar MFA');
       return null;
     }
     
@@ -407,7 +438,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         currentTherapist.email || currentTherapist.therapistId
       );
       
-      console.log('✅ MFA configurado exitosamente:', mfaSetup ? 'Con datos' : 'Sin datos');
+      console.log('SUCCESS: MFA configurado exitosamente:', mfaSetup ? 'Con datos' : 'Sin datos');
       
       if (mfaSetup) {
         MedicalAuditService.logAuthenticationEvent(
@@ -420,8 +451,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       return mfaSetup;
     } catch (error) {
-      console.error('❌ Error detallado en setupMFA:', error);
-      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('ERROR: Error detallado en setupMFA:', error);
+      console.error('ERROR: Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       
       MedicalAuditService.logSystemEvent(
         currentTherapist.email || currentTherapist.therapistId,

@@ -85,24 +85,24 @@ const SimpleConsultationPage: React.FC = () => {
       console.log('🏥 SimpleConsultationPage: Iniciando carga de paciente', { patientId });
       
       if (!patientId) {
-        console.warn('⚠️ No se proporcionó patientId, navegando a /clinical');
+        console.warn('WARNING: No se proporcionó patientId, navegando a /clinical');
         navigate('/clinical');
         return;
       }
 
       const patients = localStorageService.getAllPatients();
-      console.log('📊 Pacientes encontrados:', patients.length);
+      console.log('STATS: Pacientes encontrados:', patients.length);
       
       const patient = patients.find(p => p.id === patientId);
 
       if (!patient) {
-        console.error('❌ Paciente no encontrado:', patientId);
+        console.error('ERROR: Paciente no encontrado:', patientId);
         alert('Paciente no encontrado');
         navigate('/clinical');
         return;
       }
 
-      console.log('✅ Paciente cargado:', patient.name);
+      console.log('SUCCESS: Paciente cargado:', patient.name);
 
       // Obtener preguntas guía basadas en la condición
       try {
@@ -117,7 +117,7 @@ const SimpleConsultationPage: React.FC = () => {
           showGuideQuestions: guideQuestions.length > 0
         }));
       } catch (error) {
-        console.error('❌ Error cargando preguntas guía:', error);
+        console.error('ERROR: Error cargando preguntas guía:', error);
         // Continuar sin preguntas guía
         setState(prev => ({ 
           ...prev, 
@@ -146,23 +146,23 @@ const SimpleConsultationPage: React.FC = () => {
             }));
           },
           onSegmentComplete: (segment) => {
-            console.log('🎤 Nuevo segmento transcrito:', segment.content);
+            console.log('AUDIO: Nuevo segmento transcrito:', segment.content);
           },
           onError: (error) => {
-            console.error('❌ Error en transcripción:', error);
+            console.error('ERROR: Error en transcripción:', error);
             // No mostrar alert que puede causar problemas
             console.warn('Transcripción con errores, continuando...');
           }
         });
         
-        console.log('🎤 Servicio de transcripción configurado correctamente');
+        console.log('AUDIO: Servicio de transcripción configurado correctamente');
       } catch (error) {
-        console.error('❌ Error configurando transcripción:', error);
+        console.error('ERROR: Error configurando transcripción:', error);
         // Continuar sin transcripción
       }
 
     } catch (error) {
-      console.error('❌ Error crítico en SimpleConsultationPage useEffect:', error);
+      console.error('ERROR: Error crítico en SimpleConsultationPage useEffect:', error);
       // En caso de error crítico, navegar de vuelta
       navigate('/clinical');
     }
@@ -172,7 +172,7 @@ const SimpleConsultationPage: React.FC = () => {
       try {
         transcriptionService.cleanup();
       } catch (error) {
-        console.error('❌ Error en cleanup:', error);
+        console.error('ERROR: Error en cleanup:', error);
       }
     };
   }, [patientId, navigate, transcriptionService]);
@@ -225,7 +225,7 @@ const SimpleConsultationPage: React.FC = () => {
   const handleStopRecording = async () => {
     try {
       const segments = await transcriptionService.stopRecording();
-      console.log('🎯 Transcripción completada:', segments.length, 'segmentos');
+      console.log('TARGET: Transcripción completada:', segments.length, 'segmentos');
     } catch (error) {
       console.error('Error deteniendo grabación:', error);
       alert('Error al detener la grabación');
@@ -412,14 +412,14 @@ const SimpleConsultationPage: React.FC = () => {
                         onClick={handleStartRecording}
                         className="btn-primary px-4 py-2 text-sm"
                       >
-                        🎤 Iniciar Grabación
+                        AUDIO: Iniciar Grabación
                       </button>
                     ) : (
                       <button
                         onClick={handleStopRecording}
                         className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                       >
-                        ⏹️ Detener Grabación
+                        STOP: Detener Grabación
                       </button>
                     )}
                   </div>

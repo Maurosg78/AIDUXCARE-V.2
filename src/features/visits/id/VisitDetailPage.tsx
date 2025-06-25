@@ -37,7 +37,7 @@ const VisitDetailPage = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Detalle de Visita {visitId}</h1>
 
-      {/* ✅ Se pasa correctamente el contexto */}
+      {/* SUCCESS: Se pasa correctamente el contexto */}
       <MCPContextViewer context={context} />
     </div>
   );

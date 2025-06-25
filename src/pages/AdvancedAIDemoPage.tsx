@@ -1,5 +1,5 @@
 /**
- * 🚀 Advanced AI Demo Page - AiDuxCare V.2 Fase 5
+ * LAUNCH: Advanced AI Demo Page - AiDuxCare V.2 Fase 5
  * Demostración completa de capacidades avanzadas de IA:
  * Audio → STT → NLP → RAG → Clinical Insights → Professional UI
  */
@@ -125,7 +125,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
    * Maneja resultado del procesamiento avanzado
    */
   const handleAdvancedProcessingComplete = useCallback((result: any) => {
-    console.log('🧠 Procesamiento IA avanzado completado:', result);
+    console.log('AI: Procesamiento IA avanzado completado:', result);
     setProcessingResult(result);
     
     // Extraer resultado RAG si está disponible
@@ -444,7 +444,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
   }, []);
 
   const handleAlertAction = useCallback((alert: ClinicalAlert, action: string) => {
-    console.log('⚠️ Acción de alerta ejecutada:', { alert: alert.title, action });
+    console.log('WARNING: Acción de alerta ejecutada:', { alert: alert.title, action });
     // Aquí se ejecutarían las acciones específicas
   }, []);
 
@@ -460,7 +460,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🧠 AiDuxCare V.2 - Advanced AI Demo
+            AI: AiDuxCare V.2 - Advanced AI Demo
           </h1>
           <p className="text-xl text-gray-600 mb-6">
             Demostración completa de capacidades avanzadas de IA clínica
@@ -470,10 +470,10 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
               🔬 RAG Medical
             </span>
             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-              🧠 Clinical Insights
+              AI: Clinical Insights
             </span>
             <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-              📊 Advanced Analytics
+              STATS: Advanced Analytics
             </span>
             <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
               ⚡ Real-time Processing
@@ -485,7 +485,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
             disabled={isRunningDemo}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 text-lg"
           >
-            {isRunningDemo ? '🔄 Procesando IA...' : '🚀 Ejecutar Demo Avanzado'}
+            {isRunningDemo ? 'RELOAD: Procesando IA...' : 'LAUNCH: Ejecutar Demo Avanzado'}
           </Button>
           
           {demoStep && (
@@ -509,7 +509,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
               patientId={patientId}
               onProcessingComplete={handleAdvancedProcessingComplete}
               onError={(error) => {
-                console.error('❌ Error en ProfessionalAudioProcessor:', error);
+                console.error('ERROR: Error en ProfessionalAudioProcessor:', error);
                 setDemoStep('Error en el procesamiento de audio');
               }}
             />
@@ -541,7 +541,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
             {processingResult && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  📋 Resultados del Procesamiento
+                  NOTES: Resultados del Procesamiento
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">

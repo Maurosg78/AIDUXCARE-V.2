@@ -2,11 +2,11 @@
  * 📝 REAL TIME TRANSCRIPTION DISPLAY - Componente de Transcripción en Tiempo Real
  * 
  * Características principales:
- * 1. ✅ Transcripción visible en tiempo real
- * 2. ✅ Identificación visual de interlocutores (PACIENTE/TERAPEUTA)
- * 3. ✅ Métricas de calidad de audio
- * 4. ✅ Recomendaciones de mejora
- * 5. ✅ Preparado para integración SOAP
+ * 1. SUCCESS: Transcripción visible en tiempo real
+ * 2. SUCCESS: Identificación visual de interlocutores (PACIENTE/TERAPEUTA)
+ * 3. SUCCESS: Métricas de calidad de audio
+ * 4. SUCCESS: Recomendaciones de mejora
+ * 5. SUCCESS: Preparado para integración SOAP
  * 
  * @author AiDuxCare Team
  * @date Junio 2025
@@ -279,9 +279,9 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
   const renderSpeakerIcon = (role: string) => {
     switch (role) {
       case 'PATIENT':
-        return '👤';
+        return 'USER:';
       case 'THERAPIST':
-        return '👨‍⚕️';
+        return 'DOCTOR:';
       default:
         return '❓';
     }
@@ -330,17 +330,17 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
               state.status === 'error' ? 'bg-red-100 text-red-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {state.status === 'recording' && '🔴 Grabando'}
-              {state.status === 'completed' && '✅ Completado'}
-              {state.status === 'error' && '❌ Error'}
+              {state.status === 'recording' && 'RED: Grabando'}
+              {state.status === 'completed' && 'SUCCESS: Completado'}
+              {state.status === 'error' && 'ERROR: Error'}
               {state.status === 'idle' && '⏸️ Listo'}
-              {state.status === 'initializing' && '🔄 Iniciando...'}
+              {state.status === 'initializing' && 'RELOAD: Iniciando...'}
             </div>
 
             {/* Duración */}
             {state.sessionDuration > 0 && (
               <div className="text-sm text-gray-600">
-                ⏱️ {formatDuration(state.sessionDuration)}
+                TIME: {formatDuration(state.sessionDuration)}
               </div>
             )}
           </div>
@@ -353,14 +353,14 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 disabled={state.status === 'initializing'}
               >
-                🎙️ Iniciar Grabación
+                MIC: Iniciar Grabación
               </button>
             ) : (
               <button
                 onClick={stopRecording}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                ⏹️ Detener
+                STOP: Detener
               </button>
             )}
 
@@ -369,7 +369,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
               disabled={state.isRecording}
             >
-              🗑️ Limpiar
+              TRASH: Limpiar
             </button>
           </div>
         </div>
@@ -378,7 +378,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
         {state.error && (
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="text-red-800 text-sm">
-              ❌ {state.error}
+              ERROR: {state.error}
             </div>
           </div>
         )}
@@ -441,7 +441,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
           <div className="text-center text-gray-500 py-8">
             {state.status === 'idle' && (
               <>
-                <div className="text-4xl mb-2">🎙️</div>
+                <div className="text-4xl mb-2">MIC:</div>
                 <div>Haz clic en "Iniciar Grabación" para comenzar</div>
               </>
             )}
@@ -503,7 +503,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
 
                 {/* Métricas adicionales */}
                 <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                  <span>🔊 {Math.round(segment.audioLevel * 100)}%</span>
+                  <span>SOUND: {Math.round(segment.audioLevel * 100)}%</span>
                   <span>⚡ {segment.processingTime}ms</span>
                 </div>
               </div>
@@ -517,7 +517,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
         <div className="transcription-footer bg-gray-50 p-4 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
-              📊 {state.segments.filter(s => s.isFinal).length} segmentos finales
+              STATS: {state.segments.filter(s => s.isFinal).length} segmentos finales
             </div>
             <div>
               👥 {state.speakers.length} interlocutores detectados

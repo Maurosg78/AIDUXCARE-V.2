@@ -52,7 +52,7 @@ export const ChunkedTranscriptionDemo: React.FC = () => {
   }, []);
 
   const initializeService = () => {
-    console.log('🎯 Inicializando Servicio de Chunking según especificación de Mauricio');
+    console.log('TARGET: Inicializando Servicio de Chunking según especificación de Mauricio');
     
     const callbacks = {
       onChunkCreated: handleChunkCreated,
@@ -75,7 +75,7 @@ export const ChunkedTranscriptionDemo: React.FC = () => {
   };
 
   const handleChunkProcessed = (result: ChunkSOAPResult) => {
-    console.log(`✅ Chunk procesado: ${result.chunkId} | Confianza: ${result.confidence.toFixed(2)}`);
+    console.log(`SUCCESS: Chunk procesado: ${result.chunkId} | Confianza: ${result.confidence.toFixed(2)}`);
     setState(prev => ({
       ...prev,
       processedChunks: [...prev.processedChunks, result]
@@ -83,7 +83,7 @@ export const ChunkedTranscriptionDemo: React.FC = () => {
   };
 
   const handleBatchCompleted = (result: ChunkedTranscriptionResult) => {
-    console.log('🎯 Batch completado con chunking:', result);
+    console.log('TARGET: Batch completado con chunking:', result);
     setState(prev => ({
       ...prev,
       fullResult: result
@@ -91,7 +91,7 @@ export const ChunkedTranscriptionDemo: React.FC = () => {
   };
 
   const handleError = (error: Error) => {
-    console.error('❌ Error en chunking:', error);
+    console.error('ERROR: Error en chunking:', error);
     setState(prev => ({ ...prev, error: error.message }));
   };
 
@@ -103,8 +103,8 @@ export const ChunkedTranscriptionDemo: React.FC = () => {
       return;
     }
 
-    console.log('🎤 Iniciando grabación con chunking automático');
-    console.log(`📊 Configuración: min ${config.bufferConfig.minWordCount} palabras por segmento`);
+    console.log('AUDIO: Iniciando grabación con chunking automático');
+    console.log(`STATS: Configuración: min ${config.bufferConfig.minWordCount} palabras por segmento`);
     console.log(`📦 Chunking: ${config.chunkingConfig.chunkSize} utterances, ${config.chunkingConfig.overlap} overlap`);
 
     setState(prev => ({
@@ -175,7 +175,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
         processedChunks: result.soapResults
       }));
 
-      console.log('✅ Procesamiento offline completado');
+      console.log('SUCCESS: Procesamiento offline completado');
     } catch (error) {
       handleError(error as Error);
     }
@@ -189,7 +189,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
       chunkingService.current.updateConfig(updatedConfig);
     }
 
-    console.log('📊 Configuración actualizada:', updatedConfig);
+    console.log('STATS: Configuración actualizada:', updatedConfig);
   };
 
   // === TIMER Y STATS ===
@@ -242,8 +242,8 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
 
   const getSpeakerIcon = (speaker: string) => {
     switch (speaker) {
-      case 'PATIENT': return '🧑‍🦱';
-      case 'THERAPIST': return '👨‍⚕️';
+      case 'PATIENT': return 'PERSON:‍🦱';
+      case 'THERAPIST': return 'DOCTOR:';
       default: return '❓';
     }
   };
@@ -279,13 +279,13 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
         {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🎯 Chunking Semántico en Tiempo Real - Especificación Mauricio
+            TARGET: Chunking Semántico en Tiempo Real - Especificación Mauricio
           </h1>
           <p className="text-gray-600">
             Implementación exacta: captura → buffer (min {config.bufferConfig.minWordCount} palabras) → chunks ({config.chunkingConfig.chunkSize} utterances, {config.chunkingConfig.overlap} overlap) → análisis SOAP
           </p>
           <div className="mt-2 text-sm text-green-600">
-            ✅ NO más sílaba por sílaba • ✅ Segmentos semánticamente completos • ✅ Solapamiento inteligente
+            SUCCESS: NO más sílaba por sílaba • SUCCESS: Segmentos semánticamente completos • SUCCESS: Solapamiento inteligente
           </div>
         </div>
 
@@ -373,7 +373,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
 
           {/* Estadísticas */}
           <div className="bg-white rounded-lg shadow-sm border p-4">
-            <h3 className="text-lg font-semibold mb-3">📊 Estadísticas</h3>
+            <h3 className="text-lg font-semibold mb-3">STATS: Estadísticas</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Segmentos buffer:</span>
@@ -396,7 +396,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                 <span className="font-mono">{formatDuration(state.duration)}</span>
               </div>
               {state.stats.isProcessing && (
-                <div className="text-orange-600 text-center">🔄 Procesando...</div>
+                <div className="text-orange-600 text-center">RELOAD: Procesando...</div>
               )}
             </div>
           </div>
@@ -410,7 +410,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                 disabled={state.isRecording}
                 className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium disabled:bg-gray-400 hover:bg-red-700 transition-colors"
               >
-                {state.isRecording ? '🔴 Grabando...' : '🎤 Iniciar Grabación'}
+                {state.isRecording ? 'RED: Grabando...' : 'AUDIO: Iniciar Grabación'}
               </button>
               
               <button
@@ -443,7 +443,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
         {state.error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <span className="text-red-600 mr-2">❌</span>
+              <span className="text-red-600 mr-2">ERROR:</span>
               <span className="text-red-800">{state.error}</span>
             </div>
           </div>
@@ -485,8 +485,8 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                       <div className="text-sm text-gray-600 space-y-1">
                         <div>📝 {chunk.utterances.length} utterances</div>
                         <div>👥 {new Set(chunk.utterances.map(u => u.speaker)).size} hablantes</div>
-                        <div>📊 {chunk.metadata?.totalWords || 0} palabras</div>
-                        {chunk.metadata?.hasSymptoms && <div>🩺 Síntomas</div>}
+                        <div>STATS: {chunk.metadata?.totalWords || 0} palabras</div>
+                        {chunk.metadata?.hasSymptoms && <div>MEDICAL: Síntomas</div>}
                         {chunk.metadata?.hasExamination && <div>🔍 Examen</div>}
                       </div>
                     </div>
@@ -553,7 +553,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                       <div className="bg-gray-50 p-2 rounded">
                         <div className="font-medium">Contenido</div>
                         <div>
-                          {selectedChunk.metadata?.hasSymptoms ? '🩺' : ''}
+                          {selectedChunk.metadata?.hasSymptoms ? 'MEDICAL:' : ''}
                           {selectedChunk.metadata?.hasExamination ? '🔍' : ''}
                         </div>
                       </div>
@@ -573,7 +573,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
           {/* Resultados SOAP */}
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">🧠 Resultados SOAP</h3>
+              <h3 className="text-lg font-semibold">AI: Resultados SOAP</h3>
               <p className="text-sm text-gray-600">
                 {state.processedChunks.length} chunks procesados
               </p>
@@ -617,7 +617,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="text-3xl mb-2">🧠</div>
+                  <div className="text-3xl mb-2">AI:</div>
                   <p>Los chunks procesados aparecerán aquí</p>
                 </div>
               )}
@@ -629,7 +629,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
         {state.fullResult && (
           <div className="mt-6 bg-white rounded-lg shadow-sm border">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">📊 Resultado Final del Chunking</h3>
+              <h3 className="text-lg font-semibold">STATS: Resultado Final del Chunking</h3>
             </div>
             
             <div className="p-4">
@@ -661,9 +661,9 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
               </div>
 
               <div className="text-sm text-gray-600">
-                <p>⏱️ Tiempo total de procesamiento: {formatDuration(state.fullResult.totalProcessingTime)}</p>
+                <p>TIME: Tiempo total de procesamiento: {formatDuration(state.fullResult.totalProcessingTime)}</p>
                 <p>📄 Utterances totales: {state.fullResult.utterances.length}</p>
-                <p>🧠 Resultados SOAP: {state.fullResult.soapResults.length}</p>
+                <p>AI: Resultados SOAP: {state.fullResult.soapResults.length}</p>
               </div>
             </div>
           </div>

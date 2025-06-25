@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 // Páginas principales
 import WelcomePage from '../pages/WelcomePage';
 import AuthenticationPage from '../pages/AuthenticationPage';
+import ClinicalWorkflowPage from '../pages/ClinicalWorkflowPage';
 import PatientListPage from '../pages/PatientListPage';
 import PatientDetailPage from '../features/patient/PatientDetailPage';
 import VisitDetailPage from '../features/visits/[id]/VisitDetailPage';
@@ -13,6 +14,7 @@ import DemoVisitPage from '../features/demo/DemoVisitPage';
 import DashboardPage from '../features/admin/DashboardPage';
 import PatientPortalPage from '../features/patient/PatientPortalPage';
 import AccessDeniedPage from '../features/auth/AccessDeniedPage';
+import IntegratedConsultationPage from '../pages/IntegratedConsultationPage';
 
 // Demos de transcripción
 import EnhancedTranscriptionDemo from '../pages/EnhancedTranscriptionDemo';
@@ -23,6 +25,7 @@ import ChunkedTranscriptionDemo from '../pages/ChunkedTranscriptionDemo';
 import SimpleChunkingDemo from '../pages/SimpleChunkingDemo';
 import TestPage from '../pages/TestPage';
 import WorkModeDemoPage from '../pages/WorkModeDemoPage';
+import GeminiTestPage from '../pages/GeminiTestPage';
 
 // ROUTER SIMPLIFICADO - FUNCIONAL
 export const router = createBrowserRouter([
@@ -39,12 +42,28 @@ export const router = createBrowserRouter([
         element: <AuthenticationPage />
       },
       {
+        path: 'authentication',
+        element: <AuthenticationPage />
+      },
+      {
+        path: 'clinical',
+        element: <ClinicalWorkflowPage />
+      },
+      {
+        path: 'demo',
+        element: <RealWorldDemo />
+      },
+      {
         path: 'patients',
         element: <PatientListPage />
       },
       {
         path: 'patient/:id',
         element: <PatientDetailPage />
+      },
+      {
+        path: 'patient/:patientId/consultation',
+        element: <IntegratedConsultationPage />
       },
       {
         path: 'visit/:id',
@@ -102,6 +121,11 @@ export const router = createBrowserRouter([
       {
         path: 'work-mode-demo',
         element: <WorkModeDemoPage />
+      },
+      // === GEMINI DEVELOPER API ===
+      {
+        path: 'gemini-test',
+        element: <GeminiTestPage />
       }
     ]
   }

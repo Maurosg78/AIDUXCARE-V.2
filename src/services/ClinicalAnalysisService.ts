@@ -11,7 +11,7 @@
  * @author AiDuxCare Development Team
  * @version 1.0
  */
-import { SOAPResult } from '../types/nlp';
+import { NLPAnalysisResult } from '../types/nlp';
 import { ProfessionalProfile } from '../types/professional';
 
 const API_ENDPOINT = '/api/nlp-analysis'; // Usamos una ruta relativa para que Vite use el proxy
@@ -27,7 +27,7 @@ const API_ENDPOINT = '/api/nlp-analysis'; // Usamos una ruta relativa para que V
 export const processClinicalTranscription = async (
   transcription: string,
   professional: ProfessionalProfile
-): Promise<SOAPResult> => {
+): Promise<NLPAnalysisResult> => {
   try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -46,7 +46,7 @@ export const processClinicalTranscription = async (
       throw new Error(`Error del servidor: ${response.status} ${response.statusText} - ${errorData.message}`);
     }
 
-    const result: SOAPResult = await response.json();
+    const result: NLPAnalysisResult = await response.json();
     return result;
 
   } catch (error) {

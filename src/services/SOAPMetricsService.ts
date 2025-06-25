@@ -1,5 +1,5 @@
 /**
- * 📊 SOAP METRICS SERVICE - ANÁLISIS DE PRECISIÓN Y CALIDAD
+ * STATS: SOAP METRICS SERVICE - ANÁLISIS DE PRECISIÓN Y CALIDAD
  * 
  * Servicio para métricas de precisión SOAP, análisis de errores y mejora continua
  * 

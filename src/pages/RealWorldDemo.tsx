@@ -278,14 +278,14 @@ const RealWorldDemo: React.FC = () => {
           </p>
           
           <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-yellow-800 mb-2">🔄 Diferencia Clave</h3>
+            <h3 className="font-semibold text-yellow-800 mb-2">RELOAD: Diferencia Clave</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="font-medium text-red-700 mb-1">❌ Enfoque Anterior (Idealizado)</div>
+                <div className="font-medium text-red-700 mb-1">ERROR: Enfoque Anterior (Idealizado)</div>
                 <div className="italic text-red-600">"TERAPEUTA: ¿Dónde le duele? PACIENTE: En el hombro derecho"</div>
               </div>
               <div>
-                <div className="font-medium text-green-700 mb-1">✅ Enfoque Real (ChatGPT)</div>
+                <div className="font-medium text-green-700 mb-1">SUCCESS: Enfoque Real (ChatGPT)</div>
                 <div className="italic text-green-600">"cuando me siento me paralizo... a veces baja hasta la pierna..."</div>
               </div>
             </div>
@@ -297,7 +297,7 @@ const RealWorldDemo: React.FC = () => {
           {/* PANEL IZQUIERDO - MUESTRAS REALES */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              🎙️ Transcripciones Reales Caóticas
+              MIC: Transcripciones Reales Caóticas
             </h2>
             
             <div className="space-y-4">
@@ -341,14 +341,14 @@ const RealWorldDemo: React.FC = () => {
               onClick={clearResults}
               className="w-full mt-6 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              🗑️ Limpiar Resultados
+              TRASH: Limpiar Resultados
             </button>
           </div>
 
           {/* PANEL DERECHO - RESULTADOS */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              🧠 Análisis Pipeline Real
+              AI: Análisis Pipeline Real
             </h2>
 
             {isProcessing && (
@@ -376,7 +376,7 @@ const RealWorldDemo: React.FC = () => {
 
                 {/* INFERENCIA DE HABLANTE */}
                 <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-blue-800 mb-2">👤 Inferencia de Hablante</h3>
+                  <h3 className="font-semibold text-blue-800 mb-2">USER: Inferencia de Hablante</h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -386,8 +386,8 @@ const RealWorldDemo: React.FC = () => {
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {result.detectedSpeaker === 'PATIENT' ? '🤒 PACIENTE' :
-                         result.detectedSpeaker === 'THERAPIST' ? '👨‍⚕️ TERAPEUTA' :
-                         result.detectedSpeaker === 'MIXED' ? '🔄 MIXTO' : '❓ AMBIGUO'}
+                         result.detectedSpeaker === 'THERAPIST' ? 'DOCTOR: TERAPEUTA' :
+                         result.detectedSpeaker === 'MIXED' ? 'RELOAD: MIXTO' : '❓ AMBIGUO'}
                       </span>
                       <span className="text-sm font-medium">
                         {Math.round(result.speakerConfidence * 100)}% confianza
@@ -401,7 +401,7 @@ const RealWorldDemo: React.FC = () => {
 
                 {/* CLASIFICACIÓN SOAP */}
                 <div className="bg-purple-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-purple-800 mb-2">🧠 Clasificación SOAP</h3>
+                  <h3 className="font-semibold text-purple-800 mb-2">AI: Clasificación SOAP</h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -472,7 +472,7 @@ const RealWorldDemo: React.FC = () => {
 
                     {result.entities.severity.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-gray-600 mb-1">📊 Severidad</div>
+                        <div className="text-xs font-medium text-gray-600 mb-1">STATS: Severidad</div>
                         <div className="space-y-1">
                           {result.entities.severity.map((item, i) => (
                             <span key={i} className="inline-block px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded mr-1">
@@ -488,7 +488,7 @@ const RealWorldDemo: React.FC = () => {
 
                 {/* AUTO-ASSESSMENT */}
                 <div className="bg-indigo-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-indigo-800 mb-2">🎯 Assessment Auto-generado</h3>
+                  <h3 className="font-semibold text-indigo-800 mb-2">TARGET: Assessment Auto-generado</h3>
                   <div className="bg-white rounded p-3">
                     <p className="text-sm text-gray-800">{result.autoAssessment}</p>
                   </div>
@@ -499,7 +499,7 @@ const RealWorldDemo: React.FC = () => {
 
                 {/* MÉTRICAS */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2">📊 Métricas de Procesamiento</h3>
+                  <h3 className="font-semibold text-gray-800 mb-2">STATS: Métricas de Procesamiento</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Tiempo de procesamiento:</span>

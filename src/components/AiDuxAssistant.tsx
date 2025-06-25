@@ -1,5 +1,5 @@
 /**
- * 🤖 ASISTENTE AIDUX - COMPACTO Y FUNCIONAL
+ * BOT: ASISTENTE AIDUX - COMPACTO Y FUNCIONAL
  * Asistente inteligente especializado en fisioterapia
  * Genera planes de ejercicios y sugerencias clínicas
  */
@@ -24,9 +24,9 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
 
   const tips = {
     inicio: "¡Hola! Soy AiDux. Puedo ayudarte con planes de ejercicios y sugerencias clínicas.",
-    recording: "🎙️ Escuchando... Puedo generar ejercicios específicos para la condición del paciente.",
-    analysis: "🧠 Analizando información clínica para sugerencias personalizadas.",
-    soap: "📋 ¿Necesitas un plan de ejercicios para agregar al SOAP? Puedo generarlo."
+    recording: "MIC: Escuchando... Puedo generar ejercicios específicos para la condición del paciente.",
+    analysis: "AI: Analizando información clínica para sugerencias personalizadas.",
+    soap: "NOTES: ¿Necesitas un plan de ejercicios para agregar al SOAP? Puedo generarlo."
   };
 
   const currentTip = tips[currentStep as keyof typeof tips] || tips.inicio;
@@ -43,7 +43,7 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
       if (condition.toLowerCase().includes('lumbar') || condition.toLowerCase().includes('espalda')) {
         plan = `PLAN DE EJERCICIOS - DOLOR LUMBAR
 
-🏃‍♂️ FASE INICIAL (Semana 1-2):
+RUNNER: FASE INICIAL (Semana 1-2):
 • Ejercicios de respiración diafragmática: 3 series de 10 respiraciones
 • Inclinación pélvica en decúbito supino: 2 series de 15 repeticiones
 • Rodillas al pecho alternadas: 2 series de 10 por pierna
@@ -55,31 +55,31 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
 • Estiramiento del psoas: 30 segundos por lado, 2 series
 • Fortalecimiento de transverso abdominal: 3 series de 10
 
-🎯 RECOMENDACIONES:
+TARGET: RECOMENDACIONES:
 • Realizar 2-3 veces por semana
 • Progresar gradualmente según tolerancia
 • Evitar ejercicios que aumenten el dolor
 • Reevaluación en 2 semanas
 
-⚠️ PRECAUCIONES:
+WARNING: PRECAUCIONES:
 • Detener si hay aumento del dolor
 • Mantener respiración durante ejercicios
 • Calentar antes de iniciar rutina`;
       } else {
         plan = `PLAN DE EJERCICIOS PERSONALIZADO
 
-🎯 EJERCICIOS RECOMENDADOS:
+TARGET: EJERCICIOS RECOMENDADOS:
 • Movilización articular suave: 2 series de 10 movimientos
 • Fortalecimiento progresivo: 3 series de 8-12 repeticiones
 • Estiramientos específicos: mantener 30 segundos
 • Ejercicios funcionales: según actividades diarias
 
-📋 PROGRESIÓN:
+NOTES: PROGRESIÓN:
 • Semana 1-2: Enfoque en movilidad y control del dolor
 • Semana 3-4: Introducir fortalecimiento gradual
 • Semana 5+: Ejercicios funcionales avanzados
 
-⚠️ PRECAUCIONES:
+WARNING: PRECAUCIONES:
 • Respetar límites de dolor
 • Progresión gradual
 • Reevaluación periódica`;
@@ -109,7 +109,7 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm">🤖</span>
+                <span className="text-white text-sm">BOT:</span>
               </div>
               {!isMinimized && (
                 <div>
@@ -151,7 +151,7 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
                   currentView === 'exercises' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'
                 }`}
               >
-                🏃‍♂️ Ejercicios
+                RUNNER: Ejercicios
               </button>
               <button 
                 onClick={() => setCurrentView('suggestions')}
@@ -183,14 +183,14 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
                       </>
                     ) : (
                       <>
-                        <span>🏃‍♂️</span>
+                        <span>RUNNER:</span>
                         <span>Generar Plan de Ejercicios</span>
                       </>
                     )}
                   </button>
                   
                   <button className="w-full px-3 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2">
-                    <span>📋</span>
+                    <span>NOTES:</span>
                     <span>Sugerencias SOAP</span>
                   </button>
                 </div>
@@ -233,7 +233,7 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
                 ) : (
                   <div className="text-center py-8">
                     <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">🏃‍♂️</span>
+                      <span className="text-2xl">RUNNER:</span>
                     </div>
                     <p className="text-sm text-slate-600 mb-3">
                       No hay plan de ejercicios generado
@@ -261,14 +261,14 @@ const AiDuxAssistant: React.FC<AiDuxAssistantProps> = ({
                   </div>
                   
                   <div className="bg-emerald-50 p-3 rounded-lg">
-                    <h4 className="text-xs font-semibold text-emerald-700 mb-1">🎯 Objetivos</h4>
+                    <h4 className="text-xs font-semibold text-emerald-700 mb-1">TARGET: Objetivos</h4>
                     <p className="text-xs text-emerald-600">
                       Establecer metas SMART: específicas, medibles y alcanzables
                     </p>
                   </div>
                   
                   <div className="bg-amber-50 p-3 rounded-lg">
-                    <h4 className="text-xs font-semibold text-amber-700 mb-1">⚠️ Precauciones</h4>
+                    <h4 className="text-xs font-semibold text-amber-700 mb-1">WARNING: Precauciones</h4>
                     <p className="text-xs text-amber-600">
                       Monitorear signos de alarma y adaptar tratamiento según respuesta
                     </p>

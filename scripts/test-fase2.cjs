@@ -10,7 +10,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function log(level, message) {
-  const symbols = { info: '🔍', success: '✅', error: '❌', warning: '⚠️' };
+  const symbols = { info: '🔍', success: 'SUCCESS:', error: 'ERROR:', warning: '⚠️' };
   console.log(`${symbols[level]} ${message}`);
 }
 
@@ -145,25 +145,25 @@ const results = {
 
 // RESUMEN
 console.log('\n' + '=' .repeat(50));
-console.log('📊 RESUMEN FINAL');
+console.log('STATS: RESUMEN FINAL');
 console.log('=' .repeat(50));
 
 const passed = Object.values(results).filter(r => r === true).length;
 const total = Object.keys(results).length;
 
 Object.entries(results).forEach(([test, result]) => {
-  const status = result ? '✅' : '❌';
+  const status = result ? 'SUCCESS:' : 'ERROR:';
   console.log(`${status} ${test.toUpperCase()}: ${result ? 'PASS' : 'FAIL'}`);
 });
 
-console.log(`\n📈 RESULTADO: ${passed}/${total} tests pasaron (${Math.round(passed/total*100)}%)`);
+console.log(`\nMETRICS: RESULTADO: ${passed}/${total} tests pasaron (${Math.round(passed/total*100)}%)`);
 
 if (passed === total) {
   console.log('\n🎉 ¡TODOS LOS TESTS PASARON!');
-  console.log('✅ Es SEGURO continuar con Fase 3');
+  console.log('SUCCESS: Es SEGURO continuar con Fase 3');
 } else {
   console.log('\n⚠️  ALGUNOS TESTS FALLARON');
-  console.log('❌ Revisar problemas antes de continuar');
+  console.log('ERROR: Revisar problemas antes de continuar');
 }
 
 console.log('\n' + '=' .repeat(50)); 

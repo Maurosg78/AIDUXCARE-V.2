@@ -297,8 +297,8 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="text-2xl">
-                  {selectedFile.validationStatus === 'valid' ? '✅' : 
-                   selectedFile.validationStatus === 'invalid' ? '❌' : '⏳'}
+                  {selectedFile.validationStatus === 'valid' ? 'SUCCESS:' : 
+                   selectedFile.validationStatus === 'invalid' ? 'ERROR:' : '⏳'}
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 truncate max-w-xs">
@@ -328,7 +328,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             {selectedFile.validationStatus === 'invalid' && selectedFile.errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-red-500">❌</span>
+                  <span className="text-red-500">ERROR:</span>
                   <span className="text-sm text-red-700">{selectedFile.errorMessage}</span>
                 </div>
               </div>
@@ -337,7 +337,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             {selectedFile.validationStatus === 'valid' && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-green-500">✅</span>
+                  <span className="text-green-500">SUCCESS:</span>
                   <span className="text-sm text-green-700">Archivo válido - Listo para procesar</span>
                 </div>
               </div>
@@ -378,7 +378,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
                     </>
                   ) : (
                     <>
-                      🚀 Procesar Audio
+                      LAUNCH: Procesar Audio
                     </>
                   )}
                 </Button>

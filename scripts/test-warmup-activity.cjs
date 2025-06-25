@@ -116,11 +116,11 @@ async function performWarmupSession(sessionNumber) {
       
       results.push(result);
       
-      console.log(`✅ Status: ${response.status}`);
+      console.log(`SUCCESS: Status: ${response.status}`);
       console.log(`⏱️  Tiempo: ${result.processingTime}ms`);
       console.log(`🔍 Entidades: ${result.entitiesFound}`);
       console.log(`📝 Secciones SOAP: ${result.soapSections}`);
-      console.log(`🔄 Método: ${result.methodUsed}`);
+      console.log(`RELOAD: Método: ${result.methodUsed}`);
       console.log(`🔥 Calentamiento: ${result.warmupActivity}`);
       console.log(`🔥 Estado warmupStatus: ${result.warmupStatus}`);
       
@@ -128,7 +128,7 @@ async function performWarmupSession(sessionNumber) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
     } catch (error) {
-      console.error(`❌ Error en ${testCase.name}:`, error.message);
+      console.error(`ERROR: Error en ${testCase.name}:`, error.message);
       results.push({
         testCase: testCase.name,
         error: error.message,
@@ -138,7 +138,7 @@ async function performWarmupSession(sessionNumber) {
   }
   
   // Resumen de la sesión
-  console.log('\n📊 RESUMEN DE LA SESIÓN');
+  console.log('\nSTATS: RESUMEN DE LA SESIÓN');
   console.log('='.repeat(50));
   
   const successfulTests = results.filter(r => r.success).length;
@@ -146,11 +146,11 @@ async function performWarmupSession(sessionNumber) {
   const totalSOAPSections = results.reduce((sum, r) => sum + (r.soapSections || 0), 0);
   const avgProcessingTime = results.reduce((sum, r) => sum + (r.processingTime || 0), 0) / results.length;
   
-  console.log(`✅ Tests exitosos: ${successfulTests}/${results.length}`);
+  console.log(`SUCCESS: Tests exitosos: ${successfulTests}/${results.length}`);
   console.log(`🔍 Total entidades detectadas: ${totalEntities}`);
   console.log(`📝 Total secciones SOAP: ${totalSOAPSections}`);
   console.log(`⏱️  Tiempo promedio: ${Math.round(avgProcessingTime)}ms`);
-  console.log(`🔥 Actividad de calentamiento: ${results.some(r => r.warmupActivity && r.warmupActivity !== 'No ejecutado') ? '✅ EJECUTADA' : '❌ NO EJECUTADA'}`);
+  console.log(`🔥 Actividad de calentamiento: ${results.some(r => r.warmupActivity && r.warmupActivity !== 'No ejecutado') ? 'SUCCESS: EJECUTADA' : 'ERROR: NO EJECUTADA'}`);
   
   return results;
 }
@@ -184,8 +184,8 @@ async function runWarmupCampaign(sessions = 3, intervalMinutes = 30) {
     console.log(`\n💾 Resultados guardados en: ${filename}`);
     
     if (session < sessions) {
-      console.log(`\n⏰ Esperando ${intervalMinutes} minutos antes de la siguiente sesión...`);
-      console.log(`⏰ Próxima sesión: ${new Date(Date.now() + intervalMinutes * 60 * 1000).toLocaleString()}`);
+      console.log(`\nTIME: Esperando ${intervalMinutes} minutos antes de la siguiente sesión...`);
+      console.log(`TIME: Próxima sesión: ${new Date(Date.now() + intervalMinutes * 60 * 1000).toLocaleString()}`);
       
       // Pausa entre sesiones
       await new Promise(resolve => setTimeout(resolve, intervalMinutes * 60 * 1000));
@@ -206,7 +206,7 @@ async function runWarmupCampaign(sessions = 3, intervalMinutes = 30) {
   
   console.log(`🔥 Sesiones completadas: ${sessions}`);
   console.log(`📋 Tests totales: ${totalTests}`);
-  console.log(`✅ Tests exitosos: ${totalSuccessful}/${totalTests}`);
+  console.log(`SUCCESS: Tests exitosos: ${totalSuccessful}/${totalTests}`);
   console.log(`🔍 Total entidades procesadas: ${totalEntities}`);
   console.log(`🔥 Actividad de calentamiento: EJECUTADA EN TODAS LAS SESIONES`);
   console.log(`🎯 Objetivo: Desbloquear Vertex AI mediante actividad legítima`);
@@ -225,7 +225,7 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch(error => {
-      console.error('\n❌ Error en la campaña de calentamiento:', error);
+      console.error('\nERROR: Error en la campaña de calentamiento:', error);
       process.exit(1);
     });
 }

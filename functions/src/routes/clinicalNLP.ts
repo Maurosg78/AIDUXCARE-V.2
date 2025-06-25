@@ -8,7 +8,7 @@ import {
   getClinicalAnalysis,
   getNLPUsageStats,
 } from "../api/clinicalNLP";
-import { healthcare } from "@googleapis/healthcare";
+import { healthcare_v1beta1 } from "@googleapis/healthcare";
 import { GoogleAuth } from "google-auth-library";
 import { Translate } from "@google-cloud/translate/build/src/v2";
 
@@ -342,9 +342,8 @@ export const analyzeClinicalText = async (req: Request, res: Response): Promise<
         });
 
         const authClient = await auth.getClient();
-        const healthcareClient = healthcare({
-          version: "v1beta1",
-          auth: authClient as unknown,
+        const healthcareClient = new healthcare_v1beta1.Healthcare({
+          auth: authClient as any,
         });
 
         console.log("🔄 Cliente de Healthcare NLP inicializado.");

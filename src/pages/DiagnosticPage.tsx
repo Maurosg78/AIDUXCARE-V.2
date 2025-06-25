@@ -75,7 +75,7 @@ export const DiagnosticPage: React.FC = () => {
         hasStarted = true;
         setTestResults(prev => ({ 
           ...prev, 
-          actualTest: '✅ Iniciado correctamente - Habla ahora para probar...'
+          actualTest: 'SUCCESS: Iniciado correctamente - Habla ahora para probar...'
         }));
       };
 
@@ -87,7 +87,7 @@ export const DiagnosticPage: React.FC = () => {
         }
         setTestResults(prev => ({ 
           ...prev, 
-          actualTest: `✅ TRANSCRIPCIÓN EXITOSA: "${transcript}"`
+          actualTest: `SUCCESS: TRANSCRIPCIÓN EXITOSA: "${transcript}"`
         }));
         recognition.stop();
         setIsRunningTest(false);
@@ -129,7 +129,7 @@ export const DiagnosticPage: React.FC = () => {
 
         setTestResults(prev => ({ 
           ...prev, 
-          actualTest: `❌ ERROR: ${event.error}`,
+          actualTest: `ERROR: ERROR: ${event.error}`,
           errorDetails: detailedError
         }));
         setIsRunningTest(false);
@@ -139,7 +139,7 @@ export const DiagnosticPage: React.FC = () => {
         if (!hasResult && hasStarted) {
           setTestResults(prev => ({ 
             ...prev, 
-            actualTest: '⚠️ Sesión terminó sin capturar audio - Intenta hablar más fuerte'
+            actualTest: 'WARNING: Sesión terminó sin capturar audio - Intenta hablar más fuerte'
           }));
         }
         setIsRunningTest(false);
@@ -153,7 +153,7 @@ export const DiagnosticPage: React.FC = () => {
           recognition.stop();
           setTestResults(prev => ({ 
             ...prev, 
-            actualTest: '⏱️ Timeout - No se detectó habla en 10 segundos'
+            actualTest: 'TIME: Timeout - No se detectó habla en 10 segundos'
           }));
           setIsRunningTest(false);
         }
@@ -182,7 +182,7 @@ export const DiagnosticPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className={`p-4 rounded-lg border ${testResults.browserSupport ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center space-x-2">
-                <span className="text-2xl">{testResults.browserSupport ? '✅' : '❌'}</span>
+                <span className="text-2xl">{testResults.browserSupport ? 'SUCCESS:' : 'ERROR:'}</span>
                 <div>
                   <h3 className="font-medium text-gray-900">Navegador</h3>
                   <p className="text-sm text-gray-600">
@@ -194,7 +194,7 @@ export const DiagnosticPage: React.FC = () => {
 
             <div className={`p-4 rounded-lg border ${testResults.permissions ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center space-x-2">
-                <span className="text-2xl">{testResults.permissions ? '✅' : '❌'}</span>
+                <span className="text-2xl">{testResults.permissions ? 'SUCCESS:' : 'ERROR:'}</span>
                 <div>
                   <h3 className="font-medium text-gray-900">Micrófono</h3>
                   <p className="text-sm text-gray-600">
@@ -206,7 +206,7 @@ export const DiagnosticPage: React.FC = () => {
 
             <div className={`p-4 rounded-lg border ${testResults.networkTest ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center space-x-2">
-                <span className="text-2xl">{testResults.networkTest ? '✅' : '❌'}</span>
+                <span className="text-2xl">{testResults.networkTest ? 'SUCCESS:' : 'ERROR:'}</span>
                 <div>
                   <h3 className="font-medium text-gray-900">Red</h3>
                   <p className="text-sm text-gray-600">
@@ -232,7 +232,7 @@ export const DiagnosticPage: React.FC = () => {
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {isRunningTest ? '🎙️ Escuchando... (Di "Hola")' : 'Iniciar Test de Voz'}
+              {isRunningTest ? 'MIC: Escuchando... (Di "Hola")' : 'Iniciar Test de Voz'}
             </button>
 
             {testResults.actualTest && (

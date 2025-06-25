@@ -1,5 +1,5 @@
 /**
- * 🎤 AiDuxCare - Servicio de Transcripción con Buffer Inteligente
+ * AUDIO: AiDuxCare - Servicio de Transcripción con Buffer Inteligente
  * Acumula transcripción en tiempo real hasta formar párrafos coherentes
  * antes de enviar al análisis SOAP, evitando procesamiento sílaba por sílaba
  */
@@ -113,7 +113,7 @@ export class BufferedTranscriptionService {
     };
 
     this.recognition.onstart = () => {
-      console.log('🎤 Transcripción con buffer iniciada');
+      console.log('AUDIO: Transcripción con buffer iniciada');
       this.isRecording = true;
     };
 
@@ -261,7 +261,7 @@ export class BufferedTranscriptionService {
 
     // Verificar confianza mínima
     if (this.lastConfidence < this.config.confidenceThreshold) {
-      console.log(`⚠️ Buffer descartado por baja confianza: ${this.lastConfidence}`);
+      console.log(`WARNING: Buffer descartado por baja confianza: ${this.lastConfidence}`);
       this.resetBuffer();
       return;
     }
@@ -279,7 +279,7 @@ export class BufferedTranscriptionService {
 
     this.bufferedSegments.push(segment);
 
-    console.log(`✅ Buffer completado (${reason}): "${segment.text}" | ${segment.wordCount} palabras | ${segment.speaker}`);
+    console.log(`SUCCESS: Buffer completado (${reason}): "${segment.text}" | ${segment.wordCount} palabras | ${segment.speaker}`);
 
     // Callback con segmento completo
     this.callbacks.onBufferedSegment(segment);
@@ -299,7 +299,7 @@ export class BufferedTranscriptionService {
     
     // Procesar SOAP cada 3-4 segmentos completos
     if (completeSegments.length >= 3) {
-      console.log(`🧠 Enviando ${completeSegments.length} segmentos a procesamiento SOAP`);
+      console.log(`AI: Enviando ${completeSegments.length} segmentos a procesamiento SOAP`);
       this.callbacks.onSOAPProcessing([...completeSegments]);
       // Mantener últimos 2 segmentos para contexto
       this.bufferedSegments = completeSegments.slice(-2);
@@ -380,7 +380,7 @@ export class BufferedTranscriptionService {
    */
   updateConfig(newConfig: Partial<BufferConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.log('📊 Configuración de buffer actualizada:', this.config);
+    console.log('STATS: Configuración de buffer actualizada:', this.config);
   }
 
   /**

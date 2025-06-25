@@ -1,5 +1,5 @@
 /**
- * 🎯 WORK MODE DEMO PAGE - Página de Demostración de Modos de Trabajo
+ * TARGET: WORK MODE DEMO PAGE - Página de Demostración de Modos de Trabajo
  * 
  * Página que demuestra el flujo completo de selección de modos de trabajo flexibles.
  * Integra WorkModeSelector con los componentes placeholder para cada modo.

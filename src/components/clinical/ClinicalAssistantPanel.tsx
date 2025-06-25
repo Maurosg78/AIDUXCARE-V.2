@@ -64,13 +64,13 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
       setActiveTab('accepted');
     }
 
-    console.log('✅ Sugerencia aceptada:', suggestion.title);
+    console.log('SUCCESS: Sugerencia aceptada:', suggestion.title);
   };
 
   const handleDismissSuggestion = (suggestion: ClinicalSuggestion) => {
     setDismissedSuggestions(prev => [...prev, suggestion.id]);
     onSuggestionDismissed(suggestion);
-    console.log('❌ Sugerencia descartada:', suggestion.title);
+    console.log('ERROR: Sugerencia descartada:', suggestion.title);
   };
 
   const handleTestComplete = (templateId: string, testId: string, result: string, notes?: string) => {
@@ -110,10 +110,10 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
   const getSeverityIcon = (severity: RedFlag['severity']) => {
     switch (severity) {
       case 'CRITICAL': return '🚨';
-      case 'HIGH': return '⚠️';
+      case 'HIGH': return 'WARNING:';
       case 'MEDIUM': return '⚡';
       case 'LOW': return 'ℹ️';
-      default: return '📋';
+      default: return 'NOTES:';
     }
   };
 
@@ -250,7 +250,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
               : 'text-[#2C3E50]/60 hover:text-[#2C3E50]'
           }`}
         >
-          📋 Plantillas ({getExamTemplates().length})
+          NOTES: Plantillas ({getExamTemplates().length})
         </button>
         <button
           onClick={() => setActiveTab('accepted')}
@@ -260,7 +260,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
               : 'text-[#2C3E50]/60 hover:text-[#2C3E50]'
           }`}
         >
-          ✅ Aceptadas ({acceptedSuggestions.length})
+          SUCCESS: Aceptadas ({acceptedSuggestions.length})
         </button>
       </div>
 
@@ -361,7 +361,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <span className="text-lg">📋</span>
+                          <span className="text-lg">NOTES:</span>
                           <h4 className="font-semibold text-[#2C3E50] text-sm">{template.title}</h4>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             template.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
@@ -373,9 +373,9 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
                         </div>
                         <p className="text-sm text-[#2C3E50]/80 mb-2">{template.description}</p>
                         <div className="flex items-center space-x-4 text-xs text-[#2C3E50]/60">
-                          <span>⏱️ {template.estimatedTime} min</span>
-                          <span>🎯 {template.tests.length} pruebas</span>
-                          <span>📊 {Math.floor(template.confidence * 100)}% confianza</span>
+                          <span>TIME: {template.estimatedTime} min</span>
+                          <span>TARGET: {template.tests.length} pruebas</span>
+                          <span>STATS: {Math.floor(template.confidence * 100)}% confianza</span>
                         </div>
                       </div>
                     </div>
@@ -425,7 +425,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
                     <div key={suggestion.id} className="p-4 rounded-lg border border-[#5DA5A3] bg-[#5DA5A3]/5">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
-                          <span className="text-lg">✅</span>
+                          <span className="text-lg">SUCCESS:</span>
                           <h4 className="font-semibold text-[#2C3E50] text-sm">{template.title}</h4>
                         </div>
                         <button
@@ -470,7 +470,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
                   return (
                     <div key={suggestion.id} className="p-3 rounded-lg border border-[#A8E6CF] bg-[#A8E6CF]/10">
                       <div className="flex items-center space-x-2">
-                        <span className="text-lg">✅</span>
+                        <span className="text-lg">SUCCESS:</span>
                         <span className="text-sm font-medium text-[#2C3E50]">{suggestion.title}</span>
                         <span className="text-xs text-[#2C3E50]/60">
                           Aceptada {new Date(suggestion.acceptedAt).toLocaleTimeString()}
@@ -515,7 +515,7 @@ const TestItem: React.FC<TestItemProps> = ({ test, onComplete }) => {
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-1">
             <span className={`text-sm ${test.isCompleted ? 'text-green-600' : 'text-[#2C3E50]'}`}>
-              {test.isCompleted ? '✅' : '⭕'}
+              {test.isCompleted ? 'SUCCESS:' : '⭕'}
             </span>
             <h5 className="font-medium text-[#2C3E50] text-sm">{test.name}</h5>
             <span className="px-2 py-1 bg-[#A8E6CF]/20 text-[#2C3E50] rounded text-xs">
@@ -524,11 +524,11 @@ const TestItem: React.FC<TestItemProps> = ({ test, onComplete }) => {
           </div>
           <p className="text-xs text-[#2C3E50]/70 mb-2">{test.description}</p>
           <p className="text-xs text-[#5DA5A3] font-medium mb-2">
-            📋 {test.instructions}
+            NOTES: {test.instructions}
           </p>
           {test.normalRange && (
             <p className="text-xs text-[#2C3E50]/60 mb-2">
-              📊 Rango normal: {test.normalRange}
+              STATS: Rango normal: {test.normalRange}
             </p>
           )}
 

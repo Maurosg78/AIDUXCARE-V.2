@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTranscriptionHistory = exports.api = void 0;
+exports.getTranscriptionHistory = exports.aiduxcareApi = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const express = require("express");
@@ -15,27 +15,28 @@ const app = express();
 app.use(cors({
     origin: true,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 const patientsCollection = admin.firestore().collection("patients");
 // Define la ruta POST para crear un paciente
 app.post("/patients", async (req, res) => {
     try {
         const patientData = req.body;
-        if (!patientData.name || !patientData.email || !patientData.phone || !patientData.birthDate || !patientData.reasonForConsultation) {
+        if (!patientData.name || !patientData.email || !patientData.phone ||
+            !patientData.birthDate || !patientData.reasonForConsultation) {
             res.status(400).json({
                 error: "Missing required fields",
-                details: "name, email, phone, birthDate, and reasonForConsultation are required"
+                details: "name, email, phone, birthDate, and reasonForConsultation are required",
             });
             return;
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(patientData.email)) {
             res.status(400).json({
-                error: "Invalid email format"
+                error: "Invalid email format",
             });
             return;
         }
@@ -43,7 +44,7 @@ app.post("/patients", async (req, res) => {
         if (!phoneRegex.test(patientData.phone)) {
             res.status(400).json({
                 error: "Invalid phone format",
-                details: "Phone must be in format: +56 9 XXXX XXXX"
+                details: "Phone must be in format: +56 9 XXXX XXXX",
             });
             return;
         }
@@ -57,7 +58,7 @@ app.post("/patients", async (req, res) => {
         console.error("Error creating patient:", error);
         res.status(500).json({
             error: "Internal server error",
-            details: error instanceof Error ? error.message : "Unknown error"
+            details: error instanceof Error ? error.message : "Unknown error",
         });
     }
 });
@@ -65,7 +66,7 @@ app.post("/patients", async (req, res) => {
 app.get("/patients", async (req, res) => {
     try {
         const snapshot = await patientsCollection.get();
-        const patients = snapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        const patients = snapshot.docs.map((doc) => (Object.assign({ id: doc.id }, doc.data())));
         res.status(200).json(patients);
     }
     catch (error) {
@@ -127,15 +128,15 @@ app.use("/clinical-nlp", clinicalNLP_1.default);
 // === ENDPOINT DE SALUD ===
 app.get("/health", (req, res) => {
     res.json({
-        status: 'healthy',
+        status: "healthy",
         timestamp: new Date().toISOString(),
-        service: 'aiduxcare-api-v2',
-        version: '2.0.0',
-        environment: 'production'
+        service: "aiduxcare-api-v2",
+        version: "2.0.0",
+        environment: "production",
     });
 });
 // Exporta la aplicación como Cloud Function Gen 2
-exports.api = (0, https_1.onRequest)({
+exports.aiduxcareApi = (0, https_1.onRequest)({
     region: "us-east1",
     memory: "256MiB",
     cpu: 1,
