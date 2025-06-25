@@ -1,5 +1,5 @@
 /**
- * 🔐 AUTHENTICATION PAGE - PROFESSIONAL REGISTRATION SYSTEM
+ * SECURITY AUTHENTICATION PAGE - PROFESSIONAL REGISTRATION SYSTEM
  * Sistema de registro profesional con claves temporales y personalización
  */
 
@@ -65,7 +65,7 @@ const AuthenticationPage: React.FC = () => {
     
     // DETECCIÓN AUTOMÁTICA DE CONFIGURACIÓN MFA - SEGURIDAD HIPAA
     if (setupMFAParam === 'true') {
-      console.log('🔐 Detectado parámetro setupMFA=true, configurando MFA automáticamente...');
+      console.log('SECURITY Detectado parámetro setupMFA=true, configurando MFA automáticamente...');
       setShowMFASetup(true);
       setMfaStep('setup');
       // Trigger MFA setup automáticamente
@@ -93,7 +93,7 @@ const AuthenticationPage: React.FC = () => {
       const mauricioExists = users.find(u => u.email === 'msobarzo78@gmail.com');
       
       if (!mauricioExists) {
-        console.log('🔍 Usuario Mauricio no encontrado, creando automáticamente...');
+        console.log('SEARCH Usuario Mauricio no encontrado, creando automáticamente...');
         createMauricioUser();
       } else {
         console.log('SUCCESS: Usuario Mauricio ya existe');
@@ -112,7 +112,7 @@ const AuthenticationPage: React.FC = () => {
           note: 'Credenciales solo para desarrollo'
         };
       };
-      console.log('🔐 Para ver credenciales de desarrollo, ejecuta: window.getDevCredentials()');
+      console.log('SECURITY Para ver credenciales de desarrollo, ejecuta: window.getDevCredentials()');
     }
     
     return () => {
@@ -126,15 +126,15 @@ const AuthenticationPage: React.FC = () => {
       console.log('LAUNCH: Usuario autenticado y MFA completo, redirigiendo al dashboard...');
       navigate('/clinical', { replace: true });
     } else if (isAuthenticated && requiresMFA) {
-      console.log('🔐 Usuario autenticado pero requiere MFA - permaneciendo en configuración');
+      console.log('SECURITY Usuario autenticado pero requiere MFA - permaneciendo en configuración');
     }
   }, [isAuthenticated, isLoading, requiresMFA, navigate]);
 
-  // 🔐 CONFIGURACIÓN AUTOMÁTICA DE MFA CUANDO SE DETECTA EL PARÁMETRO
+  // SECURITY CONFIGURACIÓN AUTOMÁTICA DE MFA CUANDO SE DETECTA EL PARÁMETRO
   useEffect(() => {
     const setupMFAParam = searchParams.get('setupMFA');
     if (setupMFAParam === 'true' && isAuthenticated && !mfaSetupData) {
-      console.log('🔐 Ejecutando configuración automática de MFA...');
+      console.log('SECURITY Ejecutando configuración automática de MFA...');
       const autoSetupMFA = async () => {
         try {
           const mfaData = await setupMFA();
@@ -209,7 +209,7 @@ const AuthenticationPage: React.FC = () => {
   const findUserByEmail = (email: string): UserData | null => {
     const users = getRegisteredUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    console.log('🔍 Buscando usuario:', email, 'Encontrado:', !!found, 'Total usuarios:', users.length);
+    console.log('SEARCH Buscando usuario:', email, 'Encontrado:', !!found, 'Total usuarios:', users.length);
     return found || null;
   };
 
@@ -252,7 +252,7 @@ const AuthenticationPage: React.FC = () => {
       const adminPassword = 'aidux2025'; // En producción esto vendría de variables de entorno
       const hashedPassword = MedicalEncryptionService.hashPassword(adminPassword);
       
-      console.log('🔐 Creando usuario administrador...');
+      console.log('SECURITY Creando usuario administrador...');
       
       const mauricioUser: UserData = {
         id: `user-mauricio-${Date.now()}`,
@@ -308,7 +308,7 @@ const AuthenticationPage: React.FC = () => {
       
       // Verificar que el sistema funciona
       const verification = MedicalEncryptionService.verifyPassword(adminPassword, hashedPassword);
-      console.log('🔐 Verificación del sistema:', verification ? 'OK' : 'ERROR');
+      console.log('SECURITY Verificación del sistema:', verification ? 'OK' : 'ERROR');
       
       if (!verification) {
         console.error('ERROR: ERROR CRÍTICO: Fallo en el sistema de autenticación');
@@ -323,7 +323,7 @@ const AuthenticationPage: React.FC = () => {
   // FUNCIÓN DE EMERGENCIA: Recrear usuario Mauricio inmediatamente
   const forceRecreateMauricio = async () => {
     try {
-      console.log('🚨 RECREACIÓN FORZADA DE MAURICIO INICIADA');
+      console.log('ALERT RECREACIÓN FORZADA DE MAURICIO INICIADA');
       
       // 1. Limpiar todo
       localStorage.removeItem('aiduxcare_registered_users');
@@ -416,8 +416,8 @@ const AuthenticationPage: React.FC = () => {
           `SUCCESS: Registro exitoso!\n\n` +
           `USER: Usuario registrado: ${newUser.email}\n` +
           `KEY: Clave temporal enviada por email seguro\n` +
-          `⏰ Válida por: 24 horas\n` +
-          `🔒 Rol asignado: ${role}\n\n` +
+          `TIME Válida por: 24 horas\n` +
+          `SECURE Rol asignado: ${role}\n\n` +
           `WARNING: IMPORTANTE: Cambia tu clave después del primer login.\n` +
           `📧 Contacta al administrador para obtener credenciales.`
         );
@@ -460,7 +460,7 @@ const AuthenticationPage: React.FC = () => {
     setSuccessMessage('');
 
     try {
-      console.log('🔐 Iniciando autenticación médico segura...');
+      console.log('SECURITY Iniciando autenticación médico segura...');
       
       // Usar el nuevo sistema médico seguro
       const result = await login(formData.username.trim(), formData.password.trim());
@@ -631,8 +631,8 @@ const AuthenticationPage: React.FC = () => {
         setSuccessMessage(
           `SUCCESS: ${result.message}\n\n` +
           `📧 Se ha enviado un email a: ${user.email}\n` +
-          `⏰ El link será válido por 1 hora\n\n` +
-          `💡 En desarrollo, revisa la consola del navegador para ver el link.`
+          `TIME El link será válido por 1 hora\n\n` +
+          `TIP En desarrollo, revisa la consola del navegador para ver el link.`
         );
 
         // Limpiar formulario
@@ -662,9 +662,9 @@ const AuthenticationPage: React.FC = () => {
   
   const handleSetupMFA = async () => {
     try {
-      console.log('🔐 === INICIANDO HANDLESETUPMFA ===');
-      console.log('🔐 isAuthenticated:', isAuthenticated);
-      console.log('🔐 currentTherapist:', currentTherapist);
+      console.log('SECURITY === INICIANDO HANDLESETUPMFA ===');
+      console.log('SECURITY isAuthenticated:', isAuthenticated);
+      console.log('SECURITY currentTherapist:', currentTherapist);
       
       if (!currentTherapist) {
         console.error('ERROR: No hay currentTherapist disponible');
@@ -672,10 +672,10 @@ const AuthenticationPage: React.FC = () => {
         return;
       }
       
-      console.log('🔐 Llamando a setupMFA()...');
+      console.log('SECURITY Llamando a setupMFA()...');
       const mfaData = await setupMFA();
       
-      console.log('🔐 Resultado setupMFA:', mfaData);
+      console.log('SECURITY Resultado setupMFA:', mfaData);
       
       if (mfaData) {
         console.log('SUCCESS: MFA data recibido, configurando estado...');
@@ -701,7 +701,7 @@ const AuthenticationPage: React.FC = () => {
         return;
       }
 
-      console.log('🔐 Verificando código MFA...');
+      console.log('SECURITY Verificando código MFA...');
       const isValid = await verifyMFA(mfaToken);
       
       if (isValid) {
@@ -731,7 +731,7 @@ const AuthenticationPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      console.log('🔐 Autenticando con MFA...');
+      console.log('SECURITY Autenticando con MFA...');
       
       const result = await loginWithMFA(formData.username, formData.password, mfaToken);
       
@@ -787,7 +787,7 @@ const AuthenticationPage: React.FC = () => {
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-[#BDC3C7]/20 p-8">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🔐</span>
+                <span className="text-3xl">SECURITY</span>
               </div>
               <h2 className="text-2xl font-bold text-[#2C3E50] mb-2">Configuración MFA Requerida</h2>
               <p className="text-[#2C3E50]/70">
@@ -815,7 +815,7 @@ const AuthenticationPage: React.FC = () => {
 
               <div className="text-center">
                 <p className="text-xs text-[#2C3E50]/60">
-                  🔒 Tu configuración estará cifrada con estándares hospitalarios
+                  SECURE Tu configuración estará cifrada con estándares hospitalarios
                 </p>
               </div>
             </div>
@@ -925,7 +925,7 @@ const AuthenticationPage: React.FC = () => {
                     disabled={mfaToken.length !== 6}
                     className="w-full bg-[#5DA5A3] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#4A8280] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    🔐 Verificar y Activar MFA
+                    SECURITY Verificar y Activar MFA
       </button>
                 </div>
               </>
@@ -944,8 +944,8 @@ const AuthenticationPage: React.FC = () => {
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                   <p className="text-green-800 text-sm">
                     SUCCESS: Acceso completo habilitado<br/>
-                    🔐 Estándares HIPAA cumplidos<br/>
-                    🏥 Listo para uso clínico
+                    SECURITY Estándares HIPAA cumplidos<br/>
+                    MEDICAL Listo para uso clínico
                   </p>
                 </div>
               </div>
@@ -1106,7 +1106,7 @@ const AuthenticationPage: React.FC = () => {
                     }}
                     className="w-full py-2 px-4 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-medium rounded-lg transition-colors"
                   >
-                    🔐 Rellenar Credenciales de Desarrollo
+                    SECURITY Rellenar Credenciales de Desarrollo
         </button>
                   <p className="text-xs text-blue-600 mt-1 text-center">Solo visible en desarrollo</p>
                 </div>
@@ -1399,7 +1399,7 @@ const AuthenticationPage: React.FC = () => {
           {/* Footer */}
           <div className="mt-6 pt-4 border-t border-[#BDC3C7]/30 text-center">
             <p className="text-xs text-[#2C3E50]/60 mb-3">
-              🔒 Datos seguros • 🏥 HIPAA Compliant • 🔍 Auditoría médica
+              SECURE Datos seguros • MEDICAL HIPAA Compliant • SEARCH Auditoría médica
             </p>
             
             {/* Botones de utilidad para desarrollo */}
@@ -1417,7 +1417,7 @@ const AuthenticationPage: React.FC = () => {
                 className="text-xs text-[#FF6F61] hover:text-[#E55A4B] transition-colors block mx-auto"
                 title="Limpiar datos de localStorage para testing"
               >
-                🧹 Limpiar Datos de Prueba
+                CLEAN Limpiar Datos de Prueba
         </button>
       </div>
     </div>

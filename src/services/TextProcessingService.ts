@@ -290,7 +290,7 @@ REGLAS IMPORTANTES:
     warnings: string[];
   } {
     try {
-      console.log('🔍 Respuesta SOAP avanzada recibida:', response.substring(0, 200) + '...');
+      console.log('SEARCH Respuesta SOAP avanzada recibida:', response.substring(0, 200) + '...');
       
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {

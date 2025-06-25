@@ -187,7 +187,7 @@ export class AudioCaptureServiceReal {
     // Emitir evento global para componentes que lo necesiten
     this.emitTranscriptionUpdateEvent(segment);
 
-    console.log(`📝 Segmento ${segment.confidence === 'entendido' ? 'final' : 'temporal'}:`, {
+    console.log(`NOTES Segmento ${segment.confidence === 'entendido' ? 'final' : 'temporal'}:`, {
       actor: segment.actor,
       contenido: segment.content.substring(0, 50) + (segment.content.length > 50 ? '...' : ''),
       confianza: segment.confidence
@@ -337,7 +337,7 @@ export class AudioCaptureServiceReal {
     
     this.segments = [];
     this.currentSession = null;
-    console.log('🧹 Recursos de captura limpiados');
+    console.log('CLEAN Recursos de captura limpiados');
   }
 
   /**

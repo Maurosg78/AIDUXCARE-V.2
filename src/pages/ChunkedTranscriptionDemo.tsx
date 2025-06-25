@@ -433,7 +433,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                 onClick={clearAll}
                 className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors"
               >
-                🧹 Limpiar Todo
+                CLEAN Limpiar Todo
               </button>
             </div>
           </div>
@@ -483,11 +483,11 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                       </div>
                       
                       <div className="text-sm text-gray-600 space-y-1">
-                        <div>📝 {chunk.utterances.length} utterances</div>
+                        <div>NOTES {chunk.utterances.length} utterances</div>
                         <div>👥 {new Set(chunk.utterances.map(u => u.speaker)).size} hablantes</div>
                         <div>STATS: {chunk.metadata?.totalWords || 0} palabras</div>
                         {chunk.metadata?.hasSymptoms && <div>MEDICAL: Síntomas</div>}
-                        {chunk.metadata?.hasExamination && <div>🔍 Examen</div>}
+                        {chunk.metadata?.hasExamination && <div>SEARCH Examen</div>}
                       </div>
                     </div>
                   ))}
@@ -504,7 +504,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
           {/* Detalle del Chunk */}
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">🔍 Detalle del Chunk</h3>
+              <h3 className="text-lg font-semibold">SEARCH Detalle del Chunk</h3>
               <p className="text-sm text-gray-600">
                 {selectedChunk ? `${selectedChunk.id} - ${selectedChunk.utterances.length} utterances` : 'Seleccione un chunk'}
               </p>
@@ -554,7 +554,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                         <div className="font-medium">Contenido</div>
                         <div>
                           {selectedChunk.metadata?.hasSymptoms ? 'MEDICAL:' : ''}
-                          {selectedChunk.metadata?.hasExamination ? '🔍' : ''}
+                          {selectedChunk.metadata?.hasExamination ? 'SEARCH' : ''}
                         </div>
                       </div>
                     </div>
@@ -563,7 +563,7 @@ TERAPEUTA: Aproximadamente 8-10 sesiones, evaluando progreso.
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="text-3xl mb-2">🔍</div>
+                  <div className="text-3xl mb-2">SEARCH</div>
                   <p>Seleccione un chunk para ver detalles</p>
                 </div>
               )}

@@ -153,7 +153,7 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">🏥 AiDuxCare</div>
+            <div class="logo">MEDICAL AiDuxCare</div>
             <div class="subtitle">Plataforma Médica AI-EMR</div>
           </div>
           
@@ -168,7 +168,7 @@ class EmailService {
             
             <div style="text-align: center;">
               <a href="${data.resetLink}" class="button">
-                🔐 Restablecer Contraseña
+                SECURITY Restablecer Contraseña
               </a>
             </div>
             
@@ -194,9 +194,9 @@ class EmailService {
               <strong>AiDuxCare</strong> - Plataforma Médica Profesional
             </div>
             <div class="footer-icons">
-              <span>🔒 Datos seguros</span>
-              <span>🏥 HIPAA Compliant</span>
-              <span>🔍 Auditoría médica</span>
+              <span>SECURE Datos seguros</span>
+              <span>MEDICAL HIPAA Compliant</span>
+              <span>SEARCH Auditoría médica</span>
             </div>
             <div style="margin-top: 15px; font-size: 12px;">
               Este es un email automático, no respondas a este mensaje.
@@ -225,13 +225,13 @@ INFORMACIÓN DE SEGURIDAD:
 
 ---
 AiDuxCare - Plataforma Médica Profesional
-🔒 Datos seguros • 🏥 HIPAA Compliant • 🔍 Auditoría médica
+SECURE Datos seguros • MEDICAL HIPAA Compliant • SEARCH Auditoría médica
 
 Este es un email automático, no respondas a este mensaje.
     `.trim();
 
     return {
-      subject: `🔐 Restablecer contraseña - AiDuxCare`,
+      subject: `SECURITY Restablecer contraseña - AiDuxCare`,
       html,
       text
     };

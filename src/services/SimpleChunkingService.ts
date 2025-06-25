@@ -151,7 +151,7 @@ export class SimpleChunkingService {
         this.fullTranscript += newText;
         this.sessionWordCount = this.countWords(this.fullTranscript);
         
-        console.log(`📝 Texto agregado: "${newText.trim()}"`);
+        console.log(`NOTES Texto agregado: "${newText.trim()}"`);
         console.log(`STATS: Total palabras en sesión: ${this.sessionWordCount}`);
         
         // Callback de actualización
@@ -196,7 +196,7 @@ export class SimpleChunkingService {
     const hasMinimumWords = this.sessionWordCount >= this.config.minimumSessionWords;
     const hasMinimumPause = timeSinceLastSpeech >= this.config.minimumPauseMs;
 
-    console.log(`🔍 Verificando procesamiento:`);
+    console.log(`SEARCH Verificando procesamiento:`);
     console.log(`   Palabras: ${this.sessionWordCount}/${this.config.minimumSessionWords}`);
     console.log(`   Pausa: ${timeSinceLastSpeech}ms/${this.config.minimumPauseMs}ms`);
 
@@ -212,10 +212,10 @@ export class SimpleChunkingService {
     } else if (hasMinimumWords) {
       // Programar procesamiento cuando se cumpla la pausa
       const remainingPause = this.config.minimumPauseMs - timeSinceLastSpeech;
-      console.log(`⏰ Programando procesamiento en ${remainingPause}ms`);
+      console.log(`TIME Programando procesamiento en ${remainingPause}ms`);
       
       this.processingTimeout = setTimeout(() => {
-        console.log('⏰ Timeout alcanzado - Iniciando chunking');
+        console.log('TIME Timeout alcanzado - Iniciando chunking');
         this.processSession();
       }, remainingPause);
     }
@@ -237,7 +237,7 @@ export class SimpleChunkingService {
     try {
       // PASO 1: Convertir a utterances
       const utterances = this.parseToUtterances(this.fullTranscript);
-      console.log(`📝 Utterances creadas: ${utterances.length}`);
+      console.log(`NOTES Utterances creadas: ${utterances.length}`);
 
       // PASO 2: Crear chunks según especificación de Mauricio
       const chunks = this.createChunks(utterances);
@@ -323,7 +323,7 @@ export class SimpleChunkingService {
       currentTime += 3000; // 3 segundos por utterance (más realista)
     }
 
-    console.log(`📝 Parseado: ${sentences.length} frases → ${utterances.length} utterances`);
+    console.log(`NOTES Parseado: ${sentences.length} frases → ${utterances.length} utterances`);
     return utterances;
   }
 

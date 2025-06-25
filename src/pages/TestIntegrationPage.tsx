@@ -172,7 +172,7 @@ const TestIntegrationPage: React.FC = () => {
           {showRawTranscription && (
             <div className="mb-6">
               <h3 className="text-lg font-medium text-gray-700 mb-3">
-                📝 Transcripción Original (Desordenada)
+                NOTES Transcripción Original (Desordenada)
               </h3>
               <div className="bg-gray-50 border rounded-lg p-4">
                 <p className="text-gray-800 leading-relaxed">
@@ -241,7 +241,7 @@ const TestIntegrationPage: React.FC = () => {
             {/* Segmentos Procesados */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                🔍 Segmentos Procesados con Análisis Detallado
+                SEARCH Segmentos Procesados con Análisis Detallado
               </h2>
               <div className="space-y-4">
                 {processingResults.segments.map((segment: any, index: number) => (
@@ -301,7 +301,7 @@ const TestIntegrationPage: React.FC = () => {
             {processingResults.fullAssessment && (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                  🏥 Assessment Clínico Generado
+                  MEDICAL Assessment Clínico Generado
                 </h2>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 leading-relaxed">
@@ -314,7 +314,7 @@ const TestIntegrationPage: React.FC = () => {
             {/* Integración con DynamicSOAPEditor */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                📝 Editor SOAP Dinámico - Resultado Final
+                NOTES Editor SOAP Dinámico - Resultado Final
               </h2>
               <DynamicSOAPEditor
                 initialData={{

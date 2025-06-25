@@ -159,7 +159,7 @@ WARNING: PRECAUCIONES:
                   currentView === 'suggestions' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'
                 }`}
               >
-                💡 Tips
+                TIP Tips
               </button>
             </div>
 
@@ -254,7 +254,7 @@ WARNING: PRECAUCIONES:
               <div className="space-y-3">
                 <div className="space-y-2">
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <h4 className="text-xs font-semibold text-blue-700 mb-1">💡 Evaluación</h4>
+                    <h4 className="text-xs font-semibold text-blue-700 mb-1">TIP Evaluación</h4>
                     <p className="text-xs text-blue-600">
                       Considera pruebas de movilidad y fuerza específicas para la condición
                     </p>

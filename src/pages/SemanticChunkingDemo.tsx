@@ -358,7 +358,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                 onClick={() => handleLoadExample('fisioterapia')}
                 className="w-full text-left p-2 rounded bg-blue-50 hover:bg-blue-100 text-sm"
               >
-                🏥 Fisioterapia - Hombro
+                MEDICAL Fisioterapia - Hombro
               </button>
               <button
                 onClick={() => handleLoadExample('psicologia')}
@@ -433,7 +433,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                 }))}
                 className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors"
               >
-                🧹 Limpiar
+                CLEAN Limpiar
               </button>
             </div>
           </div>
@@ -452,7 +452,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
         {/* TRANSCRIPCIÓN INPUT */}
         <div className="bg-white rounded-lg shadow-sm border mb-6">
           <div className="p-4 border-b">
-            <h3 className="text-lg font-semibold">📝 Transcripción Completa</h3>
+            <h3 className="text-lg font-semibold">NOTES Transcripción Completa</h3>
             <p className="text-sm text-gray-600">Ingrese la transcripción completa para análisis semántico</p>
           </div>
           
@@ -614,7 +614,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                       <div className="mt-2 flex items-center space-x-3 text-xs text-gray-500">
                         <span>{chunk.sentences.length} oraciones</span>
                         <span>{chunk.speakers.length} hablantes</span>
-                        {chunk.narrative.hasTemporalMarkers && <span>⏰ Temporal</span>}
+                        {chunk.narrative.hasTemporalMarkers && <span>TIME Temporal</span>}
                         {chunk.narrative.hasCausalRelations && <span>🔗 Causal</span>}
                       </div>
                     </div>
@@ -627,7 +627,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
             {state.selectedChunk && (
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="p-4 border-b">
-                  <h3 className="text-lg font-semibold">🔍 Detalle del Chunk</h3>
+                  <h3 className="text-lg font-semibold">SEARCH Detalle del Chunk</h3>
                   <p className="text-sm text-gray-600">Análisis narrativo y clínico</p>
                 </div>
                 
@@ -669,7 +669,7 @@ Terapeuta: Exactamente. El plan de tratamiento debe abordar tanto los aspectos f
                           {state.selectedChunk.clinicalContext.hasSymptoms ? 'NOTES:' : 'ERROR:'} Síntomas
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasExamination ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                          {state.selectedChunk.clinicalContext.hasExamination ? '🔍' : 'ERROR:'} Examen
+                          {state.selectedChunk.clinicalContext.hasExamination ? 'SEARCH' : 'ERROR:'} Examen
                         </div>
                         <div className={`p-2 rounded ${state.selectedChunk.clinicalContext.hasAssessment ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>
                           {state.selectedChunk.clinicalContext.hasAssessment ? 'TARGET:' : 'ERROR:'} Assessment

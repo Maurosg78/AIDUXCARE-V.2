@@ -39,7 +39,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   });
 
   // DIAGNÓSTICO DETALLADO - CRÍTICO PARA DEBUGGING
-  console.log('🔍 AuthGuard - DIAGNÓSTICO COMPLETO:', {
+  console.log('SEARCH AuthGuard - DIAGNÓSTICO COMPLETO:', {
     'Estado de carga': isLoading,
     'Está autenticado': isAuthenticated,
     'Requiere MFA': requiresMFA,
@@ -53,7 +53,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   // VERIFICACIÓN DE TOKENS DE SEGURIDAD
   const secureToken = localStorage.getItem('aiduxcare_secure_token');
   if (secureToken) {
-    console.log('🔐 Token seguro encontrado, longitud:', secureToken.length);
+    console.log('SECURITY Token seguro encontrado, longitud:', secureToken.length);
   } else {
     console.log('ERROR: NO hay token seguro en localStorage');
   }
@@ -65,7 +65,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">🔐 AiDuxCare Medical</h3>
+            <h3 className="mt-4 text-lg font-semibold text-gray-900">SECURITY AiDuxCare Medical</h3>
             <p className="mt-2 text-gray-600">Verificando credenciales médicas...</p>
             <p className="mt-1 text-sm text-gray-500">Seguridad de grado hospitalario</p>
           </div>
@@ -76,7 +76,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   if (!isAuthenticated) {
     console.log('SECURITY: AuthGuard - ERROR: NO autenticado, redirigiendo a /auth');
-    console.log('🔍 MOTIVO DE REDIRECCIÓN:', {
+    console.log('SEARCH MOTIVO DE REDIRECCIÓN:', {
       'isAuthenticated': isAuthenticated,
       'hasSecureToken': !!localStorage.getItem('aiduxcare_secure_token'),
       'contextLoaded': true,
@@ -93,7 +93,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="text-center">
             <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🔐</span>
+              <span className="text-2xl">SECURITY</span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900">Autenticación Multi-Factor Requerida</h3>
             <p className="mt-2 text-gray-600">
@@ -176,7 +176,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   }
 
   console.log('SECURITY: AuthGuard - SUCCESS: ACCESO AUTORIZADO - Seguridad médica verificada');
-  console.log(`🔐 Nivel de seguridad: ${securityLevel} | Rol: ${getCurrentRole()}`);
+  console.log(`SECURITY Nivel de seguridad: ${securityLevel} | Rol: ${getCurrentRole()}`);
   
   return <>{children}</>;
 };

@@ -116,7 +116,7 @@ export class IntegratedChunkingService {
       },
       
       onBufferedSegment: (segment: BufferedSegment) => {
-        console.log(`📝 Segmento buffered: ${segment.wordCount} palabras - "${segment.text.substring(0, 50)}..."`);
+        console.log(`NOTES Segmento buffered: ${segment.wordCount} palabras - "${segment.text.substring(0, 50)}..."`);
         this.handleBufferedSegment(segment);
       },
       
@@ -194,10 +194,10 @@ export class IntegratedChunkingService {
     try {
       console.log('\nTARGET: === INICIANDO CHUNKING SEGÚN MAURICIO ===');
       console.log(`📄 Procesando ${this.accumulatedSegments.length} segmentos buffered`);
-      console.log(`📝 Transcripción completa: ${this.fullTranscript.length} caracteres`);
+      console.log(`NOTES Transcripción completa: ${this.fullTranscript.length} caracteres`);
 
       // PASO 1: Convertir transcripción completa a utterances
-      console.log('\n📝 PASO 1: Convirtiendo a utterances...');
+      console.log('\nNOTES PASO 1: Convirtiendo a utterances...');
       const utterances = parseTranscriptToUtterances(this.fullTranscript);
       console.log(`SUCCESS: ${utterances.length} utterances creadas`);
 
@@ -422,7 +422,7 @@ export class IntegratedChunkingService {
    */
   async processFullTranscription(transcriptText: string): Promise<ChunkedTranscriptionResult> {
     console.log('📄 Procesando transcripción completa en modo offline');
-    console.log(`📝 Longitud: ${transcriptText.length} caracteres`);
+    console.log(`NOTES Longitud: ${transcriptText.length} caracteres`);
 
     this.fullTranscript = transcriptText;
     this.accumulatedSegments = []; // No hay segmentos buffered en modo offline

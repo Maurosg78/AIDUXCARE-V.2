@@ -457,7 +457,7 @@ const PatientSelectionPage: React.FC = () => {
                   <div className="flex flex-wrap gap-2">
                     {patient.urgencyFlags.map((flag, index) => (
                       <span key={index} className="px-2 py-1 bg-[#FF6F61]/10 text-[#FF6F61] text-xs font-medium rounded-full">
-                        🚨 {flag}
+                        ALERT {flag}
                       </span>
                     ))}
                   </div>

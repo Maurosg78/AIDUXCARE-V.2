@@ -93,7 +93,7 @@ const PatientListPage: React.FC = () => {
 
   // === HANDLERS ===
   const handlePatientClick = (patientId: string) => {
-    console.log('🔍 Navegando a ficha del paciente:', patientId);
+    console.log('SEARCH Navegando a ficha del paciente:', patientId);
     navigate(`/patient/${patientId}`);
   };
 

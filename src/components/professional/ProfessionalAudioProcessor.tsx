@@ -387,7 +387,7 @@ export const ProfessionalAudioProcessor: React.FC<ProfessionalAudioProcessorProp
             <span className="font-medium">Estado:</span>
             {audioState.isRecording ? ' RED: Grabando' :
              audioState.isProcessing ? ' RELOAD: Procesando' :
-             audioState.hasRecording ? ' SUCCESS: Completado' : ' ⚪ Esperando'}
+             audioState.hasRecording ? ' SUCCESS: Completado' : ' WHITE Esperando'}
           </div>
           <div>
             <span className="font-medium">Calidad:</span> Alta (44.1kHz)

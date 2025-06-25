@@ -5,7 +5,7 @@ async function testPatientFlow() {
     console.log('LAUNCH: Iniciando prueba del flujo de pacientes...');
 
     // 1. Crear un nuevo paciente
-    console.log('\n📝 Creando nuevo paciente...');
+    console.log('\nNOTES Creando nuevo paciente...');
     const newPatient = await PatientApiService.createPatient({
       name: 'Juan Pérez (Test Flow)',
       email: 'juan.test@example.com',
@@ -21,7 +21,7 @@ async function testPatientFlow() {
     console.log('SUCCESS: Lista de pacientes obtenida:', patients.length, 'pacientes');
 
     // 3. Obtener los detalles del paciente creado
-    console.log('\n🔍 Obteniendo detalles del paciente...');
+    console.log('\nSEARCH Obteniendo detalles del paciente...');
     const patientDetails = await PatientApiService.getPatient(newPatient.id);
     console.log('SUCCESS: Detalles del paciente obtenidos:', patientDetails.name);
 

@@ -7,8 +7,8 @@ import "./index.css";
 if (import.meta.env.DEV) {
   console.log("LAUNCH: AiDuxCare V.2 - Modo Desarrollo - Fase 3");
   console.log("📍 Página Principal:", "http://localhost:3000/");
-  console.log("🔐 Autenticación:", "http://localhost:3000/auth");
-  console.log("🏥 Página Completa Paciente:", "http://localhost:3000/patient-complete");
+  console.log("SECURITY Autenticación:", "http://localhost:3000/auth");
+  console.log("MEDICAL Página Completa Paciente:", "http://localhost:3000/patient-complete");
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -222,14 +222,14 @@ export default function GeminiTestPage() {
               
               {connectionStatus === 'success' && (
                 <div className="flex items-center text-green-600">
-                  <span className="mr-2">✅</span>
+                  <span className="mr-2">SUCCESS</span>
                   Conexión exitosa
                 </div>
               )}
               
               {connectionStatus === 'error' && (
                 <div className="text-red-600">
-                  <span className="mr-2">❌</span>
+                  <span className="mr-2">ERROR</span>
                   Error: {connectionError}
                 </div>
               )}

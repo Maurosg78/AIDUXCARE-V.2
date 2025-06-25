@@ -169,7 +169,7 @@ const WelcomePage: React.FC = () => {
                 justifyContent: 'center',
                 fontSize: '2rem'
               }}>
-                📋
+                FORM
               </div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1a365d', marginBottom: '16px' }}>
                 Documentación automática y precisa

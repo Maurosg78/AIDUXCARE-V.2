@@ -157,7 +157,7 @@ export class BufferedTranscriptionService {
     this.currentBuffer += (this.currentBuffer ? ' ' : '') + text;
     this.wordCount = this.currentBuffer.split(' ').length;
 
-    console.log(`📝 Buffer: ${this.wordCount} palabras | Hablante: ${this.currentSpeaker} | "${text}"`);
+    console.log(`NOTES Buffer: ${this.wordCount} palabras | Hablante: ${this.currentSpeaker} | "${text}"`);
 
     // Verificar si el buffer debe completarse
     this.checkBufferCompletion();

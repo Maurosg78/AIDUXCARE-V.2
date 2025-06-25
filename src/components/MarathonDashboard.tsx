@@ -85,8 +85,8 @@ export const MarathonDashboard: React.FC<MarathonDashboardProps> = ({
 
   const getStatusIcon = (value: number, thresholds: { warning: number; critical: number }) => {
     if (value >= thresholds.critical) return 'RED:';
-    if (value >= thresholds.warning) return '🟡';
-    return '🟢';
+    if (value >= thresholds.warning) return 'YELLOW';
+    return 'GREEN';
   };
 
   return (
@@ -114,7 +114,7 @@ export const MarathonDashboard: React.FC<MarathonDashboardProps> = ({
       {/* Alerts */}
       {alerts.length > 0 && (
         <div className="mb-6 p-4 bg-red-900 border border-red-500 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2">🚨 Active Alerts</h3>
+          <h3 className="text-lg font-semibold mb-2">ALERT Active Alerts</h3>
           <div className="space-y-1">
             {alerts.map((alert, index) => (
               <div key={index} className="text-red-200">{alert}</div>

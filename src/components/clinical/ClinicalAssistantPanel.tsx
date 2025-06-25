@@ -1,5 +1,5 @@
 /**
- * 🏥 CLINICAL ASSISTANT PANEL - INTERFAZ DE ASISTENCIA Y CHECKLIST
+ * MEDICAL CLINICAL ASSISTANT PANEL - INTERFAZ DE ASISTENCIA Y CHECKLIST
  */
 
 import React, { useState, useEffect } from 'react';
@@ -46,7 +46,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
 
   useEffect(() => {
     if (analysisResult) {
-      console.log('🔍 Nuevo análisis recibido:', analysisResult);
+      console.log('SEARCH Nuevo análisis recibido:', analysisResult);
     }
   }, [analysisResult]);
 
@@ -94,7 +94,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
       })
     );
 
-    console.log('📝 Test completado:', testId, result);
+    console.log('NOTES Test completado:', testId, result);
   };
 
   const getSeverityColor = (severity: RedFlag['severity']) => {
@@ -109,10 +109,10 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
 
   const getSeverityIcon = (severity: RedFlag['severity']) => {
     switch (severity) {
-      case 'CRITICAL': return '🚨';
+      case 'CRITICAL': return 'ALERT';
       case 'HIGH': return 'WARNING:';
       case 'MEDIUM': return '⚡';
-      case 'LOW': return 'ℹ️';
+      case 'LOW': return 'INFO';
       default: return 'NOTES:';
     }
   };
@@ -240,7 +240,7 @@ const ClinicalAssistantPanel: React.FC<ClinicalAssistantPanelProps> = ({
               : 'text-[#2C3E50]/60 hover:text-[#2C3E50]'
           }`}
         >
-          🚨 Alertas ({getRedFlags().length})
+          ALERT Alertas ({getRedFlags().length})
         </button>
         <button
           onClick={() => setActiveTab('templates')}
@@ -574,7 +574,7 @@ const TestItem: React.FC<TestItemProps> = ({ test, onComplete }) => {
               onClick={() => setIsCompleting(true)}
               className="bg-[#5DA5A3] text-white py-1 px-3 rounded text-xs font-medium hover:bg-[#4A8280] transition-colors"
             >
-              📝 Realizar Prueba
+              NOTES Realizar Prueba
             </button>
           )}
         </div>

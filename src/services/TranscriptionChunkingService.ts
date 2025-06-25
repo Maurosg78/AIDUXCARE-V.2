@@ -163,7 +163,7 @@ function analyzeChunkMetadata(utterances: Utterance[]) {
  * VITAL: Esta función convierte el problema "sílaba por sílaba" a chunks semánticos
  */
 export function parseTranscriptToUtterances(transcriptText: string): Utterance[] {
-  console.log('📝 Convirtiendo transcripción a utterances...');
+  console.log('NOTES Convirtiendo transcripción a utterances...');
   
   // Dividir por líneas y limpiar
   const lines = transcriptText
@@ -337,7 +337,7 @@ function calculateChunkConfidence(chunk: Chunk): number {
  * Mostrar información detallada de chunking para debugging
  */
 export function debugChunking(chunks: Chunk[]): void {
-  console.log('\n🔍 === DEBUG CHUNKING ===');
+  console.log('\nSEARCH === DEBUG CHUNKING ===');
   console.log(`Total chunks: ${chunks.length}`);
   
   chunks.forEach((chunk, index) => {
@@ -352,7 +352,7 @@ export function debugChunking(chunks: Chunk[]): void {
     });
   });
   
-  console.log('\n🔍 === FIN DEBUG ===\n');
+  console.log('\nSEARCH === FIN DEBUG ===\n');
 }
 
 /**

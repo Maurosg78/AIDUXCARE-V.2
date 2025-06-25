@@ -1,5 +1,5 @@
 /**
- * 🏥 PATIENT SERVICE - AIDUXCARE V.2
+ * MEDICAL PATIENT SERVICE - AIDUXCARE V.2
  * Servicio centralizado para comunicación con el backend de pacientes
  * Implementa el contrato API definido en API_CONTRACT.md
  */
@@ -180,7 +180,7 @@ export async function updatePatient(
   patientId: string, 
   updateData: UpdatePatientRequest
 ): Promise<Patient> {
-  console.log('📝 Actualizando paciente:', patientId, updateData);
+  console.log('NOTES Actualizando paciente:', patientId, updateData);
   
   try {
     const patient = await apiRequest<Patient>(`/patients/${patientId}`, {
@@ -240,7 +240,7 @@ export async function checkApiHealth(): Promise<{
   service: string;
   version: string;
 }> {
-  console.log('🔍 Verificando estado de la API');
+  console.log('SEARCH Verificando estado de la API');
   
   try {
     const health = await apiRequest<{

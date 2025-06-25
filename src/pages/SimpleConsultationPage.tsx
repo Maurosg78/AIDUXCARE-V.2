@@ -1,5 +1,5 @@
 /**
- * 🏥 SimpleConsultationPage - Versión SIMPLIFICADA para resolver logout
+ * MEDICAL SimpleConsultationPage - Versión SIMPLIFICADA para resolver logout
  * Página temporal sin dependencias complejas que puedan causar errores
  */
 
@@ -32,7 +32,7 @@ const SimpleConsultationPage: React.FC = () => {
   useEffect(() => {
     const loadPatient = () => {
       try {
-        console.log('🏥 SIMPLE: Cargando paciente simplificado:', patientId);
+        console.log('MEDICAL SIMPLE: Cargando paciente simplificado:', patientId);
         
         if (!patientId) {
           console.warn('ERROR: No patientId, navegando a /clinical');

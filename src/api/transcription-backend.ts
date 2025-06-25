@@ -1,5 +1,5 @@
 /**
- * 🏥 AIDUXCARE - BACKEND TRANSCRIPTION SERVICE
+ * MEDICAL AIDUXCARE - BACKEND TRANSCRIPTION SERVICE
  * Pipeline profesional: Audio → Google Cloud Speech-to-Text → Structured Output
  */
 
@@ -19,10 +19,10 @@ export interface SpeakerLabel {
 }
 
 export interface TranscriptionResponse {
-  text: string; // ✅ Corregido: text en lugar de transcript
+  text: string; // SUCCESS Corregido: text en lugar de transcript
   confidence: number;
-  duration: number; // ✅ Agregado: duración en segundos
-  speakers?: SpeakerLabel[]; // ✅ Corregido: speakers en lugar de speakerLabels
+  duration: number; // SUCCESS Agregado: duración en segundos
+  speakers?: SpeakerLabel[]; // SUCCESS Corregido: speakers en lugar de speakerLabels
   processingTime: number;
   audioQuality: 'excellent' | 'good' | 'poor';
 }
@@ -67,7 +67,7 @@ export class ProfessionalTranscriptionService {
    */
   static async transcribeAudio(audio: Blob, config: Partial<TranscriptionRequest>): Promise<TranscriptionResponse> {
     console.log('🔊 [BACKEND MOCK] Procesando audio con Google Cloud Speech-to-Text...');
-    console.log('📊 Configuración:', config);
+    console.log('STATS Configuración:', config);
     
     // Simular tiempo de procesamiento real
     await this.delay(2000 + Math.random() * 3000);
@@ -76,13 +76,13 @@ export class ProfessionalTranscriptionService {
     const mockTranscriptions = this.getMockTranscriptionForContext(config.medicalContext || '');
     const selectedTranscription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
     
-    console.log('✅ [BACKEND MOCK] Transcripción completada');
+    console.log('SUCCESS [BACKEND MOCK] Transcripción completada');
     
     return {
-      text: selectedTranscription.fullText, // ✅ Corregido: text en lugar de transcript
-      confidence: Math.round((0.92 + Math.random() * 0.07) * 100), // ✅ Corregido: porcentaje
-      duration: 45 + Math.round(Math.random() * 30), // ✅ Agregado: duration
-      speakers: selectedTranscription.speakers.map(s => ({ // ✅ Corregido: speakers
+      text: selectedTranscription.fullText, // SUCCESS Corregido: text en lugar de transcript
+      confidence: Math.round((0.92 + Math.random() * 0.07) * 100), // SUCCESS Corregido: porcentaje
+      duration: 45 + Math.round(Math.random() * 30), // SUCCESS Agregado: duration
+      speakers: selectedTranscription.speakers.map(s => ({ // SUCCESS Corregido: speakers
         ...s,
         label: s.speaker === 'PATIENT' ? 'Paciente' : 'Terapeuta'
       })),
@@ -96,7 +96,7 @@ export class ProfessionalTranscriptionService {
    */
   static async classifySOAP(request: SOAPClassificationRequest): Promise<SOAPResponse> {
     console.log('🤖 [BACKEND MOCK] Clasificando SOAP con RealWorldSOAPProcessor...');
-    console.log('🎯 Método preferido:', request.useVertexAI ? 'Vertex AI' : 'Gemini Developer');
+    console.log('TARGET Método preferido:', request.useVertexAI ? 'Vertex AI' : 'Gemini Developer');
     
     // Simular tiempo de procesamiento de IA
     await this.delay(1500 + Math.random() * 2000);
@@ -104,7 +104,7 @@ export class ProfessionalTranscriptionService {
     // Generar SOAP contextual basado en la transcripción
     const soapResult = this.generateContextualSOAP(request);
     
-    console.log('✅ [BACKEND MOCK] Clasificación SOAP completada');
+    console.log('SUCCESS [BACKEND MOCK] Clasificación SOAP completada');
     
     return soapResult;
   }

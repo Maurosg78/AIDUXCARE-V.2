@@ -47,10 +47,10 @@ const SecurityDashboard: React.FC = () => {
 
   const getEventTypeIcon = (type: string) => {
     switch (type) {
-      case 'AUTHENTICATION': return '🔐';
+      case 'AUTHENTICATION': return 'SECURITY';
       case 'PATIENT_RECORD_ACCESS': return 'USER:';
       case 'DATA_MODIFICATION': return '✏️';
-      case 'EMERGENCY_ACCESS': return '🚨';
+      case 'EMERGENCY_ACCESS': return 'ALERT';
       case 'SYSTEM_CONFIGURATION': return '⚙️';
       case 'SECURITY_INCIDENT': return 'SECURITY:';
       default: return 'NOTES:';
@@ -236,7 +236,7 @@ const SecurityDashboard: React.FC = () => {
           <div className="border-t border-gray-200 pt-3">
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>Última actualización: {lastUpdate.toLocaleTimeString()}</span>
-              <span>🔒 Seguridad médica activa</span>
+              <span>SECURE Seguridad médica activa</span>
             </div>
           </div>
         </div>

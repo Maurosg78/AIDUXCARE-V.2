@@ -1,5 +1,5 @@
 /**
- * 📝 POST CONSULTATION DICTATION - Modo Dictado Post-Consulta
+ * NOTES POST CONSULTATION DICTATION - Modo Dictado Post-Consulta
  * 
  * Componente placeholder para el modo de dictado después de la consulta.
  * Optimizado para un solo hablante (el profesional).

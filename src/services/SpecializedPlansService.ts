@@ -1,5 +1,5 @@
 /**
- * 🏥 SPECIALIZED PLANS SERVICE - PLANES ESPECIALIZADOS POR DISCIPLINA
+ * MEDICAL SPECIALIZED PLANS SERVICE - PLANES ESPECIALIZADOS POR DISCIPLINA
  * 
  * Sistema que implementa la diferenciación estratégica clave:
  * Psychology Pro €79, Physio Pro €69, General Pro €59

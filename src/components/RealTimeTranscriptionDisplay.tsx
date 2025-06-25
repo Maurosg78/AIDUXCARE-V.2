@@ -1,5 +1,5 @@
 /**
- * 📝 REAL TIME TRANSCRIPTION DISPLAY - Componente de Transcripción en Tiempo Real
+ * NOTES REAL TIME TRANSCRIPTION DISPLAY - Componente de Transcripción en Tiempo Real
  * 
  * Características principales:
  * 1. SUCCESS: Transcripción visible en tiempo real
@@ -320,7 +320,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              📝 Transcripción en Tiempo Real
+              NOTES Transcripción en Tiempo Real
             </h3>
             
             {/* Indicador de estado */}
@@ -523,7 +523,7 @@ export const RealTimeTranscriptionDisplay: React.FC<RealTimeTranscriptionDisplay
               👥 {state.speakers.length} interlocutores detectados
             </div>
             <div>
-              📝 {state.segments.reduce((total, s) => total + s.text.split(' ').length, 0)} palabras
+              NOTES {state.segments.reduce((total, s) => total + s.text.split(' ').length, 0)} palabras
             </div>
           </div>
         </div>

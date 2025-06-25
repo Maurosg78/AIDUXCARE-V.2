@@ -1,5 +1,5 @@
 /**
- * 🔐 Local Authentication Service - AiDuxCare V.2
+ * SECURITY Local Authentication Service - AiDuxCare V.2
  * Gestión de autenticación local sin dependencias externas
  * Integrado con LocalStorageService para persistencia
  */
@@ -334,7 +334,7 @@ class LocalAuthService {
     const nameOrEmail = `${name.toLowerCase()} ${email?.toLowerCase() || ''}`;
     
     // Log detallado para UAT
-    console.log(`🔍 UAT: Analizando usuario para rol OWNER`);
+    console.log(`SEARCH UAT: Analizando usuario para rol OWNER`);
     console.log(`USER: Nombre: "${name}"`);
     console.log(`📧 Email: "${email || 'no proporcionado'}"`);
     console.log(`🔎 Texto de búsqueda: "${nameOrEmail}"`);

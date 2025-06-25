@@ -390,7 +390,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
 
       {/* Información técnica */}
       <div className="mt-4 flex justify-center text-xs text-gray-500">
-        <span>🔒 Los archivos se procesan localmente con total privacidad</span>
+        <span>SECURE Los archivos se procesan localmente con total privacidad</span>
       </div>
     </div>
   );

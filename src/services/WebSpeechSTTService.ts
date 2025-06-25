@@ -441,7 +441,7 @@ ERROR: No Compatible:
 • Safari
 • Navegadores móviles antiguos
 
-💡 Alternativa: Puedes cargar archivos de audio para procesamiento.
+TIP Alternativa: Puedes cargar archivos de audio para procesamiento.
 
 ${compatibility.recommendedAction}
     `.trim();

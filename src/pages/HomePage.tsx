@@ -162,7 +162,7 @@ export const HomePage: React.FC = () => {
                           </svg>
                           SUGERENCIAS IA
                         </div>
-                        <div className="text-sm text-gray-600">💡 Considerar: SCA - Solicitar ECG urgente</div>
+                        <div className="text-sm text-gray-600">TIP Considerar: SCA - Solicitar ECG urgente</div>
                         <div className="text-sm text-gray-600">NOTES: SOAP pre-completado para revisión</div>
                         <div className="text-sm text-gray-600">WARNING: Alertas: Protocolo dolor torácico</div>
                       </div>

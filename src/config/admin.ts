@@ -1,5 +1,5 @@
 /**
- * 🔐 CONFIGURACIÓN ADMINISTRATIVA SEGURA
+ * SECURITY CONFIGURACIÓN ADMINISTRATIVA SEGURA
  * Este archivo contiene configuraciones para el usuario administrador
  * En producción, estas credenciales deben ser manejadas por variables de entorno
  */

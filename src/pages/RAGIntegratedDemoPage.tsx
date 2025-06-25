@@ -121,7 +121,7 @@ export const RAGIntegratedDemoPage: React.FC<RAGIntegratedDemoPageProps> = ({
               💰 Costo: $0.00
             </div>
             <div className="bg-blue-100 px-3 py-1 rounded-full text-sm text-blue-800">
-              🔒 100% Local
+              SECURE 100% Local
             </div>
             <div className="bg-purple-100 px-3 py-1 rounded-full text-sm text-purple-800">
               🔬 PubMed Integration

@@ -1,5 +1,5 @@
 /**
- * 🏥 CLINICAL WORKFLOW PAGE - Flujo de Trabajo Clínico Real
+ * MEDICAL CLINICAL WORKFLOW PAGE - Flujo de Trabajo Clínico Real
  * 
  * Dashboard práctico para clínicos con:
  * - Búsqueda y gestión real de pacientes
@@ -173,7 +173,7 @@ const ClinicalWorkflowPage: React.FC = () => {
 
   const handleStartConsultation = (patientId: string) => {
     try {
-      console.log('🏥 Iniciando consulta para paciente:', patientId);
+      console.log('MEDICAL Iniciando consulta para paciente:', patientId);
       
       // Verificar que el paciente existe
       const patients = localStorageService.getAllPatients();
@@ -240,7 +240,7 @@ const ClinicalWorkflowPage: React.FC = () => {
 
   const handleSetupMFA = async () => {
     try {
-      console.log('🔐 Configurando MFA desde sistema clínico...');
+      console.log('SECURITY Configurando MFA desde sistema clínico...');
       const mfaData = await setupMFA();
       if (mfaData) {
         setMfaSetupData(mfaData);
@@ -297,7 +297,7 @@ const ClinicalWorkflowPage: React.FC = () => {
                   className="text-xs text-[#FF6F61] hover:text-[#E55A4B] transition-colors px-3 py-2 border border-[#FF6F61]/30 rounded-md hover:bg-[#FF6F61]/5"
                   title="Eliminar pacientes demo y empezar con pacientes reales"
                 >
-                  🧹 Limpiar Demo
+                  CLEAN Limpiar Demo
                 </button>
               )}
               
@@ -317,7 +317,7 @@ const ClinicalWorkflowPage: React.FC = () => {
                   onClick={handleSetupMFA}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  🔐 Configurar MFA
+                  SECURITY Configurar MFA
                 </button>
               )}
             </div>
@@ -535,7 +535,7 @@ const ClinicalWorkflowPage: React.FC = () => {
       {showMFASetup && mfaSetupData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">🔐 Configurar MFA</h2>
+            <h2 className="text-xl font-bold mb-4">SECURITY Configurar MFA</h2>
             
             {mfaStep === 'setup' && (
               <div>

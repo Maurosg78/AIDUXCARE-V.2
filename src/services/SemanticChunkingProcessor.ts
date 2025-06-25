@@ -131,7 +131,7 @@ export class SemanticChunkingProcessor {
 
       console.log(`SUCCESS: Procesamiento completado en ${metadata.processingTime}ms`);
       console.log(`STATS: Coherencia narrativa: ${Math.round(metadata.narrativeCoherence * 100)}%`);
-      console.log(`🏥 Coherencia clínica: ${Math.round(metadata.clinicalCoherence * 100)}%`);
+      console.log(`MEDICAL Coherencia clínica: ${Math.round(metadata.clinicalCoherence * 100)}%`);
 
       return {
         fullTranscript,
@@ -155,7 +155,7 @@ export class SemanticChunkingProcessor {
    * Evita cortar en medio de diálogos o contextos clínicos importantes
    */
   private createSemanticChunks(transcript: string): SemanticChunk[] {
-    console.log('📝 Creando chunks semánticos...');
+    console.log('NOTES Creando chunks semánticos...');
 
     // Dividir en oraciones preservando diálogos
     const sentences = this.splitIntoSentences(transcript);

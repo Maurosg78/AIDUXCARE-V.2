@@ -272,7 +272,7 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              📝 Transcripción Mejorada
+              NOTES Transcripción Mejorada
             </h3>
             
             {isRecording && (
@@ -417,7 +417,7 @@ export const RealTimeTranscriptionDisplay: React.FC<TranscriptionDisplayProps> =
         <div className="p-4 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>STATS: {segments.filter(s => s.isFinal).length} segmentos finales</div>
-            <div>📝 {segments.reduce((total, s) => total + s.text.split(' ').length, 0)} palabras</div>
+            <div>NOTES {segments.reduce((total, s) => total + s.text.split(' ').length, 0)} palabras</div>
           </div>
         </div>
       )}

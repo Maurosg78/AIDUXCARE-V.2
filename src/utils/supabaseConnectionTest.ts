@@ -19,7 +19,7 @@ export async function testSupabaseConnection() {
     }
 
     // Test 2: Verificar acceso a tabla simple
-    console.log('🔍 Probando acceso a tabla memory_blocks...');
+    console.log('SEARCH Probando acceso a tabla memory_blocks...');
     const { data, error } = await supabase
       .from('memory_blocks')
       .select('id')

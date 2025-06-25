@@ -13,7 +13,7 @@ const AudioTestPage: React.FC = () => {
 
   const handleTranscriptionUpdate = (segment: TranscriptionSegment) => {
     setLastSegment(segment);
-    console.log('📝 Nuevo segmento:', segment);
+    console.log('NOTES Nuevo segmento:', segment);
   };
 
   const exportTranscription = () => {
@@ -214,7 +214,7 @@ const AudioTestPage: React.FC = () => {
           
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
             <p className="text-sm text-green-700">
-              💡 <strong>Tip:</strong> Para mejores resultados, usa Chrome o Edge, habla claramente 
+              TIP <strong>Tip:</strong> Para mejores resultados, usa Chrome o Edge, habla claramente 
               y asegúrate de tener buena conexión a internet.
             </p>
           </div>

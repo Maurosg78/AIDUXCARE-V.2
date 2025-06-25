@@ -249,7 +249,7 @@ export class ActiveListeningService {
           this.options.onResult(activeSegment);
         }
 
-        console.log(`📝 Transcripción local: "${activeSegment.content}" (${Math.round(activeSegment.confidence * 100)}%)`);
+        console.log(`NOTES Transcripción local: "${activeSegment.content}" (${Math.round(activeSegment.confidence * 100)}%)`);
       },
 
       onError: (error) => {

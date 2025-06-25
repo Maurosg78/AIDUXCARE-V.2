@@ -1,1 +1,0 @@
-export interface AgentSuggestion { id: string; type: SuggestionType; field: SuggestionField; content: string; sourceBlockId: string; explanation?: string; createdAt: Date; updatedAt: Date; feedback?: string; context_origin?: { source_block: string; text: string; }; }

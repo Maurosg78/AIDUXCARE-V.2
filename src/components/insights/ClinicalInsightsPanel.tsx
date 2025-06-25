@@ -34,10 +34,10 @@ const SeverityBadge: React.FC<{
   };
 
   const icons = {
-    info: 'ℹ️',
+    info: 'INFO',
     warning: 'WARNING:',
     danger: 'WARNING:',
-    critical: '🚨'
+    critical: 'ALERT'
   };
 
   return (
@@ -59,7 +59,7 @@ const PriorityBadge: React.FC<{
 
   const icons = {
     low: '🔵',
-    medium: '🟡',
+    medium: 'YELLOW',
     high: 'RED:'
   };
 
@@ -202,9 +202,9 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
       <div className="flex border-b border-gray-200">
         {[
           { key: 'overview', label: 'STATS: Resumen', count: totalInsights },
-          { key: 'patterns', label: '🔍 Patrones', count: insights.patterns.length },
+          { key: 'patterns', label: 'SEARCH Patrones', count: insights.patterns.length },
           { key: 'alerts', label: 'WARNING: Alertas', count: insights.alerts.length },
-          { key: 'recommendations', label: '💡 Recomendaciones', count: insights.recommendations.length }
+          { key: 'recommendations', label: 'TIP Recomendaciones', count: insights.recommendations.length }
         ].map(tab => (
           <button
             key={tab.key}
@@ -281,7 +281,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
               {insights.alerts.filter(a => a.severity === 'critical').length > 0 && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <span className="text-red-600">🚨</span>
+                    <span className="text-red-600">ALERT</span>
                     <span className="text-sm font-medium text-red-800">
                       {insights.alerts.filter(a => a.severity === 'critical').length} alertas críticas requieren atención inmediata
                     </span>
@@ -292,7 +292,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
               {insights.recommendations.filter(r => r.priority === 'high').length > 0 && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <span className="text-blue-600">💡</span>
+                    <span className="text-blue-600">TIP</span>
                     <span className="text-sm font-medium text-blue-800">
                       {insights.recommendations.filter(r => r.priority === 'high').length} recomendaciones de alta prioridad disponibles
                     </span>
@@ -308,7 +308,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
           <div className="space-y-3">
             {insights.patterns.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-2xl mb-2">🔍</div>
+                <div className="text-2xl mb-2">SEARCH</div>
                 <p>No se detectaron patrones clínicos significativos</p>
               </div>
             ) : (
@@ -439,7 +439,7 @@ export const ClinicalInsightsPanel: React.FC<ClinicalInsightsPanelProps> = ({
           <div className="space-y-3">
             {insights.recommendations.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-2xl mb-2">💡</div>
+                <div className="text-2xl mb-2">TIP</div>
                 <p>No hay recomendaciones disponibles</p>
               </div>
             ) : (

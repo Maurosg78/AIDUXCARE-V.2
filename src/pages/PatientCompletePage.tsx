@@ -1,5 +1,5 @@
 /**
- * 🏥 PATIENT COMPLETE PAGE - IDENTIDAD VISUAL OFICIAL AIDUXCARE
+ * MEDICAL PATIENT COMPLETE PAGE - IDENTIDAD VISUAL OFICIAL AIDUXCARE
  * Página principal del workflow con identidad oficial y asistente bajo demanda
  * REFACTORIZADA: Usa servicios centralizados para eliminar memory leaks
  */
@@ -355,7 +355,7 @@ const PatientCompletePage: React.FC = () => {
         throw new Error('No hay transcripción disponible para procesar');
       }
       
-      console.log('📝 Transcripción a procesar:', realTranscript);
+      console.log('NOTES Transcripción a procesar:', realTranscript);
       
       // Simular análisis clínico de la transcripción real
       setWorkplace(prev => ({
@@ -890,7 +890,7 @@ const PatientCompletePage: React.FC = () => {
     }
 
     try {
-      console.log('🔍 Iniciando análisis clínico inteligente...');
+      console.log('SEARCH Iniciando análisis clínico inteligente...');
       
       setWorkplace(prev => ({
         ...prev,
@@ -977,7 +977,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleTestCompleted = (templateId: string, testId: string, result: string, notes?: string) => {
-    console.log('📝 Test completado:', { templateId, testId, result, notes });
+    console.log('NOTES Test completado:', { templateId, testId, result, notes });
     
     setWorkplace(prev => ({
       ...prev,
@@ -1000,7 +1000,7 @@ const PatientCompletePage: React.FC = () => {
   };
 
   const handleSOAPChange = (soap: { subjective: string; objective: string; assessment: string; plan: string }) => {
-    console.log('📝 SOAP actualizado:', soap);
+    console.log('NOTES SOAP actualizado:', soap);
     
     // Convertir al formato interno
     const soapStructure: SOAPStructure = {
@@ -1331,7 +1331,7 @@ const PatientCompletePage: React.FC = () => {
                 </p>
                 <div className="space-y-2">
                   <button className="w-full bg-gradient-to-r from-[#5DA5A3] to-[#4A8280] text-white py-2 px-4 rounded-lg text-sm font-medium hover:from-[#4A8280] hover:to-[#3A6B69] transition-all">
-                    💡 Generar Plan de Ejercicios
+                    TIP Generar Plan de Ejercicios
                   </button>
                   <button className="w-full bg-gradient-to-r from-[#A8E6CF] to-[#8BDBB7] text-[#2C3E50] py-2 px-4 rounded-lg text-sm font-medium hover:from-[#8BDBB7] hover:to-[#6ED09F] transition-all">
                     NOTES: Sugerencias SOAP

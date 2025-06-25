@@ -286,7 +286,7 @@ const SmartDashboard: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#2C3E50]">🚨 Alertas Prioritarias</h2>
+                <h2 className="text-xl font-bold text-[#2C3E50]">ALERT Alertas Prioritarias</h2>
                 <div className="w-6 h-6 bg-[#FF6F61] text-white text-xs rounded-full flex items-center justify-center animate-pulse">
                   {state.priorityAlerts.length}
                 </div>

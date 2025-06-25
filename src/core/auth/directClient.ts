@@ -11,7 +11,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Función para prueba de diagnóstico
 export async function testDirectConnection() {
   try {
-    console.log('🔍 Probando conexión directa a Supabase con fetch...');
+    console.log('SEARCH Probando conexión directa a Supabase con fetch...');
     
     // Intentar una petición directa a la API REST
     const response = await fetch(`${SUPABASE_URL}/rest/v1/health_check?select=*&limit=1`, {

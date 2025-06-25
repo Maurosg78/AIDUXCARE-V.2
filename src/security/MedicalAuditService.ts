@@ -1,5 +1,5 @@
 /**
- * 🔐 MEDICAL AUDIT SERVICE - AUDITORÍA MÉDICA COMPLETA
+ * SECURITY MEDICAL AUDIT SERVICE - AUDITORÍA MÉDICA COMPLETA
  * Sistema de auditoría especializado para entornos médicos con compliance HIPAA
  * Registra todas las actividades críticas del sistema con anonimización automática
  */
@@ -406,7 +406,7 @@ class MedicalAuditService {
 
   private static trackFailedLogin(userId: string, ipAddress: string): void {
     // Implementar tracking de intentos fallidos
-    logger.error('🚨 Failed login attempt:', this.anonymizeUserId(userId), 'from', this.anonymizeIP(ipAddress));
+    logger.error('ALERT Failed login attempt:', this.anonymizeUserId(userId), 'from', this.anonymizeIP(ipAddress));
   }
 
   private static groupBy(array: any[], key: string): Record<string, number> {

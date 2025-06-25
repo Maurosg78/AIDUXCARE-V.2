@@ -222,7 +222,7 @@ export const ProfessorDemoPage: React.FC = () => {
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <span className="text-emerald-600 text-sm">💡</span>
+                      <span className="text-emerald-600 text-sm">TIP</span>
                     </div>
                     <div>
                       <p className="font-medium text-emerald-800">Evaluación postural recomendada</p>

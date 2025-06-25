@@ -439,7 +439,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
    * Manejadores de eventos del Clinical Insights Panel
    */
   const handlePatternClick = useCallback((pattern: ClinicalPattern) => {
-    console.log('🔍 Patrón clínico seleccionado:', pattern);
+    console.log('SEARCH Patrón clínico seleccionado:', pattern);
     // Aquí se podría mostrar un modal con detalles del patrón
   }, []);
 
@@ -449,7 +449,7 @@ export const AdvancedAIDemoPage: React.FC<AdvancedAIDemoPageProps> = ({
   }, []);
 
   const handleRecommendationAccept = useCallback((recommendation: ProactiveRecommendation) => {
-    console.log('💡 Recomendación aceptada:', recommendation.title);
+    console.log('TIP Recomendación aceptada:', recommendation.title);
     // Aquí se integraría la recomendación en el plan de tratamiento
   }, []);
 

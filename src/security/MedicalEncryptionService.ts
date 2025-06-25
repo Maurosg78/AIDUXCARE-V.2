@@ -1,5 +1,5 @@
 /**
- * 🔐 MEDICAL ENCRYPTION SERVICE - ENTERPRISE GRADE (FREE)
+ * SECURITY MEDICAL ENCRYPTION SERVICE - ENTERPRISE GRADE (FREE)
  * Cifrado de grado hospitalario usando herramientas nativas
  * HIPAA/GDPR Compliant - Field Level Encryption
  */
@@ -212,7 +212,7 @@ class MedicalEncryptionService {
       sessionId: this.generateSessionId()
     };
 
-    console.log('🔍 MEDICAL AUDIT:', logEntry);
+    console.log('SEARCH MEDICAL AUDIT:', logEntry);
   }
 
   /**

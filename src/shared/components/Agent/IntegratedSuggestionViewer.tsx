@@ -83,11 +83,11 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
   const getTypeIcon = (type: 'recommendation' | 'warning' | 'info'): string => {
     switch (type) {
       case 'recommendation':
-        return '💡';
+        return 'TIP';
       case 'warning':
         return 'WARNING:';
       case 'info':
-        return 'ℹ️';
+        return 'INFO';
     }
   };
 

@@ -1,5 +1,5 @@
 /**
- * 🏥 SOAP CLINICAL INTEGRATION SERVICE
+ * MEDICAL SOAP CLINICAL INTEGRATION SERVICE
  * 
  * Servicio que integra RealWorldSOAPProcessor con ClinicalAssistantService
  * para crear el pipeline completo: Audio → Transcripción → SOAP → Filtros de Indicaciones

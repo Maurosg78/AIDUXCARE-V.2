@@ -273,7 +273,7 @@ const PreConsultationPage: React.FC = () => {
 
             {/* Factores de Riesgo */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20">
-              <h3 className="text-lg font-bold text-[#FF6F61] mb-4">🚨 Factores de Riesgo IA</h3>
+              <h3 className="text-lg font-bold text-[#FF6F61] mb-4">ALERT Factores de Riesgo IA</h3>
               <div className="space-y-3">
                 {aiPreparation.riskFactors.map((risk, index) => (
                   <div key={index} className="p-3 bg-[#FF6F61]/10 rounded-lg border-l-4 border-[#FF6F61]">
@@ -366,7 +366,7 @@ const PreConsultationPage: React.FC = () => {
 
             {/* Notas de Preparación */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#BDC3C7]/20">
-              <h3 className="text-lg font-bold text-[#2C3E50] mb-4">📝 Notas de Preparación</h3>
+              <h3 className="text-lg font-bold text-[#2C3E50] mb-4">NOTES Notas de Preparación</h3>
               <textarea
                 className="w-full h-32 p-3 border border-[#BDC3C7]/30 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#5DA5A3] focus:border-[#5DA5A3]"
                 placeholder="Añade notas específicas para esta consulta..."

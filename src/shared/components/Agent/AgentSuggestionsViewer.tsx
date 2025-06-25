@@ -68,13 +68,13 @@ const BUTTON_TEXTS = {
  * @constant
  */
 const SUGGESTION_STYLES: Record<SuggestionType, { icon: string; colorClass: string }> = {
-  recommendation: { icon: '💡', colorClass: 'bg-blue-50 border-blue-200' },
-  warning: { icon: 'WARNING:', colorClass: 'bg-yellow-50 border-yellow-200' },
-  info: { icon: 'ℹ️', colorClass: 'bg-green-50 border-green-200' },
-  diagnostic: { icon: '🔍', colorClass: 'bg-purple-50 border-purple-200' },
-  treatment: { icon: '💊', colorClass: 'bg-indigo-50 border-indigo-200' },
-  followup: { icon: '📅', colorClass: 'bg-pink-50 border-pink-200' },
-  contextual: { icon: '📝', colorClass: 'bg-gray-50 border-gray-200' }
+  recommendation: { icon: 'RECOM', colorClass: 'bg-blue-50 border-blue-200' },
+  warning: { icon: 'WARNING', colorClass: 'bg-yellow-50 border-yellow-200' },
+  info: { icon: 'INFO', colorClass: 'bg-green-50 border-green-200' },
+  diagnostic: { icon: 'DIAG', colorClass: 'bg-purple-50 border-purple-200' },
+  treatment: { icon: 'TREAT', colorClass: 'bg-indigo-50 border-indigo-200' },
+  followup: { icon: 'FOLLOW', colorClass: 'bg-pink-50 border-pink-200' },
+  contextual: { icon: 'CONTEXT', colorClass: 'bg-gray-50 border-gray-200' }
 };
 
 /**

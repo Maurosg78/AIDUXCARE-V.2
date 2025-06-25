@@ -295,7 +295,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
                 onClick={clearAll}
                 className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
-                🧹 Limpiar Todo
+                CLEAN Limpiar Todo
               </button>
             </div>
 
@@ -406,7 +406,7 @@ export const BufferedTranscriptionDemo: React.FC = () => {
           {/* Transcripción Actual */}
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold">📝 Transcripción en Tiempo Real</h3>
+              <h3 className="text-lg font-semibold">NOTES Transcripción en Tiempo Real</h3>
               <p className="text-sm text-gray-600">Buffer acumulándose hasta formar párrafos completos</p>
             </div>
             

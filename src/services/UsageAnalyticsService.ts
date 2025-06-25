@@ -507,10 +507,10 @@ export const calculateClinicalEvolution = (
  */
 export const getEvolutionIndicator = (evolution: 'improved' | 'stable' | 'worsened'): string => {
   switch (evolution) {
-    case 'improved': return '🟢'; // Verde: mejora
-    case 'stable': return '🟡';   // Amarillo: estable
+    case 'improved': return 'GREEN'; // Verde: mejora
+    case 'stable': return 'YELLOW';   // Amarillo: estable
     case 'worsened': return 'RED:'; // Rojo: empeoramiento
-    default: return '⚪';         // Blanco: desconocido
+    default: return 'WHITE';         // Blanco: desconocido
   }
 };
 

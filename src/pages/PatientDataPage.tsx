@@ -1,5 +1,5 @@
 /**
- * 📝 Patient Data Page - IDENTIDAD VISUAL OFICIAL AIDUXCARE
+ * NOTES Patient Data Page - IDENTIDAD VISUAL OFICIAL AIDUXCARE
  * Página para capturar datos básicos del paciente con diseño oficial
  */
 

@@ -1,5 +1,5 @@
 /**
- * 🏥 AiDuxCare Professional - Página de Integración Completa
+ * MEDICAL AiDuxCare Professional - Página de Integración Completa
  * OPCIÓN 3: FULL INTEGRATION PROFESIONAL
  * 
  * Pipeline completo: Audio → STT → Google Cloud AI → SOAP → Agentes → UI

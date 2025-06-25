@@ -1,5 +1,5 @@
 /**
- * 🔐 Authentication Context - AiDuxCare V.2 MEDICAL SECURITY
+ * SECURITY Authentication Context - AiDuxCare V.2 MEDICAL SECURITY
  * Context global para gestión de autenticación con seguridad hospitalaria
  * HIPAA/GDPR Compliant - Enterprise Grade Security
  */
@@ -62,16 +62,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeSecureAuth = async () => {
     try {
       setIsLoading(true);
-      console.log('🔐 Inicializando sistema de seguridad médica...');
+      console.log('SECURITY Inicializando sistema de seguridad médica...');
       
       // Verificar token de sesión segura
       const storedToken = localStorage.getItem('aiduxcare_secure_token');
-      console.log('🔍 Token almacenado:', storedToken ? `Presente (${storedToken.length} chars)` : 'NO ENCONTRADO');
+      console.log('SEARCH Token almacenado:', storedToken ? `Presente (${storedToken.length} chars)` : 'NO ENCONTRADO');
       
       if (storedToken) {
-        console.log('🔐 Verificando validez del token médico...');
+        console.log('SECURITY Verificando validez del token médico...');
         const tokenData = MedicalAuthService.verifyToken(storedToken);
-        console.log('🔍 Resultado verificación token:', tokenData ? 'VÁLIDO' : 'INVÁLIDO/EXPIRADO');
+        console.log('SEARCH Resultado verificación token:', tokenData ? 'VÁLIDO' : 'INVÁLIDO/EXPIRADO');
         
         if (tokenData && tokenData.expiresAt > Date.now()) {
           console.log('SUCCESS: Token válido, restaurando sesión médica...');
@@ -106,17 +106,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (tokenData.role.name === 'OWNER') {
             const mfaData = localStorage.getItem(`mfa_${therapist.email}`);
             if (!mfaData) {
-              console.log('🔐 MFA requerido para usuario OWNER - Cumplimiento seguridad hospitalaria');
+              console.log('SECURITY MFA requerido para usuario OWNER - Cumplimiento seguridad hospitalaria');
               setRequiresMFA(true);
             } else {
-              console.log('🔐 MFA ya configurado para OWNER');
+              console.log('SECURITY MFA ya configurado para OWNER');
               setRequiresMFA(false);
             }
           } else {
             setRequiresMFA(false);
           }
           
-          console.log('🔐 SUCCESS: Estado de autenticación actualizado:', {
+          console.log('SECURITY SUCCESS: Estado de autenticación actualizado:', {
             'isAuthenticated': true,
             'therapistName': therapist.name,
             'role': therapist.role,
@@ -132,21 +132,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             tokenData.role.name === 'OWNER'
           );
           
-          console.log('🔐 SUCCESS: Sesión médica segura restaurada:', therapist.name);
+          console.log('SECURITY SUCCESS: Sesión médica segura restaurada:', therapist.name);
         } else {
           // Token expirado - Limpiar
           console.log('WARNING: Token expirado, limpiando almacenamiento...');
           localStorage.removeItem('aiduxcare_secure_token');
-          console.log('🔐 WARNING: Token médico expirado - Requiere nueva autenticación');
+          console.log('SECURITY WARNING: Token médico expirado - Requiere nueva autenticación');
           
-          // 🎯 ACTIVAR LOGIN AUTOMÁTICO UAT DESPUÉS DE TOKEN EXPIRADO
+          // TARGET ACTIVAR LOGIN AUTOMÁTICO UAT DESPUÉS DE TOKEN EXPIRADO
           console.log('🚀 UAT: Token expirado, activando login automático UAT...');
           await performUATAutoLogin();
         }
       } else {
-        console.log('🔐 ℹ️ No hay sesión médica activa');
+        console.log('SECURITY INFO No hay sesión médica activa');
         
-        // 🎯 CRÍTICO: LOGIN AUTOMÁTICO UAT CUANDO NO HAY TOKEN
+        // TARGET CRÍTICO: LOGIN AUTOMÁTICO UAT CUANDO NO HAY TOKEN
         console.log('🚀 UAT: No se encontró token, activando login automático UAT...');
         await performUATAutoLogin();
       }
@@ -160,16 +160,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         { error: errorMessage, context: 'AUTH_INITIALIZATION' }
       );
       
-      // 🎯 FALLBACK: LOGIN AUTOMÁTICO UAT INCLUSO CON ERROR
+      // TARGET FALLBACK: LOGIN AUTOMÁTICO UAT INCLUSO CON ERROR
       console.log('🚀 UAT: Error en inicialización, intentando login automático UAT...');
       await performUATAutoLogin();
     } finally {
       setIsLoading(false);
-      console.log('🔐 Inicialización de seguridad médica completada');
+      console.log('SECURITY Inicialización de seguridad médica completada');
     }
   };
 
-  // 🎯 FUNCIÓN CRÍTICA: Login Automático UAT para Walking Skeleton
+  // TARGET FUNCIÓN CRÍTICA: Login Automático UAT para Walking Skeleton
   const performUATAutoLogin = async () => {
     try {
       console.log('🚀 EJECUTANDO LOGIN AUTOMÁTICO UAT - Walking Skeleton');
@@ -179,7 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (result.success) {
         console.log('SUCCESS: Login automático UAT completado exitosamente');
-        console.log('✅ Walking Skeleton: Acceso habilitado para páginas de consulta');
+        console.log('SUCCESS Walking Skeleton: Acceso habilitado para páginas de consulta');
       } else {
         console.log('ERROR: Login automático UAT falló:', result.error);
       }
@@ -193,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<AuthenticationResult> => {
     try {
       setIsLoading(true);
-      console.log('🔐 Iniciando autenticación médica segura...');
+      console.log('SECURITY Iniciando autenticación médica segura...');
       
       // Determinar rol basado en email
       let role: 'PROFESSIONAL' | 'OWNER' = 'PROFESSIONAL';
@@ -262,10 +262,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const mfaData = localStorage.getItem(`mfa_${email}`);
         // TEMPORALMENTE DESHABILITADO PARA CONFIGURACIÓN INICIAL
         if (false && !mfaData) { // if(false) = siempre false, MFA deshabilitado
-          console.log('🔐 MFA requerido para usuario OWNER - Cumplimiento seguridad hospitalaria');
+          console.log('SECURITY MFA requerido para usuario OWNER - Cumplimiento seguridad hospitalaria');
           setRequiresMFA(true);
         } else {
-          console.log('🔐 MFA temporalmente deshabilitado para configuración inicial');
+          console.log('SECURITY MFA temporalmente deshabilitado para configuración inicial');
           setRequiresMFA(false);
         }
       } else {
@@ -280,7 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role === 'OWNER'
       );
 
-      console.log('🔐 SUCCESS: Autenticación médica exitosa:', therapist.name);
+      console.log('SECURITY SUCCESS: Autenticación médica exitosa:', therapist.name);
       
       return {
         success: true,
@@ -416,7 +416,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setRequiresMFA(false);
       setSecurityLevel('LOW');
       
-      console.log('🔐 SUCCESS: Logout médico seguro completado');
+      console.log('SECURITY SUCCESS: Logout médico seguro completado');
     } catch (error) {
       console.error('ERROR: Error en logout:', error);
     }
@@ -431,7 +431,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     try {
-      console.log('🔐 Iniciando configuración MFA para:', currentTherapist.email || currentTherapist.therapistId);
+      console.log('SECURITY Iniciando configuración MFA para:', currentTherapist.email || currentTherapist.therapistId);
       
       const mfaSetup = await MedicalAuthService.setupMFA(
         currentTherapist.email || currentTherapist.therapistId,

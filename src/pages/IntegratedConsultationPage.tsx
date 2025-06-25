@@ -1,5 +1,5 @@
 /**
- * 🏥 AIDUXCARE - CONSULTA INTEGRADA PROFESIONAL
+ * MEDICAL AIDUXCARE - CONSULTA INTEGRADA PROFESIONAL
  * Walking Skeleton: Audio → Backend → Speech-to-Text → SOAP → Editor
  */
 
@@ -9,7 +9,7 @@ import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 import { localStorageService } from '@/services/LocalStorageService';
 import { BackendAPI, SOAPResponse, TranscriptionResponse } from '../api/transcription-backend';
 import { useAuth } from '@/contexts/AuthContext';
-// ✅ IMPORTAR SERVICIO PROFESIONAL DE GRABACIÓN
+// SUCCESS IMPORTAR SERVICIO PROFESIONAL DE GRABACIÓN
 import { 
   EnhancedAudioCaptureService, 
   EnhancedCaptureCallbacks, 
@@ -42,7 +42,7 @@ const IntegratedConsultationPage: React.FC = () => {
   const [transcription, setTranscription] = useState<TranscriptionResponse | null>(null);
   const [soapData, setSoapData] = useState<SOAPResponse | null>(null);
 
-  // ✅ ESTADOS PROFESIONALES PARA SERVICIO MEJORADO
+  // SUCCESS ESTADOS PROFESIONALES PARA SERVICIO MEJORADO
   const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('idle');
   const [realTimeSegments, setRealTimeSegments] = useState<RealTimeTranscriptionSegment[]>([]);
   const [detectedSpeakers, setDetectedSpeakers] = useState<SpeakerProfile[]>([]);
@@ -53,9 +53,9 @@ const IntegratedConsultationPage: React.FC = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  // 🔍 DIAGNÓSTICO CRÍTICO: Logs del estado de autenticación
+  // SEARCH DIAGNÓSTICO CRÍTICO: Logs del estado de autenticación
   useEffect(() => {
-    console.log('🔍 DIAGNÓSTICO CONSULTA - Estado de autenticación:', {
+    console.log('SEARCH DIAGNÓSTICO CONSULTA - Estado de autenticación:', {
       isAuthenticated,
       authLoading,
       currentTherapist: currentTherapist?.name || 'NO DISPONIBLE',
@@ -73,7 +73,7 @@ const IntegratedConsultationPage: React.FC = () => {
       }
 
       if (!isAuthenticated) {
-        console.log('❌ Usuario no autenticado, redirigiendo a /auth');
+        console.log('ERROR Usuario no autenticado, redirigiendo a /auth');
         setLoadingError('Sesión no válida. Redirigiendo...');
         setPageLoading(false);
         setTimeout(() => navigate('/auth'), 2000);
@@ -81,18 +81,18 @@ const IntegratedConsultationPage: React.FC = () => {
       }
 
       if (!patientId) {
-        console.log('❌ ID de paciente no proporcionado');
+        console.log('ERROR ID de paciente no proporcionado');
         setLoadingError('ID de paciente requerido');
         setPageLoading(false);
         return;
       }
 
-      console.log('🏥 Cargando datos del paciente:', patientId);
+      console.log('MEDICAL Cargando datos del paciente:', patientId);
       
       try {
         const realPatient = localStorageService.getPatientById(patientId);
         if (realPatient) {
-          console.log('✅ SUCCESS: Paciente encontrado:', realPatient.name);
+          console.log('SUCCESS SUCCESS: Paciente encontrado:', realPatient.name);
           setPatient({
             id: realPatient.id,
             name: realPatient.name,
@@ -102,11 +102,11 @@ const IntegratedConsultationPage: React.FC = () => {
           });
           setLoadingError(null);
         } else {
-          console.log('❌ ERROR: Paciente no encontrado en localStorage');
+          console.log('ERROR ERROR: Paciente no encontrado en localStorage');
           setLoadingError(`Paciente con ID ${patientId} no encontrado`);
         }
       } catch (error) {
-        console.error('❌ ERROR: Error cargando paciente:', error);
+        console.error('ERROR ERROR: Error cargando paciente:', error);
         setLoadingError('Error al cargar información del paciente');
       } finally {
         setPageLoading(false);
@@ -116,7 +116,7 @@ const IntegratedConsultationPage: React.FC = () => {
     loadPatientData();
   }, [authLoading, isAuthenticated, patientId, navigate]);
 
-  // ✅ CONFIGURAR CALLBACKS ROBUSTOS PARA GRABACIÓN ESTABLE
+  // SUCCESS CONFIGURAR CALLBACKS ROBUSTOS PARA GRABACIÓN ESTABLE
   const createRobustCallbacks = () => ({
     onRealTimeSegment: (segment: any) => {
       console.log('🎙️ Nuevo segmento:', segment.text?.substring(0, 50) + '...');
@@ -139,7 +139,7 @@ const IntegratedConsultationPage: React.FC = () => {
     },
     
     onError: (error: string) => {
-      console.warn('⚠️ Error captura (no crítico):', error);
+      console.warn('WARNING Error captura (no crítico):', error);
       // NO mostrar error al usuario para evitar cascada
       if (error.includes('network')) {
         console.log('🔄 Intentando modo offline...');
@@ -148,7 +148,7 @@ const IntegratedConsultationPage: React.FC = () => {
     },
     
     onStatusChange: (status: any) => {
-      console.log('📊 Estado:', status);
+      console.log('STATS Estado:', status);
       setCaptureStatus(status);
       setIsRecording(status === 'recording');
     }
@@ -235,10 +235,10 @@ const IntegratedConsultationPage: React.FC = () => {
         }
       }, 3000);
 
-      console.log('✅ Grabación real iniciada - Cronómetro activo');
+      console.log('SUCCESS Grabación real iniciada - Cronómetro activo');
       
     } catch (error) {
-      console.error('❌ Error iniciando grabación:', error);
+      console.error('ERROR Error iniciando grabación:', error);
       alert('Error al acceder al micrófono. Verifica los permisos.');
       setCaptureStatus('error');
     }
@@ -266,7 +266,7 @@ const IntegratedConsultationPage: React.FC = () => {
       setCaptureStatus('processing');
       
     } catch (error) {
-      console.error('❌ Error deteniendo grabación:', error);
+      console.error('ERROR Error deteniendo grabación:', error);
       setCaptureStatus('error');
     }
   };
@@ -282,7 +282,7 @@ const IntegratedConsultationPage: React.FC = () => {
         ? realTimeSegments.map(s => `${s.speaker.role === 'PATIENT' ? 'Paciente' : 'Terapeuta'}: ${s.text}`).join(' ')
         : "Paciente: Me duele la espalda desde hace una semana. Terapeuta: ¿El dolor es constante o intermitente?";
       
-      console.log('📝 Transcripción compilada:', mockTranscription.substring(0, 100) + '...');
+      console.log('NOTES Transcripción compilada:', mockTranscription.substring(0, 100) + '...');
       
       // PASO 2: Procesar con backend (mantiene compatibilidad)
       setProcessingStage('Procesando con IA médica...');
@@ -308,13 +308,13 @@ const IntegratedConsultationPage: React.FC = () => {
       };
       
       setTranscription(robustTranscriptionResult);
-      console.log('✅ Transcripción robusta completada');
+      console.log('SUCCESS Transcripción robusta completada');
 
       // PASO 4: Clasificación SOAP
       setProcessingStage('Generando clasificación SOAP...');
       const soapResult = await BackendAPI.classifySOAP(mockTranscription, patient?.appointmentReason || '');
       setSoapData(soapResult);
-      console.log('✅ Clasificación SOAP completada');
+      console.log('SUCCESS Clasificación SOAP completada');
 
       setProcessingStage('¡Pipeline robusto completado!');
       setCaptureStatus('completed');
@@ -325,7 +325,7 @@ const IntegratedConsultationPage: React.FC = () => {
       }, 3000);
 
     } catch (error) {
-      console.error('❌ Error en pipeline robusto:', error);
+      console.error('ERROR Error en pipeline robusto:', error);
       setProcessingStage('Error en procesamiento');
       setCaptureStatus('error');
       setTimeout(() => {
@@ -340,7 +340,7 @@ const IntegratedConsultationPage: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 🎯 ESTADO DE CARGA MEJORADO - No más bucle infinito
+  // TARGET ESTADO DE CARGA MEJORADO - No más bucle infinito
   if (pageLoading || authLoading) {
     return (
       <div className="min-h-screen bg-[#F7F7F7] flex items-center justify-center">
@@ -357,13 +357,13 @@ const IntegratedConsultationPage: React.FC = () => {
     );
   }
 
-  // 🎯 ESTADO DE ERROR CLARO
+  // TARGET ESTADO DE ERROR CLARO
   if (loadingError) {
     return (
       <div className="min-h-screen bg-[#F7F7F7] flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">❌</span>
+            <span className="text-2xl">ERROR</span>
           </div>
           <h3 className="text-lg font-semibold text-[#2C3E50] mb-2">Error al cargar consulta</h3>
           <p className="text-[#2C3E50]/70 mb-4">{loadingError}</p>
@@ -386,13 +386,13 @@ const IntegratedConsultationPage: React.FC = () => {
     );
   }
 
-  // 🎯 ESTADO SIN PACIENTE DESPUÉS DE CARGA COMPLETA
+  // TARGET ESTADO SIN PACIENTE DESPUÉS DE CARGA COMPLETA
   if (!patient) {
     return (
       <div className="min-h-screen bg-[#F7F7F7] flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">⚠️</span>
+            <span className="text-2xl">WARNING</span>
           </div>
           <h3 className="text-lg font-semibold text-[#2C3E50] mb-2">Paciente no encontrado</h3>
           <p className="text-[#2C3E50]/70 mb-4">
@@ -436,7 +436,7 @@ const IntegratedConsultationPage: React.FC = () => {
               <span className="text-white text-sm">✓</span>
             </div>
             <div>
-              <h4 className="font-medium text-green-800">🎯 PROBLEMA RESUELTO</h4>
+              <h4 className="font-medium text-green-800">TARGET PROBLEMA RESUELTO</h4>
               <p className="text-green-600 text-sm">
                 Login automático UAT funcionando - Página carga correctamente para {patient.name}
               </p>
@@ -493,7 +493,7 @@ const IntegratedConsultationPage: React.FC = () => {
                     {formatDuration(duration)}
                   </div>
                   <div className="text-sm text-[#2C3E50]/60">
-                    {isRecording ? '🔴 Grabando...' : 'Listo para grabar'}
+                    {isRecording ? 'RED Grabando...' : 'Listo para grabar'}
                   </div>
                 </div>
                 {isRecording && (
@@ -504,11 +504,11 @@ const IntegratedConsultationPage: React.FC = () => {
                 )}
               </div>
 
-              {/* ✅ TRANSCRIPCIÓN EN TIEMPO REAL */}
+              {/* SUCCESS TRANSCRIPCIÓN EN TIEMPO REAL */}
               {isRecording && realTimeSegments.length > 0 && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-[#2C3E50] mb-3 flex items-center space-x-2">
-                    <span>📝 Transcripción en Tiempo Real</span>
+                    <span>NOTES Transcripción en Tiempo Real</span>
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </h4>
                   <div className="bg-gray-50 rounded-lg p-4 max-h-48 overflow-y-auto">

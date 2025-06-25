@@ -368,7 +368,7 @@ export class BusinessAnalyticsService {
     const financial = await this.calculateFinancialMetrics();
     
     if (product.classification_accuracy < 95) {
-      alerts.push('🚨 Precisión de clasificación IA por debajo del objetivo (95%)');
+      alerts.push('ALERT Precisión de clasificación IA por debajo del objetivo (95%)');
     }
     
     if (financial.gross_margin < 65) {
@@ -418,7 +418,7 @@ export class BusinessAnalyticsService {
     }
     
     if (financial.months_to_payback > 12) {
-      risks.push('⏰ Tiempo de recuperación CAC muy alto');
+      risks.push('TIME Tiempo de recuperación CAC muy alto');
     }
     
     if (financial.revenue_runway_months < 6) {

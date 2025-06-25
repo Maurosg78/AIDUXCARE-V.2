@@ -370,7 +370,7 @@ const RealWorldDemo: React.FC = () => {
                 
                 {/* TEXTO ORIGINAL */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2">📝 Transcripción Caótica</h3>
+                  <h3 className="font-semibold text-gray-800 mb-2">NOTES Transcripción Caótica</h3>
                   <p className="text-sm text-gray-700 italic">"{result.originalText}"</p>
                 </div>
 
@@ -428,7 +428,7 @@ const RealWorldDemo: React.FC = () => {
 
                 {/* ENTIDADES MÉDICAS NER LITE */}
                 <div className="bg-green-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-800 mb-3">🏥 NER Médico Lite</h3>
+                  <h3 className="font-semibold text-green-800 mb-3">MEDICAL NER Médico Lite</h3>
                   <div className="grid grid-cols-2 gap-3">
                     
                     {result.entities.anatomy.length > 0 && (
@@ -459,7 +459,7 @@ const RealWorldDemo: React.FC = () => {
 
                     {result.entities.temporal.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-gray-600 mb-1">⏰ Temporal</div>
+                        <div className="text-xs font-medium text-gray-600 mb-1">TIME Temporal</div>
                         <div className="space-y-1">
                           {result.entities.temporal.map((item, i) => (
                             <span key={i} className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded mr-1">

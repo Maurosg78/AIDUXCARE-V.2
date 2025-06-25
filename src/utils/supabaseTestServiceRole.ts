@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.local' });
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceRole = process.env.VITE_SUPABASE_SERVICE_ROLE;
 
-console.log('🔍 DEBUG - Service Role Test:');
+console.log('SEARCH DEBUG - Service Role Test:');
 console.log('- supabaseUrl:', supabaseUrl);
 console.log('- serviceRole length:', supabaseServiceRole?.length);
 
@@ -33,7 +33,7 @@ export async function testSupabaseServiceRole() {
   
   try {
     // Test: Verificar acceso a tabla con service role
-    console.log('🔍 Probando acceso a tabla patients con service role...');
+    console.log('SEARCH Probando acceso a tabla patients con service role...');
     const { data, error } = await testServiceClient
       .from('patients')
       .select('id, name')

@@ -257,7 +257,7 @@ const PlansPage: React.FC = () => {
       subtitle: 'Para Clínicas y Equipos',
       price: { monthly: 149, annual: 1490 },
       specialty: 'CLINIC',
-      icon: '🏥',
+      icon: 'MEDICAL',
       color: 'bg-gradient-to-r from-indigo-600 to-purple-600',
       gradient: 'from-indigo-600/10 to-purple-600/10',
       limits: {
@@ -479,7 +479,7 @@ const PlansPage: React.FC = () => {
           {isEarlyAdopter && (
             <div className="mt-3 text-center">
               <p className="text-xs text-[#2C3E50]/70">
-                ⏰ Válido para los primeros {100 - earlyAdoptersCount} usuarios restantes
+                TIME Válido para los primeros {100 - earlyAdoptersCount} usuarios restantes
               </p>
             </div>
           )}
@@ -602,7 +602,7 @@ const PlansPage: React.FC = () => {
           <div className="bg-white/50 backdrop-blur-sm rounded-3xl p-8 border border-[#BDC3C7]/20">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div>
-                <div className="text-3xl mb-2">🔒</div>
+                <div className="text-3xl mb-2">SECURE</div>
                 <h4 className="font-semibold text-[#2C3E50] mb-2">Seguridad Médica</h4>
                 <p className="text-sm text-[#2C3E50]/70">ISO 27001 + HIPAA + GDPR compliant</p>
               </div>

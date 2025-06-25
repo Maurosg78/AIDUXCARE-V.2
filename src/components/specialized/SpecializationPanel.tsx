@@ -99,7 +99,7 @@ const SpecializationPanel: React.FC<SpecializationPanelProps> = ({
       case 'SEGUIMIENTO':
         return 'RELOAD:';
       case 'EMERGENCIA':
-        return '🚨';
+        return 'ALERT';
       default:
         return 'NOTES:';
     }

@@ -1,5 +1,5 @@
 /**
- * 🏥 CLINICAL ASSISTANT SERVICE - MOTOR DE ASISTENCIA CLÍNICA INTELIGENTE
+ * MEDICAL CLINICAL ASSISTANT SERVICE - MOTOR DE ASISTENCIA CLÍNICA INTELIGENTE
  * 
  * Servicio principal que transforma AiDuxCare de un simple transcriptor
  * a una herramienta de asistencia clínica que mejora la seguridad y calidad.
@@ -244,7 +244,7 @@ class ClinicalAssistantService {
       const criticalSymptomFlags = this.detectCriticalSymptoms(entities, professionalContext);
       redFlags.push(...criticalSymptomFlags);
 
-      console.log(`🚨 Banderas rojas detectadas: ${redFlags.length} en ${Date.now() - startTime}ms`);
+      console.log(`ALERT Banderas rojas detectadas: ${redFlags.length} en ${Date.now() - startTime}ms`);
       
       return redFlags.sort((a, b) => this.getSeverityWeight(b.severity) - this.getSeverityWeight(a.severity));
       
@@ -370,7 +370,7 @@ class ClinicalAssistantService {
           id: `critical-symptom-${Date.now()}-${Math.random()}`,
           type: 'CRITICAL_SYMPTOM',
           severity: criticalMatch.severity,
-          title: `🚨 Síntoma Crítico Detectado: ${entity.text}`,
+          title: `ALERT Síntoma Crítico Detectado: ${entity.text}`,
           description: criticalMatch.description,
           recommendation: contextualRec.recommendation,
           soapNote: contextualRec.soapNote,
@@ -448,7 +448,7 @@ class ClinicalAssistantService {
     const startTime = Date.now();
 
     try {
-      console.log('🔍 Iniciando análisis clínico completo...');
+      console.log('SEARCH Iniciando análisis clínico completo...');
 
       const [redFlags, examTemplates] = await Promise.all([
         this.detectRedFlags(entities, patient, { role: 'PHYSIOTHERAPIST', country: 'CHILE' }),
@@ -1120,7 +1120,7 @@ class ClinicalAssistantService {
           };
         } else if (entityType === 'CRITICAL_SYMPTOM') {
           return {
-            recommendation: `🚨 SÍNTOMA CRÍTICO: ${entityName}. Suspender tratamiento y derivar urgentemente a urgencias.`,
+            recommendation: `ALERT SÍNTOMA CRÍTICO: ${entityName}. Suspender tratamiento y derivar urgentemente a urgencias.`,
             soapNote: `Hallazgo: Síntoma crítico ${entityName} detectado. Acción: Derivación urgente a urgencias.`
           };
         }
@@ -1129,12 +1129,12 @@ class ClinicalAssistantService {
       case 'PHYSICIAN':
         if (entityType === 'MEDICATION') {
           return {
-            recommendation: `💊 EVALUAR MEDICACIÓN: ${entityName} puede estar contraindicado. Considerar cambio a alternativa terapéutica más segura.`,
+            recommendation: `TREAT EVALUAR MEDICACIÓN: ${entityName} puede estar contraindicado. Considerar cambio a alternativa terapéutica más segura.`,
             soapNote: `Evaluación: Posible contraindicación con ${entityName}. Plan: Revisar medicación y considerar alternativas.`
           };
         } else if (entityType === 'CRITICAL_SYMPTOM') {
           return {
-            recommendation: `🚨 SÍNTOMA CRÍTICO: ${entityName}. Evaluar inmediatamente y considerar derivación urgente según gravedad.`,
+            recommendation: `ALERT SÍNTOMA CRÍTICO: ${entityName}. Evaluar inmediatamente y considerar derivación urgente según gravedad.`,
             soapNote: `Evaluación: Síntoma crítico ${entityName}. Plan: Evaluación inmediata y derivación si es necesario.`
           };
         }
@@ -1757,7 +1757,7 @@ class ClinicalAssistantService {
           id: `contraindication-${Date.now()}-${Math.random()}`,
           type: 'CONTRAINDICATION',
           severity: 'HIGH',
-          title: `🚨 Contraindicación Detectada: ${indication.title}`,
+          title: `ALERT Contraindicación Detectada: ${indication.title}`,
           description: `El paciente presenta ${contraindication} que contraindica ${indication.title}`,
           recommendation: 'Revisar indicación y considerar alternativas',
           isDismissible: false,

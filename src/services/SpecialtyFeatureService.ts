@@ -1,5 +1,5 @@
 /**
- * 🏥 SPECIALTY FEATURE SERVICE - CARACTERÍSTICAS POR ESPECIALIDAD
+ * MEDICAL SPECIALTY FEATURE SERVICE - CARACTERÍSTICAS POR ESPECIALIDAD
  * 
  * Sistema que despliega características específicas según la especialidad médica,
  * implementando un enfoque gradual de descubrimiento de necesidades por disciplina.

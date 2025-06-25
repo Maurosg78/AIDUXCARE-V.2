@@ -1,5 +1,5 @@
 /**
- * 🔐 MEDICAL AUTHENTICATION SERVICE - MFA ENTERPRISE (FREE)
+ * SECURITY MEDICAL AUTHENTICATION SERVICE - MFA ENTERPRISE (FREE)
  * Sistema de autenticación multi-factor para entornos médicos
  * TOTP + JWT + Role-Based Access Control
  */
@@ -114,22 +114,22 @@ class MedicalAuthService {
    */
   static async setupMFA(userId: string, userEmail: string): Promise<MFASetup> {
     try {
-      console.log('🔐 MedicalAuthService.setupMFA iniciado para:', userId);
+      console.log('SECURITY MedicalAuthService.setupMFA iniciado para:', userId);
       
       // Generar secreto simple pero seguro para navegadores
-      console.log('🔐 Generando secreto TOTP compatible con navegador...');
+      console.log('SECURITY Generando secreto TOTP compatible con navegador...');
       const secretArray = new Uint8Array(32);
       crypto.getRandomValues(secretArray);
       const secret = Array.from(secretArray, byte => byte.toString(36)).join('').substring(0, 32);
       console.log('SUCCESS: Secreto generado:', secret ? 'OK' : 'FALLO');
 
       // Generar códigos de backup
-      console.log('🔐 Generando códigos de backup...');
+      console.log('SECURITY Generando códigos de backup...');
       const backupCodes = this.generateBackupCodes();
       console.log('SUCCESS: Códigos backup generados:', backupCodes.length);
 
       // Crear QR code simple con URL manual
-      console.log('🔐 Generando QR code...');
+      console.log('SECURITY Generando QR code...');
       const issuer = 'AiDuxCare Medical';
       const accountName = userEmail;
       const otpAuthUrl = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(accountName)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}`;
@@ -139,7 +139,7 @@ class MedicalAuthService {
       console.log('SUCCESS: QR code generado');
 
       // Hash de códigos de backup usando Web Crypto API
-      console.log('🔐 Hasheando códigos de backup...');
+      console.log('SECURITY Hasheando códigos de backup...');
       const hashedBackupCodes = await Promise.all(
         backupCodes.map(async (code) => {
           const encoder = new TextEncoder();
@@ -159,7 +159,7 @@ class MedicalAuthService {
       };
 
       // Guardar configuración MFA cifrada
-      console.log('🔐 Guardando configuración MFA...');
+      console.log('SECURITY Guardando configuración MFA...');
       const encryptedConfig = this.encryptData(JSON.stringify({
         secret: secret,
         backupCodes: hashedBackupCodes,
@@ -446,7 +446,7 @@ class MedicalAuthService {
     this.loginAttempts.set(userId, attempts);
 
     // Log de auditoría
-    console.log('🔍 LOGIN AUDIT:', {
+    console.log('SEARCH LOGIN AUDIT:', {
       userId: CryptoJS.SHA256(userId).toString().substring(0, 12),
       success,
       mfaUsed,

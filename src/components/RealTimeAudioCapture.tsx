@@ -319,7 +319,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">
-            📝 Transcripción en Tiempo Real
+            NOTES Transcripción en Tiempo Real
           </h3>
           <span className="text-sm text-gray-500">
             {transcriptionSegments.length} segmentos

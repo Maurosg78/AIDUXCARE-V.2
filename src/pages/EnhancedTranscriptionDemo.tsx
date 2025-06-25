@@ -458,7 +458,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">
-                📝 Transcripción en Tiempo Real
+                NOTES Transcripción en Tiempo Real
               </h3>
             </div>
             
@@ -604,7 +604,7 @@ export const EnhancedTranscriptionDemo: React.FC = () => {
                   {state.soapResult.summary.keyFindings.length > 0 && (
                     <div className="bg-green-50 p-3 rounded-lg">
                       <div className="text-sm font-medium text-green-800 mb-2">
-                        🔍 Hallazgos Clave
+                        SEARCH Hallazgos Clave
                       </div>
                       <div className="space-y-1">
                         {state.soapResult.summary.keyFindings.map((finding, index) => (

@@ -230,7 +230,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
 
         {/* Instrucciones */}
         <div className="mt-4 bg-gray-50 rounded-lg p-4 w-full">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">💡 Instrucciones de Uso</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">TIP Instrucciones de Uso</h4>
           <ul className="text-xs text-gray-600 space-y-1">
             <li>• Hable claramente y a volumen normal</li>
             <li>• Identifique si habla el profesional o paciente</li>
@@ -241,7 +241,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
 
         {/* Información Técnica */}
         <div className="mt-4 flex justify-center w-full text-xs text-gray-500">
-          <span>🔒 Audio procesado localmente con total privacidad</span>
+          <span>SECURE Audio procesado localmente con total privacidad</span>
         </div>
       </div>
     </div>

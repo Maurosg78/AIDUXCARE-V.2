@@ -114,9 +114,9 @@ const SOAPMetricsDashboard: React.FC<SOAPMetricsDashboardProps> = ({
       <div className="flex space-x-1 mb-6 bg-[#F7F7F7] p-1 rounded-lg">
         {[
           { id: 'overview', label: 'Resumen', icon: 'STATS:' },
-          { id: 'details', label: 'Detalles', icon: '🔍' },
+          { id: 'details', label: 'Detalles', icon: 'SEARCH' },
           { id: 'errors', label: 'Errores', icon: 'WARNING:' },
-          { id: 'recommendations', label: 'Recomendaciones', icon: '💡' }
+          { id: 'recommendations', label: 'Recomendaciones', icon: 'TIP' }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -319,7 +319,7 @@ const SOAPMetricsDashboard: React.FC<SOAPMetricsDashboardProps> = ({
           <div className="space-y-6">
             {/* Recomendaciones */}
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-3">💡 Recomendaciones de Mejora</h4>
+              <h4 className="font-semibold text-blue-800 mb-3">TIP Recomendaciones de Mejora</h4>
               <div className="space-y-3">
                 {report.recommendations.map((recommendation, index) => (
                   <div key={index} className="flex items-start space-x-2">

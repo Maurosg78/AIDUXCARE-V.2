@@ -60,7 +60,7 @@ export class ConsultationClassifier {
    * NUEVO: Integrado con planes especializados y optimización de costos
    */
   static async classifyConsultation(context: ConsultationContext): Promise<ClassificationResult> {
-    console.log('🔍 Iniciando clasificación de consulta...');
+    console.log('SEARCH Iniciando clasificación de consulta...');
     
     // 1. Determinar tipo de consulta
     const consultationType = this.determineConsultationType(context);
@@ -235,9 +235,9 @@ export class ConsultationClassifier {
     }
     
     // PARA UAT: SIEMPRE RETORNAR FISIOTERAPIA con logging detallado
-    console.log('🏥 UAT: Forzando especialidad FISIOTERAPIA para testing');
-    console.log(`📝 Transcripción analizada: ${transcription.length} caracteres`);
-    console.log(`🔍 Términos de fisioterapia encontrados: ${detectedTerms.length}`);
+    console.log('MEDICAL UAT: Forzando especialidad FISIOTERAPIA para testing');
+    console.log(`NOTES Transcripción analizada: ${transcription.length} caracteres`);
+    console.log(`SEARCH Términos de fisioterapia encontrados: ${detectedTerms.length}`);
     
     return 'FISIOTERAPIA';
   }

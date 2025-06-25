@@ -1,5 +1,5 @@
 /**
- * 📝 TEXTAREA COMPONENT - AIDUXCARE DESIGN SYSTEM
+ * NOTES TEXTAREA COMPONENT - AIDUXCARE DESIGN SYSTEM
  * Componente de área de texto con paleta oficial
  */
 

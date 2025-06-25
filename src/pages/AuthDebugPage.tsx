@@ -1,5 +1,5 @@
 /**
- * 🔍 AUTH DEBUG PAGE - DIAGNÓSTICO DEL SISTEMA DE AUTENTICACIÓN
+ * SEARCH AUTH DEBUG PAGE - DIAGNÓSTICO DEL SISTEMA DE AUTENTICACIÓN
  * Página para diagnosticar problemas en el sistema de autenticación
  */
 
@@ -51,7 +51,7 @@ const AuthDebugPage: React.FC = () => {
     }
 
     const hash = MedicalEncryptionService.hashPassword(testPassword);
-    addDebugInfo(`🔐 Hash generado para "${testPassword}": ${hash}`);
+    addDebugInfo(`SECURITY Hash generado para "${testPassword}": ${hash}`);
 
     const verification = MedicalEncryptionService.verifyPassword(testPassword, hash);
     addDebugInfo(`SUCCESS: Verificación del hash: ${verification ? 'CORRECTA' : 'INCORRECTA'}`);
@@ -66,12 +66,12 @@ const AuthDebugPage: React.FC = () => {
     }
 
     addDebugInfo(`USER: Usuario encontrado: ${user.name} (${user.email})`);
-    addDebugInfo(`🔒 Rol: ${user.role}, Temporal: ${user.isTemporary}`);
+    addDebugInfo(`SECURE Rol: ${user.role}, Temporal: ${user.isTemporary}`);
     
     if (testPassword) {
       const verification = MedicalEncryptionService.verifyPassword(testPassword, user.password);
-      addDebugInfo(`🔐 Verificación contraseña: ${verification ? 'CORRECTA' : 'INCORRECTA'}`);
-      addDebugInfo(`📝 Hash almacenado: ${user.password}`);
+      addDebugInfo(`SECURITY Verificación contraseña: ${verification ? 'CORRECTA' : 'INCORRECTA'}`);
+      addDebugInfo(`NOTES Hash almacenado: ${user.password}`);
     }
   };
 
@@ -79,7 +79,7 @@ const AuthDebugPage: React.FC = () => {
     localStorage.removeItem('aiduxcare_registered_users');
     localStorage.removeItem('aiduxcare_password_resets');
     setUsers([]);
-    addDebugInfo('🧹 Todos los datos han sido limpiados');
+    addDebugInfo('CLEAN Todos los datos han sido limpiados');
     loadUsers();
   };
 
@@ -170,7 +170,7 @@ const AuthDebugPage: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
-            🔍 Diagnóstico del Sistema de Autenticación
+            SEARCH Diagnóstico del Sistema de Autenticación
           </h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -196,7 +196,7 @@ const AuthDebugPage: React.FC = () => {
                 onClick={clearPatientData}
                 className="w-full bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
               >
-                🏥 Limpiar Solo Pacientes
+                MEDICAL Limpiar Solo Pacientes
               </button>
               
               <button
@@ -210,7 +210,7 @@ const AuthDebugPage: React.FC = () => {
                 onClick={clearAllData}
                 className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
-                🧹 Limpiar Todos los Datos
+                CLEAN Limpiar Todos los Datos
               </button>
             </div>
 
@@ -246,14 +246,14 @@ const AuthDebugPage: React.FC = () => {
                 onClick={testPasswordHash}
                 className="w-full bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
               >
-                🔐 Probar Hash de Contraseña
+                SECURITY Probar Hash de Contraseña
               </button>
               
               <button
                 onClick={testUserLogin}
                 className="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
               >
-                🔍 Probar Login de Usuario
+                SEARCH Probar Login de Usuario
               </button>
             </div>
           </div>
@@ -294,7 +294,7 @@ const AuthDebugPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-2">
-                        {user.isTemporary ? '⏰ Sí' : 'SUCCESS: No'}
+                        {user.isTemporary ? 'TIME Sí' : 'SUCCESS: No'}
                       </td>
                       <td className="px-4 py-2">
                         {new Date(user.createdAt).toLocaleDateString()}
@@ -310,7 +310,7 @@ const AuthDebugPage: React.FC = () => {
         {/* Log de Debug */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">
-            📝 Log de Debug
+            NOTES Log de Debug
           </h2>
           
           <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm max-h-96 overflow-y-auto">
@@ -327,7 +327,7 @@ const AuthDebugPage: React.FC = () => {
             onClick={() => setDebugInfo([])}
             className="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
-            🧹 Limpiar Log
+            CLEAN Limpiar Log
           </button>
         </div>
       </div>

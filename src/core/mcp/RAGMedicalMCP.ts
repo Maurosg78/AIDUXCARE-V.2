@@ -331,7 +331,7 @@ export class RAGMedicalMCP {
     const startTime = Date.now();
     
     try {
-      console.log(`🔍 Buscando conocimiento médico para: "${clinicalQuery}"`);
+      console.log(`SEARCH Buscando conocimiento médico para: "${clinicalQuery}"`);
       
       // 1. Buscar en PubMed
       const documents = await PubMedSearchService.searchArticles(clinicalQuery, specialty, maxResults);
@@ -535,7 +535,7 @@ export class RAGTestingHelper {
     ];
     
     for (const query of testQueries) {
-      console.log(`\n📝 Testing query: "${query}"`);
+      console.log(`\nNOTES Testing query: "${query}"`);
       
       const result = await RAGMedicalMCP.retrieveRelevantKnowledge(query, 'fisioterapia', 3);
       

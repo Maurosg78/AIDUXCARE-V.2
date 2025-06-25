@@ -1,6 +1,6 @@
 /**
- * 🏥 DYNAMIC SOAP EDITOR - SOAP EDITABLE Y DINÁMICO CON MODO AUDITORÍA
- * 🔍 MODO AUDITORÍA: Indicadores de confianza y controles de reclasificación
+ * MEDICAL DYNAMIC SOAP EDITOR - SOAP EDITABLE Y DINÁMICO CON MODO AUDITORÍA
+ * SEARCH MODO AUDITORÍA: Indicadores de confianza y controles de reclasificación
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -339,7 +339,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
       suggestions: newSuggestions.filter(s => getSuggestionSection(s) === section.type)
     })));
 
-    console.log('📝 Sugerencias SOAP generadas:', newSuggestions.length);
+    console.log('NOTES Sugerencias SOAP generadas:', newSuggestions.length);
   };
 
   const getSuggestionSection = (suggestion: SOAPSuggestion): 'S' | 'O' | 'A' | 'P' => {
@@ -479,10 +479,10 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return '🚨';
+      case 'CRITICAL': return 'ALERT';
       case 'HIGH': return 'WARNING:';
       case 'MEDIUM': return '⚡';
-      case 'LOW': return 'ℹ️';
+      case 'LOW': return 'INFO';
       default: return 'NOTES:';
     }
   };
@@ -594,7 +594,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     return (
       <div className="clinical-alerts mb-6">
         <h3 className="text-lg font-semibold text-red-700 mb-3 flex items-center">
-          🚨 Alertas Clínicas ({redFlags.length})
+          ALERT Alertas Clínicas ({redFlags.length})
         </h3>
         
         <div className="space-y-3">
@@ -616,7 +616,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
               <p className="text-sm mb-3 opacity-90">{flag.description}</p>
               
               <div className="bg-white bg-opacity-10 p-3 rounded-lg">
-                <p className="text-sm font-medium mb-1">💡 Recomendación:</p>
+                <p className="text-sm font-medium mb-1">TIP Recomendación:</p>
                 <p className="text-sm">{flag.recommendation}</p>
               </div>
             </div>
@@ -632,7 +632,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
     return (
       <div className="classified-segments mb-6">
         <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center">
-          🔍 Segmentos Clasificados ({classifiedSegments.length})
+          SEARCH Segmentos Clasificados ({classifiedSegments.length})
         </h3>
         
         <div className="space-y-2">
@@ -690,7 +690,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
         <div className="audit-controls-panel mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-blue-800 flex items-center">
-              🔍 Modo Auditoría Activo
+              SEARCH Modo Auditoría Activo
             </h3>
             <div className="flex space-x-2">
               <button
@@ -779,7 +779,7 @@ const DynamicSOAPEditor: React.FC<DynamicSOAPEditorProps> = ({
       {showSuggestions && pendingSuggestions.length > 0 && (
         <div className="suggestions-panel mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <h3 className="text-lg font-semibold text-yellow-800 mb-3">
-            💡 Sugerencias Disponibles ({pendingSuggestions.length})
+            TIP Sugerencias Disponibles ({pendingSuggestions.length})
           </h3>
           
           <div className="space-y-2">
