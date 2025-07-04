@@ -8,7 +8,8 @@ import AuthenticationPage from "@/pages/AuthenticationPage";
 import AuthGuard from "@/components/AuthGuard";
 
 export const router = createBrowserRouter([
-  { path: "/", element: <WelcomePage /> },
+  { path: "/", element: (<AuthGuard><PatientCompletePage /></AuthGuard>) },
+  { path: "/consulta", element: (<AuthGuard><PatientCompletePage /></AuthGuard>) },
   { path: "/auth", element: <AuthenticationPage /> },
   { path: "/patient-data", element: (<AuthGuard><PatientDataPage /></AuthGuard>) },
   { path: "/patient-complete", element: (<AuthGuard><PatientCompletePage /></AuthGuard>) },
