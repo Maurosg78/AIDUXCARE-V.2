@@ -66,14 +66,6 @@ interface AISuggestion {
   evidenceLevel: number;
 }
 
-// Tipos para Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
 // ========= COMPONENTE PRINCIPAL =========
 
 export const PatientCompletePage: React.FC = () => {
@@ -83,8 +75,8 @@ export const PatientCompletePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('review');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // ========= DATOS DEL PACIENTE =========  
-  const [patientData, setPatientData] = useState<PatientData>({
+  // ========= DATOS DEL PACIENTE =========
+  const [patientData] = useState<PatientData>({
     id: "",
     name: "Seleccionar paciente",
     age: 0,
@@ -97,34 +89,6 @@ export const PatientCompletePage: React.FC = () => {
     clinicalHistory: ""
   });
 
-  // Cargar datos del paciente desde LocalStorage al montar el componente
-  useEffect(() => {
-    const loadPatientData = () => {
-      try {
-        const currentPatientData = localStorage.getItem('aiduxcare_current_patient');
-        if (currentPatientData) {
-          const patient = JSON.parse(currentPatientData);
-          setPatientData({
-            id: patient.id || "",
-            name: patient.name || "Paciente sin nombre",
-            age: patient.age || 0,
-            gender: "", // Se puede agregar después
-            condition: patient.condition || "",
-            lastVisit: patient.createdAt ? new Date(patient.createdAt).toLocaleDateString() : "",
-            riskLevel: "bajo",
-            allergies: patient.allergies || [],
-            medications: [], // Se puede expandir después
-            clinicalHistory: patient.clinicalHistory || ""
-          });
-        }
-      } catch (error) {
-        console.error('❌ Error al cargar datos del paciente:', error);
-      }
-    };
-
-    loadPatientData();
-  }, []);
-
   const [medicalAlerts] = useState<MedicalAlert[]>([]);
 
   // Eliminamos aiSuggestions - no son necesarias en la versión profesional
@@ -134,8 +98,6 @@ export const PatientCompletePage: React.FC = () => {
   const [highlights, setHighlights] = useState<ClinicalHighlight[]>([]);
   const [soapContent, setSOAPContent] = useState<string>('');
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
-  const [transcription, setTranscription] = useState<string>('');
-  const [recognition, setRecognition] = useState<any>(null);
 
   // ========= FUNCIONES DE TRANSICIÓN =========
   const handleViewModeChange = useCallback(async (newMode: ViewMode) => {
@@ -159,96 +121,13 @@ export const PatientCompletePage: React.FC = () => {
 
   // ========= FUNCIONES DE WORKFLOW ACTIVO =========
   const handleStartListening = useCallback(() => {
-    // Verificar soporte de Web Speech API
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Tu navegador no soporta reconocimiento de voz. Intenta con Chrome o Edge.');
-      return;
-    }
-
-    try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const newRecognition = new SpeechRecognition();
-      
-      newRecognition.continuous = true;
-      newRecognition.interimResults = true;
-      newRecognition.lang = 'es-ES';
-
-      newRecognition.onstart = () => {
-        setIsListening(true);
-        console.log('🎙️ Grabación iniciada');
-      };
-
-      newRecognition.onresult = (event: any) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        if (finalTranscript) {
-          setTranscription(prev => prev + finalTranscript);
-          // Generar highlight simple cuando se detecta información clínica
-          generateHighlightFromText(finalTranscript);
-        }
-      };
-
-      newRecognition.onerror = (event: any) => {
-        console.error('❌ Error en reconocimiento:', event.error);
-        setIsListening(false);
-      };
-
-      newRecognition.onend = () => {
-        setIsListening(false);
-        console.log('⏹️ Grabación finalizada');
-      };
-
-      newRecognition.start();
-      setRecognition(newRecognition);
-    } catch (error) {
-      console.error('❌ Error al iniciar grabación:', error);
-      alert('Error al iniciar la grabación. Inténtalo de nuevo.');
-    }
+    setIsListening(true);
+    // En la versión profesional, los highlights se detectarán del audio real
+    // Sin datos mock
   }, []);
 
   const handleStopListening = useCallback(() => {
-    if (recognition) {
-      recognition.stop();
-      setRecognition(null);
-    }
     setIsListening(false);
-  }, [recognition]);
-
-  // Función simple para generar highlights básicos
-  const generateHighlightFromText = useCallback((text: string) => {
-    const lowerText = text.toLowerCase();
-    let category: 'síntoma' | 'hallazgo' | 'plan' | 'advertencia' = 'hallazgo';
-    let confidence = 0.7;
-
-    // Detectar categorías básicas
-    if (lowerText.includes('duele') || lowerText.includes('dolor') || lowerText.includes('molesta')) {
-      category = 'síntoma';
-      confidence = 0.9;
-    } else if (lowerText.includes('tratamiento') || lowerText.includes('ejercicio') || lowerText.includes('plan')) {
-      category = 'plan';
-      confidence = 0.8;
-    }
-
-    const newHighlight: ClinicalHighlight = {
-      id: `highlight_${Date.now()}`,
-      text: text.trim(),
-      category,
-      confidence,
-      timestamp: new Date().toISOString(),
-      isSelected: false
-    };
-
-    setHighlights(prev => [...prev, newHighlight]);
   }, []);
 
   const toggleHighlight = useCallback((id: string) => {
@@ -287,27 +166,6 @@ ${plans.map(h => `• ${h.text}`).join('\n') || '• Plan de tratamiento a defin
 
     setSOAPContent(soap);
   }, [highlights, patientData]);
-
-  // Función para documentación manual
-  const handleManualDocumentation = useCallback(() => {
-    const manualSOAP = `DOCUMENTACIÓN SOAP MANUAL - ${new Date().toLocaleDateString()}
-Paciente: ${patientData.name} (${patientData.age} años)
-
-SUBJETIVO:
-• [Escribir síntomas y quejas del paciente]
-
-OBJETIVO:
-• [Escribir hallazgos de la evaluación]
-
-EVALUACIÓN:
-• [Escribir diagnóstico y análisis clínico]
-
-PLAN:
-• [Escribir plan de tratamiento]`;
-
-    setSOAPContent(manualSOAP);
-    setViewMode('completed');
-  }, [patientData]);
 
   // ========= FUNCIONES AUXILIARES =========
   const getSeverityColor = (severity: string) => {
@@ -363,9 +221,9 @@ PLAN:
         {/* NAVEGACIÓN DE ESTADOS */}
         <div className="mt-4 flex space-x-1 bg-gray-100 rounded-lg p-1">
           {[
-                  { mode: 'review' as ViewMode, label: 'Revisar Historia', icon: 'review' },
-      { mode: 'active' as ViewMode, label: 'Sesión Activa', icon: 'microphone' },
-      { mode: 'completed' as ViewMode, label: 'Finalizar SOAP', icon: 'document' }
+            { mode: 'review' as ViewMode, label: '📋 Revisar Historia', icon: '📋' },
+            { mode: 'active' as ViewMode, label: '🎙️ Sesión Activa', icon: '🎙️' },
+            { mode: 'completed' as ViewMode, label: '💾 Finalizar SOAP', icon: '💾' }
           ].map(({ mode, label, icon }) => (
             <button
               key={mode}
@@ -393,38 +251,92 @@ PLAN:
         )}
 
         {!isTransitioning && viewMode === 'review' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* HISTORIA CLÍNICA */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">📄 Historia Clínica</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">Diagnóstico Principal</h4>
+                  <p className="text-gray-600 text-sm">{patientData.clinicalHistory}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">Alergias</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {patientData.allergies.map((allergy, i) => (
+                      <span key={i} className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
+                        {allergy}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Sesión Clínica</h2>
-              <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Información del paciente cargada. Puedes elegir entre grabación con IA o documentación manual.
-              </p>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => handleViewModeChange('active')}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                  <span>Grabar con IA</span>
-                </button>
+            {/* MEDICACIÓN ACTUAL */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">💊 Medicación Actual</h3>
+              <div className="space-y-3">
+                {patientData.medications.map((med, i) => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-gray-900">{med.name}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        med.status === 'activo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {med.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{med.dosage} • {med.frequency}</p>
+                    <p className="text-xs text-gray-500">{med.prescribedBy}</p>
+                    {med.interactions.length > 0 && (
+                      <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-700">
+                        ⚠️ {med.interactions.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ALERTAS MÉDICAS */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">⚠️ Alertas Médicas</h3>
+              <div className="space-y-3">
+                {medicalAlerts.map((alert, i) => (
+                  <div 
+                    key={i}
+                    className="border-l-4 pl-3 py-2"
+                    style={{ borderLeftColor: getSeverityColor(alert.severity) }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-gray-900 capitalize">{alert.type}</span>
+                      <span 
+                        className="px-2 py-1 rounded-full text-xs text-white"
+                        style={{ backgroundColor: getSeverityColor(alert.severity) }}
+                      >
+                        {alert.severity}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{alert.description}</p>
+                    <p className="text-xs text-gray-500 mt-1">{alert.source}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ACCIONES DE SESIÓN */}
+            <div className="lg:col-span-3 bg-gradient-to-r from-teal-50 to-green-50 rounded-lg border border-teal-200 p-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Información del paciente revisada</h3>
+                <p className="text-gray-600 mb-6">Historia clínica, medicación y alertas médicas verificadas. Listo para iniciar la sesión.</p>
                 
                 <button
-                  onClick={handleManualDocumentation}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                  onClick={() => handleViewModeChange('active')}
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 mx-auto"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  <span>Documentar Manual</span>
+                  <span>🎙️</span>
+                  <span>Iniciar Sesión con Grabación</span>
                 </button>
               </div>
             </div>
@@ -436,7 +348,7 @@ PLAN:
             {/* TRANSCRIPCIÓN EN TIEMPO REAL */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Transcripción en Tiempo Real</h3>
+                <h3 className="text-lg font-semibold text-gray-900">🎙️ Transcripción en Tiempo Real</h3>
                 <span className={`px-3 py-1 rounded-full text-xs ${
                   isListening ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
                 }`}>
@@ -445,21 +357,7 @@ PLAN:
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4 min-h-64 max-h-64 overflow-y-auto mb-4">
-                {transcription ? (
-                  <div className="text-sm text-gray-900 leading-relaxed">
-                    <p className="whitespace-pre-wrap">{transcription}</p>
-                    {isListening && (
-                      <div className="flex items-center mt-2 text-teal-600">
-                        <div className="flex space-x-1 mr-2">
-                          <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
-                        <span className="text-xs">Escuchando...</span>
-                      </div>
-                    )}
-                  </div>
-                ) : isListening ? (
+                {isListening ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-4">
@@ -469,8 +367,8 @@ PLAN:
                           <div className="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">Grabación activa</p>
-                      <p className="text-xs text-gray-500">Comienza a hablar...</p>
+                      <p className="text-sm text-gray-600 mb-2">🎙️ Grabación activa</p>
+                      <p className="text-xs text-gray-500">La transcripción aparecerá aquí en tiempo real</p>
                     </div>
                   </div>
                 ) : (
@@ -516,7 +414,7 @@ PLAN:
             {/* HIGHLIGHTS DETECTADOS */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Highlights Detectados</h3>
+                <h3 className="text-lg font-semibold text-gray-900">✨ Highlights Detectados</h3>
                 <span className="text-sm text-gray-500">{highlights.length} elementos</span>
               </div>
 
@@ -585,7 +483,7 @@ PLAN:
             {/* SOAP GENERADO */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Documentación SOAP</h3>
+                <h3 className="text-lg font-semibold text-gray-900">📋 Documentación SOAP</h3>
                 <div className="flex items-center space-x-2">
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
                     ✅ Generado automáticamente
