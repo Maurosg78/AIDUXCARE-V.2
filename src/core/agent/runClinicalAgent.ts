@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { AgentContext, AgentSuggestion } from "@/types/agent"; // Asegúrate que las rutas de importación con @ sean correctas para tu proyecto
+import { AgentSuggestion } from "@/types/agent"; // Asegúrate que las rutas de importación con @ sean correctas para tu proyecto
 import { buildAgentContext } from "./AgentContextBuilder";
 import { AgentExecutor } from "./AgentExecutor";
 import { logMetric, UsageMetricType } from "@/services/UsageAnalyticsService"; // Asegúrate que UsageMetricType se exporte y se importe
@@ -10,7 +10,9 @@ import { logMetric, UsageMetricType } from "@/services/UsageAnalyticsService"; /
  * @param visitId ID de la visita para la cual ejecutar el agente
  * @returns Promise<AgentSuggestion[]> Array de sugerencias generadas por el agente
  */
-export async function runClinicalAgent(visitId: string): Promise<AgentSuggestion[]> {
+export async function runClinicalAgent(
+  visitId: string,
+): Promise<AgentSuggestion[]> {
   try {
     // Construir el contexto del agente
     const agentContext = await buildAgentContext(visitId);
@@ -84,4 +86,4 @@ export async function runClinicalAgent(visitId: string): Promise<AgentSuggestion
     // En lugar de lanzar el error, devolvemos un array vacío según el comportamiento esperado por los tests
     return [];
   }
-} 
+}
