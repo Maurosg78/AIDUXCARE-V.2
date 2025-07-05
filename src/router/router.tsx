@@ -3,7 +3,6 @@ import Layout from '@/core/components/Layout';
 import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import AudioProcessingPage from '@/pages/AudioProcessingPage';
 
 export const router = createBrowserRouter([
   // Página principal protegida: ProfessionalWorkflowPage en la raíz
@@ -28,10 +27,6 @@ export const router = createBrowserRouter([
       {
         path: "professional-workflow",
         element: <ProfessionalWorkflowPage />,
-      },
-      {
-        path: "audio-processing", 
-        element: <AudioProcessingPage />,
       },
       {
         path: "patients",
