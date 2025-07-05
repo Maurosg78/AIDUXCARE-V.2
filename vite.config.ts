@@ -1,42 +1,18 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from 'path';
-import { visualizer } from 'rollup-plugin-visualizer';
 
-// Configuración optimizada de Vite
+// Configuración simplificada de Vite para Phoenix MVP
 export default defineConfig({
   plugins: [
-    react(),
-    // Bundle analyzer - genera stats.html después del build
-    visualizer({
-      filename: 'dist/stats.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-    })
+    react()
   ],
   css: {
     postcss: './postcss.config.js',
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@headlessui/react": path.resolve(__dirname, "./src/lib/headless-ui.tsx"),
-      "@tanstack/react-virtual": path.resolve(__dirname, "./src/lib/tanstack-virtual-mock.ts"),
-      "use-sync-external-store": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts"),
-      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
-    }
-  },
-  // Mejorar la configuración de dependencias
-  optimizeDeps: {
-    include: [
-      '@tanstack/react-virtual',
-      '@supabase/supabase-js'
-    ],
-    esbuildOptions: {
-      define: {
-        global: 'globalThis'
-      }
+      "@": path.resolve(__dirname, "./src")
     }
   },
   // Configuración del servidor de desarrollo
@@ -49,20 +25,8 @@ export default defineConfig({
   // Optimización del build
   build: {
     sourcemap: false,
-    // Optimizaciones de bundle
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
-    },
-    // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
     target: 'esnext'
-  },
-  define: {
-    // Eliminar referencias a service workers que causan errores
-    'self': 'globalThis',
-    'global': 'globalThis'
   }
 });
