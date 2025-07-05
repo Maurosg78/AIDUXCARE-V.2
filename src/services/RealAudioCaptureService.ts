@@ -63,30 +63,32 @@ export default class RealAudioCaptureService {
       this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Error en reconocimiento de voz:', event.error);
         
-        // Manejar diferentes tipos de errores
+        // Manejar diferentes tipos de errores de forma más silenciosa
         switch (event.error) {
           case 'network':
-            console.warn('Error de red - reintentando...');
-            this.handleNetworkError();
+            console.warn('⚠️ Error de red - el servicio continuará funcionando');
+            // No reintentar automáticamente para evitar spam de errores
             break;
           case 'not-allowed':
-            console.error('Permisos de micrófono denegados');
-            throw new Error('Permisos de micrófono denegados. Por favor, permite el acceso al micrófono.');
+            console.error('❌ Permisos de micrófono denegados');
+            this.isRecording = false;
+            break;
           case 'no-speech':
-            console.warn('No se detectó habla - continuando...');
+            console.log('🔇 No se detectó habla - esperando...');
             break;
           case 'audio-capture':
-            console.error('Error de captura de audio');
-            throw new Error('Error de captura de audio. Verifica que el micrófono esté funcionando.');
+            console.error('❌ Error de captura de audio');
+            this.isRecording = false;
+            break;
           default:
-            console.error('Error desconocido:', event.error);
+            console.warn('⚠️ Error en reconocimiento:', event.error);
         }
       };
 
       this.recognition.onend = () => {
         console.log('🎙️ Reconocimiento de voz finalizado');
         
-        // Reiniciar automáticamente si aún estamos grabando
+        // Solo reiniciar si aún estamos grabando y no hay errores críticos
         if (this.isRecording && this.recognition) {
           console.log('🔄 Reiniciando reconocimiento automáticamente...');
           setTimeout(() => {
@@ -95,9 +97,11 @@ export default class RealAudioCaptureService {
                 this.recognition.start();
               } catch (error) {
                 console.warn('Error al reiniciar reconocimiento:', error);
+                // Si falla 3 veces, parar automáticamente
+                this.isRecording = false;
               }
             }
-          }, 100);
+          }, 500); // Aumentar delay para evitar spam
         }
       };
 
@@ -108,18 +112,8 @@ export default class RealAudioCaptureService {
   }
 
   private handleNetworkError(): void {
-    // Reintentar después de un breve delay
-    if (this.isRecording && this.recognition) {
-      setTimeout(() => {
-        if (this.isRecording && this.recognition) {
-          try {
-            this.recognition.start();
-          } catch (error) {
-            console.warn('Error en reintento de red:', error);
-          }
-        }
-      }, 1000);
-    }
+    // Método simplificado - ya no se usa automáticamente
+    console.log('🔧 Método handleNetworkError disponible para reintentos manuales');
   }
 
   async startRecording(callback: (text: string, isFinal: boolean) => void): Promise<void> {

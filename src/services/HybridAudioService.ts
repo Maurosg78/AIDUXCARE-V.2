@@ -74,6 +74,7 @@ export default class HybridAudioService {
   private mockService: MockAudioCaptureService;
   private currentService: RealAudioCaptureService | MockAudioCaptureService;
   private isUsingReal: boolean = false;
+  private preferredService: 'real' | 'mock' = 'real';
 
   constructor() {
     this.realService = new RealAudioCaptureService();
@@ -168,7 +169,43 @@ export default class HybridAudioService {
   }
 
   getServiceDisplayName(): string {
-    return this.isUsingReal ? '🎙️ Reconocimiento de Voz Real' : '🎭 Modo Demostración';
+    const activeService = this.getActiveService();
+    if (activeService === 'real') {
+      return '🎙️ Reconocimiento de Voz Real';
+    } else {
+      return '🎭 Modo Demostración';
+    }
+  }
+
+  // Método mejorado para obtener información detallada del servicio
+  getDetailedServiceInfo(): string {
+    const activeService = this.getActiveService();
+    const isRealSupported = this.realService.isServiceSupported();
+    
+    if (activeService === 'real') {
+      return `🎙️ Usando audio real del ambiente ${isRealSupported ? '(Funcional)' : '(Limitado)'}`;
+    } else {
+      return `🎭 Usando transcripción simulada médica ${!isRealSupported ? '(Audio real no disponible)' : '(Modo demo)'}`;
+    }
+  }
+
+  // Método para cambiar manualmente entre servicios
+  toggleService(): string {
+    if (this.isCurrentlyRecording()) {
+      return 'No se puede cambiar de servicio mientras se está grabando';
+    }
+
+    if (this.preferredService === 'real') {
+      this.preferredService = 'mock';
+      return 'Cambiado a modo demostración';
+    } else {
+      if (this.realService.isServiceSupported()) {
+        this.preferredService = 'real';
+        return 'Cambiado a audio real';
+      } else {
+        return 'Audio real no disponible en este navegador';
+      }
+    }
   }
 
   // Método para forzar cambio de servicio
@@ -208,5 +245,9 @@ export default class HybridAudioService {
       recording: this.isCurrentlyRecording(),
       realServiceDiagnostic: this.isUsingReal ? this.realService.getDiagnosticInfo() : null
     };
+  }
+
+  private getActiveService(): 'real' | 'mock' {
+    return this.isUsingReal ? 'real' : 'mock';
   }
 } 

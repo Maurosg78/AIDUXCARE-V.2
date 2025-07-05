@@ -178,7 +178,7 @@ const ConsultationPage: React.FC = () => {
   // Actualizar información del servicio
   useEffect(() => {
     const updateServiceInfo = () => {
-      const info = audioService.getServiceDisplayName();
+      const info = audioService.getDetailedServiceInfo();
       setServiceInfo(info);
     };
 
@@ -302,27 +302,20 @@ const ConsultationPage: React.FC = () => {
     }
   }, [soapData]);
 
-  // Función para alternar entre servicios
-  const handleToggleService = useCallback(async () => {
+  // Función para cambiar entre servicios
+  const handleToggleService = useCallback(() => {
     if (isRecording) {
       setError('No se puede cambiar de servicio mientras se está grabando');
       return;
     }
 
-    try {
-      const currentType = audioService.getCurrentServiceType();
-      if (currentType === 'real') {
-        await audioService.switchToMock();
-        setServiceInfo('🎭 Modo Demostración');
-        setError('🔄 Cambiado a modo demostración');
-      } else {
-        await audioService.switchToReal();
-        setServiceInfo('🎙️ Reconocimiento de Voz Real');
-        setError('🔄 Cambiado a audio real');
-      }
-    } catch (error) {
-      setError(`Error cambiando servicio: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    }
+    const result = audioService.toggleService();
+    setServiceInfo(audioService.getDetailedServiceInfo());
+    
+    // Mostrar mensaje temporal
+    const tempMessage = result;
+    setError(tempMessage);
+    setTimeout(() => setError(null), 3000);
   }, [audioService, isRecording]);
 
   return (
@@ -359,36 +352,30 @@ const ConsultationPage: React.FC = () => {
       {/* Indicador de servicio activo con botón para cambiar */}
       <div style={{ 
         display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        padding: '0.5rem 1rem',
+        alignItems: 'center', 
+        gap: '1rem',
+        marginBottom: '1rem',
+        padding: '0.5rem',
         backgroundColor: '#f8f9fa',
         borderRadius: '4px',
-        marginBottom: '1rem',
-        fontSize: '0.8rem',
-        color: '#666'
+        fontSize: '0.9rem'
       }}>
         <span>{serviceInfo}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>
-            {isRecording ? '🔴 Grabando...' : '⚫ Detenido'}
-          </span>
-          <button
-            onClick={handleToggleService}
-            disabled={isRecording}
-            style={{
-              padding: '0.25rem 0.5rem',
-              fontSize: '0.7rem',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              cursor: isRecording ? 'not-allowed' : 'pointer',
-              opacity: isRecording ? 0.5 : 1
-            }}
-          >
-            🔄 Cambiar
-          </button>
-        </div>
+        <button
+          onClick={handleToggleService}
+          disabled={isRecording}
+          style={{
+            padding: '0.25rem 0.5rem',
+            fontSize: '0.8rem',
+            backgroundColor: isRecording ? '#6c757d' : '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isRecording ? 'not-allowed' : 'pointer'
+          }}
+        >
+          🔄 Cambiar
+        </button>
       </div>
 
       {/* Selector de Pestañas */}
