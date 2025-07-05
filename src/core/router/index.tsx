@@ -12,7 +12,6 @@ const PageLoader = () => (
 );
 
 // Lazy loading de páginas principales
-const HomePage = lazy(() => import('../../pages/HomePage'));
 const LoginPage = lazy(() => import('../../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../../pages/RegisterPage'));
 const VisitDetailPage = lazy(() => import('../../features/visits/id/VisitDetailPage'));
@@ -35,7 +34,7 @@ export const appRoutes: RouteObject[] = [
         element: (
           <ProtectedRoute>
             <Suspense fallback={<PageLoader />}>
-              <HomePage />
+              {/* HomePage eliminado: aquí puedes poner ProfessionalWorkflowPage o similar si es necesario */}
             </Suspense>
           </ProtectedRoute>
         ),

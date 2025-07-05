@@ -1,16 +1,25 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
-import HomePage from '@/pages/HomePage';
-import AudioProcessingPage from '@/pages/AudioProcessingPage';
 import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
+import LoginPage from '@/pages/LoginPage';
+import ProtectedRoute from '@/features/auth/ProtectedRoute';
+import AudioProcessingPage from '@/pages/AudioProcessingPage';
 
 export const router = createBrowserRouter([
-  // Página de bienvenida (sin layout)
+  // Página principal protegida: ProfessionalWorkflowPage en la raíz
   {
-    path: "/",
-    element: <HomePage />,
+    path: '/',
+    element: (
+      <ProtectedRoute>
+        <ProfessionalWorkflowPage />
+      </ProtectedRoute>
+    ),
   },
-  
+  // Login
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
   // Rutas principales con layout profesional
   {
     path: "/",
