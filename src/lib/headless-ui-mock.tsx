@@ -4,8 +4,7 @@
 /* eslint-disable react/display-name */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable jsx-a11y/aria-props */
-/* eslint-disable jsx-a11y/role-has-required-aria-props */
+
 import React, {
   ReactNode,
   forwardRef,
