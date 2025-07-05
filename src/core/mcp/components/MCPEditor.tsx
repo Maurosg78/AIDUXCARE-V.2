@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MCPContext } from '../schema';
+import React, { useState } from "react";
+import { MCPContext } from "../schema";
 
 interface MCPEditorProps {
   initialContext: MCPContext;
@@ -7,10 +7,10 @@ interface MCPEditorProps {
   saving?: boolean;
 }
 
-const MCPEditor: React.FC<MCPEditorProps> = ({ 
-  initialContext, 
+const MCPEditor: React.FC<MCPEditorProps> = ({
+  initialContext,
   onSave,
-  saving = false 
+  saving = false,
 }) => {
   const [context, setContext] = useState<MCPContext>(initialContext);
   const [isEditing, setIsEditing] = useState(false);
@@ -20,7 +20,7 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
       await onSave(context);
       setIsEditing(false);
     } catch (error) {
-      console.error('Error al guardar:', error);
+      console.error("Error al guardar:", error);
     }
   };
 
@@ -31,7 +31,7 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
       const updatedContext = JSON.parse(e.target.value);
       setContext(updatedContext);
     } catch (error) {
-      console.error('Error al parsear JSON:', error);
+      console.error("Error al parsear JSON:", error);
     }
   };
 
@@ -61,7 +61,7 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
                 disabled={saving}
               >
-                {saving ? 'Guardando...' : 'Guardar cambios'}
+                {saving ? "Guardando..." : "Guardar cambios"}
               </button>
             </>
           )}
@@ -86,4 +86,4 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
   );
 };
 
-export default MCPEditor; 
+export default MCPEditor;
