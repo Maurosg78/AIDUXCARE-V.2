@@ -352,30 +352,66 @@ const ConsultationPage: React.FC = () => {
       {/* Indicador de servicio activo con botón para cambiar */}
       <div style={{ 
         display: 'flex', 
-        alignItems: 'center', 
-        gap: '1rem',
+        flexDirection: 'column',
+        gap: '0.5rem',
         marginBottom: '1rem',
-        padding: '0.5rem',
+        padding: '1rem',
         backgroundColor: '#f8f9fa',
-        borderRadius: '4px',
-        fontSize: '0.9rem'
+        borderRadius: '8px',
+        border: '1px solid #e9ecef'
       }}>
-        <span>{serviceInfo}</span>
-        <button
-          onClick={handleToggleService}
-          disabled={isRecording}
-          style={{
-            padding: '0.25rem 0.5rem',
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '1rem',
+          fontSize: '0.9rem'
+        }}>
+          <span style={{ fontWeight: 'bold' }}>{serviceInfo}</span>
+          <button
+            onClick={handleToggleService}
+            disabled={isRecording}
+            style={{
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.8rem',
+              backgroundColor: isRecording ? '#6c757d' : '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isRecording ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 Cambiar Servicio
+          </button>
+        </div>
+        
+        {serviceInfo.includes('🎭') && (
+          <div style={{
             fontSize: '0.8rem',
-            backgroundColor: isRecording ? '#6c757d' : '#007bff',
-            color: 'white',
-            border: 'none',
+            color: '#28a745',
+            padding: '0.5rem',
+            backgroundColor: '#d4edda',
             borderRadius: '4px',
-            cursor: isRecording ? 'not-allowed' : 'pointer'
-          }}
-        >
-          🔄 Cambiar
-        </button>
+            border: '1px solid #c3e6cb'
+          }}>
+            ✅ <strong>Modo Demostración:</strong> Sistema estable sin errores de red. 
+            Transcribe automáticamente texto médico simulado para pruebas.
+          </div>
+        )}
+        
+        {serviceInfo.includes('🎙️') && (
+          <div style={{
+            fontSize: '0.8rem',
+            color: '#856404',
+            padding: '0.5rem',
+            backgroundColor: '#fff3cd',
+            borderRadius: '4px',
+            border: '1px solid #ffeaa7'
+          }}>
+            ⚠️ <strong>Audio Real:</strong> Captura audio del ambiente pero puede generar errores de red en consola. 
+            Funciona correctamente a pesar de los errores.
+          </div>
+        )}
       </div>
 
       {/* Selector de Pestañas */}

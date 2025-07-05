@@ -70,60 +70,41 @@ class MockAudioCaptureService {
  * Servicio híbrido que detecta automáticamente entre audio real y mock
  */
 export default class HybridAudioService {
-  private realService: RealAudioCaptureService;
-  private mockService: MockAudioCaptureService;
+  private realAudioService: RealAudioCaptureService;
+  private mockAudioService: MockAudioCaptureService;
   private currentService: RealAudioCaptureService | MockAudioCaptureService;
   private isUsingReal: boolean = false;
-  private preferredService: 'real' | 'mock' = 'real';
+  private preferredService: 'real' | 'mock' = 'mock';
 
   constructor() {
-    this.realService = new RealAudioCaptureService();
-    this.mockService = new MockAudioCaptureService();
+    this.realAudioService = new RealAudioCaptureService();
+    this.mockAudioService = new MockAudioCaptureService();
     
-    // Detectar automáticamente qué servicio usar
-    this.detectBestService();
+    // Inicializar siempre con el servicio mock por defecto
+    this.currentService = this.mockAudioService;
+    this.isUsingReal = false;
   }
 
-  private detectBestService(): void {
-    try {
-      // Verificar si el servicio real está disponible
-      if (this.realService.isServiceSupported()) {
-        // Verificar si estamos en un entorno seguro (HTTPS o localhost)
-        const isSecureContext = window.isSecureContext || 
-                                location.protocol === 'https:' || 
-                                location.hostname === 'localhost' ||
-                                location.hostname === '127.0.0.1';
-
-        if (isSecureContext) {
-          this.currentService = this.realService;
-          this.isUsingReal = true;
-          console.log('🎙️ Usando servicio de audio real');
-        } else {
-          this.currentService = this.mockService;
-          this.isUsingReal = false;
-          console.log('🎭 Usando servicio mock (contexto no seguro)');
-        }
-      } else {
-        this.currentService = this.mockService;
-        this.isUsingReal = false;
-        console.log('🎭 Usando servicio mock (Web Speech API no soportado)');
-      }
-    } catch (error) {
-      console.warn('Error detectando servicio, usando mock:', error);
-      this.currentService = this.mockService;
-      this.isUsingReal = false;
+  // Método para determinar qué servicio usar basado en preferencia del usuario
+  private determineService(): RealAudioCaptureService | MockAudioCaptureService {
+    // Solo usar real si el usuario lo ha solicitado explícitamente
+    if (this.preferredService === 'real' && this.realAudioService.isServiceSupported()) {
+      return this.realAudioService;
     }
+    
+    // Por defecto, usar mock
+    return this.mockAudioService;
   }
 
   async startRecording(callback: (text: string, isFinal: boolean) => void): Promise<void> {
     try {
       // Si estamos usando el servicio real, intentar iniciar
       if (this.isUsingReal) {
-        await this.realService.startRecording(callback);
+        await this.realAudioService.startRecording(callback);
         console.log('✅ Grabación real iniciada exitosamente');
       } else {
         // Usar servicio mock
-        await this.mockService.startRecording(callback);
+        await this.mockAudioService.startRecording(callback);
         console.log('✅ Grabación simulada iniciada');
       }
     } catch (error) {
@@ -132,11 +113,11 @@ export default class HybridAudioService {
       // Si el servicio real falla, cambiar a mock automáticamente
       if (this.isUsingReal) {
         console.log('🔄 Cambiando automáticamente a modo demostración...');
-        this.currentService = this.mockService;
+        this.currentService = this.mockAudioService;
         this.isUsingReal = false;
         
         try {
-          await this.mockService.startRecording(callback);
+          await this.mockAudioService.startRecording(callback);
           console.log('✅ Fallback a grabación simulada exitoso');
         } catch (fallbackError) {
           throw new Error('No se pudo iniciar ningún servicio de audio');
@@ -149,9 +130,9 @@ export default class HybridAudioService {
 
   stopRecording(): string {
     if (this.isUsingReal) {
-      return this.realService.stopRecording();
+      return this.realAudioService.stopRecording();
     } else {
-      return this.mockService.stopRecording();
+      return this.mockAudioService.stopRecording();
     }
   }
 
@@ -180,12 +161,12 @@ export default class HybridAudioService {
   // Método mejorado para obtener información detallada del servicio
   getDetailedServiceInfo(): string {
     const activeService = this.getActiveService();
-    const isRealSupported = this.realService.isServiceSupported();
+    const isRealSupported = this.realAudioService.isServiceSupported();
     
     if (activeService === 'real') {
-      return `🎙️ Usando audio real del ambiente ${isRealSupported ? '(Funcional)' : '(Limitado)'}`;
+      return `🎙️ Usando audio real del ambiente (Activo)`;
     } else {
-      return `🎭 Usando transcripción simulada médica ${!isRealSupported ? '(Audio real no disponible)' : '(Modo demo)'}`;
+      return `🎭 Usando transcripción simulada médica ${!isRealSupported ? '(Audio real no disponible)' : '(Modo seguro)'}`;
     }
   }
 
@@ -197,11 +178,15 @@ export default class HybridAudioService {
 
     if (this.preferredService === 'real') {
       this.preferredService = 'mock';
-      return 'Cambiado a modo demostración';
+      this.currentService = this.mockAudioService;
+      this.isUsingReal = false;
+      return 'Cambiado a modo demostración (más estable)';
     } else {
-      if (this.realService.isServiceSupported()) {
+      if (this.realAudioService.isServiceSupported()) {
         this.preferredService = 'real';
-        return 'Cambiado a audio real';
+        this.currentService = this.realAudioService;
+        this.isUsingReal = true;
+        return 'Cambiado a audio real (puede generar errores de red)';
       } else {
         return 'Audio real no disponible en este navegador';
       }
@@ -214,7 +199,7 @@ export default class HybridAudioService {
       throw new Error('No se puede cambiar de servicio mientras se está grabando');
     }
     
-    this.currentService = this.mockService;
+    this.currentService = this.mockAudioService;
     this.isUsingReal = false;
     console.log('🔄 Cambiado manualmente a modo demostración');
   }
@@ -224,11 +209,11 @@ export default class HybridAudioService {
       throw new Error('No se puede cambiar de servicio mientras se está grabando');
     }
 
-    if (!this.realService.isServiceSupported()) {
+    if (!this.realAudioService.isServiceSupported()) {
       throw new Error('Servicio de audio real no soportado en este navegador');
     }
 
-    this.currentService = this.realService;
+    this.currentService = this.realAudioService;
     this.isUsingReal = true;
     console.log('🔄 Cambiado manualmente a audio real');
   }
@@ -238,12 +223,12 @@ export default class HybridAudioService {
     return {
       currentService: this.getCurrentServiceType(),
       displayName: this.getServiceDisplayName(),
-      realServiceSupported: this.realService.isServiceSupported(),
+      realServiceSupported: this.realAudioService.isServiceSupported(),
       isSecureContext: window.isSecureContext,
       protocol: location.protocol,
       hostname: location.hostname,
       recording: this.isCurrentlyRecording(),
-      realServiceDiagnostic: this.isUsingReal ? this.realService.getDiagnosticInfo() : null
+      realServiceDiagnostic: this.isUsingReal ? this.realAudioService.getDiagnosticInfo() : null
     };
   }
 
