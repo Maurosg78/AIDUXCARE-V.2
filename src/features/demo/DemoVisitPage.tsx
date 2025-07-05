@@ -2,15 +2,6 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import { trackMetric } from '@/services/UsageAnalyticsService';
-import {
-  mockPatient,
-  mockVisit,
-  mockMCPContext,
-  mockAgentSuggestions,
-  mockTranscription,
-  mockEMRData,
-  mockUserId
-} from '@/core/demo/mockVisitData';
 import { MCPContext } from '@/core/mcp/schema';
 import { AgentSuggestion } from '@/types/agent';
 import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
@@ -40,7 +31,7 @@ const DemoVisitPage: React.FC = () => {
   const visitId = 'demo-visit-123';
   const [showTranscription, setShowTranscription] = useState(false);
   const [transcriptionData, setTranscriptionData] = useState<TranscriptionSegment[]>([]);
-  const [emrContent, setEmrContent] = useState(mockEMRData);
+  const [emrContent, setEmrContent] = useState('');
   const [insertedContent, setInsertedContent] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
@@ -70,18 +61,18 @@ const DemoVisitPage: React.FC = () => {
   useEffect(() => {
     // Registrar carga de la página en auditoría
     AuditLogger.log('demo.page.loaded', {
-      userId: mockUserId,
-      visitId: mockVisit.id,
-      patientId: mockPatient.id,
+      userId: 'demo-user',
+      visitId: 'demo-visit-123',
+      patientId: 'demo-patient',
       timestamp: new Date().toISOString()
     });
     
     // Cargar los datos iniciales
-    setTranscriptionData(mockTranscription);
-    setEmrContent(mockEMRData);
+    setTranscriptionData([]);
+    setEmrContent('');
     
     // Establecer documento de título
-    document.title = `Consulta ${mockVisit.id} | AiduxCare`;
+    document.title = `Consulta demo | AiduxCare`;
   }, []);
 
   const handleCaptureComplete = (transcription: TranscriptionSegment[]) => {
@@ -90,10 +81,10 @@ const DemoVisitPage: React.FC = () => {
     
     // Registrar en auditoría
     AuditLogger.log('audio.capture.completed', {
-      userId: mockUserId,
-      visitId: mockVisit.id,
-      patientId: mockPatient.id,
-      segments_count: transcription.length > 0 ? transcription.length : mockTranscription.length
+      userId: 'demo-user',
+      visitId: 'demo-visit-123',
+      patientId: 'demo-patient',
+      segments_count: transcription.length > 0 ? transcription.length : 0
     });
     
     // Registrar métrica
@@ -104,8 +95,8 @@ const DemoVisitPage: React.FC = () => {
         suggestionType: 'recommendation',
         suggestionField: 'audio'
       },
-      mockUserId,
-      mockVisit.id
+      'demo-user',
+      'demo-visit-123'
     );
   };
 
@@ -115,9 +106,9 @@ const DemoVisitPage: React.FC = () => {
     
     // Registrar en auditoría
     AuditLogger.log('audio.integrated', {
-      userId: mockUserId,
-      visitId: mockVisit.id,
-      patientId: mockPatient.id,
+      userId: 'demo-user',
+      visitId: 'demo-visit-123',
+      patientId: 'demo-patient',
       content_length: content.length,
       source: 'audio_transcription'
     });
@@ -135,8 +126,8 @@ const DemoVisitPage: React.FC = () => {
         suggestionType: 'recommendation',
         suggestionField: 'audio'
       },
-      mockUserId,
-      mockVisit.id
+      'demo-user',
+      'demo-visit-123'
     );
   };
   
@@ -154,8 +145,8 @@ const DemoVisitPage: React.FC = () => {
         suggestionType: 'recommendation',
         suggestionField: 'audio'
       },
-      mockUserId,
-      mockVisit.id
+      'demo-user',
+      'demo-visit-123'
     );
   };
   
@@ -174,7 +165,7 @@ const DemoVisitPage: React.FC = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Métricas de Uso</h3>
             <Suspense fallback={<ComponentLoader name="Dashboard" />}>
-              <AgentUsageDashboard visitId={mockVisit.id} />
+              <AgentUsageDashboard visitId="demo-visit-123" />
             </Suspense>
             
             {/* Métricas adicionales */}
@@ -198,7 +189,7 @@ const DemoVisitPage: React.FC = () => {
           <div>
             <h3 className="text-lg font-medium mb-4">Registro de Auditoría</h3>
             <Suspense fallback={<ComponentLoader name="Auditoría" />}>
-              <AuditLogViewer visitId={mockVisit.id} />
+              <AuditLogViewer visitId="demo-visit-123" />
             </Suspense>
           </div>
         );
@@ -208,7 +199,7 @@ const DemoVisitPage: React.FC = () => {
             <h3 className="text-lg font-medium mb-4">Contexto MCP</h3>
             <Suspense fallback={<ComponentLoader name="MCP Context" />}>
               <MCPContextViewer
-                context={mockMCPContext as unknown as MCPContext}
+                context={{} as unknown as MCPContext}
               />
             </Suspense>
           </div>
@@ -236,14 +227,14 @@ const DemoVisitPage: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {mockPatient.name}, {mockPatient.age} años
+              Demo Patient, 0 años
             </h1>
-            <p className="text-gray-600">ID: {mockPatient.id} • Seguro: {mockPatient.insuranceId}</p>
+            <p className="text-gray-600">ID: demo-patient</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-semibold text-gray-700">{mockVisit.type}</p>
+            <p className="text-lg font-semibold text-gray-700">demo-visit-type</p>
             <p className="text-gray-600">
-              {new Date(mockVisit.date).toLocaleDateString('es-ES', { 
+              {new Date().toLocaleDateString('es-ES', { 
                 day: '2-digit', 
                 month: '2-digit', 
                 year: 'numeric',
@@ -251,19 +242,19 @@ const DemoVisitPage: React.FC = () => {
                 minute: '2-digit'
               })}
             </p>
-            <p className="text-gray-600">Dr(a): {mockVisit.provider}</p>
+            <p className="text-gray-600">Dr(a): demo-provider</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2 text-sm text-blue-600">
           <span className="px-2 py-1 bg-blue-100 rounded-md">
-            Consulta {mockVisit.id}
+            Consulta demo-visit-123
           </span>
           <span className="px-2 py-1 bg-green-100 rounded-md text-green-600">
-            {mockVisit.department}
+            demo-department
           </span>
           <span className="px-2 py-1 bg-purple-100 rounded-md text-purple-600">
-            {mockVisit.facility}
+            demo-facility
           </span>
         </div>
       </div>
@@ -280,8 +271,8 @@ const DemoVisitPage: React.FC = () => {
             <Suspense fallback={<ComponentLoader name="Audio Review" />}>
               <AudioReviewChecklist 
                 transcription={transcriptionData}
-                visitId={mockVisit.id}
-                userId={mockUserId}
+                visitId="demo-visit-123"
+                userId="demo-user"
                 onApproveSegment={handleApproveAudioSegment}
                 onClose={handleCloseReview}
               />
@@ -290,7 +281,7 @@ const DemoVisitPage: React.FC = () => {
           
           <Suspense fallback={<ComponentLoader name="AgentSuggestionsViewer" />}>
             <AgentSuggestionsViewer 
-              visitId={mockVisit.id}
+              visitId="demo-visit-123"
               suggestions={suggestions}
               onSuggestionAccepted={(suggestion) => {
                 console.log('Sugerencia aceptada:', suggestion);
@@ -298,8 +289,8 @@ const DemoVisitPage: React.FC = () => {
               onSuggestionRejected={(suggestion) => {
                 console.log('Sugerencia rechazada:', suggestion);
               }}
-              userId={mockUserId}
-              patientId={mockPatient.id}
+              userId="demo-user"
+              patientId="demo-patient"
             />
           </Suspense>
           
@@ -310,35 +301,35 @@ const DemoVisitPage: React.FC = () => {
               <div>
                 <h3 className="font-medium text-gray-700 mb-1">Subjetivo</h3>
                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-md whitespace-pre-wrap text-sm">
-                  {emrContent.subjective}
+                  {emrContent}
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700 mb-1">Objetivo</h3>
                 <div className="p-3 bg-green-50 border border-green-100 rounded-md whitespace-pre-wrap text-sm">
-                  {emrContent.objective}
+                  {emrContent}
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700 mb-1">Evaluación</h3>
                 <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-md whitespace-pre-wrap text-sm">
-                  {emrContent.assessment}
+                  {emrContent}
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700 mb-1">Plan</h3>
                 <div className="p-3 bg-purple-50 border border-purple-100 rounded-md whitespace-pre-wrap text-sm">
-                  {emrContent.plan}
+                  {emrContent}
                 </div>
               </div>
               
               <div>
                 <h3 className="font-medium text-gray-700 mb-1">Notas Adicionales</h3>
                 <div className="p-3 bg-gray-50 border border-gray-100 rounded-md whitespace-pre-wrap text-sm">
-                  {emrContent.notes}
+                  {emrContent}
                   
                   {/* Mostrar contenido insertado */}
                   {insertedContent.map((content, index) => (

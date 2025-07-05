@@ -9,50 +9,6 @@ import { RAGMedicalMCP } from '../core/mcp/RAGMedicalMCP';
 
 export class NLPServiceOllama {
   
-  // **NUEVO: Sistema A/B Testing para Prompts**
-  private static promptVersionConfig = {
-    useOptimizedV2: localStorage?.getItem('aiduxcare_prompt_version') === 'v2' || false,
-    autoLogging: true,
-    testingMode: localStorage?.getItem('aiduxcare_testing_mode') === 'true' || false
-  };
-
-  /**
-   * Configura la versión de prompt a usar (para A/B testing)
-   */
-  static setPromptVersion(version: 'current' | 'v2' | 'auto'): void {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('aiduxcare_prompt_version', version);
-    }
-    this.promptVersionConfig.useOptimizedV2 = version === 'v2';
-    console.log(`🔄 Prompt version cambiada a: ${version}`);
-  }
-
-  /**
-   * Habilita/deshabilita modo testing con logging automático
-   */
-  static setTestingMode(enabled: boolean): void {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('aiduxcare_testing_mode', enabled.toString());
-    }
-    this.promptVersionConfig.testingMode = enabled;
-    console.log(`📊 Modo testing ${enabled ? 'habilitado' : 'deshabilitado'}`);
-  }
-
-  /**
-   * Obtiene configuración actual de testing
-   */
-  static getTestingConfig(): {
-    promptVersion: string;
-    testingMode: boolean;
-    autoLogging: boolean;
-  } {
-    return {
-      promptVersion: this.promptVersionConfig.useOptimizedV2 ? 'v2' : 'current',
-      testingMode: this.promptVersionConfig.testingMode,
-      autoLogging: this.promptVersionConfig.autoLogging
-    };
-  }
-
   /**
    * Extrae entidades clínicas de una transcripción médica con RAG
    */
@@ -152,38 +108,16 @@ Responde SOLO en formato JSON:
    */
   static async generateSOAPNotes(transcript: string, entities: ClinicalEntity[], useRAG: boolean = true): Promise<SOAPNotes> {
     const startTime = Date.now();
-    const promptVersion = this.promptVersionConfig.useOptimizedV2 ? 'v2' : 'current';
-    
-    // Log automático si está en modo testing
-    if (this.promptVersionConfig.testingMode) {
-      console.log(`📝 Generando SOAP con prompt ${promptVersion}...`);
-    }
+    const promptVersion = 'current';
     
     try {
       let result: SOAPNotes;
       
-      if (this.promptVersionConfig.useOptimizedV2) {
-        result = await this.generateSOAPNotesOptimizedV2(transcript, entities, useRAG);
-      } else {
-        result = await this.generateSOAPNotesOriginal(transcript, entities, useRAG);
-      }
-      
-      // Log métricas para comparación
-      if (this.promptVersionConfig.testingMode && this.promptVersionConfig.autoLogging) {
-        const processingTime = Date.now() - startTime;
-        await this.logTestingMetrics(promptVersion, processingTime, result, transcript, entities, false);
-      }
+      result = await this.generateSOAPNotesOriginal(transcript, entities, useRAG);
       
       return result;
       
     } catch (error) {
-      // Log timeout/error para comparación
-      if (this.promptVersionConfig.testingMode && this.promptVersionConfig.autoLogging) {
-        const processingTime = Date.now() - startTime;
-        const isTimeout = error instanceof Error && error.message.includes('timeout');
-        await this.logTestingMetrics(promptVersion, processingTime, null, transcript, entities, isTimeout);
-      }
-      
       throw error;
     }
   }
@@ -296,173 +230,6 @@ Genera SOAP en formato JSON:
       
       throw new Error(`Failed to generate original SOAP notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }
-
-  /**
-   * Log automático de métricas para A/B testing
-   */
-  private static async logTestingMetrics(
-    promptVersion: string,
-    processingTime: number,
-    result: SOAPNotes | null,
-    transcript: string,
-    entities: ClinicalEntity[],
-    hadTimeout: boolean
-  ): Promise<void> {
-    const metrics = {
-      timestamp: new Date().toISOString(),
-      prompt_version: promptVersion,
-      processing_time_ms: processingTime,
-      timeout_occurred: hadTimeout,
-      transcript_length: transcript.length,
-      entities_count: entities.length,
-      soap_generated: result !== null,
-      soap_confidence: result?.confidence_score || 0,
-      session_id: `testing_${Date.now()}`
-    };
-    
-    // Log en consola para debugging
-    console.log('📊 Testing Metrics:', metrics);
-    
-    // Intentar append a USER_TESTING_LOG.md
-    try {
-      const logEntry = `| ${new Date().toLocaleDateString()} | ${new Date().toLocaleTimeString()} | ${promptVersion} | ${processingTime}ms | ${hadTimeout ? 'Sí' : 'No'} | ${transcript.length} | ${entities.length} | ${result?.confidence_score?.toFixed(2) || 'N/A'} | Auto-logged |\n`;
-      
-      // En un entorno real, esto escribiría al archivo. Por ahora, lo mostramos en consola.
-      console.log('📝 Log Entry para USER_TESTING_LOG.md:', logEntry);
-      
-    } catch (error) {
-      console.warn('⚠️ No se pudo escribir a USER_TESTING_LOG.md:', error);
-    }
-  }
-
-  /**
-   * Genera notas SOAP optimizadas v2 (NUEVA - para testing de timeouts)
-   */
-  static async generateSOAPNotesOptimizedV2(transcript: string, entities: ClinicalEntity[], useRAG: boolean = true): Promise<SOAPNotes> {
-    const startTime = Date.now();
-    
-    // Extraer información clave para el prompt
-    const keyInfo = this.extractKeyInfoForSOAP(transcript, entities);
-    
-    // RAG ultra-selectivo para evitar timeouts
-    let ragContext = '';
-    if (useRAG && keyInfo.primaryCondition) {
-      try {
-        const ragResult = await RAGMedicalMCP.retrieveRelevantKnowledge(
-          keyInfo.primaryCondition, 
-          'fisioterapia', 
-          1 // Solo 1 artículo más relevante
-        );
-        
-        if (ragResult.citations.length > 0) {
-          ragContext = `\nEvidencia: ${ragResult.citations[0].title.substring(0, 50)}...`;
-        }
-      } catch (ragError) {
-        console.warn('RAG skipped due to timeout risk');
-      }
-    }
-    
-    // Prompt híper-optimizado
-    const prompt = `Fisioterapeuta experto. SOAP profesional.${ragContext}
-
-DATOS:
-- Paciente: ${keyInfo.symptoms}
-- Eval: ${keyInfo.findings}  
-- Tratamiento: ${keyInfo.treatments}
-
-SOAP JSON:
-{"subjective":"","objective":"","assessment":"","plan":""}`;
-
-    try {
-      const result = await ollamaClient.generateCompletion(prompt, {
-        temperature: 0.2,
-        max_tokens: 400,
-        timeout: 10000 // 10 segundos timeout explícito
-      });
-      
-      const processingTime = Date.now() - startTime;
-      
-      // Parse JSON más robusto
-      const jsonMatch = result.response.match(/\{[^{}]*"subjective"[^{}]*\}/);
-      if (jsonMatch) {
-        try {
-          const soapData = JSON.parse(jsonMatch[0]);
-          
-          const soapNotes: SOAPNotes = {
-            subjective: soapData.subjective || `Paciente reporta: ${keyInfo.symptoms}`,
-            objective: soapData.objective || `Evaluación revela: ${keyInfo.findings}`,
-            assessment: soapData.assessment || `Análisis: ${keyInfo.primaryCondition || 'condición evaluada'}`,
-            plan: soapData.plan || `Plan: ${keyInfo.treatments}`,
-            generated_at: new Date(),
-            confidence_score: this.calculateSOAPConfidence(soapData)
-          };
-
-          console.log(`✅ SOAP Optimizado v2 generado en ${processingTime}ms${useRAG ? ' (con evidencia)' : ''}`);
-          return soapNotes;
-          
-        } catch (parseError) {
-          console.error('Error parsing optimized SOAP JSON:', parseError);
-        }
-      }
-      
-      // Fallback estructurado
-      return {
-        subjective: keyInfo.symptoms || 'Información subjetiva reportada',
-        objective: keyInfo.findings || 'Evaluación física realizada',
-        assessment: keyInfo.primaryCondition || 'Condición evaluada según hallazgos',
-        plan: keyInfo.treatments || 'Plan de tratamiento por determinar',
-        generated_at: new Date(),
-        confidence_score: 0.7
-      };
-      
-    } catch (error) {
-      console.error('Error generating optimized SOAP:', error);
-      
-      // Fallback inmediato sin más llamadas a Ollama
-      return {
-        subjective: keyInfo.symptoms || `Paciente: ${transcript.substring(0, 100)}...`,
-        objective: keyInfo.findings || 'Evaluación física completada',
-        assessment: keyInfo.primaryCondition || 'Evaluación clínica realizada',
-        plan: keyInfo.treatments || 'Continuar con protocolo de tratamiento',
-        generated_at: new Date(),
-        confidence_score: 0.5
-      };
-    }
-  }
-
-  /**
-   * Extrae información clave del transcript y entidades para SOAP optimizado
-   */
-  private static extractKeyInfoForSOAP(transcript: string, entities: ClinicalEntity[]): {
-    symptoms: string;
-    findings: string;
-    treatments: string;
-    primaryCondition: string;
-  } {
-    const symptoms = entities
-      .filter(e => e.type === 'symptom')
-      .slice(0, 3)
-      .map(e => e.text)
-      .join(', ') || 'síntomas reportados';
-    
-    const findings = entities
-      .filter(e => e.type === 'finding')
-      .slice(0, 2)
-      .map(e => e.text)
-      .join(', ') || 'hallazgos objetivos';
-    
-    const treatments = entities
-      .filter(e => e.type === 'treatment')
-      .slice(0, 2)
-      .map(e => e.text)
-      .join(', ') || 'tratamiento fisioterapéutico';
-    
-    const primaryCondition = entities.find(e => e.type === 'diagnosis')?.text || 
-                            entities.find(e => e.type === 'symptom')?.text ||
-                            'condición clínica';
-    
-    return { symptoms, findings, treatments, primaryCondition };
   }
 
   /**
