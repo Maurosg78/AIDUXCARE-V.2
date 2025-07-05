@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import CaptureWorkspace from '../components/CaptureWorkspace';
 import TranscriptionArea from '../components/TranscriptionArea';
 import ActionBar from '../components/ActionBar';
+import HybridAudioService from '../services/HybridAudioService';
 
 // Tipos básicos
 interface SOAPData {
@@ -11,70 +12,6 @@ interface SOAPData {
   plan: string;
   confidence: number;
   timestamp: string;
-}
-
-// Servicio de audio simulado simple
-class SimpleAudioService {
-  private isRecording: boolean = false;
-  private currentTranscript: string = '';
-  private callback: ((text: string, isFinal: boolean) => void) | null = null;
-  private timer: NodeJS.Timeout | null = null;
-
-  private sampleTexts = [
-    "El paciente presenta dolor en el hombro derecho desde hace una semana.",
-    "Refiere molestias que aumentan con el movimiento y mejoran con el reposo.",
-    "No hay antecedentes de trauma previo.",
-    "Examen físico muestra limitación en la abducción del brazo.",
-    "Se observa dolor a la palpación en el área del tendón supraespinoso.",
-    "Recomiendo radiografía de hombro y tratamiento con antiinflamatorios.",
-    "Control en una semana para evaluar evolución."
-  ];
-
-  async startRecording(callback: (text: string, isFinal: boolean) => void): Promise<void> {
-    if (this.isRecording) return;
-    
-    this.isRecording = true;
-    this.callback = callback;
-    this.currentTranscript = '';
-    
-    console.log('🎭 Iniciando grabación simulada...');
-    
-    // Simular transcripción gradual
-    let sentenceIndex = 0;
-    this.timer = setInterval(() => {
-      if (!this.isRecording || sentenceIndex >= this.sampleTexts.length) {
-        return;
-      }
-      
-      const sentence = this.sampleTexts[sentenceIndex];
-      this.currentTranscript += sentence + ' ';
-      
-      if (this.callback) {
-        this.callback(this.currentTranscript, true);
-      }
-      
-      sentenceIndex++;
-    }, 2000);
-  }
-
-  stopRecording(): string {
-    this.isRecording = false;
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-    this.callback = null;
-    console.log('🎭 Grabación simulada detenida');
-    return this.currentTranscript.trim();
-  }
-
-  isCurrentlyRecording(): boolean {
-    return this.isRecording;
-  }
-
-  isServiceSupported(): boolean {
-    return true;
-  }
 }
 
 // Servicio SOAP simple
@@ -233,9 +170,29 @@ const ConsultationPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'capture' | 'evaluation'>('capture');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [serviceInfo, setServiceInfo] = useState<string>('');
 
-  // Instanciar el servicio de audio simple
-  const audioService = useMemo(() => new SimpleAudioService(), []);
+  // Instanciar el servicio de audio híbrido
+  const audioService = useMemo(() => new HybridAudioService(), []);
+
+  // Actualizar información del servicio
+  useEffect(() => {
+    const updateServiceInfo = () => {
+      const info = audioService.getServiceDisplayName();
+      setServiceInfo(info);
+    };
+
+    updateServiceInfo();
+    
+    // Actualizar cada 5 segundos mientras se graba
+    const interval = setInterval(() => {
+      if (isRecording) {
+        updateServiceInfo();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [audioService, isRecording]);
 
   // Callback para transcripción en tiempo real
   const handleTranscriptionUpdate = useCallback((text: string, isFinal: boolean) => {
@@ -288,6 +245,18 @@ const ConsultationPage: React.FC = () => {
         await audioService.startRecording(handleTranscriptionUpdate);
         setIsRecording(true);
         console.log('Grabación iniciada');
+        
+        // Mostrar mensaje informativo según el servicio
+        const serviceType = audioService.getCurrentServiceType();
+        if (serviceType === 'mock') {
+          setTimeout(() => {
+            setError('🎭 Modo demostración activo: La transcripción médica aparecerá automáticamente. Haz clic en "Detener" cuando termine.');
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            setError('🎙️ Grabación real activada: Habla cerca del micrófono para capturar audio del ambiente.');
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('Error en grabación:', error);
@@ -333,6 +302,29 @@ const ConsultationPage: React.FC = () => {
     }
   }, [soapData]);
 
+  // Función para alternar entre servicios
+  const handleToggleService = useCallback(async () => {
+    if (isRecording) {
+      setError('No se puede cambiar de servicio mientras se está grabando');
+      return;
+    }
+
+    try {
+      const currentType = audioService.getCurrentServiceType();
+      if (currentType === 'real') {
+        await audioService.switchToMock();
+        setServiceInfo('🎭 Modo Demostración');
+        setError('🔄 Cambiado a modo demostración');
+      } else {
+        await audioService.switchToReal();
+        setServiceInfo('🎙️ Reconocimiento de Voz Real');
+        setError('🔄 Cambiado a audio real');
+      }
+    } catch (error) {
+      setError(`Error cambiando servicio: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }, [audioService, isRecording]);
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
       <PatientHeader />
@@ -340,12 +332,12 @@ const ConsultationPage: React.FC = () => {
       {/* Mostrar errores si los hay */}
       {error && (
         <div style={{ 
-          background: '#fee', 
-          border: '1px solid #fcc', 
+          background: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#fff3cd' : '#fee', 
+          border: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '1px solid #ffeaa7' : '1px solid #fcc', 
           padding: '1rem', 
           borderRadius: '4px', 
           marginBottom: '1rem',
-          color: '#c33'
+          color: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#856404' : '#c33'
         }}>
           {error}
           <button 
@@ -354,7 +346,7 @@ const ConsultationPage: React.FC = () => {
               marginLeft: '1rem', 
               background: 'none', 
               border: 'none', 
-              color: '#c33', 
+              color: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#856404' : '#c33', 
               cursor: 'pointer',
               fontSize: '1.2rem'
             }}
@@ -364,7 +356,7 @@ const ConsultationPage: React.FC = () => {
         </div>
       )}
 
-      {/* Indicador de servicio activo */}
+      {/* Indicador de servicio activo con botón para cambiar */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -376,10 +368,27 @@ const ConsultationPage: React.FC = () => {
         fontSize: '0.8rem',
         color: '#666'
       }}>
-        <span>🎭 Modo Demostración - Transcripción Simulada</span>
-        <span>
-          {isRecording ? '🔴 Grabando...' : '⚫ Detenido'}
-        </span>
+        <span>{serviceInfo}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span>
+            {isRecording ? '🔴 Grabando...' : '⚫ Detenido'}
+          </span>
+          <button
+            onClick={handleToggleService}
+            disabled={isRecording}
+            style={{
+              padding: '0.25rem 0.5rem',
+              fontSize: '0.7rem',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              backgroundColor: 'white',
+              cursor: isRecording ? 'not-allowed' : 'pointer',
+              opacity: isRecording ? 0.5 : 1
+            }}
+          >
+            🔄 Cambiar
+          </button>
+        </div>
       </div>
 
       {/* Selector de Pestañas */}
@@ -419,7 +428,7 @@ const ConsultationPage: React.FC = () => {
               <TranscriptionArea 
                 value={transcriptionText} 
                 onChange={setTranscriptionText} 
-                placeholder={isRecording ? "🎭 Transcripción simulada apareciendo..." : "La transcripción aparecerá aquí"}
+                placeholder={isRecording ? "Escuchando... hable cerca del micrófono" : "La transcripción aparecerá aquí"}
                 disabled={isRecording}
               />
               <ActionBar
