@@ -1,27 +1,27 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Button } from './Button';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Button } from "./Button";
 
 const meta: Meta<typeof Button> = {
-  title: 'UI/Button',
+  title: "UI/Button",
   component: Button,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: 'select',
-      options: ['primary', 'secondary', 'outline', 'text'],
+      control: "select",
+      options: ["primary", "secondary", "outline", "text"],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
     isLoading: {
-      control: 'boolean',
+      control: "boolean",
     },
     disabled: {
-      control: 'boolean',
+      control: "boolean",
     },
     fullWidth: {
-      control: 'boolean',
+      control: "boolean",
     },
   },
 };
@@ -31,71 +31,71 @@ type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
   args: {
-    variant: 'primary',
-    children: 'Botón Primario',
+    variant: "primary",
+    children: "Botón Primario",
   },
 };
 
 export const Secondary: Story = {
   args: {
-    variant: 'secondary',
-    children: 'Botón Secundario',
+    variant: "secondary",
+    children: "Botón Secundario",
   },
 };
 
 export const Outline: Story = {
   args: {
-    variant: 'outline',
-    children: 'Botón Outline',
+    variant: "outline",
+    children: "Botón Outline",
   },
 };
 
 export const Text: Story = {
   args: {
-    variant: 'text',
-    children: 'Botón Texto',
+    variant: "text",
+    children: "Botón Texto",
   },
 };
 
 export const Small: Story = {
   args: {
-    size: 'sm',
-    children: 'Botón Pequeño',
+    size: "sm",
+    children: "Botón Pequeño",
   },
 };
 
 export const Medium: Story = {
   args: {
-    size: 'md',
-    children: 'Botón Mediano',
+    size: "md",
+    children: "Botón Mediano",
   },
 };
 
 export const Large: Story = {
   args: {
-    size: 'lg',
-    children: 'Botón Grande',
+    size: "lg",
+    children: "Botón Grande",
   },
 };
 
 export const Loading: Story = {
   args: {
     isLoading: true,
-    children: 'Cargando...',
+    children: "Cargando...",
   },
 };
 
 export const Disabled: Story = {
   args: {
     disabled: true,
-    children: 'Deshabilitado',
+    children: "Deshabilitado",
   },
 };
 
 export const FullWidth: Story = {
   args: {
     fullWidth: true,
-    children: 'Botón Ancho Completo',
+    children: "Botón Ancho Completo",
   },
 };
 
@@ -133,6 +133,6 @@ export const WithIcons: Story = {
         />
       </svg>
     ),
-    children: 'Con Iconos',
+    children: "Con Iconos",
   },
-}; 
+};

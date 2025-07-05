@@ -1,21 +1,21 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Tabs } from './Tabs';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Tabs } from "./Tabs";
 
 const meta = {
-  title: 'UI/Tabs',
+  title: "UI/Tabs",
   component: Tabs,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: 'select',
-      options: ['default', 'pills', 'underline'],
+      control: "select",
+      options: ["default", "pills", "underline"],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
   },
 } satisfies Meta<typeof Tabs>;
@@ -25,8 +25,8 @@ type Story = StoryObj<typeof meta>;
 
 const tabs = [
   {
-    id: 'tab1',
-    label: 'Pestaña 1',
+    id: "tab1",
+    label: "Pestaña 1",
     content: (
       <div className="p-4 bg-gray-50 rounded">
         <h3 className="text-lg font-medium">Contenido de la Pestaña 1</h3>
@@ -35,8 +35,8 @@ const tabs = [
     ),
   },
   {
-    id: 'tab2',
-    label: 'Pestaña 2',
+    id: "tab2",
+    label: "Pestaña 2",
     content: (
       <div className="p-4 bg-gray-50 rounded">
         <h3 className="text-lg font-medium">Contenido de la Pestaña 2</h3>
@@ -45,8 +45,8 @@ const tabs = [
     ),
   },
   {
-    id: 'tab3',
-    label: 'Pestaña 3',
+    id: "tab3",
+    label: "Pestaña 3",
     content: (
       <div className="p-4 bg-gray-50 rounded">
         <h3 className="text-lg font-medium">Contenido de la Pestaña 3</h3>
@@ -65,28 +65,28 @@ export const Default: Story = {
 export const Pills: Story = {
   args: {
     tabs,
-    variant: 'pills',
+    variant: "pills",
   },
 };
 
 export const Underline: Story = {
   args: {
     tabs,
-    variant: 'underline',
+    variant: "underline",
   },
 };
 
 export const Small: Story = {
   args: {
     tabs,
-    size: 'sm',
+    size: "sm",
   },
 };
 
 export const Large: Story = {
   args: {
     tabs,
-    size: 'lg',
+    size: "lg",
   },
 };
 
@@ -95,8 +95,8 @@ export const WithDisabledTab: Story = {
     tabs: [
       ...tabs,
       {
-        id: 'tab4',
-        label: 'Pestaña Deshabilitada',
+        id: "tab4",
+        label: "Pestaña Deshabilitada",
         content: (
           <div className="p-4 bg-gray-50 rounded">
             <h3 className="text-lg font-medium">Contenido de la Pestaña 4</h3>
@@ -113,8 +113,8 @@ export const WithCustomContent: Story = {
   args: {
     tabs: [
       {
-        id: 'profile',
-        label: 'Perfil',
+        id: "profile",
+        label: "Perfil",
         content: (
           <div className="p-4 bg-gray-50 rounded">
             <div className="flex items-center space-x-4">
@@ -142,8 +142,8 @@ export const WithCustomContent: Story = {
         ),
       },
       {
-        id: 'settings',
-        label: 'Configuración',
+        id: "settings",
+        label: "Configuración",
         content: (
           <div className="p-4 bg-gray-50 rounded">
             <div className="space-y-4">
@@ -158,7 +158,10 @@ export const WithCustomContent: Story = {
                       id="email"
                       className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="email" className="ml-2 text-sm text-gray-700">
+                    <label
+                      htmlFor="email"
+                      className="ml-2 text-sm text-gray-700"
+                    >
                       Notificaciones por email
                     </label>
                   </div>
@@ -168,14 +171,20 @@ export const WithCustomContent: Story = {
                       id="push"
                       className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="push" className="ml-2 text-sm text-gray-700">
+                    <label
+                      htmlFor="push"
+                      className="ml-2 text-sm text-gray-700"
+                    >
                       Notificaciones push
                     </label>
                   </div>
                 </div>
               </div>
               <div>
-                <label htmlFor="theme" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="theme"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Tema
                 </label>
                 <select
@@ -192,8 +201,8 @@ export const WithCustomContent: Story = {
         ),
       },
       {
-        id: 'security',
-        label: 'Seguridad',
+        id: "security",
+        label: "Seguridad",
         content: (
           <div className="p-4 bg-gray-50 rounded">
             <div className="space-y-4">
@@ -203,7 +212,10 @@ export const WithCustomContent: Story = {
                 </h4>
                 <div className="mt-2 space-y-2">
                   <div>
-                    <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="current-password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Contraseña actual
                     </label>
                     <input
@@ -213,7 +225,10 @@ export const WithCustomContent: Story = {
                     />
                   </div>
                   <div>
-                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="new-password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Nueva contraseña
                     </label>
                     <input
@@ -223,7 +238,10 @@ export const WithCustomContent: Story = {
                     />
                   </div>
                   <div>
-                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="confirm-password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Confirmar nueva contraseña
                     </label>
                     <input
@@ -250,4 +268,4 @@ export const WithCustomContent: Story = {
       },
     ],
   },
-}; 
+};

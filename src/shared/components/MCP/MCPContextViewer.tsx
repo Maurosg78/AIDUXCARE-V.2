@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { MCPContext } from '@/core/mcp/schema';
+import React, { useState, useCallback, useEffect } from "react";
+import { MCPContext } from "@/core/mcp/schema";
 
 /**
  * Props para el componente MCPContextViewer
@@ -29,7 +29,7 @@ interface MemoryBlockDisplay {
 /**
  * Componente para mostrar un bloque de memoria individual
  */
-const MemoryBlockItem: React.FC<{ 
+const MemoryBlockItem: React.FC<{
   block: MemoryBlockDisplay;
   editable: boolean;
   onValidate: (id: string, validated: boolean) => void;
@@ -41,14 +41,14 @@ const MemoryBlockItem: React.FC<{
   // Determinar la clase de color según el tipo de bloque
   const getBadgeColorClass = (type: string) => {
     switch (type) {
-      case 'contextual':
-        return 'bg-blue-100 text-blue-800';
-      case 'persistent':
-        return 'bg-green-100 text-green-800';
-      case 'semantic':
-        return 'bg-purple-100 text-purple-800';
+      case "contextual":
+        return "bg-blue-100 text-blue-800";
+      case "persistent":
+        return "bg-green-100 text-green-800";
+      case "semantic":
+        return "bg-purple-100 text-purple-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -56,16 +56,16 @@ const MemoryBlockItem: React.FC<{
   const getFormattedDate = () => {
     // Usar timestamp si está disponible, o created_at como fallback
     const dateString = block.timestamp || block.created_at;
-    if (!dateString) return 'Fecha no disponible';
-    
+    if (!dateString) return "Fecha no disponible";
+
     try {
       const date = new Date(dateString);
-      return date.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      return date.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch (e) {
       return dateString;
@@ -85,31 +85,35 @@ const MemoryBlockItem: React.FC<{
   };
 
   // Color de fondo según estado de validación
-  const validationBgColor = block.validated 
-    ? 'border-green-300 bg-green-50' 
-    : 'border-yellow-300 bg-yellow-50';
+  const validationBgColor = block.validated
+    ? "border-green-300 bg-green-50"
+    : "border-yellow-300 bg-yellow-50";
 
   // ID único para el textarea (necesario para el label)
   const textareaId = `edit-textarea-${block.id}`;
 
   return (
-    <div className={`border rounded-md p-4 mb-3 ${editable ? validationBgColor : 'bg-white'} shadow-sm`}>
+    <div
+      className={`border rounded-md p-4 mb-3 ${editable ? validationBgColor : "bg-white"} shadow-sm`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getBadgeColorClass(block.type)}`}>
+          <span
+            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${getBadgeColorClass(block.type)}`}
+          >
             {block.type}
           </span>
           {editable && (
-            <span className={`text-xs font-medium px-2 py-0.5 rounded ${block.validated ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}`}>
-              {block.validated ? 'Validado' : 'Pendiente'}
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded ${block.validated ? "bg-green-500 text-white" : "bg-yellow-500 text-white"}`}
+            >
+              {block.validated ? "Validado" : "Pendiente"}
             </span>
           )}
         </div>
-        <span className="text-xs text-gray-500">
-          ID: {block.id}
-        </span>
+        <span className="text-xs text-gray-500">ID: {block.id}</span>
       </div>
-      
+
       <div className="mb-2">
         <p className="text-sm font-medium text-gray-700">Contenido:</p>
         {editing ? (
@@ -158,25 +162,25 @@ const MemoryBlockItem: React.FC<{
           </div>
         )}
       </div>
-      
+
       <div className="flex flex-wrap gap-3 text-xs text-gray-600">
         <div>
           <span className="font-medium">Fecha:</span> {getFormattedDate()}
         </div>
-        
+
         {block.visit_id && (
           <div>
             <span className="font-medium">Visita:</span> {block.visit_id}
           </div>
         )}
-        
+
         {block.patient_id && (
           <div>
             <span className="font-medium">Paciente:</span> {block.patient_id}
           </div>
         )}
       </div>
-      
+
       {block.metadata && (
         <div className="mt-2">
           <p className="text-xs font-medium text-gray-700 mb-1">Metadata:</p>
@@ -185,11 +189,14 @@ const MemoryBlockItem: React.FC<{
           </pre>
         </div>
       )}
-      
+
       {block.tags && block.tags.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {block.tags.map((tag, index) => (
-            <span key={index} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full">
+            <span
+              key={index}
+              className="text-xs px-2 py-0.5 bg-gray-100 rounded-full"
+            >
               {tag}
             </span>
           ))}
@@ -202,12 +209,14 @@ const MemoryBlockItem: React.FC<{
             onClick={() => onValidate(block.id, !block.validated)}
             className={`px-3 py-1 text-xs rounded-md ${
               block.validated
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-yellow-500 text-white hover:bg-yellow-600"
             }`}
-            aria-label={block.validated ? 'Marcar como no validado' : 'Validar bloque'}
+            aria-label={
+              block.validated ? "Marcar como no validado" : "Validar bloque"
+            }
           >
-            {block.validated ? 'Validado ✓' : 'Validar'}
+            {block.validated ? "Validado ✓" : "Validar"}
           </button>
         </div>
       )}
@@ -226,37 +235,47 @@ const MemorySection: React.FC<{
   editable: boolean;
   onValidateBlock: (id: string, validated: boolean) => void;
   onEditBlock: (id: string, content: string) => void;
-}> = ({ title, source, data, colorClass, editable, onValidateBlock, onEditBlock }) => {
+}> = ({
+  title,
+  source,
+  data,
+  colorClass,
+  editable,
+  onValidateBlock,
+  onEditBlock,
+}) => {
   // Convertir los datos a un formato consistente para el componente
-  const displayData = (data || []).map(item => {
+  const displayData = (data || []).map((item) => {
     const block = item as Record<string, unknown>;
     return {
-      id: String(block.id || ''),
-      type: String(block.type || ''),
-      content: String(block.content || ''),
+      id: String(block.id || ""),
+      type: String(block.type || ""),
+      content: String(block.content || ""),
       timestamp: block.timestamp as string | undefined,
       created_at: block.created_at as string | undefined,
       metadata: block.metadata as Record<string, unknown> | undefined,
       visit_id: block.visit_id as string | undefined,
       patient_id: block.patient_id as string | undefined,
       tags: block.tags as string[] | undefined,
-      validated: block.validated as boolean | undefined
+      validated: block.validated as boolean | undefined,
     };
   });
 
   return (
     <div className="mb-6">
-      <div className={`px-4 py-2 rounded-t-md font-medium text-white ${colorClass}`}>
+      <div
+        className={`px-4 py-2 rounded-t-md font-medium text-white ${colorClass}`}
+      >
         {title}
         <span className="text-xs ml-2 opacity-75">Fuente: {source}</span>
       </div>
-      
+
       <div className="border border-t-0 rounded-b-md p-4 bg-slate-50">
         {displayData.length > 0 ? (
           displayData.map((block) => (
-            <MemoryBlockItem 
-              key={block.id} 
-              block={block} 
+            <MemoryBlockItem
+              key={block.id}
+              block={block}
               editable={editable}
               onValidate={onValidateBlock}
               onEdit={onEditBlock}
@@ -275,7 +294,11 @@ const MemorySection: React.FC<{
 /**
  * Componente principal para visualizar el contexto MCP
  */
-const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable = false, onSave }) => {
+const MCPContextViewer: React.FC<MCPContextViewerProps> = ({
+  context,
+  editable = false,
+  onSave,
+}) => {
   // Estado interno para controlar las modificaciones al contexto
   const [workingContext, setWorkingContext] = useState<MCPContext>(context);
   const [allValidated, setAllValidated] = useState(false);
@@ -290,63 +313,64 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
     const allMemoryBlocks = [
       ...workingContext.contextual.data,
       ...workingContext.persistent.data,
-      ...workingContext.semantic.data
+      ...workingContext.semantic.data,
     ];
-    
-    const allBlocksValidated = allMemoryBlocks.length > 0 && 
-      allMemoryBlocks.every(block => block.validated === true);
-    
+
+    const allBlocksValidated =
+      allMemoryBlocks.length > 0 &&
+      allMemoryBlocks.every((block) => block.validated === true);
+
     setAllValidated(allBlocksValidated);
   }, [workingContext]);
 
   // Función para validar un bloque
   const handleValidateBlock = useCallback((id: string, validated: boolean) => {
-    setWorkingContext(prevContext => {
+    setWorkingContext((prevContext) => {
       // Crear una copia profunda del contexto
       const newContext = JSON.parse(JSON.stringify(prevContext)) as MCPContext;
-      
+
       // Buscar y actualizar el bloque en todas las secciones
       const updateBlockInSection = (section: typeof newContext.contextual) => {
-        const blockIndex = section.data.findIndex(block => block.id === id);
+        const blockIndex = section.data.findIndex((block) => block.id === id);
         if (blockIndex !== -1) {
           section.data[blockIndex] = {
             ...section.data[blockIndex],
-            validated
+            validated,
           };
         }
       };
-      
+
       updateBlockInSection(newContext.contextual);
       updateBlockInSection(newContext.persistent);
       updateBlockInSection(newContext.semantic);
-      
+
       return newContext;
     });
   }, []);
 
   // Función para editar el contenido de un bloque
   const handleEditBlock = useCallback((id: string, content: string) => {
-    setWorkingContext(prevContext => {
+    setWorkingContext((prevContext) => {
       // Crear una copia profunda del contexto
       const newContext = JSON.parse(JSON.stringify(prevContext)) as MCPContext;
-      
+
       // Buscar y actualizar el bloque en todas las secciones
       const updateBlockInSection = (section: typeof newContext.contextual) => {
-        const blockIndex = section.data.findIndex(block => block.id === id);
+        const blockIndex = section.data.findIndex((block) => block.id === id);
         if (blockIndex !== -1) {
           section.data[blockIndex] = {
             ...section.data[blockIndex],
             content,
             // Al editar, se marca como no validado
-            validated: false
+            validated: false,
           };
         }
       };
-      
+
       updateBlockInSection(newContext.contextual);
       updateBlockInSection(newContext.persistent);
       updateBlockInSection(newContext.semantic);
-      
+
       return newContext;
     });
   }, []);
@@ -364,17 +388,17 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">
-          {editable ? 'Editor de Contexto MCP' : 'Visor de Contexto MCP'}
+          {editable ? "Editor de Contexto MCP" : "Visor de Contexto MCP"}
         </h2>
-        
+
         {editable && (
           <button
             onClick={handleSaveContext}
             disabled={!allValidated}
             className={`px-4 py-2 rounded-md text-white ${
-              allValidated 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : 'bg-gray-400 cursor-not-allowed'
+              allValidated
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-gray-400 cursor-not-allowed"
             }`}
             aria-label="Confirmar incorporación al EMR"
           >
@@ -382,7 +406,7 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
           </button>
         )}
       </div>
-      
+
       <MemorySection
         title="Memoria Contextual"
         source={workingContext.contextual.source}
@@ -392,7 +416,7 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
         onValidateBlock={handleValidateBlock}
         onEditBlock={handleEditBlock}
       />
-      
+
       <MemorySection
         title="Memoria Persistente"
         source={workingContext.persistent.source}
@@ -402,7 +426,7 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
         onValidateBlock={handleValidateBlock}
         onEditBlock={handleEditBlock}
       />
-      
+
       <MemorySection
         title="Memoria Semántica"
         source={workingContext.semantic.source}
@@ -412,7 +436,7 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
         onValidateBlock={handleValidateBlock}
         onEditBlock={handleEditBlock}
       />
-      
+
       {editable && (
         <div className="mt-6 p-4 bg-gray-100 rounded-md">
           <h3 className="text-md font-semibold mb-2">Instrucciones:</h3>
@@ -421,8 +445,13 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
             <li>Valide cada bloque individualmente</li>
             <li>Los bloques pendientes se muestran con fondo amarillo</li>
             <li>Los bloques validados se muestran con fondo verde</li>
-            <li>El botón &quot;Confirmar incorporación al EMR&quot; se habilitará cuando todos los bloques estén validados</li>
-            <li className="text-blue-600">Nota: La persistencia real estará disponible en v2.2.1-persistence</li>
+            <li>
+              El botón &quot;Confirmar incorporación al EMR&quot; se habilitará
+              cuando todos los bloques estén validados
+            </li>
+            <li className="text-blue-600">
+              Nota: La persistencia real estará disponible en v2.2.1-persistence
+            </li>
           </ul>
         </div>
       )}
@@ -430,4 +459,4 @@ const MCPContextViewer: React.FC<MCPContextViewerProps> = ({ context, editable =
   );
 };
 
-export default MCPContextViewer; 
+export default MCPContextViewer;

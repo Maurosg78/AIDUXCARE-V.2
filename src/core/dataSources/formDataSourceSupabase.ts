@@ -1,14 +1,13 @@
-import { supabase } from '@/lib/supabaseClient';
-import { FormDataSource } from './FormDataSource';
-import { Form, ClinicalFormData } from '@/types/forms';
+import { supabase } from "@/lib/supabaseClient";
+import { FormDataSource } from "./FormDataSource";
+import { Form, ClinicalFormData } from "@/types/forms";
 
 class FormDataSourceSupabase implements FormDataSource {
-
   async getFormsByVisitId(visitId: string): Promise<Form[]> {
     const { data, error } = await supabase
-      .from('forms')
-      .select('*')
-      .eq('visit_id', visitId);
+      .from("forms")
+      .select("*")
+      .eq("visit_id", visitId);
 
     if (error) throw error;
     return data as Form[];
@@ -16,22 +15,24 @@ class FormDataSourceSupabase implements FormDataSource {
 
   async getFormById(formId: string): Promise<Form | null> {
     const { data, error } = await supabase
-      .from('forms')
-      .select('*')
-      .eq('id', formId)
+      .from("forms")
+      .select("*")
+      .eq("id", formId)
       .single();
 
     if (error) throw error;
     return data as Form;
   }
 
-  async createForm(formData: ClinicalFormData & {
-    visit_id: string;
-    patient_id: string;
-    professional_id: string;
-  }): Promise<Form> {
+  async createForm(
+    formData: ClinicalFormData & {
+      visit_id: string;
+      patient_id: string;
+      professional_id: string;
+    },
+  ): Promise<Form> {
     const { data, error } = await supabase
-      .from('forms')
+      .from("forms")
       .insert([formData])
       .select()
       .single();
@@ -42,9 +43,9 @@ class FormDataSourceSupabase implements FormDataSource {
 
   async updateForm(formId: string, formData: ClinicalFormData): Promise<Form> {
     const { data, error } = await supabase
-      .from('forms')
+      .from("forms")
       .update(formData)
-      .eq('id', formId)
+      .eq("id", formId)
       .select()
       .single();
 
@@ -53,14 +54,10 @@ class FormDataSourceSupabase implements FormDataSource {
   }
 
   async deleteForm(formId: string): Promise<void> {
-    const { error } = await supabase
-      .from('forms')
-      .delete()
-      .eq('id', formId);
+    const { error } = await supabase.from("forms").delete().eq("id", formId);
 
     if (error) throw error;
   }
 }
 
 export const formDataSourceSupabase = new FormDataSourceSupabase();
-

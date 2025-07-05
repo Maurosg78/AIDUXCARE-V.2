@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import React, { useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
 
 interface AccordionItem {
   id: string;
@@ -12,67 +12,73 @@ interface AccordionProps {
   items: AccordionItem[];
   defaultOpen?: string;
   onChange?: (id: string, isOpen: boolean) => void;
-  variant?: 'default' | 'bordered';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "default" | "bordered";
+  size?: "sm" | "md" | "lg";
 }
 
 const Accordion: React.FC<AccordionProps> = ({
   items,
   defaultOpen,
   onChange,
-  variant = 'default',
-  size = 'md'
+  variant = "default",
+  size = "md",
 }) => {
   const [openItems, setOpenItems] = useState<Set<string>>(
-    defaultOpen ? new Set([defaultOpen]) : new Set()
+    defaultOpen ? new Set([defaultOpen]) : new Set(),
   );
 
-  const handleToggle = useCallback((id: string) => {
-    setOpenItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      onChange?.(id, newSet.has(id));
-      return newSet;
-    });
-  }, [onChange]);
+  const handleToggle = useCallback(
+    (id: string) => {
+      setOpenItems((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
+        onChange?.(id, newSet.has(id));
+        return newSet;
+      });
+    },
+    [onChange],
+  );
 
   const getSizeClasses = (size: string) => {
     switch (size) {
-      case 'sm':
-        return 'text-sm';
-      case 'lg':
-        return 'text-lg';
+      case "sm":
+        return "text-sm";
+      case "lg":
+        return "text-lg";
       default:
-        return 'text-base';
+        return "text-base";
     }
   };
 
   const getVariantClasses = (variant: string) => {
     switch (variant) {
-      case 'bordered':
-        return 'border border-gray-200 rounded-lg divide-y divide-gray-200';
+      case "bordered":
+        return "border border-gray-200 rounded-lg divide-y divide-gray-200";
       default:
-        return '';
+        return "";
     }
   };
 
   return (
-    <div className={cn('w-full', getVariantClasses(variant))}>
+    <div className={cn("w-full", getVariantClasses(variant))}>
       {items.map((item) => {
         const isOpen = openItems.has(item.id);
         const isDisabled = item.disabled;
 
         return (
-          <div key={item.id} className={cn('w-full', { 'opacity-50': isDisabled })}>
+          <div
+            key={item.id}
+            className={cn("w-full", { "opacity-50": isDisabled })}
+          >
             <button
               className={cn(
-                'w-full flex items-center justify-between p-4 text-left',
+                "w-full flex items-center justify-between p-4 text-left",
                 getSizeClasses(size),
-                { 'cursor-not-allowed': isDisabled }
+                { "cursor-not-allowed": isDisabled },
               )}
               onClick={() => !isDisabled && handleToggle(item.id)}
               disabled={isDisabled}
@@ -80,21 +86,17 @@ const Accordion: React.FC<AccordionProps> = ({
               aria-controls={`content-${item.id}`}
             >
               <span>{item.title}</span>
-              <span className="ml-2">
-                {isOpen ? '−' : '+'}
-              </span>
+              <span className="ml-2">{isOpen ? "−" : "+"}</span>
             </button>
             <div
               id={`content-${item.id}`}
               className={cn(
-                'overflow-hidden transition-all duration-200 ease-in-out',
-                isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                "overflow-hidden transition-all duration-200 ease-in-out",
+                isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
               )}
               aria-hidden={!isOpen}
             >
-              <div className="p-4">
-                {item.content}
-              </div>
+              <div className="p-4">{item.content}</div>
             </div>
           </div>
         );
@@ -103,4 +105,4 @@ const Accordion: React.FC<AccordionProps> = ({
   );
 };
 
-export default Accordion; 
+export default Accordion;

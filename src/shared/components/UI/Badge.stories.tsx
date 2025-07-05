@@ -1,22 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Badge } from './Badge';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Badge } from "./Badge";
 
 const meta: Meta<typeof Badge> = {
-  title: 'UI/Badge',
+  title: "UI/Badge",
   component: Badge,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: 'select',
-      options: ['default', 'outline', 'filled'],
+      control: "select",
+      options: ["default", "outline", "filled"],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
     color: {
-      control: 'select',
-      options: ['primary', 'success', 'warning', 'error', 'info'],
+      control: "select",
+      options: ["primary", "success", "warning", "error", "info"],
     },
   },
 };
@@ -26,77 +26,77 @@ type Story = StoryObj<typeof Badge>;
 
 export const Default: Story = {
   args: {
-    children: 'Badge',
+    children: "Badge",
   },
 };
 
 export const Primary: Story = {
   args: {
-    color: 'primary',
-    children: 'Primary',
+    color: "primary",
+    children: "Primary",
   },
 };
 
 export const Success: Story = {
   args: {
-    color: 'success',
-    children: 'Success',
+    color: "success",
+    children: "Success",
   },
 };
 
 export const Warning: Story = {
   args: {
-    color: 'warning',
-    children: 'Warning',
+    color: "warning",
+    children: "Warning",
   },
 };
 
 export const Error: Story = {
   args: {
-    color: 'error',
-    children: 'Error',
+    color: "error",
+    children: "Error",
   },
 };
 
 export const Info: Story = {
   args: {
-    color: 'info',
-    children: 'Info',
+    color: "info",
+    children: "Info",
   },
 };
 
 export const Small: Story = {
   args: {
-    size: 'sm',
-    children: 'Small',
+    size: "sm",
+    children: "Small",
   },
 };
 
 export const Medium: Story = {
   args: {
-    size: 'md',
-    children: 'Medium',
+    size: "md",
+    children: "Medium",
   },
 };
 
 export const Large: Story = {
   args: {
-    size: 'lg',
-    children: 'Large',
+    size: "lg",
+    children: "Large",
   },
 };
 
 export const Outline: Story = {
   args: {
-    variant: 'outline',
-    children: 'Outline',
+    variant: "outline",
+    children: "Outline",
   },
 };
 
 export const Filled: Story = {
   args: {
-    variant: 'filled',
-    children: 'Filled',
+    variant: "filled",
+    children: "Filled",
   },
 };
 
@@ -121,6 +121,6 @@ export const WithIcon: Story = {
         Completado
       </>
     ),
-    color: 'success',
+    color: "success",
   },
-}; 
+};

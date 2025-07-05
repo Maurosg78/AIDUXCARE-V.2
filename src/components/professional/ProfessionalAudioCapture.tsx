@@ -3,8 +3,8 @@
  * Componente para capturar audio en tiempo real para el workflow clínico
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Button } from '@/shared/components/UI/Button';
+import React, { useState, useCallback, useRef } from "react";
+import { Button } from "@/shared/components/UI/Button";
 
 interface ProfessionalAudioCaptureProps {
   onRecordingComplete: (audioBlob: Blob) => void;
@@ -12,15 +12,15 @@ interface ProfessionalAudioCaptureProps {
   className?: string;
 }
 
-export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> = ({
-  onRecordingComplete,
-  isProcessing = false,
-  className = ''
-}) => {
+export const ProfessionalAudioCapture: React.FC<
+  ProfessionalAudioCaptureProps
+> = ({ onRecordingComplete, isProcessing = false, className = "" }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [audioPermission, setAudioPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
-  
+  const [audioPermission, setAudioPermission] = useState<
+    "granted" | "denied" | "pending"
+  >("pending");
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,11 +31,11 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   const requestMicrophonePermission = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setAudioPermission('granted');
+      setAudioPermission("granted");
       return stream;
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      setAudioPermission('denied');
+      console.error("Error accessing microphone:", error);
+      setAudioPermission("denied");
       return null;
     }
   }, []);
@@ -60,11 +60,11 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
     };
 
     mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
       onRecordingComplete(audioBlob);
-      
+
       // Detener todas las pistas de audio
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
     };
 
     mediaRecorder.start(100); // Grabar en chunks de 100ms
@@ -72,7 +72,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
 
     // Iniciar timer
     timerRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
+      setRecordingTime((prev) => prev + 1);
     }, 1000);
   }, [onRecordingComplete, requestMicrophonePermission]);
 
@@ -83,7 +83,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -97,7 +97,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   /**
@@ -106,18 +106,20 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   const simulateRecording = useCallback(() => {
     setIsRecording(true);
     setRecordingTime(0);
-    
+
     // Simular grabación de 3 segundos
     const timer = setInterval(() => {
-      setRecordingTime(prev => {
+      setRecordingTime((prev) => {
         if (prev >= 3) {
           clearInterval(timer);
           setIsRecording(false);
-          
+
           // Crear blob simulado
-          const simulatedBlob = new Blob(['simulated audio'], { type: 'audio/wav' });
+          const simulatedBlob = new Blob(["simulated audio"], {
+            type: "audio/wav",
+          });
           onRecordingComplete(simulatedBlob);
-          
+
           return 0;
         }
         return prev + 1;
@@ -126,14 +128,17 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   }, [onRecordingComplete]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}
+    >
       <div className="flex flex-col items-center">
-        
         {/* Estado del Micrófono */}
         <div className="mb-4">
-          {audioPermission === 'pending' && (
+          {audioPermission === "pending" && (
             <div className="text-center">
-              <div className="text-yellow-600 mb-2">🎤 Acceso al micrófono requerido</div>
+              <div className="text-yellow-600 mb-2">
+                🎤 Acceso al micrófono requerido
+              </div>
               <Button
                 onClick={requestMicrophonePermission}
                 variant="outline"
@@ -143,10 +148,12 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
               </Button>
             </div>
           )}
-          
-          {audioPermission === 'denied' && (
+
+          {audioPermission === "denied" && (
             <div className="text-center">
-              <div className="text-red-600 mb-2">❌ Micrófono no disponible</div>
+              <div className="text-red-600 mb-2">
+                ❌ Micrófono no disponible
+              </div>
               <Button
                 onClick={simulateRecording}
                 variant="secondary"
@@ -157,8 +164,8 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
               </Button>
             </div>
           )}
-          
-          {audioPermission === 'granted' && (
+
+          {audioPermission === "granted" && (
             <div className="text-center">
               <div className="text-green-600 mb-2">✅ Micrófono listo</div>
             </div>
@@ -169,12 +176,16 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
         <div className="flex flex-col items-center mb-4">
           {!isRecording ? (
             <Button
-              onClick={audioPermission === 'granted' ? startRecording : simulateRecording}
+              onClick={
+                audioPermission === "granted"
+                  ? startRecording
+                  : simulateRecording
+              }
               disabled={isProcessing}
               className={`w-32 h-32 rounded-full text-white text-xl font-bold shadow-lg transition-all ${
-                isProcessing 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transform hover:scale-105'
+                isProcessing
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transform hover:scale-105"
               }`}
             >
               {isProcessing ? (
@@ -200,12 +211,14 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
                 <br />
                 <span className="text-sm">Detener</span>
               </Button>
-              
+
               <div className="mt-4 text-center">
                 <div className="text-2xl font-bold text-red-600 mb-1">
                   {formatTime(recordingTime)}
                 </div>
-                <div className="text-sm text-gray-600">Grabando sesión clínica...</div>
+                <div className="text-sm text-gray-600">
+                  Grabando sesión clínica...
+                </div>
               </div>
             </div>
           )}
@@ -228,7 +241,9 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
 
         {/* Instrucciones */}
         <div className="mt-4 bg-gray-50 rounded-lg p-4 w-full">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">💡 Instrucciones de Uso</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">
+            💡 Instrucciones de Uso
+          </h4>
           <ul className="text-xs text-gray-600 space-y-1">
             <li>• Hable claramente y a volumen normal</li>
             <li>• Identifique si habla el profesional o paciente</li>
@@ -246,4 +261,4 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   );
 };
 
-export default ProfessionalAudioCapture; 
+export default ProfessionalAudioCapture;

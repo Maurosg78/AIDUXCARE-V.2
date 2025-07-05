@@ -7,3 +7,13 @@ dist/
 .vercel/output/
 .vercel
 .env*
+
+# Archivos de backup y temporales
+*.old
+*.bak
+*.copy
+temp/
+*.tmp
+*.swp
+*.log
+*.zip

@@ -1,0 +1,226 @@
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/__mocks__/supabase/authMock.ts
+  12:52  error  'callback' is defined but never used  @typescript-eslint/no-unused-vars
+  20:37  error  'table' is defined but never used     @typescript-eslint/no-unused-vars
+  55:39  error  'bucket' is defined but never used    @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/__mocks__/supabase/supabaseTestUtils.ts
+  43:39  error  'table' is defined but never used   @typescript-eslint/no-unused-vars
+  83:41  error  'bucket' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/__tests__/compliance/SecurityCompliance.test.ts
+  7:7  error  'securityService' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  8:7  error  'azureService' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/__tests__/core/mcp/MCPDataSourceSupabase.test.ts
+  17:6  error  'MemoryBlock' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/components/RealTimeAudioCapture.tsx
+   33:10  error  'currentSession' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  388:49  error  'index' is defined but never used                    @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/components/evidence/EvidencePanel.tsx
+   57:5   error  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+   57:5   error  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  173:58  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                    react/no-unescaped-entities
+  173:76  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                    react/no-unescaped-entities
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/__tests__/helpers/supabaseMock.ts
+  16:12  error  'relation' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/AgentContextBuilder.ts
+  2:10  error  'MCPManager' is defined but never used      @typescript-eslint/no-unused-vars
+  4:22  error  'MCPMemoryBlock' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/AgentExecutor.ts
+  1:16  error  'uuidv4' is defined but never used           @typescript-eslint/no-unused-vars
+  6:3   error  'SuggestionType' is defined but never used   @typescript-eslint/no-unused-vars
+  7:3   error  'SuggestionField' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/AgentExplainer.ts
+  1:15  error  'MemoryBlock' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/ClinicalAgent.ts
+  7:3  error  'SuggestionField' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/SuggestionIntegrationService.ts
+  6:11  error  'EMRField' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/agent/runClinicalAgent.ts
+  2:10  error  'AgentContext' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/ai/ClinicalInsightsEngine.ts
+  8:25  error  'RAGQueryResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/auth/UserContext.tsx
+  1:44  error  'ReactNode' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/demo/mockVisitData.ts
+  3:32  error  'SuggestionField' is defined but never used  @typescript-eslint/no-unused-vars
+  6:15  error  'MemoryBlock' is defined but never used      @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/hooks/useSession.ts
+  5:3  error  'SupabaseClient' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/AuditLogger.ts
+  1:8  error  'supabase' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/MCPContextBuilder.ts
+  1:10  error  'z' is defined but never used             @typescript-eslint/no-unused-vars
+  2:10  error  'AgentContext' is defined but never used  @typescript-eslint/no-unused-vars
+  2:24  error  'MemoryBlock' is defined but never used   @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/MCPManager.ts
+  1:10  error  'z' is defined but never used             @typescript-eslint/no-unused-vars
+  2:15  error  'MemoryBlock' is defined but never used   @typescript-eslint/no-unused-vars
+  2:28  error  'AgentContext' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/MemoryStore.ts
+  1:16  error  'uuidv4' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/RAGMedicalMCP.ts
+  148:49  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  236:5   error  'specialty' is defined but never used                   @typescript-eslint/no-unused-vars
+  270:11  error  'types' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  323:5   error  'maxTokensPerChunk' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  538:5   error  'query' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/components/MCPEditor.tsx
+  1:27  error  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/mcp/debugMCP.ts
+  1:10  error  'MCPManager' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/services/EMRFormService.ts
+  7:10  error  'ClinicalFormData' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/services/__tests__/EMRFormService.test.ts
+   1:10  error  'z' is defined but never used                 @typescript-eslint/no-unused-vars
+   2:10  error  'supabase' is defined but never used          @typescript-eslint/no-unused-vars
+   5:10  error  'trackMetric' is defined but never used       @typescript-eslint/no-unused-vars
+   8:8   error  'EMRSection' is defined but never used        @typescript-eslint/no-unused-vars
+  10:15  error  'FormDataSource' is defined but never used    @typescript-eslint/no-unused-vars
+  10:31  error  'Form' is defined but never used              @typescript-eslint/no-unused-vars
+  12:3   error  'ClinicalFormData' is defined but never used  @typescript-eslint/no-unused-vars
+  13:3   error  'EMRForm' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/services/userDataSourceSupabase.ts
+   6:28  error  'email' is defined but never used     @typescript-eslint/no-unused-vars
+   6:43  error  'password' is defined but never used  @typescript-eslint/no-unused-vars
+  14:5   error  'email' is defined but never used     @typescript-eslint/no-unused-vars
+  15:5   error  'password' is defined but never used  @typescript-eslint/no-unused-vars
+  16:5   error  'options' is defined but never used   @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/evals/__tests__/AgentSuggestionsViewer.eval.test.tsx
+  13:3   error  'SuggestionType' is defined but never used         @typescript-eslint/no-unused-vars
+  14:3   error  'SuggestionField' is defined but never used        @typescript-eslint/no-unused-vars
+  18:13  error  'UsageAnalyticsService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/features/demo/DemoVisitPage.tsx
+    9:3   error  'mockAgentSuggestions' is defined but never used                 @typescript-eslint/no-unused-vars
+  165:9   error  'handleIntegrateSuggestions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  165:39  error  'count' is defined but never used                                @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/features/patient/components/VisitIndicators.tsx
+  18:3  error  'visitId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/features/visits/id/VisitDetailPage.tsx
+  11:10  error  'previousContext' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/features/visits/new/VisitNewPage.tsx
+   2:10  error  'useNavigate' is defined but never used              @typescript-eslint/no-unused-vars
+   2:23  error  'useSearchParams' is defined but never used          @typescript-eslint/no-unused-vars
+   2:40  error  'Link' is defined but never used                     @typescript-eslint/no-unused-vars
+   3:16  error  'uuidv4' is defined but never used                   @typescript-eslint/no-unused-vars
+   5:10  error  'visitDataSourceSupabase' is defined but never used  @typescript-eslint/no-unused-vars
+  11:10  error  'patients' is assigned a value but never used        @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/AdvancedAIDemoPage.tsx
+  15:3  error  'ClinicalInsightSummary' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/services/AudioFileSTTService.ts
+  469:11  error  'wordsPerMinute' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/services/AudioProcessingServiceProfessional.ts
+  253:14  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  279:14  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  484:5   warning  'visitId' is defined but never used           @typescript-eslint/no-unused-vars
+  485:5   warning  'userId' is defined but never used            @typescript-eslint/no-unused-vars
+  554:5   warning  'agentSuggestions' is defined but never used  @typescript-eslint/no-unused-vars
+  555:5   warning  'config' is defined but never used            @typescript-eslint/no-unused-vars
+  617:16  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/services/AzureOpenAIService.ts
+   28:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:5   error  'options' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/services/EnterpriseSecurityService.ts
+  15:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/services/nlpServiceOllama.ts
+  843:5  error  'useRAG' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/setupTests.ts
+  28:16  error  'table' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/AgentSuggestionViewerProvider.tsx
+  1:32  error  'useContext' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/AgentSuggestionsViewer.tsx
+   23:23  error  'UsageMetricType' is defined but never used                 @typescript-eslint/no-unused-vars
+  330:15  error  'suggestionToIntegrate' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  547:11  error  '_' is defined but never used                               @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/__tests__/AgentSuggestionExplainer.test.tsx
+   8:3   error  'cleanup' is defined but never used    @typescript-eslint/no-unused-vars
+  11:8   error  'userEvent' is defined but never used  @typescript-eslint/no-unused-vars
+  12:40  error  'afterEach' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/__tests__/AgentSuggestionViewerContext.test.tsx
+  7:10  error  'EMRFormService' is defined but never used  @typescript-eslint/no-unused-vars
+  8:10  error  'trackMetric' is defined but never used     @typescript-eslint/no-unused-vars
+  9:10  error  'AuditLogger' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/__tests__/AgentSuggestionViewerProvider.test.tsx
+   7:3   error  'act' is defined but never used             @typescript-eslint/no-unused-vars
+  11:10  error  'EMRFormService' is defined but never used  @typescript-eslint/no-unused-vars
+  12:10  error  'trackMetric' is defined but never used     @typescript-eslint/no-unused-vars
+  13:10  error  'AuditLogger' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/__tests__/AgentSuggestionViewerTypes.test.tsx
+  1:10  error  'render' is defined but never used                 @typescript-eslint/no-unused-vars
+  1:18  error  'screen' is defined but never used                 @typescript-eslint/no-unused-vars
+  3:3   error  'AgentSuggestionType' is defined but never used    @typescript-eslint/no-unused-vars
+  4:3   error  'AgentSuggestionStatus' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Agent/__tests__/AgentSuggestionsViewer.test.tsx
+   6:3   error  'AgentSuggestion' is defined but never used        @typescript-eslint/no-unused-vars
+  10:10  error  'EMRFormService' is defined but never used         @typescript-eslint/no-unused-vars
+  11:10  error  'AuditLogger' is defined but never used            @typescript-eslint/no-unused-vars
+  12:13  error  'UsageAnalyticsService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Audit/AuditLogViewer.tsx
+  4:3  error  'MCPUpdateAuditEntry' is defined but never used              @typescript-eslint/no-unused-vars
+  5:3  error  'SuggestionIntegrationAuditEntry' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/Audit/__tests__/AuditLogViewer.test.tsx
+   9:3   error  'waitFor' is defined but never used      @typescript-eslint/no-unused-vars
+  14:10  error  'AuditLogger' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/ConnectionStatus.tsx
+  62:21  error  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/UI/Card.tsx
+  73:3  error  Headings must have content and the content must be accessible by a screen reader  jsx-a11y/heading-has-content
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/UI/Input.tsx
+  5:10  error  'cn' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/shared/components/UI/Switch.tsx
+  46:7  error  'className' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/utils/supabaseTestClient.ts
+  6:24  error  'SupabaseClient' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 117 problems (110 errors, 7 warnings)
+

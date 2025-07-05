@@ -1,8 +1,10 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 export const supabaseMockClient = {
   auth: {
-    getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    getSession: vi
+      .fn()
+      .mockResolvedValue({ data: { session: null }, error: null }),
     onAuthStateChange: vi.fn(),
   },
   from: vi.fn(() => ({

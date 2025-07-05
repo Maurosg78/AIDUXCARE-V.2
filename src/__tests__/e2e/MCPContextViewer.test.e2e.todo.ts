@@ -1,5 +1,5 @@
 // TODO: Validación visual del componente MCPContextViewer integrado en la vista de visita
-// 
+//
 // Escenarios de prueba a implementar:
 //
 // 1. Verificación de carga y estructura básica
@@ -36,4 +36,4 @@
 // - Implementar pruebas visuales automatizadas con una herramienta como Playwright o Cypress
 // - Generar casos de prueba con diferentes combinaciones de datos
 // - Verificar que la carga de datos desde Supabase se realiza correctamente
-// - Validar la actualización del contexto cuando cambia visitId o patientId 
+// - Validar la actualización del contexto cuando cambia visitId o patientId

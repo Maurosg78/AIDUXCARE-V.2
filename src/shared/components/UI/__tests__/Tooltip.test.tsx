@@ -1,36 +1,36 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Tooltip } from '../Tooltip';
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Tooltip } from "../Tooltip";
 
-describe('Tooltip', () => {
-  it('renderiza el contenido hijo', () => {
+describe("Tooltip", () => {
+  it("renderiza el contenido hijo", () => {
     render(
       <Tooltip content="Texto del tooltip">
         <button>Botón</button>
-      </Tooltip>
+      </Tooltip>,
     );
-    expect(screen.getByText('Botón')).toBeInTheDocument();
+    expect(screen.getByText("Botón")).toBeInTheDocument();
   });
 
-  it('muestra el tooltip al hacer hover', () => {
+  it("muestra el tooltip al hacer hover", () => {
     render(
       <Tooltip content="Texto del tooltip">
         <button>Botón</button>
-      </Tooltip>
+      </Tooltip>,
     );
-    fireEvent.mouseEnter(screen.getByText('Botón'));
-    expect(screen.getByText('Texto del tooltip')).toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByText("Botón"));
+    expect(screen.getByText("Texto del tooltip")).toBeInTheDocument();
   });
 
-  it('oculta el tooltip al salir del hover', () => {
+  it("oculta el tooltip al salir del hover", () => {
     render(
       <Tooltip content="Texto del tooltip">
         <button>Botón</button>
-      </Tooltip>
+      </Tooltip>,
     );
-    const button = screen.getByText('Botón');
+    const button = screen.getByText("Botón");
     fireEvent.mouseEnter(button);
-    expect(screen.getByText('Texto del tooltip')).toBeInTheDocument();
+    expect(screen.getByText("Texto del tooltip")).toBeInTheDocument();
     fireEvent.mouseLeave(button);
-    expect(screen.queryByText('Texto del tooltip')).not.toBeInTheDocument();
+    expect(screen.queryByText("Texto del tooltip")).not.toBeInTheDocument();
   });
-}); 
+});

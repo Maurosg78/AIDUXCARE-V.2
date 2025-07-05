@@ -1,6 +1,6 @@
-import supabase from '@/core/auth/supabaseClient';
-import { Patient, PatientSchema } from '../domain/patientType';
-import { SupabaseClient } from '@supabase/supabase-js';
+import supabase from "@/core/auth/supabaseClient";
+import { Patient, PatientSchema } from "../domain/patientType";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export class PatientDataSourceSupabase {
   private supabase: SupabaseClient;
@@ -16,20 +16,20 @@ export class PatientDataSourceSupabase {
   async getAllPatients(): Promise<Patient[]> {
     // Primero obtenemos la sesión actual para conocer el usuario autenticado
     const { data: sessionData } = await this.supabase.auth.getSession();
-    
+
     // Si no hay sesión, devolver array vacío
     if (!sessionData?.session?.user) {
       return [];
     }
-    
+
     // Con RLS activado, esta consulta solo devolverá los pacientes asociados al usuario
     const { data, error } = await this.supabase
-      .from('patients')
-      .select('*')
-      .order('name', { ascending: true });
+      .from("patients")
+      .select("*")
+      .order("name", { ascending: true });
 
     if (error) throw new Error(`Error fetching patients: ${error.message}`);
-    
+
     // Validar datos con Zod
     const validatedData = data.map((patient: Record<string, unknown>) => {
       try {
@@ -39,7 +39,7 @@ export class PatientDataSourceSupabase {
         throw e;
       }
     });
-    
+
     return validatedData;
   }
 
@@ -48,18 +48,18 @@ export class PatientDataSourceSupabase {
    */
   async getPatientById(patientId: string): Promise<Patient | null> {
     const { data, error } = await this.supabase
-      .from('patients')
-      .select('*')
-      .eq('id', patientId)
+      .from("patients")
+      .select("*")
+      .eq("id", patientId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No se encontró el paciente
+      if (error.code === "PGRST116") return null; // No se encontró el paciente
       throw new Error(`Error fetching patient: ${error.message}`);
     }
-    
+
     if (!data) return null;
-    
+
     // Validar datos con Zod
     try {
       return PatientSchema.parse(data);
@@ -74,18 +74,18 @@ export class PatientDataSourceSupabase {
    */
   async getPatientByUserId(userId: string): Promise<Patient | null> {
     const { data, error } = await this.supabase
-      .from('patients')
-      .select('*')
-      .eq('user_id', userId)
+      .from("patients")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Error fetching patient by user_id: ${error.message}`);
     }
-    
+
     if (!data) return null;
-    
+
     // Validar datos con Zod
     try {
       return PatientSchema.parse(data);
@@ -98,36 +98,38 @@ export class PatientDataSourceSupabase {
   /**
    * Crea un nuevo paciente asociado al profesional actual
    */
-  async createPatient(patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'>): Promise<Patient> {
+  async createPatient(
+    patientData: Omit<Patient, "id" | "created_at" | "updated_at">,
+  ): Promise<Patient> {
     // Obtener el ID del usuario actual
     const { data: sessionData } = await this.supabase.auth.getSession();
-    
+
     // Si no hay sesión, lanzar error
     if (!sessionData?.session?.user) {
-      throw new Error('No hay sesión de usuario activa para crear paciente');
+      throw new Error("No hay sesión de usuario activa para crear paciente");
     }
-    
+
     const currentUserId = sessionData.session.user.id;
-    
+
     // Asignar el user_id del profesional actual
     const patientWithUserId = {
       ...patientData,
-      user_id: currentUserId
+      user_id: currentUserId,
     };
-    
+
     const { data, error } = await this.supabase
-      .from('patients')
+      .from("patients")
       .insert([patientWithUserId])
       .select()
       .single();
 
     if (error) throw new Error(`Error creating patient: ${error.message}`);
-    
+
     // Validar datos con Zod
     try {
       return PatientSchema.parse(data);
     } catch (e) {
-      console.error('Validation error for new patient:', e);
+      console.error("Validation error for new patient:", e);
       throw e;
     }
   }
@@ -135,16 +137,19 @@ export class PatientDataSourceSupabase {
   /**
    * Actualiza un paciente existente
    */
-  async updatePatient(patientId: string, patientData: Partial<Omit<Patient, 'id' | 'created_at' | 'updated_at'>>): Promise<Patient> {
+  async updatePatient(
+    patientId: string,
+    patientData: Partial<Omit<Patient, "id" | "created_at" | "updated_at">>,
+  ): Promise<Patient> {
     const { data, error } = await this.supabase
-      .from('patients')
+      .from("patients")
       .update(patientData)
-      .eq('id', patientId)
+      .eq("id", patientId)
       .select()
       .single();
 
     if (error) throw new Error(`Error updating patient: ${error.message}`);
-    
+
     // Validar datos con Zod
     try {
       return PatientSchema.parse(data);
@@ -159,12 +164,12 @@ export class PatientDataSourceSupabase {
    */
   async deletePatient(patientId: string): Promise<boolean> {
     const { error } = await this.supabase
-      .from('patients')
+      .from("patients")
       .delete()
-      .eq('id', patientId);
+      .eq("id", patientId);
 
     if (error) throw new Error(`Error deleting patient: ${error.message}`);
-    
+
     return true;
   }
 }
@@ -173,4 +178,4 @@ export class PatientDataSourceSupabase {
 export const patientDataSourceSupabase = new PatientDataSourceSupabase();
 
 // Exportar función helper
-export const getPatients = () => patientDataSourceSupabase.getAllPatients(); 
+export const getPatients = () => patientDataSourceSupabase.getAllPatients();

@@ -1,2 +1,4 @@
-const AgentSuggestionsAnalytics = () => <div>Stub AgentSuggestionsAnalytics</div>;
-export default AgentSuggestionsAnalytics; 
+const AgentSuggestionsAnalytics = () => (
+  <div>Stub AgentSuggestionsAnalytics</div>
+);
+export default AgentSuggestionsAnalytics;

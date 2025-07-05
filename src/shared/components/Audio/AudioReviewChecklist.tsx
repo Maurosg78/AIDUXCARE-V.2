@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { TranscriptionSegment, audioCaptureService } from '@/core/audio/AudioCaptureService';
-import { trackMetric } from '@/services/UsageAnalyticsService';
-import { AuditLogger } from '@/core/audit/AuditLogger';
+import React, { useState } from "react";
+import {
+  TranscriptionSegment,
+  audioCaptureService,
+} from "@/core/audio/AudioCaptureService";
+import { trackMetric } from "@/services/UsageAnalyticsService";
+import { AuditLogger } from "@/core/audit/AuditLogger";
 
 interface AudioReviewChecklistProps {
   transcription: TranscriptionSegment[];
@@ -19,164 +22,158 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
   visitId,
   userId,
   onApproveSegment,
-  onClose
+  onClose,
 }) => {
-  const [segments, setSegments] = useState<TranscriptionSegment[]>(transcription);
+  const [segments, setSegments] =
+    useState<TranscriptionSegment[]>(transcription);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState<string>('');
+  const [editContent, setEditContent] = useState<string>("");
   const [approvedCount, setApprovedCount] = useState(0);
-  
+
   // Manejar la edición de un segmento
   const handleEdit = (segment: TranscriptionSegment) => {
     setEditingId(segment.id);
     setEditContent(segment.content);
   };
-  
+
   // Guardar los cambios de edición
   const handleSaveEdit = (segmentId: string) => {
-    setSegments(prev => 
-      prev.map(s => 
-        s.id === segmentId 
-          ? { ...s, content: editContent, edited: true } 
-          : s
-      )
+    setSegments((prev) =>
+      prev.map((s) =>
+        s.id === segmentId ? { ...s, content: editContent, edited: true } : s,
+      ),
     );
     setEditingId(null);
   };
-  
+
   // Cancelar la edición en curso
   const handleCancelEdit = () => {
     setEditingId(null);
   };
-  
+
   // Aprobar un segmento
   const handleApprove = (segment: TranscriptionSegment) => {
     // Actualizar el estado del segmento
-    setSegments(prev => 
-      prev.map(s => 
-        s.id === segment.id 
-          ? { ...s, approved: true } 
-          : s
-      )
+    setSegments((prev) =>
+      prev.map((s) => (s.id === segment.id ? { ...s, approved: true } : s)),
     );
-    
+
     // Incrementar contador de aprobados
-    setApprovedCount(prev => prev + 1);
-    
+    setApprovedCount((prev) => prev + 1);
+
     // Insertar en el EMR
     onApproveSegment(segment.content);
-    
+
     // Registrar evento en el log de auditoría
-    AuditLogger.log('audio.validated', {
+    AuditLogger.log("audio.validated", {
       userId,
       visitId,
-      patientId: 'unknown',
+      patientId: "unknown",
       segmentId: segment.id,
       actor: segment.actor,
       content: segment.content,
-      edited: segment.edited || false
+      edited: segment.edited || false,
     });
-    
+
     // Registrar métrica
     trackMetric(
-      'suggestions_accepted',
+      "suggestions_accepted",
       {
         suggestionId: segment.id,
-        suggestionType: 'recommendation',
-        suggestionField: 'audio'
+        suggestionType: "recommendation",
+        suggestionField: "audio",
       },
       userId,
-      visitId
+      visitId,
     );
   };
-  
+
   // Rechazar un segmento
   const handleReject = (segmentId: string) => {
-    setSegments(prev => 
-      prev.map(s => 
-        s.id === segmentId 
-          ? { ...s, approved: false } 
-          : s
-      )
+    setSegments((prev) =>
+      prev.map((s) => (s.id === segmentId ? { ...s, approved: false } : s)),
     );
   };
-  
+
   // Generar y aprobar resumen completo
   const handleApproveAll = () => {
-    const approvedSegments = segments.filter(s => s.approved);
+    const approvedSegments = segments.filter((s) => s.approved);
     if (approvedSegments.length === 0) return;
-    
-    const content = audioCaptureService.generateClinicalContent(approvedSegments);
-    
+
+    const content =
+      audioCaptureService.generateClinicalContent(approvedSegments);
+
     // Enviar el contenido estructurado al EMR
     onApproveSegment(content);
-    
+
     // Registrar en auditoría
-    AuditLogger.log('audio.summary.integrated', {
+    AuditLogger.log("audio.summary.integrated", {
       userId,
       visitId,
-      patientId: 'unknown',
+      patientId: "unknown",
       segmentsCount: approvedSegments.length,
-      contentLength: content.length
+      contentLength: content.length,
     });
-    
+
     // Cerrar el checklist
     onClose();
   };
-  
+
   // Obtener el color de fondo según el tipo de actor
   const getActorBgColor = (actor: string): string => {
     switch (actor) {
-      case 'profesional':
-        return 'bg-blue-50 border-blue-100';
-      case 'paciente':
-        return 'bg-green-50 border-green-100';
-      case 'acompañante':
-        return 'bg-purple-50 border-purple-100';
+      case "profesional":
+        return "bg-blue-50 border-blue-100";
+      case "paciente":
+        return "bg-green-50 border-green-100";
+      case "acompañante":
+        return "bg-purple-50 border-purple-100";
       default:
-        return 'bg-gray-50 border-gray-100';
+        return "bg-gray-50 border-gray-100";
     }
   };
-  
+
   // Obtener el color de texto según el tipo de actor
   const getActorTextColor = (actor: string): string => {
     switch (actor) {
-      case 'profesional':
-        return 'text-blue-800';
-      case 'paciente':
-        return 'text-green-800';
-      case 'acompañante':
-        return 'text-purple-800';
+      case "profesional":
+        return "text-blue-800";
+      case "paciente":
+        return "text-green-800";
+      case "acompañante":
+        return "text-purple-800";
       default:
-        return 'text-gray-800';
+        return "text-gray-800";
     }
   };
-  
+
   // Obtener el label para el tipo de actor
   const getActorLabel = (actor: string): string => {
     switch (actor) {
-      case 'profesional':
-        return 'Profesional';
-      case 'paciente':
-        return 'Paciente';
-      case 'acompañante':
-        return 'Acompañante';
+      case "profesional":
+        return "Profesional";
+      case "paciente":
+        return "Paciente";
+      case "acompañante":
+        return "Acompañante";
       default:
-        return 'Desconocido';
+        return "Desconocido";
     }
   };
-  
+
   // Obtener el color y el texto según el nivel de confianza
-  const getConfidenceInfo = (confidence: string): { color: string; text: string } => {
+  const getConfidenceInfo = (
+    confidence: string,
+  ): { color: string; text: string } => {
     switch (confidence) {
-      case 'entendido':
-        return { color: 'text-green-600', text: 'Alta confianza' };
-      case 'poco_claro':
-        return { color: 'text-yellow-600', text: 'Confianza media' };
-      case 'no_reconocido':
-        return { color: 'text-red-600', text: 'Baja confianza' };
+      case "entendido":
+        return { color: "text-green-600", text: "Alta confianza" };
+      case "poco_claro":
+        return { color: "text-yellow-600", text: "Confianza media" };
+      case "no_reconocido":
+        return { color: "text-red-600", text: "Baja confianza" };
       default:
-        return { color: 'text-gray-600', text: 'Desconocido' };
+        return { color: "text-gray-600", text: "Desconocido" };
     }
   };
 
@@ -190,38 +187,40 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
           {approvedCount} de {segments.length} segmentos aprobados
         </div>
       </div>
-      
+
       <p className="text-sm text-gray-600 mb-4">
-        Revise y edite cada segmento antes de aprobarlo para su incorporación al EMR. 
-        Los segmentos con baja confianza requieren especial atención.
+        Revise y edite cada segmento antes de aprobarlo para su incorporación al
+        EMR. Los segmentos con baja confianza requieren especial atención.
       </p>
-      
+
       <div className="space-y-4 mb-6 max-h-96 overflow-y-auto p-2">
-        {segments.map(segment => {
+        {segments.map((segment) => {
           const confidenceInfo = getConfidenceInfo(segment.confidence);
           const isEditing = editingId === segment.id;
-          
+
           return (
             <div
               key={segment.id}
               className={`p-4 border rounded-md ${getActorBgColor(segment.actor)} ${
                 segment.approved !== undefined
                   ? segment.approved
-                    ? 'ring-2 ring-green-400'
-                    : 'opacity-50'
-                  : ''
+                    ? "ring-2 ring-green-400"
+                    : "opacity-50"
+                  : ""
               }`}
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${getActorBgColor(segment.actor)} ${getActorTextColor(segment.actor)}`}>
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${getActorBgColor(segment.actor)} ${getActorTextColor(segment.actor)}`}
+                  >
                     {getActorLabel(segment.actor)}
                   </span>
                   <span className={`ml-2 text-xs ${confidenceInfo.color}`}>
                     {confidenceInfo.text}
                   </span>
                 </div>
-                
+
                 {segment.approved === undefined && (
                   <div className="flex space-x-2">
                     {!isEditing && (
@@ -230,8 +229,19 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
                         className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800"
                       >
                         <span className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
                           </svg>
                           Editar
                         </span>
@@ -240,7 +250,7 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {isEditing ? (
                 <div className="mt-2">
                   <textarea
@@ -268,10 +278,12 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
                 </div>
               ) : (
                 <div className="mt-2">
-                  <p className={`text-sm ${segment.confidence === 'no_reconocido' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
+                  <p
+                    className={`text-sm ${segment.confidence === "no_reconocido" ? "text-red-600 font-medium" : "text-gray-700"}`}
+                  >
                     {segment.content}
                   </p>
-                  
+
                   {segment.approved === undefined && (
                     <div className="flex justify-end space-x-2 mt-3">
                       <button
@@ -294,7 +306,7 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
           );
         })}
       </div>
-      
+
       <div className="flex justify-between pt-4 border-t border-gray-200">
         <button
           onClick={onClose}
@@ -302,14 +314,14 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
         >
           Cancelar
         </button>
-        
+
         <button
           onClick={handleApproveAll}
           disabled={approvedCount === 0}
           className={`px-4 py-2 text-white rounded-md ${
             approvedCount > 0
-              ? 'bg-green-600 hover:bg-green-700'
-              : 'bg-gray-400 cursor-not-allowed'
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
         >
           Generar Resumen e Integrar
@@ -319,4 +331,4 @@ const AudioReviewChecklist: React.FC<AudioReviewChecklistProps> = ({
   );
 };
 
-export default AudioReviewChecklist; 
+export default AudioReviewChecklist;

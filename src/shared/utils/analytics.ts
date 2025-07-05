@@ -3,15 +3,18 @@ interface AnalyticsEvent {
   properties?: Record<string, unknown>;
 }
 
-export const track = (eventName: string, properties?: Record<string, unknown>) => {
+export const track = (
+  eventName: string,
+  properties?: Record<string, unknown>,
+) => {
   const event: AnalyticsEvent = {
     eventName,
-    properties
+    properties,
   };
 
   // En desarrollo, solo logueamos los eventos
   if (import.meta.env.DEV) {
-    console.log('Analytics Event:', event);
+    console.log("Analytics Event:", event);
     return;
   }
 
@@ -20,6 +23,6 @@ export const track = (eventName: string, properties?: Record<string, unknown>) =
   try {
     // Implementación futura
   } catch (error) {
-    console.error('Error tracking event:', error);
+    console.error("Error tracking event:", error);
   }
-}; 
+};

@@ -4,8 +4,8 @@
  * Tarea 1.1.1 del Roadmap MVP "Escucha Activa Clínica"
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Button } from '@/shared/components/UI/Button';
+import React, { useState, useCallback, useRef } from "react";
+import { Button } from "@/shared/components/UI/Button";
 
 interface AudioFileUploadProps {
   onFileSelect: (file: File) => void;
@@ -21,7 +21,7 @@ interface FileInfo {
   duration?: number;
   size: string;
   type: string;
-  validationStatus: 'valid' | 'invalid' | 'validating';
+  validationStatus: "valid" | "invalid" | "validating";
   errorMessage?: string;
 }
 
@@ -29,63 +29,66 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
   onFileSelect,
   onUploadComplete,
   isProcessing = false,
-  className = '',
+  className = "",
   maxFileSizeMB = 50, // 50MB máximo por defecto
-  acceptedFormats = ['.mp3', '.wav', '.m4a', '.ogg', '.webm']
+  acceptedFormats = [".mp3", ".wav", ".m4a", ".ogg", ".webm"],
 }) => {
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   /**
    * Valida el archivo de audio seleccionado
    */
-  const validateAudioFile = useCallback(async (file: File): Promise<FileInfo> => {
-    const fileInfo: FileInfo = {
-      file,
-      size: formatFileSize(file.size),
-      type: file.type || 'Desconocido',
-      validationStatus: 'validating'
-    };
+  const validateAudioFile = useCallback(
+    async (file: File): Promise<FileInfo> => {
+      const fileInfo: FileInfo = {
+        file,
+        size: formatFileSize(file.size),
+        type: file.type || "Desconocido",
+        validationStatus: "validating",
+      };
 
-    // Validar tamaño
-    if (file.size > maxFileSizeMB * 1024 * 1024) {
-      return {
-        ...fileInfo,
-        validationStatus: 'invalid',
-        errorMessage: `El archivo excede el tamaño máximo de ${maxFileSizeMB}MB`
-      };
-    }
+      // Validar tamaño
+      if (file.size > maxFileSizeMB * 1024 * 1024) {
+        return {
+          ...fileInfo,
+          validationStatus: "invalid",
+          errorMessage: `El archivo excede el tamaño máximo de ${maxFileSizeMB}MB`,
+        };
+      }
 
-    // Validar formato
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!acceptedFormats.includes(fileExtension)) {
-      return {
-        ...fileInfo,
-        validationStatus: 'invalid',
-        errorMessage: `Formato no soportado. Use: ${acceptedFormats.join(', ')}`
-      };
-    }
+      // Validar formato
+      const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
+      if (!acceptedFormats.includes(fileExtension)) {
+        return {
+          ...fileInfo,
+          validationStatus: "invalid",
+          errorMessage: `Formato no soportado. Use: ${acceptedFormats.join(", ")}`,
+        };
+      }
 
-    // Validar que es un archivo de audio válido
-    try {
-      const duration = await getAudioDuration(file);
-      return {
-        ...fileInfo,
-        duration,
-        validationStatus: 'valid'
-      };
-    } catch (error) {
-      return {
-        ...fileInfo,
-        validationStatus: 'invalid',
-        errorMessage: 'No se pudo procesar el archivo de audio'
-      };
-    }
-  }, [maxFileSizeMB, acceptedFormats]);
+      // Validar que es un archivo de audio válido
+      try {
+        const duration = await getAudioDuration(file);
+        return {
+          ...fileInfo,
+          duration,
+          validationStatus: "valid",
+        };
+      } catch (error) {
+        return {
+          ...fileInfo,
+          validationStatus: "invalid",
+          errorMessage: "No se pudo procesar el archivo de audio",
+        };
+      }
+    },
+    [maxFileSizeMB, acceptedFormats],
+  );
 
   /**
    * Obtiene la duración del archivo de audio
@@ -94,17 +97,17 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
     return new Promise((resolve, reject) => {
       const audio = new Audio();
       const url = URL.createObjectURL(file);
-      
-      audio.addEventListener('loadedmetadata', () => {
+
+      audio.addEventListener("loadedmetadata", () => {
         URL.revokeObjectURL(url);
         resolve(audio.duration);
       });
-      
-      audio.addEventListener('error', () => {
+
+      audio.addEventListener("error", () => {
         URL.revokeObjectURL(url);
-        reject(new Error('Error al cargar el archivo de audio'));
+        reject(new Error("Error al cargar el archivo de audio"));
       });
-      
+
       audio.src = url;
     });
   };
@@ -113,11 +116,11 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
    * Formatea el tamaño del archivo
    */
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   /**
@@ -126,37 +129,43 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   /**
    * Maneja la selección de archivo
    */
-  const handleFileSelect = useCallback(async (file: File) => {
-    const validatedFile = await validateAudioFile(file);
-    setSelectedFile(validatedFile);
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      const validatedFile = await validateAudioFile(file);
+      setSelectedFile(validatedFile);
 
-    if (validatedFile.validationStatus === 'valid') {
-      // Crear URL para preview
-      const previewUrl = URL.createObjectURL(file);
-      setAudioPreviewUrl(previewUrl);
-      
-      // Notificar al padre
-      onFileSelect(file);
-    } else {
-      setAudioPreviewUrl(null);
-    }
-  }, [validateAudioFile, onFileSelect]);
+      if (validatedFile.validationStatus === "valid") {
+        // Crear URL para preview
+        const previewUrl = URL.createObjectURL(file);
+        setAudioPreviewUrl(previewUrl);
+
+        // Notificar al padre
+        onFileSelect(file);
+      } else {
+        setAudioPreviewUrl(null);
+      }
+    },
+    [validateAudioFile, onFileSelect],
+  );
 
   /**
    * Maneja el cambio en el input de archivo
    */
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-  }, [handleFileSelect]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    },
+    [handleFileSelect],
+  );
 
   /**
    * Maneja el drag & drop
@@ -178,21 +187,27 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    const audioFile = files.find(file => 
-      file.type.startsWith('audio/') || 
-      acceptedFormats.some(format => file.name.toLowerCase().endsWith(format))
-    );
+      const files = Array.from(e.dataTransfer.files);
+      const audioFile = files.find(
+        (file) =>
+          file.type.startsWith("audio/") ||
+          acceptedFormats.some((format) =>
+            file.name.toLowerCase().endsWith(format),
+          ),
+      );
 
-    if (audioFile) {
-      handleFileSelect(audioFile);
-    }
-  }, [acceptedFormats, handleFileSelect]);
+      if (audioFile) {
+        handleFileSelect(audioFile);
+      }
+    },
+    [acceptedFormats, handleFileSelect],
+  );
 
   /**
    * Abre el selector de archivos
@@ -205,8 +220,10 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
    * Procesa el archivo seleccionado
    */
   const processSelectedFile = useCallback(() => {
-    if (selectedFile?.validationStatus === 'valid') {
-      const blob = new Blob([selectedFile.file], { type: selectedFile.file.type });
+    if (selectedFile?.validationStatus === "valid") {
+      const blob = new Blob([selectedFile.file], {
+        type: selectedFile.file.type,
+      });
       onUploadComplete?.(blob, selectedFile.file.name);
     }
   }, [selectedFile, onUploadComplete]);
@@ -221,13 +238,14 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
       setAudioPreviewUrl(null);
     }
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   }, [audioPreviewUrl]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
-      
+    <div
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}
+    >
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-aidux-blue-slate mb-2">
@@ -239,15 +257,15 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
       </div>
 
       {/* Área de carga */}
-      <div 
+      <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
-          isDragOver 
-            ? 'border-aidux-coral bg-coral-50' 
-            : selectedFile?.validationStatus === 'valid'
-            ? 'border-aidux-mint-green bg-mint-50'
-            : selectedFile?.validationStatus === 'invalid'
-            ? 'border-red-300 bg-red-50'
-            : 'border-gray-300 hover:border-aidux-coral hover:bg-gray-50'
+          isDragOver
+            ? "border-aidux-coral bg-coral-50"
+            : selectedFile?.validationStatus === "valid"
+              ? "border-aidux-mint-green bg-mint-50"
+              : selectedFile?.validationStatus === "invalid"
+                ? "border-red-300 bg-red-50"
+                : "border-gray-300 hover:border-aidux-coral hover:bg-gray-50"
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -257,7 +275,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept={acceptedFormats.join(',')}
+          accept={acceptedFormats.join(",")}
           onChange={handleInputChange}
           className="hidden"
           disabled={isProcessing}
@@ -276,7 +294,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
                 o haz clic para seleccionar un archivo
               </p>
             </div>
-            
+
             <Button
               onClick={openFileSelector}
               disabled={isProcessing}
@@ -285,9 +303,9 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             >
               📂 Seleccionar Archivo
             </Button>
-            
+
             <div className="text-xs text-gray-500 space-y-1">
-              <div>Formatos soportados: {acceptedFormats.join(', ')}</div>
+              <div>Formatos soportados: {acceptedFormats.join(", ")}</div>
               <div>Tamaño máximo: {maxFileSizeMB}MB</div>
             </div>
           </>
@@ -297,8 +315,11 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="text-2xl">
-                  {selectedFile.validationStatus === 'valid' ? '✅' : 
-                   selectedFile.validationStatus === 'invalid' ? '❌' : '⏳'}
+                  {selectedFile.validationStatus === "valid"
+                    ? "✅"
+                    : selectedFile.validationStatus === "invalid"
+                      ? "❌"
+                      : "⏳"}
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 truncate max-w-xs">
@@ -313,7 +334,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               <Button
                 onClick={clearSelection}
                 variant="outline"
@@ -325,46 +346,55 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             </div>
 
             {/* Estado de validación */}
-            {selectedFile.validationStatus === 'invalid' && selectedFile.errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500">❌</span>
-                  <span className="text-sm text-red-700">{selectedFile.errorMessage}</span>
+            {selectedFile.validationStatus === "invalid" &&
+              selectedFile.errorMessage && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌</span>
+                    <span className="text-sm text-red-700">
+                      {selectedFile.errorMessage}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {selectedFile.validationStatus === 'valid' && (
+            {selectedFile.validationStatus === "valid" && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-green-500">✅</span>
-                  <span className="text-sm text-green-700">Archivo válido - Listo para procesar</span>
+                  <span className="text-sm text-green-700">
+                    Archivo válido - Listo para procesar
+                  </span>
                 </div>
               </div>
             )}
 
-                         {/* Preview del audio */}
-             {audioPreviewUrl && selectedFile.validationStatus === 'valid' && (
-               <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                 <div className="block text-xs font-medium text-gray-700 mb-2">
-                   Vista previa:
-                 </div>
-                 <audio
-                   ref={audioRef}
-                   controls
-                   src={audioPreviewUrl}
-                   className="w-full"
-                   preload="metadata"
-                   aria-label={`Vista previa del archivo de audio: ${selectedFile.file.name}`}
-                 >
-                   <track kind="captions" srcLang="es" label="Sin subtítulos disponibles" />
-                   Tu navegador no soporta el elemento de audio.
-                 </audio>
-               </div>
-             )}
+            {/* Preview del audio */}
+            {audioPreviewUrl && selectedFile.validationStatus === "valid" && (
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <div className="block text-xs font-medium text-gray-700 mb-2">
+                  Vista previa:
+                </div>
+                <audio
+                  ref={audioRef}
+                  controls
+                  src={audioPreviewUrl}
+                  className="w-full"
+                  preload="metadata"
+                  aria-label={`Vista previa del archivo de audio: ${selectedFile.file.name}`}
+                >
+                  <track
+                    kind="captions"
+                    srcLang="es"
+                    label="Sin subtítulos disponibles"
+                  />
+                  Tu navegador no soporta el elemento de audio.
+                </audio>
+              </div>
+            )}
 
             {/* Botón de procesamiento */}
-            {selectedFile.validationStatus === 'valid' && onUploadComplete && (
+            {selectedFile.validationStatus === "valid" && onUploadComplete && (
               <div className="flex justify-center">
                 <Button
                   onClick={processSelectedFile}
@@ -377,9 +407,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
                       Procesando...
                     </>
                   ) : (
-                    <>
-                      🚀 Procesar Audio
-                    </>
+                    <>🚀 Procesar Audio</>
                   )}
                 </Button>
               </div>
@@ -396,4 +424,4 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
   );
 };
 
-export default AudioFileUpload; 
+export default AudioFileUpload;

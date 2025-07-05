@@ -4,7 +4,7 @@
  */
 
 export class CryptoService {
-  private static readonly ALGORITHM = 'AES-GCM';
+  private static readonly ALGORITHM = "AES-GCM";
   private static readonly KEY_LENGTH = 256;
   private static readonly IV_LENGTH = 12;
   private static readonly TAG_LENGTH = 128;
@@ -19,20 +19,20 @@ export class CryptoService {
     try {
       // Derivar clave desde la frase de paso
       const key = await this.deriveKey(passphrase);
-      
+
       // Generar IV aleatorio
       const iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
-      
+
       // Cifrar datos
       const encodedText = new TextEncoder().encode(plaintext);
       const encryptedBuffer = await crypto.subtle.encrypt(
         {
           name: this.ALGORITHM,
           iv: iv,
-          tagLength: this.TAG_LENGTH
+          tagLength: this.TAG_LENGTH,
         },
         key,
-        encodedText
+        encodedText,
       );
 
       // Combinar IV + datos cifrados
@@ -43,8 +43,8 @@ export class CryptoService {
       // Convertir a base64
       return btoa(String.fromCharCode(...result));
     } catch (error) {
-      console.error('Error en cifrado:', error);
-      throw new Error('Error al cifrar datos médicos');
+      console.error("Error en cifrado:", error);
+      throw new Error("Error al cifrar datos médicos");
     }
   }
 
@@ -54,36 +54,41 @@ export class CryptoService {
    * @param passphrase - Frase de paso para derivar la clave
    * @returns Promise<string> - Texto plano descifrado
    */
-  static async decrypt(encryptedData: string, passphrase: string): Promise<string> {
+  static async decrypt(
+    encryptedData: string,
+    passphrase: string,
+  ): Promise<string> {
     try {
       // Derivar clave desde la frase de paso
       const key = await this.deriveKey(passphrase);
-      
+
       // Decodificar base64
       const encryptedBytes = new Uint8Array(
-        atob(encryptedData).split('').map(char => char.charCodeAt(0))
+        atob(encryptedData)
+          .split("")
+          .map((char) => char.charCodeAt(0)),
       );
-      
+
       // Extraer IV y datos cifrados
       const iv = encryptedBytes.slice(0, this.IV_LENGTH);
       const ciphertext = encryptedBytes.slice(this.IV_LENGTH);
-      
+
       // Descifrar datos
       const decryptedBuffer = await crypto.subtle.decrypt(
         {
           name: this.ALGORITHM,
           iv: iv,
-          tagLength: this.TAG_LENGTH
+          tagLength: this.TAG_LENGTH,
         },
         key,
-        ciphertext
+        ciphertext,
       );
 
       // Convertir a texto
       return new TextDecoder().decode(decryptedBuffer);
     } catch (error) {
-      console.error('Error en descifrado:', error);
-      throw new Error('Error al descifrar datos médicos');
+      console.error("Error en descifrado:", error);
+      throw new Error("Error al descifrar datos médicos");
     }
   }
 
@@ -94,31 +99,31 @@ export class CryptoService {
    */
   private static async deriveKey(passphrase: string): Promise<CryptoKey> {
     const encoder = new TextEncoder();
-    const salt = encoder.encode('AIDUXCARE_SALT_2025');
-    
+    const salt = encoder.encode("AIDUXCARE_SALT_2025");
+
     // Derivar clave usando PBKDF2
     const baseKey = await crypto.subtle.importKey(
-      'raw',
+      "raw",
       encoder.encode(passphrase),
-      'PBKDF2',
+      "PBKDF2",
       false,
-      ['deriveBits', 'deriveKey']
+      ["deriveBits", "deriveKey"],
     );
 
     return crypto.subtle.deriveKey(
       {
-        name: 'PBKDF2',
+        name: "PBKDF2",
         salt: salt,
         iterations: 100000,
-        hash: 'SHA-256'
+        hash: "SHA-256",
       },
       baseKey,
       {
         name: this.ALGORITHM,
-        length: this.KEY_LENGTH
+        length: this.KEY_LENGTH,
       },
       false,
-      ['encrypt', 'decrypt']
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -130,10 +135,10 @@ export class CryptoService {
   static async hash(data: string): Promise<string> {
     const encoder = new TextEncoder();
     const dataBuffer = encoder.encode(data);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-    
+    const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+
     return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
-} 
+}

@@ -1,22 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Drawer } from './Drawer';
-import { useState } from 'react';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Drawer } from "./Drawer";
+import { useState } from "react";
 
 const meta = {
-  title: 'UI/Drawer',
+  title: "UI/Drawer",
   component: Drawer,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     position: {
-      control: 'select',
-      options: ['left', 'right', 'top', 'bottom'],
+      control: "select",
+      options: ["left", "right", "top", "bottom"],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg', 'xl', 'full'],
+      control: "select",
+      options: ["sm", "md", "lg", "xl", "full"],
     },
   },
 } satisfies Meta<typeof Drawer>;
@@ -42,8 +42,8 @@ const DrawerTemplate = (args: React.ComponentProps<typeof Drawer>) => {
 export const Default: Story = {
   render: DrawerTemplate,
   args: {
-    title: 'Título del Drawer',
-    description: 'Esta es una descripción del drawer que explica su propósito.',
+    title: "Título del Drawer",
+    description: "Esta es una descripción del drawer que explica su propósito.",
     children: (
       <div className="space-y-4">
         <p>Este es el contenido del drawer.</p>
@@ -58,8 +58,8 @@ export const Default: Story = {
 export const Left: Story = {
   render: DrawerTemplate,
   args: {
-    position: 'left',
-    title: 'Drawer Izquierdo',
+    position: "left",
+    title: "Drawer Izquierdo",
     children: (
       <div className="space-y-4">
         <p>Este drawer se abre desde la izquierda.</p>
@@ -82,9 +82,9 @@ export const Left: Story = {
 export const Top: Story = {
   render: DrawerTemplate,
   args: {
-    position: 'top',
-    size: 'full',
-    title: 'Drawer Superior',
+    position: "top",
+    size: "full",
+    title: "Drawer Superior",
     children: (
       <div className="space-y-4">
         <p>Este drawer se abre desde arriba y ocupa todo el ancho.</p>
@@ -101,9 +101,9 @@ export const Top: Story = {
 export const Bottom: Story = {
   render: DrawerTemplate,
   args: {
-    position: 'bottom',
-    size: 'full',
-    title: 'Drawer Inferior',
+    position: "bottom",
+    size: "full",
+    title: "Drawer Inferior",
     children: (
       <div className="space-y-4">
         <p>Este drawer se abre desde abajo y ocupa todo el ancho.</p>
@@ -119,10 +119,12 @@ export const Bottom: Story = {
 export const Small: Story = {
   render: DrawerTemplate,
   args: {
-    size: 'sm',
-    title: 'Drawer Pequeño',
+    size: "sm",
+    title: "Drawer Pequeño",
     children: (
-      <p>Este es un drawer de tamaño pequeño, ideal para menús de navegación.</p>
+      <p>
+        Este es un drawer de tamaño pequeño, ideal para menús de navegación.
+      </p>
     ),
   },
 };
@@ -130,12 +132,14 @@ export const Small: Story = {
 export const Large: Story = {
   render: DrawerTemplate,
   args: {
-    size: 'lg',
-    title: 'Drawer Grande',
-    description: 'Ideal para contenido extenso o formularios complejos.',
+    size: "lg",
+    title: "Drawer Grande",
+    description: "Ideal para contenido extenso o formularios complejos.",
     children: (
       <div className="space-y-4">
-        <p>Este es un drawer de tamaño grande que puede contener más contenido.</p>
+        <p>
+          Este es un drawer de tamaño grande que puede contener más contenido.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 rounded">Columna 1</div>
           <div className="p-4 bg-gray-100 rounded">Columna 2</div>
@@ -162,12 +166,15 @@ export const WithoutHeader: Story = {
 export const WithForm: Story = {
   render: DrawerTemplate,
   args: {
-    title: 'Formulario de Contacto',
-    description: 'Complete el formulario para contactarnos.',
+    title: "Formulario de Contacto",
+    description: "Complete el formulario para contactarnos.",
     children: (
       <form className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700"
+          >
             Nombre
           </label>
           <input
@@ -177,7 +184,10 @@ export const WithForm: Story = {
           />
         </div>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Email
           </label>
           <input
@@ -187,7 +197,10 @@ export const WithForm: Story = {
           />
         </div>
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="message"
+            className="block text-sm font-medium text-gray-700"
+          >
             Mensaje
           </label>
           <textarea
@@ -213,4 +226,4 @@ export const WithForm: Story = {
       </form>
     ),
   },
-}; 
+};

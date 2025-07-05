@@ -1,8 +1,8 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
-export type AvatarVariant = 'default' | 'outline' | 'filled';
-export type AvatarSize = 'sm' | 'md' | 'lg';
+export type AvatarVariant = "default" | "outline" | "filled";
+export type AvatarSize = "sm" | "md" | "lg";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: AvatarVariant;
@@ -13,31 +13,32 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles: Record<AvatarVariant, string> = {
-  default: 'bg-gray-100',
-  outline: 'bg-transparent border-2 border-gray-200',
-  filled: 'bg-primary-100',
+  default: "bg-gray-100",
+  outline: "bg-transparent border-2 border-gray-200",
+  filled: "bg-primary-100",
 };
 
 const sizeStyles: Record<AvatarSize, string> = {
-  sm: 'h-8 w-8 text-sm',
-  md: 'h-10 w-10 text-base',
-  lg: 'h-12 w-12 text-lg',
+  sm: "h-8 w-8 text-sm",
+  md: "h-10 w-10 text-base",
+  lg: "h-12 w-12 text-lg",
 };
 
 export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
   (
     {
-      variant = 'default',
-      size = 'md',
+      variant = "default",
+      size = "md",
       src,
       alt,
       fallback,
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const baseStyles = 'relative flex items-center justify-center rounded-full overflow-hidden';
+    const baseStyles =
+      "relative flex items-center justify-center rounded-full overflow-hidden";
     const [error, setError] = React.useState(false);
 
     const handleError = () => {
@@ -51,7 +52,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
           baseStyles,
           variantStyles[variant],
           sizeStyles[size],
-          className
+          className,
         )}
         {...props}
       >
@@ -64,12 +65,12 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
           />
         ) : (
           <span className="font-medium text-gray-600">
-            {fallback?.charAt(0).toUpperCase() || '?'}
+            {fallback?.charAt(0).toUpperCase() || "?"}
           </span>
         )}
       </div>
     );
-  }
+  },
 );
 
-Avatar.displayName = 'Avatar'; 
+Avatar.displayName = "Avatar";

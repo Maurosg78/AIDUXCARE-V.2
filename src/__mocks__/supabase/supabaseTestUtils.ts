@@ -1,12 +1,12 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 /**
  * Configuración rápida de mock para Supabase en archivos de prueba
  * Este mock se puede usar al principio de cada archivo de prueba específico
  * para anular el mock global y proporcionar comportamientos personalizados
- * 
+ *
  * Ejemplo de uso:
- * 
+ *
  * ```ts
  * // Al inicio del archivo de prueba, antes de importar los componentes
  * vi.mock('@/core/auth/supabaseClient', () => ({
@@ -17,26 +17,30 @@ import { vi } from 'vitest';
  * }));
  * ```
  */
-export function configureSupabaseMock(options: {
-  data?: any;
-  error?: any;
-  session?: any;
-  user?: any;
-} = {}) {
+export function configureSupabaseMock(
+  options: {
+    data?: any;
+    error?: any;
+    session?: any;
+    user?: any;
+  } = {},
+) {
   const { data = {}, error = null, session = null, user = null } = options;
-  
+
   return {
     // Auth methods
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session }, error }),
       signInWithPassword: vi.fn().mockResolvedValue({ data: { user }, error }),
       signOut: vi.fn().mockResolvedValue({ error }),
-      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      onAuthStateChange: vi
+        .fn()
+        .mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       getUser: vi.fn().mockResolvedValue({ data: { user }, error }),
     },
-    
+
     // Database methods
-    from: vi.fn().mockImplementation((table) => ({
+    from: vi.fn().mockImplementation((_table) => ({
       select: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
@@ -66,20 +70,25 @@ export function configureSupabaseMock(options: {
       offset: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data, error }),
       maybeSingle: vi.fn().mockResolvedValue({ data, error }),
-      then: vi.fn().mockResolvedValue({ data: Array.isArray(data) ? data : [data], error }),
+      then: vi.fn().mockResolvedValue({
+        data: Array.isArray(data) ? data : [data],
+        error,
+      }),
     })),
-    
+
     // Storage methods
     storage: {
-      from: vi.fn().mockImplementation((bucket) => ({
+      from: vi.fn().mockImplementation((_bucket) => ({
         upload: vi.fn().mockResolvedValue({ data: {}, error }),
         download: vi.fn().mockResolvedValue({ data: {}, error }),
-        getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/file.png' } }),
+        getPublicUrl: vi.fn().mockReturnValue({
+          data: { publicUrl: "https://example.com/file.png" },
+        }),
         list: vi.fn().mockResolvedValue({ data: [], error }),
         remove: vi.fn().mockResolvedValue({ data: {}, error }),
       })),
     },
-    
+
     // RPC calls
     rpc: vi.fn().mockResolvedValue({ data, error }),
   };
@@ -97,4 +106,4 @@ export function mockSuccessResponse(data: any) {
  */
 export function mockErrorResponse(message: string) {
   return { data: null, error: { message } };
-} 
+}

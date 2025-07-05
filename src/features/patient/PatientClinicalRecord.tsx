@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import supabase from '@/core/auth/supabaseClient';
-import VisitRecordCard from './components/VisitRecordCard';
-import VisitIndicators from './components/VisitIndicators';
-import ClinicalFilters, { ClinicalFilters as ClinicalFiltersType } from './components/ClinicalFilters';
+import React, { useEffect, useState, useMemo } from "react";
+import supabase from "@/core/auth/supabaseClient";
+import VisitRecordCard from "./components/VisitRecordCard";
+import VisitIndicators from "./components/VisitIndicators";
+import ClinicalFilters, {
+  ClinicalFilters as ClinicalFiltersType,
+} from "./components/ClinicalFilters";
 
 interface Visit {
   id: string;
@@ -28,19 +30,23 @@ interface PatientClinicalRecordProps {
   patientId: string;
 }
 
-const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId }) => {
+const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({
+  patientId,
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [summaries, setSummaries] = useState<Record<string, VisitSummary>>({});
-  const [suggestions, setSuggestions] = useState<Record<string, SuggestionLog[]>>({});
+  const [suggestions, setSuggestions] = useState<
+    Record<string, SuggestionLog[]>
+  >({});
   const [filters, setFilters] = useState<ClinicalFiltersType>({
     selectedFields: [],
     hasSummary: false,
     dateRange: {
-      from: '',
-      to: ''
-    }
+      from: "",
+      to: "",
+    },
   });
 
   useEffect(() => {
@@ -51,52 +57,67 @@ const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId
 
         // Cargar visitas del paciente
         const { data: visitsData, error: visitsError } = await supabase
-          .from('visits')
-          .select('id, created_at, reason')
-          .eq('patient_id', patientId)
-          .order('created_at', { ascending: false });
+          .from("visits")
+          .select("id, created_at, reason")
+          .eq("patient_id", patientId)
+          .order("created_at", { ascending: false });
 
         if (visitsError) throw visitsError;
-        if (!visitsData) throw new Error('No se encontraron visitas');
+        if (!visitsData) throw new Error("No se encontraron visitas");
 
         setVisits(visitsData);
 
         // Cargar resúmenes de las visitas
         const { data: summariesData, error: summariesError } = await supabase
-          .from('visit_summaries')
-          .select('*')
-          .in('visit_id', visitsData.map(v => v.id));
+          .from("visit_summaries")
+          .select("*")
+          .in(
+            "visit_id",
+            visitsData.map((v) => v.id),
+          );
 
         if (summariesError) throw summariesError;
 
         // Convertir array de resúmenes a objeto indexado por visit_id
-        const summariesMap = (summariesData || []).reduce((acc, summary) => ({
-          ...acc,
-          [summary.visit_id]: summary
-        }), {} as Record<string, VisitSummary>);
+        const summariesMap = (summariesData || []).reduce(
+          (acc, summary) => ({
+            ...acc,
+            [summary.visit_id]: summary,
+          }),
+          {} as Record<string, VisitSummary>,
+        );
 
         setSummaries(summariesMap);
 
         // Cargar sugerencias integradas
-        const { data: suggestionsData, error: suggestionsError } = await supabase
-          .from('suggestion_logs')
-          .select('*')
-          .in('visit_id', visitsData.map(v => v.id))
-          .eq('status', 'integrated');
+        const { data: suggestionsData, error: suggestionsError } =
+          await supabase
+            .from("suggestion_logs")
+            .select("*")
+            .in(
+              "visit_id",
+              visitsData.map((v) => v.id),
+            )
+            .eq("status", "integrated");
 
         if (suggestionsError) throw suggestionsError;
 
         // Agrupar sugerencias por visit_id
-        const suggestionsMap = (suggestionsData || []).reduce((acc, suggestion) => ({
-          ...acc,
-          [suggestion.visit_id]: [...(acc[suggestion.visit_id] || []), suggestion]
-        }), {} as Record<string, SuggestionLog[]>);
+        const suggestionsMap = (suggestionsData || []).reduce(
+          (acc, suggestion) => ({
+            ...acc,
+            [suggestion.visit_id]: [
+              ...(acc[suggestion.visit_id] || []),
+              suggestion,
+            ],
+          }),
+          {} as Record<string, SuggestionLog[]>,
+        );
 
         setSuggestions(suggestionsMap);
-
       } catch (err) {
-        console.error('Error al cargar datos del paciente:', err);
-        setError('Error al cargar el historial clínico');
+        console.error("Error al cargar datos del paciente:", err);
+        setError("Error al cargar el historial clínico");
       } finally {
         setIsLoading(false);
       }
@@ -107,12 +128,12 @@ const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId
 
   // Filtrar visitas según los criterios seleccionados
   const filteredVisits = useMemo(() => {
-    return visits.filter(visit => {
+    return visits.filter((visit) => {
       // Filtrar por campos impactados
       if (filters.selectedFields.length > 0) {
         const visitSuggestions = suggestions[visit.id] || [];
-        const hasSelectedField = visitSuggestions.some(suggestion =>
-          filters.selectedFields.includes(suggestion.field)
+        const hasSelectedField = visitSuggestions.some((suggestion) =>
+          filters.selectedFields.includes(suggestion.field),
         );
         if (!hasSelectedField) return false;
       }
@@ -156,7 +177,9 @@ const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId
   if (visits.length === 0) {
     return (
       <div className="bg-gray-50 p-4 rounded-md">
-        <p className="text-gray-600">El paciente no tiene visitas registradas</p>
+        <p className="text-gray-600">
+          El paciente no tiene visitas registradas
+        </p>
       </div>
     );
   }
@@ -173,8 +196,8 @@ const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId
         totalVisits={visits.length}
         filteredVisits={filteredVisits.length}
       />
-      
-      {filteredVisits.map(visit => (
+
+      {filteredVisits.map((visit) => (
         <div key={visit.id} className="bg-white rounded-lg shadow-sm">
           <VisitRecordCard
             visit={visit}
@@ -199,4 +222,4 @@ const PatientClinicalRecord: React.FC<PatientClinicalRecordProps> = ({ patientId
   );
 };
 
-export default PatientClinicalRecord; 
+export default PatientClinicalRecord;

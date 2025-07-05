@@ -1,8 +1,8 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
-export type DrawerPosition = 'left' | 'right' | 'top' | 'bottom';
-export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type DrawerPosition = "left" | "right" | "top" | "bottom";
+export type DrawerSize = "sm" | "md" | "lg" | "xl" | "full";
 
 export interface DrawerProps {
   isOpen: boolean;
@@ -16,25 +16,25 @@ export interface DrawerProps {
 }
 
 const positionStyles: Record<DrawerPosition, string> = {
-  left: 'left-0 top-0 h-full',
-  right: 'right-0 top-0 h-full',
-  top: 'top-0 left-0 w-full',
-  bottom: 'bottom-0 left-0 w-full',
+  left: "left-0 top-0 h-full",
+  right: "right-0 top-0 h-full",
+  top: "top-0 left-0 w-full",
+  bottom: "bottom-0 left-0 w-full",
 };
 
 const sizeStyles: Record<DrawerSize, string> = {
-  sm: 'w-64',
-  md: 'w-96',
-  lg: 'w-[32rem]',
-  xl: 'w-[40rem]',
-  full: 'w-full',
+  sm: "w-64",
+  md: "w-96",
+  lg: "w-[32rem]",
+  xl: "w-[40rem]",
+  full: "w-full",
 };
 
 const slideStyles: Record<DrawerPosition, string> = {
-  left: 'translate-x-0 -translate-x-full',
-  right: 'translate-x-0 translate-x-full',
-  top: 'translate-y-0 -translate-y-full',
-  bottom: 'translate-y-0 translate-y-full',
+  left: "translate-x-0 -translate-x-full",
+  right: "translate-x-0 translate-x-full",
+  top: "translate-y-0 -translate-y-full",
+  bottom: "translate-y-0 translate-y-full",
 };
 
 export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
@@ -42,14 +42,14 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
     {
       isOpen,
       onClose,
-      position = 'right',
-      size = 'md',
+      position = "right",
+      size = "md",
       headerTitle,
       headerDescription,
       children,
       className,
     },
-    ref
+    ref,
   ) => {
     if (!isOpen) return null;
 
@@ -65,8 +65,8 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
         className="fixed inset-0 z-50 flex"
         role="dialog"
         aria-modal="true"
-        aria-labelledby={headerTitle ? 'drawer-title' : undefined}
-        aria-describedby={headerDescription ? 'drawer-description' : undefined}
+        aria-labelledby={headerTitle ? "drawer-title" : undefined}
+        aria-describedby={headerDescription ? "drawer-description" : undefined}
       >
         {/* Backdrop */}
         <div
@@ -78,11 +78,13 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
         {/* Drawer */}
         <div
           className={cn(
-            'fixed bg-white shadow-xl transition-transform duration-300 ease-in-out',
+            "fixed bg-white shadow-xl transition-transform duration-300 ease-in-out",
             positionStyles[position],
             sizeStyles[size],
-            isOpen ? slideStyles[position].split(' ')[0] : slideStyles[position].split(' ')[1],
-            className
+            isOpen
+              ? slideStyles[position].split(" ")[0]
+              : slideStyles[position].split(" ")[1],
+            className,
           )}
         >
           {/* Header */}
@@ -135,7 +137,7 @@ export const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
-Drawer.displayName = 'Drawer'; 
+Drawer.displayName = "Drawer";

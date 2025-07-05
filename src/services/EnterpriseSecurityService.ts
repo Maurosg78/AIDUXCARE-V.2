@@ -12,13 +12,13 @@ export interface SecurityEvent {
   ipAddress?: string;
   userAgent?: string;
   success: boolean;
-  details?: Record<string, any>;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  details?: Record<string, unknown>;
+  severity: "low" | "medium" | "high" | "critical";
 }
 
 export interface AccessControl {
   userId: string;
-  role: 'OWNER' | 'PHYSICIAN' | 'ADMIN' | 'VIEWER';
+  role: "OWNER" | "PHYSICIAN" | "ADMIN" | "VIEWER";
   permissions: string[];
   lastAccess: string;
   mfaEnabled: boolean;
@@ -39,20 +39,20 @@ export class EnterpriseSecurityService {
   /**
    * Registra un evento de seguridad para auditoría
    */
-  logSecurityEvent(event: Omit<SecurityEvent, 'id' | 'timestamp'>): void {
+  logSecurityEvent(event: Omit<SecurityEvent, "id" | "timestamp">): void {
     const securityEvent: SecurityEvent = {
       ...event,
       id: this.generateEventId(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     this.securityEvents.push(securityEvent);
-    
+
     // En producción, esto se enviaría a un sistema de logging centralizado
-    console.log('🔒 Security Event:', securityEvent);
-    
+    console.log("🔒 Security Event:", securityEvent);
+
     // Si es un evento crítico, tomar acciones inmediatas
-    if (event.severity === 'critical') {
+    if (event.severity === "critical") {
       this.handleCriticalEvent(securityEvent);
     }
   }
@@ -60,30 +60,38 @@ export class EnterpriseSecurityService {
   /**
    * Valida el control de acceso para diferentes roles
    */
-  validateAccessControl(userId: string, action: string, resource: string): boolean {
+  validateAccessControl(
+    userId: string,
+    action: string,
+    resource: string,
+  ): boolean {
     const userAccess = this.accessControls.get(userId);
-    
+
     if (!userAccess) {
       this.logSecurityEvent({
-        action: 'ACCESS_DENIED',
+        action: "ACCESS_DENIED",
         resource,
         success: false,
-        severity: 'high',
-        details: { userId, reason: 'User not found in access controls' }
+        severity: "high",
+        details: { userId, reason: "User not found in access controls" },
       });
       return false;
     }
 
     // Verificar permisos según el rol
-    const hasPermission = this.checkPermission(userAccess.role, action, resource);
-    
+    const hasPermission = this.checkPermission(
+      userAccess.role,
+      action,
+      resource,
+    );
+
     this.logSecurityEvent({
       userId,
       action,
       resource,
       success: hasPermission,
-      severity: hasPermission ? 'low' : 'medium',
-      details: { role: userAccess.role, permissions: userAccess.permissions }
+      severity: hasPermission ? "low" : "medium",
+      details: { role: userAccess.role, permissions: userAccess.permissions },
     });
 
     return hasPermission;
@@ -92,19 +100,29 @@ export class EnterpriseSecurityService {
   /**
    * Verifica permisos específicos según rol y acción
    */
-  private checkPermission(role: string, action: string, resource: string): boolean {
+  private checkPermission(
+    role: string,
+    action: string,
+    resource: string,
+  ): boolean {
     const permissionMatrix = {
-      OWNER: ['*'], // Acceso total
-      PHYSICIAN: ['read:patient', 'write:soap', 'read:history', 'write:consultation'],
-      ADMIN: ['read:patient', 'read:history', 'manage:users', 'read:audit'],
-      VIEWER: ['read:patient', 'read:history']
+      OWNER: ["*"], // Acceso total
+      PHYSICIAN: [
+        "read:patient",
+        "write:soap",
+        "read:history",
+        "write:consultation",
+      ],
+      ADMIN: ["read:patient", "read:history", "manage:users", "read:audit"],
+      VIEWER: ["read:patient", "read:history"],
     };
 
-    const permissions = permissionMatrix[role as keyof typeof permissionMatrix] || [];
-    
+    const permissions =
+      permissionMatrix[role as keyof typeof permissionMatrix] || [];
+
     // OWNER tiene acceso total
-    if (permissions.includes('*')) return true;
-    
+    if (permissions.includes("*")) return true;
+
     // Verificar permiso específico
     const requiredPermission = `${action}:${resource}`;
     return permissions.includes(requiredPermission);
@@ -113,19 +131,25 @@ export class EnterpriseSecurityService {
   /**
    * Configura control de acceso para un usuario
    */
-  setAccessControl(userId: string, accessControl: Omit<AccessControl, 'userId'>): void {
+  setAccessControl(
+    userId: string,
+    accessControl: Omit<AccessControl, "userId">,
+  ): void {
     this.accessControls.set(userId, {
       ...accessControl,
-      userId
+      userId,
     });
 
     this.logSecurityEvent({
       userId,
-      action: 'ACCESS_CONTROL_SET',
-      resource: 'user_permissions',
+      action: "ACCESS_CONTROL_SET",
+      resource: "user_permissions",
       success: true,
-      severity: 'medium',
-      details: { role: accessControl.role, permissions: accessControl.permissions }
+      severity: "medium",
+      details: {
+        role: accessControl.role,
+        permissions: accessControl.permissions,
+      },
     });
   }
 
@@ -141,22 +165,25 @@ export class EnterpriseSecurityService {
     let events = [...this.securityEvents];
 
     if (filters?.userId) {
-      events = events.filter(e => e.userId === filters.userId);
+      events = events.filter((e) => e.userId === filters.userId);
     }
 
     if (filters?.severity) {
-      events = events.filter(e => e.severity === filters.severity);
+      events = events.filter((e) => e.severity === filters.severity);
     }
 
     if (filters?.startDate) {
-      events = events.filter(e => e.timestamp >= filters.startDate!);
+      events = events.filter((e) => e.timestamp >= filters.startDate!);
     }
 
     if (filters?.endDate) {
-      events = events.filter(e => e.timestamp <= filters.endDate!);
+      events = events.filter((e) => e.timestamp <= filters.endDate!);
     }
 
-    return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return events.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
   }
 
   /**
@@ -170,9 +197,15 @@ export class EnterpriseSecurityService {
     lastAudit: string;
   } {
     const events = this.securityEvents;
-    const criticalEvents = events.filter(e => e.severity === 'critical').length;
-    const accessViolations = events.filter(e => !e.success && e.action.includes('ACCESS')).length;
-    const mfaEnabled = Array.from(this.accessControls.values()).filter(ac => ac.mfaEnabled).length;
+    const criticalEvents = events.filter(
+      (e) => e.severity === "critical",
+    ).length;
+    const accessViolations = events.filter(
+      (e) => !e.success && e.action.includes("ACCESS"),
+    ).length;
+    const mfaEnabled = Array.from(this.accessControls.values()).filter(
+      (ac) => ac.mfaEnabled,
+    ).length;
     const totalUsers = this.accessControls.size;
 
     return {
@@ -180,7 +213,7 @@ export class EnterpriseSecurityService {
       criticalEvents,
       accessViolations,
       mfaCompliance: totalUsers > 0 ? (mfaEnabled / totalUsers) * 100 : 0,
-      lastAudit: new Date().toISOString()
+      lastAudit: new Date().toISOString(),
     };
   }
 
@@ -192,25 +225,29 @@ export class EnterpriseSecurityService {
     // - Enviar alertas por email/SMS
     // - Bloquear temporalmente el usuario
     // - Activar protocolos de emergencia
-    
-    console.error('🚨 CRITICAL SECURITY EVENT:', event);
-    
+
+    console.error("🚨 CRITICAL SECURITY EVENT:", event);
+
     // Ejemplo: bloquear usuario si hay múltiples intentos fallidos
-    if (event.action === 'LOGIN_FAILED' && event.userId) {
-      const recentFailures = this.securityEvents.filter(e => 
-        e.userId === event.userId && 
-        e.action === 'LOGIN_FAILED' && 
-        e.timestamp > new Date(Date.now() - 15 * 60 * 1000).toISOString() // Últimos 15 minutos
+    if (event.action === "LOGIN_FAILED" && event.userId) {
+      const recentFailures = this.securityEvents.filter(
+        (e) =>
+          e.userId === event.userId &&
+          e.action === "LOGIN_FAILED" &&
+          e.timestamp > new Date(Date.now() - 15 * 60 * 1000).toISOString(), // Últimos 15 minutos
       );
 
       if (recentFailures.length >= 5) {
         this.logSecurityEvent({
           userId: event.userId,
-          action: 'ACCOUNT_LOCKED',
-          resource: 'user_account',
+          action: "ACCOUNT_LOCKED",
+          resource: "user_account",
           success: false,
-          severity: 'critical',
-          details: { reason: 'Multiple failed login attempts', failures: recentFailures.length }
+          severity: "critical",
+          details: {
+            reason: "Multiple failed login attempts",
+            failures: recentFailures.length,
+          },
         });
       }
     }
@@ -227,7 +264,11 @@ export class EnterpriseSecurityService {
    * Limpia eventos antiguos (mantener solo últimos 30 días)
    */
   cleanupOldEvents(): void {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    this.securityEvents = this.securityEvents.filter(e => e.timestamp >= thirtyDaysAgo);
+    const thirtyDaysAgo = new Date(
+      Date.now() - 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    this.securityEvents = this.securityEvents.filter(
+      (e) => e.timestamp >= thirtyDaysAgo,
+    );
   }
-} 
+}
