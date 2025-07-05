@@ -1,11 +1,9 @@
 // Este archivo proporciona implementaciones mínimas de componentes @headlessui/react
 // para evitar problemas de dependencias durante el desarrollo
 
-/* eslint-disable react/display-name */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/display-name */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable jsx-a11y/aria-props */
-/* eslint-disable jsx-a11y/role-has-required-aria-props */
 import React, { ReactNode, forwardRef, HTMLAttributes, ButtonHTMLAttributes, InputHTMLAttributes, DependencyList, EffectCallback } from 'react';
 
 // Tipo base para componentes con displayName

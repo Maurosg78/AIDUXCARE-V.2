@@ -42,10 +42,21 @@ const ArticlePreview: React.FC<{
   citation: CitationReference;
   onClick?: () => void;
 }> = ({ citation, onClick }) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
     <div 
       className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all"
       onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalles del artículo: ${citation.title}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -150,7 +161,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
           </div>
         </div>
         <p className="text-sm text-gray-600 mt-1">
-          Query: "{ragResult.query}"
+          Query: &ldquo;{ragResult.query}&rdquo;
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-/* eslint-disable jsx-a11y/aria-proptypes */ // Deshabilitado debido a falsos positivos con el patrón aria-invalid={...} en React. Se debe prestar especial atención a otros valores ARIA en este archivo durante las revisiones de código.
+ // Deshabilitado debido a falsos positivos con el patrón aria-invalid={...} en React. Se debe prestar especial atención a otros valores ARIA en este archivo durante las revisiones de código.
 
 export type RadioVariant = 'default' | 'outline' | 'filled';
 export type RadioSize = 'sm' | 'md' | 'lg';
