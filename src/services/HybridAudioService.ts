@@ -83,6 +83,8 @@ export default class HybridAudioService {
     // Inicializar siempre con el servicio mock por defecto
     this.currentService = this.mockAudioService;
     this.isUsingReal = false;
+    
+    console.log('🔧 HybridAudioService inicializado en modo seguro (mock)');
   }
 
   // Método para determinar qué servicio usar basado en preferencia del usuario
@@ -166,7 +168,7 @@ export default class HybridAudioService {
     if (activeService === 'real') {
       return `🎙️ Usando audio real del ambiente (Activo)`;
     } else {
-      return `🎭 Usando transcripción simulada médica ${!isRealSupported ? '(Audio real no disponible)' : '(Modo seguro)'}`;
+      return `🎭 Usando transcripción simulada médica ${!isRealSupported ? '(Audio real no disponible)' : '(Modo seguro - sin errores)'}`;
     }
   }
 
@@ -180,12 +182,14 @@ export default class HybridAudioService {
       this.preferredService = 'mock';
       this.currentService = this.mockAudioService;
       this.isUsingReal = false;
+      console.log('🔄 Cambiado a modo demostración');
       return 'Cambiado a modo demostración (más estable)';
     } else {
       if (this.realAudioService.isServiceSupported()) {
         this.preferredService = 'real';
         this.currentService = this.realAudioService;
         this.isUsingReal = true;
+        console.log('🔄 Cambiado a audio real');
         return 'Cambiado a audio real (puede generar errores de red)';
       } else {
         return 'Audio real no disponible en este navegador';

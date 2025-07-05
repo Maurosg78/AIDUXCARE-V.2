@@ -7,27 +7,33 @@ export default class RealAudioCaptureService {
   private isRecording: boolean = false;
   private callback: ((text: string, isFinal: boolean) => void) | null = null;
   private currentTranscript: string = '';
+  private isInitialized: boolean = false;
 
   constructor() {
-    // Verificar soporte del navegador
-    if (this.isServiceSupported()) {
-      this.initializeRecognition();
-    }
+    // NO inicializar automáticamente para evitar errores
+    console.log('🎙️ RealAudioCaptureService creado (sin inicializar)');
   }
 
   private initializeRecognition(): void {
-    try {
-      // Crear instancia de SpeechRecognition
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      this.recognition = new SpeechRecognition();
+    if (this.isInitialized || this.recognition) {
+      return; // Ya está inicializado
+    }
 
-      // Configuración para captura médica profesional
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        throw new Error('Web Speech API no soportado');
+      }
+
+      this.recognition = new SpeechRecognition();
+      
+      // Configuración médica optimizada
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang = 'es-ES'; // Español
+      this.recognition.lang = 'es-ES';
       this.recognition.maxAlternatives = 1;
 
-      // Event handlers
       this.recognition.onstart = () => {
         console.log('🎙️ Reconocimiento de voz iniciado');
       };
@@ -36,77 +42,60 @@ export default class RealAudioCaptureService {
         let interimTranscript = '';
         let finalTranscript = '';
 
-        // Procesar todos los resultados
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           
           if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
+            finalTranscript += transcript;
           } else {
             interimTranscript += transcript;
           }
         }
 
-        // Actualizar transcripción actual
-        if (finalTranscript) {
+        if (finalTranscript && this.callback) {
           this.currentTranscript += finalTranscript;
-          if (this.callback) {
-            this.callback(this.currentTranscript.trim(), true);
-          }
+          this.callback(this.currentTranscript.trim(), true);
         } else if (interimTranscript && this.callback) {
-          // Mostrar transcripción temporal
           const tempTranscript = this.currentTranscript + interimTranscript;
           this.callback(tempTranscript.trim(), false);
         }
       };
 
       this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Error en reconocimiento de voz:', event.error);
+        // Solo log mínimo de errores
+        console.warn('⚠️ Error reconocimiento:', event.error);
         
-        // Manejar diferentes tipos de errores de forma más silenciosa
         switch (event.error) {
-          case 'network':
-            console.warn('⚠️ Error de red - el servicio continuará funcionando');
-            // No reintentar automáticamente para evitar spam de errores
-            break;
           case 'not-allowed':
-            console.error('❌ Permisos de micrófono denegados');
-            this.isRecording = false;
-            break;
-          case 'no-speech':
-            console.log('🔇 No se detectó habla - esperando...');
-            break;
           case 'audio-capture':
-            console.error('❌ Error de captura de audio');
             this.isRecording = false;
             break;
-          default:
-            console.warn('⚠️ Error en reconocimiento:', event.error);
         }
       };
 
       this.recognition.onend = () => {
-        console.log('🎙️ Reconocimiento de voz finalizado');
+        console.log('🎙️ Reconocimiento finalizado');
         
-        // Solo reiniciar si aún estamos grabando y no hay errores críticos
+        // Solo reiniciar si explícitamente estamos grabando
         if (this.isRecording && this.recognition) {
-          console.log('🔄 Reiniciando reconocimiento automáticamente...');
           setTimeout(() => {
             if (this.isRecording && this.recognition) {
               try {
                 this.recognition.start();
               } catch (error) {
-                console.warn('Error al reiniciar reconocimiento:', error);
-                // Si falla 3 veces, parar automáticamente
+                console.warn('Error reiniciando:', error);
                 this.isRecording = false;
               }
             }
-          }, 500); // Aumentar delay para evitar spam
+          }, 1000);
         }
       };
 
+      this.isInitialized = true;
+      console.log('✅ Reconocimiento de voz inicializado correctamente');
+
     } catch (error) {
-      console.error('Error inicializando reconocimiento de voz:', error);
+      console.error('❌ Error inicializando reconocimiento:', error);
       throw new Error('No se pudo inicializar el reconocimiento de voz');
     }
   }
@@ -129,9 +118,14 @@ export default class RealAudioCaptureService {
     // Verificar permisos de micrófono
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Liberar el stream inmediatamente
+      stream.getTracks().forEach(track => track.stop());
     } catch (error) {
       throw new Error('No se pudo acceder al micrófono. Verifica los permisos.');
+    }
+
+    // Inicializar solo cuando se va a usar
+    if (!this.isInitialized) {
+      this.initializeRecognition();
     }
 
     this.isRecording = true;
