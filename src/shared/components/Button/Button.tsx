@@ -1,10 +1,18 @@
-import React from 'react';
-import { twMerge } from 'tailwind-merge';
+import React from "react";
+import { twMerge } from "tailwind-merge";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'ghost';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "accent"
+  | "success"
+  | "warning"
+  | "error"
+  | "ghost";
+export type ButtonSize = "sm" | "md" | "lg";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
@@ -15,8 +23,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 export const Button: React.FC<ButtonProps> = ({
   children,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   isLoading = false,
   leftIcon,
   rightIcon,
@@ -25,25 +33,32 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
+  const baseStyles =
+    "inline-flex items-center justify-center font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm rounded-md',
-    md: 'px-4 py-2 text-base rounded-lg',
-    lg: 'px-6 py-3 text-lg rounded-xl',
+    sm: "px-3 py-1.5 text-sm rounded-md",
+    md: "px-4 py-2 text-base rounded-lg",
+    lg: "px-6 py-3 text-lg rounded-xl",
   };
 
   const variantStyles = {
-    primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary-light',
-    secondary: 'bg-secondary text-primary hover:bg-secondary-dark focus:ring-secondary-light',
-    accent: 'bg-accent text-white hover:bg-accent-dark focus:ring-accent-light',
-    success: 'bg-success text-white hover:bg-success-dark focus:ring-success-light',
-    warning: 'bg-warning text-warning-text hover:bg-warning-dark focus:ring-warning-light border border-warning-border',
-    error: 'bg-error text-error-text hover:bg-error-dark focus:ring-error-light border border-error-border',
-    ghost: 'bg-transparent text-primary hover:bg-primary/10 focus:ring-primary-light',
+    primary:
+      "bg-primary text-white hover:bg-primary-dark focus:ring-primary-light",
+    secondary:
+      "bg-secondary text-primary hover:bg-secondary-dark focus:ring-secondary-light",
+    accent: "bg-accent text-white hover:bg-accent-dark focus:ring-accent-light",
+    success:
+      "bg-success text-white hover:bg-success-dark focus:ring-success-light",
+    warning:
+      "bg-warning text-warning-text hover:bg-warning-dark focus:ring-warning-light border border-warning-border",
+    error:
+      "bg-error text-error-text hover:bg-error-dark focus:ring-error-light border border-error-border",
+    ghost:
+      "bg-transparent text-primary hover:bg-primary/10 focus:ring-primary-light",
   };
 
-  const widthStyles = fullWidth ? 'w-full' : '';
+  const widthStyles = fullWidth ? "w-full" : "";
 
   return (
     <button
@@ -52,7 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
         sizeStyles[size],
         variantStyles[variant],
         widthStyles,
-        className
+        className,
       )}
       disabled={disabled || isLoading}
       {...props}
@@ -84,4 +99,4 @@ export const Button: React.FC<ButtonProps> = ({
       {!isLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
     </button>
   );
-}; 
+};

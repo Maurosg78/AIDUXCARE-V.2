@@ -1,5 +1,5 @@
 // src/lib/use-sync-external-store-mock.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 type Subscribe = (callback: () => void) => () => void;
 type GetSnapshot<T> = () => T;
@@ -11,7 +11,7 @@ type Selector<T, R> = (state: T) => R;
  */
 export function useSyncExternalStoreMock<T>(
   subscribe: Subscribe,
-  getSnapshot: GetSnapshot<T>
+  getSnapshot: GetSnapshot<T>,
 ): T {
   const [snapshot, setSnapshot] = useState<T>(getSnapshot());
 
@@ -32,7 +32,7 @@ export function useSyncExternalStoreMock<T>(
 export function useSyncExternalStoreWithSelectorMock<T, R>(
   subscribe: Subscribe,
   getSnapshot: GetSnapshot<T>,
-  selector: Selector<T, R>
+  selector: Selector<T, R>,
 ): R {
   // Always derive from a fresh snapshot
   return selector(getSnapshot());
@@ -42,4 +42,3 @@ export default {
   useSyncExternalStore: useSyncExternalStoreMock,
   useSyncExternalStoreWithSelector: useSyncExternalStoreWithSelectorMock,
 };
- 

@@ -44,7 +44,8 @@
     "demo:integration": "tsx scripts/test-nlp-rag-integration.ts",
     "test:rag-solo": "tsx scripts/test-rag-solo.ts",
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
-    "analyze": "node scripts/analyze-bundle.cjs"
+    "analyze": "node scripts/analyze-bundle.cjs",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -55,7 +56,6 @@
     "cross-fetch": "^4.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
-    "husky": "^8.0.3",
     "node-fetch": "^3.3.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -95,19 +95,23 @@
     "color-name": "^2.0.0",
     "cross-spawn": "^7.0.3",
     "esbuild": "^0.25.4",
-    "eslint": "^8.55.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "glob": "^11.0.3",
+    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^27.5.1",
     "jest-environment-jsdom": "^27.5.1",
     "jest-snapshot": "^29.7.0",
     "jsdom": "^26.1.0",
+    "lint-staged": "^16.1.2",
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "postcss": "^8.4.33",
+    "prettier": "^3.6.2",
     "rollup-plugin-visualizer": "^6.0.1",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.2",
@@ -118,5 +122,11 @@
     "vite-tsconfig-paths": "^4.2.1",
     "vitest": "^0.29.8",
     "web-vitals": "^5.0.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

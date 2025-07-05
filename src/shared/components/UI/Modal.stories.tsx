@@ -1,18 +1,18 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Modal } from './Modal';
-import { useState } from 'react';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Modal } from "./Modal";
+import { useState } from "react";
 
 const meta = {
-  title: 'UI/Modal',
+  title: "UI/Modal",
   component: Modal,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg', 'xl', 'full'],
+      control: "select",
+      options: ["sm", "md", "lg", "xl", "full"],
     },
   },
 } satisfies Meta<typeof Modal>;
@@ -38,8 +38,8 @@ const ModalTemplate = (args: React.ComponentProps<typeof Modal>) => {
 export const Default: Story = {
   render: ModalTemplate,
   args: {
-    title: 'Título del Modal',
-    description: 'Esta es una descripción del modal que explica su propósito.',
+    title: "Título del Modal",
+    description: "Esta es una descripción del modal que explica su propósito.",
     children: (
       <div className="space-y-4">
         <p>Este es el contenido del modal.</p>
@@ -54,10 +54,12 @@ export const Default: Story = {
 export const Small: Story = {
   render: ModalTemplate,
   args: {
-    size: 'sm',
-    title: 'Modal Pequeño',
+    size: "sm",
+    title: "Modal Pequeño",
     children: (
-      <p>Este es un modal de tamaño pequeño, ideal para confirmaciones rápidas.</p>
+      <p>
+        Este es un modal de tamaño pequeño, ideal para confirmaciones rápidas.
+      </p>
     ),
   },
 };
@@ -65,12 +67,14 @@ export const Small: Story = {
 export const Large: Story = {
   render: ModalTemplate,
   args: {
-    size: 'lg',
-    title: 'Modal Grande',
-    description: 'Ideal para contenido extenso o formularios complejos.',
+    size: "lg",
+    title: "Modal Grande",
+    description: "Ideal para contenido extenso o formularios complejos.",
     children: (
       <div className="space-y-4">
-        <p>Este es un modal de tamaño grande que puede contener más contenido.</p>
+        <p>
+          Este es un modal de tamaño grande que puede contener más contenido.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 rounded">Columna 1</div>
           <div className="p-4 bg-gray-100 rounded">Columna 2</div>
@@ -83,8 +87,8 @@ export const Large: Story = {
 export const FullWidth: Story = {
   render: ModalTemplate,
   args: {
-    size: 'full',
-    title: 'Modal de Ancho Completo',
+    size: "full",
+    title: "Modal de Ancho Completo",
     children: (
       <div className="space-y-4">
         <p>Este modal ocupa todo el ancho de la pantalla.</p>
@@ -115,12 +119,15 @@ export const WithoutHeader: Story = {
 export const WithForm: Story = {
   render: ModalTemplate,
   args: {
-    title: 'Formulario de Contacto',
-    description: 'Complete el formulario para contactarnos.',
+    title: "Formulario de Contacto",
+    description: "Complete el formulario para contactarnos.",
     children: (
       <form className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700"
+          >
             Nombre
           </label>
           <input
@@ -130,7 +137,10 @@ export const WithForm: Story = {
           />
         </div>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Email
           </label>
           <input
@@ -140,7 +150,10 @@ export const WithForm: Story = {
           />
         </div>
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="message"
+            className="block text-sm font-medium text-gray-700"
+          >
             Mensaje
           </label>
           <textarea
@@ -166,4 +179,4 @@ export const WithForm: Story = {
       </form>
     ),
   },
-}; 
+};

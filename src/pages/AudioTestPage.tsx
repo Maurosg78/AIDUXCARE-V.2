@@ -1,36 +1,40 @@
-import React, { useState } from 'react';
-import RealTimeAudioCapture from '../components/RealTimeAudioCapture';
-import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
+import React, { useState } from "react";
+import RealTimeAudioCapture from "../components/RealTimeAudioCapture";
+import { TranscriptionSegment } from "../core/audio/AudioCaptureService";
 
 const AudioTestPage: React.FC = () => {
-  const [completedSegments, setCompletedSegments] = useState<TranscriptionSegment[]>([]);
-  const [lastSegment, setLastSegment] = useState<TranscriptionSegment | null>(null);
+  const [completedSegments, setCompletedSegments] = useState<
+    TranscriptionSegment[]
+  >([]);
+  const [lastSegment, setLastSegment] = useState<TranscriptionSegment | null>(
+    null,
+  );
 
   const handleCaptureComplete = (segments: TranscriptionSegment[]) => {
     setCompletedSegments(segments);
-    console.log('🎉 Captura completada:', segments);
+    console.log("🎉 Captura completada:", segments);
   };
 
   const handleTranscriptionUpdate = (segment: TranscriptionSegment) => {
     setLastSegment(segment);
-    console.log('📝 Nuevo segmento:', segment);
+    console.log("📝 Nuevo segmento:", segment);
   };
 
   const exportTranscription = () => {
     if (completedSegments.length === 0) {
-      alert('No hay transcripción para exportar');
+      alert("No hay transcripción para exportar");
       return;
     }
 
     const transcriptionText = completedSegments
-      .map(segment => `[${segment.actor.toUpperCase()}] ${segment.content}`)
-      .join('\n');
+      .map((segment) => `[${segment.actor.toUpperCase()}] ${segment.content}`)
+      .join("\n");
 
-    const blob = new Blob([transcriptionText], { type: 'text/plain' });
+    const blob = new Blob([transcriptionText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `transcripcion_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+    a.download = `transcripcion_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -120,24 +124,35 @@ const AudioTestPage: React.FC = () => {
 
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {completedSegments.map((segment, index) => (
-                <div key={segment.id} className="p-3 bg-gray-50 rounded-lg border">
+                <div
+                  key={segment.id}
+                  className="p-3 bg-gray-50 rounded-lg border"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-gray-500">
                         #{index + 1}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        segment.actor === 'profesional' ? 'bg-blue-100 text-blue-800' :
-                        segment.actor === 'paciente' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          segment.actor === "profesional"
+                            ? "bg-blue-100 text-blue-800"
+                            : segment.actor === "paciente"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-purple-100 text-purple-800"
+                        }`}
+                      >
                         {segment.actor}
                       </span>
-                      <span className={`text-xs font-medium ${
-                        segment.confidence === 'entendido' ? 'text-green-600' :
-                        segment.confidence === 'poco_claro' ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
+                      <span
+                        className={`text-xs font-medium ${
+                          segment.confidence === "entendido"
+                            ? "text-green-600"
+                            : segment.confidence === "poco_claro"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
                         {segment.confidence}
                       </span>
                     </div>
@@ -164,18 +179,30 @@ const AudioTestPage: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className="font-semibold text-lg text-green-600">
-                    {completedSegments.reduce((total, seg) => total + seg.content.split(' ').length, 0)}
+                    {completedSegments.reduce(
+                      (total, seg) => total + seg.content.split(" ").length,
+                      0,
+                    )}
                   </div>
                   <div className="text-gray-600">Palabras</div>
                 </div>
                 <div className="text-center">
                   <div className="font-semibold text-lg text-purple-600">
-                    {Math.round(completedSegments.filter(seg => seg.confidence === 'entendido').length / completedSegments.length * 100)}%
+                    {Math.round(
+                      (completedSegments.filter(
+                        (seg) => seg.confidence === "entendido",
+                      ).length /
+                        completedSegments.length) *
+                        100,
+                    )}
+                    %
                   </div>
                   <div className="text-gray-600">Confianza</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-emerald-600">$0.00</div>
+                  <div className="font-semibold text-lg text-emerald-600">
+                    $0.00
+                  </div>
                   <div className="text-gray-600">Costo Total</div>
                 </div>
               </div>
@@ -190,7 +217,9 @@ const AudioTestPage: React.FC = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">✅ Características:</h4>
+              <h4 className="font-medium text-gray-700 mb-2">
+                ✅ Características:
+              </h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• Web Speech API nativa del navegador</li>
                 <li>• Transcripción en tiempo real</li>
@@ -201,7 +230,9 @@ const AudioTestPage: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">🌐 Compatibilidad:</h4>
+              <h4 className="font-medium text-gray-700 mb-2">
+                🌐 Compatibilidad:
+              </h4>
               <ul className="space-y-1 text-gray-600">
                 <li>• ✅ Google Chrome (recomendado)</li>
                 <li>• ✅ Microsoft Edge</li>
@@ -211,11 +242,12 @@ const AudioTestPage: React.FC = () => {
               </ul>
             </div>
           </div>
-          
+
           <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
             <p className="text-sm text-green-700">
-              💡 <strong>Tip:</strong> Para mejores resultados, usa Chrome o Edge, habla claramente 
-              y asegúrate de tener buena conexión a internet.
+              💡 <strong>Tip:</strong> Para mejores resultados, usa Chrome o
+              Edge, habla claramente y asegúrate de tener buena conexión a
+              internet.
             </p>
           </div>
         </div>
@@ -224,4 +256,4 @@ const AudioTestPage: React.FC = () => {
   );
 };
 
-export default AudioTestPage; 
+export default AudioTestPage;

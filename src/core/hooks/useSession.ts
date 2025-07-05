@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Session, AuthChangeEvent, SupabaseClient } from '@supabase/supabase-js';
-import supabase from '../auth/supabaseClient';
-import { UserProfile, userDataSourceSupabase } from '../services/userDataSourceSupabase';
+import { useState, useEffect } from "react";
+import { Session, AuthChangeEvent } from "@supabase/supabase-js";
+import supabase from "../auth/supabaseClient";
+import {
+  UserProfile,
+  userDataSourceSupabase,
+} from "../services/userDataSourceSupabase";
 
 interface UseSessionResult {
   session: Session | null;
@@ -29,7 +32,7 @@ export const useSession = (): UseSessionResult => {
       const userProfile = await userDataSourceSupabase.getUserProfile(userId);
       setProfile(userProfile);
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error("Error loading user profile:", error);
       const err = error as Error;
       setError(err.message);
     }
@@ -38,12 +41,14 @@ export const useSession = (): UseSessionResult => {
   // Refresca manualmente el perfil del usuario
   const refreshProfile = async () => {
     if (!session?.user?.id) return;
-    
+
     try {
-      const userProfile = await userDataSourceSupabase.getUserProfile(session.user.id);
+      const userProfile = await userDataSourceSupabase.getUserProfile(
+        session.user.id,
+      );
       setProfile(userProfile);
     } catch (error) {
-      console.error('Error refreshing user profile:', error);
+      console.error("Error refreshing user profile:", error);
       const err = error as Error;
       setError(err.message);
     }
@@ -55,19 +60,19 @@ export const useSession = (): UseSessionResult => {
       try {
         setLoading(true);
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           throw error;
         }
-        
+
         setSession(data.session);
-        
+
         // Si hay sesión, cargar el perfil
         if (data.session?.user) {
           await loadUserProfile(data.session.user.id);
         }
       } catch (error) {
-        console.error('Error getting session:', error);
+        console.error("Error getting session:", error);
         const err = error as Error;
         setError(err.message);
       } finally {
@@ -82,19 +87,22 @@ export const useSession = (): UseSessionResult => {
       async (event: AuthChangeEvent, newSession: Session | null) => {
         setSession(newSession);
         setLoading(true);
-        
+
         // Evento "SIGNED_IN" o "TOKEN_REFRESHED" - cargar el perfil
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
+        if (
+          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
+          newSession?.user
+        ) {
           await loadUserProfile(newSession.user.id);
         }
-        
+
         // Evento "SIGNED_OUT" - limpiar el perfil
-        if (event === 'SIGNED_OUT') {
+        if (event === "SIGNED_OUT") {
           setProfile(null);
         }
-        
+
         setLoading(false);
-      }
+      },
     );
 
     return () => {
@@ -108,6 +116,6 @@ export const useSession = (): UseSessionResult => {
     profile,
     loading,
     error,
-    refreshProfile
+    refreshProfile,
   };
-}; 
+};

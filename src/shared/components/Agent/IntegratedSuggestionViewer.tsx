@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import supabase from '../../../core/auth/supabaseClient';
+import React, { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import supabase from "../../../core/auth/supabaseClient";
 
 interface IntegratedSuggestion {
   id: string;
@@ -9,14 +9,16 @@ interface IntegratedSuggestion {
   field: string;
   accepted_by: string;
   accepted_at: string;
-  type: 'recommendation' | 'warning' | 'info';
+  type: "recommendation" | "warning" | "info";
 }
 
 interface IntegratedSuggestionViewerProps {
   visitId: string;
 }
 
-const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({ visitId }) => {
+const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
+  visitId,
+}) => {
   const [suggestions, setSuggestions] = useState<IntegratedSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +31,12 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
 
         // Consultar sugerencias integradas desde la tabla de logs
         const { data, error: fetchError } = await supabase
-          .from('suggestion_logs')
-          .select('*')
-          .eq('visit_id', visitId)
-          .eq('status', 'integrated')
-          .order('field_name', { ascending: true })
-          .order('accepted_at', { ascending: false });
+          .from("suggestion_logs")
+          .select("*")
+          .eq("visit_id", visitId)
+          .eq("status", "integrated")
+          .order("field_name", { ascending: true })
+          .order("accepted_at", { ascending: false });
 
         if (fetchError) {
           throw new Error(`Error al cargar sugerencias: ${fetchError.message}`);
@@ -46,19 +48,21 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
         }
 
         // Transformar los datos al formato esperado
-        const formattedSuggestions: IntegratedSuggestion[] = data.map(log => ({
-          id: log.suggestion_id,
-          content: log.content,
-          field: log.field_name,
-          accepted_by: log.accepted_by,
-          accepted_at: log.accepted_at,
-          type: log.suggestion_type as 'recommendation' | 'warning' | 'info'
-        }));
+        const formattedSuggestions: IntegratedSuggestion[] = data.map(
+          (log) => ({
+            id: log.suggestion_id,
+            content: log.content,
+            field: log.field_name,
+            accepted_by: log.accepted_by,
+            accepted_at: log.accepted_at,
+            type: log.suggestion_type as "recommendation" | "warning" | "info",
+          }),
+        );
 
         setSuggestions(formattedSuggestions);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido');
-        console.error('Error al cargar sugerencias integradas:', err);
+        setError(err instanceof Error ? err.message : "Error desconocido");
+        console.error("Error al cargar sugerencias integradas:", err);
       } finally {
         setIsLoading(false);
       }
@@ -68,26 +72,28 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
   }, [visitId]);
 
   // Función para obtener el color del badge según el tipo de sugerencia
-  const getTypeColorClass = (type: 'recommendation' | 'warning' | 'info'): string => {
+  const getTypeColorClass = (
+    type: "recommendation" | "warning" | "info",
+  ): string => {
     switch (type) {
-      case 'recommendation':
-        return 'bg-blue-100 text-blue-800';
-      case 'warning':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'info':
-        return 'bg-green-100 text-green-800';
+      case "recommendation":
+        return "bg-blue-100 text-blue-800";
+      case "warning":
+        return "bg-yellow-100 text-yellow-800";
+      case "info":
+        return "bg-green-100 text-green-800";
     }
   };
 
   // Función para obtener el ícono según el tipo de sugerencia
-  const getTypeIcon = (type: 'recommendation' | 'warning' | 'info'): string => {
+  const getTypeIcon = (type: "recommendation" | "warning" | "info"): string => {
     switch (type) {
-      case 'recommendation':
-        return '💡';
-      case 'warning':
-        return '⚠️';
-      case 'info':
-        return 'ℹ️';
+      case "recommendation":
+        return "💡";
+      case "warning":
+        return "⚠️";
+      case "info":
+        return "ℹ️";
     }
   };
 
@@ -116,7 +122,9 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
   if (suggestions.length === 0) {
     return (
       <div className="p-4 bg-gray-50 rounded-lg shadow-sm">
-        <p className="text-gray-500 text-center">No hay sugerencias integradas para esta visita</p>
+        <p className="text-gray-500 text-center">
+          No hay sugerencias integradas para esta visita
+        </p>
       </div>
     );
   }
@@ -126,16 +134,18 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
       <h3 className="text-lg font-medium text-gray-900 mb-4">
         Sugerencias IA Integradas ({suggestions.length})
       </h3>
-      
+
       <div className="space-y-4">
         {suggestions.map((suggestion) => (
-          <div 
+          <div
             key={suggestion.id}
             className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColorClass(suggestion.type)}`}>
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColorClass(suggestion.type)}`}
+                >
                   {suggestion.field}
                 </span>
                 <span className="text-sm text-gray-500">
@@ -143,9 +153,9 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
                 </span>
               </div>
               <span className="text-sm text-gray-500">
-                {formatDistanceToNow(new Date(suggestion.accepted_at), { 
+                {formatDistanceToNow(new Date(suggestion.accepted_at), {
                   addSuffix: true,
-                  locale: es 
+                  locale: es,
                 })}
               </span>
             </div>
@@ -163,6 +173,6 @@ const IntegratedSuggestionViewer: React.FC<IntegratedSuggestionViewerProps> = ({
   );
 };
 
-IntegratedSuggestionViewer.displayName = 'IntegratedSuggestionViewer';
+IntegratedSuggestionViewer.displayName = "IntegratedSuggestionViewer";
 
-export default IntegratedSuggestionViewer; 
+export default IntegratedSuggestionViewer;

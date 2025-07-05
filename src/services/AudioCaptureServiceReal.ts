@@ -1,14 +1,22 @@
-import { WebSpeechSTTService, RealtimeTranscriptionOptions } from './WebSpeechSTTService';
-import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
+import {
+  WebSpeechSTTService,
+  RealtimeTranscriptionOptions,
+} from "./WebSpeechSTTService";
+import { TranscriptionSegment } from "../core/audio/AudioCaptureService";
 
 export interface AudioCaptureOptions {
-  language?: 'es' | 'en';
+  language?: "es" | "en";
   onTranscriptionUpdate?: (segment: TranscriptionSegment) => void;
   onError?: (error: string) => void;
   onStatusChange?: (status: CaptureStatus) => void;
 }
 
-export type CaptureStatus = 'idle' | 'requesting_permission' | 'recording' | 'stopping' | 'error';
+export type CaptureStatus =
+  | "idle"
+  | "requesting_permission"
+  | "recording"
+  | "stopping"
+  | "error";
 
 export interface CaptureSession {
   id: string;
@@ -16,7 +24,7 @@ export interface CaptureSession {
   endTime?: Date;
   segmentsCount: number;
   totalDuration?: number;
-  language: 'es' | 'en';
+  language: "es" | "en";
   status: CaptureStatus;
 }
 
@@ -33,15 +41,15 @@ export class AudioCaptureServiceReal {
 
   constructor(options: AudioCaptureOptions = {}) {
     this.sttService = new WebSpeechSTTService({
-      language: options.language || 'es',
+      language: options.language || "es",
       continuous: true,
       interimResults: true,
-      maxAlternatives: 1
+      maxAlternatives: 1,
     });
-    
+
     this.options = {
-      language: 'es',
-      ...options
+      language: "es",
+      ...options,
     };
   }
 
@@ -50,15 +58,15 @@ export class AudioCaptureServiceReal {
    */
   async startCapture(): Promise<CaptureSession> {
     if (this.isCapturing) {
-      throw new Error('Ya hay una captura en curso');
+      throw new Error("Ya hay una captura en curso");
     }
 
-    this.updateStatus('requesting_permission');
+    this.updateStatus("requesting_permission");
 
     // Verificar soporte del navegador
     if (!this.isSupported()) {
-      const error = 'Web Speech API no soportada en este navegador';
-      this.updateStatus('error');
+      const error = "Web Speech API no soportada en este navegador";
+      this.updateStatus("error");
       this.options.onError?.(error);
       throw new Error(error);
     }
@@ -69,8 +77,8 @@ export class AudioCaptureServiceReal {
         id: `capture_${Date.now()}`,
         startTime: new Date(),
         segmentsCount: 0,
-        language: this.options.language || 'es',
-        status: 'recording'
+        language: this.options.language || "es",
+        status: "recording",
       };
 
       // Limpiar segmentos anteriores
@@ -81,34 +89,34 @@ export class AudioCaptureServiceReal {
         onResult: (segment) => this.handleNewSegment(segment),
         onError: (error) => this.handleError(error),
         onStart: () => {
-          console.log('✅ Captura de audio iniciada');
+          console.log("✅ Captura de audio iniciada");
           this.isCapturing = true;
-          this.updateStatus('recording');
+          this.updateStatus("recording");
         },
         onEnd: () => {
-          console.log('⏹️ Captura de audio finalizada');
+          console.log("⏹️ Captura de audio finalizada");
           this.isCapturing = false;
-          this.updateStatus('idle');
+          this.updateStatus("idle");
         },
         onSpeechStart: () => {
-          console.log('🗣️ Habla detectada');
+          console.log("🗣️ Habla detectada");
         },
         onSpeechEnd: () => {
-          console.log('🔇 Fin de habla');
-        }
+          console.log("🔇 Fin de habla");
+        },
       };
 
       // Iniciar transcripción en tiempo real
       await this.sttService.startRealtimeTranscription(transcriptionOptions);
 
-      console.log('🚀 Captura de audio en tiempo real iniciada - COSTO: $0.00');
-      
-      return this.currentSession;
+      console.log("🚀 Captura de audio en tiempo real iniciada - COSTO: $0.00");
 
+      return this.currentSession;
     } catch (error) {
-      this.updateStatus('error');
-      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      console.error('Error iniciando captura:', errorMsg);
+      this.updateStatus("error");
+      const errorMsg =
+        error instanceof Error ? error.message : "Error desconocido";
+      console.error("Error iniciando captura:", errorMsg);
       this.options.onError?.(errorMsg);
       throw error;
     }
@@ -119,11 +127,11 @@ export class AudioCaptureServiceReal {
    */
   async stopCapture(): Promise<TranscriptionSegment[]> {
     if (!this.isCapturing || !this.currentSession) {
-      console.warn('No hay captura activa');
+      console.warn("No hay captura activa");
       return this.segments;
     }
 
-    this.updateStatus('stopping');
+    this.updateStatus("stopping");
 
     try {
       // Detener servicio STT
@@ -131,31 +139,34 @@ export class AudioCaptureServiceReal {
 
       // Finalizar sesión
       this.currentSession.endTime = new Date();
-      this.currentSession.totalDuration = this.currentSession.endTime.getTime() - this.currentSession.startTime.getTime();
+      this.currentSession.totalDuration =
+        this.currentSession.endTime.getTime() -
+        this.currentSession.startTime.getTime();
       this.currentSession.segmentsCount = this.segments.length;
 
-      console.log('📊 Sesión de captura finalizada:', {
+      console.log("📊 Sesión de captura finalizada:", {
         id: this.currentSession.id,
         segmentos: this.segments.length,
         duración: `${Math.round(this.currentSession.totalDuration / 1000)}s`,
-        costo: '$0.00'
+        costo: "$0.00",
       });
 
       // Retornar solo segmentos con contenido válido
-      const finalSegments = this.segments.filter(segment => 
-        segment.content.trim().length > 0 && 
-        segment.confidence !== 'no_reconocido'
+      const finalSegments = this.segments.filter(
+        (segment) =>
+          segment.content.trim().length > 0 &&
+          segment.confidence !== "no_reconocido",
       );
 
-      this.updateStatus('idle');
+      this.updateStatus("idle");
       this.emitCaptureCompleteEvent(finalSegments);
 
       return finalSegments;
-
     } catch (error) {
-      this.updateStatus('error');
-      const errorMsg = error instanceof Error ? error.message : 'Error deteniendo captura';
-      console.error('Error deteniendo captura:', errorMsg);
+      this.updateStatus("error");
+      const errorMsg =
+        error instanceof Error ? error.message : "Error deteniendo captura";
+      console.error("Error deteniendo captura:", errorMsg);
       this.options.onError?.(errorMsg);
       throw error;
     }
@@ -166,8 +177,10 @@ export class AudioCaptureServiceReal {
    */
   private handleNewSegment(segment: TranscriptionSegment): void {
     // Actualizar o agregar segmento
-    const existingIndex = this.segments.findIndex(s => s.id.startsWith(segment.id.split('_')[0]));
-    
+    const existingIndex = this.segments.findIndex((s) =>
+      s.id.startsWith(segment.id.split("_")[0]),
+    );
+
     if (existingIndex !== -1) {
       // Actualizar segmento existente (para interim results)
       this.segments[existingIndex] = segment;
@@ -183,23 +196,28 @@ export class AudioCaptureServiceReal {
 
     // Notificar a la UI
     this.options.onTranscriptionUpdate?.(segment);
-    
+
     // Emitir evento global para componentes que lo necesiten
     this.emitTranscriptionUpdateEvent(segment);
 
-    console.log(`📝 Segmento ${segment.confidence === 'entendido' ? 'final' : 'temporal'}:`, {
-      actor: segment.actor,
-      contenido: segment.content.substring(0, 50) + (segment.content.length > 50 ? '...' : ''),
-      confianza: segment.confidence
-    });
+    console.log(
+      `📝 Segmento ${segment.confidence === "entendido" ? "final" : "temporal"}:`,
+      {
+        actor: segment.actor,
+        contenido:
+          segment.content.substring(0, 50) +
+          (segment.content.length > 50 ? "..." : ""),
+        confianza: segment.confidence,
+      },
+    );
   }
 
   /**
    * Manejar errores de transcripción
    */
   private handleError(error: string): void {
-    console.error('❌ Error en transcripción:', error);
-    this.updateStatus('error');
+    console.error("❌ Error en transcripción:", error);
+    this.updateStatus("error");
     this.options.onError?.(error);
   }
 
@@ -217,14 +235,16 @@ export class AudioCaptureServiceReal {
    * Emitir evento de actualización de transcripción
    */
   private emitTranscriptionUpdateEvent(segment: TranscriptionSegment): void {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('transcription-update', {
-        detail: { 
-          segment, 
-          allSegments: this.segments,
-          sessionId: this.currentSession?.id
-        }
-      }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("transcription-update", {
+          detail: {
+            segment,
+            allSegments: this.segments,
+            sessionId: this.currentSession?.id,
+          },
+        }),
+      );
     }
   }
 
@@ -232,13 +252,15 @@ export class AudioCaptureServiceReal {
    * Emitir evento de captura completada
    */
   private emitCaptureCompleteEvent(segments: TranscriptionSegment[]): void {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('capture-complete', {
-        detail: { 
-          segments,
-          session: this.currentSession
-        }
-      }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("capture-complete", {
+          detail: {
+            segments,
+            session: this.currentSession,
+          },
+        }),
+      );
     }
   }
 
@@ -284,7 +306,7 @@ export class AudioCaptureServiceReal {
   /**
    * Cambiar idioma dinámicamente
    */
-  setLanguage(language: 'es' | 'en'): void {
+  setLanguage(language: "es" | "en"): void {
     this.options.language = language;
     this.sttService.setLanguage(language);
     console.log(`🌐 Idioma de captura cambiado a: ${language}`);
@@ -302,28 +324,35 @@ export class AudioCaptureServiceReal {
   } | null {
     if (!this.currentSession) return null;
 
-    const duration = this.currentSession.endTime 
-      ? this.currentSession.endTime.getTime() - this.currentSession.startTime.getTime()
+    const duration = this.currentSession.endTime
+      ? this.currentSession.endTime.getTime() -
+        this.currentSession.startTime.getTime()
       : Date.now() - this.currentSession.startTime.getTime();
 
-    const wordsTranscribed = this.segments.reduce((total, segment) => 
-      total + segment.content.split(' ').length, 0
+    const wordsTranscribed = this.segments.reduce(
+      (total, segment) => total + segment.content.split(" ").length,
+      0,
     );
 
-    const averageConfidence = this.segments.length > 0 
-      ? this.segments.reduce((sum, segment) => {
-          const confidenceValue = segment.confidence === 'entendido' ? 1 : 
-                                  segment.confidence === 'poco_claro' ? 0.6 : 0.3;
-          return sum + confidenceValue;
-        }, 0) / this.segments.length
-      : 0;
+    const averageConfidence =
+      this.segments.length > 0
+        ? this.segments.reduce((sum, segment) => {
+            const confidenceValue =
+              segment.confidence === "entendido"
+                ? 1
+                : segment.confidence === "poco_claro"
+                  ? 0.6
+                  : 0.3;
+            return sum + confidenceValue;
+          }, 0) / this.segments.length
+        : 0;
 
     return {
       segmentsCount: this.segments.length,
       duration: Math.round(duration / 1000), // en segundos
       wordsTranscribed,
       averageConfidence: Math.round(averageConfidence * 100) / 100,
-      cost: 0 // ¡GRATIS!
+      cost: 0, // ¡GRATIS!
     };
   }
 
@@ -334,10 +363,10 @@ export class AudioCaptureServiceReal {
     if (this.isCapturing) {
       await this.stopCapture();
     }
-    
+
     this.segments = [];
     this.currentSession = null;
-    console.log('🧹 Recursos de captura limpiados');
+    console.log("🧹 Recursos de captura limpiados");
   }
 
   /**
@@ -345,22 +374,24 @@ export class AudioCaptureServiceReal {
    */
   getStatusMessage(): string {
     if (!this.currentSession) {
-      return 'Listo para capturar audio';
+      return "Listo para capturar audio";
     }
 
     switch (this.currentSession.status) {
-      case 'requesting_permission':
-        return 'Solicitando permisos de micrófono...';
-      case 'recording': {
-        const duration = Math.round((Date.now() - this.currentSession.startTime.getTime()) / 1000);
+      case "requesting_permission":
+        return "Solicitando permisos de micrófono...";
+      case "recording": {
+        const duration = Math.round(
+          (Date.now() - this.currentSession.startTime.getTime()) / 1000,
+        );
         return `Grabando... ${duration}s (${this.segments.length} segmentos)`;
       }
-      case 'stopping':
-        return 'Finalizando captura...';
-      case 'error':
-        return 'Error en la captura';
+      case "stopping":
+        return "Finalizando captura...";
+      case "error":
+        return "Error en la captura";
       default:
-        return 'Estado desconocido';
+        return "Estado desconocido";
     }
   }
-} 
+}

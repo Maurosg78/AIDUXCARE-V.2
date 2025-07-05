@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from "@storybook/react";
 import {
   Card,
   CardHeader,
@@ -6,23 +6,23 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from './Card';
+} from "./Card";
 
 const meta: Meta<typeof Card> = {
-  title: 'UI/Card',
+  title: "UI/Card",
   component: Card,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: 'select',
-      options: ['default', 'outline', 'filled'],
+      control: "select",
+      options: ["default", "outline", "filled"],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
     fullWidth: {
-      control: 'boolean',
+      control: "boolean",
     },
   },
 };
@@ -51,7 +51,7 @@ export const Default: Story = {
 
 export const Small: Story = {
   args: {
-    size: 'sm',
+    size: "sm",
     children: (
       <>
         <CardHeader>
@@ -68,7 +68,7 @@ export const Small: Story = {
 
 export const Medium: Story = {
   args: {
-    size: 'md',
+    size: "md",
     children: (
       <>
         <CardHeader>
@@ -85,7 +85,7 @@ export const Medium: Story = {
 
 export const Large: Story = {
   args: {
-    size: 'lg',
+    size: "lg",
     children: (
       <>
         <CardHeader>
@@ -102,7 +102,7 @@ export const Large: Story = {
 
 export const Outline: Story = {
   args: {
-    variant: 'outline',
+    variant: "outline",
     children: (
       <>
         <CardHeader>
@@ -119,7 +119,7 @@ export const Outline: Story = {
 
 export const Filled: Story = {
   args: {
-    variant: 'filled',
+    variant: "filled",
     children: (
       <>
         <CardHeader>
@@ -162,7 +162,9 @@ export const WithImage: Story = {
         />
         <CardHeader>
           <CardTitle>Tarjeta con imagen</CardTitle>
-          <CardDescription>Incluye una imagen en la parte superior</CardDescription>
+          <CardDescription>
+            Incluye una imagen en la parte superior
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p>Contenido con imagen</p>
@@ -170,4 +172,4 @@ export const WithImage: Story = {
       </>
     ),
   },
-}; 
+};

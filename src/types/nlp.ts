@@ -5,42 +5,43 @@
 
 // === ENTIDADES CLÍNICAS ===
 
-export type ClinicalEntityType = 
-  | 'symptom'           // Síntomas reportados por el paciente
-  | 'finding'           // Hallazgos objetivos del fisioterapeuta
-  | 'anatomy'           // Partes del cuerpo, músculos, articulaciones
-  | 'assessment'        // Evaluaciones, tests, mediciones
-  | 'treatment'         // Tratamientos aplicados
-  | 'diagnosis'         // Diagnósticos mencionados
-  | 'objective'         // Observaciones objetivas
-  | 'plan'             // Planes de tratamiento
-  | 'medication'       // Medicamentos mencionados
-  | 'exercise'         // Ejercicios prescritos
-  | 'contraindication' // Contraindicaciones
-  | 'progress'         // Progreso del paciente
-  | 'goal'             // Objetivos terapéuticos
-  | 'other';           // Otras entidades no clasificadas
+export type ClinicalEntityType =
+  | "symptom" // Síntomas reportados por el paciente
+  | "finding" // Hallazgos objetivos del fisioterapeuta
+  | "anatomy" // Partes del cuerpo, músculos, articulaciones
+  | "assessment" // Evaluaciones, tests, mediciones
+  | "treatment" // Tratamientos aplicados
+  | "diagnosis" // Diagnósticos mencionados
+  | "objective" // Observaciones objetivas
+  | "plan" // Planes de tratamiento
+  | "medication" // Medicamentos mencionados
+  | "exercise" // Ejercicios prescritos
+  | "contraindication" // Contraindicaciones
+  | "progress" // Progreso del paciente
+  | "goal" // Objetivos terapéuticos
+  | "other"; // Otras entidades no clasificadas
 
 export interface ClinicalEntity {
   id: string;
   type: ClinicalEntityType;
   text: string;
   confidence: number;
-  context?: string;     // Contexto adicional de la entidad
-  position?: {          // Posición en el texto
+  context?: string; // Contexto adicional de la entidad
+  position?: {
+    // Posición en el texto
     start: number;
     end: number;
   };
-  timestamp?: number;   // Momento en la transcripción (si disponible)
+  timestamp?: number; // Momento en la transcripción (si disponible)
 }
 
 // === NOTAS SOAP ===
 
 export interface SOAPNotes {
-  subjective: string;   // S: Lo que reporta el paciente
-  objective: string;    // O: Observaciones objetivas del fisioterapeuta
-  assessment: string;   // A: Análisis/evaluación profesional
-  plan: string;         // P: Plan de tratamiento
+  subjective: string; // S: Lo que reporta el paciente
+  objective: string; // O: Observaciones objetivas del fisioterapeuta
+  assessment: string; // A: Análisis/evaluación profesional
+  plan: string; // P: Plan de tratamiento
   generated_at: Date;
   confidence_score?: number;
 }
@@ -48,7 +49,7 @@ export interface SOAPNotes {
 // === TRANSCRIPCIÓN PROCESADA ===
 
 export interface TranscriptSegment {
-  speaker: 'patient' | 'therapist' | 'unknown';
+  speaker: "patient" | "therapist" | "unknown";
   text: string;
   timestamp_start?: number;
   timestamp_end?: number;
@@ -82,7 +83,7 @@ export interface SessionData {
   visit_id: string;
   patient_id: string;
   date: Date;
-  session_type: 'initial' | 'follow_up' | 'discharge';
+  session_type: "initial" | "follow_up" | "discharge";
   duration_minutes?: number;
   therapist_id: string;
 }
@@ -91,15 +92,15 @@ export interface FisiotherapyContext {
   // Identificación
   session: SessionData;
   patient_profile: PatientProfile;
-  
+
   // Datos procesados
   processed_transcript?: ProcessedTranscript;
   generated_soap?: SOAPNotes;
-  
+
   // Contexto histórico
   previous_sessions?: SessionSummary[];
   treatment_history?: TreatmentRecord[];
-  
+
   // Metadatos
   context_version: string;
   created_at: Date;
@@ -111,7 +112,7 @@ export interface SessionSummary {
   date: Date;
   key_findings: string[];
   treatments_applied: string[];
-  patient_response: 'improved' | 'stable' | 'worsened' | 'unknown';
+  patient_response: "improved" | "stable" | "worsened" | "unknown";
 }
 
 export interface TreatmentRecord {
@@ -140,7 +141,8 @@ export interface LLMResponse<T = unknown> {
   cost_usd?: number;
 }
 
-export interface EntityExtractionResponse extends LLMResponse<ClinicalEntity[]> {
+export interface EntityExtractionResponse
+  extends LLMResponse<ClinicalEntity[]> {
   entities_count: number;
   avg_confidence: number;
 }
@@ -158,7 +160,7 @@ export interface NLPConfig {
   temperature: number;
   enable_entity_extraction: boolean;
   enable_soap_generation: boolean;
-  language: 'es' | 'en';
+  language: "es" | "en";
 }
 
 export interface OpenAIConfig extends NLPConfig {
@@ -171,30 +173,30 @@ export interface OpenAIConfig extends NLPConfig {
 
 export interface ProcessingMetrics {
   // Timing Metrics
-  entities_extraction_time_ms?: number;  // Tiempo de extracción de entidades
-  entity_extraction_time_ms?: number;   // Backward compatibility
+  entities_extraction_time_ms?: number; // Tiempo de extracción de entidades
+  entity_extraction_time_ms?: number; // Backward compatibility
   soap_generation_time_ms: number;
   total_processing_time_ms: number;
-  
+
   // Entity Metrics
-  entities_count?: number;              // Número de entidades extraídas
-  entities_extracted?: number;          // Backward compatibility
-  entities_confidence_avg?: number;     // Confianza promedio de entidades
-  
+  entities_count?: number; // Número de entidades extraídas
+  entities_extracted?: number; // Backward compatibility
+  entities_confidence_avg?: number; // Confianza promedio de entidades
+
   // SOAP Metrics
   soap_confidence: number;
-  soap_completeness?: number;           // Backward compatibility
-  
+  soap_completeness?: number; // Backward compatibility
+
   // RAG Metrics
   rag_queries_count?: number;
   rag_citations_found?: number;
-  
+
   // System Metrics
-  prompt_version?: string;              // Versión del prompt usado
-  timeout_occurred?: boolean;           // Si hubo timeout
-  estimated_tokens_used?: number;       // Estimación de tokens
-  model_used?: string;                  // Modelo usado
-  
+  prompt_version?: string; // Versión del prompt usado
+  timeout_occurred?: boolean; // Si hubo timeout
+  estimated_tokens_used?: number; // Estimación de tokens
+  model_used?: string; // Modelo usado
+
   // Legacy/Backward compatibility
   session_id?: string;
   stt_duration_ms?: number;
@@ -207,14 +209,14 @@ export interface ProcessingMetrics {
 
 // === ERRORES Y VALIDACIÓN ===
 
-export type NLPErrorType = 
-  | 'api_error'
-  | 'parsing_error'
-  | 'validation_error'
-  | 'quota_exceeded'
-  | 'model_unavailable'
-  | 'timeout'
-  | 'invalid_input';
+export type NLPErrorType =
+  | "api_error"
+  | "parsing_error"
+  | "validation_error"
+  | "quota_exceeded"
+  | "model_unavailable"
+  | "timeout"
+  | "invalid_input";
 
 export interface NLPError {
   type: NLPErrorType;
@@ -226,40 +228,45 @@ export interface NLPError {
 
 // === FUNCIONES DE VALIDACIÓN ===
 
-export function isValidClinicalEntity(entity: unknown): entity is ClinicalEntity {
-  if (!entity || typeof entity !== 'object') return false;
-  
+export function isValidClinicalEntity(
+  entity: unknown,
+): entity is ClinicalEntity {
+  if (!entity || typeof entity !== "object") return false;
+
   const e = entity as Record<string, unknown>;
   return (
-    typeof e.id === 'string' &&
-    typeof e.type === 'string' && 
-    typeof e.text === 'string' &&
-    typeof e.confidence === 'number' &&
-    e.confidence >= 0 && e.confidence <= 1
+    typeof e.id === "string" &&
+    typeof e.type === "string" &&
+    typeof e.text === "string" &&
+    typeof e.confidence === "number" &&
+    e.confidence >= 0 &&
+    e.confidence <= 1
   );
 }
 
 export function isValidSOAPNotes(soap: unknown): soap is SOAPNotes {
-  if (!soap || typeof soap !== 'object') return false;
-  
+  if (!soap || typeof soap !== "object") return false;
+
   const s = soap as Record<string, unknown>;
   return (
-    typeof s.subjective === 'string' &&
-    typeof s.objective === 'string' &&
-    typeof s.assessment === 'string' &&
-    typeof s.plan === 'string' &&
+    typeof s.subjective === "string" &&
+    typeof s.objective === "string" &&
+    typeof s.assessment === "string" &&
+    typeof s.plan === "string" &&
     s.generated_at instanceof Date
   );
 }
 
-export function isValidFisiotherapyContext(context: unknown): context is FisiotherapyContext {
-  if (!context || typeof context !== 'object') return false;
-  
+export function isValidFisiotherapyContext(
+  context: unknown,
+): context is FisiotherapyContext {
+  if (!context || typeof context !== "object") return false;
+
   const c = context as Record<string, unknown>;
   return (
-    typeof c.session === 'object' &&
-    typeof c.patient_profile === 'object' &&
-    typeof c.context_version === 'string' &&
+    typeof c.session === "object" &&
+    typeof c.patient_profile === "object" &&
+    typeof c.context_version === "string" &&
     c.created_at instanceof Date
   );
 }
@@ -267,35 +274,35 @@ export function isValidFisiotherapyContext(context: unknown): context is Fisioth
 // === CONSTANTES ===
 
 export const CLINICAL_ENTITY_TYPES: ClinicalEntityType[] = [
-  'symptom',
-  'treatment', 
-  'diagnosis',
-  'objective',
-  'plan',
-  'medication',
-  'exercise',
-  'contraindication',
-  'progress',
-  'goal',
-  'finding',
-  'anatomy',
-  'assessment',
-  'other'
+  "symptom",
+  "treatment",
+  "diagnosis",
+  "objective",
+  "plan",
+  "medication",
+  "exercise",
+  "contraindication",
+  "progress",
+  "goal",
+  "finding",
+  "anatomy",
+  "assessment",
+  "other",
 ];
 
 export const DEFAULT_NLP_CONFIG: NLPConfig = {
-  model: 'gpt-3.5-turbo',
+  model: "gpt-3.5-turbo",
   max_tokens: 2000,
   temperature: 0.3,
   enable_entity_extraction: true,
   enable_soap_generation: true,
-  language: 'es'
+  language: "es",
 };
 
-export const MCP_VERSION = '1.0.0';
+export const MCP_VERSION = "1.0.0";
 
 export const CONFIDENCE_THRESHOLDS = {
   HIGH: 0.8,
   MEDIUM: 0.6,
-  LOW: 0.3
-} as const; 
+  LOW: 0.3,
+} as const;

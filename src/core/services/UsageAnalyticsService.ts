@@ -7,15 +7,15 @@ export const trackMetric = (
   userId: string,
   visitId: string,
   value: number,
-  metadata?: MetricData
+  metadata?: MetricData,
 ): void => {
   // Implementación del tracking de métricas
-  console.log('Tracking metric:', {
+  console.log("Tracking metric:", {
     metricName,
     userId,
     visitId,
     value,
     metadata,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-}; 
+};

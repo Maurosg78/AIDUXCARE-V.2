@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface AudioCaptureSectionProps {
   visitId: string;
 }
 
-const AudioCaptureSection: React.FC<AudioCaptureSectionProps> = ({ visitId }) => {
+const AudioCaptureSection: React.FC<AudioCaptureSectionProps> = ({
+  visitId,
+}) => {
   const [isRecording, setIsRecording] = useState(false);
 
   // Usar visitId para registrar eventos si fuera necesario
@@ -22,9 +24,10 @@ const AudioCaptureSection: React.FC<AudioCaptureSectionProps> = ({ visitId }) =>
     <div className="space-y-4">
       <h2 className="text-xl font-medium text-gray-900">Escucha Activa</h2>
       <p className="text-sm text-gray-500">
-        Capture la conversación con el paciente para generar documentación clínica
+        Capture la conversación con el paciente para generar documentación
+        clínica
       </p>
-      
+
       <div className="flex space-x-3 mt-6">
         {!isRecording ? (
           <button
@@ -55,4 +58,4 @@ const AudioCaptureSection: React.FC<AudioCaptureSectionProps> = ({ visitId }) =>
   );
 };
 
-export default AudioCaptureSection; 
+export default AudioCaptureSection;

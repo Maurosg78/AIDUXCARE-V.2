@@ -1,27 +1,35 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Button } from './Button';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Button } from "./Button";
 
 const meta: Meta<typeof Button> = {
-  title: 'Components/Button',
+  title: "Components/Button",
   component: Button,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: 'select',
-      options: ['primary', 'secondary', 'accent', 'success', 'warning', 'error', 'ghost'],
+      control: "select",
+      options: [
+        "primary",
+        "secondary",
+        "accent",
+        "success",
+        "warning",
+        "error",
+        "ghost",
+      ],
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
     isLoading: {
-      control: 'boolean',
+      control: "boolean",
     },
     disabled: {
-      control: 'boolean',
+      control: "boolean",
     },
     fullWidth: {
-      control: 'boolean',
+      control: "boolean",
     },
   },
 };
@@ -31,70 +39,70 @@ type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
   args: {
-    children: 'Botón Primario',
-    variant: 'primary',
+    children: "Botón Primario",
+    variant: "primary",
   },
 };
 
 export const Secondary: Story = {
   args: {
-    children: 'Botón Secundario',
-    variant: 'secondary',
+    children: "Botón Secundario",
+    variant: "secondary",
   },
 };
 
 export const Accent: Story = {
   args: {
-    children: 'Botón de Acento',
-    variant: 'accent',
+    children: "Botón de Acento",
+    variant: "accent",
   },
 };
 
 export const Success: Story = {
   args: {
-    children: 'Botón de Éxito',
-    variant: 'success',
+    children: "Botón de Éxito",
+    variant: "success",
   },
 };
 
 export const Warning: Story = {
   args: {
-    children: 'Botón de Advertencia',
-    variant: 'warning',
+    children: "Botón de Advertencia",
+    variant: "warning",
   },
 };
 
 export const Error: Story = {
   args: {
-    children: 'Botón de Error',
-    variant: 'error',
+    children: "Botón de Error",
+    variant: "error",
   },
 };
 
 export const Ghost: Story = {
   args: {
-    children: 'Botón Fantasma',
-    variant: 'ghost',
+    children: "Botón Fantasma",
+    variant: "ghost",
   },
 };
 
 export const Loading: Story = {
   args: {
-    children: 'Cargando...',
+    children: "Cargando...",
     isLoading: true,
   },
 };
 
 export const Disabled: Story = {
   args: {
-    children: 'Botón Deshabilitado',
+    children: "Botón Deshabilitado",
     disabled: true,
   },
 };
 
 export const WithIcons: Story = {
   args: {
-    children: 'Botón con Íconos',
+    children: "Botón con Íconos",
     leftIcon: (
       <svg
         className="w-5 h-5"
@@ -132,7 +140,7 @@ export const WithIcons: Story = {
 
 export const FullWidth: Story = {
   args: {
-    children: 'Botón de Ancho Completo',
+    children: "Botón de Ancho Completo",
     fullWidth: true,
   },
 };
@@ -159,4 +167,4 @@ export const AllVariants: Story = {
       <Button variant="ghost">Botón Fantasma</Button>
     </div>
   ),
-}; 
+};

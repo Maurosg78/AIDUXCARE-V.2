@@ -1,11 +1,9 @@
-import { z } from 'zod';
-import type { MemoryBlock, AgentContext } from '@/types/agent';
-import * as SupabaseDataSource from './MCPDataSourceSupabase';
-import { MCPMemoryBlock } from './schema';
+import * as SupabaseDataSource from "./MCPDataSourceSupabase";
+import { MCPMemoryBlock } from "./schema";
 
 export class MCPManager {
   async getContextForVisit(visitId: string): Promise<Record<string, unknown>> {
-    return { context: 'mocked context for visitId ' + visitId };
+    return { context: "mocked context for visitId " + visitId };
   }
 
   async saveContext(visitId: string, context: Record<string, unknown>) {
@@ -23,30 +21,34 @@ export class MCPManager {
       // Intentar obtener datos de memoria contextual
       // Si falla, devolver estructura base con arrays vacíos
       const contextualPromise = SupabaseDataSource.getContextualMemory(visitId);
-      
+
       try {
         await contextualPromise;
       } catch (error) {
-        console.error('[MCPManager] Error al obtener memoria contextual:', error);
+        console.error(
+          "[MCPManager] Error al obtener memoria contextual:",
+          error,
+        );
         // Si falla la memoria contextual, devolvemos un contexto vacío
         return {
-          contextual: { source: 'supabase', data: [] },
-          persistent: { source: 'supabase', data: [] },
-          semantic: { source: 'supabase', data: [] }
+          contextual: { source: "supabase", data: [] },
+          persistent: { source: "supabase", data: [] },
+          semantic: { source: "supabase", data: [] },
         };
       }
-      
+
       // Si llegamos aquí, la memoria contextual fue exitosa
       // Obtener el resto de datos
-      const [contextualMemory, persistentMemory, semanticMemory] = await Promise.all([
-        contextualPromise,
-        SupabaseDataSource.getPersistentMemory(patientId).catch(() => []),
-        SupabaseDataSource.getSemanticMemory().catch(() => [])
-      ]);
+      const [contextualMemory, persistentMemory, semanticMemory] =
+        await Promise.all([
+          contextualPromise,
+          SupabaseDataSource.getPersistentMemory(patientId).catch(() => []),
+          SupabaseDataSource.getSemanticMemory().catch(() => []),
+        ]);
 
       // Procesar los bloques de memoria
-      const processBlocks = (blocks: MCPMemoryBlock[] = []) => 
-        blocks.map(block => ({
+      const processBlocks = (blocks: MCPMemoryBlock[] = []) =>
+        blocks.map((block) => ({
           id: block.id,
           created_at: block.created_at,
           type: block.type,
@@ -56,26 +58,29 @@ export class MCPManager {
 
       // Construir el objeto de contexto final
       return {
-        contextual: { 
-          source: 'supabase', 
-          data: processBlocks(contextualMemory) 
+        contextual: {
+          source: "supabase",
+          data: processBlocks(contextualMemory),
         },
-        persistent: { 
-          source: 'supabase', 
-          data: processBlocks(persistentMemory) 
+        persistent: {
+          source: "supabase",
+          data: processBlocks(persistentMemory),
         },
-        semantic: { 
-          source: 'supabase', 
-          data: processBlocks(semanticMemory) 
-        }
+        semantic: {
+          source: "supabase",
+          data: processBlocks(semanticMemory),
+        },
       };
     } catch (error) {
-      console.error('[MCPManager] Error inesperado al construir contexto:', error);
+      console.error(
+        "[MCPManager] Error inesperado al construir contexto:",
+        error,
+      );
       // En caso de error, devolver estructura base con arrays vacíos
       return {
-        contextual: { source: 'supabase', data: [] },
-        persistent: { source: 'supabase', data: [] },
-        semantic: { source: 'supabase', data: [] }
+        contextual: { source: "supabase", data: [] },
+        persistent: { source: "supabase", data: [] },
+        semantic: { source: "supabase", data: [] },
       };
     }
   }
