@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AudioCaptureServiceReal, CaptureSession, CaptureStatus } from '../services/AudioCaptureServiceReal';
-import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
-import { WebSpeechSTTService } from '../services/WebSpeechSTTService';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  AudioCaptureServiceReal,
+  CaptureStatus,
+} from "../services/AudioCaptureServiceReal";
+import { TranscriptionSegment } from "../core/audio/AudioCaptureService";
+import { WebSpeechSTTService } from "../services/WebSpeechSTTService";
 
 interface RealTimeAudioCaptureProps {
   onCaptureComplete?: (segments: TranscriptionSegment[]) => void;
   onTranscriptionUpdate?: (segment: TranscriptionSegment) => void;
-  language?: 'es' | 'en';
+  language?: "es" | "en";
   className?: string;
 }
 
@@ -21,16 +24,17 @@ interface SessionStats {
 const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   onCaptureComplete,
   onTranscriptionUpdate,
-  language = 'es',
-  className = ''
+  language = "es",
+  className = "",
 }) => {
   const [isSupported, setIsSupported] = useState<boolean>(true);
-  const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('idle');
-  const [currentSession, setCurrentSession] = useState<CaptureSession | null>(null);
-  const [transcriptionSegments, setTranscriptionSegments] = useState<TranscriptionSegment[]>([]);
+  const [captureStatus, setCaptureStatus] = useState<CaptureStatus>("idle");
+  const [transcriptionSegments, setTranscriptionSegments] = useState<
+    TranscriptionSegment[]
+  >([]);
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
   const audioCaptureRef = useRef<AudioCaptureServiceReal | null>(null);
   const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -39,8 +43,8 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
     audioCaptureRef.current = new AudioCaptureServiceReal({
       language,
       onTranscriptionUpdate: (segment) => {
-        setTranscriptionSegments(prev => {
-          const existingIndex = prev.findIndex(s => s.id === segment.id);
+        setTranscriptionSegments((prev) => {
+          const existingIndex = prev.findIndex((s) => s.id === segment.id);
           if (existingIndex !== -1) {
             const updated = [...prev];
             updated[existingIndex] = segment;
@@ -52,11 +56,11 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       },
       onError: (error) => {
         setErrorMessage(error);
-        setCaptureStatus('error');
+        setCaptureStatus("error");
       },
       onStatusChange: (status) => {
         setCaptureStatus(status);
-      }
+      },
     });
 
     // Verificar soporte del navegador
@@ -75,7 +79,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
 
   // Actualizar estadísticas en tiempo real
   useEffect(() => {
-    if (captureStatus === 'recording' && audioCaptureRef.current) {
+    if (captureStatus === "recording" && audioCaptureRef.current) {
       statsIntervalRef.current = setInterval(() => {
         const stats = audioCaptureRef.current?.getSessionStats();
         if (stats) {
@@ -98,16 +102,16 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
     if (!audioCaptureRef.current) return;
 
     try {
-      setErrorMessage('');
+      setErrorMessage("");
       setTranscriptionSegments([]);
       setSessionStats(null);
-      
-      const session = await audioCaptureRef.current.startCapture();
-      setCurrentSession(session);
+
+      await audioCaptureRef.current.startCapture();
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMsg =
+        error instanceof Error ? error.message : "Error desconocido";
       setErrorMessage(errorMsg);
-      setCaptureStatus('error');
+      setCaptureStatus("error");
     }
   };
 
@@ -116,97 +120,100 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
 
     try {
       const finalSegments = await audioCaptureRef.current.stopCapture();
-      setCurrentSession(prev => prev ? { ...prev, status: 'idle' } : null);
       onCaptureComplete?.(finalSegments);
-      
+
       // Mantener estadísticas finales
       const finalStats = audioCaptureRef.current.getSessionStats();
       if (finalStats) {
         setSessionStats(finalStats);
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error deteniendo captura';
+      const errorMsg =
+        error instanceof Error ? error.message : "Error deteniendo captura";
       setErrorMessage(errorMsg);
     }
   };
 
   const getStatusIcon = () => {
     switch (captureStatus) {
-      case 'idle':
-        return '⏸️';
-      case 'requesting_permission':
-        return '🔄';
-      case 'recording':
-        return '🔴';
-      case 'stopping':
-        return '⏹️';
-      case 'error':
-        return '❌';
+      case "idle":
+        return "⏸️";
+      case "requesting_permission":
+        return "🔄";
+      case "recording":
+        return "🔴";
+      case "stopping":
+        return "⏹️";
+      case "error":
+        return "❌";
       default:
-        return '❓';
+        return "❓";
     }
   };
 
   const getStatusColor = () => {
     switch (captureStatus) {
-      case 'idle':
-        return 'text-gray-600';
-      case 'requesting_permission':
-        return 'text-blue-600';
-      case 'recording':
-        return 'text-red-600';
-      case 'stopping':
-        return 'text-orange-600';
-      case 'error':
-        return 'text-red-600';
+      case "idle":
+        return "text-gray-600";
+      case "requesting_permission":
+        return "text-blue-600";
+      case "recording":
+        return "text-red-600";
+      case "stopping":
+        return "text-orange-600";
+      case "error":
+        return "text-red-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
 
   const getActorBadgeColor = (actor: string) => {
     switch (actor) {
-      case 'profesional':
-        return 'bg-blue-100 text-blue-800';
-      case 'paciente':
-        return 'bg-green-100 text-green-800';
-      case 'acompañante':
-        return 'bg-purple-100 text-purple-800';
+      case "profesional":
+        return "bg-blue-100 text-blue-800";
+      case "paciente":
+        return "bg-green-100 text-green-800";
+      case "acompañante":
+        return "bg-purple-100 text-purple-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getConfidenceColor = (confidence: string) => {
     switch (confidence) {
-      case 'entendido':
-        return 'text-green-600';
-      case 'poco_claro':
-        return 'text-yellow-600';
-      case 'no_reconocido':
-        return 'text-red-600';
+      case "entendido":
+        return "text-green-600";
+      case "poco_claro":
+        return "text-yellow-600";
+      case "no_reconocido":
+        return "text-red-600";
       default:
-        return 'text-gray-600';
+        return "text-gray-600";
     }
   };
 
   if (!isSupported) {
     const compatibility = WebSpeechSTTService.getBrowserCompatibility();
     return (
-      <div className={`p-6 bg-yellow-50 border border-yellow-200 rounded-lg ${className}`}>
+      <div
+        className={`p-6 bg-yellow-50 border border-yellow-200 rounded-lg ${className}`}
+      >
         <div className="flex items-center space-x-3 mb-4">
           <span className="text-2xl">⚠️</span>
           <h3 className="text-lg font-semibold text-yellow-800">
             Navegador No Compatible
           </h3>
         </div>
-        
+
         <div className="space-y-3 text-sm text-yellow-700">
           <p>
             <strong>Tu navegador:</strong> {compatibility.browserName}
           </p>
           <p>
-            <strong>Estado:</strong> {compatibility.isSupported ? 'Soporte limitado' : 'No soportado'}
+            <strong>Estado:</strong>{" "}
+            {compatibility.isSupported ? "Soporte limitado" : "No soportado"}
           </p>
           <p>
             <strong>Recomendación:</strong> {compatibility.recommendedAction}
@@ -214,7 +221,9 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
         </div>
 
         <div className="mt-4 p-3 bg-white rounded border">
-          <h4 className="font-medium text-yellow-800 mb-2">✅ Navegadores Compatibles:</h4>
+          <h4 className="font-medium text-yellow-800 mb-2">
+            ✅ Navegadores Compatibles:
+          </h4>
           <ul className="text-sm text-yellow-700 space-y-1">
             <li>• Google Chrome (recomendado)</li>
             <li>• Microsoft Edge</li>
@@ -226,7 +235,9 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg border border-gray-200 ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-lg border border-gray-200 ${className}`}
+    >
       {/* Header con controles principales */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
@@ -241,20 +252,21 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <span className={`text-lg ${getStatusColor()}`}>
               {getStatusIcon()}
             </span>
             <span className={`text-sm font-medium ${getStatusColor()}`}>
-              {audioCaptureRef.current?.getStatusMessage() || 'Inicializando...'}
+              {audioCaptureRef.current?.getStatusMessage() ||
+                "Inicializando..."}
             </span>
           </div>
         </div>
 
         {/* Controles de captura */}
         <div className="flex items-center space-x-3">
-          {captureStatus === 'idle' ? (
+          {captureStatus === "idle" ? (
             <button
               onClick={handleStartCapture}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
@@ -265,7 +277,10 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
           ) : (
             <button
               onClick={handleStopCapture}
-              disabled={captureStatus === 'stopping' || captureStatus === 'requesting_permission'}
+              disabled={
+                captureStatus === "stopping" ||
+                captureStatus === "requesting_permission"
+              }
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
               <span>⏹️</span>
@@ -276,10 +291,10 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
           <select
             value={language}
             onChange={(e) => {
-              const newLang = e.target.value as 'es' | 'en';
+              const newLang = e.target.value as "es" | "en";
               audioCaptureRef.current?.setLanguage(newLang);
             }}
-            disabled={captureStatus === 'recording'}
+            disabled={captureStatus === "recording"}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50"
             aria-label="Seleccionar idioma de transcripción"
           >
@@ -302,26 +317,38 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       {/* Estadísticas de sesión */}
       {sessionStats && (
         <div className="p-4 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">📊 Estadísticas de Sesión</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">
+            📊 Estadísticas de Sesión
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div className="text-center">
-              <div className="font-semibold text-lg text-blue-600">{sessionStats.segmentsCount}</div>
+              <div className="font-semibold text-lg text-blue-600">
+                {sessionStats.segmentsCount}
+              </div>
               <div className="text-gray-600">Segmentos</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg text-green-600">{sessionStats.duration}s</div>
+              <div className="font-semibold text-lg text-green-600">
+                {sessionStats.duration}s
+              </div>
               <div className="text-gray-600">Duración</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg text-purple-600">{sessionStats.wordsTranscribed}</div>
+              <div className="font-semibold text-lg text-purple-600">
+                {sessionStats.wordsTranscribed}
+              </div>
               <div className="text-gray-600">Palabras</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg text-orange-600">{Math.round(sessionStats.averageConfidence * 100)}%</div>
+              <div className="font-semibold text-lg text-orange-600">
+                {Math.round(sessionStats.averageConfidence * 100)}%
+              </div>
               <div className="text-gray-600">Confianza</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg text-emerald-600">${sessionStats.cost.toFixed(2)}</div>
+              <div className="font-semibold text-lg text-emerald-600">
+                ${sessionStats.cost.toFixed(2)}
+              </div>
               <div className="text-gray-600">Costo</div>
             </div>
           </div>
@@ -342,7 +369,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {transcriptionSegments.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {captureStatus === 'recording' ? (
+              {captureStatus === "recording" ? (
                 <div className="flex items-center justify-center space-x-2">
                   <span className="animate-pulse">🎤</span>
                   <span>Esperando audio...</span>
@@ -352,17 +379,21 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
               )}
             </div>
           ) : (
-            transcriptionSegments.map((segment, index) => (
-              <div 
+            transcriptionSegments.map((segment) => (
+              <div
                 key={segment.id}
                 className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getActorBadgeColor(segment.actor)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getActorBadgeColor(segment.actor)}`}
+                    >
                       {segment.actor}
                     </span>
-                    <span className={`text-xs font-medium ${getConfidenceColor(segment.confidence)}`}>
+                    <span
+                      className={`text-xs font-medium ${getConfidenceColor(segment.confidence)}`}
+                    >
                       {segment.confidence}
                     </span>
                   </div>
@@ -382,4 +413,4 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   );
 };
 
-export default RealTimeAudioCapture; 
+export default RealTimeAudioCapture;
