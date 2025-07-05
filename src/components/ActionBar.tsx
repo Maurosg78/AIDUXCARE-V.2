@@ -6,6 +6,7 @@ interface ActionBarProps {
   onUploadClick: () => void;
   onCameraClick: () => void;
   onSave: () => void;
+  disabled?: boolean;
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({ 
@@ -13,8 +14,16 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onMicClick, 
   onUploadClick, 
   onCameraClick, 
-  onSave 
+  onSave,
+  disabled = false
 }) => {
+  const getButtonStyle = (baseStyle: React.CSSProperties, isPrimary: boolean = false) => ({
+    ...baseStyle,
+    opacity: disabled ? 0.6 : 1,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    pointerEvents: disabled ? 'none' as const : 'auto' as const
+  });
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -25,62 +34,62 @@ const ActionBar: React.FC<ActionBarProps> = ({
     }}>
       <button
         onClick={onMicClick}
-        style={{
+        disabled={disabled}
+        style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
           border: 'none',
           backgroundColor: isRecording ? '#ef4444' : '#10b981',
           color: 'white',
-          cursor: 'pointer',
           fontWeight: 'bold',
           fontSize: '14px'
-        }}
+        }, true)}
       >
         {isRecording ? '🛑 Detener' : '🎤 Grabar'}
       </button>
       
       <button
         onClick={onUploadClick}
-        style={{
+        disabled={disabled}
+        style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
           border: '1px solid #ddd',
           backgroundColor: 'white',
           color: '#333',
-          cursor: 'pointer',
           fontSize: '14px'
-        }}
+        })}
       >
         📁 Subir Audio
       </button>
       
       <button
         onClick={onCameraClick}
-        style={{
+        disabled={disabled}
+        style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
           border: '1px solid #ddd',
           backgroundColor: 'white',
           color: '#333',
-          cursor: 'pointer',
           fontSize: '14px'
-        }}
+        })}
       >
         📷 Foto
       </button>
       
       <button
         onClick={onSave}
-        style={{
+        disabled={disabled}
+        style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
           border: 'none',
           backgroundColor: '#3b82f6',
           color: 'white',
-          cursor: 'pointer',
           fontWeight: 'bold',
           fontSize: '14px'
-        }}
+        }, true)}
       >
         💾 Guardar
       </button>
