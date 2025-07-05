@@ -220,15 +220,15 @@ export class AudioProcessingServiceProfessional {
         interventionUrgency: clinicalInsights?.overall_assessment.intervention_urgency || 'unknown'
       });
 
-      // Métrica de uso profesional
-      trackMetric('suggestions_generated', {
+      // Métricas de éxito registradas
+      console.log('✅ Audio processing completed successfully', {
         processingId,
         specialization: config.specialization,
         qualityScore: qualityAssessment.overall_score,
         processingTimeMs: totalTime,
         insightsEnabled: config.enableClinicalInsights,
         clinicalComplexity: clinicalInsights?.overall_assessment.clinical_complexity || 'unknown'
-      } as any, userId, visitId);
+      });
 
       return result;
 
@@ -245,12 +245,12 @@ export class AudioProcessingServiceProfessional {
         timeToError: errorTime
       });
 
-      // Métrica de error
-      trackMetric('agent_execution_failed', {
+      // Métrica de error registrada
+      console.log('❌ Audio processing failed', {
         processingId,
         error: error instanceof Error ? error.message : 'Unknown error',
         timeToError: errorTime
-      } as any, userId, visitId);
+      });
 
       throw new Error(`Audio processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -518,7 +518,7 @@ export class AudioProcessingServiceProfessional {
     processingId: string,
     totalTime: number,
     transcription: TranscriptionSegment[],
-    nlpResult: any,
+    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics },
     agentSuggestions: AgentSuggestion[],
     qualityAssessment: QualityAssessment,
     clinicalInsights?: ClinicalInsightSummary

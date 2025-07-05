@@ -40,34 +40,34 @@ describe('SuggestionIntegrationService', () => {
   describe('integrateSuggestion', () => {
     it('debe integrar una sugerencia en un campo vacío', async () => {
       // Mock para verificar visita
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: { id: mockVisitId, patient_id: mockPatientId },
           error: null
         })
-      });
+      } as any);
 
       // Mock para insertar en integrated_suggestions
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         insert: vi.fn().mockResolvedValue({ error: null })
-      });
+      } as any);
 
       // Mock para obtener campo actual (no existe)
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116', message: 'Not found' }
           })
-      });
+      } as any);
 
       // Mock para upsert del campo
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         upsert: vi.fn().mockResolvedValue({ error: null })
-      });
+      } as any);
 
       await SuggestionIntegrationService.integrateSuggestion(mockSuggestion, mockVisitId, mockUserId);
 
@@ -86,34 +86,34 @@ describe('SuggestionIntegrationService', () => {
       const existingContent = 'Existing content';
       
       // Mock para verificar visita
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({
           data: { id: mockVisitId, patient_id: mockPatientId },
               error: null
             })
-      });
+      } as any);
 
       // Mock para insertar en integrated_suggestions
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         insert: vi.fn().mockResolvedValue({ error: null })
-      });
+      } as any);
 
       // Mock para obtener campo actual (existe)
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: { content: existingContent },
           error: null
         })
-      });
+      } as any);
 
       // Mock para upsert del campo
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         upsert: vi.fn().mockResolvedValue({ error: null })
-      });
+      } as any);
 
       await SuggestionIntegrationService.integrateSuggestion(mockSuggestion, mockVisitId, mockUserId);
 
@@ -130,14 +130,14 @@ describe('SuggestionIntegrationService', () => {
 
     it('debe lanzar error si la visita no existe', async () => {
       // Mock para verificar visita (no existe)
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116', message: 'Not found' }
         })
-      });
+      } as any);
 
       await expect(
         SuggestionIntegrationService.integrateSuggestion(mockSuggestion, mockVisitId, mockUserId)
@@ -146,29 +146,29 @@ describe('SuggestionIntegrationService', () => {
 
     it('debe lanzar error si hay un problema al obtener el campo', async () => {
       // Mock para verificar visita
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: { id: mockVisitId, patient_id: mockPatientId },
           error: null
         })
-      });
+      } as any);
 
       // Mock para insertar en integrated_suggestions
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         insert: vi.fn().mockResolvedValue({ error: null })
-      });
+      } as any);
 
       // Mock para obtener campo actual (error)
-      (supabase.from as any).mockReturnValueOnce({
+      (supabase.from as jest.MockedFunction<typeof supabase.from>).mockReturnValueOnce({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({
               data: null,
               error: { message: 'Database error' }
         })
-      });
+      } as any);
 
       await expect(
         SuggestionIntegrationService.integrateSuggestion(mockSuggestion, mockVisitId, mockUserId)

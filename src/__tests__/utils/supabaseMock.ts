@@ -1,22 +1,22 @@
 import { vi } from 'vitest';
 
-export type SupabaseResponse<T = any> = {
+export type SupabaseResponse<T = unknown> = {
   data: T | null;
   error: { message: string; code?: string } | null;
 };
 
 export type SupabaseBuilder = {
   select: (columns?: string) => SupabaseBuilder;
-  insert: (data: any) => SupabaseBuilder;
-  update: (data: any) => SupabaseBuilder;
+  insert: (data: Record<string, unknown>) => SupabaseBuilder;
+  update: (data: Record<string, unknown>) => SupabaseBuilder;
   delete: () => SupabaseBuilder;
-  eq: (column: string, value: any) => SupabaseBuilder;
-  in: (column: string, values: any[]) => SupabaseBuilder;
-  gt: (column: string, value: any) => SupabaseBuilder;
-  lt: (column: string, value: any) => SupabaseBuilder;
+  eq: (column: string, value: string | number | boolean) => SupabaseBuilder;
+  in: (column: string, values: (string | number | boolean)[]) => SupabaseBuilder;
+  gt: (column: string, value: string | number) => SupabaseBuilder;
+  lt: (column: string, value: string | number) => SupabaseBuilder;
   or: (conditions: string) => SupabaseBuilder;
   single: () => Promise<SupabaseResponse>;
-  then: (callback: (response: SupabaseResponse) => any) => Promise<any>;
+  then: (callback: (response: SupabaseResponse) => unknown) => Promise<unknown>;
 };
 
 export function createSupabaseMock(response: SupabaseResponse): SupabaseBuilder {

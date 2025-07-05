@@ -14,21 +14,21 @@ const mockAuditLog = vi.fn();
 vi.mock('@/services/EMRFormService', () => ({
   EMRFormService: {
     insertSuggestion: (
-      a: any,
-      b: any,
-      c: any,
-      d: any
+      a: Record<string, unknown>,
+      b: string,
+      c: string,
+      d: string
     ) => mockInsertSuggestion(a, b, c, d)
   }
 }));
 
 vi.mock('@/services/UsageAnalyticsService', () => ({
-  trackMetric: (...args: any[]) => mockTrackMetric(...args)
+  trackMetric: (...args: unknown[]) => mockTrackMetric(...args)
 }));
 
 vi.mock('@/services/AuditLogger', () => ({
   AuditLogger: {
-    log: (...args: any[]) => mockAuditLog(...args)
+    log: (...args: unknown[]) => mockAuditLog(...args)
   }
 }));
 
