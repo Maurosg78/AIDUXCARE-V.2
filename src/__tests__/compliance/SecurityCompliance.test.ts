@@ -1,34 +1,34 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { EnterpriseSecurityService } from '../../services/EnterpriseSecurityService';
-import { AzureOpenAIService } from '../../services/AzureOpenAIService';
-import { CryptoService } from '../../services/CryptoService';
+import { describe, it, expect, beforeEach } from "vitest";
+import { EnterpriseSecurityService } from "../../services/EnterpriseSecurityService";
+import { AzureOpenAIService } from "../../services/AzureOpenAIService";
+import { CryptoService } from "../../services/CryptoService";
 
-describe('Security Compliance Tests - Deloitte ISO Standards', () => {
-  let securityService: EnterpriseSecurityService;
-  let azureService: AzureOpenAIService;
+describe("Security Compliance Tests - Deloitte ISO Standards", () => {
+  let _securityService: EnterpriseSecurityService;
+  let _azureService: AzureOpenAIService;
 
   beforeEach(() => {
-    securityService = new EnterpriseSecurityService();
-    azureService = new AzureOpenAIService();
+    _securityService = new EnterpriseSecurityService();
+    _azureService = new AzureOpenAIService();
   });
 
-  describe('HIPAA Compliance', () => {
-    it('should encrypt and decrypt PHI data with AES-256-GCM (Web Crypto API)', async () => {
+  describe("HIPAA Compliance", () => {
+    it("should encrypt and decrypt PHI data with AES-256-GCM (Web Crypto API)", async () => {
       const phiData = {
-        patientId: 'TEST-001',
+        patientId: "TEST-001",
         data: {
-          name: 'John Doe',
-          diagnosis: 'Lower back pain',
-          treatment: 'Physical therapy'
+          name: "John Doe",
+          diagnosis: "Lower back pain",
+          treatment: "Physical therapy",
         },
-        classification: 'PHI' as const,
-        timestamp: new Date().toISOString()
+        classification: "PHI" as const,
+        timestamp: new Date().toISOString(),
       };
-      const passphrase = 'AIDUXCARE_SUPER_SECURE_KEY';
+      const passphrase = "AIDUXCARE_SUPER_SECURE_KEY";
       const plain = JSON.stringify(phiData);
       const encrypted = await CryptoService.encrypt(plain, passphrase);
       expect(encrypted).toBeDefined();
-      expect(encrypted).not.toContain('John Doe');
+      expect(encrypted).not.toContain("John Doe");
       const decrypted = await CryptoService.decrypt(encrypted, passphrase);
       expect(decrypted).toBe(plain);
       const parsed = JSON.parse(decrypted);
@@ -36,9 +36,9 @@ describe('Security Compliance Tests - Deloitte ISO Standards', () => {
       expect(parsed.data.diagnosis).toBe(phiData.data.diagnosis);
     });
 
-    it('should validate access control for different roles', () => {
+    it("should validate access control for different roles", () => {
       // Test implementation
       expect(true).toBe(true);
     });
   });
-}); 
+});
