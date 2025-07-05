@@ -110,16 +110,9 @@ Responde SOLO en formato JSON:
     const startTime = Date.now();
     const promptVersion = 'current';
     
-    try {
-      let result: SOAPNotes;
-      
-      result = await this.generateSOAPNotesOriginal(transcript, entities, useRAG);
-      
-      return result;
-      
-    } catch (error) {
-      throw error;
-    }
+    const result = await this.generateSOAPNotesOriginal(transcript, entities, useRAG);
+    
+    return result;
   }
 
   /**
