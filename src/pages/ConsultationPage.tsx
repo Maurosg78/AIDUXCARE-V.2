@@ -184,12 +184,12 @@ const ConsultationPage: React.FC = () => {
 
     updateServiceInfo();
     
-    // Actualizar cada 5 segundos mientras se graba
+    // Actualizar cada 10 segundos mientras se graba
     const interval = setInterval(() => {
       if (isRecording) {
         updateServiceInfo();
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [audioService, isRecording]);
@@ -225,45 +225,45 @@ const ConsultationPage: React.FC = () => {
     }
   }, []);
 
-  // Manejar inicio/parada de grabación
-  const handleMicClick = useCallback(async () => {
+  // Función para manejar grabación
+  const handleStartRecording = useCallback(async () => {
+    if (isRecording) return;
+
     try {
       setError(null);
+      setIsRecording(true);
+      console.log('🎙️ Iniciando grabación de consulta médica...');
       
-      if (isRecording) {
-        // Detener grabación
-        const finalTranscript = audioService.stopRecording();
-        setIsRecording(false);
-        console.log('Grabación detenida. Transcripción final:', finalTranscript);
-        
-        // Procesar a SOAP automáticamente si hay contenido
-        if (finalTranscript.trim()) {
-          await processTranscriptionToSOAP(finalTranscript);
-        }
+      await audioService.startRecording(handleTranscriptionUpdate);
+    } catch (error) {
+      setIsRecording(false);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al iniciar grabación';
+      setError(`Error: ${errorMessage}`);
+      console.error('Error al iniciar grabación:', error);
+    }
+  }, [isRecording, audioService, handleTranscriptionUpdate]);
+
+  const handleStopRecording = useCallback(async () => {
+    if (!isRecording) return;
+
+    try {
+      setIsRecording(false);
+      console.log('🛑 Deteniendo grabación de consulta médica...');
+      
+      const finalTranscript = audioService.stopRecording();
+      
+      if (finalTranscript.trim()) {
+        console.log('📝 Procesando transcripción médica a formato SOAP...');
+        await processTranscriptionToSOAP(finalTranscript);
       } else {
-        // Iniciar grabación
-        await audioService.startRecording(handleTranscriptionUpdate);
-        setIsRecording(true);
-        console.log('Grabación iniciada');
-        
-        // Mostrar mensaje informativo según el servicio
-        const serviceType = audioService.getCurrentServiceType();
-        if (serviceType === 'mock') {
-          setTimeout(() => {
-            setError('🎭 Modo demostración activo: La transcripción médica aparecerá automáticamente. Haz clic en "Detener" cuando termine.');
-          }, 1000);
-        } else {
-          setTimeout(() => {
-            setError('🎙️ Grabación real activada: Habla cerca del micrófono para capturar audio del ambiente.');
-          }, 1000);
-        }
+        setError('No se detectó audio. Intenta hablar más cerca del micrófono.');
       }
     } catch (error) {
-      console.error('Error en grabación:', error);
-      setError(`❌ Error en grabación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-      setIsRecording(false);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al detener grabación';
+      setError(`Error: ${errorMessage}`);
+      console.error('Error al detener grabación:', error);
     }
-  }, [isRecording, audioService, handleTranscriptionUpdate, processTranscriptionToSOAP]);
+  }, [isRecording, audioService, processTranscriptionToSOAP]);
 
   // Placeholder para otras funciones
   const handleUploadClick = useCallback(() => {
@@ -301,22 +301,6 @@ const ConsultationPage: React.FC = () => {
       setIsProcessing(false);
     }
   }, [soapData]);
-
-  // Función para cambiar entre servicios
-  const handleToggleService = useCallback(() => {
-    if (isRecording) {
-      setError('No se puede cambiar de servicio mientras se está grabando');
-      return;
-    }
-
-    const result = audioService.toggleService();
-    setServiceInfo(audioService.getDetailedServiceInfo());
-    
-    // Mostrar mensaje temporal
-    const tempMessage = result;
-    setError(tempMessage);
-    setTimeout(() => setError(null), 3000);
-  }, [audioService, isRecording]);
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
@@ -367,49 +351,39 @@ const ConsultationPage: React.FC = () => {
           fontSize: '0.9rem'
         }}>
           <span style={{ fontWeight: 'bold' }}>{serviceInfo}</span>
-          <button
-            onClick={handleToggleService}
-            disabled={isRecording}
-            style={{
-              padding: '0.4rem 0.8rem',
-              fontSize: '0.8rem',
-              backgroundColor: isRecording ? '#6c757d' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isRecording ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            🔄 Cambiar Servicio
-          </button>
+          {isRecording && (
+            <span style={{
+              color: '#dc3545',
+              fontWeight: 'bold',
+              animation: 'pulse 2s infinite'
+            }}>
+              🔴 GRABANDO EN VIVO
+            </span>
+          )}
         </div>
         
-        {serviceInfo.includes('🎭') && (
-          <div style={{
-            fontSize: '0.8rem',
-            color: '#28a745',
-            padding: '0.5rem',
-            backgroundColor: '#d4edda',
-            borderRadius: '4px',
-            border: '1px solid #c3e6cb'
-          }}>
-            ✅ <strong>Modo Demostración:</strong> Sistema estable sin errores de red. 
-            Transcribe automáticamente texto médico simulado para pruebas.
-          </div>
-        )}
+        <div style={{
+          fontSize: '0.8rem',
+          color: '#28a745',
+          padding: '0.5rem',
+          backgroundColor: '#d4edda',
+          borderRadius: '4px',
+          border: '1px solid #c3e6cb'
+        }}>
+          ✅ <strong>Sistema Médico:</strong> Captura audio real de la consulta médica. 
+          Habla normalmente durante la consulta para obtener transcripción automática.
+        </div>
         
-        {serviceInfo.includes('🎙️') && (
+        {error && (
           <div style={{
             fontSize: '0.8rem',
-            color: '#856404',
+            color: '#721c24',
             padding: '0.5rem',
-            backgroundColor: '#fff3cd',
+            backgroundColor: '#f8d7da',
             borderRadius: '4px',
-            border: '1px solid #ffeaa7'
+            border: '1px solid #f5c6cb'
           }}>
-            ⚠️ <strong>Audio Real:</strong> Captura audio del ambiente pero puede generar errores de red en consola. 
-            Funciona correctamente a pesar de los errores.
+            ⚠️ <strong>Error:</strong> {error}
           </div>
         )}
       </div>
@@ -454,14 +428,15 @@ const ConsultationPage: React.FC = () => {
                 placeholder={isRecording ? "Escuchando... hable cerca del micrófono" : "La transcripción aparecerá aquí"}
                 disabled={isRecording}
               />
-              <ActionBar
-                isRecording={isRecording}
-                onMicClick={handleMicClick}
-                onUploadClick={handleUploadClick}
-                onCameraClick={handleCameraClick}
-                onSave={handleSave}
-                disabled={isProcessing}
-              />
+                              <ActionBar
+                  isRecording={isRecording}
+                  onStartRecording={handleStartRecording}
+                  onStopRecording={handleStopRecording}
+                  onUploadClick={handleUploadClick}
+                  onCameraClick={handleCameraClick}
+                  onSave={handleSave}
+                  disabled={isProcessing}
+                />
               {isProcessing && (
                 <div style={{ textAlign: 'center', padding: '1rem', color: '#666' }}>
                   🔄 Procesando transcripción a SOAP...

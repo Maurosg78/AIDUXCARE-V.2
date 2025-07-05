@@ -2,7 +2,8 @@ import React from 'react';
 
 interface ActionBarProps {
   isRecording: boolean;
-  onMicClick: () => void;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
   onUploadClick: () => void;
   onCameraClick: () => void;
   onSave: () => void;
@@ -11,7 +12,8 @@ interface ActionBarProps {
 
 const ActionBar: React.FC<ActionBarProps> = ({ 
   isRecording, 
-  onMicClick, 
+  onStartRecording,
+  onStopRecording,
   onUploadClick, 
   onCameraClick, 
   onSave,
@@ -32,25 +34,43 @@ const ActionBar: React.FC<ActionBarProps> = ({
       padding: '1rem',
       borderTop: '1px solid #eee'
     }}>
-      <button
-        onClick={onMicClick}
-        disabled={disabled}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: 'none',
-          backgroundColor: isRecording ? '#ef4444' : '#10b981',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '14px'
-        }, true)}
-      >
-        {isRecording ? '🛑 Detener' : '🎤 Grabar'}
-      </button>
+      {!isRecording ? (
+        <button
+          onClick={onStartRecording}
+          disabled={disabled}
+          style={getButtonStyle({
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            border: 'none',
+            backgroundColor: '#10b981',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }, true)}
+        >
+          🎙️ Iniciar Grabación Médica
+        </button>
+      ) : (
+        <button
+          onClick={onStopRecording}
+          disabled={disabled}
+          style={getButtonStyle({
+            padding: '0.75rem 1.5rem',
+            borderRadius: '0.5rem',
+            border: 'none',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }, true)}
+        >
+          🛑 Detener Grabación
+        </button>
+      )}
       
       <button
         onClick={onUploadClick}
-        disabled={disabled}
+        disabled={disabled || isRecording}
         style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
@@ -65,7 +85,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
       
       <button
         onClick={onCameraClick}
-        disabled={disabled}
+        disabled={disabled || isRecording}
         style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
@@ -80,7 +100,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
       
       <button
         onClick={onSave}
-        disabled={disabled}
+        disabled={disabled || isRecording}
         style={getButtonStyle({
           padding: '0.75rem 1.5rem',
           borderRadius: '0.5rem',
