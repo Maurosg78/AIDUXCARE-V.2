@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface SuggestionLog {
   visit_id: string;
@@ -13,15 +13,21 @@ interface VisitIndicatorsProps {
   visitId: string;
 }
 
-const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId }) => {
+const VisitIndicators: React.FC<VisitIndicatorsProps> = ({
+  suggestions,
+  visitId: _visitId,
+}) => {
   // Calcular total de sugerencias
   const totalSuggestions = suggestions.length;
 
   // Calcular campos más impactados
-  const fieldCounts = suggestions.reduce((acc, suggestion) => {
-    acc[suggestion.field] = (acc[suggestion.field] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const fieldCounts = suggestions.reduce(
+    (acc, suggestion) => {
+      acc[suggestion.field] = (acc[suggestion.field] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Obtener los 2 campos más frecuentes
   const topFields = Object.entries(fieldCounts)
@@ -38,7 +44,7 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId 
       <h4 className="text-sm font-medium text-gray-700 mb-3">
         Indicadores de Impacto IA
       </h4>
-      
+
       <div className="space-y-3">
         {/* Total de sugerencias */}
         <div className="flex items-center space-x-2">
@@ -50,7 +56,7 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId 
         {/* Campos más impactados */}
         {topFields.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {topFields.map(field => (
+            {topFields.map((field) => (
               <span
                 key={field}
                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
@@ -65,7 +71,9 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId 
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-gray-600">
             <span>Evolución Clínica</span>
-            <span>{actualImprovement}% vs {expectedImprovement}% esperado</span>
+            <span>
+              {actualImprovement}% vs {expectedImprovement}% esperado
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
@@ -89,4 +97,4 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId 
   );
 };
 
-export default VisitIndicators; 
+export default VisitIndicators;
