@@ -1,10 +1,11 @@
-import React from 'react';
-import { twMerge } from 'tailwind-merge';
+import React from "react";
+import { twMerge } from "tailwind-merge";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'text';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonVariant = "primary" | "secondary" | "outline" | "text";
+export type ButtonSize = "sm" | "md" | "lg";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
@@ -14,23 +15,27 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-dark focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-  secondary: 'bg-secondary text-white hover:bg-secondary-dark focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2',
-  outline: 'border-2 border-primary text-primary hover:bg-primary-light hover:bg-opacity-10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-  text: 'text-primary hover:bg-primary-light hover:bg-opacity-10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+  primary:
+    "bg-accent text-white hover:bg-accent-dark focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+  secondary:
+    "bg-secondary text-white hover:bg-secondary-dark focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2",
+  outline:
+    "border-2 border-primary text-primary hover:bg-primary-light hover:bg-opacity-10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+  text: "text-primary hover:bg-primary-light hover:bg-opacity-10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
+  sm: "px-3 py-1.5 text-sm",
+  md: "px-4 py-2 text-base",
+  lg: "px-6 py-3 text-lg",
 };
 
-const baseStyles = 'inline-flex items-center justify-center font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-opacity-100';
+const baseStyles =
+  "inline-flex items-center justify-center font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-opacity-100";
 
 export const Button: React.FC<ButtonProps> = ({
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   isLoading = false,
   leftIcon,
   rightIcon,
@@ -44,8 +49,8 @@ export const Button: React.FC<ButtonProps> = ({
     baseStyles,
     variantStyles[variant],
     sizeStyles[size],
-    fullWidth ? 'w-full' : '',
-    className
+    fullWidth ? "w-full" : "",
+    className,
   );
 
   return (
@@ -83,4 +88,4 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-export default Button; 
+export default Button;

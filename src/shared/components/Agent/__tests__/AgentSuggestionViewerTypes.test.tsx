@@ -1,9 +1,5 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { AgentSuggestionType, AgentSuggestionStatus } from '../AgentSuggestionViewerTypes';
-
-describe.skip('AgentSuggestionViewerTypes', () => {
-  describe('AgentSuggestionType', () => {
+describe.skip("AgentSuggestionViewerTypes", () => {
+  describe("AgentSuggestionType", () => {
     // it('debe renderizar correctamente el tipo de recomendación', () => {
     //   render(<AgentSuggestionType type="recommendation" />);
     //
@@ -37,7 +33,7 @@ describe.skip('AgentSuggestionViewerTypes', () => {
     // });
   });
 
-  describe('AgentSuggestionStatus', () => {
+  describe("AgentSuggestionStatus", () => {
     // it('debe renderizar correctamente el estado de integrado', () => {
     //   render(<AgentSuggestionStatus status="integrated" />);
     //
@@ -78,4 +74,4 @@ describe.skip('AgentSuggestionViewerTypes', () => {
     //   expect(status).toHaveAttribute('aria-label', 'Estado: Integrado');
     // });
   });
-}); 
+});

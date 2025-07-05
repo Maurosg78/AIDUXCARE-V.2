@@ -1,6 +1,6 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import IntegratedSuggestionViewer from '@/shared/components/Agent/IntegratedSuggestionViewer';
+import React from "react";
+import { useParams } from "react-router-dom";
+import IntegratedSuggestionViewer from "@/shared/components/Agent/IntegratedSuggestionViewer";
 
 const VisitDetailPage: React.FC = () => {
   const { id: visitId } = useParams<{ id: string }>();
@@ -17,7 +17,9 @@ const VisitDetailPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Sección de EMR */}
       <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Registro Médico Electrónico</h2>
+        <h2 className="text-2xl font-semibold mb-4">
+          Registro Médico Electrónico
+        </h2>
         {/* ... existing EMR code ... */}
       </div>
 
@@ -29,4 +31,4 @@ const VisitDetailPage: React.FC = () => {
   );
 };
 
-export default VisitDetailPage; 
+export default VisitDetailPage;

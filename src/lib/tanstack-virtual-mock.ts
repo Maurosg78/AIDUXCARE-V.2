@@ -7,9 +7,9 @@ export const useVirtualizer = () => ({
   measure: () => {},
   scrollToIndex: () => {},
   scrollToOffset: () => {},
-  getVirtualItemForOffset: () => null
+  getVirtualItemForOffset: () => null,
 });
 
 export default {
-  useVirtualizer
-}; 
+  useVirtualizer,
+};

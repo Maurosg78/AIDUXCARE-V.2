@@ -22,9 +22,9 @@ export interface EMRContent {
 
 export interface ClinicalFormData {
   id?: string;
-  form_type: 'SOAP';
+  form_type: "SOAP";
   content: string;
-  status: 'draft' | 'final' | 'archived';
+  status: "draft" | "final" | "archived";
   visit_id: string;
   patient_id: string;
   professional_id: string;
@@ -47,7 +47,6 @@ export interface Form {
 export interface SuggestionToIntegrate {
   id: string;
   content: string;
-  type: 'recommendation' | 'warning' | 'info';
+  type: "recommendation" | "warning" | "info";
   sourceBlockId: string;
 }
-

@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import MCPContextViewer from '@/shared/components/MCP/MCPContextViewer';
-import { MCPContext } from '@/core/mcp/schema';
-import { getContextFromVisit } from '@/core/mcp/MCPContextBuilder';
-import { visitDataSourceSupabase } from '@/core/dataSources/visitDataSourceSupabase';
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import MCPContextViewer from "@/shared/components/MCP/MCPContextViewer";
+import { MCPContext } from "@/core/mcp/schema";
+import { getContextFromVisit } from "@/core/mcp/MCPContextBuilder";
+import { visitDataSourceSupabase } from "@/core/dataSources/visitDataSourceSupabase";
 
 const VisitDetailPage = () => {
   const { id: visitId } = useParams<{ id: string }>();
   const [context, setContext] = useState<MCPContext | null>(null);
-  const [previousContext, setPreviousContext] = useState<MCPContext | null>(null);
+  const [_previousContext, setPreviousContext] = useState<MCPContext | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!visitId) return;

@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 export type SupabaseResponse<T = any> = {
   data: T | null;
@@ -19,7 +19,9 @@ export type SupabaseBuilder = {
   then: (callback: (response: SupabaseResponse) => any) => Promise<any>;
 };
 
-export function createSupabaseMock(response: SupabaseResponse): SupabaseBuilder {
+export function createSupabaseMock(
+  response: SupabaseResponse,
+): SupabaseBuilder {
   const builder: SupabaseBuilder = {
     select: () => builder,
     insert: () => builder,
@@ -31,17 +33,19 @@ export function createSupabaseMock(response: SupabaseResponse): SupabaseBuilder 
     lt: () => builder,
     or: () => builder,
     single: () => Promise.resolve(response),
-    then: (callback) => Promise.resolve(callback(response))
+    then: (callback) => Promise.resolve(callback(response)),
   };
   return builder;
 }
 
 export const mockSupabaseClient = {
-  from: vi.fn().mockImplementation(() => createSupabaseMock({ data: null, error: null }))
+  from: vi
+    .fn()
+    .mockImplementation(() => createSupabaseMock({ data: null, error: null })),
 };
 
 export function setupSupabaseMock() {
-  vi.mock('@/core/auth/supabaseClient', () => ({
-    default: mockSupabaseClient
+  vi.mock("@/core/auth/supabaseClient", () => ({
+    default: mockSupabaseClient,
   }));
-} 
+}

@@ -1,7 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface VisitRecordCardProps {
   visit: {
@@ -20,22 +20,25 @@ interface VisitRecordCardProps {
   }>;
 }
 
-const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, summary, suggestions }) => {
+const VisitRecordCard: React.FC<VisitRecordCardProps> = ({
+  visit,
+  summary,
+  suggestions,
+}) => {
   const navigate = useNavigate();
   const visitDate = new Date(visit.created_at);
-  const relativeDate = formatDistanceToNow(visitDate, { addSuffix: true, locale: es });
+  const relativeDate = formatDistanceToNow(visitDate, {
+    addSuffix: true,
+    locale: es,
+  });
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
       {/* Encabezado de la visita */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">
-            {relativeDate}
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Motivo: {visit.reason}
-          </p>
+          <h3 className="text-lg font-medium text-gray-900">{relativeDate}</h3>
+          <p className="text-sm text-gray-600 mt-1">Motivo: {visit.reason}</p>
         </div>
         <button
           onClick={() => navigate(`/visits/${visit.id}`)}
@@ -80,9 +83,9 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, summary, sugge
                     </p>
                   </div>
                   <span className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(suggestion.accepted_at), { 
+                    {formatDistanceToNow(new Date(suggestion.accepted_at), {
                       addSuffix: true,
-                      locale: es 
+                      locale: es,
                     })}
                   </span>
                 </div>
@@ -95,4 +98,4 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, summary, sugge
   );
 };
 
-export default VisitRecordCard; 
+export default VisitRecordCard;

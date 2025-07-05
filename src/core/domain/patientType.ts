@@ -1,11 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Enumeración para género
 export enum PatientGender {
-  MALE = 'male',
-  FEMALE = 'female',
-  OTHER = 'other',
-  UNSPECIFIED = 'unspecified'
+  MALE = "male",
+  FEMALE = "female",
+  OTHER = "other",
+  UNSPECIFIED = "unspecified",
 }
 
 // Esquema de validación para Paciente
@@ -24,8 +24,8 @@ export const PatientSchema = z.object({
   insurance_id: z.string().optional(),
   user_id: z.string().uuid().optional(),
   created_at: z.string().optional(),
-  updated_at: z.string().optional()
+  updated_at: z.string().optional(),
 });
 
 // Tipo derivado del esquema
-export type Patient = z.infer<typeof PatientSchema>; 
+export type Patient = z.infer<typeof PatientSchema>;

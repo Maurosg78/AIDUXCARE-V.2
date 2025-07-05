@@ -1,7 +1,7 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
 export interface ModalProps {
   isOpen: boolean;
@@ -14,11 +14,11 @@ export interface ModalProps {
 }
 
 const sizeStyles: Record<ModalSize, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  full: 'max-w-full mx-4',
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  full: "max-w-full mx-4",
 };
 
 export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
@@ -26,13 +26,13 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
     {
       isOpen,
       onClose,
-      size = 'md',
+      size = "md",
       headerTitle,
       headerDescription,
       children,
       className,
     },
-    ref
+    ref,
   ) => {
     if (!isOpen) return null;
 
@@ -48,8 +48,8 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
         className="fixed inset-0 z-50 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
-        aria-labelledby={headerTitle ? 'modal-title' : undefined}
-        aria-describedby={headerDescription ? 'modal-description' : undefined}
+        aria-labelledby={headerTitle ? "modal-title" : undefined}
+        aria-describedby={headerDescription ? "modal-description" : undefined}
       >
         {/* Backdrop */}
         <div
@@ -61,9 +61,9 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
         {/* Modal */}
         <div
           className={cn(
-            'relative bg-white rounded-lg shadow-xl w-full mx-4',
+            "relative bg-white rounded-lg shadow-xl w-full mx-4",
             sizeStyles[size],
-            className
+            className,
           )}
         >
           {/* Header */}
@@ -116,7 +116,7 @@ export const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
-Modal.displayName = 'Modal'; 
+Modal.displayName = "Modal";

@@ -2,7 +2,11 @@
  * Tipos para el sistema de agente clínico
  */
 
-export type MemoryBlockType = 'contextual' | 'semantic' | 'clinical' | 'persistent';
+export type MemoryBlockType =
+  | "contextual"
+  | "semantic"
+  | "clinical"
+  | "persistent";
 
 export interface MemoryBlock {
   id: string;
@@ -26,18 +30,25 @@ export interface AgentContext {
   };
 }
 
-export type SuggestionType = 'diagnostic' | 'treatment' | 'followup' | 'contextual' | 'recommendation' | 'warning' | 'info';
-export type SuggestionField = 
-  | 'diagnosis'
-  | 'treatment'
-  | 'followup'
-  | 'medication'
-  | 'vitals'
-  | 'symptoms'
-  | 'history'
-  | 'lab_results'
-  | 'imaging'
-  | 'notes';
+export type SuggestionType =
+  | "diagnostic"
+  | "treatment"
+  | "followup"
+  | "contextual"
+  | "recommendation"
+  | "warning"
+  | "info";
+export type SuggestionField =
+  | "diagnosis"
+  | "treatment"
+  | "followup"
+  | "medication"
+  | "vitals"
+  | "symptoms"
+  | "history"
+  | "lab_results"
+  | "imaging"
+  | "notes";
 
 export interface AgentSuggestion {
   id: string;
@@ -55,4 +66,4 @@ export interface AgentSuggestion {
   };
 }
 
-export type SuggestionFeedbackType = 'accept' | 'reject' | 'ignore'; 
+export type SuggestionFeedbackType = "accept" | "reject" | "ignore";

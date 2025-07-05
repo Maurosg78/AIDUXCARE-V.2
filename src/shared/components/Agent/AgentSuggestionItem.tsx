@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
 interface AgentSuggestion {
   id: string;
-  type: 'recommendation' | 'warning' | 'info';
+  type: "recommendation" | "warning" | "info";
   content: string;
   sourceBlockId: string;
   field: string;
@@ -17,9 +17,9 @@ interface AgentSuggestionItemProps {
 }
 
 const typeLabels: Record<string, string> = {
-  recommendation: 'Recomendación',
-  warning: 'Advertencia',
-  info: 'Información',
+  recommendation: "Recomendación",
+  warning: "Advertencia",
+  info: "Información",
 };
 
 const AgentSuggestionItem: React.FC<AgentSuggestionItemProps> = ({
@@ -30,9 +30,9 @@ const AgentSuggestionItem: React.FC<AgentSuggestionItemProps> = ({
   onFeedback,
 }) => {
   return (
-    <div role="article" aria-label="Sugerencia de diagnóstico"> 
+    <div role="article" aria-label="Sugerencia de diagnóstico">
       <div>{suggestion.content}</div>
-      <div>{typeLabels[suggestion.type] || 'Desconocido'}</div>
+      <div>{typeLabels[suggestion.type] || "Desconocido"}</div>
       {isIntegrated ? (
         <div>Integrado</div>
       ) : (
@@ -61,4 +61,4 @@ const AgentSuggestionItem: React.FC<AgentSuggestionItemProps> = ({
   );
 };
 
-export default AgentSuggestionItem; 
+export default AgentSuggestionItem;

@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { runSummaryAgent } from '../../../core/agent/ClinicalAgent';
-import { saveVisitSummary } from '../../../core/services/visitSummaryService';
+import React, { useState } from "react";
+import { runSummaryAgent } from "../../../core/agent/ClinicalAgent";
+import { saveVisitSummary } from "../../../core/services/visitSummaryService";
 
 interface VisitSummaryGeneratorProps {
   visitId: string;
   userId: string;
 }
 
-const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, userId }) => {
+const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({
+  visitId,
+  userId,
+}) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [summaryText, setSummaryText] = useState('');
+  const [summaryText, setSummaryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -23,10 +26,9 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
       // Generar resumen usando el agente
       const generatedSummary = await runSummaryAgent(visitId);
       setSummaryText(generatedSummary);
-
     } catch (err) {
-      setError('Error al generar el resumen. Intente nuevamente.');
-      console.error('Error al generar resumen:', err);
+      setError("Error al generar el resumen. Intente nuevamente.");
+      console.error("Error al generar resumen:", err);
     } finally {
       setIsGenerating(false);
     }
@@ -34,7 +36,7 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
 
   const handleSaveSummary = async () => {
     if (!summaryText.trim()) {
-      setError('El resumen no puede estar vacío');
+      setError("El resumen no puede estar vacío");
       return;
     }
 
@@ -47,21 +49,20 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
       await saveVisitSummary({
         visitId,
         userId,
-        summaryText
+        summaryText,
       });
 
       // Mostrar mensaje de éxito
       setSuccess(true);
-      
+
       // Limpiar el estado después de 3 segundos
       setTimeout(() => {
-        setSummaryText('');
+        setSummaryText("");
         setSuccess(false);
       }, 3000);
-
     } catch (err) {
-      setError('No se pudo guardar el resumen. Intente nuevamente.');
-      console.error('Error al guardar resumen:', err);
+      setError("No se pudo guardar el resumen. Intente nuevamente.");
+      console.error("Error al guardar resumen:", err);
     } finally {
       setIsSaving(false);
     }
@@ -78,7 +79,7 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
           disabled={isGenerating}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isGenerating ? 'Generando...' : 'Generar Resumen'}
+          {isGenerating ? "Generando..." : "Generar Resumen"}
         </button>
       </div>
 
@@ -114,7 +115,7 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
               disabled={isSaving}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? 'Guardando...' : 'Guardar en EMR'}
+              {isSaving ? "Guardando..." : "Guardar en EMR"}
             </button>
           </div>
         </div>
@@ -123,6 +124,6 @@ const VisitSummaryGenerator: React.FC<VisitSummaryGeneratorProps> = ({ visitId, 
   );
 };
 
-VisitSummaryGenerator.displayName = 'VisitSummaryGenerator';
+VisitSummaryGenerator.displayName = "VisitSummaryGenerator";
 
-export default VisitSummaryGenerator; 
+export default VisitSummaryGenerator;

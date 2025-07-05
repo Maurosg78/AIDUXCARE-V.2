@@ -1,21 +1,23 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // Mock completo del cliente Supabase para tests
 export const supabaseClientMock = {
   // Auth methods
   auth: {
-    getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    getSession: vi
+      .fn()
+      .mockResolvedValue({ data: { session: null }, error: null }),
     signInWithPassword: vi.fn().mockResolvedValue({ data: {}, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
-    onAuthStateChange: vi.fn().mockImplementation((callback) => {
+    onAuthStateChange: vi.fn().mockImplementation((_callback) => {
       // Devuelve una función para desuscribirse
       return { data: { subscription: { unsubscribe: vi.fn() } } };
     }),
     getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
   },
-  
+
   // Database methods
-  from: vi.fn().mockImplementation((table) => ({
+  from: vi.fn().mockImplementation((_table) => ({
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
@@ -47,18 +49,20 @@ export const supabaseClientMock = {
     maybeSingle: vi.fn().mockResolvedValue({ data: {}, error: null }),
     then: vi.fn().mockResolvedValue({ data: [], error: null }),
   })),
-  
+
   // Storage methods
   storage: {
-    from: vi.fn().mockImplementation((bucket) => ({
+    from: vi.fn().mockImplementation((_bucket) => ({
       upload: vi.fn().mockResolvedValue({ data: {}, error: null }),
       download: vi.fn().mockResolvedValue({ data: {}, error: null }),
-      getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/file.png' } }),
+      getPublicUrl: vi.fn().mockReturnValue({
+        data: { publicUrl: "https://example.com/file.png" },
+      }),
       list: vi.fn().mockResolvedValue({ data: [], error: null }),
       remove: vi.fn().mockResolvedValue({ data: {}, error: null }),
     })),
   },
-  
+
   // RPC calls
   rpc: vi.fn().mockResolvedValue({ data: {}, error: null }),
 };

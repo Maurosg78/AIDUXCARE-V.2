@@ -1,13 +1,12 @@
-import supabase from '@/core/auth/supabaseClient';
-import { AuditLogEntry as BaseAuditLogEntry } from '@/core/audit/AuditLogger';
+import { AuditLogEntry as BaseAuditLogEntry } from "@/core/audit/AuditLogger";
 
 /**
  * Tipo para representar una entrada de log de auditoría específica para MCP
  */
 export interface AuditLogEntry extends BaseAuditLogEntry {
   block_id: string;
-  block_type: 'contextual' | 'persistent' | 'semantic';
-  operation: 'update';
+  block_type: "contextual" | "persistent" | "semantic";
+  operation: "update";
   old_content: string;
   new_content: string;
 }
@@ -29,11 +28,11 @@ export class AuditLogger {
     originalBlocks: Record<string, unknown>[],
     updatedBlocks: Record<string, unknown>[],
     userId: string,
-    visitId: string
+    visitId: string,
   ): void {
     // Crear un mapa de los bloques originales para facilitar la búsqueda
     const originalBlocksMap = new Map<string, Record<string, unknown>>();
-    originalBlocks.forEach(block => {
+    originalBlocks.forEach((block) => {
       const blockId = block.id as string;
       if (blockId) {
         originalBlocksMap.set(blockId, block);
@@ -41,7 +40,7 @@ export class AuditLogger {
     });
 
     // Iterar por los bloques actualizados
-    updatedBlocks.forEach(updatedBlock => {
+    updatedBlocks.forEach((updatedBlock) => {
       const blockId = updatedBlock.id as string;
       if (!blockId) return; // Ignorar bloques sin ID
 
@@ -60,19 +59,22 @@ export class AuditLogger {
           timestamp: new Date().toISOString(),
           user_id: userId,
           visit_id: visitId,
-          action: 'block.update',
-          patient_id: '', // TODO: Obtener el patient_id de alguna manera
+          action: "block.update",
+          patient_id: "", // TODO: Obtener el patient_id de alguna manera
           metadata: {
             block_id: blockId,
             block_type: updatedBlock.type,
             old_content: originalContent,
-            new_content: updatedContent
+            new_content: updatedContent,
           },
           block_id: blockId,
-          block_type: updatedBlock.type as 'contextual' | 'persistent' | 'semantic',
-          operation: 'update',
+          block_type: updatedBlock.type as
+            | "contextual"
+            | "persistent"
+            | "semantic",
+          operation: "update",
           old_content: originalContent,
-          new_content: updatedContent
+          new_content: updatedContent,
         };
 
         this.auditLogs.push(logEntry);
@@ -94,4 +96,4 @@ export class AuditLogger {
   public static clearAuditLogs(): void {
     this.auditLogs = [];
   }
-} 
+}
