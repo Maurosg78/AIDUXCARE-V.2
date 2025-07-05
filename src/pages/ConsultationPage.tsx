@@ -3,6 +3,7 @@ import CaptureWorkspace from '../components/CaptureWorkspace';
 import TranscriptionArea from '../components/TranscriptionArea';
 import ActionBar from '../components/ActionBar';
 import EnhancedAudioCaptureService from '../services/EnhancedAudioCaptureService';
+import MockAudioCaptureService from '../services/MockAudioCaptureService';
 import AudioToSOAPBridge, { SOAPData } from '../services/AudioToSOAPBridge';
 import PersistenceService from '../services/PersistenceService';
 import CryptoService from '../services/CryptoService';
@@ -229,16 +230,33 @@ const ConsultationPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'capture' | 'evaluation'>('capture');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState<boolean>(false);
 
-  // Instanciar el servicio de audio de forma eficiente
-  const audioService = useMemo(() => new EnhancedAudioCaptureService(), []);
+  // Instanciar el servicio de audio de forma eficiente con fallback
+  const audioService = useMemo(() => {
+    const realService = new EnhancedAudioCaptureService();
+    const mockService = new MockAudioCaptureService();
+    
+    // Verificar si el servicio real está disponible
+    if (realService.isServiceSupported()) {
+      console.log('🎙️ Usando EnhancedAudioCaptureService (Web Speech API)');
+      setIsUsingFallback(false);
+      return realService;
+    } else {
+      console.log('🎭 Usando MockAudioCaptureService (Modo demostración)');
+      setIsUsingFallback(true);
+      return mockService;
+    }
+  }, []);
 
   // Verificar soporte del navegador al cargar
   useEffect(() => {
     if (!audioService.isServiceSupported()) {
-      setError('Tu navegador no soporta reconocimiento de voz. Usa Chrome, Edge o Safari.');
+      setError('Servicio de audio no disponible. Contacta al administrador.');
+    } else if (isUsingFallback) {
+      setError('⚠️ Modo demostración activo: La transcripción será simulada porque Web Speech API no está disponible en este entorno.');
     }
-  }, [audioService]);
+  }, [audioService, isUsingFallback]);
 
   // Callback para transcripción en tiempo real
   const handleTranscriptionUpdate = useCallback((text: string, isFinal: boolean) => {
@@ -293,16 +311,50 @@ const ConsultationPage: React.FC = () => {
         }
       } else {
         // Iniciar grabación
-        await audioService.startRecording(handleTranscriptionUpdate);
-        setIsRecording(true);
-        console.log('Grabación iniciada');
+        try {
+          await audioService.startRecording(handleTranscriptionUpdate);
+          setIsRecording(true);
+          console.log('Grabación iniciada');
+          
+          // Mostrar mensaje informativo para modo demostración
+          if (isUsingFallback) {
+            setTimeout(() => {
+              setError('🎭 Modo demostración: La transcripción médica aparecerá automáticamente. Haz clic en "Detener" cuando termine.');
+            }, 1000);
+          }
+        } catch (audioError) {
+          console.error('Error específico de audio:', audioError);
+          
+          // Si el servicio real falla, intentar con el servicio simulado
+          if (!isUsingFallback) {
+            console.log('🔄 Intentando con servicio simulado...');
+            const mockService = new MockAudioCaptureService();
+            try {
+              await mockService.startRecording(handleTranscriptionUpdate);
+              setIsRecording(true);
+              setIsUsingFallback(true);
+              setError('⚠️ Cambiado a modo demostración: La transcripción será simulada.');
+              console.log('Grabación simulada iniciada');
+            } catch (mockError) {
+              throw new Error('No se pudo iniciar ningún servicio de audio');
+            }
+          } else {
+            throw audioError;
+          }
+        }
       }
     } catch (error) {
       console.error('Error en grabación:', error);
-      setError(error instanceof Error ? error.message : 'Error desconocido en grabación');
+      let errorMessage = 'Error desconocido en grabación';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setError(`❌ ${errorMessage}`);
       setIsRecording(false);
     }
-  }, [isRecording, audioService, handleTranscriptionUpdate, processTranscriptionToSOAP]);
+  }, [isRecording, audioService, handleTranscriptionUpdate, processTranscriptionToSOAP, isUsingFallback]);
 
   // Placeholder para otras funciones
   const handleUploadClick = useCallback(() => {
@@ -362,21 +414,21 @@ const ConsultationPage: React.FC = () => {
       {/* Mostrar errores si los hay */}
       {error && (
         <div style={{ 
-          background: '#fee', 
-          border: '1px solid #fcc', 
+          background: error.includes('⚠️') || error.includes('🎭') ? '#fff3cd' : '#fee', 
+          border: error.includes('⚠️') || error.includes('🎭') ? '1px solid #ffeaa7' : '1px solid #fcc', 
           padding: '1rem', 
           borderRadius: '4px', 
           marginBottom: '1rem',
-          color: '#c33'
+          color: error.includes('⚠️') || error.includes('🎭') ? '#856404' : '#c33'
         }}>
-          ⚠️ {error}
+          {error}
           <button 
             onClick={() => setError(null)}
             style={{ 
               marginLeft: '1rem', 
               background: 'none', 
               border: 'none', 
-              color: '#c33', 
+              color: error.includes('⚠️') || error.includes('🎭') ? '#856404' : '#c33', 
               cursor: 'pointer',
               fontSize: '1.2rem'
             }}
@@ -385,6 +437,26 @@ const ConsultationPage: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Indicador de servicio activo */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: '0.5rem 1rem',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '4px',
+        marginBottom: '1rem',
+        fontSize: '0.8rem',
+        color: '#666'
+      }}>
+        <span>
+          {isUsingFallback ? '🎭 Modo Demostración' : '🎙️ Reconocimiento de Voz Real'}
+        </span>
+        <span>
+          {isRecording ? '🔴 Grabando...' : '⚫ Detenido'}
+        </span>
+      </div>
 
       {/* Selector de Pestañas */}
       <div style={{ display: 'flex', borderBottom: '1px solid #ccc', marginBottom: '1.5rem' }}>

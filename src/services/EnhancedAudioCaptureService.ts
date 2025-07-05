@@ -37,6 +37,8 @@ export class EnhancedAudioCaptureService {
   private isRecording: boolean = false;
   private currentTranscript: string = '';
   private onTranscriptionCallback: TranscriptionCallback | null = null;
+  private restartAttempts: number = 0;
+  private maxRestartAttempts: number = 3;
 
   constructor() {
     // Verificar soporte del navegador
@@ -62,16 +64,56 @@ export class EnhancedAudioCaptureService {
     this.recognition.onstart = () => {
       console.log('🎙️ Reconocimiento de voz iniciado');
       this.isRecording = true;
+      this.restartAttempts = 0;
     };
     
     this.recognition.onend = () => {
       console.log('🎙️ Reconocimiento de voz finalizado');
-      this.isRecording = false;
+      
+      // Si estamos grabando pero se detuvo inesperadamente, intentar reiniciar
+      if (this.isRecording && this.restartAttempts < this.maxRestartAttempts) {
+        console.log('🔄 Intentando reiniciar reconocimiento...');
+        this.restartAttempts++;
+        setTimeout(() => {
+          if (this.isRecording) {
+            try {
+              this.recognition?.start();
+            } catch (error) {
+              console.error('Error al reiniciar reconocimiento:', error);
+              this.isRecording = false;
+            }
+          }
+        }, 100);
+      } else {
+        this.isRecording = false;
+      }
     };
     
     this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('❌ Error en reconocimiento:', event.error);
-      this.isRecording = false;
+      
+      // Manejar diferentes tipos de errores
+      switch (event.error) {
+        case 'network':
+          console.warn('Error de red - Verificar conexión a internet');
+          break;
+        case 'not-allowed':
+          console.warn('Permisos de micrófono denegados');
+          break;
+        case 'no-speech':
+          console.warn('No se detectó voz - Continuar escuchando');
+          return; // No detener por falta de voz
+        case 'audio-capture':
+          console.warn('Error de captura de audio - Verificar micrófono');
+          break;
+        default:
+          console.warn('Error desconocido:', event.error);
+      }
+      
+      // Para errores críticos, detener la grabación
+      if (['not-allowed', 'audio-capture'].includes(event.error)) {
+        this.isRecording = false;
+      }
     };
 
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -88,7 +130,7 @@ export class EnhancedAudioCaptureService {
       }
 
       if (finalTranscript) {
-        this.currentTranscript += finalTranscript;
+        this.currentTranscript += finalTranscript + ' ';
         if (this.onTranscriptionCallback) {
           this.onTranscriptionCallback(this.currentTranscript, true);
         }
@@ -100,7 +142,7 @@ export class EnhancedAudioCaptureService {
 
   async startRecording(callback: TranscriptionCallback): Promise<void> {
     if (!this.isSupported) {
-      throw new Error('Speech recognition no soportado en este navegador');
+      throw new Error('Speech recognition no soportado en este navegador. Usa Chrome, Edge o Safari.');
     }
 
     if (this.isRecording) {
@@ -108,8 +150,17 @@ export class EnhancedAudioCaptureService {
       return;
     }
 
+    // Verificar permisos de micrófono
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Liberar el stream
+    } catch (error) {
+      throw new Error('Permisos de micrófono denegados. Permite el acceso al micrófono e intenta nuevamente.');
+    }
+
     this.onTranscriptionCallback = callback;
     this.currentTranscript = '';
+    this.restartAttempts = 0;
     
     try {
       this.recognition?.start();
@@ -125,10 +176,11 @@ export class EnhancedAudioCaptureService {
       return this.currentTranscript;
     }
 
+    this.isRecording = false;
     this.recognition?.stop();
     this.onTranscriptionCallback = null;
     
-    return this.currentTranscript;
+    return this.currentTranscript.trim();
   }
 
   isCurrentlyRecording(): boolean {
@@ -141,6 +193,27 @@ export class EnhancedAudioCaptureService {
 
   isServiceSupported(): boolean {
     return this.isSupported;
+  }
+
+  /**
+   * Obtiene información de diagnóstico del servicio
+   */
+  getDiagnosticInfo(): {
+    isSupported: boolean;
+    isRecording: boolean;
+    currentTranscript: string;
+    restartAttempts: number;
+    userAgent: string;
+    isHTTPS: boolean;
+  } {
+    return {
+      isSupported: this.isSupported,
+      isRecording: this.isRecording,
+      currentTranscript: this.currentTranscript,
+      restartAttempts: this.restartAttempts,
+      userAgent: navigator.userAgent,
+      isHTTPS: window.location.protocol === 'https:'
+    };
   }
 }
 
