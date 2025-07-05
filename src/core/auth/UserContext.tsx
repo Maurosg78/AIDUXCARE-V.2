@@ -1,5 +1,5 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useContext } from "react";
+import { User, Session } from "@supabase/supabase-js";
 
 // Definición mínima necesaria para tipo de usuario y perfil
 interface UserProfile {
@@ -8,7 +8,7 @@ interface UserProfile {
   full_name: string;
 }
 
-type RoleType = 'admin' | 'professional' | 'patient';
+type RoleType = "admin" | "professional" | "patient";
 
 interface UserContextType {
   user: User | null;
@@ -32,7 +32,7 @@ const initialUserContext: UserContextType = {
   error: null,
   logout: async () => {},
   refreshProfile: async () => {},
-  hasRole: () => false
+  hasRole: () => false,
 };
 
 const UserContext = createContext<UserContextType>(initialUserContext);
@@ -45,7 +45,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // En una implementación real, aquí añadiríamos la lógica
   // de autenticación con Supabase, pero para un build limpio
   // simplemente usamos el contexto inicial
-  
+
   return (
     <UserContext.Provider value={initialUserContext}>
       {children}
@@ -55,12 +55,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
-  
+
   if (!context) {
-    throw new Error('useUser must be used within a UserProvider');
+    throw new Error("useUser must be used within a UserProvider");
   }
-  
+
   return context;
 };
 
-export default UserContext; 
+export default UserContext;
