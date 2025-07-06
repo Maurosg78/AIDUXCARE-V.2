@@ -5,12 +5,13 @@ const busboy = require('busboy');
 // Crear cliente de Speech-to-Text
 const client = new speech.SpeechClient();
 
-// Función para manejar CORS manualmente
+// Función para manejar CORS manualmente - MEJORADA
 const setCorsHeaders = (res) => {
   res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
   res.set('Access-Control-Max-Age', '3600');
+  res.set('Access-Control-Allow-Credentials', 'false');
 };
 
 // Función para logging detallado
@@ -93,12 +94,16 @@ const parseFormData = (req) => {
 
 // Función principal de transcripción
 functions.http('transcribeAudio', async (req, res) => {
-  // Manejar preflight CORS
+  // Manejar preflight CORS - MEJORADO
   setCorsHeaders(res);
   
   if (req.method === 'OPTIONS') {
-    logDetailed('INFO', 'CORS preflight request handled');
-    res.status(200).send();
+    logDetailed('INFO', 'CORS preflight request handled', {
+      origin: req.headers.origin,
+      method: req.headers['access-control-request-method'],
+      headers: req.headers['access-control-request-headers']
+    });
+    res.status(204).send();
     return;
   }
 
@@ -183,21 +188,21 @@ functions.http('transcribeAudio', async (req, res) => {
     }
 
     try {
-      // Configuración para Google Cloud Speech-to-Text MEJORADA
+      // Configuración para Google Cloud Speech-to-Text CORREGIDA
       const audioConfig = {
         encoding: file.mimetype.includes('wav') ? 'LINEAR16' : 
                  file.mimetype.includes('webm') ? 'WEBM_OPUS' :
                  file.mimetype.includes('ogg') ? 'OGG_OPUS' :
                  file.mimetype.includes('mp3') ? 'MP3' :
-                 file.mimetype.includes('mp4') ? 'MP3' : 'WEBM_OPUS', // Fallback más robusto
+                 file.mimetype.includes('mp4') ? 'MP3' : 'WEBM_OPUS',
         sampleRateHertz: 48000,
         languageCode: 'es-ES',
-        alternativeLanguageCodes: ['es-MX', 'es-AR', 'es-CL'],
+        // ELIMINADO: alternativeLanguageCodes no compatible con modelo médico
         enableSpeakerDiarization: true,
         diarizationSpeakerCount: 2,
         enableAutomaticPunctuation: true,
         enableWordTimeOffsets: true,
-        model: 'medical_conversation',
+        model: 'latest_long', // Cambiado de medical_conversation a latest_long
         useEnhanced: true,
         // Optimizaciones de rendimiento
         enableWordConfidence: true,

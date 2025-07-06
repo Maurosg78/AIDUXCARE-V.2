@@ -73,11 +73,18 @@
             ⏳ Inicializando sistema...
         </div>
         
+        <div id="recordingStatus" class="status">⚪ DETENIDO</div>
+        
         <div>
             <button id="healthBtn" onclick="testHealthCheck()">🔍 Test Health Check</button>
             <button id="testBtn" onclick="testDirectTranscription()">🧪 Test Directo</button>
             <button id="recordBtn" onclick="toggleRecording()" disabled>🎙️ Iniciar Grabación</button>
             <button id="clearBtn" onclick="clearLogs()">🧹 Limpiar Logs</button>
+        </div>
+        
+        <div id="transcriptionResult" class="status info" style="margin-top: 20px;">
+            <h3>📝 Transcripción:</h3>
+            <p>Aquí aparecerá la transcripción...</p>
         </div>
         
         <div id="logs"></div>
@@ -440,6 +447,33 @@
         function clearLogs() {
             document.getElementById('logs').innerHTML = '';
             log('🧹 Logs limpiados', 'info');
+        }
+
+        // FUNCIONES FALTANTES AGREGADAS
+        function updateRecordingStatus(recording) {
+            const statusElement = document.getElementById('recordingStatus');
+            if (statusElement) {
+                statusElement.textContent = recording ? '🔴 GRABANDO' : '⚪ DETENIDO';
+                statusElement.className = recording ? 'recording' : '';
+            }
+            log(`🎙️ Estado grabación: ${recording ? 'INICIADA' : 'DETENIDA'}`, 'info');
+        }
+
+        function updateTranscription(text) {
+            const transcriptionElement = document.getElementById('transcriptionResult');
+            if (transcriptionElement) {
+                transcriptionElement.textContent = text;
+            }
+            log(`📝 Transcripción actualizada: ${text}`, 'success');
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.className = `status ${type}`;
+            }
+            log(message, type);
         }
         
         // Inicializar al cargar

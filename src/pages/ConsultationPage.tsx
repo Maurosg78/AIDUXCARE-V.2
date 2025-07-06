@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import CaptureWorkspace from '../components/CaptureWorkspace';
 import TranscriptionArea from '../components/TranscriptionArea';
 import ActionBar from '../components/ActionBar';
-import HybridAudioService from '../services/HybridAudioService';
+import AudioPipelineService from '../services/AudioPipelineService';
 
 // Tipos básicos
 interface SOAPData {
@@ -170,13 +170,13 @@ const ConsultationPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [serviceInfo, setServiceInfo] = useState<string>('');
 
-  // Instanciar el servicio de audio híbrido
-  const audioService = useMemo(() => new HybridAudioService(), []);
+  // Instanciar el servicio de audio unificado
+  const audioService = useMemo(() => new AudioPipelineService(), []);
 
   // Actualizar información del servicio
   useEffect(() => {
     const updateServiceInfo = () => {
-      const info = audioService.getDetailedServiceInfo();
+      const info = audioService.getServiceInfo();
       setServiceInfo(info);
     };
 

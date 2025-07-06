@@ -9,7 +9,7 @@
   },
   "scripts": {
     "debug:mcp": "tsx src/core/mcp/debugMCP.ts",
-    "dev": "vite",
+    "dev": "kill-port 5174 5175 5176 5177 5178 5179 5180 && vite",
     "build": "npm run check:env && tsc && vite build",
     "lint:prod": "eslint src/ --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:tests": "eslint __tests__ __mocks__ scripts --ext ts,tsx --report-unused-disable-directives --max-warnings 50 || true",
@@ -107,6 +107,7 @@
     "jest-environment-jsdom": "^27.5.1",
     "jest-snapshot": "^29.7.0",
     "jsdom": "^26.1.0",
+    "kill-port": "^2.0.1",
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "postcss": "^8.4.33",
