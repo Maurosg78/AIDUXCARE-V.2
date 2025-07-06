@@ -107,7 +107,7 @@ functions.http('transcribeAudio', async (req, res) => {
       }
 
       try {
-        // Configuración para Google Cloud Speech-to-Text
+        // Configuración para Google Cloud Speech-to-Text OPTIMIZADA
         const audioConfig = {
           encoding: req.file.mimetype.includes('wav') ? 'LINEAR16' : 
                    req.file.mimetype.includes('webm') ? 'WEBM_OPUS' :
@@ -121,6 +121,21 @@ functions.http('transcribeAudio', async (req, res) => {
           enableWordTimeOffsets: true,
           model: 'medical_conversation',
           useEnhanced: true,
+          // Optimizaciones de rendimiento
+          enableWordConfidence: true,
+          enableSeparateRecognitionPerChannel: false,
+          maxAlternatives: 1, // Reducir alternativas para mejor rendimiento
+          profanityFilter: false, // Desactivar filtro para mejor velocidad
+          speechContexts: [{
+            phrases: [
+              // Frases médicas más frecuentes para mejor reconocimiento
+              'dolor', 'síntomas', 'tratamiento', 'diagnóstico', 'paciente',
+              'fisioterapia', 'kinesiología', 'rehabilitación', 'ejercicio',
+              'hombro', 'rodilla', 'espalda', 'cuello', 'lumbar', 'cervical',
+              'inflamación', 'contractura', 'tensión', 'rigidez'
+            ],
+            boost: 15 // Aumentar boost para mejor precisión
+          }],
           metadata: {
             interactionType: 'DISCUSSION',
             industryNanosicCode: 621111, // Offices of physicians
@@ -130,11 +145,13 @@ functions.http('transcribeAudio', async (req, res) => {
           }
         };
 
-        logDetailed('INFO', 'Configuración de transcripción', {
+        logDetailed('INFO', 'Configuración de transcripción optimizada', {
           encoding: audioConfig.encoding,
           sampleRate: audioConfig.sampleRateHertz,
           language: audioConfig.languageCode,
-          speakerDiarization: audioConfig.enableSpeakerDiarization
+          speakerDiarization: audioConfig.enableSpeakerDiarization,
+          model: audioConfig.model,
+          maxAlternatives: audioConfig.maxAlternatives
         });
 
         const request = {
@@ -144,17 +161,28 @@ functions.http('transcribeAudio', async (req, res) => {
           config: audioConfig,
         };
 
-        logDetailed('INFO', 'Enviando solicitud a Google Cloud Speech-to-Text', {
+        logDetailed('INFO', 'Enviando solicitud optimizada a Google Cloud Speech-to-Text', {
           audioSizeBytes: req.file.buffer.length,
-          base64Length: request.audio.content.length
+          base64Length: request.audio.content.length,
+          timestamp: Date.now()
         });
 
-        // Realizar transcripción
-        const [response] = await client.recognize(request);
+        const startProcessing = Date.now();
+
+        // Realizar transcripción con timeout optimizado
+        const [response] = await Promise.race([
+          client.recognize(request),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout de procesamiento (45s)')), 45000)
+          )
+        ]);
+        
+        const processingTime = Date.now() - startProcessing;
         
         logDetailed('INFO', 'Respuesta recibida de Google Cloud', {
           resultsCount: response.results?.length || 0,
-          totalBilledTime: response.totalBilledTime
+          totalBilledTime: response.totalBilledTime,
+          processingTimeMs: processingTime
         });
 
         if (!response.results || response.results.length === 0) {

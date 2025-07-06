@@ -169,51 +169,9 @@ export default class GoogleCloudAudioService {
       this.transcriptionCallback = callback;
       this.audioChunks = [];
       
-      // Configurar MediaRecorder con mejor formato soportado
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/mp4';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = ''; // Usar formato por defecto
-          }
-        }
-      }
-
-      console.log(`🎙️ Formato de grabación: ${mimeType || 'por defecto'}`);
-
-      // Configurar MediaRecorder
-      const options: MediaRecorderOptions = {
-        audioBitsPerSecond: 128000 // Bitrate optimizado para calidad médica
-      };
-
-      if (mimeType) {
-        options.mimeType = mimeType;
-      }
-
-      this.mediaRecorder = new MediaRecorder(this.stream, options);
+      // Configurar MediaRecorder con optimizaciones de rendimiento
+      this.configureMediaRecorder();
       
-      // Configurar eventos
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-          console.log(`📦 Chunk capturado: ${event.data.size} bytes`);
-        }
-      };
-
-      this.mediaRecorder.onstop = async () => {
-        console.log('🔄 Grabación finalizada, procesando audio...');
-        await this.processAudioChunks();
-      };
-
-      this.mediaRecorder.onerror = (event) => {
-        console.error('❌ Error en MediaRecorder:', event);
-        this.stopRecording();
-      };
-
-      // Iniciar grabación con chunks optimizados
-      this.mediaRecorder.start(1000); // Chunks cada 1 segundo
       this.isRecording = true;
       
       console.log('🎙️ Grabación Google Cloud iniciada exitosamente');
@@ -264,13 +222,13 @@ export default class GoogleCloudAudioService {
   }
 
   /**
-   * Procesar chunks de audio y enviar a Google Cloud
+   * Procesar chunks de audio con optimizaciones de rendimiento
    */
   private async processAudioChunks(): Promise<void> {
     if (this.audioChunks.length === 0) {
       console.warn('⚠️ No hay chunks de audio para procesar');
       if (this.transcriptionCallback) {
-        this.transcriptionCallback('No se detectó audio para transcribir', true);
+        this.transcriptionCallback('No se detectó audio. Intenta hablar más cerca del micrófono.', true);
       }
       return;
     }
@@ -278,77 +236,104 @@ export default class GoogleCloudAudioService {
     try {
       console.log(`🔄 Procesando ${this.audioChunks.length} chunks de audio...`);
       
-      // Combinar chunks en un solo blob
-      const originalBlob = new Blob(this.audioChunks, { 
-        type: this.mediaRecorder?.mimeType || 'audio/webm' 
-      });
+      // Crear blob con el tipo MIME correcto
+      const mimeType = this.audioChunks[0].type || 'audio/webm';
+      const audioBlob = new Blob(this.audioChunks, { type: mimeType });
       
-      console.log(`📁 Audio original: ${originalBlob.size} bytes (${originalBlob.type})`);
-
-      // Mostrar progreso
-      if (this.transcriptionCallback) {
-        this.transcriptionCallback('🔄 Convirtiendo audio para Google Cloud...', false);
+      console.log(`📊 Audio creado: ${audioBlob.size} bytes, tipo: ${mimeType}`);
+      
+      // Validar tamaño mínimo (evitar archivos muy pequeños)
+      if (audioBlob.size < 1024) { // <1KB
+        console.warn('⚠️ Archivo de audio muy pequeño, puede no contener speech');
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback('Audio muy corto. Intenta grabar por más tiempo.', true);
+        }
+        return;
       }
 
-      // Convertir a WAV para Google Cloud
-      const wavBlob = await this.convertWebMToWAV(originalBlob);
+      // Optimización: Convertir a WAV solo si es necesario
+      let finalBlob = audioBlob;
+      let finalMimeType = mimeType;
       
-      // Mostrar progreso
-      if (this.transcriptionCallback) {
-        this.transcriptionCallback('🚀 Enviando a Google Cloud Speech-to-Text...', false);
+      // Si no es un formato compatible con Google Cloud, convertir a WAV
+      if (!mimeType.includes('wav') && !mimeType.includes('flac') && !mimeType.includes('mp3')) {
+        console.log('🔄 Convirtiendo a formato WAV para compatibilidad...');
+        try {
+                     const wavBlob = await this.convertWebMToWAV(audioBlob);
+          finalBlob = wavBlob;
+          finalMimeType = 'audio/wav';
+          console.log(`✅ Conversión exitosa: ${finalBlob.size} bytes WAV`);
+        } catch (conversionError) {
+          console.warn('⚠️ Error en conversión, usando formato original:', conversionError);
+          // Continuar con formato original
+        }
       }
 
-      // Crear FormData
+      // Crear FormData optimizado
       const formData = new FormData();
-      formData.append('audio', wavBlob, 'recording.wav');
+      formData.append('audio', finalBlob, `recording.${finalMimeType.split('/')[1]}`);
       
-      console.log(`🚀 Enviando ${wavBlob.size} bytes (WAV) a Google Cloud...`);
+      console.log(`📤 Enviando audio a Google Cloud (${finalBlob.size} bytes)...`);
       
-      // Enviar a Cloud Function
+      // Enviar con timeout optimizado
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
+      const startTime = performance.now();
+      
       const response = await fetch(this.getTranscribeUrl(), {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal,
+        headers: {
+          // No establecer Content-Type manualmente para FormData
+        }
       });
+
+      clearTimeout(timeoutId);
+      const processingTime = Math.round(performance.now() - startTime);
+      
+      console.log(`⏱️ Tiempo de procesamiento: ${processingTime}ms`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error Cloud Function:', response.status, errorText);
+        console.error('❌ Error del servidor:', response.status, errorText);
         throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Respuesta Google Cloud:', result);
+      console.log('✅ Respuesta recibida:', result);
 
-      if (result.success && result.transcription) {
-        console.log(`📝 Transcripción: ${result.transcription}`);
-        
-        // Formatear con información de hablantes
+      // Procesar respuesta optimizada
+      if (result.success && result.transcription && this.transcriptionCallback) {
+        // Formatear transcripción con speaker diarization si está disponible
         let formattedTranscription = result.transcription;
         
         if (result.segments && result.segments.length > 0) {
-          console.log(`👥 Detectados ${result.totalSpeakers} hablantes`);
-          
-          formattedTranscription = result.segments.map((segment: any) => {
-            const speakerIcon = segment.speaker === 1 ? '👩‍⚕️' : '👤';
-            const speakerLabel = segment.speaker === 1 ? 'Terapeuta' : 'Paciente';
-            return `${speakerIcon} ${speakerLabel}: ${segment.text}`;
-          }).join('\n');
+          formattedTranscription = result.segments
+            .map((segment: any) => {
+              const speaker = segment.speaker === 1 ? '👩‍⚕️ Terapeuta' : '👤 Paciente';
+              return `${speaker}: ${segment.text}`;
+            })
+            .join('\n');
         }
 
-        // Enviar resultado final
-        if (this.transcriptionCallback) {
-          this.transcriptionCallback(formattedTranscription, true);
-        }
-
-        // Métricas
-        if (result.confidence) {
-          console.log(`🎯 Confianza: ${(result.confidence * 100).toFixed(1)}%`);
-        }
+        this.transcriptionCallback(formattedTranscription, true);
         
+        // Log métricas de rendimiento
+        console.log(`📊 Métricas de rendimiento:
+          - Tiempo total: ${processingTime}ms
+          - Tamaño audio: ${finalBlob.size} bytes
+          - Confianza: ${Math.round((result.confidence || 0) * 100)}%
+          - Hablantes detectados: ${result.totalSpeakers || 0}`);
+          
       } else {
-        console.warn('⚠️ No se pudo transcribir el audio');
+        console.warn('⚠️ No se obtuvo transcripción válida');
         if (this.transcriptionCallback) {
-          this.transcriptionCallback(result.message || 'No se pudo transcribir el audio', true);
+          this.transcriptionCallback(
+            result.message || 'No se pudo transcribir el audio. Intenta hablar más claro.',
+            true
+          );
         }
       }
 
@@ -394,5 +379,69 @@ export default class GoogleCloudAudioService {
     }
     
     console.log('🧹 Recursos de audio limpiados');
+  }
+
+  /**
+   * Configurar MediaRecorder con optimizaciones de rendimiento
+   */
+  private configureMediaRecorder(): void {
+    if (!this.stream) return;
+
+    // Detectar formatos soportados con prioridad por rendimiento
+    const supportedFormats = [
+      'audio/webm;codecs=opus',  // Mejor compresión
+      'audio/webm',              // Fallback WebM
+      'audio/mp4',               // Compatibilidad móvil
+      'audio/wav'                // Fallback universal
+    ];
+
+    let selectedFormat = 'audio/wav'; // Fallback por defecto
+    
+    for (const format of supportedFormats) {
+      if (MediaRecorder.isTypeSupported(format)) {
+        selectedFormat = format;
+        break;
+      }
+    }
+
+    console.log(`🎙️ Formato seleccionado: ${selectedFormat}`);
+
+    // Configuración optimizada para rendimiento
+    const options = {
+      mimeType: selectedFormat,
+      audioBitsPerSecond: selectedFormat.includes('opus') ? 64000 : 128000, // Menor bitrate para Opus
+      bitsPerSecond: selectedFormat.includes('opus') ? 64000 : 128000
+    };
+
+    try {
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+      console.log('✅ MediaRecorder configurado con optimizaciones');
+    } catch (error) {
+      console.warn('⚠️ Fallback a configuración básica:', error);
+      this.mediaRecorder = new MediaRecorder(this.stream);
+    }
+
+    // Configurar eventos con optimizaciones
+    this.mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        this.audioChunks.push(event.data);
+        console.log(`📦 Chunk recibido: ${event.data.size} bytes`);
+      }
+    };
+
+    this.mediaRecorder.onstop = async () => {
+      console.log('🛑 Grabación detenida, procesando audio...');
+      await this.processAudioChunks();
+    };
+
+    this.mediaRecorder.onerror = (event) => {
+      console.error('❌ Error en MediaRecorder:', event);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback('Error en la grabación de audio', true);
+      }
+    };
+
+    // Iniciar grabación con chunks optimizados (1 segundo para mejor rendimiento)
+    this.mediaRecorder.start(1000);
   }
 } 
