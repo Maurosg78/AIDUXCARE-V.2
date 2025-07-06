@@ -19,177 +19,279 @@ const setCorsHeaders = (res) => {
   res.set('Access-Control-Max-Age', '3600');
 };
 
+// Función para logging detallado
+const logDetailed = (level, message, data = null) => {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    level,
+    message,
+    ...(data && { data })
+  };
+  console.log(`[${level}] ${timestamp}: ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
 // Función principal de transcripción
 functions.http('transcribeAudio', async (req, res) => {
-  // Manejar CORS
+  // Manejar preflight CORS
   setCorsHeaders(res);
   
-  // Manejar preflight OPTIONS
   if (req.method === 'OPTIONS') {
-    res.status(204).send('');
+    logDetailed('INFO', 'CORS preflight request handled');
+    res.status(200).send();
     return;
   }
 
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Método no permitido' });
+    logDetailed('ERROR', 'Method not allowed', { method: req.method });
+    res.status(405).json({ 
+      success: false, 
+      error: 'Method not allowed',
+      allowedMethods: ['POST', 'OPTIONS']
+    });
     return;
   }
 
   try {
-    console.log('📥 Procesando solicitud de transcripción...');
-    console.log('📊 Headers:', req.headers);
-    console.log('📊 Content-Type:', req.headers['content-type']);
-    
+    logDetailed('INFO', 'Iniciando procesamiento de transcripción', {
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+      userAgent: req.headers['user-agent']
+    });
+
     // Usar multer para procesar el archivo
     upload.single('audio')(req, res, async (err) => {
       if (err) {
-        console.error('❌ Error procesando archivo:', err);
-        res.status(400).json({ 
-          error: 'Error procesando archivo de audio',
-          details: err.message 
+        logDetailed('ERROR', 'Error en multer', { 
+          error: err.message,
+          code: err.code,
+          field: err.field
         });
-        return;
+        
+        return res.status(400).json({
+          success: false,
+          error: 'Error procesando archivo de audio',
+          details: err.message
+        });
       }
 
       if (!req.file) {
-        console.error('❌ No se encontró archivo de audio');
-        console.log('📊 Body keys:', Object.keys(req.body || {}));
-        res.status(400).json({ error: 'No se encontró archivo de audio en el campo "audio"' });
-        return;
+        logDetailed('ERROR', 'No se recibió archivo de audio', {
+          body: Object.keys(req.body),
+          files: req.files
+        });
+        
+        return res.status(400).json({
+          success: false,
+          error: 'No se encontró archivo de audio',
+          expectedField: 'audio'
+        });
       }
 
-      console.log(`📄 Archivo recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
-      console.log(`📄 Tipo MIME: ${req.file.mimetype}`);
+      // Log detallado del archivo recibido
+      logDetailed('INFO', 'Archivo de audio recibido', {
+        filename: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        encoding: req.file.encoding,
+        fieldname: req.file.fieldname
+      });
 
-      // Validar que el archivo no esté vacío
-      if (req.file.size === 0) {
-        console.error('❌ Archivo de audio vacío');
-        res.status(400).json({ error: 'El archivo de audio está vacío' });
-        return;
+      // Validar formato de audio
+      const supportedFormats = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/flac', 'audio/webm'];
+      if (!supportedFormats.includes(req.file.mimetype)) {
+        logDetailed('WARN', 'Formato de audio no estándar', {
+          received: req.file.mimetype,
+          supported: supportedFormats
+        });
       }
 
-      // Configuración para Speech-to-Text
-      const request = {
-        audio: {
-          content: req.file.buffer.toString('base64'),
-        },
-        config: {
-          encoding: 'WEBM_OPUS',
+      try {
+        // Configuración para Google Cloud Speech-to-Text
+        const audioConfig = {
+          encoding: req.file.mimetype.includes('wav') ? 'LINEAR16' : 
+                   req.file.mimetype.includes('webm') ? 'WEBM_OPUS' :
+                   req.file.mimetype.includes('mp3') ? 'MP3' : 'LINEAR16',
           sampleRateHertz: 48000,
           languageCode: 'es-ES',
           alternativeLanguageCodes: ['es-MX', 'es-AR', 'es-CL'],
-          model: 'medical_conversation',
-          useEnhanced: true,
           enableSpeakerDiarization: true,
           diarizationSpeakerCount: 2,
           enableAutomaticPunctuation: true,
           enableWordTimeOffsets: true,
-          speechContexts: [{
-            phrases: [
-              'dolor', 'síntomas', 'tratamiento', 'diagnóstico', 'paciente', 'terapeuta',
-              'fisioterapia', 'kinesiología', 'rehabilitación', 'ejercicio', 'movilidad',
-              'hombro', 'rodilla', 'espalda', 'cuello', 'lumbar', 'cervical',
-              'inflamación', 'contractura', 'tensión', 'rigidez', 'limitación'
-            ],
-            boost: 10
-          }]
-        },
-      };
+          model: 'medical_conversation',
+          useEnhanced: true,
+          metadata: {
+            interactionType: 'DISCUSSION',
+            industryNanosicCode: 621111, // Offices of physicians
+            microphoneDistance: 'NEARFIELD',
+            originalMediaType: 'AUDIO',
+            recordingDeviceType: 'PC'
+          }
+        };
 
-      console.log('🎙️ Enviando audio a Google Cloud Speech-to-Text...');
-      
-      try {
+        logDetailed('INFO', 'Configuración de transcripción', {
+          encoding: audioConfig.encoding,
+          sampleRate: audioConfig.sampleRateHertz,
+          language: audioConfig.languageCode,
+          speakerDiarization: audioConfig.enableSpeakerDiarization
+        });
+
+        const request = {
+          audio: {
+            content: req.file.buffer.toString('base64'),
+          },
+          config: audioConfig,
+        };
+
+        logDetailed('INFO', 'Enviando solicitud a Google Cloud Speech-to-Text', {
+          audioSizeBytes: req.file.buffer.length,
+          base64Length: request.audio.content.length
+        });
+
         // Realizar transcripción
         const [response] = await client.recognize(request);
         
-        console.log('✅ Transcripción completada');
-        console.log('📊 Resultados:', response.results?.length || 0);
-        
-        // Verificar si hay resultados
+        logDetailed('INFO', 'Respuesta recibida de Google Cloud', {
+          resultsCount: response.results?.length || 0,
+          totalBilledTime: response.totalBilledTime
+        });
+
         if (!response.results || response.results.length === 0) {
-          console.warn('⚠️ No se encontraron resultados de transcripción');
-          res.status(200).json({
-            success: false,
-            message: 'No se detectó audio claro para transcribir. Intenta hablar más cerca del micrófono.',
-            transcription: '',
-            speakers: [],
-            confidence: 0,
-            timestamp: new Date().toISOString()
+          logDetailed('WARN', 'No se obtuvieron resultados de transcripción', {
+            response: JSON.stringify(response, null, 2)
           });
-          return;
+          
+          return res.json({
+            success: false,
+            message: 'No se pudo transcribir el audio. Intenta hablar más claro o cerca del micrófono.',
+            details: 'No results from Google Cloud Speech-to-Text'
+          });
         }
-        
+
         // Procesar resultados
         const transcription = response.results
           .map(result => result.alternatives[0].transcript)
-          .join('\n');
+          .join(' ');
 
-        // Procesar speaker diarization si está disponible
-        let speakers = [];
-        if (response.results && response.results.length > 0) {
-          response.results.forEach((result, index) => {
-            if (result.alternatives && result.alternatives[0].words) {
-              result.alternatives[0].words.forEach(word => {
-                if (word.speakerTag !== undefined) {
-                  speakers.push({
-                    word: word.word,
-                    speakerTag: word.speakerTag,
-                    startTime: word.startTime,
-                    endTime: word.endTime
-                  });
-                }
-              });
+        // Procesar información de hablantes
+        let segments = [];
+        let totalSpeakers = 0;
+
+        if (response.results[0].alternatives[0].words) {
+          const words = response.results[0].alternatives[0].words;
+          const speakerTags = new Set();
+          
+          words.forEach(word => {
+            if (word.speakerTag) {
+              speakerTags.add(word.speakerTag);
             }
           });
+          
+          totalSpeakers = speakerTags.size;
+          
+          // Agrupar palabras por hablante
+          let currentSpeaker = null;
+          let currentText = '';
+          
+          words.forEach(word => {
+            if (word.speakerTag !== currentSpeaker) {
+              if (currentText.trim()) {
+                segments.push({
+                  speaker: currentSpeaker,
+                  text: currentText.trim()
+                });
+              }
+              currentSpeaker = word.speakerTag;
+              currentText = word.word;
+            } else {
+              currentText += ' ' + word.word;
+            }
+          });
+          
+          // Agregar último segmento
+          if (currentText.trim()) {
+            segments.push({
+              speaker: currentSpeaker,
+              text: currentText.trim()
+            });
+          }
         }
 
-        // Formatear respuesta
+        // Calcular confianza promedio
+        const confidence = response.results.reduce((acc, result) => {
+          return acc + (result.alternatives[0].confidence || 0);
+        }, 0) / response.results.length;
+
         const result = {
           success: true,
-          transcription: transcription,
-          speakers: speakers,
-          confidence: response.results.length > 0 ? response.results[0].alternatives[0].confidence : 0,
-          timestamp: new Date().toISOString()
+          transcription,
+          confidence,
+          totalSpeakers,
+          segments,
+          metadata: {
+            audioFormat: req.file.mimetype,
+            audioSize: req.file.size,
+            processingTime: Date.now(),
+            language: audioConfig.languageCode
+          }
         };
 
-        console.log('📤 Enviando respuesta:', { 
+        logDetailed('SUCCESS', 'Transcripción completada exitosamente', {
           transcriptionLength: transcription.length,
-          speakersCount: speakers.length,
-          confidence: result.confidence
+          confidence: confidence,
+          speakersDetected: totalSpeakers,
+          segmentsCount: segments.length
         });
 
-        res.status(200).json(result);
-        
+        res.json(result);
+
       } catch (speechError) {
-        console.error('❌ Error en Google Cloud Speech-to-Text:', speechError);
-        res.status(500).json({ 
-          error: 'Error procesando audio con Google Cloud',
-          details: speechError.message 
+        logDetailed('ERROR', 'Error en Google Cloud Speech-to-Text', {
+          error: speechError.message,
+          code: speechError.code,
+          details: speechError.details,
+          stack: speechError.stack
+        });
+
+        res.status(500).json({
+          success: false,
+          error: 'Error en el servicio de transcripción',
+          details: speechError.message,
+          code: speechError.code
         });
       }
     });
 
   } catch (error) {
-    console.error('❌ Error general en transcripción:', error);
-    res.status(500).json({ 
+    logDetailed('ERROR', 'Error general en transcribeAudio', {
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
       error: 'Error interno del servidor',
-      details: error.message 
+      details: error.message
     });
   }
 });
 
-// Función de health check
+// Health check endpoint
 functions.http('healthCheck', (req, res) => {
   setCorsHeaders(res);
   
   if (req.method === 'OPTIONS') {
-    res.status(204).send('');
+    res.status(200).send();
     return;
   }
 
-  res.status(200).json({ 
-    status: 'healthy', 
+  logDetailed('INFO', 'Health check solicitado');
+  
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
     service: 'Google Cloud Speech-to-Text',
-    timestamp: new Date().toISOString()
+    version: '2.0.0'
   });
 }); 

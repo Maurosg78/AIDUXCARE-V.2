@@ -20,13 +20,17 @@ export default class RealAudioCaptureService {
     }
 
     try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
       if (!SpeechRecognition) {
         throw new Error('Web Speech API no soportado');
       }
 
       this.recognition = new SpeechRecognition();
+      
+      if (!this.recognition) {
+        throw new Error('No se pudo crear instancia de SpeechRecognition');
+      }
       
       // Configuración médica optimizada
       this.recognition.continuous = true;
@@ -191,13 +195,7 @@ export default class RealAudioCaptureService {
   }
 }
 
-// Declaraciones para TypeScript
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+// Declaraciones globales para Web Speech API eliminadas para evitar conflictos
 
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
