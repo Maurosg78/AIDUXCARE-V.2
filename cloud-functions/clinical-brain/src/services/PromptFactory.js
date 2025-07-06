@@ -195,6 +195,55 @@ TERMINOLOGÍA ESPECÍFICA:
 ${terminology.map(term => `- ${term.term}: ${term.definition}`).join('\n')}`;
   }
 
+  generateChunkPrompt(chunkText, specialty, sessionType, chunkNumber, totalChunks) {
+    const basePrompt = this.getBasePrompt();
+    const specialtyPrompt = this.getSpecialtyPrompt(specialty);
+    const chunkPrompt = this.getChunkSpecificPrompt(chunkNumber, totalChunks);
+    const outputPrompt = this.getOutputFormatPrompt();
+
+    const fullPrompt = `${basePrompt}
+
+${specialtyPrompt}
+
+${chunkPrompt}
+
+FRAGMENTO DE TRANSCRIPCIÓN A ANALIZAR (${chunkNumber}/${totalChunks}):
+"""
+${chunkText}
+"""
+
+${outputPrompt}`;
+
+    logger.info('Chunk prompt generated', {
+      specialty,
+      sessionType,
+      chunkNumber,
+      totalChunks,
+      chunkLength: chunkText.length,
+      promptLength: fullPrompt.length,
+      timestamp: new Date().toISOString()
+    });
+
+    return fullPrompt;
+  }
+
+  getChunkSpecificPrompt(chunkNumber, totalChunks) {
+    if (totalChunks === 1) {
+      return `ANÁLISIS DE TRANSCRIPCIÓN COMPLETA:
+Este es el análisis de una transcripción completa. Proporciona un análisis exhaustivo.`;
+    }
+
+    return `ANÁLISIS DE FRAGMENTO (${chunkNumber}/${totalChunks}):
+
+INSTRUCCIONES ESPECIALES PARA FRAGMENTOS:
+- Este es el fragmento ${chunkNumber} de ${totalChunks} partes de una transcripción más larga
+- Analiza SOLO lo que está presente en este fragmento
+- No asumas información que no está en este fragmento específico
+- Enfócate en advertencias y sugerencias basadas únicamente en el contenido visible
+- Si el fragmento está incompleto, indica "Análisis parcial - fragmento ${chunkNumber}/${totalChunks}" en las descripciones
+- Prioriza advertencias de seguridad inmediata sobre análisis completo`;
+  }
+
   getOutputFormatPrompt() {
     return `FORMATO DE RESPUESTA REQUERIDO:
 
