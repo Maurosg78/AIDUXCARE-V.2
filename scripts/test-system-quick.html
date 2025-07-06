@@ -146,78 +146,117 @@
                 stream: null,
                 
                 async startRecording(callback) {
-                    log('🎤 Solicitando permisos de micrófono...', 'info');
-                    
+                    if (this.isRecording || this.isProcessing) {
+                        log('⚠️ Ya hay una grabación en curso', 'warning');
+                        return;
+                    }
+
                     try {
+                        log('🎤 Solicitando permisos de micrófono...', 'info');
+                        
                         this.stream = await navigator.mediaDevices.getUserMedia({
                             audio: {
                                 echoCancellation: true,
                                 noiseSuppression: true,
                                 autoGainControl: true,
-                                sampleRate: 48000,
-                                channelCount: 1
+                                sampleRate: 48000
                             }
                         });
-                        
+
                         log('✅ Permisos concedidos', 'success');
+
+                        // Limpiar chunks anteriores
+                        this.audioChunks = [];
                         
-                        // Configurar MediaRecorder
-                        const supportedFormats = [
+                        // Detectar formato soportado
+                        const mimeTypes = [
                             'audio/webm;codecs=opus',
                             'audio/webm',
                             'audio/mp4',
-                            'audio/wav'
+                            'audio/ogg;codecs=opus'
                         ];
                         
-                        let selectedFormat = 'audio/wav';
-                        for (const format of supportedFormats) {
-                            if (MediaRecorder.isTypeSupported(format)) {
-                                selectedFormat = format;
+                        let selectedMimeType = 'audio/webm';
+                        for (const mimeType of mimeTypes) {
+                            if (MediaRecorder.isTypeSupported(mimeType)) {
+                                selectedMimeType = mimeType;
                                 break;
                             }
                         }
-                        
-                        log(`🎙️ Formato seleccionado: ${selectedFormat}`, 'info');
-                        
+
+                        log(`📊 Formato seleccionado: ${selectedMimeType}`, 'info');
+
                         this.mediaRecorder = new MediaRecorder(this.stream, {
-                            mimeType: selectedFormat
+                            mimeType: selectedMimeType,
+                            audioBitsPerSecond: 64000
                         });
-                        
-                        this.audioChunks = [];
-                        this.isRecording = true;
-                        
+
+                        // CONTROL CRÍTICO: Eventos de grabación
                         this.mediaRecorder.ondataavailable = (event) => {
-                            if (event.data && event.data.size > 0) {
+                            if (event.data && event.data.size > 0 && this.isRecording) {
                                 this.audioChunks.push(event.data);
                                 log(`📦 Chunk recibido: ${event.data.size} bytes`, 'info');
                             }
                         };
-                        
-                        this.mediaRecorder.onstop = async () => {
-                            log('🛑 Grabación detenida, procesando audio...', 'info');
-                            await this.processAudio(callback);
+
+                        this.mediaRecorder.onstop = () => {
+                            log('🛑 Grabación detenida', 'info');
+                            this.isRecording = false;
+                            
+                            // Detener stream inmediatamente
+                            if (this.stream) {
+                                this.stream.getTracks().forEach(track => {
+                                    track.stop();
+                                    log(`🔇 Track detenido: ${track.kind}`, 'info');
+                                });
+                                this.stream = null;
+                            }
+                            
+                            // Procesar audio solo si hay chunks
+                            if (this.audioChunks.length > 0 && !this.isProcessing) {
+                                this.processAudio((result) => {
+                                    updateTranscription(result);
+                                });
+                            }
                         };
+
+                        this.mediaRecorder.onerror = (error) => {
+                            log(`❌ Error en MediaRecorder: ${error.error}`, 'error');
+                            this.stopRecording();
+                        };
+
+                        // Iniciar grabación
+                        this.mediaRecorder.start(1000); // Chunks cada 1 segundo
+                        this.isRecording = true;
                         
-                        this.mediaRecorder.start(1000); // 1 segundo chunks
-                        log('🎙️ Grabación iniciada exitosamente', 'success');
-                        
+                        log('🔴 Grabación iniciada', 'success');
+                        updateRecordingStatus(true);
+
                     } catch (error) {
                         log(`❌ Error al iniciar grabación: ${error.message}`, 'error');
-                        throw error;
+                        this.stopRecording();
                     }
                 },
                 
                 stopRecording() {
-                    if (this.isRecording && this.mediaRecorder) {
-                        this.isRecording = false;
+                    log('🛑 Deteniendo grabación...', 'info');
+                    
+                    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
                         this.mediaRecorder.stop();
-                        
-                        if (this.stream) {
-                            this.stream.getTracks().forEach(track => track.stop());
-                        }
-                        
-                        log('🛑 Grabación detenida', 'info');
                     }
+                    
+                    // Forzar detención del stream
+                    if (this.stream) {
+                        this.stream.getTracks().forEach(track => {
+                            track.stop();
+                        });
+                        this.stream = null;
+                    }
+                    
+                    this.isRecording = false;
+                    updateRecordingStatus(false);
+                    
+                    log('✅ Grabación detenida completamente', 'success');
                 },
                 
                 async processAudio(callback) {
