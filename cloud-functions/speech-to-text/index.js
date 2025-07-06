@@ -1,5 +1,5 @@
-const speech = require('@google-cloud/speech');
 const functions = require('@google-cloud/functions-framework');
+const speech = require('@google-cloud/speech');
 const cors = require('cors');
 const multer = require('multer');
 
@@ -15,181 +15,156 @@ const corsOptions = {
   credentials: true
 };
 
-// Configurar multer para manejar archivos
-const upload = multer({
+// Configurar multer para manejar archivos en memoria
+const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB límite
-  }
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// Inicializar cliente de Speech-to-Text
-const speechClient = new speech.SpeechClient();
+// Crear cliente de Speech-to-Text
+const client = new speech.SpeechClient();
+
+// Función para manejar CORS manualmente
+const setCorsHeaders = (res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+};
 
 // Función principal de transcripción
-functions.http('transcribeAudio', cors(corsOptions), async (req, res) => {
-  console.log('🎙️ Iniciando transcripción de audio médico...');
+functions.http('transcribeAudio', async (req, res) => {
+  // Manejar CORS
+  setCorsHeaders(res);
   
-  try {
-    // Verificar método HTTP
-    if (req.method !== 'POST') {
-      return res.status(405).json({ 
-        error: 'Método no permitido. Use POST.' 
-      });
-    }
+  // Manejar preflight OPTIONS
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
 
-    // Manejar upload de archivo
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Método no permitido' });
+    return;
+  }
+
+  try {
+    console.log('📥 Procesando solicitud de transcripción...');
+    
+    // Usar multer para procesar el archivo
     upload.single('audio')(req, res, async (err) => {
       if (err) {
-        console.error('Error en upload:', err);
-        return res.status(400).json({ 
-          error: 'Error al procesar archivo de audio' 
-        });
+        console.error('❌ Error procesando archivo:', err);
+        res.status(400).json({ error: 'Error procesando archivo de audio' });
+        return;
       }
 
       if (!req.file) {
-        return res.status(400).json({ 
-          error: 'No se encontró archivo de audio' 
-        });
+        console.error('❌ No se encontró archivo de audio');
+        res.status(400).json({ error: 'No se encontró archivo de audio' });
+        return;
       }
 
-      console.log(`📁 Archivo recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
+      console.log(`📄 Archivo recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
 
-      try {
-        // Configuración para transcripción médica en español
-        const request = {
-          audio: {
-            content: req.file.buffer.toString('base64'),
-          },
-          config: {
-            encoding: 'WEBM_OPUS', // Formato común de navegadores
-            sampleRateHertz: 48000,
-            languageCode: 'es-ES',
-            alternativeLanguageCodes: ['es-MX', 'es-AR', 'es-CO'],
-            // Configuración específica para contexto médico
-            speechContexts: [{
-              phrases: [
-                'dolor', 'síntoma', 'diagnóstico', 'tratamiento', 'medicamento',
-                'paciente', 'consulta', 'examen', 'análisis', 'terapia',
-                'fisioterapia', 'kinesiología', 'rehabilitación', 'lesión',
-                'inflamación', 'contractura', 'articulación', 'músculo',
-                'cervical', 'lumbar', 'hombro', 'rodilla', 'tobillo'
-              ]
-            }],
-            // Mejorar precisión para audio médico
-            useEnhanced: true,
-            model: 'medical_conversation',
-            enableAutomaticPunctuation: true,
-            enableWordTimeOffsets: true,
-            // Configuración para múltiples hablantes
-            diarizationConfig: {
-              enableSpeakerDiarization: true,
-              minSpeakerCount: 2,
-              maxSpeakerCount: 3
-            }
-          },
-        };
+      // Configuración para Speech-to-Text
+      const request = {
+        audio: {
+          content: req.file.buffer.toString('base64'),
+        },
+        config: {
+          encoding: 'WEBM_OPUS',
+          sampleRateHertz: 48000,
+          languageCode: 'es-ES',
+          alternativeLanguageCodes: ['es-MX', 'es-AR', 'es-CL'],
+          model: 'medical_conversation',
+          useEnhanced: true,
+          enableSpeakerDiarization: true,
+          diarizationSpeakerCount: 2,
+          enableAutomaticPunctuation: true,
+          enableWordTimeOffsets: true,
+          speechContexts: [{
+            phrases: [
+              'dolor', 'síntomas', 'tratamiento', 'diagnóstico', 'paciente', 'terapeuta',
+              'fisioterapia', 'kinesiología', 'rehabilitación', 'ejercicio', 'movilidad',
+              'hombro', 'rodilla', 'espalda', 'cuello', 'lumbar', 'cervical',
+              'inflamación', 'contractura', 'tensión', 'rigidez', 'limitación'
+            ],
+            boost: 10
+          }]
+        },
+      };
 
-        console.log('🔄 Enviando audio a Google Cloud Speech-to-Text...');
-        
-        // Realizar transcripción
-        const [response] = await speechClient.recognize(request);
-        
-        if (!response.results || response.results.length === 0) {
-          return res.status(200).json({
-            success: true,
-            transcription: '',
-            message: 'No se detectó habla en el audio',
-            speakers: []
-          });
-        }
+      console.log('🎙️ Enviando audio a Google Cloud Speech-to-Text...');
+      
+      // Realizar transcripción
+      const [response] = await client.recognize(request);
+      
+      console.log('✅ Transcripción completada');
+      
+      // Procesar resultados
+      const transcription = response.results
+        .map(result => result.alternatives[0].transcript)
+        .join('\n');
 
-        // Procesar resultados con información de hablantes
-        const transcriptionSegments = [];
-        let fullTranscription = '';
-
+      // Procesar speaker diarization si está disponible
+      let speakers = [];
+      if (response.results && response.results.length > 0) {
         response.results.forEach((result, index) => {
-          const alternative = result.alternatives[0];
-          const words = alternative.words || [];
-          
-          // Detectar cambios de hablante
-          let currentSpeaker = null;
-          let currentSegment = '';
-          
-          words.forEach((word) => {
-            if (word.speakerTag !== currentSpeaker) {
-              if (currentSegment) {
-                transcriptionSegments.push({
-                  speaker: currentSpeaker,
-                  text: currentSegment.trim(),
-                  confidence: alternative.confidence
+          if (result.alternatives && result.alternatives[0].words) {
+            result.alternatives[0].words.forEach(word => {
+              if (word.speakerTag !== undefined) {
+                speakers.push({
+                  word: word.word,
+                  speakerTag: word.speakerTag,
+                  startTime: word.startTime,
+                  endTime: word.endTime
                 });
               }
-              currentSpeaker = word.speakerTag;
-              currentSegment = word.word;
-            } else {
-              currentSegment += ' ' + word.word;
-            }
-          });
-
-          // Añadir último segmento
-          if (currentSegment) {
-            transcriptionSegments.push({
-              speaker: currentSpeaker,
-              text: currentSegment.trim(),
-              confidence: alternative.confidence
             });
           }
-
-          fullTranscription += alternative.transcript + ' ';
-        });
-
-        console.log('✅ Transcripción completada exitosamente');
-        console.log(`📝 Texto transcrito: ${fullTranscription.substring(0, 100)}...`);
-
-        // Respuesta exitosa
-        res.status(200).json({
-          success: true,
-          transcription: fullTranscription.trim(),
-          segments: transcriptionSegments,
-          speakers: [...new Set(transcriptionSegments.map(s => s.speaker))],
-          totalSpeakers: transcriptionSegments.length > 0 ? 
-            Math.max(...transcriptionSegments.map(s => s.speaker || 1)) : 1,
-          confidence: response.results[0]?.alternatives[0]?.confidence || 0,
-          processingTime: Date.now(),
-          audioInfo: {
-            originalName: req.file.originalname,
-            size: req.file.size,
-            mimeType: req.file.mimetype
-          }
-        });
-
-      } catch (transcriptionError) {
-        console.error('❌ Error en transcripción:', transcriptionError);
-        res.status(500).json({
-          success: false,
-          error: 'Error al transcribir audio',
-          details: transcriptionError.message
         });
       }
+
+      // Formatear respuesta
+      const result = {
+        success: true,
+        transcription: transcription,
+        speakers: speakers,
+        confidence: response.results.length > 0 ? response.results[0].alternatives[0].confidence : 0,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('📤 Enviando respuesta:', { 
+        transcriptionLength: transcription.length,
+        speakersCount: speakers.length,
+        confidence: result.confidence
+      });
+
+      res.status(200).json(result);
     });
 
   } catch (error) {
-    console.error('❌ Error general:', error);
-    res.status(500).json({
-      success: false,
+    console.error('❌ Error en transcripción:', error);
+    res.status(500).json({ 
       error: 'Error interno del servidor',
-      details: error.message
+      details: error.message 
     });
   }
 });
 
 // Función de health check
-functions.http('healthCheck', cors(corsOptions), (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    service: 'AiDuxCare Speech-to-Text',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
+functions.http('healthCheck', (req, res) => {
+  setCorsHeaders(res);
+  
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
+  res.status(200).json({ 
+    status: 'healthy', 
+    service: 'Google Cloud Speech-to-Text',
+    timestamp: new Date().toISOString()
   });
 }); 

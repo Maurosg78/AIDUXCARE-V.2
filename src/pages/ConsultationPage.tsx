@@ -14,57 +14,55 @@ interface SOAPData {
   timestamp: string;
 }
 
-// Servicio SOAP simple
-class SimpleSOAPService {
-  static processTranscriptionToSOAP(transcription: string): SOAPData {
-    const words = transcription.toLowerCase();
-    
-    let subjective = '';
-    let objective = '';
-    let assessment = '';
-    let plan = '';
-    
-    // Clasificación básica por palabras clave
-    if (words.includes('dolor') || words.includes('molestias') || words.includes('presenta')) {
-      subjective = transcription.split('.').slice(0, 2).join('. ').trim();
-    }
-    
-    if (words.includes('examen') || words.includes('palpación') || words.includes('limitación')) {
-      objective = transcription.split('.').filter(s => 
-        s.toLowerCase().includes('examen') || 
-        s.toLowerCase().includes('palpación') || 
-        s.toLowerCase().includes('limitación')
-      ).join('. ').trim();
-    }
-    
-    if (words.includes('hombro') || words.includes('tendón')) {
-      assessment = 'Posible tendinopatía del manguito rotador. Dolor en hombro derecho con limitación funcional.';
-    }
-    
-    if (words.includes('recomiendo') || words.includes('tratamiento') || words.includes('control')) {
-      plan = transcription.split('.').filter(s => 
-        s.toLowerCase().includes('recomiendo') || 
-        s.toLowerCase().includes('tratamiento') || 
-        s.toLowerCase().includes('control')
-      ).join('. ').trim();
-    }
-    
-    // Valores por defecto si no se encuentra contenido
-    if (!subjective) subjective = 'Paciente refiere síntomas según transcripción médica.';
-    if (!objective) objective = 'Examen físico según hallazgos documentados.';
-    if (!assessment) assessment = 'Evaluación clínica basada en síntomas y examen físico.';
-    if (!plan) plan = 'Plan de tratamiento a determinar según evolución clínica.';
-    
-    return {
-      subjective,
-      objective,
-      assessment,
-      plan,
-      confidence: 0.85,
-      timestamp: new Date().toISOString()
-    };
+// Función para procesar transcripción a SOAP
+const processTranscriptionToSOAP = (transcription: string): SOAPData => {
+  const words = transcription.toLowerCase();
+  
+  let subjective = '';
+  let objective = '';
+  let assessment = '';
+  let plan = '';
+  
+  // Clasificación básica por palabras clave
+  if (words.includes('dolor') || words.includes('molestias') || words.includes('presenta')) {
+    subjective = transcription.split('.').slice(0, 2).join('. ').trim();
   }
-}
+  
+  if (words.includes('examen') || words.includes('palpación') || words.includes('limitación')) {
+    objective = transcription.split('.').filter(s => 
+      s.toLowerCase().includes('examen') || 
+      s.toLowerCase().includes('palpación') || 
+      s.toLowerCase().includes('limitación')
+    ).join('. ').trim();
+  }
+  
+  if (words.includes('hombro') || words.includes('tendón')) {
+    assessment = 'Posible tendinopatía del manguito rotador. Dolor en hombro derecho con limitación funcional.';
+  }
+  
+  if (words.includes('recomiendo') || words.includes('tratamiento') || words.includes('control')) {
+    plan = transcription.split('.').filter(s => 
+      s.toLowerCase().includes('recomiendo') || 
+      s.toLowerCase().includes('tratamiento') || 
+      s.toLowerCase().includes('control')
+    ).join('. ').trim();
+  }
+  
+  // Valores por defecto si no se encuentra contenido
+  if (!subjective) subjective = 'Paciente refiere síntomas según transcripción médica.';
+  if (!objective) objective = 'Examen físico según hallazgos documentados.';
+  if (!assessment) assessment = 'Evaluación clínica basada en síntomas y examen físico.';
+  if (!plan) plan = 'Plan de tratamiento a determinar según evolución clínica.';
+  
+  return {
+    subjective,
+    objective,
+    assessment,
+    plan,
+    confidence: 0.85,
+    timestamp: new Date().toISOString()
+  };
+};
 
 // Placeholder para el header del paciente y los módulos de IA
 const PatientHeader = () => <div style={{ padding: '1rem', border: '1px dashed grey', marginBottom: '1rem' }}>[Header del Paciente]</div>;
@@ -203,15 +201,15 @@ const ConsultationPage: React.FC = () => {
   }, []);
 
   // Procesar transcripción a SOAP
-  const processTranscriptionToSOAP = useCallback(async (transcript: string) => {
+  const processTranscriptionToSOAPAsync = useCallback(async (transcript: string) => {
     try {
       setIsProcessing(true);
       console.log('🧠 Procesando transcripción a SOAP...');
       
-      // Simular un pequeño delay para mostrar el procesamiento
+      // Simular procesamiento
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const soapResult = SimpleSOAPService.processTranscriptionToSOAP(transcript);
+      const soapResult = processTranscriptionToSOAP(transcript);
       setSoapData(soapResult);
       console.log('✅ SOAP generado exitosamente:', soapResult);
       
@@ -250,11 +248,13 @@ const ConsultationPage: React.FC = () => {
       setIsRecording(false);
       console.log('🛑 Deteniendo grabación de consulta médica...');
       
-      const finalTranscript = audioService.stopRecording();
+      // Detener grabación (no retorna transcript)
+      audioService.stopRecording();
       
-      if (finalTranscript.trim()) {
+      // Usar el transcript actual del estado
+      if (transcriptionText && transcriptionText.trim()) {
         console.log('📝 Procesando transcripción médica a formato SOAP...');
-        await processTranscriptionToSOAP(finalTranscript);
+        await processTranscriptionToSOAPAsync(transcriptionText);
       } else {
         setError('No se detectó audio. Intenta hablar más cerca del micrófono.');
       }
@@ -263,7 +263,7 @@ const ConsultationPage: React.FC = () => {
       setError(`Error: ${errorMessage}`);
       console.error('Error al detener grabación:', error);
     }
-  }, [isRecording, audioService, processTranscriptionToSOAP]);
+  }, [isRecording, audioService, processTranscriptionToSOAPAsync, transcriptionText]);
 
   // Placeholder para otras funciones
   const handleUploadClick = useCallback(() => {

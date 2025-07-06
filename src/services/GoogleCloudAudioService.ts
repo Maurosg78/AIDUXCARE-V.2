@@ -6,14 +6,28 @@ export default class GoogleCloudAudioService {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private isRecording: boolean = false;
-  private callback: ((text: string, isFinal: boolean) => void) | null = null;
+  private transcriptionCallback: ((text: string, isFinal: boolean) => void) | null = null;
   private stream: MediaStream | null = null;
   
-  // URL de la Cloud Function
-  private readonly CLOUD_FUNCTION_URL = 'https://us-central1-aiduxcare-stt-20250706.cloudfunctions.net/transcribeAudio';
-
   constructor() {
     console.log('🎙️ GoogleCloudAudioService inicializado');
+  }
+
+  // URLs desde variables de entorno
+  private getTranscribeUrl(): string {
+    const url = import.meta.env.VITE_GOOGLE_CLOUD_TRANSCRIBE_URL;
+    if (!url) {
+      throw new Error('VITE_GOOGLE_CLOUD_TRANSCRIBE_URL no está configurada');
+    }
+    return url;
+  }
+
+  private getHealthUrl(): string {
+    const url = import.meta.env.VITE_GOOGLE_CLOUD_HEALTH_URL;
+    if (!url) {
+      throw new Error('VITE_GOOGLE_CLOUD_HEALTH_URL no está configurada');
+    }
+    return url;
   }
 
   /**
@@ -41,13 +55,14 @@ export default class GoogleCloudAudioService {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 48000
+          sampleRate: 48000,
+          channelCount: 1
         } 
       });
 
       console.log('✅ Permisos concedidos, iniciando grabación...');
       
-      this.callback = callback;
+      this.transcriptionCallback = callback;
       this.audioChunks = [];
       
       // Configurar MediaRecorder
@@ -83,8 +98,8 @@ export default class GoogleCloudAudioService {
       console.log('🎙️ Grabación iniciada exitosamente');
       
       // Feedback inmediato al usuario
-      if (this.callback) {
-        this.callback('🎙️ Grabando audio...', false);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback('🎙️ Grabando audio...', false);
       }
 
     } catch (error) {
@@ -132,8 +147,8 @@ export default class GoogleCloudAudioService {
   private async processAudioChunks(): Promise<void> {
     if (this.audioChunks.length === 0) {
       console.warn('⚠️ No hay chunks de audio para procesar');
-      if (this.callback) {
-        this.callback('No se detectó audio para transcribir', true);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback('No se detectó audio para transcribir', true);
       }
       return;
     }
@@ -146,8 +161,8 @@ export default class GoogleCloudAudioService {
       console.log(`📁 Audio combinado: ${audioBlob.size} bytes`);
 
       // Mostrar progreso al usuario
-      if (this.callback) {
-        this.callback('🔄 Transcribiendo audio con Google Cloud...', false);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback('🔄 Transcribiendo audio con Google Cloud...', false);
       }
 
       // Crear FormData para enviar archivo
@@ -157,7 +172,7 @@ export default class GoogleCloudAudioService {
       console.log('🚀 Enviando audio a Google Cloud Speech-to-Text...');
       
       // Enviar a Cloud Function
-      const response = await fetch(this.CLOUD_FUNCTION_URL, {
+      const response = await fetch(this.getTranscribeUrl(), {
         method: 'POST',
         body: formData,
         headers: {
@@ -191,8 +206,8 @@ export default class GoogleCloudAudioService {
         }
 
         // Enviar transcripción final al callback
-        if (this.callback) {
-          this.callback(formattedTranscription, true);
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback(formattedTranscription, true);
         }
 
         // Información adicional en consola
@@ -202,16 +217,16 @@ export default class GoogleCloudAudioService {
         
       } else {
         console.warn('⚠️ No se pudo transcribir el audio');
-        if (this.callback) {
-          this.callback(result.message || 'No se pudo transcribir el audio', true);
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback(result.message || 'No se pudo transcribir el audio', true);
         }
       }
 
     } catch (error) {
       console.error('❌ Error al procesar audio:', error);
       
-      if (this.callback) {
-        this.callback(`Error al transcribir: ${error.message}`, true);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(`Error al transcribir: ${error.message}`, true);
       }
     }
   }
@@ -239,7 +254,7 @@ export default class GoogleCloudAudioService {
     }
     
     this.audioChunks = [];
-    this.callback = null;
+    this.transcriptionCallback = null;
     this.mediaRecorder = null;
     
     console.log('🧹 Recursos de audio limpiados');
