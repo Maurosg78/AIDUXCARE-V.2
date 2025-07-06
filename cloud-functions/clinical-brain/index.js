@@ -31,7 +31,7 @@ const corsOptions = {
 };
 
 // Función principal de la Cloud Function
-functions.http('clinicalBrain', async (req, res) => {
+exports.clinicalBrain = async (req, res) => {
   // Configurar CORS
   res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -44,251 +44,201 @@ functions.http('clinicalBrain', async (req, res) => {
     return;
   }
 
-  try {
-    logger.info('🧠 CLINICAL BRAIN REQUEST RECIBIDO', {
-      method: req.method,
-      path: req.path,
-      headers: req.headers,
-      timestamp: new Date().toISOString()
-    });
-
-    // Routing básico
-    if (req.method === 'POST' && req.path === '/analyze') {
-      return await handleAnalyzeRequest(req, res);
-    }
-
-    if (req.method === 'GET' && req.path === '/health') {
-      return res.status(200).json({
-        status: 'healthy',
-        service: 'clinical-brain',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-      });
-    }
-
-    // Endpoint no encontrado
-    res.status(404).json({
-      error: 'Endpoint not found',
-      availableEndpoints: ['/analyze', '/health']
-    });
-
-  } catch (error) {
-    logger.error('🚨 CLINICAL BRAIN ERROR GENERAL', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-
-    res.status(500).json({
-      error: 'Internal server error',
-      message: 'Clinical analysis failed',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Handler principal para análisis clínico
-async function handleAnalyzeRequest(req, res) {
   const startTime = Date.now();
   
   try {
-    // LOG CRÍTICO: Request body completo
-    logger.info('📨 REQUEST BODY RECIBIDO', {
-      bodyKeys: Object.keys(req.body),
-      transcriptionLength: req.body.transcription?.length || 0,
-      specialty: req.body.specialty,
-      sessionType: req.body.sessionType,
-      transcriptionPreview: req.body.transcription?.substring(0, 200) || 'No transcription',
-      timestamp: new Date().toISOString()
+    logger.info('🧠 CEREBRO CLÍNICO INICIADO CON OPTIMIZACIÓN DE COSTOS', {
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      headers: req.headers
     });
 
-    // Validar request
-    const { transcription, specialty, sessionType } = req.body;
-    
-    if (!transcription || !specialty) {
-      logger.error('❌ VALIDACIÓN FALLIDA', {
-        missingFields: {
-          transcription: !transcription,
-          specialty: !specialty
-        },
-        receivedKeys: Object.keys(req.body)
-      });
-      
-      return res.status(400).json({
-        error: 'Missing required fields',
-        required: ['transcription', 'specialty'],
-        received: Object.keys(req.body)
+    // Validar método HTTP
+    if (req.method !== 'POST') {
+      logger.warn('❌ MÉTODO NO PERMITIDO:', { method: req.method });
+      return res.status(405).json({
+        error: 'Método no permitido. Use POST.',
+        method: req.method,
+        timestamp: new Date().toISOString()
       });
     }
 
-    logger.info('✅ VALIDACIÓN EXITOSA - INICIANDO ANÁLISIS CLÍNICO', {
-      specialty,
-      sessionType,
-      transcriptionLength: transcription.length,
-      timestamp: new Date().toISOString()
+    // Validar y extraer datos del request
+    const { transcription, sessionType = 'initial' } = req.body;
+    
+    logger.info('📋 DATOS RECIBIDOS:', {
+      transcriptionLength: transcription?.length || 0,
+      sessionType: sessionType,
+      hasTranscription: !!transcription
     });
 
-    // PASO 1: Cargar KnowledgeBase
-    logger.info('📚 PASO 1: Cargando KnowledgeBase...');
-    const knowledgeBase = await KnowledgeBase.load(specialty);
-    logger.info('✅ KnowledgeBase cargada exitosamente', {
-      hasRules: !!knowledgeBase.rules,
-      hasTerminology: !!knowledgeBase.terminology
-    });
-    
-    // PASO 2: Generar prompt especializado
-    logger.info('🏭 PASO 2: Generando prompt especializado...');
-    const promptFactory = new PromptFactory(knowledgeBase);
-    const prompt = promptFactory.generatePrompt(transcription, specialty, sessionType);
-    
-    // LOG CRÍTICO: Prompt final generado
-    logger.info('📝 PROMPT FINAL GENERADO', {
-      promptLength: prompt.length,
-      promptFirst500: prompt.substring(0, 500),
-      promptLast500: prompt.substring(Math.max(0, prompt.length - 500)),
-      specialty,
-      sessionType,
-      timestamp: new Date().toISOString()
-    });
-    
-    // PASO 3: Evaluar si necesita chunking
-    logger.info('🔍 PASO 3: Evaluando necesidad de chunking...');
-    const textChunker = new TextChunker();
-    const needsChunking = textChunker.shouldChunk(transcription);
-    
-    let structuredResponse;
-    
-    if (needsChunking) {
-      logger.info('📄 PROCESAMIENTO CON CHUNKING ACTIVADO');
-      
-      // Dividir transcripción en chunks
-      const chunks = textChunker.chunkTranscription(transcription);
-      
-      // Procesar cada chunk
-      const vertexClient = new VertexAIClient();
-      const chunkResults = await textChunker.processChunks(chunks, promptFactory, vertexClient, specialty, sessionType);
-      
-      // Consolidar resultados
-      structuredResponse = textChunker.consolidateResults(chunkResults, transcription);
-      
-      logger.info('✅ CHUNKING COMPLETADO', {
-        totalChunks: chunks.length,
-        successfulChunks: chunkResults.filter(r => r.result).length,
-        finalWarnings: structuredResponse.warnings.length,
-        finalSuggestions: structuredResponse.suggestions.length
+    // Validar transcripción
+    if (!transcription || typeof transcription !== 'string' || transcription.trim().length === 0) {
+      logger.error('❌ TRANSCRIPCIÓN INVÁLIDA:', { transcription });
+      return res.status(400).json({
+        error: 'Transcripción requerida y debe ser texto válido',
+        received: typeof transcription,
+        timestamp: new Date().toISOString()
       });
+    }
+
+    // Validar longitud mínima
+    if (transcription.trim().length < 10) {
+      logger.warn('⚠️ TRANSCRIPCIÓN MUY CORTA:', { length: transcription.length });
+      return res.status(400).json({
+        error: 'Transcripción muy corta. Mínimo 10 caracteres.',
+        length: transcription.length,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // PASO 1: Inicializar servicios con optimización
+    const vertexClient = new VertexAIClient();
+    const promptFactory = new PromptFactory();
+    const textChunker = new TextChunker();
+    const knowledgeBase = new KnowledgeBase();
+
+    // PASO 2: Evaluar si necesita chunking
+    const needsChunking = textChunker.needsChunking(transcription);
+    
+    logger.info('🔍 EVALUACIÓN DE PROCESAMIENTO:', {
+      needsChunking: needsChunking,
+      transcriptionLength: transcription.length,
+      strategy: needsChunking ? 'chunking' : 'standard'
+    });
+
+    let analysisResult;
+
+    if (needsChunking) {
+      // PASO 3A: Procesamiento con chunking
+      logger.info('🔄 PROCESANDO CON CHUNKING...');
+      
+      const chunks = textChunker.splitText(transcription);
+      logger.info('📦 CHUNKS GENERADOS:', { count: chunks.length });
+
+      const chunkResults = [];
+      
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        logger.info(`🔄 PROCESANDO CHUNK ${i + 1}/${chunks.length}`);
+        
+        const chunkPrompt = promptFactory.generateChunkPrompt(chunk, i + 1, chunks.length);
+        
+        // Usar optimización de costos para cada chunk
+        const chunkResult = await vertexClient.processTranscription(chunk, chunkPrompt);
+        
+        logger.info(`✅ CHUNK ${i + 1} PROCESADO:`, {
+          modelo: chunkResult.modelUsed,
+          tiempo: chunkResult.processingTime,
+          ahorro: chunkResult.costOptimization.savings
+        });
+        
+        chunkResults.push({
+          chunkIndex: i + 1,
+          result: chunkResult.text,
+          modelUsed: chunkResult.modelUsed,
+          processingTime: chunkResult.processingTime,
+          costOptimization: chunkResult.costOptimization
+        });
+      }
+
+      // Consolidar resultados de chunks
+      const consolidatedResults = textChunker.consolidateResults(chunkResults.map(cr => cr.result));
+      analysisResult = {
+        text: consolidatedResults,
+        modelUsed: 'mixed-chunking',
+        processingTime: chunkResults.reduce((sum, cr) => sum + cr.processingTime, 0),
+        costOptimization: {
+          strategy: 'chunking',
+          chunksProcessed: chunks.length,
+          modelsUsed: chunkResults.map(cr => cr.modelUsed),
+          totalSavings: chunkResults.map(cr => cr.costOptimization.savings).join(', ')
+        },
+        chunks: chunkResults.map(cr => ({
+          index: cr.chunkIndex,
+          model: cr.modelUsed,
+          time: cr.processingTime,
+          savings: cr.costOptimization.savings
+        }))
+      };
       
     } else {
-      logger.info('📝 PROCESAMIENTO ESTÁNDAR SIN CHUNKING');
+      // PASO 3B: Procesamiento estándar con optimización
+      logger.info('🔄 PROCESAMIENTO ESTÁNDAR CON OPTIMIZACIÓN...');
       
-      // PASO 3: Llamar a Vertex AI
-      logger.info('🤖 PASO 3: Enviando a Vertex AI...');
-      const vertexClient = new VertexAIClient();
+      const prompt = promptFactory.generatePrompt(transcription, sessionType);
       
-      // LOG CRÍTICO: Configuración de Vertex AI
-      logger.info('⚙️ CONFIGURACIÓN VERTEX AI', vertexClient.getModelInfo());
+      // Usar optimización de costos automática
+      analysisResult = await vertexClient.processTranscription(transcription, prompt);
       
-      const rawResponse = await vertexClient.analyze(prompt);
-      
-      logger.info('✅ RESPUESTA RECIBIDA DE VERTEX AI', {
-        responseLength: rawResponse.length,
-        responsePreview: rawResponse.substring(0, 200)
+      logger.info('✅ PROCESAMIENTO COMPLETADO:', {
+        modelo: analysisResult.modelUsed,
+        tiempo: analysisResult.processingTime,
+        complejidad: analysisResult.costOptimization.complexity.total,
+        ahorro: analysisResult.costOptimization.savings
       });
-      
-      // PASO 4: Parsear y estructurar respuesta
-      logger.info('🔧 PASO 4: Parseando respuesta...');
-      const responseParser = new ResponseParser(knowledgeBase);
-      structuredResponse = responseParser.parse(rawResponse, specialty);
     }
-    
-    logger.info('✅ RESPUESTA PARSEADA EXITOSAMENTE', {
-      warningsCount: structuredResponse.warnings?.length || 0,
-      suggestionsCount: structuredResponse.suggestions?.length || 0,
-      hasSOAPAnalysis: !!structuredResponse.soap_analysis,
-      hasSessionQuality: !!structuredResponse.session_quality
-    });
-    
-    // PASO 5: Preparar respuesta final
-    const processingTime = Date.now() - startTime;
-    const response = {
-      success: true,
-      analysis: structuredResponse,
+
+    // PASO 4: Extraer JSON del resultado
+    let jsonResult;
+    try {
+      const jsonMatch = analysisResult.text.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        jsonResult = JSON.parse(jsonMatch[1]);
+      } else {
+        // Intentar parsear directamente
+        jsonResult = JSON.parse(analysisResult.text);
+      }
+    } catch (parseError) {
+      logger.error('❌ ERROR AL PARSEAR JSON:', parseError);
+      throw new Error('Respuesta del modelo no contiene JSON válido');
+    }
+
+    // PASO 5: Enriquecer resultado con información de optimización
+    const finalResult = {
+      ...jsonResult,
       metadata: {
-        specialty,
-        sessionType,
-        processingTimeMs: processingTime,
+        processingTime: analysisResult.processingTime,
+        modelUsed: analysisResult.modelUsed,
+        costOptimization: analysisResult.costOptimization,
+        totalTime: (Date.now() - startTime) / 1000,
         timestamp: new Date().toISOString(),
-        version: '1.0.0'
+        version: '2.0-optimized'
       }
     };
 
-    // LOG CRÍTICO: Respuesta final que se envía al frontend
-    logger.info('📤 RESPUESTA FINAL ENVIADA AL FRONTEND', {
-      success: response.success,
-      specialty: response.metadata.specialty,
-      processingTimeMs: response.metadata.processingTimeMs,
-      warningsCount: response.analysis.warnings?.length || 0,
-      suggestionsCount: response.analysis.suggestions?.length || 0,
-      overallQuality: response.analysis.soap_analysis?.overall_quality || 'N/A',
-      responseSize: JSON.stringify(response).length,
-      timestamp: new Date().toISOString()
+    // PASO 6: Logging final con métricas de optimización
+    logger.info('✅ RESPUESTA FINAL GENERADA:', {
+      processingTime: analysisResult.processingTime,
+      totalTime: finalResult.metadata.totalTime,
+      modelUsed: analysisResult.modelUsed,
+      costSavings: analysisResult.costOptimization.savings,
+      complexity: analysisResult.costOptimization.complexity?.total || 'N/A',
+      warningsCount: finalResult.warnings?.length || 0,
+      suggestionsCount: finalResult.suggestions?.length || 0,
+      soapQuality: finalResult.soap_quality?.overall_score || 'N/A'
     });
 
-    res.status(200).json(response);
+    // PASO 7: Responder con resultado optimizado
+    res.status(200).json(finalResult);
 
   } catch (error) {
-    const processingTime = Date.now() - startTime;
+    const processingTime = (Date.now() - startTime) / 1000;
     
-    // LOG CRÍTICO: Error completo con contexto
-    logger.error('🚨 ERROR CRÍTICO EN ANÁLISIS CLÍNICO', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-      errorCode: error.code,
-      processingTimeMs: processingTime,
-      requestBody: {
-        transcriptionLength: req.body.transcription?.length || 0,
-        specialty: req.body.specialty,
-        sessionType: req.body.sessionType
-      },
+    logger.error('❌ ERROR EN CEREBRO CLÍNICO:', {
+      error: error.message,
+      stack: error.stack,
+      processingTime: processingTime,
       timestamp: new Date().toISOString()
     });
 
-    // Análisis específico del error
-    let errorResponse = {
-      success: false,
-      error: 'Clinical analysis failed',
+    // Respuesta de error mejorada
+    res.status(500).json({
+      error: 'Error interno del servidor',
       message: error.message,
-      metadata: {
-        processingTimeMs: processingTime,
-        timestamp: new Date().toISOString()
-      }
-    };
-
-    // Personalizar respuesta según tipo de error
-    if (error.message.includes('INVALID_ARGUMENT')) {
-      errorResponse.error = 'Invalid request to AI service';
-      errorResponse.details = 'The request format or content is not supported by the AI model';
-      errorResponse.troubleshooting = [
-        'Check transcription length (max ~15,000 characters)',
-        'Verify prompt format compatibility',
-        'Confirm model availability in region'
-      ];
-    } else if (error.message.includes('quota')) {
-      errorResponse.error = 'AI service quota exceeded';
-      errorResponse.details = 'Daily or monthly usage limits reached';
-    } else if (error.message.includes('permission')) {
-      errorResponse.error = 'AI service permission denied';
-      errorResponse.details = 'Service account lacks required permissions';
-    }
-
-    logger.info('📤 ERROR RESPONSE ENVIADA AL FRONTEND', {
-      errorType: errorResponse.error,
-      errorMessage: errorResponse.message,
-      processingTimeMs: processingTime
+      processingTime: processingTime,
+      timestamp: new Date().toISOString(),
+      version: '2.0-optimized'
     });
-
-    res.status(500).json(errorResponse);
   }
-}
-
-module.exports = { clinicalBrain: functions.http('clinicalBrain', handleAnalyzeRequest) }; 
+}; 

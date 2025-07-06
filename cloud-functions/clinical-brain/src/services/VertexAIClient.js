@@ -1,4 +1,5 @@
 const { VertexAI } = require('@google-cloud/vertexai');
+const ModelSelector = require('./ModelSelector');
 const winston = require('winston');
 
 const logger = winston.createLogger({
@@ -14,7 +15,10 @@ class VertexAIClient {
   constructor() {
     this.projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'aiduxcare-stt-20250706';
     this.location = process.env.VERTEX_AI_LOCATION || 'us-east1';
-    this.model = process.env.VERTEX_AI_MODEL || 'gemini-2.5-pro';
+    this.defaultModel = process.env.VERTEX_AI_MODEL || 'gemini-2.5-flash'; // Modelo balanceado por defecto
+    
+    // Inicializar ModelSelector para optimización inteligente
+    this.modelSelector = new ModelSelector();
     
     // Inicializar cliente Vertex AI
     this.vertexAI = new VertexAI({
@@ -22,244 +26,257 @@ class VertexAIClient {
       location: this.location
     });
     
-    // Configuración del modelo - OPTIMIZADA para Gemini 2.5 Pro
-    this.generationConfig = {
-      temperature: 0.1,  // Muy baja para máxima precisión clínica
-      topP: 0.8,
-      topK: 40,
-      maxOutputTokens: 8192,  // Aumentado para Gemini 2.5 Pro
-      candidateCount: 1
-    };
-
-    // Configuración de seguridad médica - OPTIMIZADA
-    this.safetySettings = [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-      }
-    ];
-
-    logger.info('🧠 VertexAI Client initialized con GEMINI 2.5 PRO', {
-      projectId: this.projectId,
-      location: this.location,
-      model: this.model,
-      maxOutputTokens: this.generationConfig.maxOutputTokens,
-      timestamp: new Date().toISOString()
+    logger.info('🚀 VERTEXAI CLIENT INICIALIZADO CON OPTIMIZACIÓN DE COSTOS', {
+      proyecto: this.projectId,
+      region: this.location,
+      modeloPorDefecto: this.defaultModel
     });
   }
 
-  async analyze(prompt) {
-    const startTime = Date.now();
+  /**
+   * Procesa transcripción médica con optimización basada en evidencia empírica
+   * @param {string} transcription - Transcripción médica
+   * @param {string} prompt - Prompt generado
+   * @param {Object} options - Opciones de procesamiento
+   * @returns {Promise<Object>} Respuesta procesada con información de optimización
+   */
+  async processTranscription(transcription, prompt, options = {}) {
+    logger.info('🧠 INICIANDO PROCESAMIENTO CON OPTIMIZACIÓN DE COSTOS');
     
     try {
-      logger.info('🚀 INICIANDO ANÁLISIS VERTEX AI', {
-        promptLength: prompt.length,
-        promptPreview: prompt.substring(0, 200) + '...',
-        model: this.model,
-        timestamp: new Date().toISOString()
-      });
-
-      // LOG CRÍTICO: Configuración completa que se enviará
-      logger.info('📋 CONFIGURACIÓN VERTEX AI', {
-        projectId: this.projectId,
-        location: this.location,
-        model: this.model,
-        generationConfig: this.generationConfig,
-        safetySettings: this.safetySettings,
-        timestamp: new Date().toISOString()
-      });
-
-      // LOG CRÍTICO: Prompt completo (primeros 1000 caracteres)
-      logger.info('📝 PROMPT ENVIADO A VERTEX AI', {
-        promptLength: prompt.length,
-        promptFirst1000: prompt.substring(0, 1000),
-        promptLast500: prompt.substring(Math.max(0, prompt.length - 500)),
-        timestamp: new Date().toISOString()
-      });
-
-      // Obtener el modelo generativo
-      const generativeModel = this.vertexAI.getGenerativeModel({
-        model: this.model,
-        generationConfig: this.generationConfig,
-        safetySettings: this.safetySettings
-      });
-
-      logger.info('✅ Modelo generativo obtenido correctamente');
-
-      // Generar contenido
-      logger.info('🤖 Enviando request a Gemini 2.5 Pro...');
+      // Seleccionar modelo óptimo basado en evidencia empírica
+      let modelSelection;
       
-      const result = await generativeModel.generateContent({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }]
-      });
-
-      logger.info('📨 Respuesta recibida de Vertex AI');
-
-      // CORRECCIÓN CRÍTICA: Usar la estructura correcta de respuesta
-      const response = result.response;
-      
-      // Extraer texto de la respuesta usando la estructura correcta de Gemini 2.5
-      let text = '';
-      if (response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          text = candidate.content.parts[0].text || '';
-        }
-      }
-
-      const processingTime = Date.now() - startTime;
-
-      // LOG CRÍTICO: Respuesta completa de Vertex AI
-      logger.info('📄 RESPUESTA VERTEX AI COMPLETA', {
-        processingTimeMs: processingTime,
-        responseLength: text.length,
-        responseFirst500: text.substring(0, 500),
-        responseLast500: text.substring(Math.max(0, text.length - 500)),
-        model: this.model,
-        candidatesCount: response.candidates?.length || 0,
-        timestamp: new Date().toISOString()
-      });
-
-      // Validar que la respuesta sea JSON válido
-      try {
-        const parsed = JSON.parse(text);
-        logger.info('✅ JSON VÁLIDO recibido de Vertex AI', {
-          hasWarnings: !!parsed.warnings,
-          warningsCount: parsed.warnings?.length || 0,
-          hasSuggestions: !!parsed.suggestions,
-          suggestionsCount: parsed.suggestions?.length || 0
-        });
-      } catch (jsonError) {
-        logger.error('❌ RESPUESTA NO ES JSON VÁLIDO', {
-          error: jsonError.message,
-          responsePreview: text.substring(0, 500),
-          responseLength: text.length
-        });
-        
-        // Intentar extraer JSON de la respuesta
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const extractedJson = jsonMatch[0];
-          try {
-            JSON.parse(extractedJson);
-            logger.info('✅ JSON extraído exitosamente de la respuesta');
-            return extractedJson;
-          } catch (extractError) {
-            logger.error('❌ Falló extracción de JSON', {
-              error: extractError.message,
-              extractedJson: extractedJson.substring(0, 200)
-            });
-          }
-        }
-        
-        // Si no se puede extraer JSON válido, lanzar error
-        throw new Error('Vertex AI response is not valid JSON');
-      }
-
-      return text;
-
-    } catch (error) {
-      const processingTime = Date.now() - startTime;
-      
-      // LOG CRÍTICO: Error completo con detalles
-      logger.error('🚨 ERROR CRÍTICO EN VERTEX AI', {
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorDetails: error.details,
-        errorStack: error.stack,
-        processingTimeMs: processingTime,
-        model: this.model,
-        projectId: this.projectId,
-        location: this.location,
-        timestamp: new Date().toISOString()
-      });
-
-      // Análisis específico de errores
-      if (error.message.includes('INVALID_ARGUMENT')) {
-        logger.error('🔍 ANÁLISIS INVALID_ARGUMENT', {
-          possibleCauses: [
-            'Prompt demasiado largo',
-            'Formato de prompt incompatible',
-            'Parámetros de configuración inválidos',
-            'Modelo no disponible en la región'
-          ],
-          promptLength: prompt?.length || 'unknown',
-          modelUsed: this.model,
-          locationUsed: this.location
-        });
-      }
-
-      // Manejar errores específicos de Vertex AI
-      if (error.message.includes('quota')) {
-        throw new Error('Vertex AI quota exceeded. Please check your project limits.');
-      }
-      
-      if (error.message.includes('permission')) {
-        throw new Error('Vertex AI permission denied. Please check your service account permissions.');
-      }
-      
-      if (error.message.includes('model')) {
-        throw new Error(`Vertex AI model error: ${this.model} may not be available in ${this.location}`);
-      }
-
-      if (error.message.includes('INVALID_ARGUMENT')) {
-        throw new Error(`Vertex AI INVALID_ARGUMENT: ${error.message}. Check prompt format and parameters.`);
-      }
-
-      throw new Error(`Vertex AI analysis failed: ${error.message}`);
-    }
-  }
-
-  async testConnection() {
-    try {
-      logger.info('🔍 Testing Vertex AI connection');
-      
-      const testPrompt = 'Test connection. Respond with: {"status": "connected", "timestamp": "' + new Date().toISOString() + '"}';
-      const response = await this.analyze(testPrompt);
-      
-      const parsedResponse = JSON.parse(response);
-      
-      if (parsedResponse.status === 'connected') {
-        logger.info('✅ Vertex AI connection test successful');
-        return true;
+      if (options.forceModel) {
+        // Forzar modelo específico (para testing)
+        modelSelection = this.modelSelector.forceModel(options.forceModel);
       } else {
-        logger.warn('⚠️ Vertex AI connection test returned unexpected response', {
-          response: parsedResponse
-        });
-        return false;
+        // Selección automática basada en evidencia
+        modelSelection = this.modelSelector.selectOptimalModel(transcription, options);
       }
       
-    } catch (error) {
-      logger.error('❌ Vertex AI connection test failed', {
-        error: error.message,
-        stack: error.stack
+      logger.info('✅ MODELO SELECCIONADO:', {
+        modelo: modelSelection.selectedModel,
+        razonamiento: modelSelection.reasoning,
+        ahorro: modelSelection.costAnalysis?.savingsVsPro || 'N/A'
       });
-      return false;
+
+      // Procesar con el modelo seleccionado
+      const result = await this.processWithModel(
+        transcription,
+        prompt,
+        modelSelection.selectedModel,
+        options
+      );
+
+      // Enriquecer respuesta con información de optimización
+      result.costOptimization = {
+        modelUsed: modelSelection.selectedModel,
+        redFlagsDetected: modelSelection.redFlagsDetected,
+        reasoning: modelSelection.reasoning,
+        costAnalysis: modelSelection.costAnalysis,
+        empiricalBasis: modelSelection.empiricalBasis || 'Basado en evaluación empírica',
+        timestamp: modelSelection.timestamp
+      };
+
+      return result;
+
+    } catch (error) {
+      logger.error('❌ ERROR EN PROCESAMIENTO:', error);
+      throw error;
     }
   }
 
+  /**
+   * Procesa transcripción con un modelo específico
+   * @param {string} transcription - Transcripción médica
+   * @param {string} prompt - Prompt generado
+   * @param {string} modelName - Nombre del modelo a usar
+   * @param {Object} options - Opciones de procesamiento
+   * @returns {Promise<Object>} Respuesta del modelo
+   */
+  async processWithModel(transcription, prompt, modelName, options = {}) {
+    try {
+      // Configurar modelo seleccionado
+      const modelConfig = this.getModelConfiguration(modelName);
+      
+      // Obtener instancia del modelo
+      const model = this.vertexAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: modelConfig.generationConfig,
+        safetySettings: modelConfig.safetySettings
+      });
+
+      // Procesar con el modelo
+      const startTime = Date.now();
+      
+      logger.info('🔄 ENVIANDO PROMPT AL MODELO:', {
+        modelo: modelName,
+        longitudTranscripcion: transcription.length,
+        longitudPrompt: prompt.length
+      });
+
+      const result = await model.generateContent(prompt);
+      const processingTime = (Date.now() - startTime) / 1000;
+
+      // Extraer respuesta
+      const response = result.response;
+      const text = response.candidates[0].content.parts[0].text;
+
+      logger.info('✅ RESPUESTA RECIBIDA:', {
+        modelo: modelName,
+        tiempoProcesamiento: `${processingTime}s`,
+        longitudRespuesta: text.length
+      });
+
+      return {
+        text: text,
+        modelUsed: modelName,
+        processingTime: processingTime,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          projectId: this.projectId,
+          location: this.location,
+          inputLength: transcription.length,
+          outputLength: text.length
+        }
+      };
+
+    } catch (error) {
+      logger.error('❌ ERROR PROCESANDO CON MODELO:', {
+        modelo: modelName,
+        error: error.message
+      });
+
+      // Analizar si se debe reintentar con modelo diferente
+      if (this.shouldRetryWithDifferentModel(error)) {
+        logger.info('🔄 REINTENTANDO CON MODELO ALTERNATIVO...');
+        
+        const fallbackModel = this.getFallbackModel(modelName);
+        if (fallbackModel !== modelName) {
+          return await this.processWithModel(transcription, prompt, fallbackModel, options);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene configuración específica para cada modelo
+   * @param {string} modelName - Nombre del modelo
+   * @returns {Object} Configuración del modelo
+   */
+  getModelConfiguration(modelName) {
+    const configurations = {
+      'gemini-2.5-pro': {
+        generationConfig: {
+          temperature: 0.1,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+          candidateCount: 1
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+        ]
+      },
+      'gemini-2.5-flash': {
+        generationConfig: {
+          temperature: 0.2,
+          topK: 32,
+          topP: 0.9,
+          maxOutputTokens: 4096,
+          candidateCount: 1
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+        ]
+      },
+      'gemini-2.0-flash': {
+        generationConfig: {
+          temperature: 0.3,
+          topK: 24,
+          topP: 0.85,
+          maxOutputTokens: 2048,
+          candidateCount: 1
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+        ]
+      }
+    };
+
+    return configurations[modelName] || configurations['gemini-2.5-flash'];
+  }
+
+  /**
+   * Determina si se debe reintentar con un modelo diferente
+   * @param {Error} error - Error ocurrido
+   * @returns {boolean} Si se debe reintentar
+   */
+  shouldRetryWithDifferentModel(error) {
+    const retryableErrors = [
+      'RESOURCE_EXHAUSTED',
+      'QUOTA_EXCEEDED',
+      'MODEL_NOT_AVAILABLE',
+      'INVALID_ARGUMENT'
+    ];
+
+    return retryableErrors.some(errorType => 
+      error.message.includes(errorType) || error.code === errorType
+    );
+  }
+
+  /**
+   * Obtiene modelo de fallback
+   * @param {string} currentModel - Modelo actual que falló
+   * @returns {string} Modelo de fallback
+   */
+  getFallbackModel(currentModel) {
+    const fallbackChain = {
+      'gemini-2.5-pro': 'gemini-2.5-flash',
+      'gemini-2.5-flash': 'gemini-2.0-flash',
+      'gemini-2.0-flash': 'gemini-2.5-flash'
+    };
+
+    return fallbackChain[currentModel] || 'gemini-2.5-flash';
+  }
+
+  /**
+   * Obtiene información detallada del modelo actual
+   * @returns {Object} Información del modelo
+   */
   getModelInfo() {
     return {
       projectId: this.projectId,
       location: this.location,
-      model: this.model,
-      generationConfig: this.generationConfig,
-      safetySettings: this.safetySettings
+      defaultModel: this.defaultModel,
+      availableModels: this.modelSelector.getAvailableModels(),
+      optimizationEnabled: true,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Obtiene estadísticas de uso y costos
+   * @returns {Object} Estadísticas de optimización
+   */
+  getOptimizationStats() {
+    return {
+      modelsAvailable: Object.keys(this.modelSelector.getAvailableModels()),
+      costOptimization: 'Habilitado',
+      selectionStrategy: 'Basado en complejidad automática',
+      maxSavings: 'Hasta 22.5x vs modelo premium'
     };
   }
 }
