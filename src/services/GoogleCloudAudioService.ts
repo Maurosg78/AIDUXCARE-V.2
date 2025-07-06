@@ -251,29 +251,24 @@ export default class GoogleCloudAudioService {
         return;
       }
 
-      // Optimización: Convertir a WAV solo si es necesario
-      let finalBlob = audioBlob;
-      let finalMimeType = mimeType;
+      // CORRECCIÓN CRÍTICA: Enviar directamente sin conversión problemática
+      console.log('📤 Enviando audio original sin conversión (evita FormData corrupto)...');
       
-      // Si no es un formato compatible con Google Cloud, convertir a WAV
-      if (!mimeType.includes('wav') && !mimeType.includes('flac') && !mimeType.includes('mp3')) {
-        console.log('🔄 Convirtiendo a formato WAV para compatibilidad...');
-        try {
-                     const wavBlob = await this.convertWebMToWAV(audioBlob);
-          finalBlob = wavBlob;
-          finalMimeType = 'audio/wav';
-          console.log(`✅ Conversión exitosa: ${finalBlob.size} bytes WAV`);
-        } catch (conversionError) {
-          console.warn('⚠️ Error en conversión, usando formato original:', conversionError);
-          // Continuar con formato original
-        }
-      }
-
-      // Crear FormData optimizado
+      // Crear FormData ROBUSTO
       const formData = new FormData();
-      formData.append('audio', finalBlob, `recording.${finalMimeType.split('/')[1]}`);
       
-      console.log(`📤 Enviando audio a Google Cloud (${finalBlob.size} bytes)...`);
+      // Determinar extensión correcta
+      let fileExtension = 'webm';
+      if (mimeType.includes('wav')) fileExtension = 'wav';
+      else if (mimeType.includes('mp3')) fileExtension = 'mp3';
+      else if (mimeType.includes('mp4')) fileExtension = 'mp4';
+      else if (mimeType.includes('ogg')) fileExtension = 'ogg';
+      
+      // Crear archivo con nombre específico y tipo correcto
+      const fileName = `medical_audio_${Date.now()}.${fileExtension}`;
+      formData.append('audio', audioBlob, fileName);
+      
+      console.log(`📤 Enviando ${fileName} (${audioBlob.size} bytes) a Google Cloud...`);
       
       // Enviar con timeout optimizado
       const controller = new AbortController();
@@ -284,10 +279,8 @@ export default class GoogleCloudAudioService {
       const response = await fetch(this.getTranscribeUrl(), {
         method: 'POST',
         body: formData,
-        signal: controller.signal,
-        headers: {
-          // No establecer Content-Type manualmente para FormData
-        }
+        signal: controller.signal
+        // NO establecer headers manualmente para FormData
       });
 
       clearTimeout(timeoutId);
@@ -323,7 +316,7 @@ export default class GoogleCloudAudioService {
         // Log métricas de rendimiento
         console.log(`📊 Métricas de rendimiento:
           - Tiempo total: ${processingTime}ms
-          - Tamaño audio: ${finalBlob.size} bytes
+          - Tamaño audio: ${audioBlob.size} bytes
           - Confianza: ${Math.round((result.confidence || 0) * 100)}%
           - Hablantes detectados: ${result.totalSpeakers || 0}`);
           

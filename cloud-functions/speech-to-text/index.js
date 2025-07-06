@@ -98,20 +98,32 @@ functions.http('transcribeAudio', async (req, res) => {
       });
 
       // Validar formato de audio
-      const supportedFormats = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/flac', 'audio/webm'];
-      if (!supportedFormats.includes(req.file.mimetype)) {
-        logDetailed('WARN', 'Formato de audio no estándar', {
+      const supportedFormats = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/flac', 'audio/webm', 'audio/ogg', 'audio/mp4'];
+      if (!supportedFormats.some(format => req.file.mimetype.includes(format.split('/')[1]))) {
+        logDetailed('WARN', 'Formato de audio no reconocido, intentando procesar', {
           received: req.file.mimetype,
           supported: supportedFormats
         });
       }
 
+      // Validar que el archivo no esté vacío o corrupto
+      if (req.file.size === 0) {
+        logDetailed('ERROR', 'Archivo de audio vacío');
+        return res.status(400).json({
+          success: false,
+          error: 'Archivo de audio vacío',
+          details: 'El archivo recibido no contiene datos'
+        });
+      }
+
       try {
-        // Configuración para Google Cloud Speech-to-Text OPTIMIZADA
+        // Configuración para Google Cloud Speech-to-Text MEJORADA
         const audioConfig = {
           encoding: req.file.mimetype.includes('wav') ? 'LINEAR16' : 
                    req.file.mimetype.includes('webm') ? 'WEBM_OPUS' :
-                   req.file.mimetype.includes('mp3') ? 'MP3' : 'LINEAR16',
+                   req.file.mimetype.includes('ogg') ? 'OGG_OPUS' :
+                   req.file.mimetype.includes('mp3') ? 'MP3' :
+                   req.file.mimetype.includes('mp4') ? 'MP3' : 'WEBM_OPUS', // Fallback más robusto
           sampleRateHertz: 48000,
           languageCode: 'es-ES',
           alternativeLanguageCodes: ['es-MX', 'es-AR', 'es-CL'],
