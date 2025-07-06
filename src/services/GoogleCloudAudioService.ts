@@ -34,7 +34,7 @@ export default class GoogleCloudAudioService {
    * Verificar si el servicio está soportado
    */
   isServiceSupported(): boolean {
-    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder !== 'undefined');
   }
 
   /**
@@ -49,7 +49,7 @@ export default class GoogleCloudAudioService {
     try {
       console.log('🎤 Solicitando permisos de micrófono...');
       
-      // Solicitar permisos de micrófono
+      // Solicitar permisos de micrófono con configuración optimizada
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -65,11 +65,28 @@ export default class GoogleCloudAudioService {
       this.transcriptionCallback = callback;
       this.audioChunks = [];
       
+      // Verificar formatos soportados y usar el mejor disponible
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Usar el formato por defecto
+          }
+        }
+      }
+
+      console.log(`🎙️ Usando formato de audio: ${mimeType || 'por defecto'}`);
+
       // Configurar MediaRecorder
-      const options = {
-        mimeType: 'audio/webm;codecs=opus',
+      const options: MediaRecorderOptions = {
         audioBitsPerSecond: 128000
       };
+
+      if (mimeType) {
+        options.mimeType = mimeType;
+      }
 
       this.mediaRecorder = new MediaRecorder(this.stream, options);
       
@@ -91,15 +108,15 @@ export default class GoogleCloudAudioService {
         this.stopRecording();
       };
 
-      // Iniciar grabación
-      this.mediaRecorder.start(1000); // Capturar cada segundo
+      // Iniciar grabación con chunks más grandes para mejor calidad
+      this.mediaRecorder.start(2000); // Capturar cada 2 segundos
       this.isRecording = true;
       
       console.log('🎙️ Grabación iniciada exitosamente');
       
       // Feedback inmediato al usuario
       if (this.transcriptionCallback) {
-        this.transcriptionCallback('🎙️ Grabando audio...', false);
+        this.transcriptionCallback('🎙️ Grabando audio médico...', false);
       }
 
     } catch (error) {
@@ -114,7 +131,8 @@ export default class GoogleCloudAudioService {
         }
       }
       
-      throw new Error(`Error al acceder al micrófono: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      throw new Error(`Error al acceder al micrófono: ${errorMessage}`);
     }
   }
 
@@ -225,8 +243,9 @@ export default class GoogleCloudAudioService {
     } catch (error) {
       console.error('❌ Error al procesar audio:', error);
       
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al procesar audio';
       if (this.transcriptionCallback) {
-        this.transcriptionCallback(`Error al transcribir: ${error.message}`, true);
+        this.transcriptionCallback(`Error al transcribir: ${errorMessage}`, true);
       }
     }
   }
