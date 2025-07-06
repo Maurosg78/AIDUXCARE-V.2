@@ -75,6 +75,7 @@
         
         <div>
             <button id="healthBtn" onclick="testHealthCheck()">🔍 Test Health Check</button>
+            <button id="testBtn" onclick="testDirectTranscription()">🧪 Test Directo</button>
             <button id="recordBtn" onclick="toggleRecording()" disabled>🎙️ Iniciar Grabación</button>
             <button id="clearBtn" onclick="clearLogs()">🧹 Limpiar Logs</button>
         </div>
@@ -131,6 +132,50 @@
             } catch (error) {
                 log(`❌ Health Check falló: ${error.message}`, 'error');
                 updateStatus('❌ Error en sistema', 'error');
+            }
+        }
+        
+        // Test directo de transcripción
+        async function testDirectTranscription() {
+            log('🧪 Iniciando test directo de transcripción...', 'info');
+            
+            try {
+                // Crear un payload de prueba mínimo
+                const testPayload = {
+                    audioData: 'dGVzdCBhdWRpbyBkYXRh', // "test audio data" en base64
+                    mimeType: 'audio/webm',
+                    size: 1024,
+                    timestamp: Date.now()
+                };
+                
+                log(`📦 Enviando payload de prueba: ${JSON.stringify(testPayload)}`, 'info');
+                log(`🌐 URL destino: ${TRANSCRIBE_URL}`, 'info');
+                
+                const response = await fetch(TRANSCRIBE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+                
+                log(`📡 Respuesta HTTP: ${response.status} ${response.statusText}`, 'info');
+                log(`📋 Headers de respuesta: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
+                
+                const responseText = await response.text();
+                log(`📄 Respuesta completa: ${responseText}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    updateStatus('✅ Test directo exitoso', 'success');
+                } else {
+                    updateStatus(`❌ Test directo falló: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error en test directo: ${error.message}`, 'error');
+                log(`📋 Stack: ${error.stack}`, 'error');
+                updateStatus('❌ Error en test directo', 'error');
             }
         }
         
@@ -302,6 +347,9 @@
                         };
                         
                         log(`📦 Payload JSON creado: ${JSON.stringify(payload).length} bytes`, 'info');
+                        log(`🌐 URL destino: ${TRANSCRIBE_URL}`, 'info');
+                        log(`📡 Método: POST`, 'info');
+                        log(`📋 Headers: Content-Type: application/json`, 'info');
                         
                         const startTime = performance.now();
                         
@@ -309,13 +357,17 @@
                         const response = await fetch(TRANSCRIBE_URL, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify(payload)
                         });
                         
                         const processingTime = Math.round(performance.now() - startTime);
                         log(`⏱️ Tiempo de procesamiento: ${processingTime}ms`, 'info');
+                        log(`📡 Status de respuesta: ${response.status} ${response.statusText}`, 'info');
+                        log(`🔗 URL final: ${response.url}`, 'info');
+                        log(`📋 Headers de respuesta: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
                         
                         if (!response.ok) {
                             const errorText = await response.text();
