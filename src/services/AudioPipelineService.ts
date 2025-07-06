@@ -19,8 +19,14 @@ export default class AudioPipelineService {
   private stream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   
+  // NUEVOS: Variables para transcripción en tiempo real
+  private realtimeTimer: NodeJS.Timeout | null = null;
+  private chunkCounter: number = 0;
+  private accumulatedTranscription: string = '';
+  private isProcessingChunk: boolean = false;
+  
   constructor() {
-    console.log('🎙️ AudioPipelineService inicializado - Servicio único de audio');
+    console.log('🎙️ AudioPipelineService inicializado - Servicio único de audio con transcripción en tiempo real');
   }
 
   // URLs desde variables de entorno
@@ -86,6 +92,9 @@ export default class AudioPipelineService {
       
       console.log('🎙️ Pipeline de grabación activo');
       
+      // NUEVO: Iniciar transcripción en tiempo real
+      this.startRealtimeTranscription();
+      
       // Feedback inmediato
       if (this.transcriptionCallback) {
         this.transcriptionCallback('🎙️ Grabando audio médico...', false);
@@ -119,6 +128,9 @@ export default class AudioPipelineService {
 
     console.log('🛑 Deteniendo pipeline de grabación...');
     
+    // NUEVO: Detener transcripción en tiempo real
+    this.stopRealtimeTranscription();
+    
     this.isRecording = false;
     
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -129,6 +141,11 @@ export default class AudioPipelineService {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
     }
+    
+    // NUEVO: Procesar transcripción final
+    setTimeout(() => {
+      this.processFinalTranscription();
+    }, 1000);
   }
 
   /**
@@ -271,6 +288,12 @@ export default class AudioPipelineService {
       this.detenerGrabacion();
     }
     
+    // NUEVO: Limpiar transcripción en tiempo real
+    this.stopRealtimeTranscription();
+    this.chunkCounter = 0;
+    this.accumulatedTranscription = '';
+    this.isProcessingChunk = false;
+    
     this.audioChunks = [];
     this.transcriptionCallback = null;
     this.mediaRecorder = null;
@@ -280,7 +303,7 @@ export default class AudioPipelineService {
       this.audioContext = null;
     }
     
-    console.log('🧹 Pipeline de audio limpiado');
+    console.log('🧹 Pipeline de audio limpiado (incluyendo transcripción en tiempo real)');
   }
 
   /**
@@ -326,13 +349,13 @@ export default class AudioPipelineService {
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0 && this.isRecording) {
         this.audioChunks.push(event.data);
-        console.log(`📦 Chunk recibido: ${event.data.size} bytes`);
+        console.log(`📦 Chunk recibido: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks)`);
       }
     };
 
     this.mediaRecorder.onstop = async () => {
-      console.log('🛑 Grabación detenida, procesando transcripción...');
-      await this.enviarAudioParaTranscripcion();
+      console.log('🛑 Grabación detenida, procesando transcripción final...');
+      // La transcripción final se maneja en processFinalTranscription()
     };
 
     this.mediaRecorder.onerror = (event) => {
@@ -342,8 +365,8 @@ export default class AudioPipelineService {
       }
     };
 
-    // Iniciar grabación
-    this.mediaRecorder.start(1000);
+    // OPTIMIZADO: Iniciar grabación con chunks más pequeños para tiempo real
+    this.mediaRecorder.start(1000); // Chunks cada 1 segundo para mejor tiempo real
   }
 
   // MÉTODOS DE COMPATIBILIDAD (para no romper código existente)
@@ -353,5 +376,168 @@ export default class AudioPipelineService {
 
   stopRecording(): void {
     return this.detenerGrabacion();
+  }
+
+  /**
+   * NUEVO: Iniciar transcripción en tiempo real
+   */
+  private startRealtimeTranscription(): void {
+    console.log('⏱️ Iniciando transcripción en tiempo real (chunks cada 3 segundos)');
+    
+    this.realtimeTimer = setInterval(() => {
+      this.processRealtimeChunk();
+    }, 3000); // Procesar cada 3 segundos
+  }
+
+  /**
+   * NUEVO: Procesar chunk en tiempo real
+   */
+  private async processRealtimeChunk(): Promise<void> {
+    if (!this.isRecording || this.isProcessingChunk || this.audioChunks.length === 0) {
+      return;
+    }
+
+    this.isProcessingChunk = true;
+    this.chunkCounter++;
+    
+    console.log(`🔄 Procesando chunk #${this.chunkCounter} en tiempo real...`);
+
+    try {
+      // Crear blob con chunks actuales
+      const mimeType = this.audioChunks[0].type || 'audio/webm';
+      const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+      
+      // Validar tamaño mínimo
+      if (audioBlob.size < 2048) {
+        console.log(`⏳ Chunk #${this.chunkCounter} muy pequeño, esperando más audio...`);
+        this.isProcessingChunk = false;
+        return;
+      }
+
+      // Procesar transcripción
+      const transcriptionResult = await this.processAudioChunk(audioBlob, false);
+      
+      if (transcriptionResult && transcriptionResult.trim()) {
+        // Acumular transcripción
+        this.accumulatedTranscription += transcriptionResult + ' ';
+        
+        // Enviar transcripción parcial
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback(this.accumulatedTranscription.trim(), false);
+        }
+        
+        console.log(`✅ Chunk #${this.chunkCounter} procesado: "${transcriptionResult}"`);
+      }
+
+    } catch (error) {
+      console.error(`❌ Error procesando chunk #${this.chunkCounter}:`, error);
+    } finally {
+      this.isProcessingChunk = false;
+    }
+  }
+
+  /**
+   * NUEVO: Detener transcripción en tiempo real
+   */
+  private stopRealtimeTranscription(): void {
+    if (this.realtimeTimer) {
+      clearInterval(this.realtimeTimer);
+      this.realtimeTimer = null;
+      console.log('⏹️ Transcripción en tiempo real detenida');
+    }
+  }
+
+  /**
+   * NUEVO: Procesar chunk de audio individual
+   */
+  private async processAudioChunk(audioBlob: Blob, isFinal: boolean): Promise<string | null> {
+    try {
+      // Convertir blob a Base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64Audio = btoa(binary);
+      
+      // Crear payload
+      const payload = {
+        audioData: base64Audio,
+        mimeType: audioBlob.type || 'audio/webm',
+        size: audioBlob.size,
+        timestamp: Date.now(),
+        isRealtime: !isFinal,
+        chunkNumber: this.chunkCounter
+      };
+      
+      // Enviar a Google Cloud
+      const response = await fetch(this.getTranscribeUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Error del servidor: ${response.status}`);
+        return null;
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.transcription) {
+        return result.transcription;
+      }
+      
+      return null;
+
+    } catch (error) {
+      console.error('❌ Error procesando chunk:', error);
+      return null;
+    }
+  }
+
+  /**
+   * NUEVO: Procesar transcripción final
+   */
+  private async processFinalTranscription(): Promise<void> {
+    if (this.audioChunks.length === 0) {
+      console.log('✅ Transcripción final: usando transcripción acumulada');
+      if (this.transcriptionCallback && this.accumulatedTranscription) {
+        this.transcriptionCallback(this.accumulatedTranscription.trim(), true);
+      }
+      return;
+    }
+
+    console.log('🔄 Procesando transcripción final completa...');
+    
+    try {
+      // Crear blob final con todos los chunks
+      const mimeType = this.audioChunks[0].type || 'audio/webm';
+      const finalBlob = new Blob(this.audioChunks, { type: mimeType });
+      
+      // Procesar transcripción final
+      const finalTranscription = await this.processAudioChunk(finalBlob, true);
+      
+      if (finalTranscription && this.transcriptionCallback) {
+        // Combinar transcripción en tiempo real con final
+        const combinedTranscription = this.accumulatedTranscription + ' ' + finalTranscription;
+        this.transcriptionCallback(combinedTranscription.trim(), true);
+        
+        console.log('✅ Transcripción final completada');
+      } else if (this.transcriptionCallback && this.accumulatedTranscription) {
+        // Usar solo transcripción acumulada si no hay final
+        this.transcriptionCallback(this.accumulatedTranscription.trim(), true);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error en transcripción final:', error);
+      if (this.transcriptionCallback && this.accumulatedTranscription) {
+        this.transcriptionCallback(this.accumulatedTranscription.trim(), true);
+      }
+    }
   }
 } 
