@@ -257,18 +257,36 @@ export default class GoogleCloudAudioService {
       // Crear FormData ROBUSTO
       const formData = new FormData();
       
-      // Determinar extensión correcta
+      // Esperar a que el blob esté completamente formado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Crear un File object explícito en lugar de solo Blob
       let fileExtension = 'webm';
       if (mimeType.includes('wav')) fileExtension = 'wav';
       else if (mimeType.includes('mp3')) fileExtension = 'mp3';
       else if (mimeType.includes('mp4')) fileExtension = 'mp4';
       else if (mimeType.includes('ogg')) fileExtension = 'ogg';
       
-      // Crear archivo con nombre específico y tipo correcto
       const fileName = `medical_audio_${Date.now()}.${fileExtension}`;
-      formData.append('audio', audioBlob, fileName);
       
-      console.log(`📤 Enviando ${fileName} (${audioBlob.size} bytes) a Google Cloud...`);
+      // Crear File object explícito
+      const file = new File([audioBlob], fileName, {
+        type: mimeType,
+        lastModified: Date.now()
+      });
+      
+      // Verificar que el archivo es válido
+      if (file.size === 0) {
+        console.error('❌ Error: Archivo creado está vacío');
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback('Error: Archivo de audio vacío', true);
+        }
+        return;
+      }
+      
+      formData.append('audio', file);
+      
+      console.log(`📤 Enviando ${fileName} (${file.size} bytes, ${file.type}) a Google Cloud...`);
       
       // Enviar con timeout optimizado
       const controller = new AbortController();
@@ -291,6 +309,15 @@ export default class GoogleCloudAudioService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Error del servidor:', response.status, errorText);
+        
+        // Intentar parsear el error para más detalles
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error('📋 Detalles del error:', errorData.details || errorData.error);
+        } catch (parseError) {
+          console.error('📋 Error sin parsear:', errorText);
+        }
+        
         throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
       }
 

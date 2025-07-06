@@ -77,24 +77,29 @@ functions.http('transcribeAudio', async (req, res) => {
 
       if (!req.file) {
         logDetailed('ERROR', 'No se recibió archivo de audio', {
-          body: Object.keys(req.body),
-          files: req.files
+          body: Object.keys(req.body || {}),
+          files: req.files ? 'present' : 'absent',
+          contentType: req.headers['content-type'],
+          contentLength: req.headers['content-length']
         });
         
         return res.status(400).json({
           success: false,
           error: 'No se encontró archivo de audio',
-          expectedField: 'audio'
+          expectedField: 'audio',
+          receivedFields: Object.keys(req.body || {}),
+          contentType: req.headers['content-type']
         });
       }
 
       // Log detallado del archivo recibido
-      logDetailed('INFO', 'Archivo de audio recibido', {
+      logDetailed('INFO', 'Archivo de audio recibido exitosamente', {
         filename: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
         encoding: req.file.encoding,
-        fieldname: req.file.fieldname
+        fieldname: req.file.fieldname,
+        bufferLength: req.file.buffer ? req.file.buffer.length : 0
       });
 
       // Validar formato de audio
