@@ -1,70 +1,68 @@
-import RealAudioCaptureService from './RealAudioCaptureService';
+import GoogleCloudAudioService from './GoogleCloudAudioService';
 
 /**
- * Servicio de audio médico para captura real del ambiente
+ * Servicio de audio médico con Google Cloud Speech-to-Text
  * Optimizado para consultas médicas profesionales
  */
 export default class HybridAudioService {
-  private realAudioService: RealAudioCaptureService;
+  private googleCloudService: GoogleCloudAudioService;
 
   constructor() {
-    // Solo crear y usar el servicio de audio real
-    this.realAudioService = new RealAudioCaptureService();
+    // Usar Google Cloud Speech-to-Text como servicio principal
+    this.googleCloudService = new GoogleCloudAudioService();
     
-    console.log('🎙️ Servicio de audio médico inicializado para captura real');
+    console.log('🎙️ HybridAudioService inicializado con Google Cloud');
   }
 
   // Información clara del servicio
   getDetailedServiceInfo(): string {
-    const isRealSupported = this.realAudioService.isServiceSupported();
+    const isSupported = this.googleCloudService.isServiceSupported();
     
-    if (isRealSupported) {
-      return `🎙️ Captura de audio real del ambiente (Listo para consultas médicas)`;
+    if (isSupported) {
+      return `🎙️ Google Cloud Speech-to-Text (Transcripción profesional médica)`;
     } else {
-      return `❌ Audio real no disponible en este navegador`;
+      return `❌ Google Cloud Speech-to-Text no disponible en este navegador`;
     }
   }
 
-  getServiceDisplayName(): string {
-    return '🎙️ Audio Real Médico';
-  }
-
+  // Iniciar grabación
   async startRecording(callback: (text: string, isFinal: boolean) => void): Promise<void> {
     try {
-      console.log('🎙️ Iniciando captura de audio real para consulta médica...');
-      await this.realAudioService.startRecording(callback);
-      console.log('✅ Grabación de consulta médica iniciada');
+      console.log('🎙️ Iniciando grabación con Google Cloud...');
+      await this.googleCloudService.startRecording(callback);
     } catch (error) {
-      console.error('❌ Error al iniciar grabación médica:', error);
+      console.error('❌ Error al iniciar grabación:', error);
       throw error;
     }
   }
 
-  stopRecording(): string {
-    console.log('🛑 Deteniendo grabación de consulta médica...');
-    const result = this.realAudioService.stopRecording();
-    console.log('✅ Grabación médica detenida');
-    return result;
+  // Detener grabación
+  stopRecording(): void {
+    try {
+      console.log('🛑 Deteniendo grabación...');
+      this.googleCloudService.stopRecording();
+    } catch (error) {
+      console.error('❌ Error al detener grabación:', error);
+    }
   }
 
-  isCurrentlyRecording(): boolean {
-    return this.realAudioService.isCurrentlyRecording();
+  // Verificar si está grabando
+  isRecording(): boolean {
+    return this.googleCloudService.getIsRecording();
   }
 
-  getCurrentServiceType(): 'real' {
-    return 'real';
+  // Verificar si el servicio está soportado
+  isServiceSupported(): boolean {
+    return this.googleCloudService.isServiceSupported();
   }
 
-  // Método de diagnóstico para verificar el estado del servicio
-  getDiagnosticInfo(): any {
-    return {
-      serviceType: 'real-only',
-      supported: this.realAudioService.isServiceSupported(),
-      recording: this.isCurrentlyRecording(),
-      isSecureContext: window.isSecureContext,
-      protocol: location.protocol,
-      hostname: location.hostname,
-      realServiceDiagnostic: this.realAudioService.getDiagnosticInfo()
-    };
+  // Obtener nombre del servicio
+  getServiceDisplayName(): string {
+    return '🎙️ Google Cloud Speech-to-Text';
+  }
+
+  // Limpiar recursos
+  cleanup(): void {
+    this.googleCloudService.cleanup();
   }
 } 
