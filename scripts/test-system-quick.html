@@ -240,39 +240,39 @@
                             return;
                         }
                         
-                        // CORRECCIÓN CRÍTICA: Crear FormData más robusto
-                        log('🔧 Creando FormData robusto...', 'info');
+                        // SOLUCIÓN BYPASS: Usar Base64 directo en lugar de FormData
+                        log('🚀 BYPASS: Enviando audio como Base64 directo...', 'info');
                         
-                        // Esperar a que el blob esté completamente formado
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                        const formData = new FormData();
-                        
-                        // Crear un File object explícito en lugar de solo Blob
-                        const file = new File([audioBlob], 'medical_audio.webm', {
-                            type: mimeType,
-                            lastModified: Date.now()
-                        });
-                        
-                        // Verificar que el archivo es válido
-                        if (file.size === 0) {
-                            log('❌ Error: Archivo creado está vacío', 'error');
-                            callback('Error: Archivo de audio vacío');
-                            return;
+                        // Convertir blob a Base64
+                        const arrayBuffer = await audioBlob.arrayBuffer();
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        let binary = '';
+                        for (let i = 0; i < uint8Array.length; i++) {
+                            binary += String.fromCharCode(uint8Array[i]);
                         }
+                        const base64Audio = btoa(binary);
                         
-                        formData.append('audio', file);
+                        log(`📤 Audio convertido a Base64: ${base64Audio.length} caracteres`, 'info');
                         
-                        // Verificar FormData antes de enviar
-                        log(`📤 Enviando archivo: ${file.name} (${file.size} bytes, ${file.type})`, 'info');
+                        // Crear payload JSON directo
+                        const payload = {
+                            audioData: base64Audio,
+                            mimeType: mimeType,
+                            size: audioBlob.size,
+                            timestamp: Date.now()
+                        };
+                        
+                        log(`📦 Payload JSON creado: ${JSON.stringify(payload).length} bytes`, 'info');
                         
                         const startTime = performance.now();
                         
-                        // Enviar con configuración más robusta
+                        // Enviar como JSON puro
                         const response = await fetch(TRANSCRIBE_URL, {
                             method: 'POST',
-                            body: formData,
-                            // NO establecer Content-Type - dejar que el navegador lo haga
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
                         });
                         
                         const processingTime = Math.round(performance.now() - startTime);

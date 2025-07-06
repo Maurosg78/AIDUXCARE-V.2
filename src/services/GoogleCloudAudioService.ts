@@ -251,57 +251,41 @@ export default class GoogleCloudAudioService {
         return;
       }
 
-      // CORRECCIÓN CRÍTICA: Enviar directamente sin conversión problemática
-      console.log('📤 Enviando audio original sin conversión (evita FormData corrupto)...');
+      // SOLUCIÓN BYPASS: Usar Base64 directo en lugar de FormData
+      console.log('🚀 BYPASS: Enviando audio como Base64 directo...');
       
-      // Crear FormData ROBUSTO
-      const formData = new FormData();
-      
-      // Esperar a que el blob esté completamente formado
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Crear un File object explícito en lugar de solo Blob
-      let fileExtension = 'webm';
-      if (mimeType.includes('wav')) fileExtension = 'wav';
-      else if (mimeType.includes('mp3')) fileExtension = 'mp3';
-      else if (mimeType.includes('mp4')) fileExtension = 'mp4';
-      else if (mimeType.includes('ogg')) fileExtension = 'ogg';
-      
-      const fileName = `medical_audio_${Date.now()}.${fileExtension}`;
-      
-      // Crear File object explícito
-      const file = new File([audioBlob], fileName, {
-        type: mimeType,
-        lastModified: Date.now()
-      });
-      
-      // Verificar que el archivo es válido
-      if (file.size === 0) {
-        console.error('❌ Error: Archivo creado está vacío');
-        if (this.transcriptionCallback) {
-          this.transcriptionCallback('Error: Archivo de audio vacío', true);
-        }
-        return;
+      // Convertir blob a Base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
       }
+      const base64Audio = btoa(binary);
       
-      formData.append('audio', file);
+      console.log(`📤 Audio convertido a Base64: ${base64Audio.length} caracteres`);
       
-      console.log(`📤 Enviando ${fileName} (${file.size} bytes, ${file.type}) a Google Cloud...`);
+      // Crear payload JSON directo
+      const payload = {
+        audioData: base64Audio,
+        mimeType: mimeType,
+        size: audioBlob.size,
+        timestamp: Date.now()
+      };
       
-      // Enviar con timeout optimizado
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      console.log(`📦 Payload JSON creado: ${JSON.stringify(payload).length} bytes`);
       
       const startTime = performance.now();
       
+      // Enviar como JSON puro
       const response = await fetch(this.getTranscribeUrl(), {
         method: 'POST',
-        body: formData,
-        signal: controller.signal
-        // NO establecer headers manualmente para FormData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       });
-
-      clearTimeout(timeoutId);
+      
       const processingTime = Math.round(performance.now() - startTime);
       
       console.log(`⏱️ Tiempo de procesamiento: ${processingTime}ms`);

@@ -119,18 +119,49 @@ functions.http('transcribeAudio', async (req, res) => {
       userAgent: req.headers['user-agent']
     });
 
-    // Usar parseFormData para procesar el archivo
-    const { file, fields } = await parseFormData(req);
-
-    // Log detallado del archivo recibido
-    logDetailed('INFO', 'Archivo de audio recibido exitosamente', {
-      filename: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      encoding: file.encoding,
-      fieldname: file.fieldname,
-      bufferLength: file.buffer ? file.buffer.length : 0
-    });
+    // NUEVA LÓGICA: Manejar tanto FormData como JSON directo
+    let file;
+    
+    if (req.headers['content-type']?.includes('application/json')) {
+      // BYPASS: Manejar payload JSON con Base64
+      logDetailed('INFO', 'Procesando payload JSON con Base64');
+      
+      const payload = req.body;
+      
+      if (!payload.audioData) {
+        logDetailed('ERROR', 'No se encontró audioData en payload JSON');
+        return res.status(400).json({
+          success: false,
+          error: 'No se encontró datos de audio',
+          expectedField: 'audioData'
+        });
+      }
+      
+      // Convertir Base64 a Buffer
+      const audioBuffer = Buffer.from(payload.audioData, 'base64');
+      
+      file = {
+        originalname: `medical_audio_${payload.timestamp || Date.now()}.webm`,
+        mimetype: payload.mimeType || 'audio/webm',
+        size: audioBuffer.length,
+        encoding: 'base64',
+        fieldname: 'audio',
+        buffer: audioBuffer
+      };
+      
+      logDetailed('INFO', 'Archivo JSON procesado exitosamente', {
+        originalSize: payload.size,
+        bufferSize: audioBuffer.length,
+        mimeType: file.mimetype,
+        base64Length: payload.audioData.length
+      });
+      
+    } else {
+      // FALLBACK: Usar parseFormData para FormData tradicional
+      logDetailed('INFO', 'Procesando FormData tradicional');
+      const { file: parsedFile } = await parseFormData(req);
+      file = parsedFile;
+    }
 
     // Validar formato de audio
     const supportedFormats = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/flac', 'audio/webm', 'audio/ogg', 'audio/mp4'];
@@ -308,7 +339,8 @@ functions.http('transcribeAudio', async (req, res) => {
           audioFormat: file.mimetype,
           audioSize: file.size,
           processingTime: Date.now(),
-          language: audioConfig.languageCode
+          language: audioConfig.languageCode,
+          method: req.headers['content-type']?.includes('application/json') ? 'JSON_BASE64' : 'FORMDATA'
         }
       };
 
@@ -316,7 +348,8 @@ functions.http('transcribeAudio', async (req, res) => {
         transcriptionLength: transcription.length,
         confidence: confidence,
         speakersDetected: totalSpeakers,
-        segmentsCount: segments.length
+        segmentsCount: segments.length,
+        method: result.metadata.method
       });
 
       res.json(result);
