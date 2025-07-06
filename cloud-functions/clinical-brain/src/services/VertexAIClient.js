@@ -14,7 +14,7 @@ class VertexAIClient {
   constructor() {
     this.projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'aiduxcare-stt-20250706';
     this.location = process.env.VERTEX_AI_LOCATION || 'us-east1';
-    this.model = process.env.VERTEX_AI_MODEL || 'gemini-1.5-flash';
+    this.model = process.env.VERTEX_AI_MODEL || 'gemini-2.5-pro';
     
     // Inicializar cliente Vertex AI
     this.vertexAI = new VertexAI({
@@ -22,16 +22,16 @@ class VertexAIClient {
       location: this.location
     });
     
-    // Configuración del modelo - SIMPLIFICADA para debugging
+    // Configuración del modelo - OPTIMIZADA para Gemini 2.5 Pro
     this.generationConfig = {
       temperature: 0.1,  // Muy baja para máxima precisión clínica
       topP: 0.8,
       topK: 40,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,  // Aumentado para Gemini 2.5 Pro
       candidateCount: 1
     };
 
-    // Configuración de seguridad médica - SIMPLIFICADA
+    // Configuración de seguridad médica - OPTIMIZADA
     this.safetySettings = [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
@@ -40,13 +40,22 @@ class VertexAIClient {
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
         threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+      },
+      {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+      },
+      {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_MEDIUM_AND_ABOVE'
       }
     ];
 
-    logger.info('🧠 VertexAI Client initialized', {
+    logger.info('🧠 VertexAI Client initialized con GEMINI 2.5 PRO', {
       projectId: this.projectId,
       location: this.location,
       model: this.model,
+      maxOutputTokens: this.generationConfig.maxOutputTokens,
       timestamp: new Date().toISOString()
     });
   }
@@ -90,7 +99,7 @@ class VertexAIClient {
       logger.info('✅ Modelo generativo obtenido correctamente');
 
       // Generar contenido
-      logger.info('🤖 Enviando request a Gemini 1.5 Pro...');
+      logger.info('🤖 Enviando request a Gemini 2.5 Pro...');
       
       const result = await generativeModel.generateContent({
         contents: [{
@@ -101,8 +110,17 @@ class VertexAIClient {
 
       logger.info('📨 Respuesta recibida de Vertex AI');
 
-      const response = await result.response;
-      const text = response.text();
+      // CORRECCIÓN CRÍTICA: Usar la estructura correcta de respuesta
+      const response = result.response;
+      
+      // Extraer texto de la respuesta usando la estructura correcta de Gemini 2.5
+      let text = '';
+      if (response.candidates && response.candidates.length > 0) {
+        const candidate = response.candidates[0];
+        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+          text = candidate.content.parts[0].text || '';
+        }
+      }
 
       const processingTime = Date.now() - startTime;
 
@@ -113,6 +131,7 @@ class VertexAIClient {
         responseFirst500: text.substring(0, 500),
         responseLast500: text.substring(Math.max(0, text.length - 500)),
         model: this.model,
+        candidatesCount: response.candidates?.length || 0,
         timestamp: new Date().toISOString()
       });
 
