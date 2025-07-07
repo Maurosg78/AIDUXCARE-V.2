@@ -90,15 +90,22 @@ export class GoogleCloudAudioService {
         }
       });
 
+      // ⏰ AÑADIR TIMEOUT DE 60 SEGUNDOS
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
+
       const response = await fetch(this.clinicalBrainEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
+        signal: controller.signal // ⏰ Añadir signal para timeout
       });
 
-            console.log('📡 RESPUESTA RECIBIDA DE CLOUD FUNCTION:', {
+      clearTimeout(timeoutId); // Limpiar timeout si la respuesta llega
+
+      console.log('📡 RESPUESTA RECIBIDA DE CLOUD FUNCTION:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
@@ -173,20 +180,36 @@ export class GoogleCloudAudioService {
       
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       
-             console.error('❌ ERROR DE RED CLOUD FUNCTION:', {
-         error: errorMessage,
-         request: {
-           transcriptionLength: request.transcription.length,
-           specialty: request.specialty,
-           sessionType: request.sessionType
-         }
-       });
+      // 🚨 MANEJO ESPECÍFICO DE TIMEOUT
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('⏰ TIMEOUT DEL CEREBRO CLÍNICO:', {
+          duration: '60 segundos',
+          transcriptionLength: request.transcription.length,
+          specialty: request.specialty,
+          recommendation: 'Usar procesamiento básico'
+        });
 
-       return {
-         success: false,
-         error: this.formatNetworkError(errorMessage),
-         message: errorMessage
-       };
+        return {
+          success: false,
+          error: '⏰ El Cerebro Clínico tardó más de 60 segundos. Se ha generado un análisis básico. Todas las funciones médicas están disponibles.',
+          message: 'timeout_cerebro_clinico'
+        };
+      }
+
+      console.error('❌ ERROR DE RED CLOUD FUNCTION:', {
+        error: errorMessage,
+        request: {
+          transcriptionLength: request.transcription.length,
+          specialty: request.specialty,
+          sessionType: request.sessionType
+        }
+      });
+
+      return {
+        success: false,
+        error: this.formatNetworkError(errorMessage),
+        message: errorMessage
+      };
     }
   }
 

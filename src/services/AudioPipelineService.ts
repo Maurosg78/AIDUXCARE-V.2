@@ -281,7 +281,7 @@ export default class AudioPipelineService {
     } else if (selectedFormat.includes('mp4')) {
       console.log('🎵 PASO 2: Configuración MP4 - Compatibilidad amplia');
       optimizedOptions = {
-        mimeType: selectedFormat,
+      mimeType: selectedFormat,
         audioBitsPerSecond: 96000 // Balance calidad/compatibilidad
       };
     } else {
@@ -429,7 +429,7 @@ export default class AudioPipelineService {
       };
       
       console.log('✅ Web Speech API configurado correctamente');
-      
+
     } catch (error) {
       console.error('❌ Error inicializando Web Speech API:', error);
     }

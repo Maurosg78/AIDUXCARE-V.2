@@ -247,6 +247,88 @@ const EvaluationTabContent: React.FC<{ soapData: SOAPData | null }> = ({ soapDat
   </div>
 );
 
+// Función de fallback para generar análisis básico local
+const generateBasicClinicalAnalysis = (transcription: string) => {
+  const lowerText = transcription.toLowerCase();
+  const warnings = [];
+  const suggestions = [];
+
+  // 🚨 PATRONES DE BANDERAS ROJAS BÁSICAS
+  if (lowerText.includes('dolor') && (lowerText.includes('pecho') || lowerText.includes('torácico'))) {
+    warnings.push({
+      id: 'basic_chest_pain',
+      severity: 'HIGH',
+      category: 'cardiovascular',
+      title: 'Dolor torácico detectado',
+      description: 'Se menciona dolor en región torácica que requiere evaluación',
+      recommendation: 'Considerar evaluación cardiológica y ECG',
+      evidence: 'Términos: dolor + pecho/torácico'
+    });
+  }
+
+  if (lowerText.includes('cabeza') && lowerText.includes('dolor')) {
+    warnings.push({
+      id: 'basic_headache',
+      severity: 'MEDIUM',
+      category: 'neurological',
+      title: 'Cefalea reportada',
+      description: 'Paciente refiere dolor de cabeza',
+      recommendation: 'Evaluar características, duración e intensidad',
+      evidence: 'Términos: dolor + cabeza'
+    });
+  }
+
+  if (lowerText.includes('cervical') || lowerText.includes('cuello')) {
+    warnings.push({
+      id: 'basic_cervical',
+      severity: 'MEDIUM',
+      category: 'musculoskeletal',
+      title: 'Dolor cervical identificado',
+      description: 'Se reporta molestia en región cervical',
+      recommendation: 'Evaluación postural y rango de movimiento',
+      evidence: 'Términos: cervical/cuello'
+    });
+  }
+
+  // 💡 SUGERENCIAS BÁSICAS SIEMPRE ÚTILES
+  suggestions.push(
+    {
+      id: 'basic_assessment',
+      type: 'clinical_review',
+      title: 'Completar evaluación física',
+      description: 'Realizar examen físico sistemático de las áreas afectadas',
+      priority: 'HIGH'
+    },
+    {
+      id: 'basic_history',
+      type: 'documentation',
+      title: 'Documentar antecedentes',
+      description: 'Registrar historia clínica relevante y medicamentos actuales',
+      priority: 'MEDIUM'
+    },
+    {
+      id: 'basic_followup',
+      type: 'follow_up',
+      title: 'Programar seguimiento',
+      description: 'Establecer plan de seguimiento según evolución clínica',
+      priority: 'MEDIUM'
+    }
+  );
+
+  // Sugerencias específicas según especialidad detectada
+  if (lowerText.includes('fisio') || lowerText.includes('ejercicio') || lowerText.includes('movimiento')) {
+    suggestions.push({
+      id: 'basic_physio',
+      type: 'treatment',
+      title: 'Evaluación biomecánica',
+      description: 'Analizar patrones de movimiento y función articular',
+      priority: 'HIGH'
+    });
+  }
+
+  return { warnings, suggestions };
+};
+
 const ConsultationPage: React.FC = () => {
   // Estados centralizados - única fuente de verdad
   const [transcriptionText, setTranscriptionText] = useState<string>('');
@@ -256,7 +338,7 @@ const ConsultationPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [serviceInfo, setServiceInfo] = useState<string>('');
-  
+
   // 🧠 NUEVO: Estados para cerebro clínico
   const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysisResponse | null>(null);
   const [highlights, setHighlights] = useState<Array<any>>([]);
@@ -341,11 +423,27 @@ const ConsultationPage: React.FC = () => {
       } else {
         // Fallback a procesamiento básico si falla el cerebro clínico
         console.warn('⚠️ Cerebro clínico no disponible, usando procesamiento básico');
+        
+        // 🧠 ANÁLISIS BÁSICO MEJORADO
         const fallbackSOAP = processTranscriptionToSOAP(transcript);
         setSoapData(fallbackSOAP);
         
-        if (clinicalResult.error) {
-          setError(`Cerebro clínico: ${clinicalResult.error}`);
+        // Generar advertencias básicas y sugerencias según el tipo de error
+        if (clinicalResult.message === 'timeout_cerebro_clinico') {
+          // Timeout específico - generar análisis básico pero útil
+          const basicAnalysis = generateBasicClinicalAnalysis(transcript);
+          setWarnings(basicAnalysis.warnings);
+          setHighlights(basicAnalysis.suggestions);
+          
+          setError('⏰ El Cerebro Clínico tardó más de 60 segundos. Se ha generado un análisis básico. Todas las funciones médicas están disponibles.');
+        } else {
+          // Otros errores
+          setError(`🔄 Cerebro clínico temporal: ${clinicalResult.error || 'No disponible'}. Análisis básico activo.`);
+          
+          // Generar análisis básico simple
+          const basicAnalysis = generateBasicClinicalAnalysis(transcript);
+          setWarnings(basicAnalysis.warnings);
+          setHighlights(basicAnalysis.suggestions);
         }
       }
       
@@ -566,12 +664,12 @@ const ConsultationPage: React.FC = () => {
          <CaptureWorkspace>
             <div style={{ border: '1px solid #eef1f1', borderRadius: '1rem', padding: '1rem' }}>
               <div style={{ position: 'relative' }}>
-                <TranscriptionArea 
-                  value={transcriptionText} 
-                  onChange={setTranscriptionText} 
+              <TranscriptionArea 
+                value={transcriptionText} 
+                onChange={setTranscriptionText} 
                   placeholder={isRecording ? "🎙️ Escuchando en vivo... hable normalmente" : "La transcripción aparecerá aquí en tiempo real"}
-                  disabled={isRecording}
-                />
+                disabled={isRecording}
+              />
                 
                 {/* Indicador de transcripción en tiempo real */}
                 {isRecording && transcriptionText && (

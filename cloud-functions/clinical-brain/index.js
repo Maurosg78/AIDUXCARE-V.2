@@ -32,10 +32,18 @@ const corsOptions = {
 
 // Función principal de la Cloud Function
 exports.clinicalBrain = async (req, res) => {
-  // Configurar CORS
-  res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
+  // Configurar CORS - REPARACIÓN CRÍTICA
+  const allowedOrigins = ['http://localhost:5174', 'https://localhost:5174', 'https://aiduxcare-v2.vercel.app'];
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  } else {
+    res.set('Access-Control-Allow-Origin', 'https://localhost:5174'); // Fallback para HTTPS local
+  }
+  
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.set('Access-Control-Allow-Credentials', 'true');
 
   // Manejar preflight OPTIONS
