@@ -44,6 +44,21 @@ ${outputPrompt}`;
       timestamp: new Date().toISOString()
     });
 
+    // 🔍 PASO 1: VALIDAR PROMPT ENVIADO A VERTEX AI
+    // CRÍTICO: Logging del prompt completo para debugging
+    logger.info('🔍 PROMPT COMPLETO ENVIADO A VERTEX AI:', {
+      specialty: specialty,
+      sessionType: sessionType,
+      transcriptionLength: transcription.length,
+      promptLength: fullPrompt.length,
+      promptCompleto: fullPrompt, // CRÍTICO: Todo el prompt para debugging
+      promptPreview: fullPrompt.substring(0, 1000) + (fullPrompt.length > 1000 ? '...' : ''),
+      contieneFormatoJSON: fullPrompt.includes('JSON válido'),
+      contieneInstruccionesCriticas: fullPrompt.includes('INSTRUCCIONES CRÍTICAS'),
+      terminaConFormatoRequerido: fullPrompt.includes('Si no hay advertencias o sugerencias, incluye arrays vacíos []'),
+      timestamp: new Date().toISOString()
+    });
+
     return fullPrompt;
   }
 
