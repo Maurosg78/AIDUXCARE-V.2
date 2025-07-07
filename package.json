@@ -46,7 +46,10 @@
     "demo:integration": "tsx scripts/test-nlp-rag-integration.ts",
     "test:rag-solo": "tsx scripts/test-rag-solo.ts",
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
-    "analyze": "node scripts/analyze-bundle.cjs"
+    "analyze": "node scripts/analyze-bundle.cjs",
+    "test:e2e": "vitest run src/__tests__/e2e/clinical-pipeline.e2e.test.ts",
+    "start:clean": "kill-port 5174 && vite",
+    "validate-and-start": "npm run test:e2e && npm run start:clean"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
