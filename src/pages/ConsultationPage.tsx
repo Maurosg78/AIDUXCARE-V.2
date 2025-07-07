@@ -3,6 +3,7 @@ import CaptureWorkspace from '../components/CaptureWorkspace';
 import TranscriptionArea from '../components/TranscriptionArea';
 import ActionBar from '../components/ActionBar';
 import AudioPipelineService from '../services/AudioPipelineService';
+import { GoogleCloudAudioService, type ClinicalAnalysisRequest, type ClinicalAnalysisResponse } from '../services/GoogleCloudAudioService';
 
 // Tipos básicos
 interface SOAPData {
@@ -64,9 +65,95 @@ const processTranscriptionToSOAP = (transcription: string): SOAPData => {
   };
 };
 
-// Placeholder para el header del paciente y los módulos de IA
+// Placeholder para el header del paciente
 const PatientHeader = () => <div style={{ padding: '1rem', border: '1px dashed grey', marginBottom: '1rem' }}>[Header del Paciente]</div>;
-const AIModules = () => <div style={{ padding: '1rem', border: '1px dashed grey', marginTop: '1rem' }}>[Módulos de Highlights, Advertencias y Preguntas IA]</div>;
+
+// 🧠 NUEVO: Módulos de IA reales con datos del cerebro clínico
+const AIModules: React.FC<{ warnings: any[], highlights: any[], clinicalAnalysis: ClinicalAnalysisResponse | null }> = ({ 
+  warnings, 
+  highlights, 
+  clinicalAnalysis 
+}) => (
+  <div style={{ padding: '1rem', border: '1px solid #e9ecef', borderRadius: '8px', marginTop: '1rem', backgroundColor: '#f8f9fa' }}>
+    <h3 style={{ marginBottom: '1rem', color: '#495057' }}>🧠 Análisis Clínico en Tiempo Real</h3>
+    
+    {/* Advertencias Críticas */}
+    {warnings.length > 0 && (
+      <div style={{ marginBottom: '1rem' }}>
+        <h4 style={{ color: '#dc3545', marginBottom: '0.5rem' }}>🚨 Advertencias Clínicas ({warnings.length})</h4>
+        {warnings.map((warning, index) => (
+          <div key={index} style={{ 
+            padding: '0.75rem', 
+            backgroundColor: warning.severity === 'HIGH' ? '#f8d7da' : warning.severity === 'MEDIUM' ? '#fff3cd' : '#d1ecf1',
+            border: `1px solid ${warning.severity === 'HIGH' ? '#f5c6cb' : warning.severity === 'MEDIUM' ? '#ffeaa7' : '#bee5eb'}`,
+            borderRadius: '4px',
+            marginBottom: '0.5rem'
+          }}>
+            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+              {warning.severity === 'HIGH' ? '🔴' : warning.severity === 'MEDIUM' ? '🟡' : '🔵'} {warning.title}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+              {warning.description}
+            </div>
+            {warning.recommendation && (
+              <div style={{ fontSize: '0.8rem', fontStyle: 'italic', marginTop: '0.25rem', color: '#495057' }}>
+                💡 {warning.recommendation}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+    
+    {/* Sugerencias y Highlights */}
+    {highlights.length > 0 && (
+      <div style={{ marginBottom: '1rem' }}>
+        <h4 style={{ color: '#28a745', marginBottom: '0.5rem' }}>💡 Sugerencias Clínicas ({highlights.length})</h4>
+        {highlights.map((suggestion, index) => (
+          <div key={index} style={{ 
+            padding: '0.75rem', 
+            backgroundColor: '#d4edda',
+            border: '1px solid #c3e6cb',
+            borderRadius: '4px',
+            marginBottom: '0.5rem'
+          }}>
+            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+              {suggestion.priority === 'HIGH' ? '⚡' : suggestion.priority === 'MEDIUM' ? '📝' : '💭'} {suggestion.title}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+              {suggestion.description}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+    
+    {/* Estado del Análisis */}
+    {clinicalAnalysis && (
+      <div style={{ fontSize: '0.8rem', color: '#6c757d', textAlign: 'center', marginTop: '1rem' }}>
+        {clinicalAnalysis.success ? (
+          <>
+            ✅ Análisis completado por Cerebro Clínico 
+            {clinicalAnalysis.metadata?.processingTimeMs && (
+              <> en {clinicalAnalysis.metadata.processingTimeMs}ms</>
+            )}
+          </>
+        ) : (
+          <span style={{ color: '#dc3545' }}>
+            ❌ Cerebro clínico no disponible - usando análisis básico
+          </span>
+        )}
+      </div>
+    )}
+    
+    {/* Placeholder si no hay datos */}
+    {warnings.length === 0 && highlights.length === 0 && !clinicalAnalysis && (
+      <div style={{ textAlign: 'center', color: '#6c757d', fontStyle: 'italic' }}>
+        Complete una transcripción para ver análisis clínico en tiempo real
+      </div>
+    )}
+  </div>
+);
 
 // Componente para la pestaña de evaluación con datos SOAP
 const EvaluationTabContent: React.FC<{ soapData: SOAPData | null }> = ({ soapData }) => (
@@ -169,9 +256,15 @@ const ConsultationPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [serviceInfo, setServiceInfo] = useState<string>('');
+  
+  // 🧠 NUEVO: Estados para cerebro clínico
+  const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysisResponse | null>(null);
+  const [highlights, setHighlights] = useState<Array<any>>([]);
+  const [warnings, setWarnings] = useState<Array<any>>([]);
 
-  // Instanciar el servicio de audio unificado
+  // Instanciar servicios
   const audioService = useMemo(() => new AudioPipelineService(), []);
+  const clinicalService = useMemo(() => new GoogleCloudAudioService(), []);
 
   // Actualizar información del servicio
   useEffect(() => {
@@ -192,36 +285,86 @@ const ConsultationPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [audioService, isRecording]);
 
-  // Callback para transcripción en tiempo real
+  // 🔧 MEJORADO: Callback para transcripción en tiempo real con logging detallado
   const handleTranscriptionUpdate = useCallback((text: string, isFinal: boolean) => {
+    console.log('🔍 CALLBACK TRANSCRIPCIÓN:', {
+      isFinal,
+      textLength: text.length,
+      preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+      timestamp: new Date().toLocaleTimeString()
+    });
+    
     setTranscriptionText(text);
+    
     if (isFinal) {
-      console.log('Transcripción recibida:', text);
+      console.log('✅ Transcripción FINAL recibida:', text);
+    } else {
+      console.log('⏳ Transcripción PARCIAL actualizada');
     }
   }, []);
 
-  // Procesar transcripción a SOAP
+  // 🧠 NUEVO: Procesar transcripción con cerebro clínico real
   const processTranscriptionToSOAPAsync = useCallback(async (transcript: string) => {
     try {
       setIsProcessing(true);
-      console.log('🧠 Procesando transcripción a SOAP...');
+      console.log('🧠 Enviando transcripción al Cerebro Clínico real...');
       
-      // Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Preparar request para cerebro clínico
+      const clinicalRequest: ClinicalAnalysisRequest = {
+        transcription: transcript,
+        specialty: 'physiotherapy', // TODO: Hacer configurable
+        sessionType: 'initial' // TODO: Hacer configurable
+      };
       
-      const soapResult = processTranscriptionToSOAP(transcript);
-      setSoapData(soapResult);
-      console.log('✅ SOAP generado exitosamente:', soapResult);
+      // Enviar al cerebro clínico
+      const clinicalResult = await clinicalService.analyzeClinicalTranscription(clinicalRequest);
+      setClinicalAnalysis(clinicalResult);
+      
+      if (clinicalResult.success && clinicalResult.analysis) {
+        // Extraer warnings y sugerencias
+        setWarnings(clinicalResult.analysis.warnings || []);
+        setHighlights(clinicalResult.analysis.suggestions || []);
+        
+        // Generar SOAP básico para compatibilidad
+        const basicSOAP = processTranscriptionToSOAP(transcript);
+        setSoapData({
+          ...basicSOAP,
+          confidence: clinicalResult.analysis.soap_analysis?.overall_quality ? 
+            clinicalResult.analysis.soap_analysis.overall_quality / 100 : basicSOAP.confidence
+        });
+        
+        console.log('✅ Análisis clínico completado:', {
+          warnings: clinicalResult.analysis.warnings?.length || 0,
+          suggestions: clinicalResult.analysis.suggestions?.length || 0,
+          overallQuality: clinicalResult.analysis.soap_analysis?.overall_quality
+        });
+      } else {
+        // Fallback a procesamiento básico si falla el cerebro clínico
+        console.warn('⚠️ Cerebro clínico no disponible, usando procesamiento básico');
+        const fallbackSOAP = processTranscriptionToSOAP(transcript);
+        setSoapData(fallbackSOAP);
+        
+        if (clinicalResult.error) {
+          setError(`Cerebro clínico: ${clinicalResult.error}`);
+        }
+      }
       
       // Cambiar automáticamente a la pestaña de evaluación
       setActiveTab('evaluation');
+      
     } catch (error) {
-      console.error('Error procesando SOAP:', error);
-      setError('Error al procesar la transcripción a formato SOAP');
+      console.error('Error procesando transcripción:', error);
+      
+      // Fallback a procesamiento básico en caso de error
+      const fallbackSOAP = processTranscriptionToSOAP(transcript);
+      setSoapData(fallbackSOAP);
+      
+      setError(`Error de cerebro clínico: ${error instanceof Error ? error.message : 'Error desconocido'}. Usando análisis básico.`);
+      setActiveTab('evaluation');
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [clinicalService]);
 
   // Función para manejar grabación
   const handleStartRecording = useCallback(async () => {
@@ -422,12 +565,48 @@ const ConsultationPage: React.FC = () => {
       {activeTab === 'capture' && (
          <CaptureWorkspace>
             <div style={{ border: '1px solid #eef1f1', borderRadius: '1rem', padding: '1rem' }}>
-              <TranscriptionArea 
-                value={transcriptionText} 
-                onChange={setTranscriptionText} 
-                placeholder={isRecording ? "Escuchando... hable cerca del micrófono" : "La transcripción aparecerá aquí"}
-                disabled={isRecording}
-              />
+              <div style={{ position: 'relative' }}>
+                <TranscriptionArea 
+                  value={transcriptionText} 
+                  onChange={setTranscriptionText} 
+                  placeholder={isRecording ? "🎙️ Escuchando en vivo... hable normalmente" : "La transcripción aparecerá aquí en tiempo real"}
+                  disabled={isRecording}
+                />
+                
+                {/* Indicador de transcripción en tiempo real */}
+                {isRecording && transcriptionText && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '0.5rem',
+                    right: '0.5rem',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    animation: 'pulse 2s infinite'
+                  }}>
+                    🔴 TRANSCRIBIENDO
+                  </div>
+                )}
+                
+                {/* Contador de caracteres en tiempo real */}
+                {transcriptionText && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '0.5rem',
+                    right: '0.5rem',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem'
+                  }}>
+                    {transcriptionText.length} caracteres
+                  </div>
+                )}
+              </div>
                               <ActionBar
                   isRecording={isRecording}
                   onStartRecording={handleStartRecording}
@@ -443,7 +622,11 @@ const ConsultationPage: React.FC = () => {
                 </div>
               )}
             </div>
-           <AIModules />
+           <AIModules 
+             warnings={warnings}
+             highlights={highlights}
+             clinicalAnalysis={clinicalAnalysis}
+           />
          </CaptureWorkspace>
       )}
 

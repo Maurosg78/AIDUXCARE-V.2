@@ -51,7 +51,7 @@ export interface ClinicalAnalysisResponse {
 }
 
 export class GoogleCloudAudioService {
-  private readonly clinicalBrainEndpoint = 'https://us-central1-aiduxcare-stt-20250706.cloudfunctions.net/transcribeAudio';
+  private readonly clinicalBrainEndpoint = 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';
   
   async analyzeClinicalTranscription(request: ClinicalAnalysisRequest): Promise<ClinicalAnalysisResponse> {
     console.log('🧠 Enviando transcripción al Cerebro Clínico...', {

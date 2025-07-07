@@ -30,11 +30,13 @@ export default class AudioPipelineService {
     console.log('🎙️ AudioPipelineService inicializado - Servicio único de audio con transcripción en tiempo real');
   }
 
-  // URLs desde variables de entorno
+  // URLs desde variables de entorno con fallback
   private getTranscribeUrl(): string {
     const url = import.meta.env.VITE_GOOGLE_CLOUD_TRANSCRIBE_URL;
     if (!url) {
-      throw new Error('VITE_GOOGLE_CLOUD_TRANSCRIBE_URL no está configurada');
+      // Fallback para desarrollo
+      console.warn('⚠️ VITE_GOOGLE_CLOUD_TRANSCRIBE_URL no configurada, usando fallback de desarrollo');
+      return 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/transcribeAudio';
     }
     return url;
   }
@@ -42,7 +44,9 @@ export default class AudioPipelineService {
   private getHealthUrl(): string {
     const url = import.meta.env.VITE_GOOGLE_CLOUD_HEALTH_URL;
     if (!url) {
-      throw new Error('VITE_GOOGLE_CLOUD_HEALTH_URL no está configurada');
+      // Fallback para desarrollo
+      console.warn('⚠️ VITE_GOOGLE_CLOUD_HEALTH_URL no configurada, usando fallback de desarrollo');
+      return 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/health';
     }
     return url;
   }
