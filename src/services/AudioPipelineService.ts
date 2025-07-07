@@ -323,36 +323,69 @@ export default class AudioPipelineService {
   private configureMediaRecorder(): void {
     if (!this.stream) return;
 
-    // Detectar formatos soportados
+    // 🔧 PASO 2: CONFIGURACIÓN REFINADA DEL MEDIARECORDER
+    // Detectar formatos soportados con prioridad mejorada para calidad
     const supportedFormats = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/mp4',
-      'audio/wav'
+      'audio/wav', // Prioridad 1: Mejor calidad, sin compresión
+      'audio/webm;codecs=opus', // Prioridad 2: Buena calidad con compresión eficiente
+      'audio/mp4', // Prioridad 3: Amplia compatibilidad
+      'audio/webm', // Prioridad 4: Fallback básico
+      'audio/ogg;codecs=opus' // Prioridad 5: Alternativa para algunos navegadores
     ];
 
-    let selectedFormat = 'audio/wav';
+    let selectedFormat = 'audio/webm'; // Fallback por defecto
     
     for (const format of supportedFormats) {
       if (MediaRecorder.isTypeSupported(format)) {
         selectedFormat = format;
+        console.log(`✅ PASO 2: Formato seleccionado: ${selectedFormat}`);
         break;
       }
     }
 
-    console.log(`🎙️ Formato seleccionado: ${selectedFormat}`);
-
-    const options = {
-      mimeType: selectedFormat,
-      audioBitsPerSecond: selectedFormat.includes('opus') ? 64000 : 128000,
-      bitsPerSecond: selectedFormat.includes('opus') ? 64000 : 128000
-    };
+    // 🎵 CONFIGURACIÓN OPTIMIZADA POR FORMATO
+    let optimizedOptions: MediaRecorderOptions;
+    
+    if (selectedFormat.includes('wav')) {
+      // WAV: Sin compresión, máxima calidad
+      optimizedOptions = {
+        mimeType: selectedFormat,
+        audioBitsPerSecond: 128000, // 128 kbps para calidad óptima
+        bitsPerSecond: 128000
+      };
+      console.log('🎵 PASO 2: Configuración WAV - Máxima calidad sin compresión');
+    } else if (selectedFormat.includes('opus')) {
+      // OPUS: Codec eficiente, buena calidad con menos bytes
+      optimizedOptions = {
+        mimeType: selectedFormat,
+        audioBitsPerSecond: 64000, // 64 kbps suficiente para OPUS de alta calidad
+        bitsPerSecond: 64000
+      };
+      console.log('🎵 PASO 2: Configuración OPUS - Calidad eficiente');
+    } else if (selectedFormat.includes('mp4')) {
+      // MP4: Compatibilidad amplia
+      optimizedOptions = {
+        mimeType: selectedFormat,
+        audioBitsPerSecond: 96000, // 96 kbps para MP4
+        bitsPerSecond: 96000
+      };
+      console.log('🎵 PASO 2: Configuración MP4 - Compatibilidad amplia');
+    } else {
+      // WebM genérico u otros: Configuración conservadora
+      optimizedOptions = {
+        mimeType: selectedFormat,
+        audioBitsPerSecond: 80000, // 80 kbps como compromiso
+        bitsPerSecond: 80000
+      };
+      console.log('🎵 PASO 2: Configuración genérica - Compromiso calidad/tamaño');
+    }
 
     try {
-      this.mediaRecorder = new MediaRecorder(this.stream, options);
-      console.log('✅ MediaRecorder configurado');
+      this.mediaRecorder = new MediaRecorder(this.stream, optimizedOptions);
+      console.log('✅ PASO 2: MediaRecorder configurado con opciones optimizadas:', optimizedOptions);
     } catch (error) {
-      console.warn('⚠️ Fallback a configuración básica:', error);
+      console.warn('⚠️ PASO 2: Fallback a configuración básica:', error);
+      // Fallback simple sin opciones avanzadas
       this.mediaRecorder = new MediaRecorder(this.stream);
     }
 
@@ -362,13 +395,16 @@ export default class AudioPipelineService {
         this.audioChunks.push(event.data);
         console.log(`📦 Chunk recibido: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks, procesados: ${this.processedChunkCount})`);
         
-        // 🔧 DEBUG: Mostrar información del blob crudo
+        // 🔍 DEBUG: Mostrar información del blob crudo mejorada
         console.log(`🔍 BLOB DEBUG:`, {
           size: event.data.size,
           type: event.data.type,
           chunkIndex: this.audioChunks.length - 1,
           totalChunks: this.audioChunks.length,
-          processedChunks: this.processedChunkCount
+          processedChunks: this.processedChunkCount,
+          // 🔧 PASO 2: Métricas de calidad añadidas
+          bytesPerSecond: event.data.size, // Chunk de ~1 segundo
+          qualityIndicator: event.data.size > 8000 ? 'GOOD' : event.data.size > 4000 ? 'FAIR' : 'POOR'
         });
       }
     };
@@ -558,6 +594,32 @@ export default class AudioPipelineService {
       // Crear blob final con todos los chunks
       const mimeType = this.audioChunks[0].type || 'audio/webm';
       const finalBlob = new Blob(this.audioChunks, { type: mimeType });
+      
+      // 🔍 PASO 1: DIAGNÓSTICO DE CALIDAD DEL AUDIO
+      // Calcular duración estimada basada en el número de chunks (cada chunk es ~1 segundo)
+      const estimatedDurationSeconds = this.audioChunks.length;
+      const actualBlobSizeBytes = finalBlob.size;
+      const averageBytesPerSecond = actualBlobSizeBytes / estimatedDurationSeconds;
+      
+      console.log('🎵 DIAGNÓSTICO CALIDAD AUDIO - Blob Final:', {
+        totalChunks: this.audioChunks.length,
+        estimatedDurationSeconds: estimatedDurationSeconds,
+        actualBlobSizeBytes: actualBlobSizeBytes,
+        averageBytesPerSecond: Math.round(averageBytesPerSecond),
+        mimeType: mimeType,
+        expectedBytesPerSecond: mimeType.includes('webm') ? 8000 : 16000, // Estimación típica
+        qualityRatio: Math.round((averageBytesPerSecond / 8000) * 100) / 100,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Validación de calidad básica
+      if (actualBlobSizeBytes < 1024) {
+        console.warn('⚠️ DIAGNÓSTICO: Blob muy pequeño, posible audio de baja calidad');
+      }
+      
+      if (averageBytesPerSecond < 4000) {
+        console.warn('⚠️ DIAGNÓSTICO: Tasa de bytes baja, posible audio comprimido o con ruido');
+      }
       
       // Procesar transcripción final
       const finalTranscription = await this.processAudioChunk(finalBlob, true);

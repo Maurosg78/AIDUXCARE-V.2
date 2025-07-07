@@ -249,16 +249,18 @@ export class GoogleCloudAudioService {
       return { isValid: false, error: 'La transcripción es demasiado larga (máximo 50,000 caracteres)' };
     }
 
+    // 🔧 PASO 3: MENSAJE MEJORADO PARA USUARIO CLÍNICO
     // Verificar que contiene palabras reales
     const words = transcription.trim().split(/\s+/);
     if (words.length < 3) {
-      return { isValid: false, error: 'La transcripción debe contener al menos 3 palabras' };
+      return { 
+        isValid: false, 
+        error: 'No se ha podido detectar una transcripción clara. Por favor, verifique su micrófono e inténtelo de nuevo en un entorno con menos ruido de fondo.'
+      };
     }
 
     return { isValid: true };
   }
-
-
 
   // Método para obtener estado del servicio
   async getServiceStatus(): Promise<{ available: boolean; message: string }> {
