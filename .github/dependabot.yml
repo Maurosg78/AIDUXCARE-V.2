@@ -1,0 +1,14 @@
+# Archivo de configuración para Dependabot
+version: 2
+updates:
+  # Mantener dependencias para npm (nuestro gestor de paquetes)
+  - package-ecosystem: "npm"
+    # Buscar el package.json en el directorio raíz del proyecto
+    directory: "/"
+    # Chequear por actualizaciones diariamente
+    schedule:
+      interval: "daily"
+    # Etiquetar los Pull Requests para una fácil identificación
+    labels:
+      - "dependencies"
+      - "npm" 

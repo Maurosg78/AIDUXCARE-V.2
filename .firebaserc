@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "aiduxcare-mvp-prod",
+    "private secure": "aiduxcare-mvp-prod"
+  },
+  "targets": {},
+  "etags": {}
+}
