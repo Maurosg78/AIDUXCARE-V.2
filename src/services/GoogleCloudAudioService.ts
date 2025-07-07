@@ -1,5 +1,3 @@
-import { localClinicalAnalysisService } from './LocalClinicalAnalysisService';
-
 export interface ClinicalAnalysisRequest {
   transcription: string;
   specialty: 'physiotherapy' | 'psychology' | 'general_medicine';
@@ -56,13 +54,42 @@ export class GoogleCloudAudioService {
   private readonly clinicalBrainEndpoint = 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';
   
   async analyzeClinicalTranscription(request: ClinicalAnalysisRequest): Promise<ClinicalAnalysisResponse> {
-    console.log('🧠 Enviando transcripción al Cerebro Clínico...', {
+    // 🔍 DIAGNÓSTICO EXHAUSTIVO - Logging detallado para detectar causa raíz
+    console.log('🧠 INICIANDO DIAGNÓSTICO CLOUD FUNCTION:', {
+      endpoint: this.clinicalBrainEndpoint,
       transcriptionLength: request.transcription.length,
       specialty: request.specialty,
-      sessionType: request.sessionType
+      sessionType: request.sessionType,
+      transcriptionPreview: request.transcription.substring(0, 100) + '...',
+      requestSize: JSON.stringify(request).length,
+      timestamp: new Date().toISOString()
     });
 
+    // Validación exhaustiva del request antes de enviar
+    const validation = this.validateTranscription(request.transcription);
+    if (!validation.isValid) {
+      console.error('❌ VALIDACIÓN FALLIDA:', validation.error);
+      return {
+        success: false,
+        error: `Validación fallida: ${validation.error}`,
+        message: validation.error
+      };
+    }
+
     try {
+      console.log('📡 ENVIANDO REQUEST A CLOUD FUNCTION:', {
+        method: 'POST',
+        contentType: 'application/json',
+        bodySize: JSON.stringify(request).length,
+        body: {
+          transcription: request.transcription.length > 200 ? 
+            request.transcription.substring(0, 200) + '...' : 
+            request.transcription,
+          specialty: request.specialty,
+          sessionType: request.sessionType
+        }
+      });
+
       const response = await fetch(this.clinicalBrainEndpoint, {
         method: 'POST',
         headers: {
@@ -71,30 +98,62 @@ export class GoogleCloudAudioService {
         body: JSON.stringify(request)
       });
 
-      console.log('📡 Respuesta del Cerebro Clínico:', {
+            console.log('📡 RESPUESTA RECIBIDA DE CLOUD FUNCTION:', {
         status: response.status,
         statusText: response.statusText,
-        ok: response.ok
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
       });
 
       if (!response.ok) {
-        // Obtener detalles del error del servidor
+        // DIAGNÓSTICO EXHAUSTIVO DEL ERROR
         let errorDetails = '';
+        let fullErrorResponse = null;
+        
         try {
-          const errorData = await response.json();
-          errorDetails = errorData.message || errorData.error || 'Error desconocido del servidor';
-          console.error('❌ Error del Cerebro Clínico:', errorData);
-        } catch (parseError) {
+          const rawResponse = await response.text();
+          console.log('📋 RAW ERROR RESPONSE:', rawResponse);
+          
+          try {
+            fullErrorResponse = JSON.parse(rawResponse);
+            errorDetails = fullErrorResponse.message || fullErrorResponse.error || 'Error desconocido del servidor';
+          } catch (jsonParseError) {
+            errorDetails = rawResponse || `Error HTTP ${response.status}: ${response.statusText}`;
+          }
+        } catch (textError) {
           errorDetails = `Error HTTP ${response.status}: ${response.statusText}`;
         }
 
-        console.warn('⚠️ Cerebro clínico no disponible, usando procesamiento básico', {
+        console.error('❌ DIAGNÓSTICO COMPLETO DEL ERROR:', {
           status: response.status,
-          error: errorDetails
+          statusText: response.statusText,
+          errorDetails,
+          fullErrorResponse,
+          request: {
+            transcriptionLength: request.transcription.length,
+            specialty: request.specialty,
+            sessionType: request.sessionType,
+            transcriptionSample: request.transcription.substring(0, 150)
+          },
+          timestamp: new Date().toISOString()
         });
 
-        // FALLBACK AUTOMÁTICO AL SISTEMA LOCAL
-        return await this.fallbackToLocalAnalysis(request, errorDetails);
+        // Si es Error 500, intentar capturar más detalles específicos
+        if (response.status === 500) {
+          console.error('🚨 ERROR 500 DETECTADO - ANÁLISIS ESPECÍFICO:', {
+            likelyTextChunkerError: errorDetails.includes('textChunker'),
+            likelyVertexAIError: errorDetails.includes('Vertex') || errorDetails.includes('INVALID_ARGUMENT'),
+            likelyPromptError: errorDetails.includes('prompt') || errorDetails.includes('template'),
+            fullErrorMessage: errorDetails
+          });
+        }
+
+        return {
+          success: false,
+          error: this.formatErrorMessage(response.status, errorDetails),
+          message: errorDetails
+        };
       }
 
       const result = await response.json();
@@ -114,12 +173,20 @@ export class GoogleCloudAudioService {
       
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       
-      console.warn('⚠️ Error de red, usando procesamiento básico local', {
-        error: errorMessage
-      });
+             console.error('❌ ERROR DE RED CLOUD FUNCTION:', {
+         error: errorMessage,
+         request: {
+           transcriptionLength: request.transcription.length,
+           specialty: request.specialty,
+           sessionType: request.sessionType
+         }
+       });
 
-      // FALLBACK AUTOMÁTICO AL SISTEMA LOCAL EN CASO DE ERROR DE RED
-      return await this.fallbackToLocalAnalysis(request, errorMessage);
+       return {
+         success: false,
+         error: this.formatNetworkError(errorMessage),
+         message: errorMessage
+       };
     }
   }
 
@@ -191,92 +258,7 @@ export class GoogleCloudAudioService {
     return { isValid: true };
   }
 
-  /**
-   * Fallback automático al sistema de análisis local
-   */
-  private async fallbackToLocalAnalysis(request: ClinicalAnalysisRequest, originalError: string): Promise<ClinicalAnalysisResponse> {
-    try {
-      console.log('🔄 ACTIVANDO FALLBACK LOCAL - Análisis clínico local iniciado');
-      
-      const localResult = await localClinicalAnalysisService.processTranscriptionCompatible(
-        request.transcription,
-        request.specialty,
-        request.sessionType
-      );
 
-      if (!localResult.success) {
-        throw new Error('Sistema local también falló');
-      }
-
-      // Convertir resultado local al formato esperado por GoogleCloudAudioService
-      const warnings = localResult.warnings.map((w: any) => ({
-        id: w.id,
-        severity: w.severity as 'HIGH' | 'MEDIUM' | 'LOW',
-        category: w.category || 'general',
-        title: w.title,
-        description: w.description,
-        recommendation: w.action || 'Revisar con especialista',
-        evidence: `Confianza: ${w.confidence}%`
-      }));
-
-      const suggestions = localResult.suggestions.map((s: any) => ({
-        id: s.id,
-        type: s.category || 'general',
-        title: s.title,
-        description: s.description,
-        rationale: s.rationale,
-        priority: s.priority as 'HIGH' | 'MEDIUM' | 'LOW'
-      }));
-
-      const analysisResponse: ClinicalAnalysisResponse = {
-        success: true,
-        analysis: {
-          warnings,
-          suggestions,
-          soap_analysis: {
-            subjective_completeness: Math.min(localResult.soapAnalysis.confidence, 85),
-            objective_completeness: Math.min(localResult.soapAnalysis.confidence, 85),
-            assessment_quality: Math.min(localResult.soapAnalysis.confidence, 85),
-            plan_appropriateness: Math.min(localResult.soapAnalysis.confidence, 85),
-            overall_quality: Math.min(localResult.soapAnalysis.confidence, 85),
-            missing_elements: localResult.soapAnalysis.warnings || []
-          },
-          session_quality: {
-            communication_score: 75,
-            clinical_thoroughness: 70,
-            patient_engagement: 65,
-            professional_standards: 80,
-            areas_for_improvement: ['Análisis realizado con sistema local - precisión limitada']
-          }
-        },
-        metadata: {
-          specialty: request.specialty,
-          sessionType: request.sessionType,
-          processingTimeMs: localResult.processingTime,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      console.log('✅ FALLBACK LOCAL EXITOSO:', {
-        warningsCount: warnings.length,
-        suggestionsCount: suggestions.length,
-        overallQuality: analysisResponse.analysis?.soap_analysis?.overall_quality,
-        modelUsed: localResult.modelUsed
-      });
-
-      return analysisResponse;
-
-    } catch (fallbackError) {
-      console.error('❌ Error crítico en fallback local:', fallbackError);
-
-      // Respuesta de emergencia mínima
-      return {
-        success: false,
-        error: `🚨 Error interno del Cerebro Clínico: ${originalError}. El sistema está procesando pero encontró un problema técnico.`,
-        message: `Sistema principal falló: ${originalError}. Sistema local falló: ${fallbackError instanceof Error ? fallbackError.message : 'Error desconocido'}`
-      };
-    }
-  }
 
   // Método para obtener estado del servicio
   async getServiceStatus(): Promise<{ available: boolean; message: string }> {

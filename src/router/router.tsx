@@ -3,6 +3,7 @@ import ProtectedRoute from '../features/auth/ProtectedRoute';
 import LoginPage from '../features/auth/LoginPage';
 import ConsultationPage from '../pages/ConsultationPage';
 import DebugAudioPage from '../pages/DebugAudioPage';
+import { DebugCloudFunctionPage } from '../pages/DebugCloudFunctionPage';
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DebugAudioPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/debug-cloud-function',
+    element: (
+      <ProtectedRoute>
+        <DebugCloudFunctionPage />
       </ProtectedRoute>
     ),
   },
