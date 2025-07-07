@@ -76,12 +76,6 @@ export default class AudioPipelineService {
   private accumulatedTranscription: string = '';
   private lastInterimResult: string = '';
   
-  // ANTIGUOS: Variables para Google Cloud (ya no usadas)
-  private realtimeTimer: NodeJS.Timeout | null = null;
-  private chunkCounter: number = 0;
-  private isProcessingChunk: boolean = false;
-  private processedChunkCount: number = 0;
-  
   constructor() {
     console.log('🎙️ AudioPipelineService inicializado - Web Speech API + MediaRecorder');
     this.initializeSpeechRecognition();
