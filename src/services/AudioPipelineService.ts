@@ -24,6 +24,7 @@ export default class AudioPipelineService {
   private chunkCounter: number = 0;
   private accumulatedTranscription: string = '';
   private isProcessingChunk: boolean = false;
+  private processedChunkCount: number = 0; // NUEVO: Contador de chunks ya procesados
   
   constructor() {
     console.log('🎙️ AudioPipelineService inicializado - Servicio único de audio con transcripción en tiempo real');
@@ -84,6 +85,11 @@ export default class AudioPipelineService {
       
       this.transcriptionCallback = callback;
       this.audioChunks = [];
+      
+      // 🔧 CORRECCIÓN: Resetear contador de chunks procesados
+      this.processedChunkCount = 0;
+      this.chunkCounter = 0;
+      this.accumulatedTranscription = '';
       
       // Configurar MediaRecorder
       this.configureMediaRecorder();
@@ -293,6 +299,7 @@ export default class AudioPipelineService {
     this.chunkCounter = 0;
     this.accumulatedTranscription = '';
     this.isProcessingChunk = false;
+    this.processedChunkCount = 0; // 🔧 CORRECCIÓN: Resetear contador
     
     this.audioChunks = [];
     this.transcriptionCallback = null;
@@ -349,7 +356,16 @@ export default class AudioPipelineService {
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0 && this.isRecording) {
         this.audioChunks.push(event.data);
-        console.log(`📦 Chunk recibido: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks)`);
+        console.log(`📦 Chunk recibido: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks, procesados: ${this.processedChunkCount})`);
+        
+        // 🔧 DEBUG: Mostrar información del blob crudo
+        console.log(`🔍 BLOB DEBUG:`, {
+          size: event.data.size,
+          type: event.data.type,
+          chunkIndex: this.audioChunks.length - 1,
+          totalChunks: this.audioChunks.length,
+          processedChunks: this.processedChunkCount
+        });
       }
     };
 
@@ -390,10 +406,16 @@ export default class AudioPipelineService {
   }
 
   /**
-   * NUEVO: Procesar chunk en tiempo real
+   * NUEVO: Procesar chunk en tiempo real - CORREGIDO
    */
   private async processRealtimeChunk(): Promise<void> {
     if (!this.isRecording || this.isProcessingChunk || this.audioChunks.length === 0) {
+      return;
+    }
+
+    // Verificar si hay chunks nuevos para procesar
+    if (this.processedChunkCount >= this.audioChunks.length) {
+      console.log(`⏳ No hay chunks nuevos para procesar (procesados: ${this.processedChunkCount}, disponibles: ${this.audioChunks.length})`);
       return;
     }
 
@@ -403,13 +425,24 @@ export default class AudioPipelineService {
     console.log(`🔄 Procesando chunk #${this.chunkCounter} en tiempo real...`);
 
     try {
-      // Crear blob con chunks actuales
-      const mimeType = this.audioChunks[0].type || 'audio/webm';
-      const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+      // 🔧 CORRECCIÓN: Procesar solo los chunks NUEVOS desde la última procesamiento
+      const newChunks = this.audioChunks.slice(this.processedChunkCount);
+      
+      if (newChunks.length === 0) {
+        console.log(`⏳ No hay chunks nuevos para procesar`);
+        this.isProcessingChunk = false;
+        return;
+      }
+
+      // Crear blob SOLO con los chunks nuevos
+      const mimeType = newChunks[0].type || 'audio/webm';
+      const audioBlob = new Blob(newChunks, { type: mimeType });
+      
+      console.log(`📦 Procesando ${newChunks.length} chunk(s) nuevos: ${audioBlob.size} bytes`);
       
       // Validar tamaño mínimo
-      if (audioBlob.size < 2048) {
-        console.log(`⏳ Chunk #${this.chunkCounter} muy pequeño, esperando más audio...`);
+      if (audioBlob.size < 1024) {
+        console.log(`⏳ Chunk #${this.chunkCounter} muy pequeño (${audioBlob.size} bytes), esperando más audio...`);
         this.isProcessingChunk = false;
         return;
       }
@@ -426,8 +459,11 @@ export default class AudioPipelineService {
           this.transcriptionCallback(this.accumulatedTranscription.trim(), false);
         }
         
-        console.log(`✅ Chunk #${this.chunkCounter} procesado: "${transcriptionResult}"`);
+        console.log(`✅ Chunk #${this.chunkCounter} procesado: "${transcriptionResult.substring(0, 50)}${transcriptionResult.length > 50 ? '...' : ''}"`);
       }
+
+      // 🔧 CORRECCIÓN: Actualizar contador de chunks procesados
+      this.processedChunkCount = this.audioChunks.length;
 
     } catch (error) {
       console.error(`❌ Error procesando chunk #${this.chunkCounter}:`, error);
