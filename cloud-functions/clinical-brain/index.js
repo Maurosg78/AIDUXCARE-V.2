@@ -50,7 +50,13 @@ exports.clinicalBrain = async (req, res) => {
     logger.info('🧠 CEREBRO CLÍNICO INICIADO CON OPTIMIZACIÓN DE COSTOS', {
       timestamp: new Date().toISOString(),
       method: req.method,
-      headers: req.headers
+      headers: req.headers,
+      requestBody: {
+        hasTranscription: !!req.body?.transcription,
+        transcriptionLength: req.body?.transcription?.length || 0,
+        specialty: req.body?.specialty,
+        sessionType: req.body?.sessionType
+      }
     });
 
     // Validar método HTTP
@@ -93,18 +99,35 @@ exports.clinicalBrain = async (req, res) => {
     }
 
     // PASO 1: Inicializar servicios con optimización
+    logger.info('🔧 INICIALIZANDO SERVICIOS...');
+    
     const vertexClient = new VertexAIClient();
     const promptFactory = new PromptFactory();
     const textChunker = new TextChunker();
     const knowledgeBase = new KnowledgeBase();
+    
+    logger.info('✅ SERVICIOS INICIALIZADOS:', {
+      vertexClient: !!vertexClient,
+      promptFactory: !!promptFactory,
+      textChunker: !!textChunker,
+      knowledgeBase: !!knowledgeBase,
+      textChunkerMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(textChunker))
+    });
 
     // PASO 2: Evaluar si necesita chunking
-    const needsChunking = textChunker.needsChunking(transcription);
+    logger.info('🔍 EVALUANDO CHUNKING...', {
+      transcriptionLength: transcription.length,
+      maxChunkLength: textChunker.maxChunkLength,
+      transcriptionPreview: transcription.substring(0, 150) + '...'
+    });
     
-    logger.info('🔍 EVALUACIÓN DE PROCESAMIENTO:', {
+    const needsChunking = textChunker.shouldChunk(transcription);
+    
+    logger.info('✅ EVALUACIÓN DE PROCESAMIENTO COMPLETADA:', {
       needsChunking: needsChunking,
       transcriptionLength: transcription.length,
-      strategy: needsChunking ? 'chunking' : 'standard'
+      strategy: needsChunking ? 'chunking' : 'standard',
+      timestamp: new Date().toISOString()
     });
 
     let analysisResult;
@@ -229,16 +252,26 @@ exports.clinicalBrain = async (req, res) => {
       error: error.message,
       stack: error.stack,
       processingTime: processingTime,
+      requestBody: {
+        transcriptionLength: req.body?.transcription?.length || 0,
+        specialty: req.body?.specialty,
+        sessionType: req.body?.sessionType
+      },
       timestamp: new Date().toISOString()
     });
 
-    // Respuesta de error mejorada
+    // Respuesta de error mejorada con debug info
     res.status(500).json({
       error: 'Error interno del servidor',
       message: error.message,
       processingTime: processingTime,
       timestamp: new Date().toISOString(),
-      version: '2.0-optimized'
+      version: '2.0-optimized',
+      debugInfo: {
+        errorType: error.constructor.name,
+        transcriptionReceived: !!req.body?.transcription,
+        transcriptionLength: req.body?.transcription?.length || 0
+      }
     });
   }
 }; 
