@@ -153,7 +153,7 @@ exports.clinicalBrain = async (req, res) => {
         logger.info(`✅ CHUNK ${i + 1} PROCESADO:`, {
           modelo: chunkResult.modelUsed,
           tiempo: chunkResult.processingTime,
-          ahorro: chunkResult.costOptimization.savings
+          ahorro: chunkResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
         });
         
         chunkResults.push({
@@ -175,13 +175,13 @@ exports.clinicalBrain = async (req, res) => {
           strategy: 'chunking',
           chunksProcessed: chunks.length,
           modelsUsed: chunkResults.map(cr => cr.modelUsed),
-          totalSavings: chunkResults.map(cr => cr.costOptimization.savings).join(', ')
+          totalSavings: chunkResults.map(cr => cr.costOptimization?.costAnalysis?.savingsVsPro || 'N/A').join(', ')
         },
         chunks: chunkResults.map(cr => ({
           index: cr.chunkIndex,
           model: cr.modelUsed,
           time: cr.processingTime,
-          savings: cr.costOptimization.savings
+          savings: cr.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
         }))
       };
       
@@ -197,24 +197,94 @@ exports.clinicalBrain = async (req, res) => {
       logger.info('✅ PROCESAMIENTO COMPLETADO:', {
         modelo: analysisResult.modelUsed,
         tiempo: analysisResult.processingTime,
-        complejidad: analysisResult.costOptimization.complexity.total,
-        ahorro: analysisResult.costOptimization.savings
+        complejidad: analysisResult.costOptimization?.redFlagsDetected || 'N/A',
+        ahorro: analysisResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
       });
     }
 
-    // PASO 4: Extraer JSON del resultado
+    // PASO 4: Extraer JSON del resultado con parsing robusto
     let jsonResult;
+    
+    logger.info('🔍 INICIANDO PARSING JSON:', {
+      textLength: analysisResult.text.length,
+      textPreview: analysisResult.text.substring(0, 300) + '...'
+    });
+    
     try {
-      const jsonMatch = analysisResult.text.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        jsonResult = JSON.parse(jsonMatch[1]);
+      // Estrategia 1: Buscar JSON en bloques de código
+      const jsonBlockMatch = analysisResult.text.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonBlockMatch) {
+        logger.info('✅ JSON encontrado en bloque de código');
+        jsonResult = JSON.parse(jsonBlockMatch[1].trim());
       } else {
-        // Intentar parsear directamente
-        jsonResult = JSON.parse(analysisResult.text);
+        // Estrategia 2: Buscar JSON entre llaves {}
+        const jsonObjectMatch = analysisResult.text.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          logger.info('✅ JSON encontrado como objeto');
+          jsonResult = JSON.parse(jsonObjectMatch[0]);
+        } else {
+          // Estrategia 3: Intentar parsear todo el texto
+          logger.info('🔄 Intentando parsear texto completo como JSON');
+          jsonResult = JSON.parse(analysisResult.text.trim());
+        }
       }
+      
+      logger.info('✅ JSON PARSEADO EXITOSAMENTE:', {
+        hasWarnings: !!jsonResult.warnings,
+        hasSuggestions: !!jsonResult.suggestions,
+        hasSoapAnalysis: !!jsonResult.soap_analysis,
+        warningsCount: jsonResult.warnings?.length || 0,
+        suggestionsCount: jsonResult.suggestions?.length || 0
+      });
+      
     } catch (parseError) {
-      logger.error('❌ ERROR AL PARSEAR JSON:', parseError);
-      throw new Error('Respuesta del modelo no contiene JSON válido');
+      logger.error('❌ ERROR AL PARSEAR JSON:', {
+        error: parseError.message,
+        textSample: analysisResult.text.substring(0, 500),
+        textLength: analysisResult.text.length,
+        hasJsonBlock: analysisResult.text.includes('```json'),
+        hasOpenBrace: analysisResult.text.includes('{'),
+        hasCloseBrace: analysisResult.text.includes('}')
+      });
+      
+      // Intentar generar respuesta de fallback básica
+      const fallbackResponse = {
+        warnings: [{
+          id: 'parsing_error',
+          severity: 'HIGH',
+          category: 'system_error',
+          title: 'Error de Procesamiento del Análisis Clínico',
+          description: 'El sistema no pudo procesar completamente la respuesta del análisis médico debido a un problema de formato.',
+          recommendation: 'Revisar la transcripción e intentar nuevamente. Si el problema persiste, contactar soporte técnico.',
+          evidence: 'Error interno del sistema de análisis.'
+        }],
+        suggestions: [{
+          id: 'retry_analysis',
+          type: 'system_recommendation',
+          title: 'Reintentar Análisis',
+          description: 'Sugerimos volver a enviar la transcripción para un nuevo análisis.',
+          rationale: 'El error fue temporal y puede resolverse con un nuevo intento.',
+          priority: 'MEDIUM'
+        }],
+        soap_analysis: {
+          subjective_completeness: 0,
+          objective_completeness: 0,
+          assessment_quality: 0,
+          plan_appropriateness: 0,
+          overall_quality: 0,
+          missing_elements: ['Análisis no completado debido a error de sistema']
+        },
+        session_quality: {
+          communication_score: 0,
+          clinical_thoroughness: 0,
+          patient_engagement: 0,
+          professional_standards: 0,
+          areas_for_improvement: ['Reintentar análisis debido a error técnico']
+        }
+      };
+      
+      logger.info('🔄 USANDO RESPUESTA DE FALLBACK');
+      jsonResult = fallbackResponse;
     }
 
     // PASO 5: Enriquecer resultado con información de optimización
@@ -235,8 +305,8 @@ exports.clinicalBrain = async (req, res) => {
       processingTime: analysisResult.processingTime,
       totalTime: finalResult.metadata.totalTime,
       modelUsed: analysisResult.modelUsed,
-      costSavings: analysisResult.costOptimization.savings,
-      complexity: analysisResult.costOptimization.complexity?.total || 'N/A',
+      costSavings: analysisResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A',
+      redFlags: analysisResult.costOptimization?.redFlagsDetected || 'N/A',
       warningsCount: finalResult.warnings?.length || 0,
       suggestionsCount: finalResult.suggestions?.length || 0,
       soapQuality: finalResult.soap_quality?.overall_score || 'N/A'
