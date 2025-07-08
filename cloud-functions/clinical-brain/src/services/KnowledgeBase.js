@@ -283,6 +283,89 @@ class KnowledgeBase {
     this.cache.clear();
     logger.info('Knowledge base cache cleared');
   }
+
+  /**
+   * Obtiene banderas rojas críticas para triaje rápido
+   * Optimizado para uso en la Estación 1 de la cascada de análisis
+   * @param {string} specialty - Especialidad médica (default: 'physiotherapy')
+   * @returns {string[]} Array de banderas rojas críticas
+   */
+  getCriticalRedFlags(specialty = 'physiotherapy') {
+    // Banderas rojas críticas para fisioterapia basadas en evidencia científica
+    const physiotherapyRedFlags = [
+      'Pérdida de control de esfínteres',
+      'Debilidad progresiva en extremidades',
+      'Entumecimiento en silla de montar',
+      'Fiebre con dolor de espalda',
+      'Dolor nocturno severo no mecánico',
+      'Pérdida de peso inexplicada',
+      'Rigidez matutina mayor a 1 hora',
+      'Antecedentes de cáncer con nuevo dolor',
+      'Trastornos neurológicos progresivos',
+      'Dolor torácico con actividad física',
+      'Cefalea súbita intensa',
+      'Alteraciones visuales agudas',
+      'Dificultad respiratoria con movimiento',
+      'Síncope o mareos severos',
+      'Cambios en patrones de dolor',
+      'Hormigueo bilateral en extremidades',
+      'Claudicación neurógena',
+      'Signos de infección sistémica',
+      'Deformidad ósea visible',
+      'Limitación funcional severa aguda'
+    ];
+
+    const psychologyRedFlags = [
+      'Ideación suicida activa',
+      'Alucinaciones auditivas o visuales',
+      'Delirios paranoides',
+      'Comportamiento agresivo hacia otros',
+      'Amenazas de autolesión',
+      'Pérdida completa de contacto con la realidad',
+      'Mutismo selectivo súbito',
+      'Agitación psicomotora severa',
+      'Despersonalización intensa',
+      'Episodios disociativos',
+      'Consumo activo de sustancias',
+      'Crisis de pánico recurrentes',
+      'Síntomas maníacos',
+      'Depresión mayor severa',
+      'Trastorno del pensamiento'
+    ];
+
+    const generalRedFlags = [
+      'Dolor torácico con disnea',
+      'Cefalea súbita intensa',
+      'Pérdida de conciencia',
+      'Sangrado activo',
+      'Fiebre alta persistente',
+      'Dificultad respiratoria severa',
+      'Alteraciones neurológicas agudas',
+      'Dolor abdominal intenso',
+      'Síncope recurrente',
+      'Cambios en estado mental',
+      'Signos de deshidratación severa',
+      'Reacciones alérgicas graves',
+      'Convulsiones',
+      'Alteraciones del ritmo cardíaco',
+      'Signos de shock'
+    ];
+
+    // Devolver banderas rojas según especialidad
+    switch (specialty) {
+      case 'physiotherapy':
+      case 'fisioterapia':
+        return physiotherapyRedFlags;
+      
+      case 'psychology':
+      case 'psicologia':
+        return psychologyRedFlags;
+      
+      case 'general':
+      default:
+        return generalRedFlags;
+    }
+  }
 }
 
 module.exports = KnowledgeBase; 

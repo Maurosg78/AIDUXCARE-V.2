@@ -113,20 +113,109 @@ class VertexAIClient {
       logger.info('🔄 ENVIANDO PROMPT AL MODELO:', {
         modelo: modelName,
         longitudTranscripcion: transcription.length,
-        longitudPrompt: prompt.length
+        longitudPrompt: prompt.length,
+        promptPreview: prompt.substring(0, 200) + '...',
+        promptType: typeof prompt
       });
 
-      const result = await model.generateContent(prompt);
+      // Asegurar que el prompt sea string y esté bien formateado
+      const promptText = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+      
+      const result = await model.generateContent(promptText);
       const processingTime = (Date.now() - startTime) / 1000;
 
-      // Extraer respuesta
-      const response = result.response;
-      const text = response.candidates[0].content.parts[0].text;
-
-      logger.info('✅ RESPUESTA RECIBIDA:', {
+      // 🔍 PASO 2: LOGGEAR RESPUESTA CRUDA DE VERTEX AI
+      // CRÍTICO: Logging exhaustivo ANTES del parsing para debugging
+      logger.info('🔍 RESPUESTA CRUDA COMPLETA DE VERTEX AI:', {
         modelo: modelName,
         tiempoProcesamiento: `${processingTime}s`,
-        longitudRespuesta: text.length
+        resultCompleto: JSON.stringify(result, null, 2),
+        responseCompleto: JSON.stringify(result.response, null, 2),
+        candidatesLength: result.response?.candidates?.length || 0,
+        hasResponse: !!result.response,
+        hasCandidates: !!result.response?.candidates,
+        timestamp: new Date().toISOString()
+      });
+
+      // Extraer respuesta con validación exhaustiva
+      const response = result.response;
+      
+      // 🔍 PASO 2: VALIDACIÓN DETALLADA DE LA ESTRUCTURA DE RESPUESTA
+      if (!response) {
+        logger.error('❌ RESPUESTA DE VERTEX AI ESTÁ VACÍA:', {
+          modelo: modelName,
+          resultKeys: Object.keys(result || {}),
+          resultType: typeof result
+        });
+        throw new Error('Vertex AI devolvió una respuesta vacía');
+      }
+
+      if (!response.candidates || !Array.isArray(response.candidates)) {
+        logger.error('❌ CANDIDATES NO ENCONTRADOS EN RESPUESTA DE VERTEX AI:', {
+          modelo: modelName,
+          responseKeys: Object.keys(response || {}),
+          candidatesType: typeof response.candidates,
+          candidatesValue: response.candidates
+        });
+        throw new Error('Vertex AI no devolvió candidates válidos');
+      }
+
+      if (response.candidates.length === 0) {
+        logger.error('❌ ARRAY DE CANDIDATES ESTÁ VACÍO:', {
+          modelo: modelName,
+          candidatesLength: response.candidates.length,
+          responseCompleto: JSON.stringify(response, null, 2)
+        });
+        throw new Error('Vertex AI devolvió un array de candidates vacío');
+      }
+
+      const candidate = response.candidates[0];
+      
+      if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts)) {
+        logger.error('❌ ESTRUCTURA DE CONTENT INVÁLIDA EN CANDIDATE:', {
+          modelo: modelName,
+          candidateKeys: Object.keys(candidate || {}),
+          contentKeys: Object.keys(candidate.content || {}),
+          partsType: typeof candidate.content?.parts,
+          candidateCompleto: JSON.stringify(candidate, null, 2)
+        });
+        throw new Error('Estructura de content inválida en candidate de Vertex AI');
+      }
+
+      if (candidate.content.parts.length === 0) {
+        logger.error('❌ ARRAY DE PARTS ESTÁ VACÍO:', {
+          modelo: modelName,
+          partsLength: candidate.content.parts.length,
+          candidateCompleto: JSON.stringify(candidate, null, 2)
+        });
+        throw new Error('Vertex AI devolvió un array de parts vacío');
+      }
+
+      const part = candidate.content.parts[0];
+      
+      if (!part.text) {
+        logger.error('❌ TEXT NO ENCONTRADO EN PART:', {
+          modelo: modelName,
+          partKeys: Object.keys(part || {}),
+          partCompleto: JSON.stringify(part, null, 2)
+        });
+        throw new Error('Vertex AI no devolvió texto válido');
+      }
+
+      const text = part.text;
+
+      // 🔍 PASO 2: LOGGING DETALLADO DEL TEXTO EXTRAÍDO
+      logger.info('✅ TEXTO EXTRAÍDO EXITOSAMENTE DE VERTEX AI:', {
+        modelo: modelName,
+        tiempoProcesamiento: `${processingTime}s`,
+        longitudRespuesta: text.length,
+        textoCompleto: text, // CRÍTICO: Todo el texto para debugging
+        textoPreview: text.substring(0, 500) + (text.length > 500 ? '...' : ''),
+        contieneBrackets: text.includes('{') && text.includes('}'),
+        contieneJsonBlock: text.includes('```json'),
+        primerosCaracteres: text.substring(0, 50),
+        ultimosCaracteres: text.substring(Math.max(0, text.length - 50)),
+        timestamp: new Date().toISOString()
       });
 
       return {

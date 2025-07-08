@@ -1,26 +1,24 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import path from 'path';
 
-// Configuración simplificada de Vite para Phoenix MVP
+// Configuración HTTPS para acceso al micrófono
 export default defineConfig({
   plugins: [
-    react()
+    react(),
+    basicSsl() // Plugin SSL para contexto seguro
   ],
-  css: {
-    postcss: './postcss.config.js',
-  },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src")
-    }
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
   // Configuración del servidor de desarrollo
   server: {
+    host: 'localhost',
     port: 5174,
-    strictPort: false,
-    open: true,
-    host: true
+    strictPort: true,
   },
   // Optimización del build
   build: {
