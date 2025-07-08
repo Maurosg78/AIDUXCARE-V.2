@@ -113,10 +113,15 @@ class VertexAIClient {
       logger.info('🔄 ENVIANDO PROMPT AL MODELO:', {
         modelo: modelName,
         longitudTranscripcion: transcription.length,
-        longitudPrompt: prompt.length
+        longitudPrompt: prompt.length,
+        promptPreview: prompt.substring(0, 200) + '...',
+        promptType: typeof prompt
       });
 
-      const result = await model.generateContent(prompt);
+      // Asegurar que el prompt sea string y esté bien formateado
+      const promptText = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+      
+      const result = await model.generateContent(promptText);
       const processingTime = (Date.now() - startTime) / 1000;
 
       // 🔍 PASO 2: LOGGEAR RESPUESTA CRUDA DE VERTEX AI

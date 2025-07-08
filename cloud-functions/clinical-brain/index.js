@@ -78,11 +78,24 @@ exports.clinicalBrain = async (req, res) => {
     }
 
     // Validar y extraer datos del request
-    const { transcription, sessionType = 'initial' } = req.body;
+    const { 
+      transcription, 
+      sessionType = 'initial', 
+      specialty = 'general',
+      phase = 'standard',
+      previousAnalysis = null,
+      additionalInfo = null,
+      clinicalIntegration = false
+    } = req.body;
     
     logger.info('📋 DATOS RECIBIDOS:', {
       transcriptionLength: transcription?.length || 0,
       sessionType: sessionType,
+      specialty: specialty,
+      phase: phase,
+      hasPreviousAnalysis: !!previousAnalysis,
+      hasAdditionalInfo: !!additionalInfo,
+      clinicalIntegration: clinicalIntegration,
       hasTranscription: !!transcription
     });
 
@@ -195,9 +208,36 @@ exports.clinicalBrain = async (req, res) => {
       
     } else {
       // PASO 3B: Procesamiento estándar con optimización
-      logger.info('🔄 PROCESAMIENTO ESTÁNDAR CON OPTIMIZACIÓN...');
+      logger.info('🔄 PROCESAMIENTO ESTÁNDAR CON OPTIMIZACIÓN...', {
+        phase: phase,
+        specialty: specialty,
+        sessionType: sessionType
+      });
       
-      const prompt = promptFactory.generatePrompt(transcription, sessionType);
+      let prompt;
+      
+      // Generar prompt según la fase del flujo
+      switch (phase) {
+        case 'initial_analysis':
+          logger.info('🔍 FASE 1: Análisis inicial con detección de banderas rojas');
+          prompt = promptFactory.generateInitialAnalysisPrompt(transcription, specialty);
+          break;
+          
+        case 'integration_analysis':
+          logger.info('🔗 FASE 2: Integración con información adicional');
+          prompt = promptFactory.generateIntegrationPrompt(transcription, specialty, previousAnalysis, additionalInfo);
+          break;
+          
+        case 'soap_generation':
+          logger.info('📝 FASE 3: Generación SOAP final');
+          prompt = promptFactory.generateSOAPPrompt(transcription, specialty, previousAnalysis, clinicalIntegration);
+          break;
+          
+        default:
+          logger.info('🔄 PROCESAMIENTO ESTÁNDAR');
+          prompt = promptFactory.generatePrompt(transcription, sessionType, specialty);
+          break;
+      }
       
       // Usar optimización de costos automática
       analysisResult = await vertexClient.processTranscription(transcription, prompt);

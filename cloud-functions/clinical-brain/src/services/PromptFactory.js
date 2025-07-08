@@ -216,6 +216,167 @@ JSON REQUERIDO:
   getOutputFormatPrompt() {
     return 'Formato: JSON estructurado fisioterapéutico';
   }
+
+  // 🚀 MÉTODOS PARA FLUJO COMPLETO - 3 FASES DE CONSULTA
+  
+  generateInitialAnalysisPrompt(transcription, specialty = 'physiotherapy') {
+    const redFlags = this.getRedFlagsForSpecialty(specialty);
+    const contraindicaciones = this.getContraindicationsForSpecialty(specialty);
+    
+    return `FASE 1: ANÁLISIS INICIAL - DETECCIÓN DE BANDERAS ROJAS
+Analiza como FISIOTERAPEUTA EXPERTO esta transcripción desordenada y detecta:
+
+TRANSCRIPCIÓN:
+"""
+${transcription}
+"""
+
+TAREAS ESPECÍFICAS FASE 1:
+1. BANDERAS ROJAS CRÍTICAS que requieren derivación urgente
+2. CONTRAINDICACIONES ABSOLUTAS para terapia manual
+3. PREGUNTAS SUGERIDAS para obtener información faltante crítica
+4. EVALUACIÓN DE RIESGO inmediato
+
+BANDERAS ROJAS CRÍTICAS:
+${redFlags}
+
+CONTRAINDICACIONES ABSOLUTAS:
+${contraindicaciones}
+
+RESPONDE SOLO CON JSON:
+{
+  "warnings": [
+    {
+      "severity": "HIGH|MEDIUM|LOW",
+      "category": "red_flag|contraindication|referral",
+      "title": "Bandera roja específica",
+      "description": "Explicación clínica detallada",
+      "action": "Acción inmediata requerida",
+      "urgency": "immediate|urgent|routine"
+    }
+  ],
+  "suggested_questions": [
+    {
+      "category": "safety|history|symptoms|examination",
+      "question": "Pregunta específica para obtener información crítica",
+      "rationale": "Por qué esta pregunta es importante para la seguridad del paciente"
+    }
+  ],
+  "risk_assessment": {
+    "overall_risk": "HIGH|MEDIUM|LOW",
+    "requires_referral": true,
+    "safe_for_manual_therapy": false,
+    "immediate_action_needed": "descripción de acción inmediata"
+  }
+}`;
+  }
+
+  generateIntegrationPrompt(transcription, specialty = 'physiotherapy', previousAnalysis, additionalInfo) {
+    return `FASE 2: INTEGRACIÓN DE INFORMACIÓN ADICIONAL
+Integra la información adicional obtenida con el análisis previo:
+
+TRANSCRIPCIÓN ORIGINAL:
+"""
+${transcription}
+"""
+
+ANÁLISIS PREVIO:
+${JSON.stringify(previousAnalysis, null, 2)}
+
+INFORMACIÓN ADICIONAL OBTENIDA:
+"""
+${additionalInfo}
+"""
+
+TAREAS ESPECÍFICAS FASE 2:
+1. ACTUALIZAR evaluación de riesgo con nueva información
+2. REFINAR banderas rojas y contraindicaciones
+3. GENERAR recomendaciones específicas de tratamiento
+4. DETERMINAR protocolo de seguimiento
+
+RESPONDE SOLO CON JSON:
+{
+  "updated_risk_assessment": {
+    "overall_risk": "HIGH|MEDIUM|LOW",
+    "risk_changes": "descripción de cambios en evaluación de riesgo",
+    "requires_referral": true,
+    "referral_type": "urgent|routine|specialty",
+    "referral_specialty": "rheumatology|neurology|orthopedics|other"
+  },
+  "treatment_recommendations": [
+    {
+      "category": "assessment|treatment|education|referral",
+      "recommendation": "Recomendación específica fisioterapéutica",
+      "rationale": "Justificación basada en hallazgos integrados",
+      "priority": "HIGH|MEDIUM|LOW",
+      "timeline": "immediate|short_term|long_term"
+    }
+  ],
+  "follow_up_protocol": {
+    "monitoring_needed": "descripción de monitoreo requerido",
+    "red_flags_to_watch": ["señales de alarma a vigilar"],
+    "next_assessment_timeframe": "24h|48h|1week|2weeks"
+  }
+}`;
+  }
+
+  generateSOAPPrompt(transcription, specialty = 'physiotherapy', previousAnalysis, clinicalIntegration) {
+    return `FASE 3: GENERACIÓN SOAP FINAL ESTRUCTURADO
+Genera un SOAP profesional y completo basado en toda la información integrada:
+
+TRANSCRIPCIÓN ORIGINAL:
+"""
+${transcription}
+"""
+
+ANÁLISIS INTEGRADO PREVIO:
+${JSON.stringify(previousAnalysis, null, 2)}
+
+INTEGRACIÓN CLÍNICA: ${clinicalIntegration}
+
+TAREAS ESPECÍFICAS FASE 3:
+1. ESTRUCTURAR información en formato SOAP profesional
+2. SINTETIZAR hallazgos en evaluación clínica coherente
+3. GENERAR plan de tratamiento específico y seguro
+4. INCLUIR recomendaciones de seguimiento
+
+RESPONDE SOLO CON JSON:
+{
+  "soap_note": {
+    "subjective": {
+      "chief_complaint": "motivo principal de consulta",
+      "history_present_illness": "historia actual detallada",
+      "relevant_history": "antecedentes relevantes",
+      "patient_concerns": "preocupaciones específicas del paciente"
+    },
+    "objective": {
+      "examination_findings": "hallazgos de exploración física",
+      "functional_assessment": "evaluación funcional",
+      "red_flags_identified": ["banderas rojas encontradas"],
+      "contraindications_noted": ["contraindicaciones identificadas"]
+    },
+    "assessment": {
+      "clinical_impression": "impresión clínica profesional",
+      "differential_diagnosis": ["diagnósticos diferenciales"],
+      "prognosis": "pronóstico estimado",
+      "risk_stratification": "estratificación de riesgo"
+    },
+    "plan": {
+      "immediate_actions": ["acciones inmediatas requeridas"],
+      "treatment_plan": "plan de tratamiento específico",
+      "referrals_needed": ["derivaciones necesarias"],
+      "follow_up_schedule": "cronograma de seguimiento",
+      "patient_education": "educación al paciente"
+    }
+  },
+  "clinical_summary": {
+    "key_findings": "hallazgos clave resumidos",
+    "treatment_priority": "prioridad de tratamiento",
+    "expected_outcomes": "resultados esperados",
+    "safety_considerations": "consideraciones de seguridad"
+  }
+}`;
+  }
 }
 
 module.exports = PromptFactory; 

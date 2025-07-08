@@ -4,6 +4,7 @@ import LoginPage from '../features/auth/LoginPage';
 import ConsultationPage from '../pages/ConsultationPage';
 import DebugAudioPage from '../pages/DebugAudioPage';
 import { DebugCloudFunctionPage } from '../pages/DebugCloudFunctionPage';
+import TestFullWorkflowPage from '../pages/TestFullWorkflowPage';
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DebugCloudFunctionPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/test-full-workflow',
+    element: (
+      <ProtectedRoute>
+        <TestFullWorkflowPage />
       </ProtectedRoute>
     ),
   },
