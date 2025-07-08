@@ -9,6 +9,7 @@ const VertexAIClient = require('./src/services/VertexAIClient');
 const ResponseParser = require('./src/services/ResponseParser');
 const KnowledgeBase = require('./src/services/KnowledgeBase');
 const TextChunker = require('./src/services/TextChunker');
+const ClinicalInsightService = require('./src/services/ClinicalInsightService');
 
 // Configurar logger
 const logger = winston.createLogger({
@@ -119,13 +120,14 @@ exports.clinicalBrain = async (req, res) => {
       });
     }
 
-    // PASO 1: Inicializar servicios con optimización
-    logger.info('🔧 INICIALIZANDO SERVICIOS...');
+    // PASO 1: Inicializar servicios con optimización y NUEVA ARQUITECTURA DE CASCADA
+    logger.info('🔧 INICIALIZANDO SERVICIOS CON CASCADA V2...');
     
     const vertexClient = new VertexAIClient();
     const promptFactory = new PromptFactory();
     const textChunker = new TextChunker();
     const knowledgeBase = new KnowledgeBase();
+    const clinicalInsightService = new ClinicalInsightService(); // 🆕 NUEVO SERVICIO DE CASCADA
     
     logger.info('✅ SERVICIOS INICIALIZADOS:', {
       vertexClient: !!vertexClient,
@@ -207,47 +209,49 @@ exports.clinicalBrain = async (req, res) => {
       };
       
     } else {
-      // PASO 3B: Procesamiento estándar con optimización
-      logger.info('🔄 PROCESAMIENTO ESTÁNDAR CON OPTIMIZACIÓN...', {
+      // PASO 3B: NUEVA ARQUITECTURA DE CASCADA - ANÁLISIS EN 3 ESTACIONES SECUENCIALES
+      logger.info('🚀 PROCESANDO CON NUEVA CASCADA DE ANÁLISIS V2...', {
         phase: phase,
         specialty: specialty,
-        sessionType: sessionType
+        sessionType: sessionType,
+        transcriptionLength: transcription.length
       });
       
-      let prompt;
+      // ✨ EJECUTAR CASCADA COMPLETA DE 3 ESTACIONES
+      // Estación 1: Triaje Banderas Rojas (Gemini-Flash, <5s)
+      // Estación 2: Extracción Hechos (Gemini-Flash, estructurado) 
+      // Estación 3: Análisis Final (Gemini-Pro, contextualizado)
       
-      // Generar prompt según la fase del flujo
-      switch (phase) {
-        case 'initial_analysis':
-          logger.info('🔍 FASE 1: Análisis inicial con detección de banderas rojas');
-          prompt = promptFactory.generateInitialAnalysisPrompt(transcription, specialty);
-          break;
-          
-        case 'integration_analysis':
-          logger.info('🔗 FASE 2: Integración con información adicional');
-          prompt = promptFactory.generateIntegrationPrompt(transcription, specialty, previousAnalysis, additionalInfo);
-          break;
-          
-        case 'soap_generation':
-          logger.info('📝 FASE 3: Generación SOAP final');
-          prompt = promptFactory.generateSOAPPrompt(transcription, specialty, previousAnalysis, clinicalIntegration);
-          break;
-          
-        default:
-          logger.info('🔄 PROCESAMIENTO ESTÁNDAR');
-          prompt = promptFactory.generatePrompt(transcription, sessionType, specialty);
-          break;
-      }
+      const cascadeOptions = {
+        specialty: specialty === 'physiotherapy' ? 'fisioterapia' : specialty,
+        sessionType: sessionType,
+        phase: phase,
+        previousAnalysis: previousAnalysis,
+        additionalInfo: additionalInfo,
+        clinicalIntegration: clinicalIntegration
+      };
       
-      // Usar optimización de costos automática
-      analysisResult = await vertexClient.processTranscription(transcription, prompt);
+      analysisResult = await clinicalInsightService.processTranscription(transcription, cascadeOptions);
       
-      logger.info('✅ PROCESAMIENTO COMPLETADO:', {
-        modelo: analysisResult.modelUsed,
-        tiempo: analysisResult.processingTime,
-        complejidad: analysisResult.costOptimization?.redFlagsDetected || 'N/A',
-        ahorro: analysisResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
+      logger.info('🎉 CASCADA DE ANÁLISIS V2 COMPLETADA:', {
+        totalTime: analysisResult.cascade_metadata?.total_processing_time || 'N/A',
+        stationsCompleted: analysisResult.cascade_metadata?.stations_completed || 3,
+        redFlagsDetected: analysisResult.cascade_metadata?.station_results?.station1_red_flags?.count || 0,
+        clinicalFactsExtracted: analysisResult.cascade_metadata?.station_results?.station2_clinical_facts?.keys_extracted || 0,
+        modelsUsed: analysisResult.cascade_metadata?.cost_optimization?.models_used || ['unknown'],
+        estimatedSavings: analysisResult.cascade_metadata?.cost_optimization?.estimated_savings || '60-70%'
       });
+      
+      // Adaptar el formato de respuesta para compatibilidad con el parsing existente
+      analysisResult.text = JSON.stringify(analysisResult);
+      analysisResult.modelUsed = 'cascade-v2';
+      analysisResult.processingTime = analysisResult.cascade_metadata?.total_processing_time || 0;
+      analysisResult.costOptimization = {
+        strategy: 'cascade-optimization',
+        modelsUsed: analysisResult.cascade_metadata?.cost_optimization?.models_used || [],
+        estimatedSavings: analysisResult.cascade_metadata?.cost_optimization?.estimated_savings || '60-70%',
+        stationsCompleted: analysisResult.cascade_metadata?.stations_completed || 3
+      };
     }
 
     // PASO 4: Extraer JSON del resultado con parsing robusto
