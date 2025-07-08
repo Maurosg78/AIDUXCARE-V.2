@@ -1,6 +1,7 @@
 const winston = require('winston');
 const VertexAIClient = require('./VertexAIClient');
 const KnowledgeBase = require('./KnowledgeBase');
+const ModelSelector = require('./ModelSelector');
 
 /**
  * ClinicalInsightService - Arquitectura de Cascada V2
@@ -17,6 +18,7 @@ class ClinicalInsightService {
   constructor() {
     this.vertexClient = new VertexAIClient();
     this.knowledgeBase = new KnowledgeBase();
+    this.modelSelector = new ModelSelector(this.vertexClient);
     
     // Configurar logger
     this.logger = winston.createLogger({
@@ -47,7 +49,7 @@ class ClinicalInsightService {
     
     this.logger.info('🚩 ESTACIÓN 1: Iniciando triaje de banderas rojas', {
       transcriptionLength: transcription.length,
-      model: 'gemini-flash'
+      model: 'gemini-2.5-flash'
     });
 
     try {
@@ -61,7 +63,7 @@ class ClinicalInsightService {
       const result = await this.vertexClient.processWithModel(
         transcription,
         triagePrompt,
-        'gemini-flash', // Modelo rápido y barato
+        'gemini-2.5-flash', // Modelo rápido y barato
         {
           maxTokens: 500, // Respuesta corta
           temperature: 0.1 // Precisión alta, creatividad baja
@@ -109,7 +111,7 @@ class ClinicalInsightService {
     
     this.logger.info('📋 ESTACIÓN 2: Iniciando extracción de hechos clínicos', {
       transcriptionLength: transcription.length,
-      model: 'gemini-flash'
+      model: 'gemini-2.5-flash'
     });
 
     try {
@@ -120,7 +122,7 @@ class ClinicalInsightService {
       const result = await this.vertexClient.processWithModel(
         transcription,
         extractionPrompt,
-        'gemini-flash', // Modelo rápido y barato
+        'gemini-2.5-flash', // Modelo rápido y barato
         {
           maxTokens: 1000, // Respuesta estructurada mediana
           temperature: 0.2 // Precisión alta con algo de flexibilidad
@@ -174,7 +176,7 @@ class ClinicalInsightService {
       transcriptionLength: transcription.length,
       redFlagsCount: redFlags.length,
       clinicalFactsKeys: Object.keys(clinicalFacts).length,
-      model: 'gemini-pro'
+      model: 'gemini-2.5-pro'
     });
 
     try {
@@ -189,7 +191,7 @@ class ClinicalInsightService {
       const result = await this.vertexClient.processWithModel(
         transcription,
         finalPrompt,
-        'gemini-pro', // Modelo potente y preciso
+        'gemini-2.5-pro', // Modelo potente y preciso
         {
           maxTokens: 3000, // Respuesta completa y detallada
           temperature: 0.3 // Balance entre precisión y calidad narrativa
@@ -283,7 +285,7 @@ class ClinicalInsightService {
             }
           },
           cost_optimization: {
-            models_used: ['gemini-flash', 'gemini-flash', 'gemini-pro'],
+            models_used: ['gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'],
             strategy: 'cascade-optimization',
             estimated_savings: '60-70% vs single Pro call'
           },
@@ -312,6 +314,301 @@ class ClinicalInsightService {
       });
 
       throw new Error(`Cascada de análisis falló: ${error.message}`);
+    }
+  }
+
+  /**
+   * NUEVO FLUJO INTELIGENTE: ModelSelector + Análisis Adaptativo
+   * 
+   * @param {string} transcription - Transcripción clínica a analizar  
+   * @param {Object} options - Opciones de procesamiento
+   * @returns {Object} Análisis clínico completo con metadata de decisión
+   */
+  async processTranscriptionWithIntelligentModel(transcription, options = {}) {
+    const startTime = Date.now();
+    
+    this.logger.info('🚀 INICIANDO ANÁLISIS CON MODELSELECTOR INTELIGENTE', {
+      transcriptionLength: transcription.length,
+      specialty: options.specialty || 'fisioterapia',
+      sessionType: options.sessionType || 'initial'
+    });
+
+    try {
+      // PASO 1: ModelSelector decide qué modelo usar (con triaje IA)
+      const modelDecision = await this.modelSelector.selectModel(transcription);
+      
+      this.logger.info('🧠 DECISIÓN DE MODELO COMPLETADA', {
+        selectedModel: modelDecision.selectedModel,
+        reasoning: modelDecision.reasoning,
+        redFlagsDetected: modelDecision.triageResult.redFlags.length,
+        triageTime: modelDecision.processingTime
+      });
+
+      // PASO 2: Análisis completo con modelo seleccionado
+      const analysisResult = await this._performCompleteAnalysis(
+        transcription, 
+        modelDecision.selectedModel,
+        modelDecision.triageResult,
+        options
+      );
+
+      const totalTime = (Date.now() - startTime) / 1000;
+
+      // Ensamblar resultado final con metadata de ModelSelector
+      const intelligentResult = {
+        ...analysisResult,
+        intelligent_model_metadata: {
+          workflow_version: '3.0-intelligent-selector',
+          total_processing_time: totalTime,
+          model_decision: {
+            selected_model: modelDecision.selectedModel,
+            reasoning: modelDecision.reasoning,
+            cost_optimization: modelDecision.costOptimization,
+            triage_result: modelDecision.triageResult
+          },
+          performance_metrics: {
+            triage_time: modelDecision.processingTime,
+            analysis_time: totalTime - modelDecision.processingTime,
+            total_time: totalTime
+          },
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      this.logger.info('🎉 ANÁLISIS INTELIGENTE COMPLETADO EXITOSAMENTE', {
+        totalTime: totalTime,
+        modelUsed: modelDecision.selectedModel,
+        redFlagsDetected: modelDecision.triageResult.redFlags.length,
+        costOptimization: modelDecision.costOptimization
+      });
+
+      return intelligentResult;
+
+    } catch (error) {
+      const totalTime = (Date.now() - startTime) / 1000;
+      
+      this.logger.error('💥 ERROR EN ANÁLISIS INTELIGENTE', {
+        error: error.message,
+        stack: error.stack,
+        totalTime: totalTime,
+        transcriptionLength: transcription.length
+      });
+
+      throw new Error(`Análisis inteligente falló: ${error.message}`);
+    }
+  }
+
+  /**
+   * Análisis completo adaptativo según modelo seleccionado
+   */
+  async _performCompleteAnalysis(transcription, selectedModel, triageResult, options) {
+    const analysisStartTime = Date.now();
+    
+    this.logger.info('🔬 INICIANDO ANÁLISIS COMPLETO', {
+      model: selectedModel,
+      transcriptionLength: transcription.length,
+      redFlagsFromTriage: triageResult.redFlags.length
+    });
+
+    // Construir prompt completo contextualizado
+    const completePrompt = this._buildIntelligentAnalysisPrompt(
+      transcription, 
+      triageResult, 
+      options
+    );
+
+    // Configurar parámetros según modelo seleccionado
+    const modelConfig = selectedModel === 'gemini-2.5-pro' 
+      ? { maxTokens: 3000, temperature: 0.2 }  // Máxima calidad para casos críticos
+      : { maxTokens: 2000, temperature: 0.3 }; // Eficiente para casos estándar
+
+    this.logger.info('📤 ENVIANDO ANÁLISIS COMPLETO AL MODELO', {
+      model: selectedModel,
+      promptLength: completePrompt.length,
+      config: modelConfig
+    });
+
+    const response = await this.vertexClient.processWithModel(
+      transcription,
+      completePrompt,
+      selectedModel,
+      modelConfig
+    );
+
+    const analysisTime = (Date.now() - analysisStartTime) / 1000;
+
+    this.logger.info('✅ ANÁLISIS COMPLETO FINALIZADO', {
+      model: selectedModel,
+      processingTime: analysisTime,
+      responseLength: response.length
+    });
+
+    return this._parseCompleteAnalysisResponse(response);
+  }
+
+  /**
+   * Prompt completo contextualizado para análisis inteligente
+   */
+  _buildIntelligentAnalysisPrompt(transcription, triageResult, options) {
+    const specialty = options.specialty || 'fisioterapia';
+    const sessionType = options.sessionType || 'initial';
+    
+    return `Actúa como un ${specialty} clínico experto realizando análisis completo de caso clínico.
+
+INFORMACIÓN DE CONTEXTO:
+
+TRANSCRIPCIÓN ORIGINAL:
+${transcription}
+
+RESULTADO DEL TRIAJE PREVIO:
+- Banderas Rojas Detectadas: ${triageResult.redFlags.length > 0 ? triageResult.redFlags.join(', ') : 'Ninguna'}
+- Nivel de Riesgo: ${triageResult.riskLevel}
+- Confianza del Triaje: ${triageResult.confidence}
+- Razonamiento: ${triageResult.reasoning}
+
+PARÁMETROS DE SESIÓN:
+- Especialidad: ${specialty}
+- Tipo de Sesión: ${sessionType}
+- Contexto: ${triageResult.redFlags.length > 0 ? 'ANÁLISIS CRÍTICO - Banderas rojas presentes' : 'ANÁLISIS ESTÁNDAR - Optimización de costos'}
+
+INSTRUCCIONES PARA ANÁLISIS COMPLETO:
+
+Basándote en toda la información disponible, genera un análisis clínico completo que incluya:
+
+1. **WARNINGS**: Alertas clínicas basadas en banderas rojas y patrones de riesgo identificados
+2. **SUGGESTIONS**: Recomendaciones específicas de tratamiento, seguimiento y manejo clínico
+3. **SOAP_ANALYSIS**: Nota SOAP profesional completa con todas las secciones
+
+${triageResult.redFlags.length > 0 ? 
+`⚠️ MODO CRÍTICO ACTIVADO: Se han detectado banderas rojas en el triaje previo. Proporciona análisis exhaustivo con máxima atención a:
+- Validación de banderas rojas detectadas: ${triageResult.redFlags.join(', ')}
+- Recomendaciones de seguimiento inmediato
+- Protocolos de derivación si es necesario
+- Evaluación de riesgo detallada` :
+`✅ MODO ESTÁNDAR: Triaje no detectó banderas rojas críticas. Proporciona análisis completo eficiente enfocado en:
+- Manejo clínico estándar
+- Optimización del plan de tratamiento
+- Educación del paciente
+- Seguimiento preventivo`}
+
+FORMATO DE RESPUESTA - JSON ESTRUCTURADO:
+{
+  "warnings": [
+    {
+      "level": "HIGH|MEDIUM|LOW",
+      "title": "Título del warning",
+      "description": "Descripción detallada del riesgo o preocupación clínica",
+      "immediate_action_required": true/false
+    }
+  ],
+  "suggestions": [
+    {
+      "priority": "HIGH|MEDIUM|LOW", 
+      "category": "treatment|assessment|referral|education|follow_up",
+      "title": "Título de la sugerencia",
+      "description": "Descripción detallada de la recomendación clínica",
+      "implementation_timeframe": "immediate|short_term|long_term"
+    }
+  ],
+  "soap_analysis": {
+    "subjective": {
+      "chief_complaint": "string",
+      "history_present_illness": "string",
+      "relevant_history": "string",
+      "functional_status": "string"
+    },
+    "objective": {
+      "observations": ["array de observaciones"],
+      "physical_examination": "string",
+      "functional_testing": "string",
+      "contraindications_noted": ["array"]
+    },
+    "assessment": {
+      "clinical_impression": "string",
+      "differential_diagnosis": ["array"],
+      "prognosis": "string",
+      "risk_stratification": "LOW|MEDIUM|HIGH"
+    },
+    "plan": {
+      "immediate_actions": ["array"],
+      "treatment_plan": "string", 
+      "referrals_needed": ["array"],
+      "follow_up_schedule": "string",
+      "patient_education": "string"
+    }
+  },
+  "clinical_summary": {
+    "key_findings": "string",
+    "treatment_priority": "string",
+    "expected_outcomes": "string",
+    "safety_considerations": "string"
+  }
+}
+
+RESPUESTA JSON:`;
+  }
+
+  /**
+   * Parser para respuesta de análisis completo
+   */
+  _parseCompleteAnalysisResponse(response) {
+    try {
+      // El VertexAIClient ya extrajo el texto limpio
+      let cleanResponse = response;
+      
+      // Si aún tiene markdown, limpiarlo
+      if (typeof response === 'string' && response.includes('```')) {
+        cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      }
+      
+      const parsed = JSON.parse(cleanResponse);
+      
+      this.logger.info('✅ PARSING ANÁLISIS COMPLETO EXITOSO', {
+        warningsCount: parsed.warnings?.length || 0,
+        suggestionsCount: parsed.suggestions?.length || 0,
+        soapSections: Object.keys(parsed.soap_analysis || {}).length
+      });
+      
+      return parsed;
+      
+    } catch (error) {
+      this.logger.error('❌ ERROR PARSING ANÁLISIS COMPLETO', {
+        error: error.message,
+        response: typeof response === 'string' ? response.substring(0, 300) : 'No es string'
+      });
+      
+      // Fallback básico
+      return {
+        warnings: [
+          {
+            level: "MEDIUM",
+            title: "Error en procesamiento",
+            description: "Hubo un error al procesar el análisis. Se requiere revisión manual.",
+            immediate_action_required: false
+          }
+        ],
+        suggestions: [
+          {
+            priority: "HIGH",
+            category: "assessment",
+            title: "Revisión manual requerida",
+            description: "Se recomienda revisión manual del caso debido a error en procesamiento automático.",
+            implementation_timeframe: "immediate"
+          }
+        ],
+        soap_analysis: {
+          subjective: { chief_complaint: "Error en procesamiento - requiere revisión manual" },
+          objective: { observations: ["Error en análisis automático"] },
+          assessment: { clinical_impression: "Análisis incompleto por error técnico" },
+          plan: { immediate_actions: ["Revisión manual del caso"] }
+        },
+        clinical_summary: {
+          key_findings: "Error en procesamiento automático",
+          treatment_priority: "Revisión manual inmediata",
+          expected_outcomes: "Pendiente revisión manual",
+          safety_considerations: "Requiere evaluación profesional directa"
+        }
+      };
     }
   }
 

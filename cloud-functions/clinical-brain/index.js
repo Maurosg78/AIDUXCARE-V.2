@@ -86,7 +86,8 @@ exports.clinicalBrain = async (req, res) => {
       phase = 'standard',
       previousAnalysis = null,
       additionalInfo = null,
-      clinicalIntegration = false
+      clinicalIntegration = false,
+      useIntelligentSelector = false
     } = req.body;
     
     logger.info('📋 DATOS RECIBIDOS:', {
@@ -97,7 +98,8 @@ exports.clinicalBrain = async (req, res) => {
       hasPreviousAnalysis: !!previousAnalysis,
       hasAdditionalInfo: !!additionalInfo,
       clinicalIntegration: clinicalIntegration,
-      hasTranscription: !!transcription
+      hasTranscription: !!transcription,
+      useIntelligentSelector: useIntelligentSelector
     });
 
     // Validar transcripción
@@ -155,104 +157,31 @@ exports.clinicalBrain = async (req, res) => {
 
     let analysisResult;
 
-    if (needsChunking) {
-      // PASO 3A: Procesamiento con chunking
-      logger.info('🔄 PROCESANDO CON CHUNKING...');
-      
-      const chunks = textChunker.splitText(transcription);
-      logger.info('📦 CHUNKS GENERADOS:', { count: chunks.length });
-
-      const chunkResults = [];
-      
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        logger.info(`🔄 PROCESANDO CHUNK ${i + 1}/${chunks.length}`);
-        
-        const chunkPrompt = promptFactory.generateChunkPrompt(chunk, i + 1, chunks.length);
-        
-        // Usar optimización de costos para cada chunk
-        const chunkResult = await vertexClient.processTranscription(chunk, chunkPrompt);
-        
-        logger.info(`✅ CHUNK ${i + 1} PROCESADO:`, {
-          modelo: chunkResult.modelUsed,
-          tiempo: chunkResult.processingTime,
-          ahorro: chunkResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
-        });
-        
-        chunkResults.push({
-          chunkIndex: i + 1,
-          result: chunkResult.text,
-          modelUsed: chunkResult.modelUsed,
-          processingTime: chunkResult.processingTime,
-          costOptimization: chunkResult.costOptimization
-        });
-      }
-
-      // Consolidar resultados de chunks
-      const consolidatedResults = textChunker.consolidateResults(chunkResults.map(cr => cr.result));
-      analysisResult = {
-        text: consolidatedResults,
-        modelUsed: 'mixed-chunking',
-        processingTime: chunkResults.reduce((sum, cr) => sum + cr.processingTime, 0),
-        costOptimization: {
-          strategy: 'chunking',
-          chunksProcessed: chunks.length,
-          modelsUsed: chunkResults.map(cr => cr.modelUsed),
-          totalSavings: chunkResults.map(cr => cr.costOptimization?.costAnalysis?.savingsVsPro || 'N/A').join(', ')
-        },
-        chunks: chunkResults.map(cr => ({
-          index: cr.chunkIndex,
-          model: cr.modelUsed,
-          time: cr.processingTime,
-          savings: cr.costOptimization?.costAnalysis?.savingsVsPro || 'N/A'
-        }))
-      };
-      
+    if (useIntelligentSelector) {
+      // FLUJO NUEVO: ModelSelector Inteligente V3.0
+      logger.info('🎯 USANDO MODELSELECTOR INTELIGENTE V3.0');
+      analysisResult = await clinicalInsightService.processTranscriptionWithIntelligentModel(
+        transcription,
+        { specialty, sessionType: 'initial' }
+      );
     } else {
-      // PASO 3B: NUEVA ARQUITECTURA DE CASCADA - ANÁLISIS EN 3 ESTACIONES SECUENCIALES
-      logger.info('🚀 PROCESANDO CON NUEVA CASCADA DE ANÁLISIS V2...', {
-        phase: phase,
-        specialty: specialty,
-        sessionType: sessionType,
-        transcriptionLength: transcription.length
-      });
-      
-      // ✨ EJECUTAR CASCADA COMPLETA DE 3 ESTACIONES
-      // Estación 1: Triaje Banderas Rojas (Gemini-Flash, <5s)
-      // Estación 2: Extracción Hechos (Gemini-Flash, estructurado) 
-      // Estación 3: Análisis Final (Gemini-Pro, contextualizado)
-      
-      const cascadeOptions = {
-        specialty: specialty === 'physiotherapy' ? 'fisioterapia' : specialty,
-        sessionType: sessionType,
-        phase: phase,
-        previousAnalysis: previousAnalysis,
-        additionalInfo: additionalInfo,
-        clinicalIntegration: clinicalIntegration
-      };
-      
-      analysisResult = await clinicalInsightService.processTranscription(transcription, cascadeOptions);
-      
-      logger.info('🎉 CASCADA DE ANÁLISIS V2 COMPLETADA:', {
-        totalTime: analysisResult.cascade_metadata?.total_processing_time || 'N/A',
-        stationsCompleted: analysisResult.cascade_metadata?.stations_completed || 3,
-        redFlagsDetected: analysisResult.cascade_metadata?.station_results?.station1_red_flags?.count || 0,
-        clinicalFactsExtracted: analysisResult.cascade_metadata?.station_results?.station2_clinical_facts?.keys_extracted || 0,
-        modelsUsed: analysisResult.cascade_metadata?.cost_optimization?.models_used || ['unknown'],
-        estimatedSavings: analysisResult.cascade_metadata?.cost_optimization?.estimated_savings || '60-70%'
-      });
-      
-      // Adaptar el formato de respuesta para compatibilidad con el parsing existente
-      analysisResult.text = JSON.stringify(analysisResult);
-      analysisResult.modelUsed = 'cascade-v2';
-      analysisResult.processingTime = analysisResult.cascade_metadata?.total_processing_time || 0;
-      analysisResult.costOptimization = {
-        strategy: 'cascade-optimization',
-        modelsUsed: analysisResult.cascade_metadata?.cost_optimization?.models_used || [],
-        estimatedSavings: analysisResult.cascade_metadata?.cost_optimization?.estimated_savings || '60-70%',
-        stationsCompleted: analysisResult.cascade_metadata?.stations_completed || 3
-      };
+      // FLUJO ACTUAL: Cascada de Análisis V2.0 
+      logger.info('🔄 USANDO CASCADA DE ANÁLISIS V2.0');
+      analysisResult = await clinicalInsightService.processTranscription(
+        transcription,
+        { specialty, sessionType: 'initial' }
+      );
     }
+    
+    const processingTime = (Date.now() - startTime) / 1000;
+    
+    logger.info('✅ PROCESAMIENTO COMPLETADO EXITOSAMENTE', {
+      workflow: useIntelligentSelector ? 'intelligent-selector' : 'cascade-v2',
+      processingTime: processingTime,
+      hasWarnings: analysisResult.warnings?.length > 0,
+      hasSuggestions: analysisResult.suggestions?.length > 0,
+      hasSOAP: !!analysisResult.soap_analysis
+    });
 
     // PASO 4: Extraer JSON del resultado con parsing robusto
     let jsonResult;
@@ -343,8 +272,8 @@ exports.clinicalBrain = async (req, res) => {
     const finalResult = {
       ...jsonResult,
       metadata: {
-        processingTime: analysisResult.processingTime,
-        modelUsed: analysisResult.modelUsed,
+        processingTime: processingTime,
+        modelUsed: useIntelligentSelector ? 'intelligent-selector' : 'cascade-v2',
         costOptimization: analysisResult.costOptimization,
         totalTime: (Date.now() - startTime) / 1000,
         timestamp: new Date().toISOString(),
@@ -354,9 +283,9 @@ exports.clinicalBrain = async (req, res) => {
 
     // PASO 6: Logging final con métricas de optimización
     logger.info('✅ RESPUESTA FINAL GENERADA:', {
-      processingTime: analysisResult.processingTime,
+      processingTime: processingTime,
       totalTime: finalResult.metadata.totalTime,
-      modelUsed: analysisResult.modelUsed,
+      modelUsed: finalResult.metadata.modelUsed,
       costSavings: analysisResult.costOptimization?.costAnalysis?.savingsVsPro || 'N/A',
       redFlags: analysisResult.costOptimization?.redFlagsDetected || 'N/A',
       warningsCount: finalResult.warnings?.length || 0,
