@@ -18,6 +18,19 @@ const logger = winston.createLogger({
 
 class ModelSelector {
   constructor() {
+    // 🔧 CONFIGURACIÓN DINÁMICA DE MODELOS: Leer desde variables de entorno
+    this.flashModel = process.env.MODEL_FLASH;
+    this.proModel = process.env.MODEL_PRO;
+    
+    // Validación crítica de configuración
+    if (!this.flashModel || !this.proModel) {
+      const missingVars = [];
+      if (!this.flashModel) missingVars.push('MODEL_FLASH');
+      if (!this.proModel) missingVars.push('MODEL_PRO');
+      
+      throw new Error(`Missing critical model configuration in ModelSelector: ${missingVars.join(', ')}. Please set environment variables.`);
+    }
+    
     // 🚨 PATRONES CRÍTICOS SIN IA - Análisis de texto puro
     this.CRITICAL_PATTERNS = [
       // Cardiovasculares
@@ -45,20 +58,27 @@ class ModelSelector {
       /dificultad.*respirar/i
     ];
     
-    this.models = {
-      'gemini-2.5-pro': {
-        costPerMillionTokens: 1.25,
-        accuracy: 0.95,
-        emergencyDetection: 1.0,
-        useCase: 'Casos críticos con banderas rojas'
-      },
-      'gemini-2.5-flash': {
-        costPerMillionTokens: 0.15,
-        accuracy: 0.87,
-        emergencyDetection: 1.0, // ✅ Mantiene 100% según evidencia empírica
-        useCase: 'Casos estándar y optimización de costos'
-      }
+    // 🔧 CONFIGURACIÓN DINÁMICA: Usar variables de entorno para modelos
+    this.models = {};
+    this.models[this.proModel] = {
+      costPerMillionTokens: 1.25,
+      accuracy: 0.95,
+      emergencyDetection: 1.0,
+      useCase: 'Casos críticos con banderas rojas'
     };
+    
+    this.models[this.flashModel] = {
+      costPerMillionTokens: 0.15,
+      accuracy: 0.87,
+      emergencyDetection: 1.0, // ✅ Mantiene 100% según evidencia empírica
+      useCase: 'Casos estándar y optimización de costos'
+    };
+    
+    logger.info('🚀 MODELSELECTOR INICIALIZADO CON CONFIGURACIÓN DINÁMICA', {
+      flashModel: this.flashModel,
+      proModel: this.proModel,
+      modelsConfigured: Object.keys(this.models)
+    });
   }
 
   /**
@@ -97,19 +117,19 @@ class ModelSelector {
       pattern.test(lowerText)
     );
     
-    // Lógica de decisión simplificada
+    // Lógica de decisión simplificada usando variables de entorno
     let recommendedModel, reasoning, confidence;
     
     if (criticalMatches.length >= 1) {
-      recommendedModel = 'gemini-2.5-pro';
+      recommendedModel = this.proModel;
       reasoning = `Detectados ${criticalMatches.length} patrones críticos - Máxima seguridad requerida`;
       confidence = 0.95;
     } else if (highMatches.length >= 2) {
-      recommendedModel = 'gemini-2.5-pro';  
+      recommendedModel = this.proModel;  
       reasoning = `Múltiples banderas altas (${highMatches.length}) - Escalado preventivo`;
       confidence = 0.85;
     } else {
-      recommendedModel = 'gemini-2.5-flash';
+      recommendedModel = this.flashModel;
       reasoning = `Análisis estándar - Optimización de costos manteniendo seguridad`;
       confidence = 0.90;
     }
@@ -125,7 +145,7 @@ class ModelSelector {
   }
   
   calculateSavings(selectedModel) {
-    if (selectedModel === 'gemini-2.5-flash') {
+    if (selectedModel === this.flashModel) {
       return {
         savingsVsPro: '88% ahorro vs Pro',
         costRatio: '8.3x más económico'
@@ -173,12 +193,17 @@ class ModelSelector {
    */
   getOptimizationStats() {
     return {
-      standardModel: 'gemini-2.5-flash',
+      standardModel: this.flashModel,
       clinicalSafety: '100% (demostrado empíricamente)',
       criteriaForPremium: '2+ banderas rojas críticas',
       avgCostSavings: '15x vs modelo premium',
       empiricalBasis: '5 casos clínicos evaluados',
-      redFlagsCriteria: `${this.CRITICAL_PATTERNS.length} términos críticos monitoreados`
+      redFlagsCriteria: `${this.CRITICAL_PATTERNS.length} términos críticos monitoreados`,
+      configuration: 'DYNAMIC_FROM_ENVIRONMENT',
+      modelsConfigured: {
+        flash: this.flashModel,
+        pro: this.proModel
+      }
     };
   }
 }

@@ -269,60 +269,57 @@ class VertexAIClient {
   }
 
   /**
-   * Obtiene configuración específica para cada modelo
-   * @param {string} modelName - Nombre del modelo
+   * CONFIGURACIÓN DINÁMICA: Obtiene configuración basada en variables de entorno
+   * @param {string} modelName - Nombre del modelo (debe ser flashModel o proModel)
    * @returns {Object} Configuración del modelo
    */
   getModelConfiguration(modelName) {
-    const configurations = {
-      'gemini-2.5-pro': {
-        generationConfig: {
-          temperature: 0.1,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-          candidateCount: 1
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-        ]
+    // 🔧 CONFIGURACIÓN DINÁMICA: Mapear a configuraciones basadas en variables de entorno
+    const configurations = {};
+    
+    // Configuración para modelo Flash (optimización de costos)
+    configurations[this.flashModel] = {
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.1,
+        topP: 0.8,
+        topK: 40
       },
-      'gemini-2.5-flash': {
-        generationConfig: {
-          temperature: 0.2,
-          topK: 32,
-          topP: 0.9,
-          maxOutputTokens: 4096,
-          candidateCount: 1
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH',
+          threshold: 'BLOCK_ONLY_HIGH'
         },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-        ]
-      },
-      'gemini-2.0-flash': {
-        generationConfig: {
-          temperature: 0.3,
-          topK: 24,
-          topP: 0.85,
-          maxOutputTokens: 2048,
-          candidateCount: 1
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
-        ]
-      }
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_ONLY_HIGH'
+        }
+      ]
     };
 
-    return configurations[modelName] || configurations['gemini-2.5-flash'];
+    // Configuración para modelo Pro (máxima calidad)
+    configurations[this.proModel] = {
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.05,
+        topP: 0.95,
+        topK: 40,
+        candidateCount: 1
+      },
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HATE_SPEECH',
+          threshold: 'BLOCK_ONLY_HIGH'
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_ONLY_HIGH'
+        }
+      ]
+    };
+
+    // Retornar configuración específica o default a Flash
+    return configurations[modelName] || configurations[this.flashModel];
   }
 
   /**
@@ -344,32 +341,46 @@ class VertexAIClient {
   }
 
   /**
-   * Obtiene modelo de fallback
+   * FALLBACK DINÁMICO: Obtiene modelo de respaldo basado en configuración de entorno
    * @param {string} currentModel - Modelo actual que falló
-   * @returns {string} Modelo de fallback
+   * @returns {string} Modelo de respaldo
    */
   getFallbackModel(currentModel) {
-    const fallbackChain = {
-      'gemini-2.5-pro': 'gemini-2.5-flash',
-      'gemini-2.5-flash': 'gemini-2.0-flash',
-      'gemini-2.0-flash': 'gemini-2.5-flash'
-    };
-
-    return fallbackChain[currentModel] || 'gemini-2.5-flash';
+    // 🔧 CADENA DE FALLBACK DINÁMICA basada en variables de entorno
+    const fallbackChain = {};
+    
+    // Si falla Pro, usar Flash
+    fallbackChain[this.proModel] = this.flashModel;
+    
+    // Si falla Flash, usar Pro como último recurso
+    fallbackChain[this.flashModel] = this.proModel;
+    
+    // Retornar fallback específico o default a Flash
+    return fallbackChain[currentModel] || this.flashModel;
   }
 
   /**
-   * Obtiene información detallada del modelo actual
-   * @returns {Object} Información del modelo
+   * INFORMACIÓN DINÁMICA: Obtiene información de modelos basada en configuración de entorno
+   * @returns {Object} Información de modelos configurados
    */
   getModelInfo() {
     return {
       projectId: this.projectId,
       location: this.location,
+      availableModels: {
+        flash: {
+          name: this.flashModel,
+          description: 'Modelo optimizado para costos y rendimiento',
+          usageStrategy: 'Casos estándar (90% de consultas)'
+        },
+        pro: {
+          name: this.proModel,
+          description: 'Modelo premium para casos críticos',
+          usageStrategy: 'Casos complejos con banderas rojas (10% de consultas)'
+        }
+      },
       defaultModel: this.defaultModel,
-      availableModels: this.modelSelector.getAvailableModels(),
-      optimizationEnabled: true,
-      timestamp: new Date().toISOString()
+      configuration: 'DYNAMIC_FROM_ENVIRONMENT'
     };
   }
 

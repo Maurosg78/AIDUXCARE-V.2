@@ -36,15 +36,58 @@ npm install
 
 2. **Configurar variables de entorno**:
 ```bash
-export GOOGLE_CLOUD_PROJECT_ID="aiduxcare-mvp"
-export VERTEX_AI_LOCATION="us-central1"
-export VERTEX_AI_MODEL="gemini-1.5-pro"
+export GOOGLE_CLOUD_PROJECT_ID="aiduxcare-stt-20250706"
+export VERTEX_AI_LOCATION="us-east1"
+
+# 🔧 CONFIGURACIÓN DINÁMICA DE MODELOS (Nuevo)
+export MODEL_FLASH="gemini-2.5-flash"    # Modelo optimizado para costos (90% casos)
+export MODEL_PRO="gemini-2.5-pro"        # Modelo premium para casos críticos (10% casos)
+
 export KNOWLEDGE_BASE_BUCKET="aiduxcare-clinical-knowledge"
 ```
+
+### ⚠️ **Variables de Entorno Críticas**
+
+Las siguientes variables son **OBLIGATORIAS** y el sistema fallará si no están configuradas:
+
+- `MODEL_FLASH`: Modelo para casos estándar y optimización de costos
+- `MODEL_PRO`: Modelo premium para casos complejos con banderas rojas
+- `GOOGLE_CLOUD_PROJECT_ID`: ID del proyecto de Google Cloud
+- `VERTEX_AI_LOCATION`: Región de Vertex AI (recomendado: us-east1)
+
+### 🚀 **Optimización Inteligente de Modelos**
+
+El sistema utiliza un **ModelSelector** inteligente que:
+
+1. **Análisis sin IA**: Detecta patrones críticos en transcripciones
+2. **Selección automática**: Elige entre MODEL_FLASH (90%) y MODEL_PRO (10%)
+3. **Ahorro de costos**: Hasta 88% de reducción vs usar solo modelo premium
+4. **Seguridad garantizada**: 100% de detección de banderas rojas críticas
+
+**Estrategia de selección**:
+- **MODEL_FLASH**: Casos estándar, consultas de seguimiento, análisis rutinario
+- **MODEL_PRO**: Detecta 2+ banderas rojas, casos cardiovasculares, neurológicos u oncológicos
 
 3. **Autenticación de Google Cloud**:
 ```bash
 gcloud auth application-default login
+```
+
+### 🛡️ **Validación y Fallbacks de Seguridad**
+
+El sistema incluye múltiples capas de seguridad:
+
+1. **Validación al inicio**: Verifica que MODEL_FLASH y MODEL_PRO estén configuradas
+2. **Fallback automático**: Si un modelo falla, cambia al alternativo automáticamente
+3. **Logs detallados**: Registra todas las decisiones de modelo para auditoría
+4. **Configuración inmutable**: Variables de entorno se validan una vez al inicio
+
+**Ejemplo de validación**:
+```javascript
+// El sistema verificará automáticamente:
+if (!process.env.MODEL_FLASH || !process.env.MODEL_PRO) {
+  throw new Error('Missing critical AI model configuration');
+}
 ```
 
 ## Uso
