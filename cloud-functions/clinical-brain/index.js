@@ -33,8 +33,14 @@ const corsOptions = {
 
 // Función principal de la Cloud Function
 exports.clinicalBrain = async (req, res) => {
-  // Configurar CORS - REPARACIÓN CRÍTICA
-  const allowedOrigins = ['http://localhost:5174', 'https://localhost:5174', 'https://aiduxcare-v2.vercel.app'];
+  // Configurar CORS - REPARACIÓN CRÍTICA + NETLIFY WHITELIST
+  const allowedOrigins = [
+    'http://localhost:5174',
+    'https://localhost:5174',
+    'https://aiduxcare-v2.vercel.app',
+    'https://bucolic-marshmallow-92c5fb.netlify.app', // URL principal de Netlify
+    'https://deploy-preview-24--bucolic-marshmallow-92c5fb.netlify.app' // URL del Deploy Preview
+  ];
   const origin = req.headers.origin;
   
   if (allowedOrigins.includes(origin)) {
