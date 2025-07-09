@@ -1,0 +1,10 @@
+.git
+node_modules
+coverage
+__tests__
+scripts
+.github
+storybook-static
+.storybook
+.husky
+*.log 

@@ -1,0 +1,11 @@
+node_modules/
+.env
+dist/
+.DS_Store
+
+# Local Vercel folder
+.vercel/output/
+.vercel
+.env*
+google-cloud-credentials.json
+*.json
