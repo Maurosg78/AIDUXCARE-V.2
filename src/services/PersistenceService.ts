@@ -1,10 +1,12 @@
 /**
  * Servicio de Persistencia para AiDuxCare V.2
- * Simula persistencia en base de datos para MVP (usando localStorage)
+ * Implementación profesional usando Firestore
  */
 
 import { SOAPData } from './AudioToSOAPBridge';
 import { EncryptedData, CryptoService } from './CryptoService';
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 export interface SavedNote {
   id: string;
@@ -17,7 +19,20 @@ export interface SavedNote {
 }
 
 export class PersistenceService {
-  private static readonly STORAGE_KEY = 'aiduxcare_notes';
+  private static readonly COLLECTION_NAME = 'consultations';
+  private static db = getFirestore();
+
+  /**
+   * Obtiene el ID del usuario actual autenticado
+   */
+  private static getCurrentUserId(): string {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+    return user.uid;
+  }
 
   /**
    * Guarda una nota SOAP cifrada
@@ -28,6 +43,8 @@ export class PersistenceService {
     sessionId: string = 'default-session'
   ): Promise<string> {
     try {
+      const userId = this.getCurrentUserId();
+      
       // Cifrar los datos SOAP
       const encryptedData = await CryptoService.encryptMedicalData(soapData);
       
@@ -43,14 +60,9 @@ export class PersistenceService {
         updatedAt: new Date().toISOString()
       };
 
-      // Obtener notas existentes
-      const existingNotes = this.getAllNotes();
-      
-      // Agregar la nueva nota
-      existingNotes.push(savedNote);
-      
-      // Guardar en localStorage
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingNotes));
+      // Guardar en Firestore
+      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      await setDoc(noteRef, savedNote);
       
       console.log(`✅ Nota SOAP guardada con ID: ${noteId}`);
       return noteId;
@@ -61,12 +73,15 @@ export class PersistenceService {
   }
 
   /**
-   * Obtiene todas las notas guardadas
+   * Obtiene todas las notas guardadas del usuario actual
    */
-  static getAllNotes(): SavedNote[] {
+  static async getAllNotes(): Promise<SavedNote[]> {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const userId = this.getCurrentUserId();
+      const notesRef = collection(this.db, this.COLLECTION_NAME, userId, 'notes');
+      const snapshot = await getDocs(notesRef);
+      
+      return snapshot.docs.map(doc => doc.data() as SavedNote);
     } catch (error) {
       console.error('Error obteniendo notas:', error);
       return [];
@@ -78,8 +93,11 @@ export class PersistenceService {
    */
   static async getNoteById(noteId: string): Promise<SavedNote | null> {
     try {
-      const notes = this.getAllNotes();
-      return notes.find(note => note.id === noteId) || null;
+      const userId = this.getCurrentUserId();
+      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      const snapshot = await getDoc(noteRef);
+      
+      return snapshot.exists() ? (snapshot.data() as SavedNote) : null;
     } catch (error) {
       console.error('Error obteniendo nota por ID:', error);
       return null;
@@ -89,10 +107,14 @@ export class PersistenceService {
   /**
    * Obtiene notas por paciente
    */
-  static getNotesByPatient(patientId: string): SavedNote[] {
+  static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
-      const notes = this.getAllNotes();
-      return notes.filter(note => note.patientId === patientId);
+      const userId = this.getCurrentUserId();
+      const notesRef = collection(this.db, this.COLLECTION_NAME, userId, 'notes');
+      const q = query(notesRef, where('patientId', '==', patientId));
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => doc.data() as SavedNote);
     } catch (error) {
       console.error('Error obteniendo notas por paciente:', error);
       return [];
@@ -121,16 +143,12 @@ export class PersistenceService {
   /**
    * Elimina una nota por ID
    */
-  static deleteNote(noteId: string): boolean {
+  static async deleteNote(noteId: string): Promise<boolean> {
     try {
-      const notes = this.getAllNotes();
-      const filteredNotes = notes.filter(note => note.id !== noteId);
+      const userId = this.getCurrentUserId();
+      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      await deleteDoc(noteRef);
       
-      if (filteredNotes.length === notes.length) {
-        return false; // No se encontró la nota
-      }
-      
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filteredNotes));
       console.log(`🗑️ Nota eliminada: ${noteId}`);
       return true;
     } catch (error) {
@@ -140,24 +158,16 @@ export class PersistenceService {
   }
 
   /**
-   * Limpia todas las notas (para testing)
-   */
-  static clearAllNotes(): void {
-    localStorage.removeItem(this.STORAGE_KEY);
-    console.log('🧹 Todas las notas han sido eliminadas');
-  }
-
-  /**
    * Obtiene estadísticas de notas guardadas
    */
-  static getStats(): {
+  static async getStats(): Promise<{
     totalNotes: number;
     totalPatients: number;
     totalSessions: number;
     oldestNote: string | null;
     newestNote: string | null;
-  } {
-    const notes = this.getAllNotes();
+  }> {
+    const notes = await this.getAllNotes();
     const patients = new Set(notes.map(n => n.patientId));
     const sessions = new Set(notes.map(n => n.sessionId));
     
@@ -181,39 +191,6 @@ export class PersistenceService {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `note_${timestamp}_${random}`;
-  }
-
-  /**
-   * Simula una operación de base de datos con delay
-   */
-  private static async simulateDbDelay(ms: number = 100): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Exporta todas las notas para backup
-   */
-  static exportNotes(): string {
-    const notes = this.getAllNotes();
-    return JSON.stringify(notes, null, 2);
-  }
-
-  /**
-   * Importa notas desde backup
-   */
-  static importNotes(notesJson: string): boolean {
-    try {
-      const notes = JSON.parse(notesJson);
-      if (Array.isArray(notes)) {
-        localStorage.setItem(this.STORAGE_KEY, notesJson);
-        console.log(`📥 ${notes.length} notas importadas exitosamente`);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error importando notas:', error);
-      return false;
-    }
   }
 }
 
