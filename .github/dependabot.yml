@@ -1,14 +1,24 @@
 # Archivo de configuración para Dependabot
 version: 2
 updates:
-  # Mantener dependencias para npm (nuestro gestor de paquetes)
   - package-ecosystem: "npm"
-    # Buscar el package.json en el directorio raíz del proyecto
     directory: "/"
-    # Chequear por actualizaciones diariamente
     schedule:
-      interval: "daily"
-    # Etiquetar los Pull Requests para una fácil identificación
+      interval: "weekly"
+    target-branch: "develop"
+    versioning-strategy: "auto"
     labels:
       - "dependencies"
-      - "npm" 
+      - "security"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "mauriciosobarzo"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+    rebase-strategy: "auto"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"] 

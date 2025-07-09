@@ -5,8 +5,8 @@
 
 import { SOAPData } from './AudioToSOAPBridge';
 import { EncryptedData, CryptoService } from './CryptoService';
-import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 export interface SavedNote {
   id: string;
@@ -20,13 +20,11 @@ export interface SavedNote {
 
 export class PersistenceService {
   private static readonly COLLECTION_NAME = 'consultations';
-  private static db = getFirestore();
 
   /**
    * Obtiene el ID del usuario actual autenticado
    */
   private static getCurrentUserId(): string {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (!user) {
       throw new Error('Usuario no autenticado');
@@ -61,7 +59,7 @@ export class PersistenceService {
       };
 
       // Guardar en Firestore
-      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      const noteRef = doc(db, this.COLLECTION_NAME, userId, 'notes', noteId);
       await setDoc(noteRef, savedNote);
       
       console.log(`✅ Nota SOAP guardada con ID: ${noteId}`);
@@ -78,7 +76,7 @@ export class PersistenceService {
   static async getAllNotes(): Promise<SavedNote[]> {
     try {
       const userId = this.getCurrentUserId();
-      const notesRef = collection(this.db, this.COLLECTION_NAME, userId, 'notes');
+      const notesRef = collection(db, this.COLLECTION_NAME, userId, 'notes');
       const snapshot = await getDocs(notesRef);
       
       return snapshot.docs.map(doc => doc.data() as SavedNote);
@@ -94,7 +92,7 @@ export class PersistenceService {
   static async getNoteById(noteId: string): Promise<SavedNote | null> {
     try {
       const userId = this.getCurrentUserId();
-      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      const noteRef = doc(db, this.COLLECTION_NAME, userId, 'notes', noteId);
       const snapshot = await getDoc(noteRef);
       
       return snapshot.exists() ? (snapshot.data() as SavedNote) : null;
@@ -110,7 +108,7 @@ export class PersistenceService {
   static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
       const userId = this.getCurrentUserId();
-      const notesRef = collection(this.db, this.COLLECTION_NAME, userId, 'notes');
+      const notesRef = collection(db, this.COLLECTION_NAME, userId, 'notes');
       const q = query(notesRef, where('patientId', '==', patientId));
       const snapshot = await getDocs(q);
       
@@ -146,7 +144,7 @@ export class PersistenceService {
   static async deleteNote(noteId: string): Promise<boolean> {
     try {
       const userId = this.getCurrentUserId();
-      const noteRef = doc(this.db, this.COLLECTION_NAME, userId, 'notes', noteId);
+      const noteRef = doc(db, this.COLLECTION_NAME, userId, 'notes', noteId);
       await deleteDoc(noteRef);
       
       console.log(`🗑️ Nota eliminada: ${noteId}`);
