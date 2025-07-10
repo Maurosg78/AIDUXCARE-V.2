@@ -17,94 +17,90 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
   isRecording,
   recordingStatus
 }) => {
+  const getStatusColor = () => {
+    switch (recordingStatus.status) {
+      case 'recording':
+        return 'border-red-500 bg-red-50';
+      case 'processing':
+        return 'border-yellow-500 bg-yellow-50';
+      case 'completed':
+        return 'border-green-500 bg-green-50';
+      case 'error':
+        return 'border-red-600 bg-red-50';
+      default:
+        return 'border-gray-200';
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (recordingStatus.status) {
+      case 'recording':
+        return '🔴';
+      case 'processing':
+        return '⏳';
+      case 'completed':
+        return '✅';
+      case 'error':
+        return '❌';
+      default:
+        return '🎙️';
+    }
+  };
+
   return (
-    <div style={{ 
-      border: '1px solid #e9ecef',
-      borderRadius: '8px',
-      padding: '1rem',
-      backgroundColor: 'white',
-      position: 'relative'
-    }}>
-      <h3 style={{ marginBottom: '1rem', color: '#495057' }}>
-        📝 Transcripción Médica
-      </h3>
+    <div className={`
+      p-4 rounded-lg border-2 transition-colors duration-300
+      ${getStatusColor()}
+    `}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+          {getStatusIcon()} Transcripción Médica
+        </h2>
+        {recordingStatus.status !== 'idle' && (
+          <span className="text-sm font-medium text-gray-500">
+            {recordingStatus.message}
+          </span>
+        )}
+      </div>
 
       {/* Área de transcripción */}
-      <div style={{
-        minHeight: '200px',
-        maxHeight: '400px',
-        overflowY: 'auto',
-        padding: '1rem',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '4px',
-        border: '1px solid #e9ecef',
-        fontSize: '0.9rem',
-        lineHeight: '1.5',
-        whiteSpace: 'pre-wrap',
-        position: 'relative'
-      }}>
-        {transcription || (
-          <div style={{ color: '#6c757d', fontStyle: 'italic' }}>
-            {recordingStatus.status === 'recording' ? (
-              'Grabando audio... El análisis aparecerá al finalizar.'
-            ) : recordingStatus.status === 'processing' ? (
-              'Procesando audio con Google Cloud...'
-            ) : recordingStatus.status === 'error' ? (
-              recordingStatus.message
-            ) : (
-              'La transcripción aparecerá aquí al iniciar la grabación.'
-            )}
+      <div className="relative min-h-[200px] bg-white rounded border border-gray-200 p-4">
+        {transcription ? (
+          <p className="whitespace-pre-wrap text-gray-700">{transcription}</p>
+        ) : (
+          <p className="text-gray-400 italic">
+            {isRecording 
+              ? 'Grabando audio... El análisis aparecerá al finalizar.'
+              : 'La transcripción aparecerá aquí al grabar...'}
+          </p>
+        )}
+
+        {/* Indicador de grabación */}
+        {isRecording && (
+          <div className="absolute top-2 right-2 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs font-medium text-red-500">EN VIVO</span>
           </div>
         )}
       </div>
 
-      {/* Indicadores de estado */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '1rem',
-        fontSize: '0.8rem',
-        color: '#6c757d'
-      }}>
-        {/* Estado de grabación */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.5rem' 
-        }}>
-          {recordingStatus.status === 'recording' && (
-            <span style={{ 
-              color: '#28a745',
-              animation: 'pulse 2s infinite'
-            }}>
-              🎙️ Grabando...
-            </span>
-          )}
-          {recordingStatus.status === 'processing' && (
-            <span style={{ color: '#007bff' }}>
-              🔄 Procesando...
-            </span>
-          )}
-          {recordingStatus.status === 'completed' && (
-            <span style={{ color: '#28a745' }}>
-              ✅ Análisis completado
-            </span>
-          )}
-          {recordingStatus.status === 'error' && (
-            <span style={{ color: '#dc3545' }}>
-              ❌ {recordingStatus.message}
-            </span>
-          )}
+      {/* Barra de progreso */}
+      {recordingStatus.status !== 'idle' && (
+        <div className="mt-4">
+          <div className="w-full bg-gray-200 rounded-full h-1">
+            <div
+              className={`h-1 rounded-full transition-all duration-300 ${
+                recordingStatus.status === 'recording' ? 'bg-red-500' :
+                recordingStatus.status === 'processing' ? 'bg-yellow-500' :
+                recordingStatus.status === 'completed' ? 'bg-green-500' :
+                'bg-red-600'
+              }`}
+              style={{ width: `${recordingStatus.progress}%` }}
+            />
+          </div>
         </div>
-
-        {/* Contador de caracteres */}
-        {transcription && (
-          <div>
-            {transcription.length} caracteres
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
