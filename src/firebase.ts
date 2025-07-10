@@ -2,15 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Credenciales proporcionadas por el CEO para el entorno de UAT
 const firebaseConfig = {
-  apiKey: "AIzaSyDMDl3Vj_0WSMhOtz6IbGiTXaWOtABeGyk",
-  authDomain: "aiduxcare-mvp-uat.firebaseapp.com",
-  projectId: "aiduxcare-mvp-uat",
-  storageBucket: "aiduxcare-mvp-uat.firebasestorage.app",
-  messagingSenderId: "438815206522",
-  appId: "1:438815206522:web:4a3618eb72f42c73751fc3",
-  measurementId: "G-TCXWV8L42M"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Inicializar Firebase
