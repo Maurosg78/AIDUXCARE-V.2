@@ -23,13 +23,6 @@ interface CryptoConfig {
   saltLength: number;
 }
 
-interface CryptoKeyData {
-  key: CryptoKey;
-  algorithm: string;
-  extractable: boolean;
-  usages: KeyUsage[];
-}
-
 export class CryptoService {
   private static instance: CryptoService;
   private key: CryptoKey | null = null;

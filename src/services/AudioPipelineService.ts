@@ -3,7 +3,7 @@
  * Pipeline profesional: MediaRecorder → Google Cloud Speech-to-Text → Análisis Clínico
  */
 
-import { GoogleCloudAudioService, ClinicalAnalysisResponse } from './GoogleCloudAudioService';
+import { GoogleCloudAudioService } from './GoogleCloudAudioService';
 
 interface TranscriptionResult {
   text: string;
@@ -16,12 +16,6 @@ interface TranscriptionError {
   code: string;
   message: string;
   details?: unknown;
-}
-
-interface TranscriptionMetadata {
-  confidence: number;
-  timestamp: number;
-  isFinal: boolean;
 }
 
 interface AudioPipelineCallbacks {

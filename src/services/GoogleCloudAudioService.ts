@@ -219,7 +219,7 @@ export class GoogleCloudAudioService {
     }
   }
 
-  public async processAudio(audioBlob: Blob): Promise<TranscriptionResult> {
+  public async processAudio(): Promise<TranscriptionResult> {
     try {
       // Aquí iría la lógica real de Google Cloud Speech-to-Text
       // Por ahora retornamos un resultado simulado

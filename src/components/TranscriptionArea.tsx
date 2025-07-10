@@ -1,11 +1,5 @@
 import React from 'react';
 
-interface RecordingStatus {
-  status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
-  progress: number;
-  message: string;
-}
-
 export interface TranscriptionAreaProps {
   text: string;
 }
