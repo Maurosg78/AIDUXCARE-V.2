@@ -1,29 +1,9 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Denegar todo el acceso por defecto
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    // Permitir acceso solo a usuarios autenticados a sus propios datos de pacientes
-    match /patients/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Permitir acceso a datos de consultas solo al propietario autenticado
-    match /consultations/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Permitir acceso a datos de sesiones solo al propietario autenticado
-    match /sessions/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Permitir acceso a datos de usuarios solo al propietario autenticado
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
   }
-} 
+}

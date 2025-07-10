@@ -1,112 +1,58 @@
 /**
  * AudioPipelineService - Servicio único de audio para AiDuxCare V.2
- * Pipeline completo: Grabación → Web Speech API → Transcripción
- * CORREGIDO: Eliminado Google Cloud, usando solo Web Speech API
+ * Pipeline profesional: MediaRecorder → Google Cloud Speech-to-Text → Análisis Clínico
  */
 
-// Declaración para compatibilidad con navegadores
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-    SpeechRecognition?: {
-      new (): SpeechRecognition;
-    };
-    webkitSpeechRecognition?: {
-      new (): SpeechRecognition;
-    };
-  }
+import { GoogleCloudAudioService, ClinicalAnalysisResponse } from './GoogleCloudAudioService';
+
+interface TranscriptionCallback {
+  (text: string, isFinal: boolean, metadata?: { 
+    status?: 'recording' | 'processing' | 'completed' | 'error';
+    progress?: number;
+    error?: string;
+  }): void;
 }
 
-// Tipos para Web Speech API
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  
-  start(): void;
-  stop(): void;
-  abort(): void;
-  
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
-}
-
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  readonly isFinal: boolean;
-  readonly length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  readonly transcript: string;
-  readonly confidence: number;
+interface ExtendedClinicalAnalysisResponse extends ClinicalAnalysisResponse {
+  transcription?: string;
 }
 
 export default class AudioPipelineService {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private isRecording: boolean = false;
-  private transcriptionCallback: ((text: string, isFinal: boolean) => void) | null = null;
+  private transcriptionCallback: TranscriptionCallback | null = null;
   private stream: MediaStream | null = null;
-  private audioContext: AudioContext | null = null;
-  
-  // ✅ WEB SPEECH API REAL
-  private recognition: SpeechRecognition | null = null;
-  private isTranscriptionActive: boolean = false;
-  private accumulatedTranscription: string = '';
-  private lastInterimResult: string = '';
+  private googleCloudService: GoogleCloudAudioService;
+  private recordingStartTime: number = 0;
   
   constructor() {
-    console.log('🎙️ AudioPipelineService inicializado - Web Speech API + MediaRecorder');
-    this.initializeSpeechRecognition();
+    console.log('🎙️ AudioPipelineService inicializado - Pipeline Profesional Google Cloud');
+    this.googleCloudService = new GoogleCloudAudioService();
   }
 
   /**
    * Verificar si el servicio está soportado
    */
   isServiceSupported(): boolean {
-    const hasMediaDevices = !!(
+    return !!(
       navigator.mediaDevices && 
       'getUserMedia' in navigator.mediaDevices && 
       typeof MediaRecorder !== 'undefined'
     );
-    
-    const hasSpeechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    
-    return hasMediaDevices && hasSpeechRecognition;
   }
 
   /**
    * MÉTODO PRINCIPAL: Iniciar grabación de audio
    */
-  async iniciarGrabacion(callback: (text: string, isFinal: boolean) => void): Promise<void> {
+  async iniciarGrabacion(callback: TranscriptionCallback): Promise<void> {
     if (this.isRecording) {
       console.warn('⚠️ Ya se está grabando audio');
       return;
     }
 
     try {
-      console.log('🎤 Iniciando pipeline de grabación...');
+      console.log('🎙️ Iniciando grabación de consulta médica...');
       
       // Solicitar permisos de micrófono con configuración optimizada
       this.stream = await navigator.mediaDevices.getUserMedia({ 
@@ -114,82 +60,75 @@ export default class AudioPipelineService {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 48000,
-          channelCount: 1
+          sampleRate: 48000, // Calidad profesional
+          channelCount: 1 // Mono para mejor reconocimiento
         } 
       });
 
-      console.log('✅ Permisos concedidos, configurando pipeline...');
+      console.log('✅ Permisos concedidos, configurando pipeline profesional...');
       
       this.transcriptionCallback = callback;
       this.audioChunks = [];
+      this.recordingStartTime = Date.now();
       
-      // ✅ RESETEAR VARIABLES WEB SPEECH API
-      this.accumulatedTranscription = '';
-      this.lastInterimResult = '';
-      this.isTranscriptionActive = false;
-      
-      // Configurar MediaRecorder para captura de audio
+      // Configurar MediaRecorder para captura de audio de alta calidad
       this.configureMediaRecorder();
       
       this.isRecording = true;
       
-      console.log('🎙️ Pipeline de grabación activo');
-      
-      // ✅ INICIAR WEB SPEECH API PARA TRANSCRIPCIÓN
-      this.startWebSpeechTranscription();
-      
-      // Feedback inmediato
+      // Notificar estado inicial
       if (this.transcriptionCallback) {
-        this.transcriptionCallback('🎙️ Grabando audio médico...', false);
+        this.transcriptionCallback(
+          'Grabando audio... El análisis aparecerá al finalizar.',
+          false,
+          { status: 'recording', progress: 0 }
+        );
       }
 
+      console.log('🎙️ Pipeline de grabación profesional activo');
+
     } catch (error) {
-      console.error('❌ Error en pipeline de grabación:', error);
+      console.error('❌ Error al iniciar grabación:', error);
       this.isRecording = false;
       
       if (error instanceof DOMException) {
         if (error.name === 'NotAllowedError') {
-          throw new Error('Permisos de micrófono denegados. Por favor, permite el acceso al micrófono.');
+          throw new Error('Permisos de micrófono denegados');
         } else if (error.name === 'NotFoundError') {
-          throw new Error('No se encontró micrófono. Verifica que tu dispositivo tenga un micrófono conectado.');
+          throw new Error('No se encontró micrófono');
         }
       }
       
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      throw new Error(`Error en pipeline de grabación: ${errorMessage}`);
+      throw error;
     }
   }
 
   /**
-   * MÉTODO PRINCIPAL: Detener grabación
+   * MÉTODO PRINCIPAL: Detener grabación y procesar con Google Cloud
    */
-  detenerGrabacion(): void {
+  async detenerGrabacion(): Promise<void> {
     if (!this.isRecording) {
       console.warn('⚠️ No se está grabando audio');
       return;
     }
 
-    console.log('🛑 Deteniendo pipeline de grabación...');
-    
-    // ✅ DETENER WEB SPEECH API
-    this.stopWebSpeechTranscription();
+    console.log('🛑 Deteniendo grabación de consulta médica...');
     
     this.isRecording = false;
     
+    // Detener MediaRecorder
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
     
+    // Detener stream
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
       this.stream = null;
     }
-    
-    // ✅ ENVIAR TRANSCRIPCIÓN FINAL DE WEB SPEECH API
-    setTimeout(() => {
-      this.processFinalWebSpeechTranscription();
-    }, 1000);
+
+    // Procesar audio capturado
+    await this.processAudioWithGoogleCloud();
   }
 
   /**
@@ -197,16 +136,7 @@ export default class AudioPipelineService {
    */
   getServiceInfo(): string {
     const mediaSupport = !!(navigator.mediaDevices && 'getUserMedia' in navigator.mediaDevices);
-    const speechSupport = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    
-    return `AudioPipelineService: MediaRecorder ${mediaSupport ? '✅' : '❌'}, Web Speech API ${speechSupport ? '✅' : '❌'}`;
-  }
-
-  /**
-   * Verificar si está grabando
-   */
-  getIsRecording(): boolean {
-    return this.isRecording;
+    return `AudioPipelineService: MediaRecorder ${mediaSupport ? '✅' : '❌'}, Google Cloud Pipeline Activo ✅`;
   }
 
   /**
@@ -217,258 +147,189 @@ export default class AudioPipelineService {
       this.detenerGrabacion();
     }
     
-    // ✅ LIMPIAR WEB SPEECH API
-    this.stopWebSpeechTranscription();
-    this.accumulatedTranscription = '';
-    this.lastInterimResult = '';
-    this.isTranscriptionActive = false;
-    
-    // Limpiar recursos de audio
     this.audioChunks = [];
     this.transcriptionCallback = null;
     this.mediaRecorder = null;
     
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
-    }
-    
-    console.log('🧹 Pipeline de audio limpiado (Web Speech API + MediaRecorder)');
+    console.log('🧹 Pipeline de audio limpiado (Google Cloud Pipeline)');
   }
 
   /**
-   * SIMPLIFICADO: Configurar MediaRecorder solo para captura de audio
+   * Configurar MediaRecorder para captura de audio de alta calidad
    */
   private configureMediaRecorder(): void {
     if (!this.stream) return;
 
-    // 🔧 PASO 2: CONFIGURACIÓN REFINADA DEL MEDIARECORDER
-    // Detectar formatos soportados con prioridad mejorada para calidad
-    const supportedFormats = [
-      'audio/wav', // Prioridad 1: Mejor calidad, sin compresión
-      'audio/webm;codecs=opus', // Prioridad 2: Buena calidad con compresión eficiente
-      'audio/mp4', // Prioridad 3: Amplia compatibilidad
-      'audio/webm', // Prioridad 4: Fallback básico
-      'audio/ogg;codecs=opus' // Prioridad 5: Alternativa para algunos navegadores
-    ];
-
-    let selectedFormat = 'audio/webm'; // Fallback por defecto
-    
-    for (const format of supportedFormats) {
-      if (MediaRecorder.isTypeSupported(format)) {
-        selectedFormat = format;
-        break;
-      }
-    }
-
-    console.log(`✅ PASO 2: Formato seleccionado: ${selectedFormat}`);
-
-    // Configuración específica por formato
-    let optimizedOptions: MediaRecorderOptions;
-    
-    if (selectedFormat.includes('wav')) {
-      console.log('🎵 PASO 2: Configuración WAV - Calidad máxima');
-      optimizedOptions = {
-        mimeType: selectedFormat,
-        audioBitsPerSecond: 128000 // Alta calidad sin compresión
-      };
-    } else if (selectedFormat.includes('opus')) {
-      console.log('🎵 PASO 2: Configuración OPUS - Calidad eficiente');
-      optimizedOptions = {
-        mimeType: selectedFormat,
-        audioBitsPerSecond: 64000 // Calidad eficiente
-      };
-    } else if (selectedFormat.includes('mp4')) {
-      console.log('🎵 PASO 2: Configuración MP4 - Compatibilidad amplia');
-      optimizedOptions = {
-      mimeType: selectedFormat,
-        audioBitsPerSecond: 96000 // Balance calidad/compatibilidad
-      };
-    } else {
-      console.log('🎵 PASO 2: Configuración WebM - Fallback básico');
-      optimizedOptions = {
-        mimeType: selectedFormat
-      };
-    }
+    // Configuración optimizada para Google Cloud Speech-to-Text
+    const options: MediaRecorderOptions = {
+      mimeType: 'audio/webm;codecs=opus',
+      audioBitsPerSecond: 128000 // 128kbps para calidad profesional
+    };
 
     try {
-      this.mediaRecorder = new MediaRecorder(this.stream, optimizedOptions);
-      console.log('✅ PASO 2: MediaRecorder configurado con opciones optimizadas:', optimizedOptions);
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+      console.log('✅ MediaRecorder configurado con opciones optimizadas:', options);
     } catch (error) {
-      console.warn('⚠️ PASO 2: Fallback a configuración básica:', error);
-      // Fallback simple sin opciones avanzadas
+      console.warn('⚠️ Error al configurar MediaRecorder con opciones optimizadas:', error);
       this.mediaRecorder = new MediaRecorder(this.stream);
     }
 
-    // Configurar eventos solo para diagnóstico
+    // Configurar eventos
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0 && this.isRecording) {
         this.audioChunks.push(event.data);
-        console.log(`📦 Chunk recibido: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks)`);
         
-        // 🔍 DEBUG: Mostrar información del blob crudo mejorada
-        console.log(`🔍 BLOB DEBUG:`, {
-          size: event.data.size,
-          type: event.data.type,
-          chunkIndex: this.audioChunks.length - 1,
-          totalChunks: this.audioChunks.length,
-          // 🔧 PASO 2: Métricas de calidad añadidas
-          bytesPerSecond: event.data.size, // Chunk de ~1 segundo
-          qualityIndicator: event.data.size > 8000 ? 'GOOD' : event.data.size > 4000 ? 'FAIR' : 'POOR'
-        });
+        // Calcular progreso aproximado
+        const elapsedTime = Date.now() - this.recordingStartTime;
+        const progress = Math.min(100, Math.round((elapsedTime / 1000) * 5)); // 5% por segundo
+        
+        console.log(`📦 Chunk de audio capturado: ${event.data.size} bytes (total: ${this.audioChunks.length} chunks)`);
+        
+        // Actualizar progreso
+        if (this.transcriptionCallback) {
+          this.transcriptionCallback(
+            'Grabando audio... El análisis aparecerá al finalizar.',
+            false,
+            { status: 'recording', progress }
+          );
+        }
       }
     };
 
-    this.mediaRecorder.onstop = async () => {
-      console.log('🛑 Grabación detenida, audio capturado para diagnóstico');
-      // Audio solo para diagnóstico, transcripción viene de Web Speech API
+    this.mediaRecorder.onstop = () => {
+      console.log('🛑 Grabación detenida, procesando con Google Cloud...');
     };
 
     this.mediaRecorder.onerror = (event) => {
       console.error('❌ Error en MediaRecorder:', event);
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(
+          'Error en la grabación. Por favor, intenta de nuevo.',
+          true,
+          { status: 'error', error: 'mediarecorder_error' }
+        );
+      }
     };
 
     // Iniciar grabación con chunks cada 1 segundo
     this.mediaRecorder.start(1000);
   }
 
-  // MÉTODOS DE COMPATIBILIDAD (para no romper código existente)
-  async startRecording(callback: (text: string, isFinal: boolean) => void): Promise<void> {
-    return this.iniciarGrabacion(callback);
-  }
-
-  stopRecording(): void {
-    return this.detenerGrabacion();
-  }
-
-  // ✅ WEB SPEECH API REAL
-  private initializeSpeechRecognition(): void {
-    console.log('🎤 Iniciando Web Speech API...');
-    
-    // Detectar soporte de Web Speech API
-    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognitionConstructor) {
-      console.warn('⚠️ Web Speech API no soportado en este navegador');
-      return;
-    }
-    
-    try {
-      this.recognition = new SpeechRecognitionConstructor();
-      
-      // Configuración optimizada para consulta médica
-      this.recognition.continuous = true; // CRÍTICO: Continua para grabaciones largas
-      this.recognition.interimResults = true; // Para transcripción en tiempo real
-      this.recognition.lang = 'es-ES'; // Español para términos médicos
-      this.recognition.maxAlternatives = 1;
-      
-      // Eventos de control
-      this.recognition.onstart = () => {
-        console.log('✅ Web Speech API iniciado - Transcripción activa');
-        this.isTranscriptionActive = true;
-      };
-      
-      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimText = '';
-        let finalText = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalText += result[0].transcript;
-          } else {
-            interimText += result[0].transcript;
-          }
-        }
-        
-        if (interimText.trim()) {
-          this.lastInterimResult = interimText.trim();
-          console.log(`🎤 Interim: "${this.lastInterimResult}"`);
-        }
-        
-        if (finalText.trim()) {
-          this.accumulatedTranscription += finalText.trim() + ' ';
-          console.log(`✅ Final: "${finalText.trim()}"`);
-        }
-        
-        // Enviar transcripción actualizada al callback
-        if (this.transcriptionCallback) {
-          const currentTranscription = this.accumulatedTranscription + interimText;
-          this.transcriptionCallback(currentTranscription.trim(), false);
-        }
-      };
-      
-      this.recognition.onend = () => {
-        console.log('⏹️ Web Speech API detenido');
-        this.isTranscriptionActive = false;
-        
-        // CRÍTICO: Reiniciar automáticamente si aún estamos grabando
-        if (this.isRecording) {
-          console.log('🔄 Reiniciando Web Speech API para continuar grabación...');
-          setTimeout(() => {
-            if (this.recognition && this.isRecording) {
-              this.recognition.start();
-            }
-          }, 100);
-        }
-      };
-      
-      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('❌ Error en Web Speech API:', event.error);
-        
-        // Manejar errores específicos
-        if (event.error === 'no-speech') {
-          console.log('⏳ No se detectó habla, continuando...');
-        } else if (event.error === 'not-allowed') {
-          if (this.transcriptionCallback) {
-            this.transcriptionCallback('Error: Permisos de micrófono denegados', true);
-          }
-        } else if (this.transcriptionCallback) {
-          this.transcriptionCallback(`Error de transcripción: ${event.error}`, true);
-        }
-      };
-      
-      console.log('✅ Web Speech API configurado correctamente');
-
-    } catch (error) {
-      console.error('❌ Error inicializando Web Speech API:', error);
-    }
-  }
-
-  // ✅ NUEVO: Iniciar Web Speech API para transcripción
-  private startWebSpeechTranscription(): void {
-    if (!this.recognition) {
-      console.warn('⚠️ Web Speech API no disponible');
-      return;
-    }
-    
-    try {
-      console.log('🎤 Iniciando transcripción con Web Speech API...');
-      this.recognition.start();
-    } catch (error) {
-      console.error('❌ Error iniciando Web Speech API:', error);
-    }
-  }
-
-  // ✅ NUEVO: Detener Web Speech API
-  private stopWebSpeechTranscription(): void {
-    if (this.recognition && this.isTranscriptionActive) {
-      console.log('⏹️ Deteniendo Web Speech API...');
-      this.recognition.stop();
-    }
-  }
-
-  // ✅ NUEVO: Procesar transcripción final de Web Speech API
-  private processFinalWebSpeechTranscription(): void {
-    if (this.transcriptionCallback && this.accumulatedTranscription.trim()) {
-      const finalTranscription = this.accumulatedTranscription.trim();
-      console.log(`✅ Transcripción final de Web Speech API: "${finalTranscription.substring(0, 100)}${finalTranscription.length > 100 ? '...' : ''}"`);
-      this.transcriptionCallback(finalTranscription, true);
-    } else {
-      console.warn('⚠️ No hay transcripción disponible de Web Speech API');
+  /**
+   * Procesar audio capturado con Google Cloud
+   */
+  private async processAudioWithGoogleCloud(): Promise<void> {
+    if (this.audioChunks.length === 0) {
+      console.warn('⚠️ No hay audio para procesar');
       if (this.transcriptionCallback) {
-        this.transcriptionCallback('No se pudo obtener transcripción. Verifica tu micrófono e intenta hablar más claramente.', true);
+        this.transcriptionCallback(
+          'No se capturó audio. Por favor, verifica tu micrófono.',
+          true,
+          { status: 'error', error: 'no_audio' }
+        );
+      }
+      return;
+    }
+
+    try {
+      // Notificar inicio del procesamiento
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(
+          'Procesando audio con Google Cloud...',
+          false,
+          { status: 'processing', progress: 0 }
+        );
+      }
+
+      console.log('🧠 Enviando audio al Cerebro Clínico...');
+
+      // Preparar el audio para envío
+      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm;codecs=opus' });
+      
+      // Debug info
+      console.log('🔍 BLOB DEBUG:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        chunks: this.audioChunks.length,
+        duration: `${Math.round((Date.now() - this.recordingStartTime) / 1000)}s`,
+        bitrate: `${Math.round(audioBlob.size * 8 / ((Date.now() - this.recordingStartTime) / 1000))}bps`
+      });
+
+      const base64Audio = await this.blobToBase64(audioBlob);
+      
+      // Actualizar progreso
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(
+          'Enviando audio al servidor...',
+          false,
+          { status: 'processing', progress: 50 }
+        );
+      }
+
+      const response = await this.googleCloudService.analyzeClinicalTranscription({
+        transcription: base64Audio,
+        specialty: 'physiotherapy',
+        sessionType: 'initial'
+      }) as ExtendedClinicalAnalysisResponse;
+
+      // Validar respuesta
+      if (!response || !response.success || !response.transcription) {
+        throw new Error('Respuesta inválida del Cerebro Clínico');
+      }
+
+      console.log('✅ Análisis recibido del Cerebro Clínico:', {
+        success: true,
+        transcriptionLength: response.transcription.length,
+        processingTime: `${Math.round((Date.now() - this.recordingStartTime) / 1000)}s`
+      });
+
+      // Notificar éxito
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(
+          response.transcription,
+          true,
+          { status: 'completed', progress: 100 }
+        );
+      }
+
+    } catch (error) {
+      console.error('❌ Error al procesar audio:', error);
+      
+      if (this.transcriptionCallback) {
+        this.transcriptionCallback(
+          'Error al procesar audio. Por favor, intenta de nuevo.',
+          true,
+          { 
+            status: 'error',
+            error: error instanceof Error ? error.message : 'unknown_error'
+          }
+        );
       }
     }
+  }
+
+  /**
+   * Convertir Blob a Base64
+   */
+  private async blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          // Remover el prefijo "data:audio/webm;base64,"
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        } else {
+          reject(new Error('Error al convertir audio a base64'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // Método de compatibilidad
+  async startRecording(callback: TranscriptionCallback): Promise<void> {
+    return this.iniciarGrabacion(callback);
   }
 } 

@@ -1,118 +1,83 @@
 import React from 'react';
 
-interface ActionBarProps {
-  isRecording: boolean;
-  onStartRecording: () => void;
-  onStopRecording: () => void;
-  onUploadClick: () => void;
-  onCameraClick: () => void;
-  onSave: () => void;
-  disabled?: boolean;
+interface RecordingStatus {
+  status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
+  progress: number;
+  message: string;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ 
-  isRecording, 
+export interface ActionBarProps {
+  isRecording: boolean;
+  onStartRecording: () => Promise<void>;
+  onStopRecording: () => Promise<void>;
+  recordingStatus: RecordingStatus;
+}
+
+const ActionBar: React.FC<ActionBarProps> = ({
+  isRecording,
   onStartRecording,
   onStopRecording,
-  onUploadClick, 
-  onCameraClick, 
-  onSave,
-  disabled = false
+  recordingStatus
 }) => {
-  const getButtonStyle = (baseStyle: React.CSSProperties, isPrimary: boolean = false) => ({
-    ...baseStyle,
-    opacity: disabled ? 0.6 : 1,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    pointerEvents: disabled ? 'none' as const : 'auto' as const
-  });
+  const getStatusColor = () => {
+    switch (recordingStatus.status) {
+      case 'recording':
+        return 'bg-red-500';
+      case 'processing':
+        return 'bg-yellow-500';
+      case 'completed':
+        return 'bg-green-500';
+      case 'error':
+        return 'bg-red-600';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getButtonStyle = () => {
+    if (recordingStatus.status === 'recording') {
+      return 'bg-red-500 hover:bg-red-600';
+    }
+    return 'bg-blue-500 hover:bg-blue-600';
+  };
+
+  const isButtonDisabled = recordingStatus.status === 'processing';
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      gap: '1rem', 
-      justifyContent: 'center',
-      padding: '1rem',
-      borderTop: '1px solid #eee'
-    }}>
-      {!isRecording ? (
-        <button
-          onClick={onStartRecording}
-          disabled={disabled}
-          style={getButtonStyle({
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            backgroundColor: '#10b981',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }, true)}
-        >
-          🎙️ Iniciar Grabación Médica
-        </button>
-      ) : (
-        <button
-          onClick={onStopRecording}
-          disabled={disabled}
-          style={getButtonStyle({
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }, true)}
-        >
-          🛑 Detener Grabación
-        </button>
-      )}
-      
+    <div className="flex items-center gap-4 p-4 bg-white rounded-lg shadow">
+      {/* Botón principal */}
       <button
-        onClick={onUploadClick}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: '1px solid #ddd',
-          backgroundColor: 'white',
-          color: '#333',
-          fontSize: '14px'
-        })}
+        onClick={isRecording ? onStopRecording : onStartRecording}
+        disabled={isButtonDisabled}
+        className={`
+          px-6 py-2 rounded-lg text-white font-medium
+          transition-colors duration-200
+          ${getButtonStyle()}
+          ${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
       >
-        📁 Subir Audio
+        {isRecording ? '⏹️ Detener Grabación' : '🎙️ Iniciar Grabación'}
       </button>
-      
-      <button
-        onClick={onCameraClick}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: '1px solid #ddd',
-          backgroundColor: 'white',
-          color: '#333',
-          fontSize: '14px'
-        })}
-      >
-        📷 Foto
-      </button>
-      
-      <button
-        onClick={onSave}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: 'none',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '14px'
-        }, true)}
-      >
-        💾 Guardar
-      </button>
+
+      {/* Estado y progreso */}
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
+          <span className="text-sm font-medium text-gray-700">
+            {recordingStatus.message}
+          </span>
+        </div>
+        
+        {/* Barra de progreso */}
+        {recordingStatus.status !== 'idle' && (
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
+              style={{ width: `${recordingStatus.progress}%` }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

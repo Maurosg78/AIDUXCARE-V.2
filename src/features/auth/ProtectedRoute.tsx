@@ -1,19 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-
-// Placeholder para un futuro hook de autenticación real
-const useAuth = () => {
-  // Para pruebas, simulamos que el usuario está logueado.
-  // En el futuro, esto verificará un token JWT, una cookie, etc.
-  const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
-  return { isAuthenticated };
-};
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../../firebase';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      setIsAuthenticated(!!user);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (isAuthenticated === null) {
+    // Mostrar un loader mientras se verifica la autenticación
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
-    // Si no está autenticado, redirige a la página de login
     return <Navigate to="/login" />;
   }
 
