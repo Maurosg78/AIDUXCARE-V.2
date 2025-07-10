@@ -7,9 +7,6 @@ export interface TranscriptionAreaProps {
 export function TranscriptionArea({ text }: TranscriptionAreaProps) {
   return (
     <div className="transcription-area">
-      <label htmlFor="transcription-text">
-        Transcripción en tiempo real:
-      </label>
       <textarea
         id="transcription-text"
         className="transcription-text"
