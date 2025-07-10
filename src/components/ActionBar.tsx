@@ -1,118 +1,107 @@
 import React from 'react';
 
-interface ActionBarProps {
-  isRecording: boolean;
-  onStartRecording: () => void;
-  onStopRecording: () => void;
-  onUploadClick: () => void;
-  onCameraClick: () => void;
-  onSave: () => void;
-  disabled?: boolean;
+interface RecordingStatus {
+  status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
+  progress: number;
+  message: string;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ 
-  isRecording, 
+export interface ActionBarProps {
+  isRecording: boolean;
+  onStartRecording: () => Promise<void>;
+  onStopRecording: () => Promise<void>;
+  recordingStatus: RecordingStatus;
+}
+
+const ActionBar: React.FC<ActionBarProps> = ({
+  isRecording,
   onStartRecording,
   onStopRecording,
-  onUploadClick, 
-  onCameraClick, 
-  onSave,
-  disabled = false
+  recordingStatus
 }) => {
-  const getButtonStyle = (baseStyle: React.CSSProperties, isPrimary: boolean = false) => ({
-    ...baseStyle,
-    opacity: disabled ? 0.6 : 1,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    pointerEvents: disabled ? 'none' as const : 'auto' as const
-  });
-
   return (
     <div style={{ 
       display: 'flex', 
-      gap: '1rem', 
-      justifyContent: 'center',
+      alignItems: 'center', 
+      gap: '1rem',
       padding: '1rem',
-      borderTop: '1px solid #eee'
+      backgroundColor: '#f8f9fa',
+      borderRadius: '8px',
+      border: '1px solid #e9ecef'
     }}>
-      {!isRecording ? (
-        <button
-          onClick={onStartRecording}
-          disabled={disabled}
-          style={getButtonStyle({
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            backgroundColor: '#10b981',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }, true)}
-        >
-          🎙️ Iniciar Grabación Médica
-        </button>
-      ) : (
-        <button
-          onClick={onStopRecording}
-          disabled={disabled}
-          style={getButtonStyle({
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.5rem',
-            border: 'none',
-            backgroundColor: '#ef4444',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '14px'
-          }, true)}
-        >
-          🛑 Detener Grabación
-        </button>
-      )}
-      
+      {/* Botón principal de grabación */}
       <button
-        onClick={onUploadClick}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
+        onClick={isRecording ? onStopRecording : onStartRecording}
+        disabled={recordingStatus.status === 'processing'}
+        style={{
           padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: '1px solid #ddd',
-          backgroundColor: 'white',
-          color: '#333',
-          fontSize: '14px'
-        })}
-      >
-        📁 Subir Audio
-      </button>
-      
-      <button
-        onClick={onCameraClick}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
-          border: '1px solid #ddd',
-          backgroundColor: 'white',
-          color: '#333',
-          fontSize: '14px'
-        })}
-      >
-        📷 Foto
-      </button>
-      
-      <button
-        onClick={onSave}
-        disabled={disabled || isRecording}
-        style={getButtonStyle({
-          padding: '0.75rem 1.5rem',
-          borderRadius: '0.5rem',
+          borderRadius: '8px',
           border: 'none',
-          backgroundColor: '#3b82f6',
+          backgroundColor: isRecording ? '#dc3545' : '#28a745',
           color: 'white',
           fontWeight: 'bold',
-          fontSize: '14px'
-        }, true)}
+          cursor: recordingStatus.status === 'processing' ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}
       >
-        💾 Guardar
+        {isRecording ? (
+          <>🛑 Detener Grabación</>
+        ) : (
+          <>🎙️ Iniciar Grabación</>
+        )}
       </button>
+
+      {/* Indicador de estado */}
+      <div style={{ 
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem'
+      }}>
+        <div style={{ 
+          fontSize: '0.9rem',
+          color: recordingStatus.status === 'error' ? '#dc3545' : '#212529'
+        }}>
+          {recordingStatus.message}
+        </div>
+
+        {/* Barra de progreso */}
+        {(recordingStatus.status === 'recording' || recordingStatus.status === 'processing') && (
+          <div style={{ 
+            width: '100%',
+            height: '4px',
+            backgroundColor: '#e9ecef',
+            borderRadius: '2px',
+            overflow: 'hidden'
+          }}>
+            <div 
+              style={{
+                width: `${recordingStatus.progress}%`,
+                height: '100%',
+                backgroundColor: recordingStatus.status === 'recording' ? '#28a745' : '#007bff',
+                transition: 'width 0.3s ease-in-out'
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Indicador de grabación en vivo */}
+      {isRecording && (
+        <div style={{
+          padding: '0.5rem 1rem',
+          backgroundColor: '#dc3545',
+          color: 'white',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          animation: 'pulse 2s infinite'
+        }}>
+          🔴 EN VIVO
+        </div>
+      )}
     </div>
   );
 };

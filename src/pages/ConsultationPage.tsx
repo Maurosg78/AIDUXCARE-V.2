@@ -330,407 +330,168 @@ const generateBasicClinicalAnalysis = (transcription: string) => {
 };
 
 const ConsultationPage: React.FC = () => {
-  // Estados centralizados - única fuente de verdad
-  const [transcriptionText, setTranscriptionText] = useState<string>('');
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [soapData, setSoapData] = useState<SOAPData | null>(null);
-  const [activeTab, setActiveTab] = useState<'capture' | 'evaluation'>('capture');
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [serviceInfo, setServiceInfo] = useState<string>('');
-
-  // 🧠 NUEVO: Estados para cerebro clínico
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcription, setTranscription] = useState('');
+  const [soapData, setSOAPData] = useState<SOAPData | null>(null);
+  const [serviceInfo, setServiceInfo] = useState('');
+  const [warnings, setWarnings] = useState<any[]>([]);
+  const [highlights, setHighlights] = useState<any[]>([]);
   const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysisResponse | null>(null);
-  const [highlights, setHighlights] = useState<Array<any>>([]);
-  const [warnings, setWarnings] = useState<Array<any>>([]);
+  const [recordingStatus, setRecordingStatus] = useState<{
+    status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
+    progress: number;
+    message: string;
+  }>({
+    status: 'idle',
+    progress: 0,
+    message: 'Listo para grabar'
+  });
 
-  // Instanciar servicios
-  const audioService = useMemo(() => new AudioPipelineService(), []);
-  const clinicalService = useMemo(() => new GoogleCloudAudioService(), []);
+  // Servicios
+  const audioPipeline = useMemo(() => new AudioPipelineService(), []);
+  const googleCloudService = useMemo(() => new GoogleCloudAudioService(), []);
 
   // Actualizar información del servicio
+  const updateServiceInfo = useCallback(() => {
+    const info = audioPipeline.getServiceInfo();
+    setServiceInfo(info);
+  }, [audioPipeline]);
+
+  // Inicializar
   useEffect(() => {
-    const updateServiceInfo = () => {
-      const info = audioService.getServiceInfo();
-      setServiceInfo(info);
-    };
-
     updateServiceInfo();
-    
-    // Actualizar cada 10 segundos mientras se graba
-    const interval = setInterval(() => {
-      if (isRecording) {
-        updateServiceInfo();
+  }, [updateServiceInfo]);
+
+  // Manejar transcripción
+  const handleTranscription = useCallback((
+    text: string, 
+    isFinal: boolean, 
+    metadata?: { 
+      status?: 'recording' | 'processing' | 'completed' | 'error';
+      progress?: number;
+      error?: string;
+    }
+  ) => {
+    // Actualizar estado de grabación
+    if (metadata?.status) {
+      let message = '';
+      switch (metadata.status) {
+        case 'recording':
+          message = 'Grabando audio... El análisis aparecerá al finalizar.';
+          break;
+        case 'processing':
+          message = 'Procesando audio con Google Cloud...';
+          break;
+        case 'completed':
+          message = 'Análisis completado';
+          break;
+        case 'error':
+          message = `Error: ${metadata.error || 'Desconocido'}`;
+          break;
       }
-    }, 10000);
 
-    return () => clearInterval(interval);
-  }, [audioService, isRecording]);
+      setRecordingStatus({
+        status: metadata.status,
+        progress: metadata.progress || 0,
+        message
+      });
+    }
 
-  // 🔧 MEJORADO: Callback para transcripción en tiempo real con logging detallado
-  const handleTranscriptionUpdate = useCallback((text: string, isFinal: boolean) => {
-    console.log('🔍 CALLBACK TRANSCRIPCIÓN:', {
-      isFinal,
-      textLength: text.length,
-      preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-      timestamp: new Date().toLocaleTimeString()
-    });
-    
-    setTranscriptionText(text);
-    
-    if (isFinal) {
-      console.log('✅ Transcripción FINAL recibida:', text);
-    } else {
-      console.log('⏳ Transcripción PARCIAL actualizada');
+    // Si es final, procesar con el cerebro clínico
+    if (isFinal && text) {
+      setTranscription(text);
+      
+      // Generar SOAP básico mientras esperamos el análisis completo
+      const basicSOAP = processTranscriptionToSOAP(text);
+      setSOAPData(basicSOAP);
     }
   }, []);
 
-  // 🧠 NUEVO: Procesar transcripción con cerebro clínico real
-  const processTranscriptionToSOAPAsync = useCallback(async (transcript: string) => {
+  // Iniciar grabación
+  const startRecording = useCallback(async () => {
     try {
-      setIsProcessing(true);
-      console.log('🧠 Enviando transcripción al Cerebro Clínico real...');
-      
-      // Preparar request para cerebro clínico
-      const clinicalRequest: ClinicalAnalysisRequest = {
-        transcription: transcript,
-        specialty: 'physiotherapy', // TODO: Hacer configurable
-        sessionType: 'initial' // TODO: Hacer configurable
-      };
-      
-      // Enviar al cerebro clínico
-      const clinicalResult = await clinicalService.analyzeClinicalTranscription(clinicalRequest);
-      setClinicalAnalysis(clinicalResult);
-      
-      if (clinicalResult.success && clinicalResult.analysis) {
-        // Extraer warnings y sugerencias
-        setWarnings(clinicalResult.analysis.warnings || []);
-        setHighlights(clinicalResult.analysis.suggestions || []);
-        
-        // Generar SOAP básico para compatibilidad
-        const basicSOAP = processTranscriptionToSOAP(transcript);
-        setSoapData({
-          ...basicSOAP,
-          confidence: clinicalResult.analysis.soap_analysis?.overall_quality ? 
-            clinicalResult.analysis.soap_analysis.overall_quality / 100 : basicSOAP.confidence
-        });
-        
-        console.log('✅ Análisis clínico completado:', {
-          warnings: clinicalResult.analysis.warnings?.length || 0,
-          suggestions: clinicalResult.analysis.suggestions?.length || 0,
-          overallQuality: clinicalResult.analysis.soap_analysis?.overall_quality
-        });
-      } else {
-        // Fallback a procesamiento básico si falla el cerebro clínico
-        console.warn('⚠️ Cerebro clínico no disponible, usando procesamiento básico');
-        
-        // 🧠 ANÁLISIS BÁSICO MEJORADO
-        const fallbackSOAP = processTranscriptionToSOAP(transcript);
-        setSoapData(fallbackSOAP);
-        
-        // Generar advertencias básicas y sugerencias según el tipo de error
-        if (clinicalResult.message === 'timeout_cerebro_clinico') {
-          // Timeout específico - generar análisis básico pero útil
-          const basicAnalysis = generateBasicClinicalAnalysis(transcript);
-          setWarnings(basicAnalysis.warnings);
-          setHighlights(basicAnalysis.suggestions);
-          
-          setError('⏰ El Cerebro Clínico tardó más de 60 segundos. Se ha generado un análisis básico. Todas las funciones médicas están disponibles.');
-        } else {
-          // Otros errores
-          setError(`🔄 Cerebro clínico temporal: ${clinicalResult.error || 'No disponible'}. Análisis básico activo.`);
-          
-          // Generar análisis básico simple
-          const basicAnalysis = generateBasicClinicalAnalysis(transcript);
-          setWarnings(basicAnalysis.warnings);
-          setHighlights(basicAnalysis.suggestions);
-        }
-      }
-      
-      // Cambiar automáticamente a la pestaña de evaluación
-      setActiveTab('evaluation');
-      
-    } catch (error) {
-      console.error('Error procesando transcripción:', error);
-      
-      // Fallback a procesamiento básico en caso de error
-      const fallbackSOAP = processTranscriptionToSOAP(transcript);
-      setSoapData(fallbackSOAP);
-      
-      setError(`Error de cerebro clínico: ${error instanceof Error ? error.message : 'Error desconocido'}. Usando análisis básico.`);
-      setActiveTab('evaluation');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [clinicalService]);
-
-  // Función para manejar grabación
-  const handleStartRecording = useCallback(async () => {
-    if (isRecording) return;
-
-    try {
-      setError(null);
+      await audioPipeline.iniciarGrabacion(handleTranscription);
       setIsRecording(true);
-      console.log('🎙️ Iniciando grabación de consulta médica...');
-      
-      await audioService.startRecording(handleTranscriptionUpdate);
+      setRecordingStatus({
+        status: 'recording',
+        progress: 0,
+        message: 'Grabando audio... El análisis aparecerá al finalizar.'
+      });
     } catch (error) {
-      setIsRecording(false);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al iniciar grabación';
-      setError(`Error: ${errorMessage}`);
       console.error('Error al iniciar grabación:', error);
+      setRecordingStatus({
+        status: 'error',
+        progress: 0,
+        message: `Error al iniciar grabación: ${error instanceof Error ? error.message : 'Desconocido'}`
+      });
     }
-  }, [isRecording, audioService, handleTranscriptionUpdate]);
+  }, [audioPipeline, handleTranscription]);
 
-  const handleStopRecording = useCallback(async () => {
-    if (!isRecording) return;
-
+  // Detener grabación
+  const stopRecording = useCallback(async () => {
     try {
+      await audioPipeline.detenerGrabacion();
       setIsRecording(false);
-      console.log('🛑 Deteniendo grabación de consulta médica...');
-      
-      // Detener grabación (no retorna transcript)
-      audioService.stopRecording();
-      
-      // Usar el transcript actual del estado
-      if (transcriptionText && transcriptionText.trim()) {
-        console.log('📝 Procesando transcripción médica a formato SOAP...');
-        await processTranscriptionToSOAPAsync(transcriptionText);
-      } else {
-        setError('No se detectó audio. Intenta hablar más cerca del micrófono.');
-      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al detener grabación';
-      setError(`Error: ${errorMessage}`);
       console.error('Error al detener grabación:', error);
+      setRecordingStatus({
+        status: 'error',
+        progress: 0,
+        message: `Error al detener grabación: ${error instanceof Error ? error.message : 'Desconocido'}`
+      });
     }
-  }, [isRecording, audioService, processTranscriptionToSOAPAsync, transcriptionText]);
+  }, [audioPipeline]);
 
-  // Placeholder para otras funciones
-  const handleUploadClick = useCallback(() => {
-    console.log('Upload audio clicked');
-    alert('Función de subir audio será implementada próximamente');
-  }, []);
-
-  const handleCameraClick = useCallback(() => {
-    console.log('Camera clicked');
-    alert('Función de cámara será implementada próximamente');
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    if (!soapData) {
-      alert('No hay datos SOAP para guardar. Complete una transcripción primero.');
-      return;
-    }
-
-    try {
-      setIsProcessing(true);
-      console.log('💾 Guardando nota SOAP:', soapData);
-
-      // Simular guardado
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const noteId = `note_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      console.log('✅ Nota guardada con ID:', noteId);
-      
-      alert(`✅ Nota SOAP guardada exitosamente!\n\nID: ${noteId}\nFecha: ${new Date().toLocaleString()}\nConfianza: ${Math.round(soapData.confidence * 100)}%`);
-      
-    } catch (error) {
-      console.error('Error guardando nota:', error);
-      setError(`Error al guardar la nota: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [soapData]);
+  // Limpiar recursos al desmontar
+  useEffect(() => {
+    return () => {
+      audioPipeline.cleanup();
+    };
+  }, [audioPipeline]);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
       <PatientHeader />
+      
+      <div style={{ marginBottom: '2rem' }}>
+        <ActionBar
+          isRecording={isRecording}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          recordingStatus={recordingStatus}
+        />
+      </div>
 
-      {/* Mostrar errores si los hay */}
-      {error && (
-        <div style={{ 
-          background: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#fff3cd' : '#fee', 
-          border: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '1px solid #ffeaa7' : '1px solid #fcc', 
-          padding: '1rem', 
-          borderRadius: '4px', 
-          marginBottom: '1rem',
-          color: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#856404' : '#c33'
-        }}>
-          {error}
-          <button 
-            onClick={() => setError(null)}
-            style={{ 
-              marginLeft: '1rem', 
-              background: 'none', 
-              border: 'none', 
-              color: error.includes('⚠️') || error.includes('🎭') || error.includes('🎙️') || error.includes('🔄') ? '#856404' : '#c33', 
-              cursor: 'pointer',
-              fontSize: '1.2rem'
-            }}
-          >
-            ×
-          </button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div>
+          <TranscriptionArea
+            transcription={transcription}
+            isRecording={isRecording}
+            recordingStatus={recordingStatus}
+          />
+          
+          <AIModules
+            warnings={warnings}
+            highlights={highlights}
+            clinicalAnalysis={clinicalAnalysis}
+          />
         </div>
-      )}
 
-      {/* Indicador de servicio activo con botón para cambiar */}
+        <div>
+          <EvaluationTabContent soapData={soapData} />
+        </div>
+      </div>
+
       <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '0.5rem',
-        marginBottom: '1rem',
-        padding: '1rem',
-        backgroundColor: '#f8f9fa',
+        marginTop: '2rem', 
+        padding: '1rem', 
+        backgroundColor: '#f8f9fa', 
         borderRadius: '8px',
-        border: '1px solid #e9ecef'
+        fontSize: '0.8rem',
+        color: '#6c757d'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem',
-          fontSize: '0.9rem'
-        }}>
-          <span style={{ fontWeight: 'bold' }}>{serviceInfo}</span>
-          {isRecording && (
-            <span style={{
-              color: '#dc3545',
-              fontWeight: 'bold',
-              animation: 'pulse 2s infinite'
-            }}>
-              🔴 GRABANDO EN VIVO
-            </span>
-          )}
-        </div>
-        
-        <div style={{
-          fontSize: '0.8rem',
-          color: '#28a745',
-          padding: '0.5rem',
-          backgroundColor: '#d4edda',
-          borderRadius: '4px',
-          border: '1px solid #c3e6cb'
-        }}>
-          ✅ <strong>Sistema Médico:</strong> Captura audio real de la consulta médica. 
-          Habla normalmente durante la consulta para obtener transcripción automática.
-        </div>
-        
-        {error && (
-          <div style={{
-            fontSize: '0.8rem',
-            color: '#721c24',
-            padding: '0.5rem',
-            backgroundColor: '#f8d7da',
-            borderRadius: '4px',
-            border: '1px solid #f5c6cb'
-          }}>
-            ⚠️ <strong>Error:</strong> {error}
-          </div>
-        )}
+        <strong>Estado del Sistema:</strong> {serviceInfo}
       </div>
-
-      {/* Selector de Pestañas */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #ccc', marginBottom: '1.5rem' }}>
-        <button 
-          onClick={() => setActiveTab('capture')} 
-          style={{ 
-            padding: '1rem', 
-            border: activeTab === 'capture' ? '1px solid #ccc' : 'none', 
-            borderBottom: activeTab === 'capture' ? '1px solid white' : '1px solid #ccc', 
-            background: 'transparent', 
-            cursor: 'pointer', 
-            fontWeight: activeTab === 'capture' ? 'bold' : 'normal' 
-          }}
-        >
-          Captura y Pre-evaluación
-        </button>
-        <button 
-          onClick={() => setActiveTab('evaluation')} 
-          style={{ 
-            padding: '1rem', 
-            border: activeTab === 'evaluation' ? '1px solid #ccc' : 'none', 
-            borderBottom: activeTab === 'evaluation' ? '1px solid white' : '1px solid #ccc', 
-            background: 'transparent', 
-            cursor: 'pointer', 
-            fontWeight: activeTab === 'evaluation' ? 'bold' : 'normal' 
-          }}
-        >
-          Evaluación y SOAP Final {soapData && '✅'}
-        </button>
-      </div>
-
-      {/* Contenido de la Pestaña Activa */}
-      {activeTab === 'capture' && (
-         <CaptureWorkspace>
-            <div style={{ border: '1px solid #eef1f1', borderRadius: '1rem', padding: '1rem' }}>
-              <div style={{ position: 'relative' }}>
-              <TranscriptionArea 
-                value={transcriptionText} 
-                onChange={setTranscriptionText} 
-                  placeholder={isRecording ? "🎙️ Escuchando en vivo... hable normalmente" : "La transcripción aparecerá aquí en tiempo real"}
-                disabled={isRecording}
-              />
-                
-                {/* Indicador de transcripción en tiempo real */}
-                {isRecording && transcriptionText && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '0.5rem',
-                    right: '0.5rem',
-                    backgroundColor: '#28a745',
-                    color: 'white',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                    animation: 'pulse 2s infinite'
-                  }}>
-                    🔴 TRANSCRIBIENDO
-                  </div>
-                )}
-                
-                {/* Contador de caracteres en tiempo real */}
-                {transcriptionText && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '0.5rem',
-                    right: '0.5rem',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem'
-                  }}>
-                    {transcriptionText.length} caracteres
-                  </div>
-                )}
-              </div>
-                              <ActionBar
-                  isRecording={isRecording}
-                  onStartRecording={handleStartRecording}
-                  onStopRecording={handleStopRecording}
-                  onUploadClick={handleUploadClick}
-                  onCameraClick={handleCameraClick}
-                  onSave={handleSave}
-                  disabled={isProcessing}
-                />
-              {isProcessing && (
-                <div style={{ textAlign: 'center', padding: '1rem', color: '#666' }}>
-                  🔄 Procesando transcripción a SOAP...
-                </div>
-              )}
-            </div>
-           <AIModules 
-             warnings={warnings}
-             highlights={highlights}
-             clinicalAnalysis={clinicalAnalysis}
-           />
-         </CaptureWorkspace>
-      )}
-
-      {activeTab === 'evaluation' && (
-        <EvaluationTabContent soapData={soapData} />
-      )}
     </div>
   );
 };

@@ -1,58 +1,110 @@
 import React from 'react';
 
-interface TranscriptionAreaProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
+interface RecordingStatus {
+  status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
+  progress: number;
+  message: string;
 }
 
-const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({ 
-  value, 
-  onChange, 
-  placeholder = "La transcripción aparecerá aquí en tiempo real...",
-  disabled = false
+export interface TranscriptionAreaProps {
+  transcription: string;
+  isRecording: boolean;
+  recordingStatus: RecordingStatus;
+}
+
+const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
+  transcription,
+  isRecording,
+  recordingStatus
 }) => {
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={{ 
-        display: 'block', 
-        marginBottom: '0.5rem', 
-        fontWeight: 'bold',
-        color: '#333'
+    <div style={{ 
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      padding: '1rem',
+      backgroundColor: 'white',
+      position: 'relative'
+    }}>
+      <h3 style={{ marginBottom: '1rem', color: '#495057' }}>
+        📝 Transcripción Médica
+      </h3>
+
+      {/* Área de transcripción */}
+      <div style={{
+        minHeight: '200px',
+        maxHeight: '400px',
+        overflowY: 'auto',
+        padding: '1rem',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '4px',
+        border: '1px solid #e9ecef',
+        fontSize: '0.9rem',
+        lineHeight: '1.5',
+        whiteSpace: 'pre-wrap',
+        position: 'relative'
       }}>
-        Transcripción en Tiempo Real:
-      </label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        style={{
-          width: '100%',
-          minHeight: '200px',
-          padding: '1rem',
-          border: disabled ? '1px solid #ccc' : '1px solid #ddd',
-          borderRadius: '0.5rem',
-          fontSize: '14px',
-          lineHeight: '1.5',
-          resize: 'vertical',
-          fontFamily: 'monospace',
-          backgroundColor: disabled ? '#f5f5f5' : 'white',
-          color: disabled ? '#666' : '#333',
-          cursor: disabled ? 'not-allowed' : 'text'
-        }}
-      />
-      {disabled && (
+        {transcription || (
+          <div style={{ color: '#6c757d', fontStyle: 'italic' }}>
+            {recordingStatus.status === 'recording' ? (
+              'Grabando audio... El análisis aparecerá al finalizar.'
+            ) : recordingStatus.status === 'processing' ? (
+              'Procesando audio con Google Cloud...'
+            ) : recordingStatus.status === 'error' ? (
+              recordingStatus.message
+            ) : (
+              'La transcripción aparecerá aquí al iniciar la grabación.'
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Indicadores de estado */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: '1rem',
+        fontSize: '0.8rem',
+        color: '#6c757d'
+      }}>
+        {/* Estado de grabación */}
         <div style={{ 
-          fontSize: '0.8rem', 
-          color: '#666', 
-          marginTop: '0.5rem',
-          fontStyle: 'italic'
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem' 
         }}>
-          📝 Modo transcripción automática activo
+          {recordingStatus.status === 'recording' && (
+            <span style={{ 
+              color: '#28a745',
+              animation: 'pulse 2s infinite'
+            }}>
+              🎙️ Grabando...
+            </span>
+          )}
+          {recordingStatus.status === 'processing' && (
+            <span style={{ color: '#007bff' }}>
+              🔄 Procesando...
+            </span>
+          )}
+          {recordingStatus.status === 'completed' && (
+            <span style={{ color: '#28a745' }}>
+              ✅ Análisis completado
+            </span>
+          )}
+          {recordingStatus.status === 'error' && (
+            <span style={{ color: '#dc3545' }}>
+              ❌ {recordingStatus.message}
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Contador de caracteres */}
+        {transcription && (
+          <div>
+            {transcription.length} caracteres
+          </div>
+        )}
+      </div>
     </div>
   );
 };
