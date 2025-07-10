@@ -10,9 +10,9 @@
  * 3. 🟢 VERDE: Pipeline funcional con Status 200 → ✅ VALIDANDO
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-describe('🟢 Google Cloud Pipeline - Validación Post-Reparación', () => {
+describe('Google Cloud Pipeline Integration', () => {
   const CLOUD_FUNCTION_ENDPOINT = 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';
   
   // Casos de prueba que ahora deben funcionar correctamente
@@ -42,7 +42,7 @@ describe('🟢 Google Cloud Pipeline - Validación Post-Reparación', () => {
 
   // Tests de validación exitosa
   validationTestCases.forEach((testCase) => {
-    test(`🟢 VALIDACIÓN: '${testCase.name}' debe procesarse exitosamente (Status 200)`, async () => {
+    it(`🟢 VALIDACIÓN: '${testCase.name}' debe procesarse exitosamente (Status 200)`, async () => {
       console.log(`🔍 EJECUTANDO VALIDACIÓN: ${testCase.name}`);
       console.log(`📋 Descripción: ${testCase.description}`);
       console.log(`📊 Request data:`, {
@@ -129,7 +129,7 @@ describe('🟢 Google Cloud Pipeline - Validación Post-Reparación', () => {
   });
 
   // Test de disponibilidad del endpoint
-  test('🔍 VALIDACIÓN: Verificar disponibilidad del endpoint', async () => {
+  it('🔍 VALIDACIÓN: Verificar disponibilidad del endpoint', async () => {
     console.log('🔍 VERIFICANDO DISPONIBILIDAD DEL ENDPOINT');
     
     try {
@@ -153,7 +153,7 @@ describe('🟢 Google Cloud Pipeline - Validación Post-Reparación', () => {
   });
 
   // Test de validación de formato de request
-  test('🔍 VALIDACIÓN: Verificar manejo de request inválido', async () => {
+  it('🔍 VALIDACIÓN: Verificar manejo de request inválido', async () => {
     console.log('🔍 VALIDANDO MANEJO DE REQUEST INVÁLIDO');
     
     const invalidRequest = {

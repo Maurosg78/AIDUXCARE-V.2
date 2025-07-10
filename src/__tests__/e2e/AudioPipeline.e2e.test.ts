@@ -15,7 +15,7 @@ class MockMediaRecorder {
 
   constructor(private stream: MediaStream, private options: MediaRecorderOptions) {}
 
-  start(timeslice: number) {
+  start() {
     this.state = 'recording';
     // Simular chunks de audio cada segundo durante 1 minuto
     for (let i = 0; i < 60; i++) {
@@ -54,11 +54,6 @@ const mockSuccessResponse = {
   transcription: 'Transcripción de prueba exitosa',
   warnings: [],
   suggestions: []
-};
-
-const mockErrorResponse = {
-  success: false,
-  error: 'Error de conexión simulado'
 };
 
 describe('AudioPipeline E2E Test', () => {

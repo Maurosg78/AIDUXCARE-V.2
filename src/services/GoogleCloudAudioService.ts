@@ -50,6 +50,12 @@ export interface ClinicalAnalysisResponse {
   };
 }
 
+interface TranscriptionResult {
+  text: string;
+  isFinal: boolean;
+  confidence?: number;
+}
+
 export class GoogleCloudAudioService {
   private readonly clinicalBrainEndpoint = 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';
   
@@ -210,6 +216,20 @@ export class GoogleCloudAudioService {
         error: this.formatNetworkError(errorMessage),
         message: errorMessage
       };
+    }
+  }
+
+  public async processAudio(audioBlob: Blob): Promise<TranscriptionResult> {
+    try {
+      // Aquí iría la lógica real de Google Cloud Speech-to-Text
+      // Por ahora retornamos un resultado simulado
+      return {
+        text: 'Transcripción simulada',
+        isFinal: true,
+        confidence: 0.95
+      };
+    } catch (error) {
+      throw new Error('Error al procesar audio con Google Cloud');
     }
   }
 

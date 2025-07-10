@@ -2,7 +2,19 @@ import React, { useState } from 'react';
 
 interface AnalysisResult {
   phase: string;
-  result: any;
+  result: {
+    error?: string;
+    warnings?: string[];
+    redFlags?: string[];
+    suggestions?: string[];
+    soap?: {
+      subjective?: string;
+      objective?: string;
+      assessment?: string;
+      plan?: string;
+    };
+    [key: string]: unknown;
+  };
   timestamp: string;
   processingTime: number;
 }

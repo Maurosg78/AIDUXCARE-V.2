@@ -3,7 +3,9 @@
  * Convierte transcripciones de audio en notas SOAP estructuradas
  */
 
-export interface SOAPData {
+import { GoogleCloudAudioService } from './GoogleCloudAudioService';
+
+interface SOAPData {
   subjective: string;
   objective: string;
   assessment: string;
@@ -12,7 +14,55 @@ export interface SOAPData {
   timestamp: string;
 }
 
+interface TranscriptionResult {
+  success: boolean;
+  transcription?: string;
+  error?: string;
+}
+
+interface ExtendedClinicalAnalysisRequest {
+  audio: Blob;
+  language: string;
+  enableSpeakerDiarization: boolean;
+  medicalContext: boolean;
+}
+
+interface ExtendedClinicalAnalysisResponse {
+  transcription: string;
+  warnings?: string[];
+  suggestions?: string[];
+}
+
 export class AudioToSOAPBridge {
+  private googleCloudService: GoogleCloudAudioService;
+  private transcriptionBuffer: string[] = [];
+  private isProcessing: boolean = false;
+
+  constructor() {
+    this.googleCloudService = new GoogleCloudAudioService();
+  }
+
+  async processAudioChunk(audioChunk: Blob): Promise<TranscriptionResult> {
+    try {
+      const response = await this.googleCloudService.analyzeClinicalTranscription({
+        audio: audioChunk,
+        language: 'es-ES',
+        enableSpeakerDiarization: true,
+        medicalContext: true
+      } as ExtendedClinicalAnalysisRequest);
+
+      return {
+        success: true,
+        transcription: (response as ExtendedClinicalAnalysisResponse).transcription
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      };
+    }
+  }
+
   /**
    * Procesa una transcripción de audio y la convierte en formato SOAP
    */

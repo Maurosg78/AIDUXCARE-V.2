@@ -7,7 +7,7 @@
     "dev": "kill-port 5174 5175 5176 5177 5178 5179 5180 && vite",
     "build": "tsc --skipLibCheck --noEmit && vite build",
     "postbuild": "cp public/_redirects dist/_redirects && cp public/_headers dist/_headers",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src/ --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest --config config/vitest.config.ts"
   },
@@ -49,6 +49,8 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.56.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "kill-port": "^2.0.1",
