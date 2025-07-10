@@ -2,10 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AudioPipelineService from '../../services/AudioPipelineService';
 import { GoogleCloudAudioService } from '../../services/GoogleCloudAudioService';
 
+interface MockMediaRecorderEventHandler {
+  (event: { data: Blob }): void;
+}
+
 // Mock de MediaRecorder
 class MockMediaRecorder {
-  private ondataavailable: ((event: any) => void) | null = null;
-  private onstop: (() => void) | null = null;
+  private _ondataavailable: MockMediaRecorderEventHandler | null = null;
+  private _onstop: (() => void) | null = null;
   private chunks: Blob[] = [];
   state: 'inactive' | 'recording' = 'inactive';
 
@@ -16,10 +20,10 @@ class MockMediaRecorder {
     // Simular chunks de audio cada segundo durante 1 minuto
     for (let i = 0; i < 60; i++) {
       setTimeout(() => {
-        if (this.state === 'recording' && this.ondataavailable) {
+        if (this.state === 'recording' && this._ondataavailable) {
           // Simular chunk de audio de ~8KB (similar a los logs reales)
           const chunk = new Blob(['x'.repeat(8 * 1024)], { type: 'audio/webm;codecs=opus' });
-          this.ondataavailable({ data: chunk });
+          this._ondataavailable({ data: chunk });
           this.chunks.push(chunk);
         }
       }, i * 1000);
@@ -28,12 +32,12 @@ class MockMediaRecorder {
 
   stop() {
     this.state = 'inactive';
-    if (this.onstop) this.onstop();
+    if (this._onstop) this._onstop();
   }
 
   set onstart(handler: () => void) {}
-  set ondataavailable(handler: (event: any) => void) { this.ondataavailable = handler; }
-  set onstop(handler: () => void) { this.onstop = handler; }
+  set ondataavailable(handler: MockMediaRecorderEventHandler) { this._ondataavailable = handler; }
+  set onstop(handler: () => void) { this._onstop = handler; }
   set onerror(handler: (event: any) => void) {}
 }
 
@@ -59,7 +63,7 @@ const mockErrorResponse = {
 
 describe('AudioPipeline E2E Test', () => {
   let audioPipeline: AudioPipelineService;
-  let transcriptionCallback: vi.Mock;
+  let transcriptionCallback: ReturnType<typeof vi.fn>;
   let failureCount = 0;
 
   beforeEach(() => {
@@ -153,13 +157,13 @@ describe('AudioPipeline E2E Test', () => {
 
     // Verificar manejo de errores
     const errorCalls = transcriptionCallback.mock.calls.filter(
-      call => call[2]?.status === 'error'
+      (call: any) => call[2]?.status === 'error'
     );
     expect(errorCalls.length).toBe(2); // Dos errores antes del éxito
 
     // Verificar que los reintentos tuvieron delays exponenciales
     const processingCalls = transcriptionCallback.mock.calls.filter(
-      call => call[2]?.status === 'processing'
+      (call: any) => call[2]?.status === 'processing'
     );
     expect(processingCalls.length).toBeGreaterThan(2); // Al menos 3 intentos
   }, 15000); // Timeout extendido para el test completo
