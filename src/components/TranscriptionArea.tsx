@@ -7,22 +7,18 @@ export interface TranscriptionAreaProps {
 export function TranscriptionArea({ text }: TranscriptionAreaProps) {
   return (
     <div className="transcription-area">
-      <form className="transcription-form">
-        <div className="transcription-field">
-          <label htmlFor="transcription-textarea">
-            Transcripción en tiempo real
-          </label>
-          <textarea
-            id="transcription-textarea"
-            name="transcription"
-            className="transcription-text"
-            value={text}
-            readOnly
-            rows={10}
-            aria-label="Área de transcripción en tiempo real"
-          />
-        </div>
-      </form>
+      <div className="transcription-field">
+        <textarea
+          id="transcription-textarea"
+          name="transcription"
+          className="transcription-text"
+          value={text}
+          readOnly
+          rows={10}
+          aria-label="Área de transcripción en tiempo real"
+          placeholder="La transcripción aparecerá aquí..."
+        />
+      </div>
     </div>
   );
 }

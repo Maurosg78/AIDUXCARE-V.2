@@ -1,5 +1,5 @@
 /**
- * 🟢 TEST DE VALIDACIÓN TDD - GOOGLE CLOUD PIPELINE FUNCIONAL
+ * 🧪 TESTS DE INTEGRACIÓN: Google Cloud Pipeline
  * 
  * OBJETIVO: Validar que el pipeline de Google Cloud funciona correctamente 
  * después de la reparación del Error 500 textChunker.needsChunking.
@@ -60,7 +60,7 @@ describe('Google Cloud Pipeline Integration', () => {
       };
 
       let response: Response;
-      let responseData: any;
+      let responseData: unknown;
 
       try {
         response = await fetch(CLOUD_FUNCTION_ENDPOINT, {
@@ -79,11 +79,11 @@ describe('Google Cloud Pipeline Integration', () => {
         });
 
         const rawBody = await response.text();
-        console.log(`📋 Raw response body:`, rawBody.substring(0, 1000) + '...');
+        console.log(`�� Raw response body:`, rawBody.substring(0, 1000) + '...');
 
         try {
           responseData = JSON.parse(rawBody);
-          console.log(`📋 Parsed response data keys:`, Object.keys(responseData));
+          console.log(`📋 Parsed response data keys:`, Object.keys(responseData as Record<string, unknown>));
         } catch (parseError) {
           console.log(`❌ Error parseando JSON:`, parseError);
           throw new Error(`Response no es JSON válido: ${rawBody.substring(0, 200)}`);
@@ -94,36 +94,38 @@ describe('Google Cloud Pipeline Integration', () => {
         expect(response.ok).toBe(true);
 
         // ✅ VALIDAR ESTRUCTURA DE RESPUESTA MÉDICA
-        expect(responseData).toHaveProperty('warnings');
-        expect(responseData).toHaveProperty('suggestions');
-        expect(responseData).toHaveProperty('soap_analysis');
-        expect(responseData).toHaveProperty('session_quality');
-        expect(responseData).toHaveProperty('metadata');
+        const data = responseData as Record<string, unknown>;
+        expect(data).toHaveProperty('warnings');
+        expect(data).toHaveProperty('suggestions');
+        expect(data).toHaveProperty('soap_analysis');
+        expect(data).toHaveProperty('session_quality');
+        expect(data).toHaveProperty('metadata');
 
         // ✅ VALIDAR METADATOS DE PROCESAMIENTO
-        expect(responseData.metadata).toHaveProperty('processingTime');
-        expect(responseData.metadata).toHaveProperty('modelUsed');
-        expect(responseData.metadata).toHaveProperty('costOptimization');
-        expect(responseData.metadata.version).toBe('2.0-optimized');
+        const metadata = data.metadata as Record<string, unknown>;
+        expect(metadata).toHaveProperty('processingTime');
+        expect(metadata).toHaveProperty('modelUsed');
+        expect(metadata).toHaveProperty('costOptimization');
+        expect(metadata.version).toBe('2.0-optimized');
 
         // ✅ VALIDAR ARRAYS MÉDICOS
-        expect(Array.isArray(responseData.warnings)).toBe(true);
-        expect(Array.isArray(responseData.suggestions)).toBe(true);
+        expect(Array.isArray(data.warnings)).toBe(true);
+        expect(Array.isArray(data.suggestions)).toBe(true);
 
         console.log(`🟢 VALIDACIÓN EXITOSA:`, {
           status: response.status,
-          processingTime: responseData.metadata.processingTime,
-          modelUsed: responseData.metadata.modelUsed,
-          warningsCount: responseData.warnings.length,
-          suggestionsCount: responseData.suggestions.length,
-          soapQuality: responseData.soap_analysis.overall_quality
+          processingTime: metadata.processingTime,
+          modelUsed: metadata.modelUsed,
+          warningsCount: (data.warnings as unknown[]).length,
+          suggestionsCount: (data.suggestions as unknown[]).length,
+          soapQuality: (data.soap_analysis as Record<string, unknown>).overall_quality
         });
 
-      } catch (networkError: any) {
-        console.log(`❌ ERROR DE RED:`, networkError.message);
+      } catch (networkError: unknown) {
+        console.log(`❌ ERROR DE RED:`, networkError instanceof Error ? networkError.message : 'Error desconocido');
         
         // Si hay error de red, no es el Error 500 que estábamos reparando
-        throw new Error(`Error de red inesperado: ${networkError.message}`);
+        throw new Error(`Error de red inesperado: ${networkError instanceof Error ? networkError.message : 'Error desconocido'}`);
       }
     }, { timeout: 60000 }); // 60 segundos timeout para procesamiento médico
   });
@@ -146,9 +148,9 @@ describe('Google Cloud Pipeline Integration', () => {
       // GET debería devolver 405 Method Not Allowed (esperado para Cloud Function POST-only)
       expect([200, 405].includes(healthResponse.status)).toBe(true);
       
-    } catch (error: any) {
-      console.log('⚠️ Endpoint no disponible:', error.message);
-      throw new Error(`Endpoint no disponible: ${error.message}`);
+    } catch (error: unknown) {
+      console.log('⚠️ Endpoint no disponible:', error instanceof Error ? error.message : 'Error desconocido');
+      throw new Error(`Endpoint no disponible: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   });
 

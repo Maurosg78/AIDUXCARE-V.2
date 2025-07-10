@@ -1,9 +1,9 @@
 /**
- * Servicio Puente de Audio a SOAP para AiDuxCare V.2
- * Convierte transcripciones de audio en notas SOAP estructuradas
+ * AudioToSOAPBridge - Puente entre audio y formato SOAP
+ * Convierte transcripciones de audio en datos estructurados SOAP
  */
 
-import { GoogleCloudAudioService } from './GoogleCloudAudioService';
+import { GoogleCloudAudioService, ClinicalAnalysisRequest, ClinicalAnalysisResponse } from './GoogleCloudAudioService';
 
 interface SOAPData {
   subjective: string;
@@ -20,19 +20,6 @@ interface TranscriptionResult {
   error?: string;
 }
 
-interface ExtendedClinicalAnalysisRequest {
-  audio: Blob;
-  language: string;
-  enableSpeakerDiarization: boolean;
-  medicalContext: boolean;
-}
-
-interface ExtendedClinicalAnalysisResponse {
-  transcription: string;
-  warnings?: string[];
-  suggestions?: string[];
-}
-
 export class AudioToSOAPBridge {
   private googleCloudService: GoogleCloudAudioService;
   private transcriptionBuffer: string[] = [];
@@ -44,16 +31,18 @@ export class AudioToSOAPBridge {
 
   async processAudioChunk(audioChunk: Blob): Promise<TranscriptionResult> {
     try {
+      // Convertir Blob a base64 para el análisis clínico
+      const base64Audio = await this.blobToBase64(audioChunk);
+      
       const response = await this.googleCloudService.analyzeClinicalTranscription({
-        audio: audioChunk,
-        language: 'es-ES',
-        enableSpeakerDiarization: true,
-        medicalContext: true
-      } as ExtendedClinicalAnalysisRequest);
+        transcription: base64Audio,
+        specialty: 'physiotherapy',
+        sessionType: 'initial'
+      } as ClinicalAnalysisRequest);
 
       return {
         success: true,
-        transcription: (response as ExtendedClinicalAnalysisResponse).transcription
+        transcription: (response as ClinicalAnalysisResponse).transcription || 'Transcripción procesada'
       };
     } catch (error) {
       return {
@@ -61,6 +50,22 @@ export class AudioToSOAPBridge {
         error: error instanceof Error ? error.message : 'Error desconocido'
       };
     }
+  }
+
+  private async blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        } else {
+          reject(new Error('Error al convertir blob a base64'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
   }
 
   /**

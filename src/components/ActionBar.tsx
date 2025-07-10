@@ -2,17 +2,18 @@ import React from 'react';
 
 interface ActionBarProps {
   isRecording: boolean;
+  onAction: () => void;
 }
 
-export default function ActionBar({ isRecording }: ActionBarProps) {
+export function ActionBar({ isRecording, onAction }: ActionBarProps) {
   return (
     <div className="action-bar">
       <button 
         className={`record-button ${isRecording ? 'recording' : ''}`}
-        onClick={() => {/* handle click */}}
+        onClick={onAction}
       >
         {isRecording ? 'Detener' : 'Grabar'}
       </button>
     </div>
-  )
+  );
 }
