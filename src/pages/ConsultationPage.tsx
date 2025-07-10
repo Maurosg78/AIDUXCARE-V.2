@@ -4,6 +4,7 @@ import TranscriptionArea from '../components/TranscriptionArea';
 import ActionBar from '../components/ActionBar';
 import AudioPipelineService from '../services/AudioPipelineService';
 import { GoogleCloudAudioService, type ClinicalAnalysisRequest, type ClinicalAnalysisResponse } from '../services/GoogleCloudAudioService';
+import type { Warning, Highlight, ClinicalAnalysis } from '../types/clinical';
 
 // Tipos básicos
 interface SOAPData {
@@ -69,7 +70,13 @@ const processTranscriptionToSOAP = (transcription: string): SOAPData => {
 const PatientHeader = () => <div style={{ padding: '1rem', border: '1px dashed grey', marginBottom: '1rem' }}>[Header del Paciente]</div>;
 
 // 🧠 NUEVO: Módulos de IA reales con datos del cerebro clínico
-const AIModules: React.FC<{ warnings: any[], highlights: any[], clinicalAnalysis: ClinicalAnalysisResponse | null }> = ({ 
+interface AIModulesProps {
+  warnings: Warning[];
+  highlights: Highlight[];
+  clinicalAnalysis: ClinicalAnalysis | null;
+}
+
+const AIModules: React.FC<AIModulesProps> = ({ 
   warnings, 
   highlights, 
   clinicalAnalysis 
@@ -250,8 +257,8 @@ const EvaluationTabContent: React.FC<{ soapData: SOAPData | null }> = ({ soapDat
 // Función de fallback para generar análisis básico local
 const generateBasicClinicalAnalysis = (transcription: string) => {
   const lowerText = transcription.toLowerCase();
-  const warnings = [];
-  const suggestions = [];
+  const warnings: Warning[] = [];
+  const suggestions: Highlight[] = [];
 
   // 🚨 PATRONES DE BANDERAS ROJAS BÁSICAS
   if (lowerText.includes('dolor') && (lowerText.includes('pecho') || lowerText.includes('torácico'))) {
@@ -334,9 +341,9 @@ const ConsultationPage: React.FC = () => {
   const [transcription, setTranscription] = useState('');
   const [soapData, setSOAPData] = useState<SOAPData | null>(null);
   const [serviceInfo, setServiceInfo] = useState('');
-  const [warnings, setWarnings] = useState<any[]>([]);
-  const [highlights, setHighlights] = useState<any[]>([]);
-  const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysisResponse | null>(null);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysis | null>(null);
   const [recordingStatus, setRecordingStatus] = useState<{
     status: 'idle' | 'recording' | 'processing' | 'completed' | 'error';
     progress: number;

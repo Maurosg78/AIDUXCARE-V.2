@@ -54,9 +54,12 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
     `}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+        <label 
+          htmlFor="transcription-area" 
+          className="text-lg font-semibold text-gray-700 flex items-center gap-2"
+        >
           {getStatusIcon()} Transcripción Médica
-        </h2>
+        </label>
         {recordingStatus.status !== 'idle' && (
           <span className="text-sm font-medium text-gray-500">
             {recordingStatus.message}
@@ -65,7 +68,13 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
       </div>
 
       {/* Área de transcripción */}
-      <div className="relative min-h-[200px] bg-white rounded border border-gray-200 p-4">
+      <div 
+        id="transcription-area"
+        role="textbox"
+        aria-readonly="true"
+        tabIndex={0}
+        className="relative min-h-[200px] bg-white rounded border border-gray-200 p-4"
+      >
         {transcription ? (
           <p className="whitespace-pre-wrap text-gray-700">{transcription}</p>
         ) : (
@@ -97,6 +106,10 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
                 'bg-red-600'
               }`}
               style={{ width: `${recordingStatus.progress}%` }}
+              role="progressbar"
+              aria-valuenow={recordingStatus.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
             />
           </div>
         </div>
