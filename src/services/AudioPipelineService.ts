@@ -17,6 +17,12 @@ interface ExtendedClinicalAnalysisResponse extends ClinicalAnalysisResponse {
   transcription?: string;
 }
 
+interface AudioProcessingError extends Error {
+  name: string;
+  message: string;
+  code?: string;
+}
+
 export default class AudioPipelineService {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];

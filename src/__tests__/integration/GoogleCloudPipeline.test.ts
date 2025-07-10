@@ -10,7 +10,7 @@
  * 3. 🟢 VERDE: Pipeline funcional con Status 200 → ✅ VALIDANDO
  */
 
-import { describe, test, expect, beforeAll } from 'vitest';
+import { describe, test, expect } from 'vitest';
 
 describe('🟢 Google Cloud Pipeline - Validación Post-Reparación', () => {
   const CLOUD_FUNCTION_ENDPOINT = 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';

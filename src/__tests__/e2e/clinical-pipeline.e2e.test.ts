@@ -18,40 +18,6 @@ interface AudioMock {
   };
 }
 
-interface ClinicalBrainResponse {
-  success?: boolean;
-  analysis?: {
-    warnings?: Array<{
-      id: string;
-      severity: string;
-      category: string;
-      title: string;
-      description: string;
-      recommendation: string;
-      confidence: number;
-    }>;
-    suggestions?: Array<{
-      id: string;
-      type: string;
-      title: string;
-      description: string;
-      priority: string;
-    }>;
-    soap_analysis?: {
-      overall_quality: string;
-      score: number;
-    };
-  };
-  metadata?: {
-    processingTime: number;
-    modelUsed: string;
-    timestamp: string;
-    version: string;
-  };
-  error?: string;
-  message?: string;
-}
-
 // Configuración del test
 const CLINICAL_BRAIN_ENDPOINT = process.env.CLINICAL_BRAIN_ENDPOINT || 
   'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinical-brain';

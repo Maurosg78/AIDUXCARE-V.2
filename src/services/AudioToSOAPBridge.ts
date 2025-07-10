@@ -40,8 +40,6 @@ export class AudioToSOAPBridge {
    * Clasifica el contenido de la transcripción en secciones SOAP
    */
   private static classifyContentToSOAP(transcription: string): Omit<SOAPData, 'confidence' | 'timestamp'> {
-    const text = transcription.toLowerCase();
-    
     // Patrones para identificar diferentes tipos de contenido
     const subjectivePatterns = [
       /paciente (refiere|dice|comenta|indica|reporta|menciona)/,

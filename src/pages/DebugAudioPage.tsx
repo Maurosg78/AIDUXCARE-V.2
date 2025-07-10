@@ -8,7 +8,6 @@ import AudioPipelineService from '../services/AudioPipelineService';
 
 const DebugAudioPage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [chunkLogs, setChunkLogs] = useState<string[]>([]);
   const [transcriptionLogs, setTranscriptionLogs] = useState<string[]>([]);
   const audioServiceRef = useRef<AudioPipelineService | null>(null);
 
@@ -20,7 +19,6 @@ const DebugAudioPage: React.FC = () => {
   const handleStartRecording = async () => {
     try {
       setIsRecording(true);
-      setChunkLogs([]);
       setTranscriptionLogs([]);
       
       // Callback para debug detallado
@@ -54,7 +52,6 @@ const DebugAudioPage: React.FC = () => {
   };
 
   const clearLogs = () => {
-    setChunkLogs([]);
     setTranscriptionLogs([]);
   };
 

@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
-import { GoogleCloudAudioService } from '../services/GoogleCloudAudioService';
+import { GoogleCloudAudioService, type ClinicalAnalysisRequest, type ClinicalAnalysisResponse } from '../services/GoogleCloudAudioService';
+
+interface ServiceStatus {
+  available: boolean;
+  message: string;
+}
+
+interface TestCase extends ClinicalAnalysisRequest {
+  name: string;
+}
+
+interface TestResult {
+  id: string;
+  name: string;
+  status: 'running' | 'success' | 'error';
+  startTime: string;
+  endTime?: string;
+  result?: ClinicalAnalysisResponse;
+  error?: string;
+}
 
 const googleCloudService = new GoogleCloudAudioService();
 
 export const DebugCloudFunctionPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [results, setResults] = useState<TestResult[]>([]);
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
 
   // Casos de prueba específicos para detectar el error textChunker
-  const testCases = [
+  const testCases: TestCase[] = [
     {
       name: "Transcripción Mínima",
       transcription: "El paciente refiere dolor en el hombro derecho desde hace una semana.",
@@ -44,7 +63,7 @@ export const DebugCloudFunctionPage: React.FC = () => {
     setIsLoading(false);
   };
 
-  const runSingleTest = async (testCase: any, index: number) => {
+  const runSingleTest = async (testCase: TestCase, index: number) => {
     const testId = `test-${index}`;
     setResults(prev => [...prev, {
       id: testId,
