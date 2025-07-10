@@ -1,30 +1,26 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import basicSsl from "@vitejs/plugin-basic-ssl";
-import path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
-// Configuración HTTPS para acceso al micrófono
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    basicSsl() // Plugin SSL para contexto seguro
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+  plugins: [react(), basicSsl()],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: './index.html',
+      },
     },
+    // Copiar archivos de configuración de Netlify
+    copyPublicDir: true,
   },
-  // Configuración del servidor de desarrollo
   server: {
+    https: {
+      // Usar certificados autogenerados por basicSsl
+      enabled: true
+    },
     host: 'localhost',
     port: 5174,
-    strictPort: true,
   },
-  // Optimización del build
-  build: {
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000,
-    minify: 'esbuild',
-    target: 'esnext'
-  }
 });
