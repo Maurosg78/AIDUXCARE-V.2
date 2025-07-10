@@ -5,7 +5,7 @@
 
 import { SOAPData } from './AudioToSOAPBridge';
 import { EncryptedData, CryptoService } from './CryptoService';
-import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 export interface SavedNote {
@@ -79,7 +79,7 @@ export class PersistenceService {
       const notesRef = collection(db, this.COLLECTION_NAME, userId, 'notes');
       const snapshot = await getDocs(notesRef);
       
-      return snapshot.docs.map(doc => doc.data() as SavedNote);
+      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
     } catch (error) {
       console.error('Error obteniendo notas:', error);
       return [];
@@ -112,7 +112,7 @@ export class PersistenceService {
       const q = query(notesRef, where('patientId', '==', patientId));
       const snapshot = await getDocs(q);
       
-      return snapshot.docs.map(doc => doc.data() as SavedNote);
+      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
     } catch (error) {
       console.error('Error obteniendo notas por paciente:', error);
       return [];
