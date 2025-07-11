@@ -1,6 +1,7 @@
 /**
  * Script para verificar que las variables de entorno necesarias estén definidas
  * Se ejecuta antes del build para evitar despliegues con configuraciones incompletas
+ * ARQUITECTURA: 100% Firebase (Supabase eliminado completamente)
  */
 import { config } from 'dotenv';
 import { resolve } from 'path';
@@ -16,9 +17,11 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 function checkEnvVars() {
+  // Variables críticas de Firebase para funcionamiento básico
   const requiredVars = [
-    'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY',
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_PROJECT_ID',
+    'VITE_FIREBASE_APP_ID'
   ];
 
   const missingVars: string[] = [];
@@ -32,7 +35,7 @@ function checkEnvVars() {
 
   // Si hay variables faltantes, mostrar error y terminar el proceso
   if (missingVars.length > 0) {
-    console.error('\n❌ ERROR: Faltan variables de entorno requeridas:');
+    console.error('\n❌ ERROR: Faltan variables de entorno requeridas para Firebase:');
     missingVars.forEach(varName => {
       console.error(`   - ${varName}`);
     });
@@ -45,39 +48,26 @@ function checkEnvVars() {
     process.exit(1);
   }
 
-  // Verificar si las URLs de Supabase son válidas
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  if (supabaseUrl) {
-    try {
-      new URL(supabaseUrl);
-    } catch (e) {
-      console.error('\n❌ ERROR: La URL de Supabase no es válida:');
-      console.error(`   ${supabaseUrl}`);
-      console.error('\nDebe ser una URL completa, incluyendo https://\n');
-      process.exit(1);
-    }
-}
-
-  // Verificar si las claves tienen un formato razonable
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-  if (supabaseKey && supabaseKey.length < 20) {
-    console.warn('\n⚠️ ADVERTENCIA: La clave de Supabase parece demasiado corta.');
+  // Verificar formato básico de las claves de Firebase
+  const firebaseApiKey = process.env.VITE_FIREBASE_API_KEY;
+  if (firebaseApiKey && firebaseApiKey.length < 20) {
+    console.warn('\n⚠️ ADVERTENCIA: La API Key de Firebase parece demasiado corta.');
     console.warn('Verifica que sea la clave correcta.');
   }
 
-  // Todo está bien
-  console.log('\n✅ Todas las variables de entorno requeridas están configuradas correctamente.');
-  console.log(`   VITE_SUPABASE_URL: ${supabaseUrl}`);
+  // Todo está bien - Configuración Firebase validada
+  console.log('\n✅ Configuración Firebase validada correctamente.');
+  console.log(`   VITE_FIREBASE_PROJECT_ID: ${process.env.VITE_FIREBASE_PROJECT_ID}`);
   
-  // No mostrar la clave completa por seguridad
-  if (supabaseKey) {
-    const maskedKey = supabaseKey.substring(0, 5) + '...' + 
-      supabaseKey.substring(supabaseKey.length - 5);
-    console.log(`   VITE_SUPABASE_ANON_KEY: ${maskedKey}`);
+  // Mostrar API key parcialmente por seguridad
+  if (firebaseApiKey) {
+    const maskedKey = firebaseApiKey.substring(0, 8) + '...' + 
+      firebaseApiKey.substring(firebaseApiKey.length - 8);
+    console.log(`   VITE_FIREBASE_API_KEY: ${maskedKey}`);
   }
   
-  console.log('\n');
+  console.log('   ✅ Sistema preparado para arquitectura Firebase\n');
 }
 
 // Ejecutar la verificación
-checkEnvVars(); 
+checkEnvVars();
