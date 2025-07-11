@@ -26,7 +26,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
 }) => {
   const [isSupported, setIsSupported] = useState<boolean>(true);
   const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('idle');
-  const [currentSession, setCurrentSession] = useState<CaptureSession | null>(null);
+  const [, setCurrentSession] = useState<CaptureSession | null>(null);
   const [transcriptionSegments, setTranscriptionSegments] = useState<TranscriptionSegment[]>([]);
   const [sessionStats, setSessionStats] = useState<SessionStats | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -352,7 +352,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
               )}
             </div>
           ) : (
-            transcriptionSegments.map((segment, index) => (
+            transcriptionSegments.map((segment) => (
               <div 
                 key={segment.id}
                 className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow"

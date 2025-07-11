@@ -36,7 +36,7 @@ export function configureSupabaseMock(options: {
     },
     
     // Database methods
-    from: vi.fn().mockImplementation((table) => ({
+    from: vi.fn().mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
@@ -71,7 +71,7 @@ export function configureSupabaseMock(options: {
     
     // Storage methods
     storage: {
-      from: vi.fn().mockImplementation((bucket) => ({
+      from: vi.fn().mockImplementation(() => ({
         upload: vi.fn().mockResolvedValue({ data: {}, error }),
         download: vi.fn().mockResolvedValue({ data: {}, error }),
         getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/file.png' } }),

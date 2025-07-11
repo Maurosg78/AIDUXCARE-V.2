@@ -14,14 +14,6 @@ vi.mock('../../../core/auth/supabaseClient', () => ({
 }));
 
 // Definimos el tipo exacto que maneja el DataSource
-type MemoryBlock = {
-  id: string;
-  created_at: string;
-  type: 'contextual' | 'persistent' | 'semantic';
-  content: string;
-  visit_id?: string;
-  patient_id?: string;
-};
 
 describe('MCPDataSourceSupabase', () => {
   beforeEach(() => {

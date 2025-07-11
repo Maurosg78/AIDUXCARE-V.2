@@ -7,7 +7,7 @@ export const supabaseClientMock = {
     getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     signInWithPassword: vi.fn().mockResolvedValue({ data: {}, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
-    onAuthStateChange: vi.fn().mockImplementation((callback) => {
+    onAuthStateChange: vi.fn().mockImplementation(() => {
       // Devuelve una función para desuscribirse
       return { data: { subscription: { unsubscribe: vi.fn() } } };
     }),
@@ -15,7 +15,7 @@ export const supabaseClientMock = {
   },
   
   // Database methods
-  from: vi.fn().mockImplementation((table) => ({
+  from: vi.fn().mockImplementation(() => ({
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
@@ -50,7 +50,7 @@ export const supabaseClientMock = {
   
   // Storage methods
   storage: {
-    from: vi.fn().mockImplementation((bucket) => ({
+    from: vi.fn().mockImplementation(() => ({
       upload: vi.fn().mockResolvedValue({ data: {}, error: null }),
       download: vi.fn().mockResolvedValue({ data: {}, error: null }),
       getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/file.png' } }),

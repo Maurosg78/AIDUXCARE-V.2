@@ -4,8 +4,6 @@ import { AzureOpenAIService } from '../../services/AzureOpenAIService';
 import { CryptoService } from '../../services/CryptoService';
 
 describe('Security Compliance Tests - Deloitte ISO Standards', () => {
-  let securityService: EnterpriseSecurityService;
-  let azureService: AzureOpenAIService;
 
   beforeEach(() => {
     securityService = new EnterpriseSecurityService();
