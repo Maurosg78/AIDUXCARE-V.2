@@ -161,7 +161,7 @@ export class CryptoService {
   /**
    * Cifra datos médicos con una clave predeterminada segura
    */
-  static async encryptMedicalData(data: any): Promise<EncryptedData> {
+  static async encryptMedicalData(data: unknown): Promise<EncryptedData> {
     const jsonData = JSON.stringify(data);
     const medicalKey = 'AIDUXCARE_MEDICAL_ENCRYPTION_KEY_2025';
     return this.encrypt(jsonData, medicalKey);
@@ -170,7 +170,7 @@ export class CryptoService {
   /**
    * Descifra datos médicos con la clave predeterminada
    */
-  static async decryptMedicalData(encryptedData: EncryptedData): Promise<any> {
+  static async decryptMedicalData(encryptedData: EncryptedData): Promise<unknown> {
     const medicalKey = 'AIDUXCARE_MEDICAL_ENCRYPTION_KEY_2025';
     const decryptedJson = await this.decrypt(encryptedData, medicalKey);
     return JSON.parse(decryptedJson);

@@ -44,7 +44,7 @@ export const DebugCloudFunctionPage: React.FC = () => {
     setIsLoading(false);
   };
 
-  const runSingleTest = async (testCase: any, index: number) => {
+  const runSingleTest = async (testCase: TestCase, index: number) => {
     const testId = `test-${index}`;
     setResults(prev => [...prev, {
       id: testId,
