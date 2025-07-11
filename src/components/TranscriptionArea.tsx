@@ -15,7 +15,7 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
 }) => {
   return (
     <div style={{ marginBottom: '1rem' }}>
-      <label style={{ 
+      <label htmlFor="transcription-textarea" style={{ 
         display: 'block', 
         marginBottom: '0.5rem', 
         fontWeight: 'bold',
@@ -23,7 +23,7 @@ const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
       }}>
         Transcripción en Tiempo Real:
       </label>
-      <textarea
+      <textarea id="transcription-textarea"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

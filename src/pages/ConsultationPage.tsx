@@ -6,6 +6,18 @@ import AudioPipelineService from '../services/AudioPipelineService';
 import { GoogleCloudAudioService, type ClinicalAnalysisRequest, type ClinicalAnalysisResponse } from '../services/GoogleCloudAudioService';
 
 // Tipos básicos
+
+interface ClinicalWarning {
+  type: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+interface ClinicalHighlight {
+  text: string;
+  type: string;
+  confidence: number;
+}
 interface SOAPData {
   subjective: string;
   objective: string;
@@ -69,7 +81,7 @@ const processTranscriptionToSOAP = (transcription: string): SOAPData => {
 const PatientHeader = () => <div style={{ padding: '1rem', border: '1px dashed grey', marginBottom: '1rem' }}>[Header del Paciente]</div>;
 
 // 🧠 NUEVO: Módulos de IA reales con datos del cerebro clínico
-const AIModules: React.FC<{ warnings: any[], highlights: any[], clinicalAnalysis: ClinicalAnalysisResponse | null }> = ({ 
+const AIModules: React.FC<{ warnings: ClinicalWarning[], highlights: ClinicalHighlight[], clinicalAnalysis: ClinicalAnalysisResponse | null }> = ({ 
   warnings, 
   highlights, 
   clinicalAnalysis 
@@ -341,8 +353,8 @@ const ConsultationPage: React.FC = () => {
 
   // 🧠 NUEVO: Estados para cerebro clínico
   const [clinicalAnalysis, setClinicalAnalysis] = useState<ClinicalAnalysisResponse | null>(null);
-  const [highlights, setHighlights] = useState<Array<any>>([]);
-  const [warnings, setWarnings] = useState<Array<any>>([]);
+  const [highlights, setHighlights] = useState<ClinicalHighlight[]>([]);
+  const [warnings, setWarnings] = useState<ClinicalWarning[]>([]);
 
   // Instanciar servicios
   const audioService = useMemo(() => new AudioPipelineService(), []);

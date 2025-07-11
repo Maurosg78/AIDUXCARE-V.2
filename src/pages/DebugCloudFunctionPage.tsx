@@ -3,10 +3,26 @@ import { GoogleCloudAudioService } from '../services/GoogleCloudAudioService';
 
 const googleCloudService = new GoogleCloudAudioService();
 
+interface TestResult {
+  name: string;
+  transcription: string;
+  specialty: string;
+  sessionType: string;
+  result?: unknown;
+  error?: string;
+}
+
+interface ServiceStatus {
+  isConnected: boolean;
+  endpoint: string;
+  lastTest: Date | null;
+  errors: string[];
+}
+
 export const DebugCloudFunctionPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [results, setResults] = useState<TestResult[]>([]);
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
 
   // Casos de prueba específicos para detectar el error textChunker
   const testCases = [

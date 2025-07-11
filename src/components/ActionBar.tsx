@@ -19,7 +19,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onSave,
   disabled = false
 }) => {
-  const getButtonStyle = (baseStyle: React.CSSProperties, isPrimary: boolean = false) => ({
+  const getButtonStyle = (baseStyle: React.CSSProperties) => ({
     ...baseStyle,
     opacity: disabled ? 0.6 : 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
