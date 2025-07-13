@@ -17,6 +17,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Check required Firebase secrets
+        run: |
+          missing=0
+          if [ -z "${{ secrets.VITE_FIREBASE_API_KEY }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_API_KEY en GitHub Actions"; missing=1; fi
+          if [ -z "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_PROJECT_ID en GitHub Actions"; missing=1; fi
+          if [ -z "${{ secrets.VITE_FIREBASE_APP_ID }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_APP_ID en GitHub Actions"; missing=1; fi
+          if [ "$missing" -eq 1 ]; then
+            echo "❌ Debes definir todos los secretos de Firebase en Settings > Secrets and variables > Actions"; exit 1; fi
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:

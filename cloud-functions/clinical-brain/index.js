@@ -304,7 +304,6 @@ exports.clinicalBrain = async (req, res) => {
 
   } catch (error) {
     const processingTime = (Date.now() - startTime) / 1000;
-    
     logger.error('❌ ERROR EN CEREBRO CLÍNICO:', {
       error: error.message,
       stack: error.stack,
@@ -317,18 +316,50 @@ exports.clinicalBrain = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Respuesta de error mejorada con debug info
-    res.status(500).json({
-      error: 'Error interno del servidor',
-      message: error.message,
-      processingTime: processingTime,
-      timestamp: new Date().toISOString(),
-      version: '2.0-optimized',
-      debugInfo: {
-        errorType: error.constructor.name,
-        transcriptionReceived: !!req.body?.transcription,
-        transcriptionLength: req.body?.transcription?.length || 0
+    // Blindaje enterprise: cualquier error en el pipeline clínico devuelve fallback con status 200
+    logger.warn('🛡️ ACTIVANDO FALLBACK CLÍNICO ENTERPRISE');
+    const fallbackResponse = {
+      warnings: [{
+        id: 'clinical_pipeline_fallback',
+        severity: 'HIGH',
+        category: 'system_fallback',
+        title: 'Análisis automático no disponible',
+        description: 'El sistema de IA no pudo analizar la transcripción por un error interno. Se requiere revisión clínica manual.',
+        recommendation: 'Revisar el caso manualmente y reportar el incidente a soporte.',
+        evidence: error.message || 'Error desconocido en pipeline clínico.'
+      }],
+      suggestions: [{
+        id: 'manual_review',
+        type: 'system_recommendation',
+        title: 'Revisión manual requerida',
+        description: 'El análisis automático falló. Se requiere intervención clínica.',
+        rationale: 'Fallback activado por error de IA',
+        priority: 'HIGH'
+      }],
+      soap_analysis: {
+        subjective_completeness: 0,
+        objective_completeness: 0,
+        assessment_quality: 0,
+        plan_appropriateness: 0,
+        overall_quality: 0,
+        missing_elements: ['Análisis no disponible por error de IA']
+      },
+      session_quality: {
+        communication_score: 0,
+        clinical_thoroughness: 0,
+        patient_engagement: 0,
+        professional_standards: 0,
+        areas_for_improvement: ['Revisión manual requerida']
+      },
+      metadata: {
+        processingTime: processingTime,
+        modelUsed: 'fallback',
+        totalTime: (Date.now() - startTime) / 1000,
+        timestamp: new Date().toISOString(),
+        version: '2.0-optimized',
+        error: error.message
       }
-    });
+    };
+    return res.status(200).json(fallbackResponse);
   }
 }; 

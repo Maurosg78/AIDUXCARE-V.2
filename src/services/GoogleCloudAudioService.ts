@@ -100,14 +100,42 @@ export class GoogleCloudAudioService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
 
-      const response = await fetch(this.clinicalBrainEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-        signal: controller.signal // ⏰ Añadir signal para timeout
-      });
+      let response;
+      try {
+        response = await fetch(this.clinicalBrainEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(request),
+          signal: controller.signal // ⏰ Añadir signal para timeout
+        });
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error('❌ ERROR DE RED O FETCH:', fetchError);
+        
+        // 🚨 MANEJO ESPECÍFICO DE TIMEOUT
+        if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+          console.error('⏰ TIMEOUT DEL CEREBRO CLÍNICO DETECTADO:', {
+            duration: '60 segundos',
+            transcriptionLength: request.transcription.length,
+            specialty: request.specialty,
+            recommendation: 'Usar procesamiento básico'
+          });
+
+          return {
+            success: false,
+            error: '⏰ El Cerebro Clínico tardó más de 60 segundos. Se ha generado un análisis básico. Todas las funciones médicas están disponibles.',
+            message: 'timeout_cerebro_clinico'
+          };
+        }
+        
+        return {
+          success: false,
+          error: this.formatNetworkError(fetchError instanceof Error ? fetchError.message : 'Error desconocido'),
+          message: fetchError instanceof Error ? fetchError.message : 'Error desconocido'
+        };
+      }
 
       clearTimeout(timeoutId); // Limpiar timeout si la respuesta llega
 
@@ -115,7 +143,7 @@ export class GoogleCloudAudioService {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries()),
+        headers: response.headers ? Object.fromEntries(response.headers.entries()) : {},
         url: response.url
       });
 
@@ -169,7 +197,28 @@ export class GoogleCloudAudioService {
         };
       }
 
-      const result = await response.json();
+      let result: any = null;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error('❌ Error parseando JSON de la respuesta del Cerebro Clínico:', jsonError);
+        return {
+          success: false,
+          error: `Error parseando JSON de la respuesta del Cerebro Clínico: ${jsonError instanceof Error ? jsonError.message : 'Error desconocido'}`,
+          message: 'json_parse_error'
+        };
+      }
+
+      // Blindaje: si la respuesta es null, vacía o no tiene la estructura esperada
+      if (!result || typeof result !== 'object' || (result.success === undefined && !result.analysis)) {
+        console.error('❌ Respuesta inválida o inesperada del Cerebro Clínico:', result);
+        return {
+          success: false,
+          error: 'Respuesta inválida o inesperada del Cerebro Clínico. No se pudo obtener un análisis clínico válido.',
+          message: 'invalid_response_structure'
+        };
+      }
+
       console.log('✅ Análisis recibido del Cerebro Clínico:', {
         success: result.success,
         hasWarnings: !!result.analysis?.warnings,
@@ -183,12 +232,19 @@ export class GoogleCloudAudioService {
 
     } catch (error) {
       console.error('❌ Error crítico comunicándose con el Cerebro Clínico:', error);
+      console.error('🔍 DEBUG ERROR TYPE:', {
+        errorType: typeof error,
+        errorName: error instanceof Error ? error.name : 'N/A',
+        errorMessage: error instanceof Error ? error.message : 'N/A',
+        isAbortError: error instanceof Error && error.name === 'AbortError',
+        containsAborted: error instanceof Error && error.message.includes('aborted')
+      });
       
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       
       // 🚨 MANEJO ESPECÍFICO DE TIMEOUT
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.error('⏰ TIMEOUT DEL CEREBRO CLÍNICO:', {
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+        console.error('⏰ TIMEOUT DEL CEREBRO CLÍNICO DETECTADO:', {
           duration: '60 segundos',
           transcriptionLength: request.transcription.length,
           specialty: request.specialty,
@@ -200,6 +256,11 @@ export class GoogleCloudAudioService {
           error: '⏰ El Cerebro Clínico tardó más de 60 segundos. Se ha generado un análisis básico. Todas las funciones médicas están disponibles.',
           message: 'timeout_cerebro_clinico'
         };
+      } else {
+        console.error('❌ NO ES ABORT ERROR:', {
+          errorName: error instanceof Error ? error.name : 'N/A',
+          errorMessage: error instanceof Error ? error.message : 'N/A'
+        });
       }
 
       console.error('❌ ERROR DE RED CLOUD FUNCTION:', {
@@ -270,11 +331,9 @@ export class GoogleCloudAudioService {
     if (errorMessage.includes('INVALID_ARGUMENT')) {
       return `⚠️ Formato de transcripción no válido: ${errorMessage}. La transcripción no pudo ser procesada por el modelo de IA.`;
     }
-    
     if (errorMessage.includes('quota')) {
       return `📊 Límites de uso alcanzados: ${errorMessage}. Se han agotado los recursos del servicio de IA.`;
     }
-    
     return `🔧 Error técnico: ${errorMessage}. Contacte al soporte técnico si el problema persiste.`;
   }
 
@@ -283,25 +342,21 @@ export class GoogleCloudAudioService {
     if (!transcription || transcription.trim().length === 0) {
       return { isValid: false, error: 'La transcripción está vacía' };
     }
-
     if (transcription.length < 10) {
       return { isValid: false, error: 'La transcripción es demasiado corta (mínimo 10 caracteres)' };
     }
-
     if (transcription.length > 50000) {
       return { isValid: false, error: 'La transcripción es demasiado larga (máximo 50,000 caracteres)' };
     }
-
     // 🔧 PASO 3: MENSAJE MEJORADO PARA USUARIO CLÍNICO
     // Verificar que contiene palabras reales
     const words = transcription.trim().split(/\s+/);
     if (words.length < 3) {
-      return { 
-        isValid: false, 
+      return {
+        isValid: false,
         error: 'No se ha podido detectar una transcripción clara. Por favor, verifique su micrófono e inténtelo de nuevo en un entorno con menos ruido de fondo.'
       };
     }
-
     return { isValid: true };
   }
 
@@ -314,7 +369,6 @@ export class GoogleCloudAudioService {
           'Content-Type': 'application/json',
         }
       });
-
       if (response.ok) {
         const data = await response.json();
         return {
@@ -334,4 +388,4 @@ export class GoogleCloudAudioService {
       };
     }
   }
-} 
+}

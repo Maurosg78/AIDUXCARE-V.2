@@ -174,7 +174,43 @@ npm run test:coverage
 - ✅ **Configuración CI/CD**: Pipeline de testing automatizado
 - 🔄 **Cobertura**: Expandiendo tests de componentes
 
-## 🎨 Sistema de Design
+## 🔧 CI/CD y Configuración
+
+### **Pipeline de Integración Continua**
+El proyecto utiliza GitHub Actions para automatizar el proceso de testing y build. El workflow se ejecuta en cada push a `main` y `develop`, y en cada pull request.
+
+### **Secretos Requeridos**
+Para que el CI/CD funcione correctamente, debes configurar los siguientes secretos en GitHub:
+
+**Ubicación**: `Settings` → `Secrets and variables` → `Actions`
+
+**Secretos Obligatorios**:
+- `VITE_FIREBASE_API_KEY` - Clave API de Firebase
+- `VITE_FIREBASE_PROJECT_ID` - ID del proyecto Firebase
+- `VITE_FIREBASE_APP_ID` - ID de la aplicación Firebase
+
+### **Comportamiento del Workflow**
+- ✅ **Verificación Automática**: El workflow verifica que todos los secretos estén presentes
+- ❌ **Fallo Explícito**: Si falta algún secreto, el workflow falla con mensaje claro
+- 🔍 **Transparencia**: Los logs muestran exactamente qué secreto falta
+
+### **Pasos del Workflow**
+1. **Checkout** - Descarga del código
+2. **Verificación de Secretos** - Valida que todos los secretos estén configurados
+3. **Setup Node.js** - Configuración del entorno
+4. **Instalación** - `npm ci` para dependencias
+5. **Linting** - Verificación de calidad de código
+6. **Testing** - Ejecución de suite de tests
+7. **Build** - Compilación de producción
+
+### **Solución de Problemas**
+Si el workflow falla en "Check required Firebase secrets":
+1. Ve a `Settings` → `Secrets and variables` → `Actions`
+2. Verifica que existan los 3 secretos de Firebase
+3. Asegúrate de que los nombres coincidan exactamente
+4. Si usas variables en lugar de secretos, cambia `secrets.` por `vars.` en el workflow
+
+## �� Sistema de Design
 
 ### **Paleta de Colores Oficial**
 ```css
