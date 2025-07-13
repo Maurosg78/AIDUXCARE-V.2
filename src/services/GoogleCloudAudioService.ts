@@ -197,7 +197,7 @@ export class GoogleCloudAudioService {
         };
       }
 
-      let result: any = null;
+      let result: ClinicalAnalysisResponse | null = null;
       try {
         result = await response.json();
       } catch (jsonError) {

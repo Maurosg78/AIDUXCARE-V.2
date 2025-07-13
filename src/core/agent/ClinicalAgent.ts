@@ -103,10 +103,10 @@ export class ClinicalAgent {
       onTranscriptionEnd: () => {
         console.log('✅ ClinicalAgent: Transcripción finalizada');
       },
-      onTranscriptionResult: (result: any) => {
+      onTranscriptionResult: (result: { text: string; isFinal: boolean; confidence?: number }) => {
         console.log('📝 ClinicalAgent: Resultado de transcripción recibido', result);
       },
-      onTranscriptionError: (error: any) => {
+      onTranscriptionError: (error: { code: string; message: string; details?: unknown }) => {
         console.error('❌ ClinicalAgent: Error en transcripción', error);
       }
     };
@@ -281,7 +281,7 @@ export class ClinicalAgent {
   /**
    * Inicia la captura de audio en tiempo real
    */
-  async startAudioCapture(callback: TranscriptionCallback): Promise<void> {
+  async startAudioCapture(_callback: TranscriptionCallback): Promise<void> {
     if (this.isRecording) {
       throw new Error('Ya hay una grabación en curso');
     }
