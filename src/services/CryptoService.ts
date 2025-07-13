@@ -24,7 +24,7 @@ interface CryptoConfig {
 }
 
 interface MedicalData {
-  [key: string]: any;
+  [key: string]: string | number | boolean | object | null | undefined;
 }
 
 export class CryptoService {
@@ -280,7 +280,7 @@ export class CryptoService {
   /**
    * Descifra datos médicos con la clave predeterminada
    */
-  static async decryptMedicalData(encryptedData: EncryptedData): Promise<any> {
+  static async decryptMedicalData(encryptedData: EncryptedData): Promise<MedicalData> {
     const instance = CryptoService.getInstance();
     const result = await instance.decrypt(encryptedData);
     if (!result.success || !result.data) {

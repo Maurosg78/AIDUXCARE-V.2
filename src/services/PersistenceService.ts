@@ -3,7 +3,6 @@
  * Implementación profesional usando Firestore
  */
 
-import AudioToSOAPBridge from './AudioToSOAPBridge';
 import CryptoService from './CryptoService';
 
 type SOAPData = {
@@ -146,7 +145,7 @@ export class PersistenceService {
 
       // Descifrar los datos
       const decryptedData = await CryptoService.decryptMedicalData(note.encryptedData);
-      return decryptedData;
+      return decryptedData as unknown as SOAPData;
     } catch (error) {
       console.error('Error verificando/descifrando nota:', error);
       return null;

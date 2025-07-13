@@ -171,8 +171,6 @@ describe('ClinicalAgent Enterprise Test Suite', () => {
       const mockStartRecording = vi.fn().mockResolvedValue(undefined);
       vi.mocked(clinicalAgent['audioPipeline'].startRecording).mockImplementation(mockStartRecording);
       
-      const mockCallback = vi.fn();
-
       // Act
       await clinicalAgent.startAudioCapture();
 
@@ -200,8 +198,6 @@ describe('ClinicalAgent Enterprise Test Suite', () => {
       // Arrange
       const mockError = new Error('Error de permisos de micrófono');
       vi.mocked(clinicalAgent['audioPipeline'].startRecording).mockRejectedValue(mockError);
-
-      const mockCallback = vi.fn();
 
       // Act & Assert
       await expect(clinicalAgent.startAudioCapture())
