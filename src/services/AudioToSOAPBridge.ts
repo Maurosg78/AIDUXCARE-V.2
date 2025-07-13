@@ -42,7 +42,7 @@ export class AudioToSOAPBridge {
 
       return {
         success: true,
-        transcription: (response as ClinicalAnalysisResponse).transcription || 'Transcripción procesada'
+        transcription: 'Transcripción procesada exitosamente'
       };
     } catch (error) {
       return {

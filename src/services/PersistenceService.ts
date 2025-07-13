@@ -3,8 +3,23 @@
  * Implementación profesional usando Firestore
  */
 
-import { SOAPData } from './AudioToSOAPBridge';
-import { EncryptedData, CryptoService } from './CryptoService';
+import AudioToSOAPBridge from './AudioToSOAPBridge';
+import CryptoService from './CryptoService';
+
+type SOAPData = {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  confidence: number;
+  timestamp: string;
+};
+
+type EncryptedData = {
+  iv: string;
+  encryptedData: string;
+  salt?: string;
+};
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 

@@ -174,7 +174,7 @@ describe('ClinicalAgent Enterprise Test Suite', () => {
       const mockCallback = vi.fn();
 
       // Act
-      await clinicalAgent.startAudioCapture(mockCallback);
+      await clinicalAgent.startAudioCapture();
 
       // Assert
       expect(mockStartRecording).toHaveBeenCalledWith();
@@ -204,7 +204,7 @@ describe('ClinicalAgent Enterprise Test Suite', () => {
       const mockCallback = vi.fn();
 
       // Act & Assert
-      await expect(clinicalAgent.startAudioCapture(mockCallback))
+      await expect(clinicalAgent.startAudioCapture())
         .rejects.toThrow('Error de permisos de micrófono');
     });
   });
