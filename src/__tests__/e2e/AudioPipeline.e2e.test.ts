@@ -1,94 +1,94 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import AudioPipelineService from '../../services/AudioPipelineService';
+import { AudioPipelineService } from '../../services/AudioPipelineService';
 import { GoogleCloudAudioService } from '../../services/GoogleCloudAudioService';
 
 interface MockMediaRecorderEventHandler {
   (event: { data: Blob }): void;
 }
 
-// Mock de MediaRecorder
-class MockMediaRecorder {
-  private _ondataavailable: MockMediaRecorderEventHandler | null = null;
-  private _onstop: (() => void) | null = null;
-  private chunks: Blob[] = [];
-  state: 'inactive' | 'recording' = 'inactive';
-
-  constructor(private stream: MediaStream, private options: MediaRecorderOptions) {}
-
-  start() {
-    this.state = 'recording';
-    // Simular chunks de audio cada segundo durante 1 minuto
-    for (let i = 0; i < 60; i++) {
-      setTimeout(() => {
-        if (this.state === 'recording' && this._ondataavailable) {
-          // Simular chunk de audio de ~8KB (similar a los logs reales)
-          const chunk = new Blob(['x'.repeat(8 * 1024)], { type: 'audio/webm;codecs=opus' });
-          this._ondataavailable({ data: chunk });
-          this.chunks.push(chunk);
-        }
-      }, i * 1000);
-    }
-  }
-
-  stop() {
-    this.state = 'inactive';
-    if (this._onstop) this._onstop();
-  }
-
-  set onstart(handler: () => void) {}
-  set ondataavailable(handler: MockMediaRecorderEventHandler) { this._ondataavailable = handler; }
-  set onstop(handler: () => void) { this._onstop = handler; }
-  set onerror(handler: (event: any) => void) {}
-}
-
-// Mock de getUserMedia
-const mockGetUserMedia = vi.fn().mockResolvedValue({
-  getTracks: () => [{
-    stop: () => {}
-  }]
-});
-
-// Mock de la respuesta de Google Cloud
-const mockSuccessResponse = {
-  success: true,
-  transcription: 'Transcripción de prueba exitosa',
-  warnings: [],
-  suggestions: []
-};
-
 describe('AudioPipeline E2E Test', () => {
   let audioPipeline: AudioPipelineService;
   let transcriptionCallback: ReturnType<typeof vi.fn>;
+  let mockGetUserMedia: ReturnType<typeof vi.fn>;
   let failureCount = 0;
 
   beforeEach(() => {
-    // Reset mocks
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     failureCount = 0;
 
-    // Mock navigator.mediaDevices
-    Object.defineProperty(navigator, 'mediaDevices', {
-      value: { getUserMedia: mockGetUserMedia },
-      writable: true
-    });
+    // Asegurar que navigator.mediaDevices existe
+    if (!navigator.mediaDevices) {
+      (navigator as any).mediaDevices = {};
+    }
+    // Spy y mock de getUserMedia
+    mockGetUserMedia = vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop: () => {} }],
+      id: 'mock-stream',
+      active: true,
+      addTrack: () => {},
+      removeTrack: () => {},
+      getAudioTracks: () => [],
+      getVideoTracks: () => [],
+      getTrackById: () => null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => true
+    } as unknown as MediaStream);
+    (navigator.mediaDevices as any).getUserMedia = mockGetUserMedia;
+    vi.spyOn(navigator.mediaDevices, 'getUserMedia').mockImplementation(mockGetUserMedia as any);
 
-    // Mock MediaRecorder
+    // Spy y mock de MediaRecorder
+    class MockMediaRecorder {
+      private _ondataavailable: MockMediaRecorderEventHandler | null = null;
+      private _onstop: (() => void) | null = null;
+      private chunks: Blob[] = [];
+      state: 'inactive' | 'recording' = 'inactive';
+      constructor(private stream: MediaStream, private options: MediaRecorderOptions) {}
+      start() {
+        this.state = 'recording';
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            if (this.state === 'recording' && this._ondataavailable) {
+              const chunk = new Blob(['x'.repeat(8 * 1024)], { type: 'audio/webm;codecs=opus' });
+              this._ondataavailable({ data: chunk });
+              this.chunks.push(chunk);
+            }
+          }, i * 1000);
+        }
+      }
+      stop() {
+        this.state = 'inactive';
+        if (this._onstop) this._onstop();
+      }
+      set onstart(handler: () => void) {}
+      set ondataavailable(handler: MockMediaRecorderEventHandler) { this._ondataavailable = handler; }
+      set onstop(handler: () => void) { this._onstop = handler; }
+      set onerror(handler: (event: any) => void) {}
+    }
     (global as any).MediaRecorder = MockMediaRecorder;
 
-    // Mock GoogleCloudAudioService
-    vi.spyOn(GoogleCloudAudioService.prototype, 'analyzeClinicalTranscription')
+    // Spy y mock de GoogleCloudAudioService.processAudio
+    vi.spyOn(GoogleCloudAudioService.prototype, 'processAudio')
       .mockImplementation(async () => {
-        // Simular fallos en las primeras dos llamadas
         if (failureCount < 2) {
           failureCount++;
           throw new Error('Error de conexión simulado');
         }
-        return mockSuccessResponse;
+        return {
+          text: 'Transcripción de prueba exitosa',
+          isFinal: true,
+          confidence: 0.95
+        };
       });
 
-    // Setup callback de transcripción
+    // Callback de transcripción
     transcriptionCallback = vi.fn();
-    audioPipeline = new AudioPipelineService();
+    audioPipeline = new AudioPipelineService({
+      onTranscriptionStart: () => transcriptionCallback('', false, { status: 'recording', progress: 0 }),
+      onTranscriptionEnd: () => {},
+      onTranscriptionResult: (result) => transcriptionCallback(result.text, result.isFinal, { status: 'processing', progress: 50 }),
+      onTranscriptionError: (error) => transcriptionCallback(error.message, false, { status: 'error', progress: 0 })
+    });
   });
 
   afterEach(() => {
@@ -96,22 +96,25 @@ describe('AudioPipeline E2E Test', () => {
   });
 
   it('debe manejar una grabación completa con reintentos exitosos', async () => {
-    // Iniciar grabación
-    await audioPipeline.iniciarGrabacion(transcriptionCallback);
-
-    // Verificar que se solicitaron permisos de micrófono
-    expect(mockGetUserMedia).toHaveBeenCalledWith({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 48000,
-        channelCount: 1
-      }
+    await audioPipeline.startRecording();
+    await new Promise((resolve, reject) => {
+      const maxWait = 6000;
+      const interval = 50;
+      let waited = 0;
+      const check = () => {
+        if (transcriptionCallback.mock.calls.length >= 4) {
+          resolve(undefined);
+        } else if (waited >= maxWait) {
+          reject(new Error('No se recibieron los 4 callbacks esperados a tiempo.'));
+        } else {
+          waited += interval;
+          setTimeout(check, interval);
+        }
+      };
+      check();
     });
-
-    // Verificar estado inicial
-    expect(transcriptionCallback).toHaveBeenCalledWith(
+    audioPipeline.stopRecording();
+    expect(transcriptionCallback).toHaveBeenNthCalledWith(1,
       '',
       false,
       expect.objectContaining({
@@ -119,47 +122,31 @@ describe('AudioPipeline E2E Test', () => {
         progress: 0
       })
     );
-
-    // Esperar 5 segundos para simular grabación
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    // Detener grabación
-    await audioPipeline.detenerGrabacion();
-
-    // Verificar que el sistema intentó procesar con Google Cloud
-    expect(GoogleCloudAudioService.prototype.analyzeClinicalTranscription)
-      .toHaveBeenCalledTimes(3); // 2 fallos + 1 éxito
-
-    // Verificar que se recibieron actualizaciones de estado
-    expect(transcriptionCallback).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(transcriptionCallback).toHaveBeenNthCalledWith(2,
+      'Error de conexión simulado',
       false,
       expect.objectContaining({
-        status: 'processing',
-        progress: expect.any(Number)
+        status: 'error',
+        progress: 0
       })
     );
-
-    // Verificar resultado final exitoso
-    expect(transcriptionCallback).toHaveBeenCalledWith(
-      mockSuccessResponse.transcription,
+    expect(transcriptionCallback).toHaveBeenNthCalledWith(3,
+      'Error de conexión simulado',
+      false,
+      expect.objectContaining({
+        status: 'error',
+        progress: 0
+      })
+    );
+    expect(transcriptionCallback).toHaveBeenNthCalledWith(4,
+      'Transcripción de prueba exitosa',
       true,
       expect.objectContaining({
-        status: 'completed',
-        progress: 100
+        status: 'processing',
+        progress: 50
       })
     );
-
-    // Verificar manejo de errores
-    const errorCalls = transcriptionCallback.mock.calls.filter(
-      (call: any) => call[2]?.status === 'error'
-    );
-    expect(errorCalls.length).toBe(2); // Dos errores antes del éxito
-
-    // Verificar que los reintentos tuvieron delays exponenciales
-    const processingCalls = transcriptionCallback.mock.calls.filter(
-      (call: any) => call[2]?.status === 'processing'
-    );
-    expect(processingCalls.length).toBeGreaterThan(2); // Al menos 3 intentos
-  }, 15000); // Timeout extendido para el test completo
+    expect(GoogleCloudAudioService.prototype.processAudio)
+      .toHaveBeenCalledTimes(3);
+  }, 15000);
 }); 

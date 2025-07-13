@@ -3,8 +3,22 @@
  * Implementación profesional usando Firestore
  */
 
-import { SOAPData } from './AudioToSOAPBridge';
-import { EncryptedData, CryptoService } from './CryptoService';
+import CryptoService from './CryptoService';
+
+type SOAPData = {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  confidence: number;
+  timestamp: string;
+};
+
+type EncryptedData = {
+  iv: string;
+  encryptedData: string;
+  salt?: string;
+};
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -131,7 +145,7 @@ export class PersistenceService {
 
       // Descifrar los datos
       const decryptedData = await CryptoService.decryptMedicalData(note.encryptedData);
-      return decryptedData;
+      return decryptedData as unknown as SOAPData;
     } catch (error) {
       console.error('Error verificando/descifrando nota:', error);
       return null;

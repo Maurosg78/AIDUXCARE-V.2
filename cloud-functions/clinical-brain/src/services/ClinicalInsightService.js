@@ -617,121 +617,54 @@ RESPUESTA JSON:`;
   // ========================================
 
   /**
-   * Construye prompt específico para triaje rápido de banderas rojas
+   * Construye prompt de triaje optimizado y minimalista
    */
   _buildTriagePrompt(transcription, criticalRedFlags) {
-    return `Actúa como un fisioterapeuta experto realizando triaje rápido de emergencias.
+    return `Analiza esta transcripción médica y detecta banderas rojas críticas.
+
+BANDERAS ROJAS A BUSCAR:
+${criticalRedFlags.slice(0, 10).join(', ')}
 
 TRANSCRIPCIÓN:
-${transcription}
+${transcription.substring(0, 1000)}
 
-BANDERAS ROJAS CRÍTICAS A BUSCAR:
-${criticalRedFlags.map(flag => `- ${flag}`).join('\n')}
-
-INSTRUCCIONES:
-1. Lee la transcripción en busca de las banderas rojas críticas listadas
-2. Identifica SOLO las banderas rojas que están claramente presentes
-3. Responde ÚNICAMENTE con una lista simple de banderas rojas detectadas
-4. Si no hay banderas rojas, responde "NINGUNA"
-5. Se específico y conciso - esta es evaluación de emergencia (<5 segundos)
-
-FORMATO DE RESPUESTA:
-Solo lista las banderas rojas detectadas, una por línea, sin explicaciones adicionales.
-
-EJEMPLO:
-Dolor nocturno severo
-Pérdida de peso inexplicada
-Fiebre persistente
-
-RESPUESTA:`;
+Responde solo con JSON:
+{
+  "redFlags": ["bandera1", "bandera2"],
+  "riskLevel": "LOW|MEDIUM|HIGH",
+  "confidence": 0.9
+}`;
   }
 
   /**
-   * Construye prompt para extracción estructurada de hechos clínicos
+   * Construye prompt de extracción optimizado
    */
   _buildExtractionPrompt(transcription) {
-    return `Actúa como un asistente clínico experto en extracción de datos estructurados.
+    return `Extrae hechos clínicos de esta transcripción:
 
 TRANSCRIPCIÓN:
-${transcription}
+${transcription.substring(0, 1000)}
 
-INSTRUCCIONES:
-Extrae y estructura TODOS los hechos clínicos relevantes de la transcripción en formato JSON.
-Incluye solo información que esté explícitamente mencionada.
-
-FORMATO DE RESPUESTA - JSON ESTRUCTURADO:
+Responde solo con JSON:
 {
-  "symptoms": {
-    "primary_complaint": "string",
-    "pain_location": "string",
-    "pain_intensity": "number/10",
-    "duration": "string",
-    "aggravating_factors": ["array"],
-    "relieving_factors": ["array"]
-  },
-  "history": {
-    "onset": "string",
-    "previous_episodes": "boolean",
-    "previous_treatments": ["array"],
-    "trauma_history": "string"
-  },
-  "medications": {
-    "current_medications": ["array"],
-    "allergies": ["array"],
-    "recent_medications": ["array"]
-  },
-  "functional_status": {
-    "activities_affected": ["array"],
-    "work_impact": "string",
-    "sleep_impact": "string"
-  },
-  "physical_examination": {
-    "observations": ["array"],
-    "range_of_motion": "string",
-    "strength": "string",
-    "special_tests": ["array"]
-  },
-  "patient_demographics": {
-    "age_mentioned": "string",
-    "occupation": "string",
-    "activity_level": "string"
-  }
-}
-
-REGLAS:
-- Solo incluir campos con información real de la transcripción
-- Usar "null" para campos sin información
-- Mantener exactitud a lo mencionado
-- No inferir información no explícita
-
-RESPUESTA JSON:`;
+  "symptoms": ["síntoma1", "síntoma2"],
+  "medications": ["medicamento1"],
+  "history": ["antecedente1"],
+  "vitals": {"presion": "120/80", "pulso": "72"}
+}`;
   }
 
   /**
-   * Construye super-prompt final contextualizado para análisis profundo
+   * Construye prompt final optimizado
    */
   _buildFinalAnalysisPrompt(transcription, redFlags, clinicalFacts) {
-    return `Actúa como un fisioterapeuta clínico experto realizando análisis completo y generación de nota SOAP.
+    return `Analiza esta consulta médica y genera análisis clínico completo.
 
-INFORMACIÓN PRE-PROCESADA:
+TRANSCRIPCIÓN: ${transcription.substring(0, 800)}
+BANDERAS ROJAS: ${redFlags.slice(0, 3).join(', ')}
+HECHOS: ${JSON.stringify(clinicalFacts).substring(0, 400)}
 
-TRANSCRIPCIÓN ORIGINAL:
-${transcription}
-
-BANDERAS ROJAS DETECTADAS:
-${redFlags.length > 0 ? redFlags.map(flag => `- ${flag}`).join('\n') : 'Ninguna bandera roja crítica detectada'}
-
-HECHOS CLÍNICOS ESTRUCTURADOS:
-${JSON.stringify(clinicalFacts, null, 2)}
-
-INSTRUCCIONES PARA ANÁLISIS COMPLETO:
-Usando toda la información pre-procesada, genera un análisis clínico completo que incluya:
-
-1. WARNINGS: Alertas clínicas basadas en banderas rojas y patrones de riesgo
-2. SUGGESTIONS: Recomendaciones de tratamiento y seguimiento específicas de fisioterapia
-3. SOAP_ANALYSIS: Nota SOAP profesional completa
-
-FORMATO DE RESPUESTA - JSON ESTRUCTURADO:
+Responde solo con JSON:
 {
   "warnings": [
     {
@@ -740,65 +673,65 @@ FORMATO DE RESPUESTA - JSON ESTRUCTURADO:
       "category": "string",
       "title": "string",
       "description": "string",
-      "recommendation": "string",
-      "evidence": "string"
+      "recommendation": "string"
     }
   ],
   "suggestions": [
     {
-      "id": "string", 
-      "type": "treatment|assessment|referral|education",
+      "id": "string",
+      "type": "assessment|treatment|education",
       "title": "string",
       "description": "string",
-      "rationale": "string",
       "priority": "HIGH|MEDIUM|LOW"
     }
   ],
   "soap_analysis": {
-    "subjective": {
-      "chief_complaint": "string",
-      "history_present_illness": "string", 
-      "relevant_history": "string",
-      "functional_goals": "string"
-    },
-    "objective": {
-      "observation": "string",
-      "palpation": "string",
-      "range_of_motion": "string",
-      "strength_testing": "string",
-      "special_tests": "string",
-      "functional_assessment": "string"
-    },
-    "assessment": {
-      "clinical_impression": "string",
-      "differential_diagnosis": ["array"],
-      "prognosis": "string",
-      "risk_stratification": "LOW|MEDIUM|HIGH"
-    },
-    "plan": {
-      "immediate_actions": ["array"],
-      "treatment_plan": "string", 
-      "referrals_needed": ["array"],
-      "follow_up_schedule": "string",
-      "patient_education": "string"
-    }
-  },
-  "clinical_summary": {
-    "key_findings": "string",
-    "treatment_priority": "string",
-    "expected_outcomes": "string",
-    "safety_considerations": "string"
+    "subjective": "string",
+    "objective": "string",
+    "assessment": "string",
+    "plan": "string"
   }
-}
+}`;
+  }
 
-CONSIDERACIONES ESPECIALES:
-- Integra las banderas rojas en warnings con alta prioridad
-- Usa los hechos clínicos estructurados para completar la nota SOAP
-- Mantén enfoque específico de fisioterapia
-- Proporciona recomendaciones accionables y específicas
-- Considera la información pre-procesada como datos ya validados
+  /**
+   * Construye prompt inteligente optimizado
+   */
+  _buildIntelligentAnalysisPrompt(transcription, triageResult, options) {
+    return `Analiza esta consulta médica:
 
-RESPUESTA JSON:`;
+TRANSCRIPCIÓN: ${transcription.substring(0, 800)}
+BANDERAS ROJAS: ${triageResult.redFlags.slice(0, 3).join(', ')}
+ESPECIALIDAD: ${options.specialty || 'general'}
+
+Responde solo con JSON:
+{
+  "warnings": [
+    {
+      "id": "string",
+      "severity": "HIGH|MEDIUM|LOW",
+      "category": "string",
+      "title": "string",
+      "description": "string",
+      "recommendation": "string"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "string",
+      "type": "assessment|treatment|education",
+      "title": "string",
+      "description": "string",
+      "priority": "HIGH|MEDIUM|LOW"
+    }
+  ],
+  "soap_analysis": {
+    "subjective": "string",
+    "objective": "string",
+    "assessment": "string",
+    "plan": "string"
+  }
+}`;
   }
 
   // ========================================

@@ -23,6 +23,10 @@ interface CryptoConfig {
   saltLength: number;
 }
 
+interface MedicalData {
+  [key: string]: string | number | boolean | object | null | undefined;
+}
+
 export class CryptoService {
   private static instance: CryptoService;
   private key: CryptoKey | null = null;
@@ -96,11 +100,7 @@ export class CryptoService {
         encryptedData: Buffer.from(encryptedContent).toString('base64')
       };
     } catch (error) {
-      return {
-        iv: '',
-        encryptedData: '',
-        error: error instanceof Error ? error.message : 'Error de encriptación'
-      };
+      throw new Error(error instanceof Error ? error.message : 'Error de encriptación');
     }
   }
 
@@ -272,18 +272,21 @@ export class CryptoService {
    * Cifra datos médicos con una clave predeterminada segura
    */
   static async encryptMedicalData(data: MedicalData): Promise<EncryptedData> {
+    const instance = CryptoService.getInstance();
     const jsonData = JSON.stringify(data);
-    const medicalKey = 'AIDUXCARE_MEDICAL_ENCRYPTION_KEY_2025';
-    return this.encrypt(jsonData, medicalKey);
+    return await instance.encrypt(jsonData);
   }
 
   /**
    * Descifra datos médicos con la clave predeterminada
    */
   static async decryptMedicalData(encryptedData: EncryptedData): Promise<MedicalData> {
-    const medicalKey = 'AIDUXCARE_MEDICAL_ENCRYPTION_KEY_2025';
-    const decryptedJson = await this.decrypt(encryptedData, medicalKey);
-    return JSON.parse(decryptedJson);
+    const instance = CryptoService.getInstance();
+    const result = await instance.decrypt(encryptedData);
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Error al descifrar datos médicos');
+    }
+    return JSON.parse(result.data);
   }
 }
 

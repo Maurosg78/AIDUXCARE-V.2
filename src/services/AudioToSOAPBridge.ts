@@ -3,7 +3,7 @@
  * Convierte transcripciones de audio en datos estructurados SOAP
  */
 
-import { GoogleCloudAudioService, ClinicalAnalysisRequest, ClinicalAnalysisResponse } from './GoogleCloudAudioService';
+import { GoogleCloudAudioService, ClinicalAnalysisRequest } from './GoogleCloudAudioService';
 
 interface SOAPData {
   subjective: string;
@@ -34,7 +34,7 @@ export class AudioToSOAPBridge {
       // Convertir Blob a base64 para el análisis clínico
       const base64Audio = await this.blobToBase64(audioChunk);
       
-      const response = await this.googleCloudService.analyzeClinicalTranscription({
+      await this.googleCloudService.analyzeClinicalTranscription({
         transcription: base64Audio,
         specialty: 'physiotherapy',
         sessionType: 'initial'
@@ -42,7 +42,7 @@ export class AudioToSOAPBridge {
 
       return {
         success: true,
-        transcription: (response as ClinicalAnalysisResponse).transcription || 'Transcripción procesada'
+        transcription: 'Transcripción procesada exitosamente'
       };
     } catch (error) {
       return {

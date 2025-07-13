@@ -1,0 +1,1 @@
+// Archivo de setup para Vitest. Puede estar vacío si no se requieren mocks globales. 
