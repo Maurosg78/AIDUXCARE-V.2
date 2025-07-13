@@ -1,72 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useUser } from '../../core/auth/UserContext';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../../firebase';
 
-type ProtectedRouteProps = {
-  children: React.ReactNode;
-  requiredRoles?: string | string[];
-};
-
-/**
- * Componente para proteger rutas basadas en autenticación y roles
- * 
- * @param children - Componente hijo que se renderizará si el usuario está autenticado y tiene los roles requeridos
- * @param requiredRoles - Rol(es) requerido(s) para acceder a la ruta. Si no se especifica, solo se requiere autenticación.
- */
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRoles 
-}) => {
-  const { user, isLoading } = useUser();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Si no estamos cargando y tenemos usuario, comprobamos roles
-    if (!isLoading && user) {
-      // Si no se requiere rol específico, simplemente autorizamos
-      if (!requiredRoles) {
-        setIsAuthorized(true);
-        return;
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      setIsAuthenticated(!!user);
+    });
 
-      // Convertimos a array para facilitar la comprobación
-      const requiredRolesArray = typeof requiredRoles === 'string' 
-        ? [requiredRoles] 
-        : requiredRoles;
+    return () => unsubscribe();
+  }, []);
 
-      // Para simplificar, asumimos que el rol del usuario está en user.role
-      // En una implementación real, esto podría ser más complejo
-      const userRole = user?.role as string || 'visitor';
-      
-      // Verificamos si el usuario tiene alguno de los roles requeridos
-      const hasRequiredRole = requiredRolesArray.includes(userRole);
-      setIsAuthorized(hasRequiredRole);
-    } else if (!isLoading) {
-      // Si no estamos cargando y no hay usuario, no está autorizado
-      setIsAuthorized(false);
-    }
-  }, [user, isLoading, requiredRoles]);
-
-  // Mientras estamos comprobando, mostramos un indicador de carga o nada
-  if (isLoading || isAuthorized === null) {
-    return <div className="p-4 text-center">Comprobando permisos...</div>;
+  if (isAuthenticated === null) {
+    // Mostrar un loader mientras se verifica la autenticación
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+      </div>
+    );
   }
 
-  // Si no está autorizado, redirigimos
-  if (!isAuthorized) {
-    // Para desarrollo, permitimos cualquier ruta para facilitar pruebas
-    if (import.meta.env.DEV) {
-      console.warn('DEV MODE: Permitiendo acceso aunque no está autorizado');
-      return <>{children}</>;
-    }
-    
-    return user 
-      ? <Navigate to="/access-denied" replace /> 
-      : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
   }
 
-  // Si está autorizado, mostramos los hijos
   return <>{children}</>;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

@@ -7,3 +7,5 @@ dist/
 .vercel/output/
 .vercel
 .env*
+google-cloud-credentials.json
+*.json
