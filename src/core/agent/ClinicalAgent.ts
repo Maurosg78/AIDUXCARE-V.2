@@ -281,7 +281,7 @@ export class ClinicalAgent {
   /**
    * Inicia la captura de audio en tiempo real
    */
-  async startAudioCapture(_callback: TranscriptionCallback): Promise<void> {
+  async startAudioCapture(): Promise<void> {
     if (this.isRecording) {
       throw new Error('Ya hay una grabación en curso');
     }

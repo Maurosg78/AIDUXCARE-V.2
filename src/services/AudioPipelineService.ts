@@ -60,9 +60,8 @@ export class AudioPipelineService {
       this.isRecording = true;
       this.callbacks.onTranscriptionStart();
 
-      this.mediaRecorder.ondataavailable = async (event: BlobEvent) => {
-        const audioBlob = event.data;
-        await this.processAudioChunk(audioBlob);
+      this.mediaRecorder.ondataavailable = async () => {
+        await this.processAudioChunk();
       };
 
       this.mediaRecorder.start(1000); // Chunk cada 1 segundo
@@ -76,7 +75,7 @@ export class AudioPipelineService {
     }
   }
 
-  private async processAudioChunk(audioBlob: Blob): Promise<void> {
+  private async processAudioChunk(): Promise<void> {
     try {
       // La función processAudio de GoogleCloudAudioService no acepta argumentos según el error de lint.
       // Por lo tanto, eliminamos el argumento y asumimos que el audioBlob debe ser gestionado internamente o previamente.

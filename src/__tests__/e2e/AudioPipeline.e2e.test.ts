@@ -44,7 +44,7 @@ describe('AudioPipeline E2E Test', () => {
       private chunks: Blob[] = [];
       state: 'inactive' | 'recording' = 'inactive';
       constructor(private stream: MediaStream, private options: MediaRecorderOptions) {}
-      start(_timeslice?: number) {
+      start() {
         this.state = 'recording';
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
