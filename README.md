@@ -253,3 +253,4 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 
 
 # Trigger re-run for CI/CD
+# Trigger CI/CD after secrets upload
