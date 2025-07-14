@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AgentSuggestionItem from '../AgentSuggestionItem';
 
 describe('AgentSuggestionItem', () => {
@@ -12,13 +13,13 @@ describe('AgentSuggestionItem', () => {
       field: 'diagnosis'
     },
     isIntegrated: false,
-    onAccept: jest.fn(),
-    onReject: jest.fn(),
-    onFeedback: jest.fn()
+    onAccept: vi.fn(),
+    onReject: vi.fn(),
+    onFeedback: vi.fn()
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('debe renderizar correctamente la sugerencia', () => {

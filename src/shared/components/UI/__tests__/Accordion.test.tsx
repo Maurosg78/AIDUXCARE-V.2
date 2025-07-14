@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import Accordion from '../Accordion';
 
-describe.skip('Accordion', () => {
+describe('Accordion', () => {
   const items = [
     {
       id: 'item-1',
@@ -35,10 +36,11 @@ describe.skip('Accordion', () => {
     render(<Accordion items={items} />);
     
     const button = screen.getByText('Título 1');
-    fireEvent.click(button);
-    fireEvent.click(button);
-    
-    expect(screen.queryByText('Contenido 1')).not.toBeVisible();
+    fireEvent.click(button); // abrir
+    fireEvent.click(button); // cerrar
+    // El contenido debe estar oculto (verificar la clase opacity-0 en el div de transición)
+    const content = screen.getByText('Contenido 1').parentElement;
+    expect(content).toHaveClass('opacity-0');
   });
 
   it('mantiene abierto el item por defecto', () => {
@@ -59,18 +61,19 @@ describe.skip('Accordion', () => {
     ];
 
     render(<Accordion items={itemsWithDisabled} />);
-    
-    const disabledButton = screen.getByRole('button', { name: 'Título 3' });
+    // El botón tiene el nombre 'Título 3 +' por el span extra
+    const disabledButton = screen.getByRole('button', { name: /Título 3 \+/ });
     expect(disabledButton).toBeDisabled();
-    
     fireEvent.click(disabledButton);
-    expect(screen.queryByText('Contenido 3')).not.toBeVisible();
+    // El contenido debe estar oculto (verificar la clase opacity-0 en el div de transición)
+    const content = screen.getByText('Contenido 3').parentElement;
+    expect(content).toHaveClass('opacity-0');
   });
 
   it('aplica correctamente las variantes', () => {
     const { container } = render(<Accordion items={items} variant="bordered" />);
-    
-    expect(container.firstChild).toHaveClass('space-y-2');
+    // Debe tener las clases de bordered
+    expect(container.firstChild).toHaveClass('border', 'rounded-lg', 'divide-y', 'divide-gray-200');
   });
 
   it('aplica correctamente los tamaños', () => {
@@ -81,15 +84,12 @@ describe.skip('Accordion', () => {
   });
 
   it('llama a onChange cuando se abre/cierra un item', () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(<Accordion items={items} onChange={onChange} />);
-    
     const button = screen.getByText('Título 1');
     fireEvent.click(button);
-    
-    expect(onChange).toHaveBeenCalledWith(['item-1']);
-    
+    expect(onChange).toHaveBeenCalledWith('item-1', true);
     fireEvent.click(button);
-    expect(onChange).toHaveBeenCalledWith([]);
+    expect(onChange).toHaveBeenCalledWith('item-1', false);
   });
 }); 

@@ -64,7 +64,7 @@ const mockInsertSuggestion = vi.fn(async () => {
 });
 
 // Configurar el mock de insertSuggestion
-(EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
+(EMRFormService.insertSuggestion as any).mockImplementation(mockInsertSuggestion);
 
 describe('AgentSuggestionsViewer', () => {
   // Datos de prueba
@@ -108,7 +108,7 @@ describe('AgentSuggestionsViewer', () => {
     // Limpiar todos los mocks antes de cada prueba
     vi.clearAllMocks();
     // Resetear el mock de insertSuggestion a su implementación por defecto
-    (EMRFormService.insertSuggestion as jest.Mock).mockImplementation(mockInsertSuggestion);
+    (EMRFormService.insertSuggestion as any).mockImplementation(mockInsertSuggestion);
   });
 
   it('debe renderizarse sin errores', async () => {
@@ -149,7 +149,7 @@ describe('AgentSuggestionsViewer', () => {
     const suggestion = mockSuggestions[0];
     
     // Simular inserción exitosa
-    (EMRFormService.insertSuggestion as jest.Mock).mockResolvedValueOnce(true);
+    (EMRFormService.insertSuggestion as any).mockResolvedValueOnce(true);
     
     const { getByTestId } = render(
       <AgentSuggestionsViewer
@@ -184,7 +184,7 @@ describe('AgentSuggestionsViewer', () => {
       },
       visitId,
       patientId,
-      'anonymous'
+      'admin-test-001'
     );
     
     await waitFor(() => {
@@ -205,7 +205,7 @@ describe('AgentSuggestionsViewer', () => {
         suggestionType: suggestion.type,
         suggestionField: suggestion.field
       }),
-      'anonymous',
+      'admin-test-001',
       visitId
     );
   });
@@ -259,7 +259,7 @@ describe('AgentSuggestionsViewer', () => {
 
   it('debe manejar correctamente errores de red al integrar sugerencias', async () => {
     const networkError = new Error('Error de red');
-    (EMRFormService.insertSuggestion as jest.Mock).mockRejectedValueOnce(networkError);
+    (EMRFormService.insertSuggestion as any).mockRejectedValueOnce(networkError);
 
     const { getByTestId, findByText } = render(
       <AgentSuggestionsViewer
@@ -292,13 +292,13 @@ describe('AgentSuggestionsViewer', () => {
     expect(AuditLogger.log).toHaveBeenCalledWith(
       'suggestion_integration_error',
       expect.objectContaining({
-        error: "Error al integrar la sugerencia",
-        userId: "anonymous",
-        visitId: "test-visit-id",
-        patientId: "test-patient-id",
-        suggestionId: mockSuggestions[0].id,
-        suggestionType: mockSuggestions[0].type,
-        suggestionField: mockSuggestions[0].field
+        error: 'Error al integrar la sugerencia',
+        patientId: 'test-patient-id',
+        suggestionField: 'diagnosis',
+        suggestionId: 'suggestion-1',
+        suggestionType: 'recommendation',
+        userId: 'admin-test-001',
+        visitId: 'test-visit-id',
       })
     );
   });
