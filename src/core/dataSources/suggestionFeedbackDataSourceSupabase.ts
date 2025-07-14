@@ -26,7 +26,7 @@ export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource 
 
 const saveFeedback = async (feedback: SuggestionFeedback): Promise<void> => {
   // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('suggestion_feedback')
     .insert([feedback]);
 
