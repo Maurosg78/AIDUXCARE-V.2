@@ -1,5 +1,3 @@
-import { z } from 'zod';
-import type { MemoryBlock, AgentContext } from '@/types/agent';
 import * as SupabaseDataSource from './MCPDataSourceSupabase';
 import { MCPMemoryBlock } from './schema';
 

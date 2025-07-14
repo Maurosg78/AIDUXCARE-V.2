@@ -4,7 +4,7 @@
  */
 
 import { ollamaNode } from './ollama-client-node';
-import { RAGMedicalMCP, MedicalSpecialty } from '../src/core/mcp/RAGMedicalMCP';
+import { RAGMedicalMCP } from '../src/core/mcp/RAGMedicalMCP';
 
 // === INTERFACES ===
 
@@ -55,7 +55,7 @@ export class MockNLPService {
     
     // 1. Extraer entidades clínicas
     const entitiesStart = Date.now();
-    const entities = await this.extractClinicalEntities(transcript, options.useRAG || false);
+    const entities = await this.extractClinicalEntities(transcript);
     const entitiesTime = Date.now() - entitiesStart;
     
     // 2. Generar notas SOAP
@@ -84,7 +84,7 @@ export class MockNLPService {
   /**
    * Extrae entidades clínicas del texto
    */
-  static async extractClinicalEntities(transcript: string, useRAG: boolean = false): Promise<ClinicalEntity[]> {
+  static async extractClinicalEntities(transcript: string): Promise<ClinicalEntity[]> {
     const prompt = `
 Analiza la siguiente transcripción médica y extrae entidades clínicas importantes.
 Identifica síntomas, diagnósticos, tratamientos, medicamentos, anatomía y mediciones.

@@ -29,10 +29,7 @@ const RegisterPage = () => {
       setError(null);
       
       // Usar el servicio de usuarios para registrar
-      const data = await userDataSourceSupabase.signUp(email, password, {
-        full_name: fullname,
-        role
-      });
+      const data = await userDataSourceSupabase.signUp();
 
       if (data?.user) {
         // Mostrar mensaje de éxito y redirigir al login

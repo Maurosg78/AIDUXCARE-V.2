@@ -3,10 +3,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AuditLogViewer from '../AuditLogViewer';
-import { AuditLogger, AuditLogEntry } from '@/core/audit/AuditLogger';
+import { AuditLogEntry } from '@/core/audit/AuditLogger';
 
 // Mock de AuditLogger
 vi.mock('@/core/audit/AuditLogger', () => ({

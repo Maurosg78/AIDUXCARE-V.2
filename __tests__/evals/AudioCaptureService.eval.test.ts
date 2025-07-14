@@ -226,7 +226,6 @@ describe('EVAL: Sistema de Escucha Activa Clínica', () => {
     
     it('solo inicia la captura tras interacción explícita del profesional', async () => {
       // Mock para el callback de captura completada
-      const mockOnCaptureComplete = vi.fn();
       
       // Mock para simular que la captura está activa cuando se llama a isCurrentlyCapturing
       mockAudioCaptureService.isCurrentlyCapturing.mockReturnValue(false);
@@ -260,9 +259,6 @@ describe('EVAL: Sistema de Escucha Activa Clínica', () => {
     it('clasifica correctamente los segmentos por tipo de orador', async () => {
       // Configurar el mock para devolver una transcripción con múltiples oradores
       mockAudioCaptureService.stopCapture.mockReturnValue(MultiSpeakerTranscript);
-      
-      // Mock para el callback de aprobación
-      const mockOnApproveSegment = vi.fn();
       
       // Importar screen de nuestro mock, que ya tiene elementos definidos
       const { screen } = await import('@testing-library/react');

@@ -2,7 +2,6 @@
 
 import React, { forwardRef } from 'react';
 import { twMerge } from 'tailwind-merge';
-import { cn } from '@/lib/utils';
 
 export type InputVariant = 'default' | 'outline' | 'filled';
 export type InputSize = 'sm' | 'md' | 'lg';

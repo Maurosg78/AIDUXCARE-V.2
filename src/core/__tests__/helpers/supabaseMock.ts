@@ -13,6 +13,6 @@ export const createSupabaseMock = (error?: Error) => {
   } as unknown as PostgrestQueryBuilder<any, any, string, unknown>;
 
   return {
-    from: (relation: string) => mockBuilder
+    from: () => mockBuilder
   };
 }; 

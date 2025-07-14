@@ -3,7 +3,7 @@
  * Solo para scripts de testing que no pueden usar import.meta.env
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 
 // Cargar variables de entorno

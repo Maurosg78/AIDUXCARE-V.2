@@ -12,7 +12,6 @@ import PromptTestingWidget from '@/components/testing/PromptTestingWidget';
 import { AudioProcessingResult } from '@/services/AudioProcessingServiceProfessional';
 import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
 import { 
-  ClinicalInsightSummary, 
   ClinicalPattern, 
   ClinicalAlert, 
   ProactiveRecommendation 

@@ -3,11 +3,11 @@
  * Verifica que las políticas de seguridad a nivel de fila (Row Level Security)
  * estén configuradas correctamente para la tabla patients
  */
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { professionalSession, PROFESSIONAL_ID } from '../../__mocks__/sessions/professionalSession';
-import { otherProfessionalSession, OTHER_PROFESSIONAL_ID } from '../../__mocks__/sessions/otherProfessionalSession';
+import { otherProfessionalSession } from '../../__mocks__/sessions/otherProfessionalSession';
 import { supabaseAuthMock } from '../../__mocks__/supabase/authMock';
 import type { Patient } from '../../src/core/domain/patientType';
 import { PatientGender } from '../../src/core/domain/patientType';

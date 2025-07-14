@@ -4,8 +4,6 @@
  * para probar la capacidad de limpieza y validación del builder.
  */
 
-import { MCPMemoryBlock } from '../../src/core/mcp/schema';
-
 // Timestamp común para todos los registros
 const NOW = new Date().toISOString();
 // Timestamp con formato inválido

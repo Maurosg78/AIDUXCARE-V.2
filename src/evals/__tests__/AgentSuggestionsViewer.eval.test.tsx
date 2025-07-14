@@ -2,10 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../../shared/components/Agent/AgentSuggestionsViewer';
-import { AgentSuggestion, SuggestionType, SuggestionField } from '../../types/agent';
+import { AgentSuggestion } from '../../types/agent';
 import { EMRFormService } from '../../core/services/EMRFormService';
 import { AuditLogger } from '../../core/audit/AuditLogger';
-import * as UsageAnalyticsService from '../../services/UsageAnalyticsService';
 
 // Mock de los servicios externos
 vi.mock('../../core/services/EMRFormService', () => ({

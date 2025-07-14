@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuditLogEntry, MCPUpdateAuditEntry, SuggestionIntegrationAuditEntry } from '@/core/audit/AuditLogger';
+import { AuditLogEntry } from '@/core/audit/AuditLogger';
 
 interface AuditLogViewerProps {
   visitId: string;

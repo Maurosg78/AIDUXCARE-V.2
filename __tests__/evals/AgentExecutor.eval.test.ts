@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { AgentExecutor, AgentExecutionParams } from '../../src/core/agent/AgentExecutor';
-import { buildAgentContext } from '../../src/core/agent/AgentContextBuilder';
-import { AgentSuggestion } from '../../src/types/agent';
-import { LLMProvider } from '../../src/core/agent/LLMAdapter';
-import { validMCP } from '../../__mocks__/contexts/validMCP';
-import { emptyMCP } from '../../__mocks__/contexts/emptyMCP';
-import { partialMCP } from '../../__mocks__/contexts/partialMCP';
+import { AgentExecutor } from '../../src/core/agent/AgentExecutor';
 import { z } from 'zod';
 import { EMRFormService } from '../../src/core/services/EMRFormService';
 import { AuditLogger } from '../../src/core/audit/AuditLogger';
@@ -25,7 +19,7 @@ const AgentSuggestionSchema = z.object({
 
 // Mock para sendToLLM para evitar llamadas reales a servicios externos
 vi.mock('../../src/core/agent/LLMAdapter', () => ({
-  sendToLLM: vi.fn().mockImplementation((context, provider) => {
+  sendToLLM: vi.fn().mockImplementation((context) => {
     // Si el contexto es vacío, simular respuesta vacía
     if (context && Array.isArray(context.blocks) && context.blocks.length === 0) {
       return Promise.resolve({ suggestions: [], explanation: 'Sin datos' });

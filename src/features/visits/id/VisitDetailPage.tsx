@@ -8,7 +8,6 @@ import { visitDataSourceSupabase } from '@/core/dataSources/visitDataSourceSupab
 const VisitDetailPage = () => {
   const { id: visitId } = useParams<{ id: string }>();
   const [context, setContext] = useState<MCPContext | null>(null);
-  const [previousContext, setPreviousContext] = useState<MCPContext | null>(null);
 
   useEffect(() => {
     if (!visitId) return;
@@ -19,7 +18,6 @@ const VisitDetailPage = () => {
       if (!visit || !patientId) return;
       const ctx = await getContextFromVisit(visitId, patientId);
       setContext(ctx);
-      setPreviousContext(ctx);
     };
 
     fetchContext();

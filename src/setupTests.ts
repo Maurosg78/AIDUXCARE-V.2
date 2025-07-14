@@ -25,7 +25,7 @@ vi.mock('./config/env', () => ({
 
 // Definir un mock global de cliente Supabase para evitar duplicación
 const mockSupabaseClient = {
-  from: vi.fn((table) => ({
+  from: vi.fn(() => ({
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
         single: vi.fn(() => Promise.resolve({ 

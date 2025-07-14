@@ -1,11 +1,7 @@
-import { z } from 'zod';
-import { supabase } from '@/lib/supabaseClient';
 import { formDataSourceSupabase } from '@/core/dataSources/formDataSourceSupabase';
 import { AuditLogger } from '@/core/audit/AuditLogger';
-import { trackMetric } from '@/services/UsageAnalyticsService';
-import { EMRFormService, type EMRSection } from '@/core/services/EMRFormService';
-import type { FormDataSource, Form } from '@/core/dataSources/FormDataSource';
-import type { ClinicalFormData, EMRForm, SuggestionToIntegrate } from '@/types/forms';
+import { EMRFormService } from '@/core/services/EMRFormService';
+import type { SuggestionToIntegrate } from '@/types/forms';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock de dependencias externas

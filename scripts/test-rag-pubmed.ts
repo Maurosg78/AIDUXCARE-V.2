@@ -5,7 +5,7 @@
  * Script para probar la integración RAG con PubMed y otras fuentes médicas
  */
 
-import { RAGMedicalMCP, RAGTestingHelper, PubMedSearchService } from '../src/core/mcp/RAGMedicalMCP';
+import { RAGMedicalMCP, PubMedSearchService } from '../src/core/mcp/RAGMedicalMCP';
 
 // === TESTING QUERIES ESPECIALIZADAS ===
 

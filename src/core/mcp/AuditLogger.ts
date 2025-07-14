@@ -1,4 +1,3 @@
-import supabase from '@/core/auth/supabaseClient';
 import { AuditLogEntry as BaseAuditLogEntry } from '@/core/audit/AuditLogger';
 
 /**

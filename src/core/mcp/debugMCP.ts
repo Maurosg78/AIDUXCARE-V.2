@@ -1,4 +1,3 @@
-import { MCPManager } from './MCPManager';
 /**
  * Script para depurar el funcionamiento del MCPContextBuilder
  * 

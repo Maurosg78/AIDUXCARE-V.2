@@ -4,7 +4,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../src/shared/components/Agent/AgentSuggestionsViewer';
 import { AgentSuggestion } from '../src/types/agent';
-import { EMRFormService, SuggestionToIntegrate } from '../src/core/services/EMRFormService';
+import { EMRFormService } from '../src/core/services/EMRFormService';
 import { AuditLogger } from '../src/core/audit/AuditLogger';
 import * as UsageAnalyticsService from '../src/services/UsageAnalyticsService';
 // TODO: formDataSourceSupabase está reservado para pruebas futuras de integración
@@ -59,12 +59,7 @@ vi.mock('../src/core/dataSources/formDataSourceSupabase', () => ({
 }));
 
 // Mock para las funciones de servicio integradas manualmente
-const mockInsertSuggestion = vi.fn(async (
-  suggestion: SuggestionToIntegrate,
-  visitId: string,
-  patientId: string,
-  userId: string = 'anonymous'
-) => {
+const mockInsertSuggestion = vi.fn(async () => {
   return true; // Solo devuelve true, sin efectos secundarios
 });
 
@@ -74,7 +69,6 @@ const mockInsertSuggestion = vi.fn(async (
 describe('AgentSuggestionsViewer', () => {
   // Datos de prueba
   const visitId = 'test-visit-id';
-  const userId = 'test-user-id';
   const patientId = 'test-patient-id';
   
   const mockSuggestions: AgentSuggestion[] = [
@@ -122,7 +116,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -162,7 +155,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -192,7 +184,7 @@ describe('AgentSuggestionsViewer', () => {
       },
       visitId,
       patientId,
-      userId
+      'anonymous'
     );
     
     await waitFor(() => {
@@ -213,7 +205,7 @@ describe('AgentSuggestionsViewer', () => {
         suggestionType: suggestion.type,
         suggestionField: suggestion.field
       }),
-      userId,
+      'anonymous',
       visitId
     );
   });
@@ -223,7 +215,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={[]}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -253,7 +244,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={emptySuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -275,7 +265,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -304,7 +293,7 @@ describe('AgentSuggestionsViewer', () => {
       'suggestion_integration_error',
       expect.objectContaining({
         error: "Error al integrar la sugerencia",
-        userId: "test-user-id",
+        userId: "anonymous",
         visitId: "test-visit-id",
         patientId: "test-patient-id",
         suggestionId: mockSuggestions[0].id,
@@ -319,7 +308,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -358,7 +346,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={[nonIntegrableSuggestion]}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}
@@ -390,7 +377,6 @@ describe('AgentSuggestionsViewer', () => {
       <AgentSuggestionsViewer
         visitId={visitId}
         suggestions={mockSuggestions}
-        userId={userId}
         patientId={patientId}
         onSuggestionAccepted={onSuggestionAccepted}
         onSuggestionRejected={onSuggestionRejected}

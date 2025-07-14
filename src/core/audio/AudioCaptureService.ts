@@ -60,7 +60,7 @@ export class AudioCaptureService {
     // En una implementación real, esto sería asíncrono con una API real
     
     // Devolver los datos de transcripción simulados
-    return [...mockTranscriptions];
+    return [];
   }
 
   /**

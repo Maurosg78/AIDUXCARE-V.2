@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
-import { AgentSuggestion, SuggestionType, SuggestionField } from '@/types/agent';
-import { EMRFormService } from '@/core/services/EMRFormService';
-import { AuditLogger } from '@/core/audit/AuditLogger';
-import * as UsageAnalyticsService from '@/services/UsageAnalyticsService';
+import type { SuggestionType, SuggestionField } from '@/types/agent';
 
 // Mock de los servicios externos
 const mockInsertSuggestion = vi.fn().mockImplementation(() => Promise.resolve(true));
-const mockMapSuggestionTypeToEMRSection = vi.fn().mockImplementation((type: SuggestionType) => {
-  const mapping: Record<SuggestionType, string> = {
+const mockMapSuggestionTypeToEMRSection = vi.fn().mockImplementation((type: string) => {
+  const mapping: Record<string, string> = {
     recommendation: 'recommendations',
     warning: 'warnings',
     info: 'info',

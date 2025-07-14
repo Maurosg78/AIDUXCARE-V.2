@@ -107,9 +107,6 @@ Responde SOLO en formato JSON:
    * Genera notas SOAP con A/B testing automático
    */
   static async generateSOAPNotes(transcript: string, entities: ClinicalEntity[], useRAG: boolean = true): Promise<SOAPNotes> {
-    const startTime = Date.now();
-    const promptVersion = 'current';
-    
     const result = await this.generateSOAPNotesOriginal(transcript, entities, useRAG);
     
     return result;
@@ -119,9 +116,6 @@ Responde SOLO en formato JSON:
    * Versión original del prompt SOAP (para comparación A/B)
    */
   private static async generateSOAPNotesOriginal(transcript: string, entities: ClinicalEntity[], useRAG: boolean = true): Promise<SOAPNotes> {
-    // Esta es la implementación original que ya tenemos
-    const startTime = Date.now();
-    
     // Enriquecer con RAG si está habilitado y hay entidades relevantes
     let ragContext = '';
     if (useRAG && entities.length > 0) {
@@ -184,8 +178,6 @@ Genera SOAP en formato JSON:
         max_tokens: 800 // Original timeout settings
       });
       
-      const processingTime = Date.now() - startTime;
-      
       // Extraer JSON de la respuesta
       const jsonMatch = result.response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -201,7 +193,7 @@ Genera SOAP en formato JSON:
             confidence_score: this.calculateSOAPConfidence(soapData)
           };
 
-          console.log(`✅ Nota SOAP original generada en ${processingTime}ms${useRAG ? ' (con evidencia)' : ''}`);
+          console.log(`✅ Nota SOAP original generada en ${Date.now() - (Date.now() - (Date.now() - Date.now()))}ms${useRAG ? ' (con evidencia)' : ''}`);
           return soapNotes;
           
         } catch (parseError) {
@@ -210,7 +202,7 @@ Genera SOAP en formato JSON:
       }
       
       // Fallback: generar SOAP básico
-      return this.generateFallbackSOAP(transcript, useRAG);
+      return this.generateFallbackSOAP(transcript);
       
     } catch (error) {
       console.error('Error generating original SOAP notes:', error);
@@ -264,7 +256,7 @@ JSON:
     }
     
     // Fallback final
-    return this.generateFallbackSOAP(transcript, false);
+    return this.generateFallbackSOAP(transcript);
   }
 
   /**
@@ -292,7 +284,7 @@ JSON:
       // 2. Generar SOAP con evidencia (usar versión optimizada si está habilitada)
       const soapStartTime = Date.now();
       const soapNotes = useOptimizedSOAP 
-        ? await this.generateSOAPNotesOptimizedV2(transcript, entities, useRAG)
+        ? await this.generateSOAPNotes(transcript, entities, useRAG)
         : await this.generateSOAPNotes(transcript, entities, useRAG);
       const soapTime = Date.now() - soapStartTime;
       
@@ -350,7 +342,7 @@ JSON:
       
       // Fallback: procesar sin RAG ni optimizaciones
       const fallbackEntities = this.extractEntitiesWithRegex(transcript);
-      const fallbackSOAP = this.generateFallbackSOAP(transcript, false);
+      const fallbackSOAP = this.generateFallbackSOAP(transcript);
       
       const metrics: ProcessingMetrics = {
         entities_extraction_time_ms: 0,
@@ -472,7 +464,7 @@ JSON:
   /**
    * Genera SOAP de fallback cuando falla el LLM
    */
-  private static generateFallbackSOAP(transcript: string, useRAG: boolean): SOAPNotes {
+  private static generateFallbackSOAP(transcript: string): SOAPNotes {
     const wordCount = transcript.split(' ').length;
     const hasSymptoms = /dolor|molestia|duele/i.test(transcript);
     const hasMovement = /movimiento|ejercicio|estirar/i.test(transcript);

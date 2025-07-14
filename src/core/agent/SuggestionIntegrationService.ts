@@ -3,14 +3,6 @@ import { AuditLogger } from '../audit/AuditLogger';
 import supabase from '@/core/auth/supabaseClient';
 import { track } from '@/lib/analytics';
 
-interface EMRField {
-  id: string;
-  visit_id: string;
-  field_name: string;
-  content: string;
-  updated_at: string;
-}
-
 export class SuggestionIntegrationService {
   private static readonly PREFIX = '🔎 ';
   private static readonly VALID_FIELDS: SuggestionField[] = [

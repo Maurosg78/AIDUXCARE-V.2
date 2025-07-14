@@ -1,5 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { AgentContext, AgentSuggestion, MemoryBlock, SuggestionType, SuggestionField } from '@/types/agent';
+import type { AgentContext, AgentSuggestion, MemoryBlock } from '@/types/agent';
 import { LLMProvider, sendToLLM, LLMResponse } from './LLMAdapter';
 import { ClinicalAgent } from './ClinicalAgent';
 

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { buildMCPContext } from '../../src/core/mcp/MCPContextBuilder';
-import { MCPContextSchema } from '../../src/core/mcp/schema';
 
 // Timestamp común para todos los registros
 const NOW = new Date().toISOString();

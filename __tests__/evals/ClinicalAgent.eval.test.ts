@@ -1,11 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { getAgentSuggestions } from '../../src/core/agent/ClinicalAgent';
 import { buildAgentContextFromMCP } from '../../src/core/agent/AgentContextBuilder';
 import { validMCP } from '../../__mocks__/contexts/validMCP';
 import { emptyMCP } from '../../__mocks__/contexts/emptyMCP';
 import { contradictoryMCP } from '../../__mocks__/contexts/contradictoryMCP';
 import { chronicMCP } from '../../__mocks__/contexts/chronicMCP';
-import { MCPContext } from '../../src/core/mcp/schema';
 
 /**
  * Evaluación del Agente Clínico

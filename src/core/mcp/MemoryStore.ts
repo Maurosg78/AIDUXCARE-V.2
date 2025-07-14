@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 /**
  * Clase para gestionar el almacenamiento y recuperación de diferentes tipos de memoria en el MCP
  */

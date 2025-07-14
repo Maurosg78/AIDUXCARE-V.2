@@ -1,9 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { MCPContext, MCPMemoryBlock } from '@/core/mcp/schema';
-import type { AgentSuggestion, SuggestionField } from '@/types/agent';
+import type { AgentSuggestion } from '@/types/agent';
 import { TranscriptionSegment } from '@/core/audio/AudioCaptureService';
 import { AuditLogEntry } from '@/core/audit/AuditLogger';
-import type { MemoryBlock } from '@/types/agent';
 
 /**
  * Información simulada del paciente para la demo
