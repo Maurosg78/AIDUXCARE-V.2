@@ -9,7 +9,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 console.log('⚙️ Usando mock temporal de Supabase durante migración a Firebase...');
 
-// Mock del cliente Supabase con operaciones encadenadas completas
+// Mock del cliente Supabase con operaciones encadenadas completas y compatibilidad de tipos
 const mockSupabase = {
   from: (_table: string) => ({
     select: (_columns?: string) => ({
@@ -62,9 +62,18 @@ const mockSupabase = {
   // Propiedades requeridas por el tipo SupabaseClient
   supabaseUrl: 'mock-url',
   supabaseKey: 'mock-key',
+  authUrl: 'mock-auth-url',
+  storageUrl: 'mock-storage-url',
+  functionsUrl: 'mock-functions-url',
   realtime: {} as unknown,
-  realtimeUrl: 'mock-realtime-url'
-};
+  realtimeUrl: 'mock-realtime-url',
+  rest: {} as unknown,
+  storage: {} as unknown,
+  functions: {} as unknown,
+  rpc: () => Promise.resolve({ data: null, error: null }),
+  schema: 'public',
+  serviceKey: 'mock-service-key'
+} as unknown;
 
 // Exportar mock para compatibilidad temporal
 export default mockSupabase;
@@ -86,4 +95,4 @@ export function diagnosticSupabaseClient() {
     timestamp: new Date().toISOString(),
     note: 'Mock temporal durante migración a Firebase'
   };
-} // Force update: Mon Jul 14 20:00:00 CEST 2025 - CI/CD cache bust
+} // Force update: Mon Jul 14 20:15:00 CEST 2025 - Enhanced mock with full SupabaseClient compatibility
