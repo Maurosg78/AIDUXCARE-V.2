@@ -1,4 +1,4 @@
-import type { MemoryBlock, AgentSuggestion } from '@/types/agent';
+import type { AgentSuggestion } from '@/types/agent';
 
 /**
  * Función que simula la generación de una explicación detallada para una sugerencia del agente

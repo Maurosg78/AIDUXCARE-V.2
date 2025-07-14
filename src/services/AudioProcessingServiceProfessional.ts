@@ -12,7 +12,6 @@ import { AgentSuggestion } from '@/types/agent';
 import { TranscriptionSegment, TranscriptionActor, TranscriptionConfidence } from '@/core/audio/AudioCaptureService';
 import { ClinicalEntity, SOAPNotes, ProcessingMetrics, FisiotherapyContext, SessionData, PatientProfile } from '@/types/nlp';
 import { AuditLogger } from '@/core/audit/AuditLogger';
-import { trackMetric } from '@/services/UsageAnalyticsService';
 import { v4 as uuidv4 } from 'uuid';
 import { ClinicalInsightsEngine, ClinicalInsightSummary } from '../core/ai/ClinicalInsightsEngine';
 
@@ -139,9 +138,7 @@ export class AudioProcessingServiceProfessional {
       const agentSuggestions = config.enableAgentSuggestions 
         ? await this.generateAgentSuggestions(
             physiotherapyContext,
-            nlpResult,
-            visitId,
-            userId
+            nlpResult
           )
         : [];
 
@@ -149,9 +146,7 @@ export class AudioProcessingServiceProfessional {
       const qualityAssessment = config.enableQualityAssessment
         ? await this.assessQuality(
             transcription,
-            nlpResult,
-            agentSuggestions,
-            config
+            nlpResult
           )
         : this.defaultQualityAssessment();
 
@@ -410,9 +405,7 @@ export class AudioProcessingServiceProfessional {
    */
   private static async generateAgentSuggestions(
     context: FisiotherapyContext,
-    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes },
-    visitId: string,
-    userId: string
+    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes }
   ): Promise<AgentSuggestion[]> {
     
     const suggestions: AgentSuggestion[] = [];
@@ -467,9 +460,7 @@ export class AudioProcessingServiceProfessional {
    */
   private static async assessQuality(
     transcription: TranscriptionSegment[],
-    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics },
-    agentSuggestions: AgentSuggestion[],
-    config: AudioProcessingOptions
+    nlpResult: { entities: ClinicalEntity[]; soapNotes: SOAPNotes; metrics: ProcessingMetrics }
   ): Promise<QualityAssessment> {
     
     // Calcular completeness

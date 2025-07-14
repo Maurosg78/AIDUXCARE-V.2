@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback } from 'react';
 import { AgentSuggestion } from './AgentSuggestionViewerTypes';
 import { EMRFormService } from '@/services/EMRFormService';
 import { trackMetric, UsageMetricType } from '@/services/UsageAnalyticsService';

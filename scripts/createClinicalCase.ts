@@ -51,7 +51,7 @@ async function main() {
     // Preguntar por la contraseña del profesional
     const professionalPassword = await askQuestion('   Ingrese la contraseña del profesional: ');
     
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: PROFESSIONAL_EMAIL,
       password: professionalPassword
     });
@@ -89,7 +89,6 @@ async function main() {
       .single();
     
     let patientUserId;
-    const patientEmail = PATIENT_EMAIL;
     
     if (patientUserError && patientUserError.code !== 'PGRST116') {
       throw new Error(`Error al buscar el usuario paciente: ${patientUserError.message}`);

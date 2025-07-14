@@ -220,7 +220,7 @@ async function generateLongitudinalMetrics() {
     };
     
     // 11. Guardar en Supabase
-    const { data: insertResult, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('metrics_by_visit')
       .insert(metricsData);
       

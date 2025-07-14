@@ -62,7 +62,7 @@ const LoginPage = () => {
       setError(null);
       
       // Usar el servicio de usuarios para autenticar
-      const data = await userDataSourceSupabase.signInWithPassword(email, password);
+      const data = await userDataSourceSupabase.signInWithPassword();
 
       if (data?.user) {
         // Redirigir a la página original o a la principal

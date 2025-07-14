@@ -1,10 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { Modal } from '../Modal';
 
 describe('Modal', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     headerTitle: 'Título de prueba',
     headerDescription: 'Descripción de prueba',
     children: <div>Contenido del modal</div>,
@@ -24,7 +25,7 @@ describe('Modal', () => {
   });
 
   it('llama a onClose al hacer click en el backdrop', () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     render(<Modal {...defaultProps} onClose={onClose} />);
     const backdrop = screen.getByRole('dialog').previousSibling;
     if (backdrop && backdrop instanceof HTMLElement) {
@@ -34,7 +35,7 @@ describe('Modal', () => {
   });
 
   it('llama a onClose al hacer click en el botón de cerrar', () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     render(<Modal {...defaultProps} onClose={onClose} />);
     const closeButton = screen.getByLabelText(/cerrar modal/i);
     fireEvent.click(closeButton);

@@ -252,3 +252,7 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 5. **Compliance**: Implementar estándares de seguridad médica
 
 
+# Trigger re-run for CI/CD
+# Trigger CI/CD after secrets upload
+# Force CI/CD re-run after ESLint fix
+# Force CI/CD re-run - Mon Jul 14 20:28:57 CEST 2025

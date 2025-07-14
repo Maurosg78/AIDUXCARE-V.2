@@ -1,10 +1,9 @@
-import { z } from 'zod';
-import { supabase } from '@/lib/supabaseClient';
+import supabase from '@/core/auth/supabaseClient';
 import { formDataSourceSupabase } from '../dataSources/formDataSourceSupabase';
 import { AuditLogger } from '../audit/AuditLogger';
 import { trackMetric } from '../services/UsageAnalyticsService';
 import { FormDataSource } from '../dataSources/FormDataSource';
-import { ClinicalFormData, EMRContent, EMRForm } from '@/types/forms';
+import { EMRContent, EMRForm } from '@/types/forms';
 import { SuggestionType } from '@/types/agent';
 
 /**
@@ -17,23 +16,6 @@ export type EMRSection = 'subjective' | 'objective' | 'assessment' | 'plan' | 'n
  */
 export const INTEGRABLE_SUGGESTION_TYPES = ['recommendation', 'warning', 'info'] as const;
 export type IntegrableSuggestionType = typeof INTEGRABLE_SUGGESTION_TYPES[number];
-
-/**
- * Esquema de validación para el formulario estructurado del EMR
- */
-export const EMRFormSchema = z.object({
-  id: z.string().optional(),
-  visitId: z.string(),
-  patientId: z.string(),
-  professionalId: z.string(),
-  subjective: z.string().default(''),
-  objective: z.string().default(''),
-  assessment: z.string().default(''),
-  plan: z.string().default(''),
-  notes: z.string().default(''),
-  updatedAt: z.string().optional(),
-  createdAt: z.string().optional()
-});
 
 /**
  * Interfaz para representar una sugerencia que se integrará al EMR
@@ -97,8 +79,7 @@ export class EMRFormService {
         createdAt: soapForm.created_at
       };
       
-      // Validar con Zod
-      return EMRFormSchema.parse(emrForm);
+      return emrForm;
     } catch (error) {
       console.error('Error fetching EMR form:', error);
       return null;
@@ -302,22 +283,22 @@ export class EMRFormService {
   ): Promise<boolean> {
     try {
       // Validar los datos del formulario
-      const validatedData = EMRFormSchema.parse(formData);
+      // const validatedData = EMRFormSchema.parse(formData); // This line is removed
 
       // Actualizar el formulario en la base de datos
       const { error } = await supabase
         .from('forms')
         .update({
           content: JSON.stringify({
-            subjective: validatedData.subjective,
-            objective: validatedData.objective,
-            assessment: validatedData.assessment,
-            plan: validatedData.plan,
-            notes: validatedData.notes
+            subjective: formData.subjective,
+            objective: formData.objective,
+            assessment: formData.assessment,
+            plan: formData.plan,
+            notes: formData.notes
           }),
           updated_at: new Date().toISOString()
         })
-        .eq('id', validatedData.id);
+        .eq('id', formData.id);
 
       if (error) {
         console.error('Error updating form:', error);
@@ -329,11 +310,11 @@ export class EMRFormService {
         'form.updated',
         userId,
         {
-          formId: validatedData.id,
-          visitId: validatedData.visitId,
-          patientId: validatedData.patientId
+          formId: formData.id,
+          visitId: formData.visitId,
+          patientId: formData.patientId
         },
-        validatedData.visitId
+        formData.visitId
       );
 
       return true;

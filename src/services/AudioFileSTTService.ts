@@ -443,7 +443,6 @@ export class AudioFileSTTService {
     ];
 
     const segments: TranscriptionSegment[] = [];
-    const wordsPerMinute = 120; // Velocidad promedio de habla
     const segmentDuration = 8; // segundos promedio por segmento
 
     const totalSegments = Math.min(Math.floor(duration / segmentDuration), templates.length);

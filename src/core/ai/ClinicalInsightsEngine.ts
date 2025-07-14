@@ -5,7 +5,6 @@
  */
 
 import { ClinicalEntity, SOAPNotes } from '@/types/nlp';
-import { RAGMedicalMCP, RAGQueryResult } from '@/core/mcp/RAGMedicalMCP';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 
 // === INTERFACES AVANZADAS ===
@@ -557,27 +556,28 @@ export class ClinicalInsightsEngine {
   private static async enrichWithScientificEvidence(
     insights: ClinicalInsightSummary
   ): Promise<ClinicalInsightSummary> {
-    let evidenceSources = 0;
+    const evidenceSources = 0;
 
     try {
       // Buscar evidencia para patrones significativos
-      for (const pattern of insights.patterns.filter(p => p.significance === 'high')) {
-        try {
-          const ragResult = await RAGMedicalMCP.retrieveRelevantKnowledge(
-            pattern.pattern.substring(0, 100), 
-            'fisioterapia', 
-            2
-          );
-          
-          if (ragResult.citations.length > 0) {
-            pattern.evidence_support.scientific_articles = ragResult.citations.length;
-            pattern.evidence_support.evidence_level = 'scientific_literature';
-            evidenceSources += ragResult.citations.length;
-          }
-        } catch (error) {
-          console.warn('Error enriching pattern with evidence:', error);
-        }
-      }
+      // TODO: Implementar cuando RAGMedicalMCP esté disponible
+      // for (const pattern of insights.patterns.filter(p => p.significance === 'high')) {
+      //   try {
+      //     const ragResult = await RAGMedicalMCP.retrieveRelevantKnowledge(
+      //       pattern.pattern.substring(0, 100), 
+      //       'fisioterapia', 
+      //       2
+      //     );
+      //     
+      //     if (ragResult.citations.length > 0) {
+      //       pattern.evidence_support.scientific_articles = ragResult.citations.length;
+      //       pattern.evidence_support.evidence_level = 'scientific_literature';
+      //       evidenceSources += ragResult.citations.length;
+      //     }
+      //   } catch (error) {
+      //     console.warn('Error enriching pattern with evidence:', error);
+      //   }
+      // }
 
       // Actualizar metadata
       insights.processing_metadata.evidence_sources = evidenceSources;

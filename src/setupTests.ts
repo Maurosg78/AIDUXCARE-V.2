@@ -25,7 +25,7 @@ vi.mock('./config/env', () => ({
 
 // Definir un mock global de cliente Supabase para evitar duplicación
 const mockSupabaseClient = {
-  from: vi.fn((table) => ({
+  from: vi.fn(() => ({
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
         single: vi.fn(() => Promise.resolve({ 
@@ -33,17 +33,20 @@ const mockSupabaseClient = {
           error: null 
         })),
         order: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
-        }))
+          limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          then: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        })),
+        limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        then: vi.fn(() => Promise.resolve({ data: [], error: null }))
       })),
-      order: vi.fn(() => ({
-        limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
-      }))
+      order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      then: vi.fn(() => Promise.resolve({ data: [], error: null }))
     })),
+    insert: vi.fn(() => Promise.resolve({ data: {}, error: null })),
     update: vi.fn(() => ({
       eq: vi.fn(() => Promise.resolve({ data: {}, error: null }))
     })),
-    insert: vi.fn(() => Promise.resolve({ data: {}, error: null })),
     delete: vi.fn(() => ({
       eq: vi.fn(() => Promise.resolve({ data: {}, error: null }))
     }))

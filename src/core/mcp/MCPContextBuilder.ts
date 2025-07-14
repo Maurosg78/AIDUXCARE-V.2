@@ -1,5 +1,3 @@
-import { z } from 'zod';
-import { AgentContext, MemoryBlock } from '@/types/agent';
 import { MCPContext, MCPContextSchema } from './schema';
 import { getContextualMemory, getPersistentMemory, getSemanticMemory } from './MCPDataSourceSupabase';
 

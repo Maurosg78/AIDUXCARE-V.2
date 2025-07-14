@@ -50,7 +50,7 @@ export const ConnectionStatus = () => {
         for (const table of tablesToTry) {
           try {
             console.log(`Probando tabla ${table} con cliente oficial...`);
-            const { data, error } = await client
+            const { error } = await client
               .from(table)
               .select('*')
               .limit(1);

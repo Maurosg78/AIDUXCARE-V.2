@@ -1,5 +1,5 @@
 import supabase from '@/core/auth/supabaseClient';
-import { AgentContext, AgentSuggestion, MemoryBlock, SuggestionType, SuggestionField } from '@/types/agent';
+import { AgentContext, AgentSuggestion, MemoryBlock, SuggestionType } from '@/types/agent';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

@@ -13,7 +13,7 @@ interface VisitIndicatorsProps {
   visitId: string;
 }
 
-const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions, visitId }) => {
+const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions }) => {
   // Calcular total de sugerencias
   const totalSuggestions = suggestions.length;
 

@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
-import { AgentExecutor, AgentExecutionParams } from '../../../src/core/agent/AgentExecutor';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AgentExecutor } from '../../../src/core/agent/AgentExecutor';
 import { ClinicalAgent } from '../../../src/core/agent/ClinicalAgent';
-import type { AgentContext, AgentSuggestion, MemoryBlock } from '../../../src/types/agent';
+import type { AgentContext } from '../../../src/types/agent';
 import { sendToLLM, LLMProvider, LLMResponse } from '../../../src/core/agent/LLMAdapter';
 
 // Mock para sendToLLM
 vi.mock('../../../src/core/agent/LLMAdapter', () => ({
-  sendToLLM: vi.fn().mockImplementation((context, provider) => {
+  sendToLLM: vi.fn().mockImplementation(() => {
     return Promise.resolve({
       suggestions: [
         {
@@ -81,17 +81,12 @@ const mockAgent = {
 } as unknown as ClinicalAgent;
 
 describe('AgentExecutor', () => {
-  const mockParams: AgentExecutionParams = {
-    context: mockContext,
-    provider: 'openai'
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('debería devolver un array con al menos 2 sugerencias válidas', async () => {
-    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    const executor = new AgentExecutor(mockAgent, mockContext, 'openai');
     const suggestions = await executor.execute();
     
     expect(Array.isArray(suggestions)).toBe(true);
@@ -113,15 +108,15 @@ describe('AgentExecutor', () => {
   });
 
   it('debería generar un prompt que contenga fragmentos del contexto original', async () => {
-    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    const executor = new AgentExecutor(mockAgent, mockContext, 'openai');
     await executor.execute();
     
     // Verificar que se llamó a sendToLLM con el contexto correcto
-    expect(sendToLLM).toHaveBeenCalledWith(mockContext, mockParams.provider);
+    expect(sendToLLM).toHaveBeenCalledWith(mockContext, 'openai');
   });
 
   it('debería incluir sourceBlockId válido en las sugerencias', async () => {
-    const executor = new AgentExecutor(mockAgent, mockContext, mockParams.provider);
+    const executor = new AgentExecutor(mockAgent, mockContext, 'openai');
     const suggestions = await executor.execute();
     
     // Obtener la lista de IDs de bloques válidos del contexto
@@ -144,13 +139,8 @@ describe('AgentExecutor', () => {
       blocks: []
     };
     
-    const minimalParams: AgentExecutionParams = {
-      context: minimalContext,
-      provider: 'anthropic'
-    };
-    
     // No debería lanzar errores
-    const executor = new AgentExecutor(mockAgent, minimalContext, minimalParams.provider);
+    const executor = new AgentExecutor(mockAgent, minimalContext, 'anthropic');
     const suggestions = await executor.execute();
     
     // Verificar que se obtienen sugerencias
@@ -163,11 +153,6 @@ describe('AgentExecutor', () => {
     const providers: LLMProvider[] = ['openai', 'anthropic'];
     
     for (const provider of providers) {
-      const params: AgentExecutionParams = {
-        context: mockContext,
-        provider
-      };
-      
       // Limpiar mocks para nuevo test
       vi.mocked(sendToLLM).mockClear();
       

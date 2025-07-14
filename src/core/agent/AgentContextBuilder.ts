@@ -1,7 +1,6 @@
 import type { AgentContext, MemoryBlock } from '@/types/agent';
-import { MCPManager } from '../mcp/MCPManager';
 import supabase from '@/core/auth/supabaseClient';
-import { MCPContext, MCPMemoryBlock } from '@/core/mcp/schema';
+import { MCPContext } from '@/core/mcp/schema';
 
 interface RawMemoryBlock {
   id?: string;
@@ -124,7 +123,7 @@ export function buildAgentContextFromMCP(mcpContext: MCPContext): AgentContext {
       id: block.id,
       type: block.type,
       content: block.content.trim(),
-      created_at: normalizeDate(block.created_at || block.timestamp || new Date())
+      created_at: normalizeDate(block.created_at || new Date())
     });
   }
 

@@ -20,7 +20,7 @@
 
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import { AgentSuggestion, SuggestionType } from '@/types/agent';
-import { trackMetric, UsageMetricType } from '@/services/UsageAnalyticsService';
+import { trackMetric } from '@/services/UsageAnalyticsService';
 import { EMRFormService } from '@/core/services/EMRFormService';
 import { AuditLogger } from '@/core/audit/AuditLogger';
 import { Button } from '../UI/Button';
@@ -76,20 +76,6 @@ const SUGGESTION_STYLES: Record<SuggestionType, { icon: string; colorClass: stri
   followup: { icon: '📅', colorClass: 'bg-pink-50 border-pink-200' },
   contextual: { icon: '📝', colorClass: 'bg-gray-50 border-gray-200' }
 };
-
-/**
- * Interfaz para la sugerencia a integrar en el EMR
- * @interface
- */
-interface SuggestionToIntegrate {
-  id: string;
-  content: string;
-  type: IntegrableSuggestionType;
-  sourceBlockId: string;
-  field: string;
-  suggestionType: IntegrableSuggestionType;
-  suggestionField: string;
-}
 
 /**
  * Props del componente AgentSuggestionsViewer
@@ -289,15 +275,6 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
         console.warn('Tipo de sugerencia no soportado para integración:', suggestion.type);
         return;
       }
-      const suggestionToIntegrate: SuggestionToIntegrate = {
-          id: suggestion.id,
-        content: suggestion.content.trim(),
-        type: suggestion.type as IntegrableSuggestionType,
-        sourceBlockId: suggestion.sourceBlockId || '',
-        field: suggestion.field || 'notes',
-        suggestionType: suggestion.type as IntegrableSuggestionType,
-        suggestionField: suggestion.field || 'notes'
-      };
       await EMRFormService.insertSuggestion(
         {
           id: suggestion.id,
@@ -464,7 +441,7 @@ const AgentSuggestionsViewer: React.FC<AgentSuggestionsViewerProps> = ({
     });
 
     return Object.fromEntries(
-      Object.entries(grouped).filter(([_, suggestions]) => suggestions.length > 0)
+      Object.entries(grouped).filter(([, suggestions]) => suggestions.length > 0)
     ) as Record<SuggestionType, AgentSuggestion[]>;
   }, [suggestions]);
 

@@ -27,7 +27,7 @@ export const MCPMemoryBlockSchema = z.object({
     ),
   type: MemoryTypeEnum,
   content: z.string(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   visit_id: z.string().optional(),
   patient_id: z.string().optional(),
   tags: z.array(z.string()).optional(),

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import supabase from '@/core/auth/supabaseClient';
 import { SuggestionFeedback, SuggestionFeedbackDataSource } from './SuggestionFeedbackDataSource';
 
 export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource = {
@@ -16,8 +16,7 @@ export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource 
     const { data, error } = await supabase
       .from('suggestion_feedback')
       .select('*')
-      .eq('suggestion_id', suggestionId)
-      .single();
+      .eq('suggestion_id', suggestionId);
     
     if (error) throw error;
     return data as SuggestionFeedback | null;

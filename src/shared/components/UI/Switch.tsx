@@ -41,7 +41,6 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
       error,
       variant = 'default',
       size = 'md',
-      className,
       disabled,
       ...props
     },

@@ -5,11 +5,9 @@ import {
   screen,
   waitFor,
   act,
-  cleanup,
   fireEvent
 } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, it, vi, beforeEach, afterEach, expect } from 'vitest';
+import { describe, it, vi, beforeEach, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
 import AgentSuggestionExplainer from '../../Agent/AgentSuggestionExplainer';

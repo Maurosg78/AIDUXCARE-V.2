@@ -65,7 +65,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
   });
   
   const mockRecommendations = [
-    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica', true),
+    createMockSuggestion('recommendation', 'Realizar ECG para evaluar posible cardiopatía isquémica'),
     createMockSuggestion('recommendation', 'Ajustar dosis de metformina a 1000mg c/12h')
   ];
   
@@ -226,7 +226,7 @@ describe('AgentSuggestionsViewer EVAL', () => {
       const mockIntegrateFn = vi.fn();
       
       // Renderizar el componente
-      const { container } = render(
+      render(
         <AgentSuggestionsViewer 
           visitId={mockVisitId}
           suggestions={mockSuggestions}

@@ -129,9 +129,9 @@ export class PubMedSearchService {
               publication_date: article.pubdate || '',
               doi: article.doi || undefined,
               pmid: uid,
-              keywords: this.extractKeywords(article.title, specialty),
+              keywords: this.extractKeywords(article.title),
               medical_specialty: [specialty],
-              evidence_level: this.determineEvidenceLevel(article.title, article.pubtype),
+              evidence_level: this.determineEvidenceLevel(article.title),
               content_type: this.determineContentType(article.pubtype),
               source: 'pubmed'
             });
@@ -194,7 +194,7 @@ export class PubMedSearchService {
   /**
    * Extrae keywords relevantes del título
    */
-  private static extractKeywords(title: string, specialty: MedicalSpecialty): string[] {
+  private static extractKeywords(title: string): string[] {
     const commonKeywords = [
       'pain', 'dolor', 'treatment', 'therapy', 'rehabilitation', 'exercise',
       'manual', 'therapeutic', 'clinical', 'evidence', 'effectiveness',
@@ -209,9 +209,8 @@ export class PubMedSearchService {
   /**
    * Determina el nivel de evidencia basado en el tipo de publicación
    */
-  private static determineEvidenceLevel(title: string, pubTypes: string[] = []): EvidenceLevel {
+  private static determineEvidenceLevel(title: string): EvidenceLevel {
     const titleLower = title.toLowerCase();
-    const types = pubTypes.join(' ').toLowerCase();
     
     if (titleLower.includes('systematic review') || titleLower.includes('meta-analysis')) {
       return 'level_1';
@@ -236,12 +235,10 @@ export class PubMedSearchService {
    * Determina el tipo de contenido
    */
   private static determineContentType(pubTypes: string[] = []): MedicalDocument['content_type'] {
-    const types = pubTypes.join(' ').toLowerCase();
-    
-    if (types.includes('systematic review')) return 'systematic_review';
-    if (types.includes('meta-analysis')) return 'meta_analysis';
-    if (types.includes('guideline')) return 'clinical_guideline';
-    if (types.includes('case report')) return 'case_study';
+    if (pubTypes.join(' ').toLowerCase().includes('systematic review')) return 'systematic_review';
+    if (pubTypes.join(' ').toLowerCase().includes('meta-analysis')) return 'meta_analysis';
+    if (pubTypes.join(' ').toLowerCase().includes('guideline')) return 'clinical_guideline';
+    if (pubTypes.join(' ').toLowerCase().includes('case report')) return 'case_study';
     
     return 'research_paper'; // Default
   }
@@ -255,7 +252,7 @@ export class MedicalDocumentChunker {
   /**
    * Divide un documento médico en chunks semánticamente coherentes
    */
-  static chunkDocument(document: MedicalDocument, maxTokensPerChunk: number = 512): ChunkedDocument[] {
+  static chunkDocument(document: MedicalDocument): ChunkedDocument[] {
     const chunks: ChunkedDocument[] = [];
     
     // Chunk 1: Abstract (siempre separado)
@@ -375,7 +372,7 @@ export class RAGMedicalMCP {
       }
       
       // 3. Construir contexto médico agregado
-      const medicalContext = this.buildMedicalContext(allChunks, clinicalQuery);
+      const medicalContext = this.buildMedicalContext(allChunks);
       
       // 4. Calcular confianza general
       const confidenceScore = this.calculateOverallConfidence(documents, clinicalQuery);
@@ -451,7 +448,7 @@ RELEVANCIA: ${Math.round((citation?.relevance_score || 0) * 100)}%`,
   /**
    * Construye contexto médico agregado
    */
-  private static buildMedicalContext(chunks: ChunkedDocument[], query: string): string {
+  private static buildMedicalContext(chunks: ChunkedDocument[]): string {
     if (chunks.length === 0) {
       return 'No se encontró evidencia científica específica.';
     }

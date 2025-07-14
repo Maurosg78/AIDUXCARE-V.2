@@ -2,9 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import AgentSuggestionViewerProvider, { AgentSuggestionViewerContext } from '../AgentSuggestionViewerProvider';
-import { EMRFormService } from '@/services/EMRFormService';
-import { trackMetric } from '@/services/UsageAnalyticsService';
-import { AuditLogger } from '@/services/AuditLogger';
 
 // Mocks usando vi.fn()
 const mockInsertSuggestion = vi.fn();

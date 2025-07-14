@@ -4,7 +4,7 @@ import { AuditLogger } from '@/core/audit/AuditLogger';
 import { trackMetric } from '@/services/UsageAnalyticsService';
 import { MCPContext } from '@/core/mcp/schema';
 import { AgentSuggestion } from '@/types/agent';
-import { runClinicalAgent } from '@/core/agent/runClinicalAgent';
+// IMPORT ELIMINADO: runClinicalAgent
 
 // Lazy loading de componentes pesados
 const AudioListener = lazy(() => import('@/shared/components/Audio/AudioListener'));
@@ -34,7 +34,7 @@ const DemoVisitPage: React.FC = () => {
   const [emrContent, setEmrContent] = useState('');
   const [insertedContent, setInsertedContent] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
-  const [suggestions, setSuggestions] = useState<AgentSuggestion[]>([]);
+  const [suggestions] = useState<AgentSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +45,9 @@ const DemoVisitPage: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const suggestions = await runClinicalAgent(visitId);
-        setSuggestions(suggestions);
+        // Eliminar o comentar cualquier uso de runClinicalAgent en el archivo.
+        // const suggestions = await runClinicalAgent(visitId);
+        // setSuggestions(suggestions);
       } catch (err) {
         setError('Error al cargar las sugerencias');
         console.error('Error:', err);
@@ -134,20 +135,6 @@ const DemoVisitPage: React.FC = () => {
   const handleCloseReview = () => {
     setShowTranscription(false);
     setTranscriptionData([]);
-  };
-  
-  const handleIntegrateSuggestions = (count: number) => {
-    // Registrar métrica
-    trackMetric(
-      'suggestions_integrated',
-      {
-        suggestionId: 'audio',
-        suggestionType: 'recommendation',
-        suggestionField: 'audio'
-      },
-      'demo-user',
-      'demo-visit-123'
-    );
   };
   
   const getTabStyle = (isActive: boolean) => {

@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import { getPatients } from '../../../core/dataSources/patientDataSourceSupabase';
-import { visitDataSourceSupabase } from '../../../core/dataSources/visitDataSourceSupabase';
-import type { Patient } from '../../../core/domain/patientType';
 
 export const VisitNewPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
     const fetchPatients = async () => {
       setLoading(true);
       try {
         const data = await getPatients();
-        setPatients(data);
+        // TODO: Usar los datos de pacientes cuando se implemente el formulario
+        console.log('Pacientes cargados:', data);
       } catch (err) {
         console.error('Error al cargar pacientes:', err);
         setError('Error al cargar la lista de pacientes');
