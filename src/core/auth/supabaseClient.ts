@@ -86,4 +86,4 @@ export function diagnosticSupabaseClient() {
     timestamp: new Date().toISOString(),
     note: 'Mock temporal durante migración a Firebase'
   };
-} // Force update: Mon Jul 14 19:55:45 CEST 2025
+} // Force update: Mon Jul 14 20:00:00 CEST 2025 - CI/CD cache bust
