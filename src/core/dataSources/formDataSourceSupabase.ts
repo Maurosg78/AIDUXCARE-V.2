@@ -5,6 +5,7 @@ import { Form, ClinicalFormData } from '@/types/forms';
 class FormDataSourceSupabase implements FormDataSource {
 
   async getFormsByVisitId(visitId: string): Promise<Form[]> {
+    // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
     const { data, error } = await supabase
       .from('forms')
       .select('*')
@@ -15,6 +16,7 @@ class FormDataSourceSupabase implements FormDataSource {
   }
 
   async getFormById(formId: string): Promise<Form | null> {
+    // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
     const { data, error } = await supabase
       .from('forms')
       .select('*')

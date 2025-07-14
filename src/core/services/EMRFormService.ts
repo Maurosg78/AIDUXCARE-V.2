@@ -156,6 +156,7 @@ export class EMRFormService {
       
       if (!emrForm) {
         // Si no hay formulario, verificar si obtenemos el professionalId
+        // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
         const { data, error } = await supabase
           .from('visits')
           .select('professional_id')

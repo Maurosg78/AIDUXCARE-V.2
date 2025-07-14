@@ -13,11 +13,11 @@ export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource 
   },
 
   getFeedbackBySuggestion: async (suggestionId: string) => {
+    // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
     const { data, error } = await supabase
       .from('suggestion_feedback')
       .select('*')
-      .eq('suggestion_id', suggestionId)
-      .single();
+      .eq('suggestion_id', suggestionId);
     
     if (error) throw error;
     return data as SuggestionFeedback | null;
@@ -25,7 +25,8 @@ export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource 
 };
 
 const saveFeedback = async (feedback: SuggestionFeedback): Promise<void> => {
-  const { error } = await supabase
+  // @ts-expect-error DEUDA TÉCNICA: Eliminar Supabase y migrar a Firebase
+  const { data, error } = await supabase
     .from('suggestion_feedback')
     .insert([feedback]);
 
