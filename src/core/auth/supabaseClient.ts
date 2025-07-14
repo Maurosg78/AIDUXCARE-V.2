@@ -73,7 +73,8 @@ const mockSupabase = {
   rpc: () => Promise.resolve({ data: null, error: null }),
   schema: 'public',
   serviceKey: 'mock-service-key'
-} as unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any;
 
 // Exportar mock para compatibilidad temporal
 export default mockSupabase;
