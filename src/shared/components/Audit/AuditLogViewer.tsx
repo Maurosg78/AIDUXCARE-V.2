@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuditLogEntry } from '@/core/audit/AuditLogger';
+import { toZonedTime, format } from 'date-fns-tz';
 
 interface AuditLogViewerProps {
   visitId: string;
@@ -52,18 +53,12 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ visitId, logs = [], fro
     return log.details?.visit_id === visitId;
   });
 
-  // Función para formatear la fecha y hora
+  // Función para formatear la fecha y hora con zona horaria explícita
   const formatDateTime = (timestamp: string): string => {
     try {
-      const date = new Date(timestamp);
-      return date.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+      const timeZone = 'Europe/Madrid';
+      const date = toZonedTime(new Date(timestamp), timeZone);
+      return format(date, 'dd/MM/yyyy, HH:mm:ss', { timeZone });
     } catch (e) {
       return timestamp;
     }

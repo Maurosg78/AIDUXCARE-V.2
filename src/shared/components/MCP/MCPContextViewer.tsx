@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { MCPContext } from '@/core/mcp/schema';
+import { toZonedTime, format } from 'date-fns-tz';
 
 /**
  * Props para el componente MCPContextViewer
@@ -52,21 +53,16 @@ const MemoryBlockItem: React.FC<{
     }
   };
 
-  // Función para obtener la fecha formateada
+  // Función para obtener la fecha formateada con zona horaria explícita
   const getFormattedDate = () => {
     // Usar timestamp si está disponible, o created_at como fallback
     const dateString = block.timestamp || block.created_at;
     if (!dateString) return 'Fecha no disponible';
     
     try {
-      const date = new Date(dateString);
-      return date.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const timeZone = 'Europe/Madrid';
+      const date = toZonedTime(new Date(dateString), timeZone);
+      return format(date, 'dd/MM/yyyy, HH:mm', { timeZone });
     } catch (e) {
       return dateString;
     }
