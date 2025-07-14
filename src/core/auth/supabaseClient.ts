@@ -6,54 +6,55 @@
  * TODO: Eliminar todas las referencias a Supabase y migrar a Firebase completamente
  */
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 console.log('⚙️ Usando mock temporal de Supabase durante migración a Firebase...');
 
 // Mock del cliente Supabase con operaciones encadenadas completas
 const mockSupabase = {
-  from: (table: string) => ({
-    select: (columns?: string) => ({
-      eq: (column: string, value: any) => ({
+  from: (_table: string) => ({
+    select: (_columns?: string) => ({
+      eq: (_column: string, _value: unknown) => ({
         single: () => Promise.resolve({ data: { professional_id: 'mock-professional-id' }, error: null }),
-        order: (column: string, options?: any) => ({
-          limit: (count: number) => Promise.resolve({ data: [], error: null }),
-          then: (callback: any) => Promise.resolve({ data: [], error: null })
+        order: (_column: string, _options?: unknown) => ({
+          limit: (_count: number) => Promise.resolve({ data: [], error: null }),
+          then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
         }),
-        limit: (count: number) => Promise.resolve({ data: [], error: null }),
-        then: (callback: any) => Promise.resolve({ data: { professional_id: 'mock-professional-id' }, error: null })
+        limit: (_count: number) => Promise.resolve({ data: [], error: null }),
+        then: (_callback: unknown) => Promise.resolve({ data: { professional_id: 'mock-professional-id' }, error: null })
       }),
-      in: (column: string, values: any[]) => ({
-        then: (callback: any) => Promise.resolve({ data: [], error: null })
+      in: (_column: string, _values: unknown[]) => ({
+        then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
       }),
-      order: (column: string, options?: any) => ({
-        limit: (count: number) => Promise.resolve({ data: [], error: null }),
-        then: (callback: any) => Promise.resolve({ data: [], error: null })
+      order: (_column: string, _options?: unknown) => ({
+        limit: (_count: number) => Promise.resolve({ data: [], error: null }),
+        then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
       }),
-      limit: (count: number) => Promise.resolve({ data: [], error: null }),
-      then: (callback: any) => Promise.resolve({ data: [], error: null })
+      limit: (_count: number) => Promise.resolve({ data: [], error: null }),
+      then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
     }),
-    insert: (data: any) => ({
-      then: (callback: any) => Promise.resolve({ data: null, error: null })
+    insert: (_data: unknown) => ({
+      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
     }),
-    update: (data: any) => ({
-      eq: (column: string, value: any) => ({
-        then: (callback: any) => Promise.resolve({ data: null, error: null })
+    update: (_data: unknown) => ({
+      eq: (_column: string, _value: unknown) => ({
+        then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
       }),
-      then: (callback: any) => Promise.resolve({ data: null, error: null })
+      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
     }),
-    upsert: (data: any) => ({
-      then: (callback: any) => Promise.resolve({ data: null, error: null })
+    upsert: (_data: unknown) => ({
+      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
     }),
     delete: () => ({
-      eq: (column: string, value: any) => ({
-        then: (callback: any) => Promise.resolve({ data: null, error: null })
+      eq: (_column: string, _value: unknown) => ({
+        then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
       }),
-      then: (callback: any) => Promise.resolve({ data: null, error: null })
+      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
     })
   }),
   auth: {
     getSession: () => Promise.resolve({ data: { session: null }, error: null }),
     signOut: () => Promise.resolve({ error: null }),
-    onAuthStateChange: (callback: any) => {
+    onAuthStateChange: (_callback: unknown) => {
       // Mock de suscripción
       return { data: { subscription: null } };
     }
@@ -61,7 +62,7 @@ const mockSupabase = {
   // Propiedades requeridas por el tipo SupabaseClient
   supabaseUrl: 'mock-url',
   supabaseKey: 'mock-key',
-  realtime: {} as any,
+  realtime: {} as unknown,
   realtimeUrl: 'mock-realtime-url'
 };
 
