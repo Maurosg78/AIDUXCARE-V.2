@@ -47,8 +47,11 @@ jobs:
     - name: Lint
       run: npm run lint
 
-    - name: Build & Type-check
-      run: npm run build
+    - name: Build & Type-check (Migration Mode)
+      run: |
+        echo "🔧 MODO MIGRACIÓN: Usando configuración TypeScript temporal"
+        npx tsc --project tsconfig.migration.json
+        npm run build
 
     - name: Run tests
       run: npm test
