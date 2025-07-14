@@ -252,3 +252,4 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 5. **Compliance**: Implementar estándares de seguridad médica
 
 
+# Trigger re-run for CI/CD
