@@ -45,8 +45,13 @@ export default defineConfig({
       '**/__tests__/future_evals/**'
     ],
     coverage: {
-      reporter: ['text', 'lcov', 'html'],
+      // Reporters optimizados para performance
+      reporter: ['text-summary', 'html'],
       reportsDirectory: path.resolve(__dirname, '../coverage'),
+      // Configuración de coverage optimizada
+      provider: 'c8',
+      all: false,
+      // Exclusions optimizadas
       exclude: [
         'node_modules/',
         'src/setupTests.ts',
@@ -56,7 +61,11 @@ export default defineConfig({
         '**/__tests__/**',
         '**/__mocks__/**',
         '**/evals/**',
-        '**/*.eval.test.ts'
+        '**/*.eval.test.ts',
+        '**/coverage/**',
+        '**/dist/**',
+        '**/build/**',
+        '**/.vite/**'
       ]
     }
   }
