@@ -7,6 +7,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "../src")
     }
   },
+  // Configuración de cache optimizada
+  cacheDir: path.resolve(__dirname, '../node_modules/.vitest'),
+  optimizeDeps: {
+    include: ['@testing-library/jest-dom', 'vitest']
+  },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -18,6 +23,15 @@ export default defineConfig({
     testTimeout: 8000,
     // Hook timeout optimizado
     hookTimeout: 3000,
+    // Configuración jsdom optimizada
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
+        runScripts: 'dangerously',
+        pretendToBeVisual: false,
+        includeNodeLocations: false
+      }
+    },
     include: [
       '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       '**/*.eval.test.{js,ts,jsx,tsx}'
