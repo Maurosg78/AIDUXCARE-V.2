@@ -4,6 +4,12 @@ import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
 
+// Configuración de future flags para React Router v7
+const future = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
+
 export const router = createBrowserRouter([
   // Página principal protegida: ProfessionalWorkflowPage en la raíz
   {
@@ -83,4 +89,4 @@ export const router = createBrowserRouter([
       </div>
     </div>
   }
-]); 
+], { future }); 

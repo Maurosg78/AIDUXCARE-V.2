@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import { supabaseClientMock } from '../__mocks__/supabase/authMock';
+import { renderWithRouter } from './test-utils';
 
 // Mock del cliente de Supabase
 vi.mock('../core/auth/supabaseClient', () => ({
@@ -41,11 +41,7 @@ vi.mock('../core/services/userDataSourceSupabase', () => ({
 
 describe('LoginPage Component', () => {
   it('renderiza el formulario de login correctamente', () => {
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderWithRouter(<LoginPage />);
 
     expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Correo electrónico')).toBeInTheDocument();
@@ -55,11 +51,7 @@ describe('LoginPage Component', () => {
   });
 
   it('muestra error cuando los campos están vacíos', async () => {
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderWithRouter(<LoginPage />);
 
     const form = screen.getByTestId('login-form');
     fireEvent.submit(form);
@@ -72,11 +64,7 @@ describe('LoginPage Component', () => {
   });
 
   it('deshabilita el botón cuando loading es true', async () => {
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderWithRouter(<LoginPage />);
 
     const emailInput = screen.getByPlaceholderText('Correo electrónico');
     const passwordInput = screen.getByPlaceholderText('Contraseña');
@@ -95,11 +83,7 @@ describe('LoginPage Component', () => {
   });
 
   it('permite ingresar texto en los campos', async () => {
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderWithRouter(<LoginPage />);
 
     const emailInput = screen.getByPlaceholderText('Correo electrónico');
     const passwordInput = screen.getByPlaceholderText('Contraseña');
