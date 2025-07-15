@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { screen } from '@testing-library/react';
+import { renderWithRouter } from './test-utils';
 import Layout from '../core/components/Layout';
 import * as UserContext from '../core/auth/UserContext';
 import { User } from '@supabase/supabase-js';
@@ -62,10 +62,10 @@ describe('Layout Component', () => {
   });
 
   it('renderiza correctamente con usuario autenticado', () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <Layout />
-      </BrowserRouter>
+      
     );
 
     // Verificar que se muestra el nombre AiDuxCare en el header
@@ -79,10 +79,10 @@ describe('Layout Component', () => {
   });
 
   it('muestra el menú de navegación con las opciones correctas', () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <Layout />
-      </BrowserRouter>
+      
     );
 
     // Verificar opciones de menú reales
@@ -94,10 +94,10 @@ describe('Layout Component', () => {
   });
 
   it('contiene el menú de usuario', () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <Layout />
-      </BrowserRouter>
+      
     );
     // Verifica que el nombre del usuario esté presente
     expect(screen.getByText('Dr. Juan Pérez')).toBeInTheDocument();
@@ -116,10 +116,10 @@ describe('Layout Component', () => {
       hasRole: vi.fn()
     });
 
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <Layout />
-      </BrowserRouter>
+      
     );
     // Busca un texto o data-testid de loading/spinner si existe
     // Si no existe, este test puede ser eliminado o adaptado

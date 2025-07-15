@@ -4,6 +4,9 @@ import { vi, beforeAll, afterEach } from 'vitest';
 // Configurar jest globalmente
 global.jest = vi as unknown as typeof jest;
 
+// Configuración optimizada para performance
+const setupStartTime = Date.now();
+
 // Mock completo para las variables de entorno
 vi.mock('./config/env', () => ({
   SUPABASE_URL: 'https://mock-supabase-url.co',
@@ -158,6 +161,12 @@ beforeAll(() => {
     }
     originalConsoleWarn(...args);
   };
+  
+  // Log de performance del setup
+  const setupTime = Date.now() - setupStartTime;
+  if (setupTime > 1000) {
+    console.log(`⚡ Setup time: ${setupTime}ms`);
+  }
 });
 
 // Limpiar los mocks después de cada prueba

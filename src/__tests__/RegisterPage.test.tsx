@@ -1,9 +1,9 @@
 // src/__tests__/RegisterPage.test.tsx
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
 import RegisterPage from '../pages/RegisterPage';
+import { renderWithRouter } from './test-utils';
 import { supabaseClientMock } from '../__mocks__/supabase/authMock';
 
 // Mock del cliente de Supabase
@@ -31,10 +31,10 @@ vi.mock('react-router-dom', async () => {
 
 describe('RegisterPage Component', () => {
   it('renderiza el formulario de registro correctamente', () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <RegisterPage />
-      </BrowserRouter>
+      
     );
 
     expect(screen.getByRole('heading', { name: 'Registro' })).toBeInTheDocument();
@@ -45,10 +45,10 @@ describe('RegisterPage Component', () => {
   });
 
   it('muestra errores de validación cuando faltan campos', async () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <RegisterPage />
-      </BrowserRouter>
+      
     );
     fireEvent.submit(screen.getByTestId('register-form'));
 
@@ -58,10 +58,10 @@ describe('RegisterPage Component', () => {
   });
 
   it('permite escribir en los inputs', async () => {
-    render(
-      <BrowserRouter>
+    renderWithRouter(
+      
         <RegisterPage />
-      </BrowserRouter>
+      
     );
 
     await userEvent.type(screen.getByPlaceholderText('Correo electrónico'), 'juan@ejemplo.com');
