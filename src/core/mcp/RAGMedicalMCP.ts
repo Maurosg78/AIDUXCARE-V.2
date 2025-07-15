@@ -1,4 +1,5 @@
 /**
+ * 
  * 🧬 AiDuxCare - RAG Medical MCP
  * Model Context Protocol especializado en Retrieval Augmented Generation
  * para fuentes de conocimiento médico (PubMed, guidelines, evidence-based protocols)
@@ -513,39 +514,4 @@ RECOMENDACIÓN: Considerar esta evidencia en el contexto clínico específico de
   }
 }
 
-/**
- * Helper para testing y desarrollo
- */
-export class RAGTestingHelper {
-  
-  /**
-   * Test completo del pipeline RAG
-   */
-  static async testRAGPipeline(): Promise<void> {
-    console.log('🧪 Testing RAG Medical MCP Pipeline...');
-    
-    const testQueries = [
-      'lumbar spine physical therapy exercises',
-      'manual therapy cervical pain effectiveness',
-      'knee rehabilitation post surgery protocol',
-      'chronic pain management physiotherapy'
-    ];
-    
-    for (const query of testQueries) {
-      console.log(`\n📝 Testing query: "${query}"`);
-      
-      const result = await RAGMedicalMCP.retrieveRelevantKnowledge(query, 'fisioterapia', 3);
-      
-      console.log(`✅ Found ${result.citations.length} citations`);
-      console.log(`✅ Generated ${result.relevant_chunks.length} chunks`);
-      console.log(`✅ Confidence: ${Math.round(result.confidence_score * 100)}%`);
-      console.log(`✅ Processing time: ${result.processing_time_ms}ms`);
-      
-      // Generar bloques MCP
-      const mcpBlocks = RAGMedicalMCP.convertToMCPBlocks(result);
-      console.log(`✅ Generated ${mcpBlocks.length} MCP blocks`);
-    }
-    
-    console.log('\n🎉 RAG Pipeline testing completed!');
-  }
-} 
+ 
