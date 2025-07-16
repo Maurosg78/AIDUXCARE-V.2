@@ -1,8 +1,6 @@
 import { db } from '../firebase/firebaseClient';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, Timestamp, Firestore, query, where, addDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, query, where, addDoc } from 'firebase/firestore';
 import { Visit, VisitSchema } from '../domain/visitType';
-
-const visitsCollection = collection(db, 'visits');
 
 export class VisitDataSourceFirestore {
   private db: Firestore;

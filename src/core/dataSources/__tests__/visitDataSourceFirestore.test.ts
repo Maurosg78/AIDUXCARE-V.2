@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
-import { initializeApp, deleteApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator, collection, getDocs, deleteDoc, Firestore } from 'firebase/firestore';
 import { VisitStatus } from '../../domain/visitType';
 import { VisitDataSourceFirestore } from '../visitDataSourceFirestore';
@@ -33,7 +32,8 @@ describe('VisitDataSourceFirestore (integración)', () => {
   }, 20000);
 
   afterAll(async () => {
-    await deleteApp(app);
+    // Eliminar import de initializeApp si no se usa
+    // await deleteApp(app);
   }, 20000);
 
   it('debe crear una visita y luego obtenerla por ID', async () => {
