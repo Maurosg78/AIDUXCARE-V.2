@@ -53,6 +53,9 @@ jobs:
     - name: Instalar Java (para Firestore Emulator)
       run: sudo apt-get update && sudo apt-get install -y default-jre
 
+    - name: Instalar Firebase CLI
+      run: npm install -g firebase-tools
+
     - name: Iniciar emulador Firestore
       run: |
         firebase emulators:start --only firestore --project aiduxcare-mvp-uat --import=./ --export-on-exit --debug > /tmp/emulator.log 2>&1 &
