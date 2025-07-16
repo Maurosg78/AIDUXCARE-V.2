@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom';
 import { vi, beforeAll, afterEach } from 'vitest';
+import chai from 'chai';
+import sinonChai from 'sinon-chai';
+
+// Configurar Chai con plugins (sin chai-as-promised para evitar conflictos)
+chai.use(sinonChai);
 
 // Configurar jest globalmente
 global.jest = vi as unknown as typeof jest;

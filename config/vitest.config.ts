@@ -17,8 +17,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: [path.resolve(__dirname, '../src/setupTests.ts')],
     // Configuración optimizada para performance
-    // Parallelización optimizada - ajustado para mejor performance
-    maxConcurrency: 2,
+    // Parallelización avanzada - Sprint TDP-3
+    maxConcurrency: 4, // Ajustado para pruebas de performance
     // Timeout optimizado
     testTimeout: 8000,
     // Hook timeout optimizado

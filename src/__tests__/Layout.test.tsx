@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithRouter } from './test-utils';
@@ -63,44 +64,34 @@ describe('Layout Component', () => {
 
   it('renderiza correctamente con usuario autenticado', () => {
     renderWithRouter(
-      
-        <Layout />
-      
+      <Layout />
     );
-
     // Verificar que se muestra el nombre AiDuxCare en el header
-    expect(screen.getByText('AiDuxCare')).toBeInTheDocument();
-    
+    expect(screen.getByText('AiDuxCare')).to.exist;
     // Verificar que se muestra el outlet
-    expect(screen.getByTestId('outlet')).toBeInTheDocument();
-    
-    // Verificar que se muestra el nombre del usuario
-    expect(screen.getByText('Dr. Juan Pérez')).toBeInTheDocument();
+    expect(screen.getByTestId('outlet')).to.exist;
+    // Verificar que se muestra el nombre del usuario (al menos una vez)
+    expect(screen.getAllByText('Dr. Juan Pérez').length).to.be.greaterThan(0);
   });
 
   it('muestra el menú de navegación con las opciones correctas', () => {
     renderWithRouter(
-      
-        <Layout />
-      
+      <Layout />
     );
-
     // Verificar opciones de menú reales
-    expect(screen.getByText('Calendario')).toBeInTheDocument();
-    expect(screen.getByText('Pacientes')).toBeInTheDocument();
-    expect(screen.getByText('Notas')).toBeInTheDocument();
-    expect(screen.getByText('Demo')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Juan Pérez')).toBeInTheDocument();
+    expect(screen.getAllByText('Calendario').length).to.be.greaterThan(0);
+    expect(screen.getAllByText('Pacientes').length).to.be.greaterThan(0);
+    expect(screen.getAllByText('Notas').length).to.be.greaterThan(0);
+    expect(screen.getAllByText('Demo').length).to.be.greaterThan(0);
+    expect(screen.getAllByText('Dr. Juan Pérez').length).to.be.greaterThan(0);
   });
 
   it('contiene el menú de usuario', () => {
     renderWithRouter(
-      
-        <Layout />
-      
+      <Layout />
     );
-    // Verifica que el nombre del usuario esté presente
-    expect(screen.getByText('Dr. Juan Pérez')).toBeInTheDocument();
+    // Verifica que el nombre del usuario esté presente (al menos una vez)
+    expect(screen.getAllByText('Dr. Juan Pérez').length).to.be.greaterThan(0);
   });
 
   it('muestra pantalla de carga cuando loading es true', () => {

@@ -1,16 +1,31 @@
 import { vi } from "vitest";
-export const createClient = vi.fn(() => ({
-  auth: {
-    getSession: vi.fn().mockResolvedValue({
-      data: {
-        session: {
-          user: { id: 'mock-user-id' },
-        },
-      },
-    }),
-  },
-  from: vi.fn(() => ({
-    select: vi.fn().mockResolvedValue({ data: [], error: null }),
-    insert: vi.fn().mockResolvedValue({ data: [{ id: 'mock-id' }], error: null }),
-  })),
-}));
+const mockSelect = vi.fn();
+const mockInsert = vi.fn();
+const mockUpdate = vi.fn();
+const mockDelete = vi.fn();
+const mockEq = vi.fn();
+const mockOrder = vi.fn();
+const mockSingle = vi.fn();
+
+const mockSupabase = {
+  from: () => ({
+    select: mockSelect,
+    insert: mockInsert,
+    update: mockUpdate,
+    delete: mockDelete,
+    eq: mockEq,
+    order: mockOrder,
+    single: mockSingle
+  })
+};
+
+export default mockSupabase;
+export {
+  mockSelect,
+  mockInsert,
+  mockUpdate,
+  mockDelete,
+  mockEq,
+  mockOrder,
+  mockSingle
+};

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import AgentSuggestionsViewer from '../AgentSuggestionsViewer';
 import type { SuggestionType, SuggestionField } from '@/types/agent';
 
@@ -70,6 +71,10 @@ describe('AgentSuggestionsViewer', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('debe validar la integración completa de sugerencias al EMR', async () => {
     render(<AgentSuggestionsViewer {...defaultProps} />);
 
@@ -80,7 +85,7 @@ describe('AgentSuggestionsViewer', () => {
     // Esperar a que se muestren las sugerencias
     await waitFor(() => {
       const allSuggestions = screen.getAllByTestId(`suggestion-${defaultProps.suggestions[0].id}`);
-      expect(allSuggestions.some(el => el.textContent?.includes(defaultProps.suggestions[0].content))).toBe(true);
+      expect(allSuggestions.some(el => el.textContent?.includes(defaultProps.suggestions[0].content))).to.be.true;
     });
 
     // Encontrar y hacer clic en el botón de integrar
@@ -144,18 +149,18 @@ describe('AgentSuggestionsViewer', () => {
     // Esperar a que se muestren las sugerencias
     await waitFor(() => {
       const allSuggestions = screen.getAllByTestId(`suggestion-${defaultProps.suggestions[0].id}`);
-      expect(allSuggestions.length).toBeGreaterThan(0);
+      expect(allSuggestions.length).to.be.above(0);
     });
 
     // Encontrar y hacer clic en el botón de integrar
     const integrateButtons = screen.getAllByTestId(`accept-suggestion-${defaultProps.suggestions[0].id}`);
     const enabledIntegrateButton = integrateButtons.find(btn => !(btn as HTMLButtonElement).disabled);
-    expect(enabledIntegrateButton).not.toBeNull();
+    expect(enabledIntegrateButton).to.exist;
     fireEvent.click(enabledIntegrateButton!);
 
     // Verificar que se muestra el mensaje de error
     await waitFor(() => {
-      expect(screen.getByText('Error de conexión al integrar la sugerencia')).not.toBeNull();
+      expect(screen.getByText('Error de conexión al integrar la sugerencia')).to.exist;
     });
 
     // Verificar que se llamó a AuditLogger con el error (CORREGIDO)
@@ -178,32 +183,32 @@ describe('AgentSuggestionsViewer', () => {
 
     // Verificar que el contenedor principal tiene el role y aria-label correctos
     const mainContainers = screen.getAllByRole('region', { name: 'Sugerencias del Copiloto' });
-    expect(mainContainers.length).toBeGreaterThan(0);
-    expect(mainContainers[0]).not.toBeNull();
+    expect(mainContainers.length).to.be.above(0);
+    expect(mainContainers[0]).to.exist;
 
     // Verificar que el botón toggle tiene los atributos ARIA correctos
     const toggleButton = screen.getByRole('button', { name: 'Mostrar sugerencias del copiloto' });
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('false');
-    expect(toggleButton.getAttribute('aria-controls')).toBe('suggestions-content');
+    expect(toggleButton.getAttribute('aria-expanded')).to.equal('false');
+    expect(toggleButton.getAttribute('aria-controls')).to.equal('suggestions-content');
 
     // Hacer clic en el botón para expandir
     fireEvent.click(toggleButton);
 
     // Verificar que el contenedor de sugerencias tiene los atributos ARIA correctos (CORREGIDO)
     const suggestionsContents = screen.getAllByRole('region', { name: /Lista de sugerencias/i });
-    expect(suggestionsContents.length).toBeGreaterThan(0);
+    expect(suggestionsContents.length).to.be.above(0);
     const suggestionsContent = suggestionsContents[0];
-    expect(suggestionsContent).not.toBeNull();
+    expect(suggestionsContent).to.exist;
 
     // Verificar que cada sugerencia tiene un contenedor con role="article" (CORREGIDO)
     const suggestionRegions = screen.getAllByRole('region');
     const individualSuggestions = suggestionRegions.filter(region => region.getAttribute("aria-label")?.startsWith("Sugerencia suggestion-"));
-    expect(individualSuggestions.length >= defaultProps.suggestions.length).toBe(true);
+    expect(individualSuggestions.length >= defaultProps.suggestions.length).to.be.true;
 
     // Verificar que cada sugerencia tiene los atributos ARIA correctos
     defaultProps.suggestions.forEach(suggestion => {
       const match = individualSuggestions.find(region => region.getAttribute('aria-label') === `Sugerencia ${suggestion.id}`);
-      expect(match).not.toBeNull();
+      expect(match).to.exist;
     });
   });
 }); 

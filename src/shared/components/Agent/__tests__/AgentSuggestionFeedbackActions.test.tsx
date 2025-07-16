@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import AgentSuggestionFeedbackActions from '../AgentSuggestionFeedbackActions';
 import { AgentSuggestion, SuggestionType } from '../../../../types/agent';
 import { track } from '../../../utils/analytics';
@@ -29,6 +29,10 @@ describe('AgentSuggestionFeedbackActions', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('debe mostrar los botones de aceptar y rechazar', () => {
     render(
       <AgentSuggestionFeedbackActions
@@ -41,8 +45,8 @@ describe('AgentSuggestionFeedbackActions', () => {
       />
     );
 
-    expect(screen.getByText('Aceptar')).toBeInTheDocument();
-    expect(screen.getByText('Rechazar')).toBeInTheDocument();
+    expect(screen.getByText('Aceptar')).to.exist;
+    expect(screen.getByText('Rechazar')).to.exist;
   });
 
   it('debe llamar a onAccept al hacer clic en Aceptar', () => {
@@ -99,8 +103,8 @@ describe('AgentSuggestionFeedbackActions', () => {
       />
     );
 
-    expect(screen.getByText('✓ Sugerencia integrada')).toBeInTheDocument();
-    expect(screen.queryByText('Aceptar')).not.toBeInTheDocument();
-    expect(screen.queryByText('Rechazar')).not.toBeInTheDocument();
+    expect(screen.getByText('✓ Sugerencia integrada')).to.exist;
+    expect(screen.queryByText('Aceptar')).to.not.exist;
+    expect(screen.queryByText('Rechazar')).to.not.exist;
   });
 }); 

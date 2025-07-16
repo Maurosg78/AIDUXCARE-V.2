@@ -1,5 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
+// @vitest-environment jsdom
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AgentSuggestionList from '../AgentSuggestionList';
 
 describe('AgentSuggestionList', () => {
@@ -32,18 +33,22 @@ describe('AgentSuggestionList', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('debe renderizar correctamente la lista de sugerencias', () => {
     render(<AgentSuggestionList {...mockProps} />);
 
-    expect(screen.getByText('Test suggestion 1')).toBeInTheDocument();
-    expect(screen.getByText('Test suggestion 2')).toBeInTheDocument();
+    expect(screen.getByText('Test suggestion 1')).to.exist;
+    expect(screen.getByText('Test suggestion 2')).to.exist;
   });
 
   it('debe mostrar el estado integrado para las sugerencias integradas', () => {
     render(<AgentSuggestionList {...mockProps} />);
 
     const integratedSuggestion = screen.getByText('Integrado');
-    expect(integratedSuggestion).toBeInTheDocument();
+    expect(integratedSuggestion).to.exist;
   });
 
   it('debe llamar a onAccept cuando se acepta una sugerencia', () => {
@@ -77,22 +82,22 @@ describe('AgentSuggestionList', () => {
     render(<AgentSuggestionList {...mockProps} />);
 
     const list = screen.getByLabelText('Lista de sugerencias');
-    expect(list).toBeInTheDocument();
+    expect(list).to.exist;
 
     const items = screen.getAllByRole('article');
-    expect(items).toHaveLength(2);
+    expect(items.length).to.equal(2);
   });
 
   it('debe manejar lista vacía de sugerencias', () => {
     render(<AgentSuggestionList {...mockProps} suggestions={[]} />);
 
-    expect(screen.getByText('No hay sugerencias disponibles')).toBeInTheDocument();
+    expect(screen.getByText('No hay sugerencias disponibles')).to.exist;
   });
 
   it('debe mostrar diferentes tipos de sugerencias correctamente', () => {
     render(<AgentSuggestionList {...mockProps} />);
 
-    expect(screen.getByText('Recomendación')).toBeInTheDocument();
-    expect(screen.getByText('Advertencia')).toBeInTheDocument();
+    expect(screen.getByText('Recomendación')).to.exist;
+    expect(screen.getByText('Advertencia')).to.exist;
   });
 }); 
