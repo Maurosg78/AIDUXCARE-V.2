@@ -4,7 +4,7 @@
 
 import { vi, describe, it, expect, afterEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import MCPContextViewer from '../MCPContextViewer';
 import { MCPContext, MCPMemoryBlock } from '../../../../core/mcp/schema';
 

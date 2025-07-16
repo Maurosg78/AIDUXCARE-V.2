@@ -12,29 +12,35 @@ console.log('⚙️ Usando mock temporal de Supabase durante migración a Fireba
 // Mock avanzado de Supabase con chaining profundo y resultados configurables
 import { vi } from 'vitest';
 
+// Tipos específicos para evitar any
+type MockResult = unknown;
+type MockFunction = (...args: unknown[]) => unknown;
+type ChainState = { result: MockResult };
+
 // Utilidad para crear un mock de chain profundo
 function createDeepChainMock(methods: string[] = []) {
   const handler = {
-    get(target: any, prop: string) {
+    get(target: { __result?: MockResult; __mockImpl?: MockFunction }, prop: string) {
       if (prop === '__setResult') {
-        return (result: any) => {
+        return (result: MockResult) => {
           target.__result = result;
         };
       }
       if (prop === 'then') {
         // Permite await/then en el chain final
-        return (onFulfilled: any, onRejected: any) => Promise.resolve(target.__result).then(onFulfilled, onRejected);
+        return (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
+          Promise.resolve(target.__result).then(onFulfilled, onRejected);
       }
       if (prop === 'returns') {
         // Permite sobrescribir el resultado final
-        return (result: any) => {
+        return (result: MockResult) => {
           target.__result = result;
           return target;
         };
       }
       if (prop === 'mockImplementation') {
         // Permite sobrescribir la implementación de un método
-        return (fn: any) => {
+        return (fn: MockFunction) => {
           target.__mockImpl = fn;
           return target;
         };
@@ -42,7 +48,7 @@ function createDeepChainMock(methods: string[] = []) {
       // Si el método existe, retorna un nuevo proxy para chaining
       if (methods.includes(prop)) {
         const next = createDeepChainMock(methods);
-        return (...args: any[]) => {
+        return (...args: unknown[]) => {
           if (target.__mockImpl) {
             return target.__mockImpl(prop, ...args);
           }
@@ -67,40 +73,44 @@ function createDeepChainMock(methods: string[] = []) {
     getPrototypeOf() {
       return Promise.prototype;
     },
-    apply(target: any, thisArg: any, argArray?: any) {
+    apply(target: { __result?: MockResult }, _thisArg: unknown, _argArray?: unknown[]) {
       return target.__result;
     }
   };
   // Permitir await chain
-  const proxy = new Proxy({ __result: undefined }, handler);
-  proxy.then = (onFulfilled: any, onRejected: any) => Promise.resolve(proxy.__result).then(onFulfilled, onRejected);
+  const proxy = new Proxy({ __result: undefined }, handler) as Record<string, unknown>;
+  proxy.then = (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
+    Promise.resolve(proxy.__result).then(onFulfilled, onRejected);
   return proxy;
 }
 
 function createChainableMock(methods: string[] = []) {
   // Estado compartido entre todos los chains de un mismo flujo
-  const createState = () => ({ result: undefined });
-  const makeChain = (state?: any) => {
+  const createState = (): ChainState => ({ result: undefined });
+  const makeChain = (state?: ChainState) => {
     const __state = state || createState();
-    const chain: any = {};
+    const chain: Record<string, unknown> = {};
     methods.forEach((method) => {
-      chain[method] = (..._args: any[]) => makeChain(__state);
+      chain[method] = (..._args: unknown[]) => makeChain(__state);
     });
-    chain.returns = (result: any) => {
+    chain.returns = (result: MockResult) => {
       __state.result = result;
       return chain;
     };
-    chain.then = (onFulfilled: any, onRejected: any) => Promise.resolve(__state.result).then(onFulfilled, onRejected);
-    chain.catch = (onRejected: any) => Promise.resolve(__state.result).catch(onRejected);
-    chain.finally = (onFinally: any) => Promise.resolve(__state.result).finally(onFinally);
-    chain[Symbol.toStringTag] = 'Promise';
-    chain[Symbol.toPrimitive] = () => __state.result;
-    chain.valueOf = () => __state.result;
-    chain[Symbol.asyncIterator] = async function* () { yield __state.result; };
+    chain.then = (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
+      Promise.resolve(__state.result).then(onFulfilled, onRejected);
+    chain.catch = (onRejected?: (reason: unknown) => unknown) => 
+      Promise.resolve(__state.result).catch(onRejected);
+    chain.finally = (onFinally?: () => unknown) => 
+      Promise.resolve(__state.result).finally(onFinally);
+    (chain as Record<string | symbol, unknown>)[Symbol.toStringTag] = 'Promise';
+    (chain as Record<string | symbol, unknown>)[Symbol.toPrimitive] = () => __state.result;
+    chain.valueOf = () => __state.result as object;
+    (chain as Record<string | symbol, unknown>)[Symbol.asyncIterator] = async function* () { yield __state.result; };
     return chain;
   };
   // Map para almacenar un chain por tabla
-  const tableChains = new Map<string, any>();
+  const tableChains = new Map<string, Record<string, unknown>>();
   const from = (table: string) => {
     if (!tableChains.has(table)) {
       tableChains.set(table, makeChain());

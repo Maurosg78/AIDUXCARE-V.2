@@ -12,7 +12,7 @@ afterEach(() => {
 describe('AgentSuggestionItem', () => {
   const baseSuggestion = {
     id: '1',
-    type: 'recommendation' as 'recommendation',
+    type: 'recommendation' as const,
     content: 'Sugerencia de prueba',
     sourceBlockId: 'block-1',
     field: 'diagnosis',
@@ -70,11 +70,11 @@ describe('AgentSuggestionItem', () => {
   });
 
   it('renderiza el tipo de sugerencia correctamente', () => {
-    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'warning' as 'warning' }} />);
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'warning' as const }} />);
     expect(screen.getByText('Advertencia')).to.exist;
-    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'info' as 'info' }} />);
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'info' as const }} />);
     expect(screen.getByText('Información')).to.exist;
-    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'recommendation' as 'recommendation' }} />);
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'recommendation' as const }} />);
     expect(screen.getByText('Recomendación')).to.exist;
   });
 }); 

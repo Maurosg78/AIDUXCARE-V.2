@@ -227,7 +227,6 @@ describe('AgentSuggestionsViewer', () => {
     render(<AgentSuggestionsViewer {...defaultProps} suggestions={[]} />);
     fireEvent.click(screen.getAllByText('Mostrar')[0]);
     // Debug temporal para inspeccionar el DOM
-    // eslint-disable-next-line no-console
     console.log(document.body.innerHTML);
     expect(screen.getByText('No hay sugerencias disponibles', { exact: false })).to.exist;
   });
