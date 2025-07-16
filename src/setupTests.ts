@@ -191,4 +191,4 @@ beforeAll(() => {
 // Limpiar los mocks después de cada prueba
 afterEach(() => {
   vi.clearAllMocks();
-}); 
+}); // trigger CI/CD
