@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /*  src/shared/components/Agent/__tests__/AgentSuggestionExplainer.test.tsx */
 
 import {
@@ -5,10 +6,10 @@ import {
   screen,
   waitFor,
   act,
-  fireEvent
+  fireEvent,
+  cleanup
 } from '@testing-library/react';
-import { describe, it, vi, beforeEach, expect } from 'vitest';
-import '@testing-library/jest-dom';
+import { describe, it, vi, beforeEach, expect, afterEach } from 'vitest';
 
 import AgentSuggestionExplainer from '../../Agent/AgentSuggestionExplainer';
 import { explainSuggestion } from '@/core/agent/AgentExplainer';
@@ -39,25 +40,29 @@ describe('AgentSuggestionExplainer', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   it('debe renderizar el botón para sugerencias explicables', () => {
     render(<AgentSuggestionExplainer suggestion={mockSuggestion} />);
-    expect(screen.getByTestId('explanation-button')).toBeInTheDocument();
+    expect(screen.getByTestId('explanation-button')).to.exist;
   });
 
   it('no renderiza nada para sugerencias tipo info', () => {
     const infoSuggestion = { ...mockSuggestion, type: 'info' as AgentSuggestion['type'] };
     const { container } = render(<AgentSuggestionExplainer suggestion={infoSuggestion} />);
-    expect(container.firstChild).toBeNull();
+    expect(container.firstChild).to.be.null;
   });
 
   it('aria-expanded cambia al expandir/ocultar', async () => {
     render(<AgentSuggestionExplainer suggestion={mockSuggestion} />);
     const button = screen.getByTestId('explanation-button');
-    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button.getAttribute('aria-expanded')).to.equal('false');
     fireEvent.click(button);
-    await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
+    await waitFor(() => expect(button.getAttribute('aria-expanded')).to.equal('true'));
     fireEvent.click(button);
-    await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
+    await waitFor(() => expect(button.getAttribute('aria-expanded')).to.equal('false'));
   });
 
   it('maneja un fallo inicial y reintento exitoso', async () => {
@@ -73,17 +78,17 @@ describe('AgentSuggestionExplainer', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(screen.getByTestId('explanation-text')).toHaveTextContent(COMPONENT_ERROR_MESSAGES.NETWORK);
+      expect(screen.getByTestId('explanation-text').textContent).to.include(COMPONENT_ERROR_MESSAGES.NETWORK);
     });
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).to.exist;
     
     const retryButton = screen.getByRole('button', { name: 'Reintentar' });
     fireEvent.click(retryButton);
 
     await waitFor(() => {
-      expect(screen.getByTestId('explanation-text')).toHaveTextContent(successExplanation);
+      expect(screen.getByTestId('explanation-text').textContent).to.include(successExplanation);
     });
-    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).to.not.exist;
     expect(vi.mocked(explainSuggestion)).toHaveBeenCalledTimes(2);
   });
 
@@ -99,16 +104,16 @@ describe('AgentSuggestionExplainer', () => {
     fireEvent.click(screen.getByTestId('explanation-button'));
 
     await waitFor(() => {
-        expect(screen.getByTestId('explanation-text')).toHaveTextContent(COMPONENT_ERROR_MESSAGES.NETWORK);
+        expect(screen.getByTestId('explanation-text').textContent).to.include(COMPONENT_ERROR_MESSAGES.NETWORK);
     });
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).to.exist;
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     
     await waitFor(() => {
-        expect(screen.getByTestId('explanation-text')).toHaveTextContent(COMPONENT_ERROR_MESSAGES.UNKNOWN);
+        expect(screen.getByTestId('explanation-text').textContent).to.include(COMPONENT_ERROR_MESSAGES.UNKNOWN);
     });
-    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).to.exist;
     expect(vi.mocked(explainSuggestion)).toHaveBeenCalledTimes(2);
   });
   
@@ -122,9 +127,9 @@ describe('AgentSuggestionExplainer', () => {
     fireEvent.click(screen.getByTestId('explanation-button'));
     
     await waitFor(() => {
-      expect(screen.getByTestId('explanation-text')).toHaveTextContent(mockExplanation);
+      expect(screen.getByTestId('explanation-text').textContent).to.include(mockExplanation);
     });
-    expect(screen.queryByTestId('loading-indicator')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('loading-indicator')).to.not.exist;
   });
 
   it('oculta y vuelve a mostrar sin llamar otra vez', async () => {
@@ -136,18 +141,18 @@ describe('AgentSuggestionExplainer', () => {
 
     fireEvent.click(button);
     await waitFor(() => {
-      expect(screen.getByTestId('explanation-text')).toHaveTextContent(mockExplanation);
+      expect(screen.getByTestId('explanation-text').textContent).to.include(mockExplanation);
     });
 
     fireEvent.click(button);
     await waitFor(() => {
-      expect(screen.queryByTestId('explanation-text')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('explanation-text')).to.not.exist;
     });
     
     fireEvent.click(button);
     await waitFor(() => {
-      expect(screen.getByTestId('explanation-text')).toBeVisible();
-      expect(screen.getByTestId('explanation-text')).toHaveTextContent(mockExplanation);
+      expect(screen.getByTestId('explanation-text')).to.exist;
+      expect(screen.getByTestId('explanation-text').textContent).to.include(mockExplanation);
     });
     expect(explainSuggestion).toHaveBeenCalledTimes(1);
   });
@@ -162,14 +167,14 @@ describe('AgentSuggestionExplainer', () => {
     render(<AgentSuggestionExplainer suggestion={mockSuggestion} />);
     const button = screen.getByTestId('explanation-button');
     
-    expect(button).not.toBeDisabled(); 
+    expect(button).to.not.have.property('disabled', true);
 
     fireEvent.click(button); 
 
     await waitFor(() => {
-        expect(button).toBeDisabled();
+        expect(button).to.have.property('disabled', true);
     });
-    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-indicator')).to.exist;
 
     await act(async () => {
       resolvePromise("Explicación cargada manualmente");
@@ -178,9 +183,9 @@ describe('AgentSuggestionExplainer', () => {
   });
 
     await waitFor(() => {
-      expect(button).not.toBeDisabled();
+      expect(button).to.not.have.property('disabled', true);
     });
-    expect(screen.getByTestId('explanation-text')).toHaveTextContent("Explicación cargada manualmente");
-    expect(screen.queryByTestId('loading-indicator')).not.toBeInTheDocument();
+    expect(screen.getByTestId('explanation-text').textContent).to.include("Explicación cargada manualmente");
+    expect(screen.queryByTestId('loading-indicator')).to.not.exist;
   });
 }); 

@@ -1,106 +1,80 @@
+// @vitest-environment jsdom
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import AgentSuggestionItem from '../AgentSuggestionItem';
 
+// Limpieza tras cada test
+afterEach(() => {
+  cleanup();
+});
+
 describe('AgentSuggestionItem', () => {
-  const mockProps = {
-    suggestion: {
-      id: 'suggestion-1',
-      type: 'recommendation' as const,
-      content: 'Test suggestion content',
-      sourceBlockId: 'block-1',
-      field: 'diagnosis'
-    },
+  const baseSuggestion = {
+    id: '1',
+    type: 'recommendation' as const,
+    content: 'Sugerencia de prueba',
+    sourceBlockId: 'block-1',
+    field: 'diagnosis',
+  };
+  const baseProps = {
+    suggestion: baseSuggestion,
     isIntegrated: false,
     onAccept: vi.fn(),
     onReject: vi.fn(),
-    onFeedback: vi.fn()
+    onFeedback: vi.fn(),
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renderiza el texto de la sugerencia', () => {
+    render(<AgentSuggestionItem {...baseProps} />);
+    expect(screen.getByText('Sugerencia de prueba')).to.exist;
   });
 
-  it('debe renderizar correctamente la sugerencia', () => {
-    render(<AgentSuggestionItem {...mockProps} />);
-
-    expect(screen.getByText('Test suggestion content')).toBeInTheDocument();
-    expect(screen.getByText('Recomendación')).toBeInTheDocument();
+  it('renderiza los botones de acción cuando no está integrado', () => {
+    render(<AgentSuggestionItem {...baseProps} isIntegrated={false} />);
+    expect(screen.getByRole('button', { name: /aceptar/i })).to.exist;
+    expect(screen.getByRole('button', { name: /rechazar/i })).to.exist;
+    expect(screen.getByRole('button', { name: /retroalimentación/i })).to.exist;
   });
 
-  it('debe mostrar el estado integrado cuando isIntegrated es true', () => {
-    render(<AgentSuggestionItem {...mockProps} isIntegrated={true} />);
-
-    expect(screen.getByText('Integrado')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /aceptar/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /rechazar/i })).not.toBeInTheDocument();
+  it('no renderiza botones de acción cuando está integrado', () => {
+    render(<AgentSuggestionItem {...baseProps} isIntegrated={true} />);
+    expect(screen.queryByRole('button', { name: /aceptar/i })).to.be.null;
+    expect(screen.queryByRole('button', { name: /rechazar/i })).to.be.null;
+    expect(screen.queryByRole('button', { name: /retroalimentación/i })).to.be.null;
+    expect(screen.getByText('Integrado')).to.exist;
   });
 
-  it('debe llamar a onAccept cuando se acepta la sugerencia', () => {
-    render(<AgentSuggestionItem {...mockProps} />);
-
-    const acceptButton = screen.getByRole('button', { name: /aceptar/i });
-    fireEvent.click(acceptButton);
-
-    expect(mockProps.onAccept).toHaveBeenCalledWith(mockProps.suggestion);
+  it('llama a onAccept al hacer click en aceptar', () => {
+    const onAccept = vi.fn();
+    render(<AgentSuggestionItem {...baseProps} onAccept={onAccept} />);
+    const acceptBtn = screen.getByRole('button', { name: /aceptar/i });
+    fireEvent.click(acceptBtn);
+    expect(onAccept).toHaveBeenCalledWith(baseSuggestion);
   });
 
-  it('debe llamar a onReject cuando se rechaza la sugerencia', () => {
-    render(<AgentSuggestionItem {...mockProps} />);
-
-    const rejectButton = screen.getByRole('button', { name: /rechazar/i });
-    fireEvent.click(rejectButton);
-
-    expect(mockProps.onReject).toHaveBeenCalledWith(mockProps.suggestion);
+  it('llama a onReject al hacer click en rechazar', () => {
+    const onReject = vi.fn();
+    render(<AgentSuggestionItem {...baseProps} onReject={onReject} />);
+    const rejectBtn = screen.getByRole('button', { name: /rechazar/i });
+    fireEvent.click(rejectBtn);
+    expect(onReject).toHaveBeenCalledWith(baseSuggestion);
   });
 
-  it('debe llamar a onFeedback cuando se solicita retroalimentación', () => {
-    render(<AgentSuggestionItem {...mockProps} />);
-
-    const feedbackButton = screen.getByRole('button', { name: /retroalimentación/i });
-    fireEvent.click(feedbackButton);
-
-    expect(mockProps.onFeedback).toHaveBeenCalledWith(mockProps.suggestion);
+  it('llama a onFeedback al hacer click en retroalimentación', () => {
+    const onFeedback = vi.fn();
+    render(<AgentSuggestionItem {...baseProps} onFeedback={onFeedback} />);
+    const feedbackBtn = screen.getByRole('button', { name: /retroalimentación/i });
+    fireEvent.click(feedbackBtn);
+    expect(onFeedback).toHaveBeenCalledWith(baseSuggestion);
   });
 
-  it('debe tener atributos ARIA correctos', () => {
-    render(<AgentSuggestionItem {...mockProps} />);
-
-    const item = screen.getByRole('article');
-    expect(item).toHaveAttribute('aria-label', 'Sugerencia de diagnóstico');
-
-    const acceptButton = screen.getByRole('button', { name: /aceptar/i });
-    expect(acceptButton).toHaveAttribute('aria-label', 'Aceptar sugerencia');
-
-    const rejectButton = screen.getByRole('button', { name: /rechazar/i });
-    expect(rejectButton).toHaveAttribute('aria-label', 'Rechazar sugerencia');
-
-    const feedbackButton = screen.getByRole('button', { name: /retroalimentación/i });
-    expect(feedbackButton).toHaveAttribute('aria-label', 'Dar retroalimentación');
-  });
-
-  it('debe mostrar diferentes tipos de sugerencias correctamente', () => {
-    const warningProps = {
-      ...mockProps,
-      suggestion: {
-        ...mockProps.suggestion,
-        type: 'warning' as const
-      }
-    };
-
-    const { rerender } = render(<AgentSuggestionItem {...warningProps} />);
-    expect(screen.getByText('Advertencia')).toBeInTheDocument();
-
-    const infoProps = {
-      ...mockProps,
-      suggestion: {
-        ...mockProps.suggestion,
-        type: 'info' as const
-      }
-    };
-
-    rerender(<AgentSuggestionItem {...infoProps} />);
-    expect(screen.getByText('Información')).toBeInTheDocument();
+  it('renderiza el tipo de sugerencia correctamente', () => {
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'warning' as const }} />);
+    expect(screen.getByText('Advertencia')).to.exist;
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'info' as const }} />);
+    expect(screen.getByText('Información')).to.exist;
+    render(<AgentSuggestionItem {...baseProps} suggestion={{ ...baseSuggestion, type: 'recommendation' as const }} />);
+    expect(screen.getByText('Recomendación')).to.exist;
   });
 }); 

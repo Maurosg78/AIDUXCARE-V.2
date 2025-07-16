@@ -19,7 +19,7 @@ export const suggestionFeedbackDataSourceSupabase: SuggestionFeedbackDataSource 
       .eq('suggestion_id', suggestionId);
     
     if (error) throw error;
-    return data as SuggestionFeedback | null;
+    return (data as unknown) as SuggestionFeedback | null;
   }
 };
 

@@ -6,7 +6,7 @@ export class PatientDataSourceSupabase {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = supabase;
+    this.supabase = supabase as unknown as SupabaseClient;
   }
 
   /**

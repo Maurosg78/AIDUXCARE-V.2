@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { beforeEach, describe, it, vi, type Mock, expect as vitestExpect } from 'vitest';
+import { expect } from 'chai';
 import {
   getContextualMemory,
   getPersistentMemory,
@@ -12,8 +13,6 @@ vi.mock('../../../core/auth/supabaseClient', () => ({
     from: vi.fn()
   }
 }));
-
-// Definimos el tipo exacto que maneja el DataSource
 
 describe('MCPDataSourceSupabase', () => {
   beforeEach(() => {
@@ -41,8 +40,8 @@ describe('MCPDataSourceSupabase', () => {
       });
 
       const result = await getContextualMemory(visitId);
-      expect(result).toEqual(mockData);
-      expect(supabase.from).toHaveBeenCalledWith('contextual_memory');
+      expect(result).to.deep.equal(mockData);
+      vitestExpect(supabase.from).toHaveBeenCalledWith('contextual_memory');
     });
 
     it('lanza error cuando Supabase regresa error', async () => {
@@ -54,7 +53,8 @@ describe('MCPDataSourceSupabase', () => {
         order: vi.fn().mockResolvedValue({ data: null, error })
       });
 
-      await expect(getContextualMemory('x')).resolves.toEqual([]);
+      const result = await getContextualMemory('x');
+      expect(result).to.deep.equal([]);
     });
   });
 
@@ -76,8 +76,8 @@ describe('MCPDataSourceSupabase', () => {
       });
 
       const result = await getPersistentMemory(patientId);
-      expect(result).toEqual(mockData);
-      expect(supabase.from).toHaveBeenCalledWith('persistent_memory');
+      expect(result).to.deep.equal(mockData);
+      vitestExpect(supabase.from).toHaveBeenCalledWith('persistent_memory');
     });
 
     it('lanza error en caso de fallo', async () => {
@@ -89,7 +89,8 @@ describe('MCPDataSourceSupabase', () => {
         order: vi.fn().mockResolvedValue({ data: null, error })
       });
 
-      await expect(getPersistentMemory('p-x')).resolves.toEqual([]);
+      const result = await getPersistentMemory('p-x');
+      expect(result).to.deep.equal([]);
     });
   });
 
@@ -109,8 +110,8 @@ describe('MCPDataSourceSupabase', () => {
       });
 
       const result = await getSemanticMemory();
-      expect(result).toEqual(mockData);
-      expect(supabase.from).toHaveBeenCalledWith('semantic_memory');
+      expect(result).to.deep.equal(mockData);
+      vitestExpect(supabase.from).toHaveBeenCalledWith('semantic_memory');
     });
 
     it('lanza error cuando falla', async () => {
@@ -122,7 +123,8 @@ describe('MCPDataSourceSupabase', () => {
         order: vi.fn().mockResolvedValue({ data: null, error })
       });
 
-      await expect(getSemanticMemory()).resolves.toEqual([]);
+      const result = await getSemanticMemory();
+      expect(result).to.deep.equal([]);
     });
   });
 });

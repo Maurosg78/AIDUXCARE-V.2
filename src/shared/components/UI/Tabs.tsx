@@ -125,7 +125,7 @@ export const Tabs: React.FC<TabsProps> = ({
         })}
       </div>
 
-      {/* TAREA 2: Renderizado condicional - solo renderiza el contenido del tab activo */}
+      {/* Renderizar solo el tabpanel activo */}
       <div className="mt-4">
         {activeTabContent && (
           <div

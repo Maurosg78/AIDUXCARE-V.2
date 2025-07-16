@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+import { SupabaseClient } from '@supabase/supabase-js';
 /**
  * 🔧 Supabase Client Mock - Migración a Firebase
  * FASE 0.5: ESTABILIZACIÓN FINAL DE INFRAESTRUCTURA
@@ -9,57 +11,40 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 console.log('⚙️ Usando mock temporal de Supabase durante migración a Firebase...');
 
-// Mock del cliente Supabase con operaciones encadenadas completas y compatibilidad de tipos
+// Mock avanzado de Supabase compatible con todos los chains y métodos
+function createQueryMock(result: unknown = { data: [], error: null }): Record<string, unknown> {
+  // Métodos encadenables
+  const chain: Record<string, unknown> = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    single: vi.fn(() => chain),
+    insert: vi.fn(() => chain),
+    update: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
+    catch: vi.fn(() => Promise.resolve(result)),
+    finally: vi.fn(() => Promise.resolve(result)),
+    then: vi.fn((cb: (v: unknown) => unknown) => Promise.resolve(result).then(cb)),
+    returns: vi.fn((r: unknown) => { result = r; return chain; }),
+  };
+  return chain;
+}
+
 const mockSupabase = {
-  from: (_table: string) => ({
-    select: (_columns?: string) => ({
-      eq: (_column: string, _value: unknown) => ({
-        single: () => Promise.resolve({ data: { professional_id: 'mock-professional-id' }, error: null }),
-        order: (_column: string, _options?: unknown) => ({
-          limit: (_count: number) => Promise.resolve({ data: [], error: null }),
-          then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
-        }),
-        limit: (_count: number) => Promise.resolve({ data: [], error: null }),
-        then: (_callback: unknown) => Promise.resolve({ data: { professional_id: 'mock-professional-id' }, error: null })
-      }),
-      in: (_column: string, _values: unknown[]) => ({
-        then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
-      }),
-      order: (_column: string, _options?: unknown) => ({
-        limit: (_count: number) => Promise.resolve({ data: [], error: null }),
-        then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
-      }),
-      limit: (_count: number) => Promise.resolve({ data: [], error: null }),
-      then: (_callback: unknown) => Promise.resolve({ data: [], error: null })
-    }),
-    insert: (_data: unknown) => ({
-      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-    }),
-    update: (_data: unknown) => ({
-      eq: (_column: string, _value: unknown) => ({
-        then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-      }),
-      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-    }),
-    upsert: (_data: unknown) => ({
-      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-    }),
-    delete: () => ({
-      eq: (_column: string, _value: unknown) => ({
-        then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-      }),
-      then: (_callback: unknown) => Promise.resolve({ data: null, error: null })
-    })
-  }),
+  from: vi.fn((table: string) => createQueryMock()),
   auth: {
-    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-    onAuthStateChange: (_callback: unknown) => {
-      // Mock de suscripción
-      return { data: { subscription: null } };
-    }
+    getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    signOut: vi.fn().mockResolvedValue({ error: null }),
+    onAuthStateChange: vi.fn(() => ({
+      data: {
+        subscription: {
+          unsubscribe: vi.fn()
+        }
+      }
+    })),
   },
-  // Propiedades requeridas por el tipo SupabaseClient
+  // Propiedades dummy requeridas por SupabaseClient
   supabaseUrl: 'mock-url',
   supabaseKey: 'mock-key',
   authUrl: 'mock-auth-url',
@@ -70,17 +55,34 @@ const mockSupabase = {
   rest: {} as unknown,
   storage: {} as unknown,
   functions: {} as unknown,
-  rpc: () => Promise.resolve({ data: null, error: null }),
+  rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   schema: 'public',
-  serviceKey: 'mock-service-key'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any;
+  serviceKey: 'mock-service-key',
+  storageKey: 'mock-storage-key',
+  headers: {},
+  channel: vi.fn(),
+  getChannels: vi.fn(),
+  removeAllChannels: vi.fn(),
+  removeChannel: vi.fn(),
+  setAuth: vi.fn(),
+  setSession: vi.fn(),
+  setAccessToken: vi.fn(),
+  setRefreshToken: vi.fn(),
+  // Métodos dummy adicionales para compatibilidad
+  restUrl: 'mock-rest-url',
+  authStorageKey: 'mock-auth-storage-key',
+  getAuthSession: vi.fn(),
+  getUser: vi.fn(),
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOutUser: vi.fn(),
+  onAuthStateChanged: vi.fn(),
+  // ... puedes agregar más si el tipado lo requiere ...
+} as unknown as SupabaseClient;
 
-// Exportar mock para compatibilidad temporal
 export default mockSupabase;
 export const supabase = mockSupabase;
 
-// Funciones mock para compatibilidad
 export function getSupabaseClient() {
   return mockSupabase;
 }
@@ -94,6 +96,6 @@ export function diagnosticSupabaseClient() {
     isInitialized: true,
     clientReference: mockSupabase,
     timestamp: new Date().toISOString(),
-    note: 'Mock temporal durante migración a Firebase'
+    note: 'Mock temporal durante migración a Firebase',
   };
 } // Force update: Mon Jul 14 20:15:00 CEST 2025 - Enhanced mock with full SupabaseClient compatibility

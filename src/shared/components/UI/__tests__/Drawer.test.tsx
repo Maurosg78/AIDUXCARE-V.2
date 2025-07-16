@@ -1,6 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+// @vitest-environment jsdom
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Drawer } from '../Drawer';
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('Drawer', () => {
   const defaultProps = {
@@ -13,32 +18,36 @@ describe('Drawer', () => {
 
   it('renderiza el drawer cuando isOpen es true', () => {
     render(<Drawer {...defaultProps} />);
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Título de prueba')).toBeInTheDocument();
-    expect(screen.getByText('Descripción de prueba')).toBeInTheDocument();
-    expect(screen.getByText('Contenido del drawer')).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).to.exist;
+    expect(screen.getByText('Título de prueba')).to.exist;
+    expect(screen.getByText('Descripción de prueba')).to.exist;
+    expect(screen.getByText('Contenido del drawer')).to.exist;
   });
 
   it('no renderiza el drawer cuando isOpen es false', () => {
     render(<Drawer {...defaultProps} isOpen={false} />);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).to.be.null;
   });
 
   it('llama a onClose al hacer click en el backdrop', () => {
     const onClose = vi.fn();
     render(<Drawer {...defaultProps} onClose={onClose} />);
-    const backdrop = screen.getByRole('dialog').previousSibling;
+    // Buscar el backdrop por clase
+    const backdrop = document.querySelector('.bg-black');
     if (backdrop && backdrop instanceof HTMLElement) {
       fireEvent.click(backdrop);
-      expect(onClose).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalledOnce();
+    } else {
+      throw new Error('Backdrop no encontrado');
     }
   });
 
   it('llama a onClose al hacer click en el botón de cerrar', () => {
     const onClose = vi.fn();
     render(<Drawer {...defaultProps} onClose={onClose} />);
-    const closeButton = screen.getByLabelText(/cerrar drawer/i);
-    fireEvent.click(closeButton);
-    expect(onClose).toHaveBeenCalled();
+    const closeButtons = screen.getAllByLabelText(/cerrar drawer/i);
+    fireEvent.click(closeButtons[0]);
+    expect(onClose).toHaveBeenCalledOnce();
   });
 }); 

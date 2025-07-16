@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { Tooltip } from '../Tooltip';
@@ -9,7 +10,8 @@ describe('Tooltip', () => {
         <button>Botón</button>
       </Tooltip>
     );
-    expect(screen.getByText('Botón')).toBeInTheDocument();
+    const buttons = screen.getAllByText('Botón');
+    expect(buttons[0]).to.exist;
   });
 
   it('muestra el tooltip al hacer hover', () => {
@@ -18,8 +20,9 @@ describe('Tooltip', () => {
         <button>Botón</button>
       </Tooltip>
     );
-    fireEvent.mouseEnter(screen.getByText('Botón'));
-    expect(screen.getByText('Texto del tooltip')).toBeInTheDocument();
+    const buttons = screen.getAllByText('Botón');
+    fireEvent.mouseEnter(buttons[0]);
+    expect(screen.getByText('Texto del tooltip')).to.exist;
   });
 
   it('oculta el tooltip al salir del hover', () => {
@@ -28,10 +31,10 @@ describe('Tooltip', () => {
         <button>Botón</button>
       </Tooltip>
     );
-    const button = screen.getByText('Botón');
-    fireEvent.mouseEnter(button);
-    expect(screen.getByText('Texto del tooltip')).toBeInTheDocument();
-    fireEvent.mouseLeave(button);
-    expect(screen.queryByText('Texto del tooltip')).not.toBeInTheDocument();
+    const buttons = screen.getAllByText('Botón');
+    fireEvent.mouseEnter(buttons[0]);
+    expect(screen.getByText('Texto del tooltip')).to.exist;
+    fireEvent.mouseLeave(buttons[0]);
+    expect(screen.queryByText('Texto del tooltip')).to.not.exist;
   });
 }); 

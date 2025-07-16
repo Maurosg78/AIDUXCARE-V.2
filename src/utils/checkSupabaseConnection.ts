@@ -28,7 +28,7 @@ export async function checkSupabaseConnection(): Promise<{
     const startTime = performance.now();
     
     // Tipar correctamente el cliente de Supabase
-    const client = supabase as SupabaseClient;
+    const client = supabase as unknown as SupabaseClient;
     
     // Usar auth.getSession() en lugar de consultar una tabla específica
     // Este método siempre está disponible y no depende de esquemas personalizados
