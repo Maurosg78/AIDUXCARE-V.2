@@ -1,0 +1,61 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { patientDataSourceFirestore } from '../patientDataSourceFirestore';
+import { Patient, PatientGender } from '../../domain/patientType';
+
+function randomString(prefix = 'test') {
+  return `${prefix}-${Math.random().toString(36).substring(2, 10)}`;
+}
+
+describe('PatientDataSourceFirestore (integración)', () => {
+  let createdPatient: Patient;
+  const professionalId = randomString('prof');
+  const patientData = {
+    name: randomString('Paciente'),
+    full_name: randomString('Nombre Completo'),
+    age: Math.floor(Math.random() * 80) + 18,
+    gender: 'male' as PatientGender,
+    email: `${randomString('mail')}@test.com`,
+    phone: randomString('phone'),
+    user_id: professionalId
+  };
+
+  it('debe crear un paciente', async () => {
+    createdPatient = await patientDataSourceFirestore.createPatient(patientData, professionalId);
+    expect(createdPatient).toBeDefined();
+    expect(createdPatient.id).toBeTruthy();
+    expect(createdPatient.name).toBe(patientData.name);
+    expect(createdPatient.user_id).toBe(professionalId);
+  });
+
+  it('debe obtener el paciente por ID', async () => {
+    const found = await patientDataSourceFirestore.getPatientById(createdPatient.id);
+    expect(found).toBeDefined();
+    expect(found?.id).toBe(createdPatient.id);
+    expect(found?.name).toBe(patientData.name);
+  });
+
+  it('debe obtener el paciente por user_id', async () => {
+    const found = await patientDataSourceFirestore.getPatientByUserId(professionalId);
+    expect(found).toBeDefined();
+    expect(found?.id).toBe(createdPatient.id);
+  });
+
+  it('debe actualizar el paciente', async () => {
+    const newName = randomString('PacienteEditado');
+    const updated = await patientDataSourceFirestore.updatePatient(createdPatient.id, { name: newName });
+    expect(updated).toBeDefined();
+    expect(updated.name).toBe(newName);
+  });
+
+  it('debe eliminar el paciente', async () => {
+    const deleted = await patientDataSourceFirestore.deletePatient(createdPatient.id);
+    expect(deleted).toBe(true);
+    const found = await patientDataSourceFirestore.getPatientById(createdPatient.id);
+    expect(found).toBeNull();
+  });
+
+  it('debe retornar null si el paciente no existe', async () => {
+    const found = await patientDataSourceFirestore.getPatientById('nonexistent-id');
+    expect(found).toBeNull();
+  });
+}); 

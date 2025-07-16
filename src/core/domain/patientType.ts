@@ -10,11 +10,11 @@ export enum PatientGender {
 
 // Esquema de validación para Paciente
 export const PatientSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
+  id: z.string().min(1, 'ID requerido'), // Firestore ID: cualquier string no vacío
+  name: z.string().min(1),
   full_name: z.string().optional(),
-  age: z.number().optional(),
-  gender: z.nativeEnum(PatientGender).optional(),
+  age: z.number().int().min(0).optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -22,9 +22,9 @@ export const PatientSchema = z.object({
   allergies: z.string().optional(),
   current_medication: z.string().optional(),
   insurance_id: z.string().optional(),
-  user_id: z.string().uuid().optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional()
+  user_id: z.string().min(1),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1)
 });
 
 // Tipo derivado del esquema
