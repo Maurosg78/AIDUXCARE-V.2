@@ -45,7 +45,11 @@
     "demo:integration": "tsx scripts/test-nlp-rag-integration.ts",
     "test:rag-solo": "tsx scripts/test-rag-solo.ts",
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
-    "analyze": "node scripts/analyze-bundle.cjs"
+    "analyze": "node scripts/analyze-bundle.cjs",
+    "emulator:firestore": "firebase emulators:start --only firestore --project test-project",
+    "test:firestore:patients": "concurrently -k -s first -n \"EMULATOR,TEST\" -c \"yellow.bold,cyan.bold\" \"firebase emulators:start --only firestore --project test-project\" \"wait-on tcp:8080 --timeout 60000 && vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts\"",
+    "test:firestore:visits": "concurrently -k -s first -n \"EMULATOR,TEST\" -c \"yellow.bold,cyan.bold\" \"firebase emulators:start --only firestore --project test-project\" \"wait-on tcp:8080 --timeout 60000 && vitest run src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts\"",
+    "test:firestore": "npm run test:firestore:patients && npm run test:firestore:visits"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -56,6 +60,7 @@
     "cross-fetch": "^4.1.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "firebase": "^11.10.0",
     "husky": "^8.0.3",
     "node-fetch": "^3.3.2",
     "react": "^18.3.1",
@@ -95,6 +100,7 @@
     "chai-as-promised": "^8.0.1",
     "chalk": "^4.1.2",
     "color-name": "^2.0.0",
+    "concurrently": "^9.2.0",
     "cross-spawn": "^7.0.3",
     "dotenv": "^17.2.0",
     "esbuild": "^0.25.4",
@@ -117,6 +123,7 @@
     "vite": "^5.4.19",
     "vite-tsconfig-paths": "^4.2.1",
     "vitest": "^0.29.8",
+    "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
     "zod": "^4.0.5"
   }

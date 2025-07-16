@@ -256,3 +256,25 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 # Trigger CI/CD after secrets upload
 # Force CI/CD re-run after ESLint fix
 # Force CI/CD re-run - Mon Jul 14 20:28:57 CEST 2025
+
+# Testing profesional con Firestore (Emulador)
+
+Para ejecutar los tests de integración que dependen de Firestore, es obligatorio tener el emulador de Firestore corriendo en local. Esto garantiza aislamiento, velocidad y cumplimiento de compliance (no se usan datos reales).
+
+## Scripts disponibles
+
+- `npm run emulator:firestore`: Levanta solo el emulador de Firestore en el puerto 8080.
+- `npm run test:firestore`: Levanta el emulador en background, espera a que esté listo y ejecuta los tests de integración de Firestore. El emulador se apaga automáticamente al terminar los tests.
+
+## Buenas prácticas
+
+- **Siempre usa el emulador para tests de integración.** Nunca apuntes a Firestore real en tests automatizados.
+- Si usas CI/CD, asegúrate de que el pipeline soporte levantar procesos en background y tenga Java instalado (requisito de Firebase Emulator).
+- Si el emulador no está corriendo, los tests fallarán con errores de conexión (ECONNREFUSED).
+
+## Troubleshooting
+
+- Si ves errores como `ECONNREFUSED 127.0.0.1:8080`, asegúrate de que el emulador esté corriendo antes de lanzar los tests.
+- El emulador requiere Java instalado en el sistema. Puedes verificarlo con `java -version`.
+
+---

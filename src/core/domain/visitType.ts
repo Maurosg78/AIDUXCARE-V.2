@@ -10,7 +10,7 @@ export enum VisitStatus {
 
 // Esquema de validación para Visita
 export const VisitSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(), // Firestore IDs no son UUIDs
   professional_id: z.string().uuid(),
   patient_id: z.string().uuid(),
   date: z.string(),

@@ -2,6 +2,8 @@ import '@testing-library/jest-dom';
 import { vi, beforeAll, afterEach } from 'vitest';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
+import { initializeApp, getApps } from 'firebase/app';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 // Configurar Chai con plugins (sin chai-as-promised para evitar conflictos)
 chai.use(sinonChai);
@@ -11,6 +13,18 @@ global.jest = vi as unknown as typeof jest;
 
 // Configuración optimizada para performance
 const setupStartTime = Date.now();
+
+// Configuración Firebase para testing local con emulador
+const firebaseConfig = {
+  apiKey: 'fake-api-key',
+  authDomain: 'localhost',
+  projectId: 'test-project',
+};
+
+if (getApps().length === 0) {
+  initializeApp(firebaseConfig);
+  connectFirestoreEmulator(getFirestore(), 'localhost', 8080);
+}
 
 // Mock completo para las variables de entorno
 vi.mock('./config/env', () => ({
@@ -177,4 +191,4 @@ beforeAll(() => {
 // Limpiar los mocks después de cada prueba
 afterEach(() => {
   vi.clearAllMocks();
-}); 
+}); // trigger CI/CD
