@@ -50,17 +50,13 @@ jobs:
         echo "VITE_SUPABASE_ANON_KEY=mock-supabase-key" >> .env.local
         echo "✅ .env.local creado con valores temporales para CI/CD"
 
-    - name: Instalar Java (para Firestore Emulator)
-      run: sudo apt-get update && sudo apt-get install -y default-jre
-
-    - name: Instalar Firebase CLI
-      run: npm install -g firebase-tools
-
-    - name: Crear directorio para exportar datos del emulador
-      run: mkdir -p emulator-data
-
-    - name: Iniciar emulador Firestore
+    - name: Instalar Firebase CLI y arrancar emulador Firestore
       run: |
+        sudo apt-get update && sudo apt-get install -y default-jre
+        npm install -g firebase-tools
+        mkdir -p emulator-data
+        export PATH="$(npm bin -g):$PATH"
+        firebase --version
         firebase emulators:start --only firestore --project aiduxcare-mvp-uat --import=./emulator-data --export-on-exit=./emulator-data --debug > /tmp/emulator.log 2>&1 &
         sleep 5
 
