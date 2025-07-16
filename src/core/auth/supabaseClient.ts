@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+import { SupabaseClient } from '@supabase/supabase-js';
 /**
  * 🔧 Supabase Client Mock - Migración a Firebase
  * FASE 0.5: ESTABILIZACIÓN FINAL DE INFRAESTRUCTURA
@@ -9,162 +11,40 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 console.log('⚙️ Usando mock temporal de Supabase durante migración a Firebase...');
 
-// Mock avanzado de Supabase con chaining profundo y resultados configurables
-import { vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-// Tipos específicos para evitar any
-type MockResult = unknown;
-type MockFunction = (...args: unknown[]) => unknown;
-type ChainState = { result: MockResult };
-
-// Utilidad para crear un mock de chain profundo
-function createDeepChainMock(methods: string[] = []) {
-  const handler = {
-    get(target: { __result?: MockResult; __mockImpl?: MockFunction }, prop: string) {
-      if (prop === '__setResult') {
-        return (result: MockResult) => {
-          target.__result = result;
-        };
-      }
-      if (prop === 'then') {
-        // Permite await/then en el chain final
-        return (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
-          Promise.resolve(target.__result).then(onFulfilled, onRejected);
-      }
-      if (prop === 'returns') {
-        // Permite sobrescribir el resultado final
-        return (result: MockResult) => {
-          target.__result = result;
-          return target;
-        };
-      }
-      if (prop === 'mockImplementation') {
-        // Permite sobrescribir la implementación de un método
-        return (fn: MockFunction) => {
-          target.__mockImpl = fn;
-          return target;
-        };
-      }
-      // Si el método existe, retorna un nuevo proxy para chaining
-      if (methods.includes(prop)) {
-        const next = createDeepChainMock(methods);
-        return (...args: unknown[]) => {
-          if (target.__mockImpl) {
-            return target.__mockImpl(prop, ...args);
-          }
-          return next;
-        };
-      }
-      // Si es una propiedad especial
-      if (prop === '__result') return target.__result;
-      // Permitir await chain
-      if (prop === 'toPrimitive' || prop === 'valueOf') {
-        return () => target.__result;
-      }
-      if (prop === 'asyncIterator') {
-        // Para compatibilidad con for-await (no usado, pero por robustez)
-        return async function* () {
-          yield target.__result;
-        };
-      }
-      return undefined;
-    },
-    // Permitir await chain
-    getPrototypeOf() {
-      return Promise.prototype;
-    },
-    apply(target: { __result?: MockResult }, _thisArg: unknown, _argArray?: unknown[]) {
-      return target.__result;
-    }
+// Mock avanzado de Supabase compatible con todos los chains y métodos
+function createQueryMock(result: unknown = { data: [], error: null }): Record<string, unknown> {
+  // Métodos encadenables
+  const chain: Record<string, unknown> = {
+    select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
+    order: vi.fn(() => chain),
+    single: vi.fn(() => chain),
+    insert: vi.fn(() => chain),
+    update: vi.fn(() => chain),
+    delete: vi.fn(() => chain),
+    limit: vi.fn(() => chain),
+    catch: vi.fn(() => Promise.resolve(result)),
+    finally: vi.fn(() => Promise.resolve(result)),
+    then: vi.fn((cb: (v: unknown) => unknown) => Promise.resolve(result).then(cb)),
+    returns: vi.fn((r: unknown) => { result = r; return chain; }),
   };
-  // Permitir await chain
-  const proxy = new Proxy({ __result: undefined }, handler) as Record<string, unknown>;
-  proxy.then = (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
-    Promise.resolve(proxy.__result).then(onFulfilled, onRejected);
-  return proxy;
+  return chain;
 }
 
-function createChainableMock(methods: string[] = []) {
-  // Estado compartido entre todos los chains de un mismo flujo
-  const createState = (): ChainState => ({ result: undefined });
-  const makeChain = (state?: ChainState) => {
-    const __state = state || createState();
-    const chain: Record<string, unknown> = {};
-    methods.forEach((method) => {
-      chain[method] = (..._args: unknown[]) => makeChain(__state);
-    });
-    chain.returns = (result: MockResult) => {
-      __state.result = result;
-      return chain;
-    };
-    chain.then = (onFulfilled?: (value: MockResult) => unknown, onRejected?: (reason: unknown) => unknown) => 
-      Promise.resolve(__state.result).then(onFulfilled, onRejected);
-    chain.catch = (onRejected?: (reason: unknown) => unknown) => 
-      Promise.resolve(__state.result).catch(onRejected);
-    chain.finally = (onFinally?: () => unknown) => 
-      Promise.resolve(__state.result).finally(onFinally);
-    (chain as Record<string | symbol, unknown>)[Symbol.toStringTag] = 'Promise';
-    (chain as Record<string | symbol, unknown>)[Symbol.toPrimitive] = () => __state.result;
-    chain.valueOf = () => __state.result as object;
-    (chain as Record<string | symbol, unknown>)[Symbol.asyncIterator] = async function* () { yield __state.result; };
-    return chain;
-  };
-  // Map para almacenar un chain por tabla
-  const tableChains = new Map<string, Record<string, unknown>>();
-  const from = (table: string) => {
-    if (!tableChains.has(table)) {
-      tableChains.set(table, makeChain());
-    }
-    return tableChains.get(table);
-  };
-  return { from };
-}
-
-// Mock simple que funciona correctamente
 const mockSupabase = {
-  from: vi.fn((table: string) => ({
-    select: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        order: vi.fn(() => ({
-          then: vi.fn((callback: (value: unknown) => unknown) => 
-            Promise.resolve({ data: [], error: null }).then(callback)
-          )
-        }))
-      }))
-    })),
-    insert: vi.fn(() => ({
-      then: vi.fn((callback: (value: unknown) => unknown) => 
-        Promise.resolve({ data: null, error: null }).then(callback)
-      )
-    })),
-    update: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        then: vi.fn((callback: (value: unknown) => unknown) => 
-          Promise.resolve({ data: null, error: null }).then(callback)
-        )
-      }))
-    })),
-    delete: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        then: vi.fn((callback: (value: unknown) => unknown) => 
-          Promise.resolve({ data: null, error: null }).then(callback)
-        )
-      }))
-    }))
-  })),
+  from: vi.fn((table: string) => createQueryMock()),
   auth: {
     getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
-    onAuthStateChange: vi.fn(() => ({ 
-      data: { 
-        subscription: { 
-          unsubscribe: vi.fn() 
-        } 
-      } 
+    onAuthStateChange: vi.fn(() => ({
+      data: {
+        subscription: {
+          unsubscribe: vi.fn()
+        }
+      }
     })),
   },
-  // Propiedades requeridas por el tipo SupabaseClient
+  // Propiedades dummy requeridas por SupabaseClient
   supabaseUrl: 'mock-url',
   supabaseKey: 'mock-key',
   authUrl: 'mock-auth-url',
@@ -178,7 +58,6 @@ const mockSupabase = {
   rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   schema: 'public',
   serviceKey: 'mock-service-key',
-  // Propiedades adicionales requeridas por SupabaseClient
   storageKey: 'mock-storage-key',
   headers: {},
   channel: vi.fn(),
@@ -189,6 +68,16 @@ const mockSupabase = {
   setSession: vi.fn(),
   setAccessToken: vi.fn(),
   setRefreshToken: vi.fn(),
+  // Métodos dummy adicionales para compatibilidad
+  restUrl: 'mock-rest-url',
+  authStorageKey: 'mock-auth-storage-key',
+  getAuthSession: vi.fn(),
+  getUser: vi.fn(),
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOutUser: vi.fn(),
+  onAuthStateChanged: vi.fn(),
+  // ... puedes agregar más si el tipado lo requiere ...
 } as unknown as SupabaseClient;
 
 export default mockSupabase;
