@@ -61,8 +61,12 @@ jobs:
     - name: Run unit tests
       run: npm test
 
-    - name: Run Firestore integration tests (Patients)
-      run: npm run test:firestore:patients
-
-    - name: Run Firestore integration tests (Visits)
-      run: npm run test:firestore:visits
+    - name: Run Firestore Integration Tests (Emulator, All-in-One)
+      run: |
+        sudo apt-get update && sudo apt-get install -y default-jre
+        firebase emulators:start --only firestore --project test-project > /tmp/emulator.log 2>&1 &
+        npx wait-on tcp:8080 --timeout 60000
+        npx vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts
+        npx vitest run src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts
+        pkill -f "firebase emulators:start"
+        cat /tmp/emulator.log
