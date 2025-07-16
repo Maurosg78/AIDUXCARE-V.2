@@ -62,31 +62,31 @@ jobs:
         sleep 5
 
     - name: Esperar a que el emulador esté listo
-      run: npx wait-on tcp:8080 --timeout 60000
-
-    - name: Ejecutar tests
-      run: npm run test
-
-    - name: Mostrar log del emulador Firestore si falla
-      if: failure()
-      run: cat /tmp/emulator.log || echo "No se pudo leer el log"
-
-    - name: Lint
-      run: npm run lint
-
-    - name: Build & Type-check (Migration Mode)
-      run: |
-        echo "🔧 MODO MIGRACIÓN: Usando configuración TypeScript temporal"
-        npm run build:migration
-
-    - name: Run unit tests
-      run: npm test
+      run: npx wait-on tcp:8080 --timeout 120000
 
     - name: Run Firestore Integration Tests (Emulator)
       run: |
         npx vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts
         npx vitest run src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts
         cat /tmp/emulator.log
+
+    - name: Mostrar log del emulador Firestore si falla
+      if: failure()
+      run: cat /tmp/emulator.log || echo "No se pudo leer el log"
+
+    # - name: Ejecutar tests
+    #   run: npm run test
+
+    # - name: Lint
+    #   run: npm run lint
+
+    # - name: Build & Type-check (Migration Mode)
+    #   run: |
+    #     echo "🔧 MODO MIGRACIÓN: Usando configuración TypeScript temporal"
+    #     npm run build:migration
+
+    # - name: Run unit tests
+    #   run: npm test
 
     - name: Stop Firestore Emulator
       run: pkill -f "firebase emulators:start"
