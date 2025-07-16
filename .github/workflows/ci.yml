@@ -61,5 +61,8 @@ jobs:
     - name: Run unit tests
       run: npm test
 
-    - name: Run Firestore integration tests (Emulator)
-      run: npm run test:firestore
+    - name: Run Firestore integration tests (Patients)
+      run: npm run test:firestore:patients
+
+    - name: Run Firestore integration tests (Visits)
+      run: npm run test:firestore:visits

@@ -47,7 +47,9 @@
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
     "analyze": "node scripts/analyze-bundle.cjs",
     "emulator:firestore": "firebase emulators:start --only firestore --project test-project",
-    "test:firestore": "concurrently -k -s first -n \"EMULATOR,TEST\" -c \"yellow.bold,cyan.bold\" \"firebase emulators:start --only firestore --project test-project\" \"wait-on tcp:8080 --timeout 60000 && vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts\""
+    "test:firestore:patients": "concurrently -k -s first -n \"EMULATOR,TEST\" -c \"yellow.bold,cyan.bold\" \"firebase emulators:start --only firestore --project test-project\" \"wait-on tcp:8080 --timeout 60000 && vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts\"",
+    "test:firestore:visits": "concurrently -k -s first -n \"EMULATOR,TEST\" -c \"yellow.bold,cyan.bold\" \"firebase emulators:start --only firestore --project test-project\" \"wait-on tcp:8080 --timeout 60000 && vitest run src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts\"",
+    "test:firestore": "npm run test:firestore:patients && npm run test:firestore:visits"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
