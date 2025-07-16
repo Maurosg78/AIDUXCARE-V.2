@@ -1,4 +1,4 @@
-import { Firestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, addDoc } from 'firebase/firestore';
+import { Firestore, collection, doc, getDoc, getDocs, updateDoc, deleteDoc, query, where, addDoc } from 'firebase/firestore';
 import { Visit, VisitSchema } from '../domain/visitType';
 
 export class VisitDataSourceFirestore {
