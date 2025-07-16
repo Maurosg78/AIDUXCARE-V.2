@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { patientDataSourceFirestore } from '../patientDataSourceFirestore';
-import { Patient, PatientGender } from '../../domain/patientType';
+import { Patient } from '../../domain/patientType';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { app } from '../../firebase/firebaseClient';
+
+const firestore = getFirestore(app);
+connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
 
 function randomString(prefix = 'test') {
   return `${prefix}-${Math.random().toString(36).substring(2, 10)}`;
@@ -9,11 +14,11 @@ function randomString(prefix = 'test') {
 describe('PatientDataSourceFirestore (integración)', () => {
   let createdPatient: Patient;
   const professionalId = randomString('prof');
-  const patientData = {
+  const patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'> = {
     name: randomString('Paciente'),
     full_name: randomString('Nombre Completo'),
     age: Math.floor(Math.random() * 80) + 18,
-    gender: 'male' as PatientGender,
+    gender: 'male',
     email: `${randomString('mail')}@test.com`,
     phone: randomString('phone'),
     user_id: professionalId

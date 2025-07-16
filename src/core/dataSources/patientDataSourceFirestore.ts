@@ -1,7 +1,7 @@
-import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db } from '../firebase/firebaseClient';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { Patient, PatientSchema } from '../domain/patientType';
 
-const db = getFirestore();
 const patientsCollection = collection(db, 'patients');
 
 export class PatientDataSourceFirestore {
