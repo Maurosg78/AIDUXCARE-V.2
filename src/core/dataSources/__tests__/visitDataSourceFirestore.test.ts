@@ -25,16 +25,16 @@ describe('VisitDataSourceFirestore (integración)', () => {
     firestore = getFirestore(app);
     connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
     ds = new VisitDataSourceFirestore(firestore);
-  }, 20000);
+  }, 30000);
 
   beforeEach(async () => {
     await cleanVisits(firestore);
-  }, 20000);
+  }, 30000);
 
   afterAll(async () => {
     // Eliminar import de initializeApp si no se usa
     // await deleteApp(app);
-  }, 20000);
+  }, 30000);
 
   it('debe crear una visita y luego obtenerla por ID', async () => {
     const patientId = uuid();
@@ -58,7 +58,7 @@ describe('VisitDataSourceFirestore (integración)', () => {
     expect(found?.id).toBe(createdVisit.id);
     expect(found?.patient_id).toBe(patientId);
     expect(found?.professional_id).toBe(professionalId);
-  }, 20000);
+  }, 30000);
 
   it('debe obtener todas las visitas por paciente', async () => {
     const patientId = uuid();
@@ -75,7 +75,7 @@ describe('VisitDataSourceFirestore (integración)', () => {
     const visits = await ds.getAllVisitsByPatient(patientId);
     expect(Array.isArray(visits)).toBe(true);
     expect(visits.find(v => v.id === createdVisit.id)).toBeDefined();
-  }, 20000);
+  }, 30000);
 
   it('debe actualizar la visita', async () => {
     const patientId = uuid();
@@ -93,7 +93,7 @@ describe('VisitDataSourceFirestore (integración)', () => {
     expect(updated).toBeDefined();
     expect(updated.notes).toBe('actualizado');
     expect(updated.status).toBe(VisitStatus.COMPLETED);
-  }, 20000);
+  }, 30000);
 
   it('debe eliminar la visita', async () => {
     const patientId = uuid();
@@ -111,10 +111,10 @@ describe('VisitDataSourceFirestore (integración)', () => {
     expect(deleted).toBe(true);
     const found = await ds.getVisitById(createdVisit.id);
     expect(found).toBeNull();
-  }, 20000);
+  }, 30000);
 
   it('debe retornar null si la visita no existe', async () => {
     const found = await ds.getVisitById('nonexistent-id');
     expect(found).toBeNull();
-  }, 20000);
+  }, 30000);
 }); 

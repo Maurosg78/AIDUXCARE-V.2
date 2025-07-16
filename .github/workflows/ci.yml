@@ -58,5 +58,8 @@ jobs:
         echo "🔧 MODO MIGRACIÓN: Usando configuración TypeScript temporal"
         npm run build:migration
 
-    - name: Run tests
+    - name: Run unit tests
       run: npm test
+
+    - name: Run Firestore integration tests (Emulator)
+      run: npm run test:firestore
