@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { vi, beforeAll, afterEach } from 'vitest';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import { initializeApp, getApps } from 'firebase/app';
