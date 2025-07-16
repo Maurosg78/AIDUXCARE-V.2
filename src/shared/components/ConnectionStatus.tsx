@@ -36,7 +36,7 @@ export const ConnectionStatus = () => {
         
         // 2. Si falló el método directo, intentar con el cliente oficial
         console.log('MÉTODO 2: Probando con el cliente oficial de Supabase...');
-        const client = supabase as SupabaseClient;
+        const client = supabase as unknown as SupabaseClient;
         if (!client) {
           throw new Error('Cliente Supabase no disponible');
         }

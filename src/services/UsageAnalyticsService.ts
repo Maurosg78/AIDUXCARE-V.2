@@ -358,7 +358,7 @@ export const getLongitudinalMetricForVisit = async (visitId: string): Promise<Lo
     const supabase = getSupabaseClient();
     
     // Obtener la métrica de Supabase
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as unknown as SupabaseClient)
       .from('metrics_by_visit')
       .select('*')
       .eq('visit_id', visitId)

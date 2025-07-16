@@ -11,6 +11,7 @@ console.log('⚙️ Usando mock temporal de Supabase durante migración a Fireba
 
 // Mock avanzado de Supabase con chaining profundo y resultados configurables
 import { vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Tipos específicos para evitar any
 type MockResult = unknown;
@@ -120,18 +121,48 @@ function createChainableMock(methods: string[] = []) {
   return { from };
 }
 
-const chainMethods = [
-  'select', 'insert', 'update', 'delete', 'eq', 'order', 'single', 'limit', 'in',
-];
-
-const supabaseChainMock = createChainableMock(chainMethods);
-
+// Mock simple que funciona correctamente
 const mockSupabase = {
-  ...supabaseChainMock,
+  from: vi.fn((table: string) => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        order: vi.fn(() => ({
+          then: vi.fn((callback: (value: unknown) => unknown) => 
+            Promise.resolve({ data: [], error: null }).then(callback)
+          )
+        }))
+      }))
+    })),
+    insert: vi.fn(() => ({
+      then: vi.fn((callback: (value: unknown) => unknown) => 
+        Promise.resolve({ data: null, error: null }).then(callback)
+      )
+    })),
+    update: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        then: vi.fn((callback: (value: unknown) => unknown) => 
+          Promise.resolve({ data: null, error: null }).then(callback)
+        )
+      }))
+    })),
+    delete: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        then: vi.fn((callback: (value: unknown) => unknown) => 
+          Promise.resolve({ data: null, error: null }).then(callback)
+        )
+      }))
+    }))
+  })),
   auth: {
     getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
-    onAuthStateChange: vi.fn(() => ({ data: { subscription: null } })),
+    onAuthStateChange: vi.fn(() => ({ 
+      data: { 
+        subscription: { 
+          unsubscribe: vi.fn() 
+        } 
+      } 
+    })),
   },
   // Propiedades requeridas por el tipo SupabaseClient
   supabaseUrl: 'mock-url',
@@ -147,7 +178,18 @@ const mockSupabase = {
   rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   schema: 'public',
   serviceKey: 'mock-service-key',
-};
+  // Propiedades adicionales requeridas por SupabaseClient
+  storageKey: 'mock-storage-key',
+  headers: {},
+  channel: vi.fn(),
+  getChannels: vi.fn(),
+  removeAllChannels: vi.fn(),
+  removeChannel: vi.fn(),
+  setAuth: vi.fn(),
+  setSession: vi.fn(),
+  setAccessToken: vi.fn(),
+  setRefreshToken: vi.fn(),
+} as unknown as SupabaseClient;
 
 export default mockSupabase;
 export const supabase = mockSupabase;
