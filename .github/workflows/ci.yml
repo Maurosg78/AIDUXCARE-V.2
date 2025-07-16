@@ -59,10 +59,11 @@ jobs:
         export PATH="$(npm bin -g):$PATH"
         firebase --version
         firebase emulators:start --only firestore --project aiduxcare-mvp-uat --import=./emulator-data --export-on-exit=./emulator-data --debug > /tmp/emulator.log 2>&1 &
-        sleep 5
+        sleep 10
 
-    - name: Esperar a que el emulador esté listo
-      run: npx wait-on tcp:8080 --timeout 120000
+    - name: Esperar a que el emulador esté listo (localhost y 127.0.0.1)
+      run: |
+        npx wait-on tcp:127.0.0.1:8080 --timeout 120000 || npx wait-on tcp:localhost:8080 --timeout 120000
 
     - name: Run Firestore Integration Tests (Emulator)
       run: |
