@@ -9,7 +9,22 @@ const RegisterPage = () => {
   const [role, setRole] = useState<RoleType>('patient');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
+
+  // Campos profesionales adicionales
+  const [professionalData, setProfessionalData] = useState({
+    specialty: '',
+    subSpecialty: '',
+    yearsExperience: 0,
+    age: 0,
+    city: '',
+    country: 'España',
+    hourlyRate: 0,
+    patientTypes: [] as string[],
+    certifications: [] as string[],
+    languages: ['Español'] as string[]
+  });
 
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,6 +39,14 @@ const RegisterPage = () => {
       return;
     }
 
+    // Validación específica para profesionales
+    if (role === 'professional') {
+      if (!professionalData.specialty || !professionalData.yearsExperience || !professionalData.city) {
+        setError('Para profesionales, completa todos los campos obligatorios');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -32,6 +55,12 @@ const RegisterPage = () => {
       const data = await userDataSourceSupabase.signUp();
 
       if (data?.user) {
+        // Si es profesional, guardar datos adicionales
+        if (role === 'professional') {
+          // Aquí se guardarían los datos profesionales en el perfil
+          console.log('Datos profesionales a guardar:', professionalData);
+        }
+        
         // Mostrar mensaje de éxito y redirigir al login
         alert('Registro exitoso. Por favor inicia sesión.');
         navigate('/login');
@@ -134,6 +163,78 @@ const RegisterPage = () => {
                 Nota: Las cuentas de administrador solo pueden ser creadas por el administrador del sistema.
               </p>
             </div>
+
+            {/* Campos adicionales para profesionales */}
+            {role === 'professional' && (
+              <div className="space-y-4 border-t pt-4 mt-4">
+                <h3 className="text-sm font-medium text-slateBlue">Información Profesional</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slateBlue mb-1">
+                      Especialidad *
+                    </label>
+                    <select
+                      value={professionalData.specialty}
+                      onChange={(e) => setProfessionalData(prev => ({ ...prev, specialty: e.target.value }))}
+                      className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
+                    >
+                      <option value="">Selecciona especialidad</option>
+                      <option value="Fisioterapia">Fisioterapia</option>
+                      <option value="Medicina Deportiva">Medicina Deportiva</option>
+                      <option value="Traumatología">Traumatología</option>
+                      <option value="Rehabilitación">Rehabilitación</option>
+                      <option value="Medicina Familiar">Medicina Familiar</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slateBlue mb-1">
+                      Años de experiencia *
+                    </label>
+                    <input
+                      type="number"
+                      value={professionalData.yearsExperience}
+                      onChange={(e) => setProfessionalData(prev => ({ ...prev, yearsExperience: parseInt(e.target.value) }))}
+                      className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
+                      placeholder="Ej: 5"
+                      min="0"
+                      max="50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slateBlue mb-1">
+                      Ciudad *
+                    </label>
+                    <input
+                      type="text"
+                      value={professionalData.city}
+                      onChange={(e) => setProfessionalData(prev => ({ ...prev, city: e.target.value }))}
+                      className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
+                      placeholder="Ej: Madrid"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slateBlue mb-1">
+                      Tarifa horaria (€)
+                    </label>
+                    <input
+                      type="number"
+                      value={professionalData.hourlyRate}
+                      onChange={(e) => setProfessionalData(prev => ({ ...prev, hourlyRate: parseFloat(e.target.value) }))}
+                      className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
+                      placeholder="Ej: 45"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

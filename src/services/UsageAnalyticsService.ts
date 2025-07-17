@@ -15,6 +15,22 @@ export interface UsageMetric {
   timestamp: string;
   value: number;
   estimated_time_saved_minutes?: number;
+  
+  // Métricas críticas para CEO
+  professionalSpecialty?: string;
+  patientAge?: number;
+  patientSport?: string;
+  consultationType?: 'initial' | 'follow_up' | 'emergency';
+  transcriptionAccuracy?: number;
+  soapCompleteness?: number;
+  suggestionsAccepted?: number;
+  suggestionsRejected?: number;
+  suggestionsTotal?: number;
+  professionalHourlyRate?: number;
+  timeSaved?: number;
+  costSavings?: number;
+  professionalRating?: number;
+  professionalFeedback?: string;
 }
 
 /**
@@ -26,7 +42,14 @@ export type UsageMetricType =
   | 'suggestions_integrated'
   | 'suggestions_rejected'
   | 'suggestion_field_matched'
-  | 'agent_execution_failed';
+  | 'agent_execution_failed'
+  | 'transcription_accuracy'
+  | 'soap_completeness'
+  | 'consultation_duration'
+  | 'time_saved'
+  | 'cost_savings'
+  | 'professional_rating'
+  | 'professional_feedback';
 
 /**
  * Tipo que define la estructura de métricas longitudinales entre visitas
@@ -117,6 +140,110 @@ export const trackMetric = async (
 ): Promise<void> => {
   // Aquí iría la implementación real
   console.log('Track Metric:', { metricType, data, userId, visitId });
+};
+
+/**
+ * Captura métricas críticas para CEO desde minuto 0
+ */
+export const captureCEOMetrics = async (
+  consultationData: {
+    professionalId: string;
+    patientId: string;
+    visitId: string;
+    professionalSpecialty: string;
+    patientAge: number;
+    patientSport?: string;
+    consultationType: 'initial' | 'follow_up' | 'emergency';
+    transcriptionAccuracy: number;
+    soapCompleteness: number;
+    suggestionsAccepted: number;
+    suggestionsRejected: number;
+    suggestionsTotal: number;
+    professionalHourlyRate: number;
+    timeSaved: number;
+    costSavings: number;
+    professionalRating: number;
+    professionalFeedback: string;
+  }
+): Promise<void> => {
+  try {
+    // Crear métricas individuales para tracking granular
+    const metrics: UsageMetric[] = [
+      {
+        id: `ceo_${Date.now()}_1`,
+        type: 'transcription_accuracy',
+        userId: consultationData.professionalId,
+        visitId: consultationData.visitId,
+        metadata: { patientId: consultationData.patientId },
+        createdAt: new Date(),
+        timestamp: new Date().toISOString(),
+        value: consultationData.transcriptionAccuracy,
+        transcriptionAccuracy: consultationData.transcriptionAccuracy,
+        professionalSpecialty: consultationData.professionalSpecialty,
+        patientAge: consultationData.patientAge,
+        patientSport: consultationData.patientSport,
+        consultationType: consultationData.consultationType
+      },
+      {
+        id: `ceo_${Date.now()}_2`,
+        type: 'soap_completeness',
+        userId: consultationData.professionalId,
+        visitId: consultationData.visitId,
+        metadata: { patientId: consultationData.patientId },
+        createdAt: new Date(),
+        timestamp: new Date().toISOString(),
+        value: consultationData.soapCompleteness,
+        soapCompleteness: consultationData.soapCompleteness,
+        professionalSpecialty: consultationData.professionalSpecialty,
+        patientAge: consultationData.patientAge,
+        patientSport: consultationData.patientSport,
+        consultationType: consultationData.consultationType
+      },
+      {
+        id: `ceo_${Date.now()}_3`,
+        type: 'time_saved',
+        userId: consultationData.professionalId,
+        visitId: consultationData.visitId,
+        metadata: { patientId: consultationData.patientId },
+        createdAt: new Date(),
+        timestamp: new Date().toISOString(),
+        value: consultationData.timeSaved,
+        timeSaved: consultationData.timeSaved,
+        costSavings: consultationData.costSavings,
+        professionalHourlyRate: consultationData.professionalHourlyRate,
+        professionalSpecialty: consultationData.professionalSpecialty,
+        patientAge: consultationData.patientAge,
+        patientSport: consultationData.patientSport,
+        consultationType: consultationData.consultationType
+      },
+      {
+        id: `ceo_${Date.now()}_4`,
+        type: 'professional_rating',
+        userId: consultationData.professionalId,
+        visitId: consultationData.visitId,
+        metadata: { patientId: consultationData.patientId },
+        createdAt: new Date(),
+        timestamp: new Date().toISOString(),
+        value: consultationData.professionalRating,
+        professionalRating: consultationData.professionalRating,
+        professionalFeedback: consultationData.professionalFeedback,
+        professionalSpecialty: consultationData.professionalSpecialty,
+        patientAge: consultationData.patientAge,
+        patientSport: consultationData.patientSport,
+        consultationType: consultationData.consultationType
+      }
+    ];
+
+    // Guardar todas las métricas
+    metrics.forEach(metric => {
+      metricsStore.push(metric);
+    });
+
+    console.log('📊 Métricas CEO capturadas:', consultationData);
+    
+  } catch (error) {
+    console.error('Error capturando métricas CEO:', error);
+  }
 };
 
 /**

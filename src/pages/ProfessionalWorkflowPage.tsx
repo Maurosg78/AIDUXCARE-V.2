@@ -5,6 +5,33 @@
 
 import React, { useState, useCallback } from 'react';
 
+// 1. Tipos estrictos para respuesta del backend
+interface BackendAnalysisResponse {
+  highlights: Array<{
+    id: string;
+    text: string;
+    category: 'síntoma' | 'hallazgo' | 'plan' | 'advertencia';
+    confidence: number;
+  }>;
+  warnings: Array<{
+    id: string;
+    type: 'legal' | 'iatrogénica' | 'contraindicación';
+    description: string;
+    severity: 'alta' | 'media' | 'baja';
+  }>;
+  facts: Array<string>;
+}
+
+interface BackendSOAPResponse {
+  soap: {
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+    fullText: string;
+  };
+}
+
 interface PatientData {
   id: string;
   name: string;
@@ -39,6 +66,25 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   const [legalWarnings, setLegalWarnings] = useState<LegalWarning[]>([]);
   const [soapContent, setSOAPContent] = useState('');
   const [showAssistant, setShowAssistant] = useState(false);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [errorAnalysis, setErrorAnalysis] = useState<string | null>(null);
+  const [loadingSOAP, setLoadingSOAP] = useState(false);
+  const [errorSOAP, setErrorSOAP] = useState<string | null>(null);
+  
+  // Nuevo estado para layout de 3 pestañas
+  const [activeTab, setActiveTab] = useState<'collection' | 'evaluation' | 'soap'>('collection');
+  const [transcription, setTranscription] = useState('');
+  const [consultationData, setConsultationData] = useState({
+    patientInfo: { name: '', age: 0, gender: '', occupation: '' },
+    symptoms: [] as string[],
+    medicalHistory: [] as string[],
+    currentMedication: [] as string[],
+    allergies: [] as string[],
+    redFlags: [] as string[],
+    clinicalTests: [] as Array<{ name: string; result: string; notes: string }>,
+    painAnatomy: [] as Array<{ region: string; intensity: number; type: string; radiation: string }>,
+    soapData: { subjective: '', objective: '', assessment: '', plan: '' }
+  });
 
   // Datos del paciente
   const [patientData] = useState<PatientData>({
@@ -54,6 +100,11 @@ export const ProfessionalWorkflowPage: React.FC = () => {
 
   const handleStartListening = useCallback(() => {
     setIsListening(true);
+    
+    // Simulación de transcripción en tiempo real
+    setTimeout(() => {
+      setTranscription('Paciente refiere dolor lumbar de 3 meses de evolución...');
+    }, 2000);
     
     // Simulación de highlights detectados
     setTimeout(() => {
@@ -83,9 +134,69 @@ export const ProfessionalWorkflowPage: React.FC = () => {
     }, 3000);
   }, []);
 
+  // 3. Función asíncrona para enviar transcripción al backend
+  const analyzeTranscription = async (transcript: string) => {
+    setLoadingAnalysis(true);
+    setErrorAnalysis(null);
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcription: transcript, patientId: patientData.id })
+      });
+      if (!res.ok) throw new Error('Error en el análisis clínico');
+      const data: BackendAnalysisResponse = await res.json();
+      setHighlights(data.highlights.map(h => ({ ...h, isSelected: false })));
+      setLegalWarnings(data.warnings.map(w => ({ ...w, isAccepted: false })));
+      // Puedes poblar facts en otro estado si lo deseas
+    } catch (err: any) {
+      setErrorAnalysis(err.message || 'Error desconocido');
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
+
+  // 4. Función para enviar selección a backend y poblar nota SOAP
+  const generateSOAPFromSelection = async () => {
+    setLoadingSOAP(true);
+    setErrorSOAP(null);
+    try {
+      const selectedHighlights = highlights.filter(h => h.isSelected);
+      const acceptedWarnings = legalWarnings.filter(w => w.isAccepted);
+      const res = await fetch('/generate-soap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          highlights: selectedHighlights,
+          warnings: acceptedWarnings,
+          patientId: patientData.id
+        })
+      });
+      if (!res.ok) throw new Error('Error generando nota SOAP');
+      const data: BackendSOAPResponse = await res.json();
+      setSOAPContent(data.soap.fullText);
+      setConsultationData(prev => ({
+        ...prev,
+        soapData: {
+          subjective: data.soap.subjective,
+          objective: data.soap.objective,
+          assessment: data.soap.assessment,
+          plan: data.soap.plan
+        }
+      }));
+    } catch (err: any) {
+      setErrorSOAP(err.message || 'Error desconocido');
+    } finally {
+      setLoadingSOAP(false);
+    }
+  };
+
   const handleStopListening = useCallback(() => {
     setIsListening(false);
-  }, []);
+    if (transcription) {
+      analyzeTranscription(transcription);
+    }
+  }, [transcription]);
 
   const toggleHighlight = (id: string) => {
     setHighlights(prev => prev.map(item => 
@@ -100,17 +211,37 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   };
 
   const generateSOAP = () => {
-    const selectedHighlights = highlights.filter(h => h.isSelected);
-    const symptoms = selectedHighlights.filter(h => h.category === 'síntoma').map(h => h.text).join(', ');
-    const findings = selectedHighlights.filter(h => h.category === 'hallazgo').map(h => h.text).join(', ');
-    const plans = selectedHighlights.filter(h => h.category === 'plan').map(h => h.text).join(', ');
-    
-    const soapText = `S: ${symptoms}\nO: ${findings}\nA: Evaluación fisioterapéutica\nP: ${plans}`;
-    setSOAPContent(soapText);
+    generateSOAPFromSelection();
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F7F7F7' }}>
+      
+      {/* Navegación por Pestañas */}
+      <div className="mx-4 mb-6">
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'collection', label: 'Recopilación', icon: '📋' },
+              { id: 'evaluation', label: 'Evaluación Clínica', icon: '🔍' },
+              { id: 'soap', label: 'SOAP', icon: '📝' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'collection' | 'evaluation' | 'soap')}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
       
       {/* Header del Paciente - Información Resumida */}
       <div className="mx-4 mb-6">
@@ -276,12 +407,22 @@ export const ProfessionalWorkflowPage: React.FC = () => {
             </svg>
             <h3 className="font-bold" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>Highlights de Conversación</h3>
           </div>
-          
           <p className="text-sm mb-4" style={{ color: '#7F8C8D' }}>
             Elementos clave detectados automáticamente en la conversación. 
             Selecciona los que deseas incluir en las notas SOAP.
           </p>
-          
+          {loadingAnalysis && (
+            <div className="flex items-center text-blue-500 mb-2">
+              <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="4" className="opacity-25" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M4 12a8 8 0 018-8" className="opacity-75" />
+              </svg>
+              Analizando transcripción...
+            </div>
+          )}
+          {errorAnalysis && (
+            <div className="text-red-500 mb-2">{errorAnalysis}</div>
+          )}
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {highlights.map((highlight) => (
               <label key={highlight.id} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-50">
@@ -308,15 +449,24 @@ export const ProfessionalWorkflowPage: React.FC = () => {
               </label>
             ))}
           </div>
-          
           {highlights.length > 0 && (
             <button
               onClick={generateSOAP}
-              className="mt-3 w-full px-4 py-2 rounded text-white text-sm font-medium transition-colors"
+              className="mt-3 w-full px-4 py-2 rounded text-white text-sm font-medium transition-colors flex items-center justify-center"
               style={{ backgroundColor: '#5DA5A3' }}
+              disabled={loadingSOAP}
             >
-              Generar Notas SOAP
+              {loadingSOAP && (
+                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth="4" className="opacity-25" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M4 12a8 8 0 018-8" className="opacity-75" />
+                </svg>
+              )}
+              {loadingSOAP ? 'Generando nota SOAP...' : 'Generar Notas SOAP'}
             </button>
+          )}
+          {errorSOAP && (
+            <div className="text-red-500 mt-2">{errorSOAP}</div>
           )}
         </div>
 
@@ -395,7 +545,186 @@ export const ProfessionalWorkflowPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Sección SOAP */}
+      {/* Contenido de Pestañas */}
+      {activeTab === 'collection' && (
+        <div className="mx-4 mb-6">
+          <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recopilación de Información</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Información del Paciente */}
+              <div>
+                <h4 className="font-medium text-sm mb-3" style={{ color: '#2C3E50' }}>Información del Paciente</h4>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Nombre completo"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    value={consultationData.patientInfo.name}
+                    onChange={(e) => setConsultationData(prev => ({
+                      ...prev,
+                      patientInfo: { ...prev.patientInfo, name: e.target.value }
+                    }))}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      placeholder="Edad"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      value={consultationData.patientInfo.age || ''}
+                      onChange={(e) => setConsultationData(prev => ({
+                        ...prev,
+                        patientInfo: { ...prev.patientInfo, age: parseInt(e.target.value) || 0 }
+                      }))}
+                    />
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      value={consultationData.patientInfo.gender}
+                      onChange={(e) => setConsultationData(prev => ({
+                        ...prev,
+                        patientInfo: { ...prev.patientInfo, gender: e.target.value }
+                      }))}
+                    >
+                      <option value="">Género</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="femenino">Femenino</option>
+                      <option value="no binario">No binario</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transcripción */}
+              <div>
+                <h4 className="font-medium text-sm mb-3" style={{ color: '#2C3E50' }}>Transcripción de Conversación</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-center">
+                    <button
+                      onClick={isListening ? handleStopListening : handleStartListening}
+                      className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                        isListening
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {isListening ? '⏹️ Detener' : '🎤 Iniciar Grabación'}
+                    </button>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg min-h-[200px]">
+                    <div className="text-sm text-gray-600">
+                      {transcription || 'La transcripción aparecerá aquí...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'evaluation' && (
+        <div className="mx-4 mb-6">
+          <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Evaluación Clínica</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Tests Clínicos */}
+              <div>
+                <h4 className="font-medium text-sm mb-3" style={{ color: '#2C3E50' }}>Tests Clínicos</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="font-medium">Test de Lasègue</div>
+                      <div className="text-sm text-gray-600">Positivo a 45°</div>
+                    </div>
+                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Positivo</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="font-medium">Test de Bragard</div>
+                      <div className="text-sm text-gray-600">Negativo</div>
+                    </div>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Negativo</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Anatomía del Dolor */}
+              <div>
+                <h4 className="font-medium text-sm mb-3" style={{ color: '#2C3E50' }}>Anatomía del Dolor</h4>
+                <div className="text-center">
+                  <div className="w-32 h-48 bg-gray-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                    <span className="text-gray-500">Figura Humanoide</span>
+                  </div>
+                  <div className="text-sm text-gray-600">Haz clic en las áreas para marcar el dolor</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'soap' && (
+        <div className="mx-4 mb-6">
+          <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">SOAP Editable</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subjetivo</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Descripción del paciente sobre su problema..."
+                  value={consultationData.soapData.subjective}
+                  onChange={(e) => setConsultationData(prev => ({
+                    ...prev,
+                    soapData: { ...prev.soapData, subjective: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Objetivo</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Hallazgos del examen físico..."
+                  value={consultationData.soapData.objective}
+                  onChange={(e) => setConsultationData(prev => ({
+                    ...prev,
+                    soapData: { ...prev.soapData, objective: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assessment</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Diagnóstico y evaluación clínica..."
+                  value={consultationData.soapData.assessment}
+                  onChange={(e) => setConsultationData(prev => ({
+                    ...prev,
+                    soapData: { ...prev.soapData, assessment: e.target.value }
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Plan de tratamiento y seguimiento..."
+                  value={consultationData.soapData.plan}
+                  onChange={(e) => setConsultationData(prev => ({
+                    ...prev,
+                    soapData: { ...prev.soapData, plan: e.target.value }
+                  }))}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sección SOAP Original */}
       <div className="mx-4 mb-6">
         <div className="bg-white rounded-lg border p-6" style={{ borderColor: '#BDC3C7' }}>
           <div className="flex items-center justify-between mb-4">

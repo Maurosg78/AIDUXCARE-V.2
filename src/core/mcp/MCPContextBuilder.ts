@@ -1,5 +1,4 @@
 import { MCPContext, MCPContextSchema } from './schema';
-import { getContextualMemory, getPersistentMemory, getSemanticMemory } from './MCPDataSourceSupabase';
 
 /**
  * Tipo para los datos de memoria utilizados internamente
@@ -51,24 +50,40 @@ export async function getContextFromVisit(
   visitId: string,
   patientId: string
 ): Promise<MCPContext> {
-  const [contextual, persistent, semantic] = await Promise.all([
-    getContextualMemory(visitId),
-    getPersistentMemory(patientId),
-    getSemanticMemory()
-  ]);
+  // TODO: Migrar a fuente Firestore. MCPDataSourceSupabase es legacy y debe eliminarse tras migración total.
+  // const [contextual, persistent, semantic] = await Promise.all([
+  //   getContextualMemory(visitId),
+  //   getPersistentMemory(patientId),
+  //   getSemanticMemory()
+  // ]);
 
+  // return {
+  //   contextual: {
+  //     source: 'supabase',
+  //     data: contextual
+  //   },
+  //   persistent: {
+  //     source: 'supabase',
+  //     data: persistent
+  //   },
+  //   semantic: {
+  //     source: 'supabase',
+  //     data: semantic
+  //   }
+  // };
+  // Placeholder for Firestore data retrieval
   return {
     contextual: {
-      source: 'supabase',
-      data: contextual
+      source: 'placeholder',
+      data: []
     },
     persistent: {
-      source: 'supabase',
-      data: persistent
+      source: 'placeholder',
+      data: []
     },
     semantic: {
-      source: 'supabase',
-      data: semantic
+      source: 'placeholder',
+      data: []
     }
   };
 }

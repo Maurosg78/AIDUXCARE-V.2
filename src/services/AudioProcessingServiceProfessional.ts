@@ -279,45 +279,99 @@ export class AudioProcessingServiceProfessional {
   }
 
   /**
-   * Detecta el actor del segmento de transcripción
+   * Detecta el actor del segmento de transcripción con patrones médicos avanzados
    */
   private static detectActor(content: string): TranscriptionActor {
-    const professionalKeywords = [
-      'observo', 'evalúo', 'recomiendo', 'prescribimos', 'tratamiento',
-      'diagnóstico', 'aplicamos', 'vamos a', 'necesita'
-    ];
-    
-    const patientKeywords = [
-      'siento', 'me duele', 'tengo', 'noto', 'puedo', 'no puedo',
-      'desde hace', 'cuando', 'me pasa'
-    ];
-    
     const lowerContent = content.toLowerCase();
     
-    const professionalScore = professionalKeywords.reduce((score, keyword) => 
-      lowerContent.includes(keyword) ? score + 1 : score, 0
-    );
+    // Patrones del profesional - Términos técnicos y evaluativos
+    const professionalPatterns = [
+      /observo|evalúo|examino|palpo|movilizo|aplico|realizo|recomiendo|prescribo|diagnostico/,
+      /flexión|extensión|rotación|abducción|aducción|resistencia|fuerza|tono|reflejos/,
+      /test de|manejo de|técnica de|protocolo de|ejercicio de|terapia de/,
+      /paciente presenta|se observa|se evidencia|se constata|se confirma/,
+      /vamos a|necesita|requiere|debe|tiene que|es importante/
+    ];
     
-    const patientScore = patientKeywords.reduce((score, keyword) => 
-      lowerContent.includes(keyword) ? score + 1 : score, 0
-    );
+    // Patrones del paciente - Expresiones subjetivas y síntomas
+    const patientPatterns = [
+      /me duele|siento dolor|tengo dolor|me molesta|me incomoda|me lastima/,
+      /cuando|desde hace|empezó|comenzó|empeoró|mejoró|cambió/,
+      /no puedo|no logro|me cuesta|me es difícil|me impide|me limita/,
+      /me siento|me encuentro|estoy|tengo|noto|percibo|experimento/
+    ];
     
-    if (professionalScore > patientScore) return 'profesional';
-    if (patientScore > professionalScore) return 'paciente';
-    return 'profesional'; // Default
+    // Contar coincidencias con patrones
+    const professionalMatches = professionalPatterns.filter(pattern => pattern.test(lowerContent)).length;
+    const patientMatches = patientPatterns.filter(pattern => pattern.test(lowerContent)).length;
+    
+    // Lógica de decisión mejorada
+    if (professionalMatches > patientMatches) {
+      return 'profesional';
+    } else if (patientMatches > professionalMatches) {
+      return 'paciente';
+    } else {
+      // Fallback inteligente basado en contexto
+      if (lowerContent.includes('paciente') || lowerContent.includes('usted')) {
+        return 'profesional';
+      } else if (lowerContent.includes('yo') || lowerContent.includes('me')) {
+        return 'paciente';
+      }
+      return 'profesional'; // Default conservador
+    }
   }
 
   /**
-   * Calcula la confianza de la transcripción
+   * Calcula la confianza de la transcripción con métricas médicas avanzadas
    */
   private static calculateConfidence(content: string): TranscriptionConfidence {
-    if (content.includes('(inaudible)') || content.includes('???')) {
+    const lowerContent = content.toLowerCase();
+    
+    // Detectar contenido inaudible o no reconocido
+    if (content.includes('(inaudible)') || content.includes('???') || content.includes('[inaudible]')) {
       return 'no_reconocido';
     }
-    if (content.includes('mmm') || content.includes('ehh') || content.length < 20) {
+    
+    // Detectar contenido poco claro
+    if (content.includes('mmm') || content.includes('ehh') || content.includes('...') || content.length < 15) {
       return 'poco_claro';
     }
-    return 'entendido';
+    
+    // Palabras médicas complejas que indican alta confianza
+    const medicalTerms = [
+      'espondiloartropatía', 'radiculopatía', 'estenosis', 'hernia discal',
+      'síndrome del túnel carpiano', 'bursitis', 'tendinitis', 'artrosis',
+      'fibromialgia', 'esclerosis múltiple', 'parkinson', 'alzheimer'
+    ];
+    
+    // Términos técnicos de fisioterapia
+    const physioTerms = [
+      'mulligan', 'mckenzie', 'kaltenborn', 'maitland',
+      'punción seca', 'kinesiotaping', 'vendaje neuromuscular',
+      'ejercicio terapéutico', 'reeducación neuromuscular'
+    ];
+    
+    // Detectar términos médicos y técnicos
+    const hasMedicalTerms = medicalTerms.some(term => lowerContent.includes(term));
+    const hasPhysioTerms = physioTerms.some(term => lowerContent.includes(term));
+    
+    // Longitud y complejidad del contenido
+    const wordCount = content.split(' ').length;
+    const hasComplexStructure = content.includes(',') || content.includes(';') || content.includes(':');
+    const hasProperGrammar = /[A-Z]/.test(content) && content.endsWith('.');
+    
+    // Calcular score de confianza
+    let confidenceScore = 0;
+    if (hasMedicalTerms) confidenceScore += 3;
+    if (hasPhysioTerms) confidenceScore += 2;
+    if (wordCount > 8) confidenceScore += 1;
+    if (hasComplexStructure) confidenceScore += 1;
+    if (hasProperGrammar) confidenceScore += 1;
+    
+    // Mapear a niveles de confianza
+    if (confidenceScore >= 4) return 'entendido';
+    if (confidenceScore >= 2) return 'poco_claro';
+    return 'no_reconocido';
   }
 
   /**

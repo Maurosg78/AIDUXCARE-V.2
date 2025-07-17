@@ -3,6 +3,11 @@ import Layout from '@/core/components/Layout';
 import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
+import { MVPTestPage } from '@/pages/MVPTestPage';
+import { OnboardingPage } from '@/pages/OnboardingPage';
+import PhysiotherapyCaseEvaluator from '../pages/PhysiotherapyCaseEvaluator';
+import PhysiotherapyPipelineTest from '../pages/PhysiotherapyPipelineTest';
+
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -11,12 +16,12 @@ const future = {
 };
 
 export const router = createBrowserRouter([
-  // Página principal protegida: ProfessionalWorkflowPage en la raíz
+  // Página principal protegida: MVP Test Page en la raíz
   {
     path: '/',
     element: (
       <ProtectedRoute>
-        <ProfessionalWorkflowPage />
+        <MVPTestPage />
       </ProtectedRoute>
     ),
   },
@@ -25,6 +30,20 @@ export const router = createBrowserRouter([
     path: '/login',
     element: <LoginPage />,
   },
+  // Onboarding
+  {
+    path: '/onboarding',
+    element: <OnboardingPage />,
+  },
+  {
+    path: '/physiotherapy-evaluator',
+    element: <PhysiotherapyCaseEvaluator />
+  },
+  {
+    path: '/physiotherapy-pipeline-test',
+    element: <PhysiotherapyPipelineTest />
+  },
+
   // Rutas principales con layout profesional
   {
     path: "/",
@@ -34,6 +53,7 @@ export const router = createBrowserRouter([
         path: "professional-workflow",
         element: <ProfessionalWorkflowPage />,
       },
+
       {
         path: "patients",
         element: <div className="max-w-4xl mx-auto">

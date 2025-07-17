@@ -33,6 +33,11 @@ export default defineConfig({
       '@tanstack/react-virtual',
       '@supabase/supabase-js'
     ],
+    exclude: [
+      'vitest',
+      '@vitest/ui',
+      'vitest/config'
+    ],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -63,6 +68,8 @@ export default defineConfig({
   define: {
     // Eliminar referencias a service workers que causan errores
     'self': 'globalThis',
-    'global': 'globalThis'
+    'global': 'globalThis',
+    // Prevenir carga de Vitest en el navegador
+    'process.env.NODE_ENV': '"development"'
   }
 });
