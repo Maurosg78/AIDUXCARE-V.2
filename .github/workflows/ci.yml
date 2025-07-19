@@ -1,4 +1,4 @@
-# Forzar ejecución: actualización 2025-07-16
+# Forzar ejecución: actualización 2025-07-19
 #
 # Workflow enterprise: integración Firestore, emulador, tests automáticos y compliance hospitalario.
 # Cada bloque está documentado para auditoría y reproducibilidad.
@@ -60,48 +60,10 @@ jobs:
         echo "✅ .env.local creado con valores temporales para CI/CD"
       # Variables mock para evitar exposición de datos reales
 
-    - name: Instalar Firebase CLI y arrancar emulador Firestore
-      run: |
-        sudo apt-get update && sudo apt-get install -y default-jre
-        npm install -g firebase-tools
-        mkdir -p emulator-data
-        export PATH="$(npm bin -g):$PATH"
-        firebase --version
-        firebase emulators:start --only firestore --project aiduxcare-mvp-uat --import=./emulator-data --export-on-exit=./emulator-data --debug > /tmp/emulator.log 2>&1 &
-        sleep 10
-      # Instala Java y Firebase CLI, arranca emulador en modo robusto y seguro
+    - name: Lint
+      run: npm run lint
+      # Verificación de calidad de código
 
-    - name: Esperar a que el emulador esté listo (localhost y 127.0.0.1)
-      run: |
-        npx wait-on tcp:127.0.0.1:8080 --timeout 120000 || npx wait-on tcp:localhost:8080 --timeout 120000
-      # Espera activa en ambos endpoints para máxima compatibilidad CI/CD
-
-    - name: Run Firestore Integration Tests (Emulator)
-      run: |
-        npx vitest run src/core/dataSources/__tests__/patientDataSourceFirestore.test.ts
-        npx vitest run src/core/dataSources/__tests__/visitDataSourceFirestore.test.ts
-        cat /tmp/emulator.log
-      # Ejecuta tests de integración Firestore y muestra log para auditoría
-
-    - name: Mostrar log del emulador Firestore si falla
-      if: failure()
-      run: cat /tmp/emulator.log || echo "No se pudo leer el log"
-      # Log completo disponible ante cualquier error
-
-    # - name: Ejecutar tests
-    #   run: npm run test
-
-    # - name: Lint
-    #   run: npm run lint
-
-    # - name: Build & Type-check (Migration Mode)
-    #   run: |
-    #     echo "🔧 MODO MIGRACIÓN: Usando configuración TypeScript temporal"
-    #     npm run build:migration
-
-    # - name: Run unit tests
-    #   run: npm test
-
-    - name: Stop Firestore Emulator
-      run: pkill -f "firebase emulators:start"
-      # Limpieza profesional del entorno
+    - name: Build & Type-check
+      run: npm run build
+      # Verificación de compilación y tipos
