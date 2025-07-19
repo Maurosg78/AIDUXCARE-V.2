@@ -15,10 +15,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js 18
+    - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
 
     - name: Install dependencies
@@ -37,7 +37,11 @@ jobs:
       run: npm run type-check
 
     - name: Build application
-      run: npm run build
+      run: |
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        export NODE_ENV=production
+        export VITE_DISABLE_CRYPTO_HASH=true
+        npm run build:ci
 
     - name: Validate build output
       run: |
@@ -56,10 +60,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js 18
+    - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
 
     - name: Install dependencies
@@ -73,15 +77,17 @@ jobs:
 
     - name: Start development server (background)
       run: |
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        export NODE_ENV=development
         npm run dev &
         sleep 10
 
     - name: Check if server is running
       run: |
-        if curl -f http://localhost:5173 > /dev/null 2>&1; then
-          echo "✅ Development server is running on port 5173"
-        elif curl -f http://localhost:5174 > /dev/null 2>&1; then
+        if curl -f http://localhost:5174 > /dev/null 2>&1; then
           echo "✅ Development server is running on port 5174"
+        elif curl -f http://localhost:5173 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5173"
         elif curl -f http://localhost:5175 > /dev/null 2>&1; then
           echo "✅ Development server is running on port 5175"
         elif curl -f http://localhost:5176 > /dev/null 2>&1; then
@@ -90,6 +96,10 @@ jobs:
           echo "✅ Development server is running on port 5177"
         else
           echo "❌ Development server is not running"
+          echo "🔍 Checking process status..."
+          ps aux | grep vite || true
+          echo "🔍 Checking port status..."
+          netstat -tlnp | grep :517 || true
           exit 1
         fi
 
