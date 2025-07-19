@@ -3,7 +3,7 @@
  * Implementa cifrado AES-256-GCM para cumplir con HIPAA/GDPR
  */
 
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'default-key-change-in-production';
+const ENCRYPTION_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENCRYPTION_KEY) || 'default-key-change-in-production';
 
 /**
  * Cifra datos sensibles usando AES-256-GCM

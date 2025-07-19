@@ -49,10 +49,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   useEffect(() => {
     loadUser();
-    const unsubscribe = authService.onAuthStateChange((session) => {
-      setUser(session.user);
-    });
-    return () => unsubscribe();
+    // TEMPORALMENTE DESHABILITADO: Causa loop infinito
+    // const unsubscribe = authService.onAuthStateChange((session) => {
+    //   setUser(session.user);
+    // });
+    // return () => unsubscribe();
+    
+    // SOLUCIÓN TEMPORAL: Solo cargar usuario inicial
+    console.log('🔍 [DEBUG] UserContext: Listener de autenticación deshabilitado temporalmente');
   }, [loadUser, authService]);
 
   const logout = async () => {

@@ -22,10 +22,12 @@ service cloud.firestore {
              (hasRole(['PHYSICIAN']) && resource.data.assignedPhysician == request.auth.uid);
     }
     
-    // AUDIT LOGS - Inmutables, solo lectura para ADMIN/OWNER
+    // AUDIT LOGS - Permitir escritura para usuarios autenticados
     match /audit_logs/{document} {
       allow read: if hasRole(['ADMIN', 'OWNER']);
-      allow write: if false; // Los logs son inmutables por diseño
+      allow create: if isAuthenticated(); // Permitir creación de logs para usuarios autenticados
+      allow update: if false; // Los logs son inmutables una vez creados
+      allow delete: if false; // Los logs no se pueden eliminar
     }
     
     // PATIENTS - Control de acceso basado en roles
@@ -44,10 +46,10 @@ service cloud.firestore {
       allow delete: if hasRole(['ADMIN', 'OWNER']);
     }
     
-    // USER PROFILES - Solo propio perfil o ADMIN
+    // USER PROFILES - Permitir creación de propio perfil y acceso ADMIN
     match /users/{userId} {
       allow read: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
-      allow create: if hasRole(['ADMIN', 'OWNER']);
+      allow create: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']); // Permitir creación de propio perfil
       allow update: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
       allow delete: if hasRole(['ADMIN', 'OWNER']);
     }

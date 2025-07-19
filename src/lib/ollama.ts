@@ -30,8 +30,8 @@ export class OllamaClient {
   private timeout: number;
 
   constructor(
-    baseUrl = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434',
-    model = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.2:3b',
+    baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OLLAMA_URL) || 'http://localhost:11434',
+    model = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_OLLAMA_MODEL) || 'llama3.2:3b',
     timeout = 30000
   ) {
     this.baseUrl = baseUrl;
