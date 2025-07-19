@@ -28,14 +28,15 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       # Clona el repositorio y asegura contexto limpio
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18'
-      # Node 18 para máxima compatibilidad
+        node-version: '20'
+        cache: 'npm'
+      # Node 20 para compatibilidad con Vite 7.0.5
 
     - name: Print Environment Status (debug)
       run: |
@@ -68,5 +69,8 @@ jobs:
       run: |
         echo "🔧 Configurando entorno para build CI..."
         export NODE_OPTIONS="--max-old-space-size=4096"
+        export NODE_ENV=production
+        # Resolver crypto.hash específicamente para CI
+        export VITE_DISABLE_CRYPTO_HASH=true
         npm run build:ci
       # Verificación de compilación y tipos con configuración CI

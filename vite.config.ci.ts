@@ -67,8 +67,10 @@ export default defineConfig({
     'self': 'globalThis',
     'global': 'globalThis',
     'process.env.NODE_ENV': '"production"',
-    // Resolver crypto.hash específicamente
-    'crypto.hash': 'undefined'
+    // Resolver crypto.hash específicamente para CI
+    'crypto.hash': 'undefined',
+    'crypto': 'undefined',
+    'process.env.VITE_DISABLE_CRYPTO_HASH': '"true"'
   },
   esbuild: {
     define: {
