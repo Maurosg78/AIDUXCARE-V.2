@@ -31,7 +31,14 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       '@tanstack/react-virtual',
-      '@supabase/supabase-js'
+      '@supabase/supabase-js',
+      'react',
+      'react-dom',
+      '@headlessui/react',
+      '@heroicons/react',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore'
     ],
     exclude: [
       'vitest',
@@ -57,13 +64,21 @@ export default defineConfig({
     // Optimizaciones de bundle
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'ui-vendor': ['@headlessui/react', '@heroicons/react'],
+          'utils-vendor': ['@tanstack/react-virtual']
+        }
       }
     },
     // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
-    target: 'esnext'
+    target: 'esnext',
+    // Optimizaciones adicionales
+    assetsInlineLimit: 4096,
+    cssCodeSplit: true
   },
   define: {
     // Eliminar referencias a service workers que causan errores

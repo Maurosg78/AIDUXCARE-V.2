@@ -192,7 +192,8 @@ export class FirebaseAuthService {
       
       // Registrar evento de logout exitoso
       if (userProfile) {
-        const { FirestoreAuditLogger } = await import('../audit/FirestoreAuditLogger');
+        // Import estático para optimizar bundle
+        const { FirestoreAuditLogger } = await import(/* webpackChunkName: "audit" */ '../audit/FirestoreAuditLogger');
         await FirestoreAuditLogger.logEvent({
           type: 'logout_success',
           userId: userProfile.id,

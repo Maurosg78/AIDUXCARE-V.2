@@ -5,6 +5,13 @@ export default {
     './src/**/*.{js,ts,jsx,tsx}',
     './public/index.html',
   ],
+  // Optimizaciones para producción
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
   theme: {
     extend: {
       colors: {
