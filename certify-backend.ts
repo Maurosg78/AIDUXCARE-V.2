@@ -75,6 +75,14 @@ class BackendCertificationProtocol {
       expectedComplexity: 'simple',
       expectedRedFlags: 0,
       description: 'Caso médico simple sin complicaciones'
+    },
+    {
+      name: 'Caso Crítico - Traumatología Deportiva',
+      transcription: 'Paciente de 28 años, futbolista profesional, presenta lesión en rodilla izquierda durante partido hace 3 semanas. Contacto directo con otro jugador generó dolor agudo inmediato e incapacidad para continuar. Desde entonces presenta dolor intenso, inestabilidad al caminar, hinchazón progresiva y limitación severa de movilidad. Dolor nocturno que interfiere con el sueño. Exploración muestra edema importante, equimosis lateral, test de Lachman y cajón anterior positivos, limitación flexión 45° y extensión -10°. Antecedentes de lesión previa en rodilla derecha con cirugía artroscópica hace 2 años. Paciente refiere sensación de bloqueo articular y miedo a recaída. Objetivo: retorno al deporte de alto rendimiento.',
+      specialty: 'fisioterapia',
+      expectedComplexity: 'critical',
+      expectedRedFlags: 3,
+      description: 'Caso complejo de traumatología deportiva con múltiples banderas rojas'
     }
   ];
 
@@ -178,28 +186,63 @@ class BackendCertificationProtocol {
       console.log('   🧠 Paso 3: Procesamiento con Vertex AI...');
       let vertexResponse: any;
 
+      // Llamada REAL a Vertex AI - SIN MOCKS
+      console.log('      🔥 CONECTANDO CON VERTEX AI REAL...');
+      console.log(`      📡 URL: ${vertexAIService['baseUrl']}/clinicalBrain/analyze`);
+      console.log(`      🧠 Modelo: ${analysis.modelRecommendation.model}`);
+      
+      const startVertexTime = Date.now();
+      
       try {
-        // Intentar llamada real a Vertex AI
-        const analysisResult = await vertexAIService.analyzeClinicalText(testCase.transcription);
+        // Llamada directa a la Cloud Function de Vertex AI
+        const response = await fetch(`${vertexAIService['baseUrl']}/clinicalBrain/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${vertexAIService['apiKey']}`
+          },
+          body: JSON.stringify({
+            transcription: testCase.transcription,
+            specialty: testCase.specialty,
+            model: analysis.modelRecommendation.model,
+            include_soap: true,
+            include_entities: true,
+            medical_context: true
+          }),
+          signal: AbortSignal.timeout(30000) // 30 segundos timeout
+        });
+
+        const vertexTime = Date.now() - startVertexTime;
+        console.log(`      ⏱️ Tiempo de respuesta Vertex AI: ${vertexTime}ms`);
+        console.log(`      📊 Status HTTP: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Vertex AI HTTP ${response.status}: ${errorText}`);
+        }
+
+        const analysisResult = await response.json();
+        console.log('      ✅ RESPUESTA REAL DE VERTEX AI OBTENIDA');
+        console.log(`      📝 Tamaño respuesta: ${JSON.stringify(analysisResult).length} caracteres`);
+
         vertexResponse = {
           model: analysis.modelRecommendation.model,
           complexity: analysis.complexity,
           redFlags: analysis.redFlags,
           timestamp: new Date().toISOString(),
-          processingTime: Math.random() * 2000 + 500,
-          warnings: analysisResult.warnings,
-          suggestions: [
-            'Evaluación completa recomendada',
-            'Seguimiento clínico necesario',
-            'Considerar estudios adicionales si persisten síntomas'
-          ],
-          soap_analysis: analysisResult.soap
+          processingTime: vertexTime,
+          warnings: analysisResult.warnings || [],
+          suggestions: analysisResult.suggestions || [],
+          soap_analysis: analysisResult.soap || analysisResult.soap_analysis || {},
+          entities: analysisResult.entities || [],
+          raw_response: analysisResult // Respuesta completa sin procesar
         };
-        console.log('      ✅ Respuesta real de Vertex AI obtenida');
+
       } catch (error) {
-        // Simulación si Vertex AI no está disponible
-        console.log('      🔄 Simulando respuesta de Vertex AI...');
+        console.log(`      ❌ ERROR EN VERTEX AI: ${error}`);
+        console.log('      🔄 Fallback a simulación...');
         vertexResponse = this.simulateVertexAIResponse(testCase, analysis);
+        vertexResponse.error = error instanceof Error ? error.message : String(error);
       }
 
       // Paso 4: Validación de respuesta
