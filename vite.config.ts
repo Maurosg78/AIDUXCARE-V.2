@@ -70,8 +70,12 @@ export default defineConfig({
     'self': 'globalThis',
     'global': 'globalThis',
     // Prevenir carga de Vitest en el navegador
-    'process.env.NODE_ENV': '"development"',
-    // Resolver problema de crypto.hash
-    'crypto.hash': 'undefined'
+    'process.env.NODE_ENV': '"development"'
+  },
+  // Resolver problema de crypto.hash en CI
+  esbuild: {
+    define: {
+      'crypto.hash': 'undefined'
+    }
   }
 });
