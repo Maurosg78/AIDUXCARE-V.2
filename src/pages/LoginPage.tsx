@@ -13,18 +13,31 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Si el usuario ya está autenticado, redirigir a la página principal
+  // Logging para verificar que el componente se monta sin redirección
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange((session) => {
-      if (session.user) {
-        navigate('/');
-      }
+    console.log('🔍 [DEBUG] LoginPage: Componente montado en /login');
+    console.log('🔍 [DEBUG] LoginPage: Estado de autenticación actual:', {
+      hasPrefillEmail: !!location.state?.prefillEmail,
+      hasPrefillPassword: !!location.state?.prefillPassword,
+      from: location.state?.from?.pathname || '/'
     });
-    return () => unsubscribe();
-  }, [navigate]);
+  }, [location.state]);
+
+  // Pre-llenar credenciales si vienen de la página de acceso
+  useEffect(() => {
+    if (location.state?.prefillEmail) {
+      setEmail(location.state.prefillEmail);
+    }
+    if (location.state?.prefillPassword) {
+      setPassword(location.state.prefillPassword);
+    }
+  }, [location.state]);
 
   // Si viene de una ruta protegida, obtener la URL original
-  const from = location.state?.from?.pathname || '/';
+  // const from = location.state?.from?.pathname || '/';
+
+  // ELIMINADO: useEffect que causaba redirección automática
+  // Esto permitirá que el usuario permanezca en /login sin importar el estado de autenticación
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,7 +57,10 @@ const LoginPage = () => {
           userRole: userProfile.role || 'unknown',
           metadata: { email },
         });
-        navigate(from, { replace: true });
+        
+        // SOLUCIÓN: Redirigir a una página específica en lugar de regresar a AccessPage
+        console.log('🔍 [DEBUG] Login exitoso, redirigiendo a página principal');
+        navigate('/professional-workflow', { replace: true });
       }
     } catch (error: unknown) {
       const err = error as Error;
@@ -145,7 +161,35 @@ const LoginPage = () => {
           <h3 className="text-sm font-medium text-slateBlue mb-2">Credenciales de demostración:</h3>
           <p className="text-xs text-slateBlue/70 mb-1">Profesional: demo@aiduxcare.com / password123</p>
           <p className="text-xs text-slateBlue/70 mb-1">Paciente: paciente@aiduxcare.com / password123</p>
-          <p className="text-xs text-slateBlue/70">Admin: admin@aiduxcare.com / password123</p>
+          <p className="text-xs text-slateBlue/70 mb-1">Admin: admin@aiduxcare.com / password123</p>
+          <p className="text-xs text-slateBlue/70">Mauricio: maurosg.2023@gmail.com / Mauro7812#</p>
+        </div>
+        {/* Botón para volver al acceso directo */}
+        <div className="text-center">
+          <Link 
+            to="/" 
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            ← Volver al acceso directo
+          </Link>
+        </div>
+        
+        {/* Botón para limpiar sesión (solución temporal) */}
+        <div className="text-center mt-4">
+          <button
+            onClick={async () => {
+              try {
+                await authService.signOut();
+                console.log('🔍 [DEBUG] Sesión cerrada manualmente');
+                window.location.reload();
+              } catch (error) {
+                console.error('❌ Error cerrando sesión:', error);
+              }
+            }}
+            className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 border border-red-300 rounded"
+          >
+            🗑️ Limpiar Sesión
+          </button>
         </div>
       </div>
     </div>
