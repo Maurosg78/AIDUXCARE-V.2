@@ -46,10 +46,7 @@ export function buildMCPContext(
  * Recupera el contexto MCP asociado a una visita clínica.
  * Usado para poblar el visor MCP en VisitDetailPage.
  */
-export async function getContextFromVisit(
-  visitId: string,
-  patientId: string
-): Promise<MCPContext> {
+export async function getContextFromVisit(): Promise<MCPContext> {
   // TODO: Migrar a fuente Firestore. MCPDataSourceSupabase es legacy y debe eliminarse tras migración total.
   // const [contextual, persistent, semantic] = await Promise.all([
   //   getContextualMemory(visitId),

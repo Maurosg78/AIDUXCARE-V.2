@@ -355,8 +355,10 @@ export class ProfessionalProfileService {
   /**
    * Obtener recomendaciones personalizadas según perfil
    */
-  getPersonalizedRecommendations(profileId: string, clinicalContext: string): string[] {
-    const profile = this.profiles.get(profileId);
+  getPersonalizedRecommendations(
+    professionalProfileId: string
+  ): string[] {
+    const profile = this.profiles.get(professionalProfileId);
     
     if (!profile) {
       return [];

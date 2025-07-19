@@ -136,7 +136,12 @@ async function testNLPConRAG(transcripcion: any): Promise<void> {
     
     // Métricas detalladas
     console.log('\n📊 Métricas de procesamiento:');
-    console.log(`   - Confianza general: ${Math.round(result.metrics.overall_confidence * 100)}%`);
+    // Mostrar confianza general solo si está definida
+    if (result.metrics && typeof result.metrics.overall_confidence === 'number') {
+      console.log(`   - Confianza general: ${Math.round(result.metrics.overall_confidence * 100)}%`);
+    } else {
+      console.log('   - Confianza general: N/A');
+    }
     console.log(`   - Requiere revisión: ${result.metrics.requires_review ? 'Sí' : 'No'}`);
     console.log(`   - Entidades por minuto: ${Math.round(result.entities.length / (duration / 60000))}`);
     

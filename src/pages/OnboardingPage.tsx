@@ -119,10 +119,11 @@ export const OnboardingPage: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 text-center">Tu Perfil Profesional</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre Completo
                 </label>
                 <input
+                  id="name"
                   type="text"
                   value={userProfile.name}
                   onChange={(e) => setUserProfile(prev => ({ ...prev, name: e.target.value }))}
@@ -131,10 +132,11 @@ export const OnboardingPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-2">
                   Especialidad
                 </label>
                 <select
+                  id="specialty"
                   value={userProfile.specialty}
                   onChange={(e) => setUserProfile(prev => ({ ...prev, specialty: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -149,10 +151,11 @@ export const OnboardingPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
                   Años de Experiencia
                 </label>
                 <select
+                  id="experience"
                   value={userProfile.experience}
                   onChange={(e) => setUserProfile(prev => ({ ...prev, experience: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -165,10 +168,11 @@ export const OnboardingPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="useCase" className="block text-sm font-medium text-gray-700 mb-2">
                   Caso de Uso Principal
                 </label>
                 <select
+                  id="useCase"
                   value={userProfile.useCase}
                   onChange={(e) => setUserProfile(prev => ({ ...prev, useCase: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

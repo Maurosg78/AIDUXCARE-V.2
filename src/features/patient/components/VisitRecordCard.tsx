@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useClinicalAudit } from '../../../core/audit/ClinicalAuditHook';
 
 interface VisitRecordCardProps {
   visit: {
@@ -9,6 +10,7 @@ interface VisitRecordCardProps {
     created_at: string;
     reason: string;
   };
+  patientId?: string;
   summary?: {
     summary_text: string;
     created_at: string;
@@ -20,10 +22,19 @@ interface VisitRecordCardProps {
   }>;
 }
 
-const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, summary, suggestions }) => {
+const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, patientId, summary, suggestions }) => {
   const navigate = useNavigate();
+  const { logVisitAccess } = useClinicalAudit();
   const visitDate = new Date(visit.created_at);
   const relativeDate = formatDistanceToNow(visitDate, { addSuffix: true, locale: es });
+
+  const handleViewVisit = async () => {
+    // Registrar acceso a la visita
+    if (patientId) {
+      await logVisitAccess(visit.id, patientId, 'view');
+    }
+    navigate(`/visits/${visit.id}`);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
@@ -38,7 +49,7 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, summary, sugge
           </p>
         </div>
         <button
-          onClick={() => navigate(`/visits/${visit.id}`)}
+          onClick={handleViewVisit}
           className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           Ver visita completa

@@ -4,7 +4,7 @@
  * Implementación del Blueprint Oficial
  */
 
-import ProfessionalProfileService, { ProfessionalProfile } from './ProfessionalProfileService';
+import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface ClinicalAnalysisRequest {
   transcription: string;
@@ -165,10 +165,10 @@ export class OptimizedClinicalBrainService {
       const soapDocument = await this.generateSOAPDocument(request, highlights, warnings);
       
       // FASE 4: Metadatos y análisis
-      const analysisMetadata = this.generateAnalysisMetadata(highlights, warnings, request);
+      const analysisMetadata = this.generateAnalysisMetadata(highlights, warnings);
       
       // FASE 5: Técnicas y objetivos funcionales
-      const { functionalGoals, treatmentTechniques } = await this.generateTreatmentPlan(request, highlights, warnings);
+      const { functionalGoals, treatmentTechniques } = await this.generateTreatmentPlan();
 
       const processingTime = Date.now() - startTime;
       
@@ -212,12 +212,12 @@ export class OptimizedClinicalBrainService {
 
     // Patrones de síntomas
     const symptomPatterns = [
-      { pattern: /dolor\s+([^,\.]+)/g, category: 'síntoma' as const },
-      { pattern: /molestia\s+([^,\.]+)/g, category: 'síntoma' as const },
-      { pattern: /incomodidad\s+([^,\.]+)/g, category: 'síntoma' as const },
-      { pattern: /limitación\s+([^,\.]+)/g, category: 'hallazgo' as const },
-      { pattern: /dificultad\s+([^,\.]+)/g, category: 'hallazgo' as const },
-      { pattern: /imposibilidad\s+([^,\.]+)/g, category: 'hallazgo' as const }
+      { pattern: /dolor\s+([^,.]+)/g, category: 'síntoma' as const },
+      { pattern: /molestia\s+([^,.]+)/g, category: 'síntoma' as const },
+      { pattern: /incomodidad\s+([^,.]+)/g, category: 'síntoma' as const },
+      { pattern: /limitación\s+([^,.]+)/g, category: 'hallazgo' as const },
+      { pattern: /dificultad\s+([^,.]+)/g, category: 'hallazgo' as const },
+      { pattern: /imposibilidad\s+([^,.]+)/g, category: 'hallazgo' as const }
     ];
 
     symptomPatterns.forEach(({ pattern, category }) => {
@@ -370,10 +370,10 @@ export class OptimizedClinicalBrainService {
     const objective = this.generateObjective(findings, warnings);
     
     // Generar Assessment
-    const assessment = this.generateAssessment(request, symptoms, findings, warnings);
+    const assessment = this.generateAssessment(symptoms, findings, warnings);
     
     // Generar Plan
-    const plan = this.generatePlan(request, highlights, warnings);
+    const plan = this.generatePlan(highlights, warnings);
 
     // Calcular calidad
     const quality = this.calculateSOAPQuality(subjective, objective, assessment, plan);
@@ -434,7 +434,6 @@ export class OptimizedClinicalBrainService {
   }
 
   private generateAssessment(
-    request: ClinicalAnalysisRequest,
     symptoms: string[],
     findings: string[],
     warnings: ClinicalWarning[]
@@ -452,7 +451,6 @@ export class OptimizedClinicalBrainService {
   }
 
   private generatePlan(
-    request: ClinicalAnalysisRequest,
     highlights: ClinicalHighlight[],
     warnings: ClinicalWarning[]
   ): string {
@@ -492,8 +490,7 @@ export class OptimizedClinicalBrainService {
 
   private generateAnalysisMetadata(
     highlights: ClinicalHighlight[],
-    warnings: ClinicalWarning[],
-    request: ClinicalAnalysisRequest
+    warnings: ClinicalWarning[]
   ): ClinicalAnalysisResponse['analysisMetadata'] {
     const redFlagsDetected = warnings.filter(w => w.type === 'bandera_roja').length;
     const riskLevel = redFlagsDetected > 2 ? 'HIGH' : redFlagsDetected > 0 ? 'MEDIUM' : 'LOW';
@@ -518,11 +515,7 @@ export class OptimizedClinicalBrainService {
     };
   }
 
-  private async generateTreatmentPlan(
-    request: ClinicalAnalysisRequest,
-    highlights: ClinicalHighlight[],
-    warnings: ClinicalWarning[]
-  ): Promise<{ functionalGoals: string[]; treatmentTechniques: string[] }> {
+  private async generateTreatmentPlan(): Promise<{ functionalGoals: string[]; treatmentTechniques: string[] }> {
     const functionalGoals = [
       'Reducir dolor',
       'Mejorar movilidad',
@@ -535,18 +528,6 @@ export class OptimizedClinicalBrainService {
       'Ejercicio terapéutico',
       'Educación del paciente'
     ];
-
-    // Personalizar según perfil profesional
-    if (request.professionalProfileId) {
-      const profile = this.profileService.getProfile(request.professionalProfileId);
-      if (profile) {
-        const personalizedRecommendations = this.profileService.getPersonalizedRecommendations(
-          request.professionalProfileId,
-          request.transcription
-        );
-        treatmentTechniques.push(...personalizedRecommendations);
-      }
-    }
 
     return { functionalGoals, treatmentTechniques };
   }

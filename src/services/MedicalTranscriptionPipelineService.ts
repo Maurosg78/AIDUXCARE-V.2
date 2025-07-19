@@ -5,7 +5,7 @@
  */
 
 import OptimizedClinicalBrainService, { ClinicalAnalysisRequest, ClinicalAnalysisResponse } from './OptimizedClinicalBrainService';
-import ProfessionalProfileService, { ProfessionalProfile } from './ProfessionalProfileService';
+import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface TranscriptionSegment {
   id: string;
@@ -96,7 +96,7 @@ export class MedicalTranscriptionPipelineService {
   private profileService: ProfessionalProfileService;
   
   // Cache para transcripciones (eliminación automática según HIPAA/GDPR)
-  private transcriptionCache: Map<string, { data: any; expiry: Date }> = new Map();
+  private transcriptionCache: Map<string, { data: unknown; expiry: Date }> = new Map();
   
   // Configuración de retención de datos
   private readonly DATA_RETENTION_HOURS = 1; // 1 hora según HIPAA/GDPR
@@ -184,9 +184,7 @@ export class MedicalTranscriptionPipelineService {
     try {
       // 2.1 Generar tests sugeridos basados en highlights seleccionados
       const suggestedTests = await this.generateSuggestedTests(
-        selectedHighlights,
-        acceptedWarnings,
-        professionalProfileId
+        selectedHighlights
       );
 
       // 2.2 Simular resultados de tests (en producción vendrían del frontend)
@@ -364,9 +362,7 @@ export class MedicalTranscriptionPipelineService {
   }
 
   private async generateSuggestedTests(
-    selectedHighlights: string[],
-    acceptedWarnings: string[],
-    professionalProfileId: string
+    selectedHighlights: string[]
   ): Promise<PipelinePhase2Result['suggestedTests']> {
     const tests: PipelinePhase2Result['suggestedTests'] = [];
 
@@ -499,8 +495,6 @@ export class MedicalTranscriptionPipelineService {
   }
 
   private scheduleTranscriptionDeletion(professionalProfileId: string): void {
-    const expiryTime = new Date(Date.now() + this.DATA_RETENTION_HOURS * 60 * 60 * 1000);
-    
     setTimeout(() => {
       this.transcriptionCache.delete(professionalProfileId);
       console.log(`🗑️ Transcripción eliminada para ${professionalProfileId} (compliance HIPAA/GDPR)`);

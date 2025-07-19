@@ -553,8 +553,7 @@ class BackendBlueprintTester {
 
       const tests = this.knowledgeService.getSuggestedTests(
         profiles[0].id,
-        ['dolor lumbar', 'dolor que irradia'],
-        'Ortopedia'
+        ['dolor lumbar', 'dolor que irradia']
       );
 
       if (tests.length === 0) {

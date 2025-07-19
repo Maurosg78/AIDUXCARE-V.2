@@ -179,10 +179,49 @@ export class FirebaseAuthService {
   async signOut(): Promise<void> {
     try {
       console.log('🔥 Firebase Auth: Cerrando sesión...');
+      
+      // Obtener usuario actual antes de cerrar sesión
+      const currentUser = this.auth.currentUser;
+      let userProfile: UserProfile | null = null;
+      
+      if (currentUser) {
+        userProfile = await this.getUserProfile(currentUser.uid);
+      }
+      
       await firebaseSignOut(this.auth);
+      
+      // Registrar evento de logout exitoso
+      if (userProfile) {
+        const { FirestoreAuditLogger } = await import('../audit/FirestoreAuditLogger');
+        await FirestoreAuditLogger.logEvent({
+          type: 'logout_success',
+          userId: userProfile.id,
+          userRole: userProfile.role,
+          metadata: { 
+            email: userProfile.email,
+            sessionDuration: userProfile.lastLoginAt ? 
+              Date.now() - userProfile.lastLoginAt.getTime() : null
+          },
+        });
+      }
+      
       console.log('✅ Firebase Auth: Sesión cerrada exitosamente');
     } catch (error) {
       console.error('❌ Firebase Auth: Error al cerrar sesión', error);
+      
+      // Registrar evento de logout fallido
+      try {
+        const { FirestoreAuditLogger } = await import('../audit/FirestoreAuditLogger');
+        await FirestoreAuditLogger.logEvent({
+          type: 'logout_failed',
+          userId: 'unknown',
+          userRole: 'unknown',
+          metadata: { error: (error as Error).message },
+        });
+      } catch (auditError) {
+        console.error('Error registrando logout fallido:', auditError);
+      }
+      
       throw this.handleAuthError(error as AuthError);
     }
   }

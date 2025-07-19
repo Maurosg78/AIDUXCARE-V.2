@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 /**
  * 🏥 Physiotherapy Pipeline Test - AiDuxCare V.2
  * Testing del pipeline completo con casos reales
@@ -27,7 +28,7 @@ const PhysiotherapyPipelineTest: React.FC = () => {
     highlights: ClinicalHighlight[];
     warnings: ClinicalWarning[];
     complianceIssues: string[];
-    suggestedTests: any[];
+    suggestedTests: Array<Record<string, unknown>>;
     soapDocument: SOAPDocument | null;
   } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -142,8 +143,7 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
       // FASE 1: Procesamiento de transcripción
       console.log('📋 Fase 1: Procesando transcripción...');
       const transcriptionResults = await pipelineService.processMedicalTranscription(
-        testCase.rawTranscription,
-        testCase.patientInfo
+        testCase.rawTranscription
       );
 
       setPipelineResults({
@@ -158,8 +158,7 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
       setActiveStep('tests');
       console.log('🔍 Fase 2: Generando tests sugeridos...');
       const suggestedTests = await pipelineService.generateSuggestedTests(
-        transcriptionResults.highlights,
-        transcriptionResults.warnings.filter(w => w.isAccepted)
+        transcriptionResults.highlights
       );
 
       setPipelineResults(prev => prev ? {
@@ -173,8 +172,7 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
       const soapDocument = await pipelineService.generateSOAPDocument(
         transcriptionResults.highlights.filter(h => h.isSelected),
         transcriptionResults.warnings.filter(w => w.isAccepted),
-        [], // Test results (simulados)
-        testCase.patientInfo
+        [] // Test results (simulados)
       );
 
       setPipelineResults(prev => prev ? {
@@ -322,8 +320,9 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
                   </h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {pipelineResults.highlights.map((highlight) => (
-                      <label key={highlight.id} className="flex items-start space-x-3 cursor-pointer p-3 rounded border hover:bg-gray-50">
+                      <label htmlFor={`highlight-${highlight.id}`} key={highlight.id} className="flex items-start space-x-3 cursor-pointer p-3 rounded border hover:bg-gray-50">
                         <input
+                          id={`highlight-${highlight.id}`}
                           type="checkbox"
                           checked={highlight.isSelected}
                           onChange={() => toggleHighlight(highlight.id)}
@@ -360,9 +359,9 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-xs font-medium uppercase">
+                              <div className="text-xs font-medium uppercase">
                                 {warning.type.replace('_', ' ')}
-                              </span>
+                              </div>
                               <span className={`px-2 py-1 rounded text-xs ${
                                 warning.severity === 'alta' ? 'bg-red-200 text-red-800' :
                                 warning.severity === 'media' ? 'bg-yellow-200 text-yellow-800' :
@@ -401,18 +400,18 @@ Paciente: Sí, a veces se me atraganta la comida, especialmente los líquidos.`,
                   {pipelineResults.suggestedTests.map((test, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{test.name}</h4>
+                        <h4 className="font-medium text-gray-900">{String(test.name || '')}</h4>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           test.category === 'ortopédico' ? 'bg-blue-100 text-blue-800' :
                           test.category === 'neurológico' ? 'bg-purple-100 text-purple-800' :
                           'bg-green-100 text-green-800'
                         }`}>
-                          {test.category}
+                          {String(test.category || '')}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{test.description}</p>
+                      <p className="text-sm text-gray-600 mb-2">{String(test.description || '')}</p>
                       <div className="text-xs text-gray-500">
-                        <strong>Contraindicaciones:</strong> {test.contraindications.join(', ')}
+                        <strong>Contraindicaciones:</strong> {Array.isArray(test.contraindications) ? test.contraindications.join(', ') : ''}
                       </div>
                     </div>
                   ))}

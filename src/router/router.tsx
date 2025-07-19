@@ -7,7 +7,10 @@ import { MVPTestPage } from '@/pages/MVPTestPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import PhysiotherapyCaseEvaluator from '../pages/PhysiotherapyCaseEvaluator';
 import PhysiotherapyPipelineTest from '../pages/PhysiotherapyPipelineTest';
-
+import BackendTestingPage from '../pages/BackendTestingPage';
+import CompletePipelineTestPage from '../pages/CompletePipelineTestPage';
+import { AuditPage } from '@/features/admin/AuditPage';
+import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -16,19 +19,20 @@ const future = {
 };
 
 export const router = createBrowserRouter([
-  // Página principal protegida: MVP Test Page en la raíz
+  // Página principal: Login limpio
   {
     path: '/',
-    element: (
-      <ProtectedRoute>
-        <MVPTestPage />
-      </ProtectedRoute>
-    ),
+    element: <LoginPage />,
   },
   // Login
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  // Página de testing/validación
+  {
+    path: '/testing',
+    element: <MVPTestPage />,
   },
   // Onboarding
   {
@@ -43,52 +47,95 @@ export const router = createBrowserRouter([
     path: '/physiotherapy-pipeline-test',
     element: <PhysiotherapyPipelineTest />
   },
+  {
+    path: '/backend-testing',
+    element: <BackendTestingPage />
+  },
+  {
+    path: '/pipeline-test',
+    element: <CompletePipelineTestPage />
+  },
 
-  // Rutas principales con layout profesional
+  // Rutas principales con layout profesional - PROTEGIDAS
   {
     path: "/",
     element: <Layout />,
     children: [
       {
         path: "professional-workflow",
-        element: <ProfessionalWorkflowPage />,
+        element: (
+          <ProtectedRoute>
+            <ProfessionalWorkflowPage />
+          </ProtectedRoute>
+        ),
       },
-
+      {
+        path: "audit",
+        element: (
+          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+            <AuditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "audit-metrics",
+        element: (
+          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+            <AuditMetricsDashboard />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "patients",
-        element: <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Gestión de Pacientes</h1>
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-600">Módulo de pacientes en desarrollo</p>
-          </div>
-        </div>
+        element: (
+          <ProtectedRoute>
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Gestión de Pacientes</h1>
+              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">Módulo de pacientes en desarrollo</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        )
       },
       {
         path: "notes",
-        element: <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Notas Clínicas</h1>
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-600">Módulo de notas en desarrollo</p>
-          </div>
-        </div>
+        element: (
+          <ProtectedRoute>
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Notas Clínicas</h1>
+              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">Módulo de notas en desarrollo</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        )
       },
       {
         path: "profile",
-        element: <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Mi Perfil</h1>
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-600">Configuración de perfil en desarrollo</p>
-          </div>
-        </div>
+        element: (
+          <ProtectedRoute>
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Mi Perfil</h1>
+              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">Configuración de perfil en desarrollo</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        )
       },
       {
         path: "settings",
-        element: <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración</h1>
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <p className="text-gray-600">Configuración del sistema en desarrollo</p>
-          </div>
-        </div>
+        element: (
+          <ProtectedRoute>
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración</h1>
+              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                <p className="text-gray-600">Configuración del sistema en desarrollo</p>
+              </div>
+            </div>
+          </ProtectedRoute>
+        )
       },
     ]
   },

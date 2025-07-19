@@ -59,8 +59,7 @@ export class PhysiotherapyPipelineService {
    * Convierte texto desordenado en highlights y advertencias estructuradas
    */
   async processMedicalTranscription(
-    rawTranscription: string,
-    patientInfo: { age: number; gender: string; occupation: string }
+    rawTranscription: string
   ): Promise<{
     highlights: ClinicalHighlight[];
     warnings: ClinicalWarning[];
@@ -70,9 +69,9 @@ export class PhysiotherapyPipelineService {
     
     // Simulación de procesamiento con IA médica especializada
     const segments = this.parseTranscription(rawTranscription);
-    const highlights = this.extractClinicalHighlights(segments, patientInfo);
-    const warnings = this.generateClinicalWarnings(segments, highlights, patientInfo);
-    const complianceIssues = this.checkComplianceIssues(warnings, patientInfo);
+    const highlights = this.extractClinicalHighlights(segments);
+    const warnings = this.generateClinicalWarnings(segments, highlights);
+    const complianceIssues = this.checkComplianceIssues(warnings);
 
     return {
       highlights,
@@ -86,19 +85,11 @@ export class PhysiotherapyPipelineService {
    * Basado en highlights seleccionados y advertencias
    */
   async generateSuggestedTests(
-    selectedHighlights: ClinicalHighlight[],
-    acceptedWarnings: ClinicalWarning[]
-  ): Promise<Array<{
-    name: string;
-    category: 'ortopédico' | 'neurológico' | 'cardiorrespiratorio' | 'funcional';
-    description: string;
-    contraindications: string[];
-    expectedResults: string[];
-  }>> {
+    highlights: ClinicalHighlight[]
+  ): Promise<Array<Record<string, unknown>>> {
     console.log('🔍 Generando tests clínicos sugeridos...');
     
-    const symptoms = selectedHighlights.filter(h => h.category === 'síntoma');
-    const findings = selectedHighlights.filter(h => h.category === 'hallazgo');
+    const symptoms = highlights.filter(h => h.category === 'síntoma');
     
     const suggestedTests: Array<{
       name: string;
@@ -157,17 +148,16 @@ export class PhysiotherapyPipelineService {
    * Con toda la información recopilada
    */
   async generateSOAPDocument(
-    selectedHighlights: ClinicalHighlight[],
-    acceptedWarnings: ClinicalWarning[],
-    testResults: Array<{ testName: string; result: string; notes: string }>,
-    patientInfo: { age: number; gender: string; occupation: string }
+    highlights: ClinicalHighlight[],
+    warnings: ClinicalWarning[],
+    testResults: Array<Record<string, unknown>>
   ): Promise<SOAPDocument> {
     console.log('📝 Generando documento SOAP...');
     
-    const subjective = this.generateSubjective(selectedHighlights, patientInfo);
-    const objective = this.generateObjective(selectedHighlights, testResults);
-    const assessment = this.generateAssessment(selectedHighlights, acceptedWarnings, testResults);
-    const plan = this.generatePlan(selectedHighlights, acceptedWarnings, assessment);
+    const subjective = this.generateSubjective(highlights);
+    const objective = this.generateObjective(highlights, testResults);
+    const assessment = this.generateAssessment(highlights, warnings, testResults);
+    const plan = this.generatePlan(highlights, warnings);
 
     return {
       subjective,
@@ -184,8 +174,7 @@ export class PhysiotherapyPipelineService {
    * Asegura que no se sugieran medicamentos y se cumplan normativas
    */
   private checkComplianceIssues(
-    warnings: ClinicalWarning[],
-    patientInfo: { age: number; gender: string; occupation: string }
+    warnings: ClinicalWarning[]
   ): string[] {
     const issues: string[] = [];
     
@@ -232,8 +221,7 @@ export class PhysiotherapyPipelineService {
   }
 
   private extractClinicalHighlights(
-    segments: TranscriptionSegment[],
-    patientInfo: { age: number; gender: string; occupation: string }
+    segments: TranscriptionSegment[]
   ): ClinicalHighlight[] {
     const highlights: ClinicalHighlight[] = [];
     let id = 1;
@@ -280,8 +268,7 @@ export class PhysiotherapyPipelineService {
 
   private generateClinicalWarnings(
     segments: TranscriptionSegment[],
-    highlights: ClinicalHighlight[],
-    patientInfo: { age: number; gender: string; occupation: string }
+    highlights: ClinicalHighlight[]
   ): ClinicalWarning[] {
     const warnings: ClinicalWarning[] = [];
     let id = 1;
@@ -326,20 +313,22 @@ export class PhysiotherapyPipelineService {
   }
 
   private generateSubjective(
-    highlights: ClinicalHighlight[],
-    patientInfo: { age: number; gender: string; occupation: string }
+    highlights: ClinicalHighlight[]
   ): string {
     const symptoms = highlights.filter(h => h.category === 'síntoma').map(h => h.text);
-    const antecedents = highlights.filter(h => h.category === 'antecedente').map(h => h.text);
     
-    return `Paciente ${patientInfo.age} años, ${patientInfo.gender}, ${patientInfo.occupation}. 
-Refiere: ${symptoms.join('; ')}. 
-Antecedentes: ${antecedents.join('; ')}.`;
+    let subjective = 'Paciente adulto. ';
+    
+    if (symptoms.length > 0) {
+      subjective += `Refiere: ${symptoms.join('; ')}. `;
+    }
+    
+    return subjective;
   }
 
   private generateObjective(
     highlights: ClinicalHighlight[],
-    testResults: Array<{ testName: string; result: string; notes: string }>
+    testResults: Array<Record<string, unknown>>
   ): string {
     const findings = highlights.filter(h => h.category === 'hallazgo').map(h => h.text);
     const tests = testResults.map(t => `${t.testName}: ${t.result}`);
@@ -351,7 +340,7 @@ Tests realizados: ${tests.join('; ')}.`;
   private generateAssessment(
     highlights: ClinicalHighlight[],
     warnings: ClinicalWarning[],
-    testResults: Array<{ testName: string; result: string; notes: string }>
+    testResults: Array<Record<string, unknown>>
   ): string {
     const symptoms = highlights.filter(h => h.category === 'síntoma');
     const findings = highlights.filter(h => h.category === 'hallazgo');
@@ -363,8 +352,7 @@ Consideraciones: ${warnings.filter(w => w.isAccepted).map(w => w.description).jo
 
   private generatePlan(
     highlights: ClinicalHighlight[],
-    warnings: ClinicalWarning[],
-    assessment: string
+    warnings: ClinicalWarning[]
   ): string {
     const acceptedWarnings = warnings.filter(w => w.isAccepted);
     const contraindications = acceptedWarnings.filter(w => w.type === 'contraindicación');

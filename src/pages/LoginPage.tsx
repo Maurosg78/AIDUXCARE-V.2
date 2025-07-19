@@ -1,85 +1,67 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { userDataSourceSupabase } from '../core/services/userDataSourceSupabase';
-import { useUser } from '../core/auth/UserContext';
-import { checkSupabaseConnection } from '../utils/checkSupabaseConnection';
-import { SUPABASE_URL } from '../config/env';
+import { FirebaseAuthService } from '../core/auth/firebaseAuthService';
+import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
+
+const authService = new FirebaseAuthService();
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useUser();
 
   // Si el usuario ya está autenticado, redirigir a la página principal
   useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
-  // Comprobar la conexión a Supabase al cargar
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const result = await checkSupabaseConnection();
-        setConnectionStatus(result.isConnected ? 'ok' : 'error');
-        if (!result.isConnected) {
-          console.error('Error de conexión a Supabase:', result.error);
-        }
-      } catch (err) {
-        setConnectionStatus('error');
-        console.error('Error comprobando la conexión:', err);
+    const unsubscribe = authService.onAuthStateChange((session) => {
+      if (session.user) {
+        navigate('/');
       }
-    };
-    
-    checkConnection();
-  }, []);
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   // Si viene de una ruta protegida, obtener la URL original
   const from = location.state?.from?.pathname || '/';
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    
     if (!email || !password) {
       setError('Por favor, completa todos los campos');
       return;
     }
-
-    // Si ya sabemos que hay problema de conexión, mostrar mensaje específico
-    if (connectionStatus === 'error') {
-      setError(`Error de conexión con el servidor (${SUPABASE_URL}). Por favor, verifica tu conexión a internet o contacta al administrador.`);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
-      
-      // Usar el servicio de usuarios para autenticar
-      const data = await userDataSourceSupabase.signInWithPassword();
-
-      if (data?.user) {
-        // Redirigir a la página original o a la principal
+      const userProfile = await authService.signIn(email, password);
+      if (userProfile) {
+        // Log de login exitoso
+        await FirestoreAuditLogger.logEvent({
+          type: 'login_success',
+          userId: userProfile.id,
+          userRole: userProfile.role || 'unknown',
+          metadata: { email },
+        });
         navigate(from, { replace: true });
       }
     } catch (error: unknown) {
       const err = error as Error;
-      
-      // Mostrar mensajes más amigables según el error
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setError(`Error de conexión con el servidor. Por favor, verifica tu conexión a internet.`);
-      } else if (err.message.includes('Invalid login')) {
-        setError('Credenciales incorrectas. Por favor, verifica tu email y contraseña.');
+      // Log de login fallido
+      await FirestoreAuditLogger.logEvent({
+        type: 'login_failed',
+        userId: 'anonymous',
+        userRole: 'unknown',
+        metadata: { email, error: err.message },
+      });
+      if (err.message.includes('auth/wrong-password') || err.message.includes('auth/user-not-found')) {
+        setError('Credenciales incorrectas. Por favor');
+      } else if (err.message.includes('auth/network-request-failed')) {
+        setError('Error de conexión con el servidor. Por favor, verifica tu conexión a internet.');
       } else {
-      setError(err.message || 'Error al iniciar sesión');
+        setError(err.message || 'Error al iniciar sesión');
       }
-      
       console.error('Error al iniciar sesión:', err.message);
     } finally {
       setLoading(false);
@@ -96,13 +78,11 @@ const LoginPage = () => {
             Accede a tu cuenta para gestionar pacientes y consultas
           </p>
         </div>
-        
         {error && (
           <div className="bg-softCoral/10 border-l-4 border-softCoral p-4">
             <p className="text-softCoral">{error}</p>
           </div>
         )}
-        
         <form
           onSubmit={handleLogin}
           className="space-y-6"
@@ -142,7 +122,6 @@ const LoginPage = () => {
               />
             </div>
           </div>
-
           <div>
             <button
               type="submit"
@@ -153,7 +132,6 @@ const LoginPage = () => {
             </button>
           </div>
         </form>
-
         <div className="text-center mt-4">
           <p className="text-sm text-slateBlue/70">
             ¿No tienes cuenta?{' '}
@@ -162,7 +140,6 @@ const LoginPage = () => {
             </Link>
           </p>
         </div>
-        
         {/* Credenciales de demostración */}
         <div className="mt-8 p-4 border border-gray-200 rounded-md bg-gray-50">
           <h3 className="text-sm font-medium text-slateBlue mb-2">Credenciales de demostración:</h3>

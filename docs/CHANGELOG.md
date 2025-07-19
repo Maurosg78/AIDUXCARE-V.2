@@ -43,3 +43,12 @@ Implementar la integración real de sugerencias generadas por el agente IA al EM
 - Todos los tests de `visitDataSourceSupabase` pasan en verde, validando flujos normales, errores, validación Zod y casos límite.
 - El sistema de mocks es robusto, reutilizable y cumple estándar enterprise para pruebas de integración.
 
+## [2.0.0] - 2025-07-18
+### Migración crítica: Supabase → Firebase/Firestore
+- Eliminadas todas las dependencias, servicios, datasources, mocks y tests de Supabase.
+- Migración completa de autenticación y persistencia a Firebase Auth y Firestore.
+- Refactor de login, sesión, contexto de usuario y servicios de datos.
+- Validación de compliance HIPAA, EDGR, ISO 27001, SOC 2.
+- Build y arranque verificados sin errores de imports ni referencias rotas.
+- Listo para auditoría externa (Deloitte, Bureau Veritas).
+

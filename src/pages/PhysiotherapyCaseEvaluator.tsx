@@ -3,7 +3,7 @@
  * Evaluador de casos de fisioterapia de diferentes complejidades
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface PhysioCase {
   id: string;

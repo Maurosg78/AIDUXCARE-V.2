@@ -1,12 +1,53 @@
-import { MCPMemoryBlock } from './schema';
+import { MCPContext } from './schema';
 
+/**
+ * Gestor principal de MCP (Model Context Protocol)
+ * Maneja la creación, actualización y recuperación de contextos MCP
+ */
 export class MCPManager {
-  async getContextForVisit(visitId: string): Promise<Record<string, unknown>> {
-    return { context: 'mocked context for visitId ' + visitId };
+  private static instance: MCPManager;
+  private contexts: Map<string, MCPContext> = new Map();
+
+  private constructor() {}
+
+  static getInstance(): MCPManager {
+    if (!MCPManager.instance) {
+      MCPManager.instance = new MCPManager();
+    }
+    return MCPManager.instance;
   }
 
-  async saveContext(visitId: string, context: Record<string, unknown>) {
-    console.log(`[MCPManager] Context saved for ${visitId}`, context);
+  /**
+   * Crea un nuevo contexto MCP para una visita
+   */
+  async createContext(): Promise<MCPContext> {
+    const context: MCPContext = {
+      contextual: { source: 'mock', data: [] },
+      persistent: { source: 'mock', data: [] },
+      semantic: { source: 'mock', data: [] }
+    };
+    return context;
+  }
+
+  /**
+   * Obtiene el contexto de una visita por su ID
+   */
+  async getContext(): Promise<MCPContext | undefined> {
+    return this.contexts.get('temp_visit_id');
+  }
+
+  /**
+   * Actualiza el contexto de una visita
+   */
+  async updateContext(context: MCPContext): Promise<void> {
+    this.contexts.set('temp_visit_id', context);
+  }
+
+  /**
+   * Elimina el contexto de una visita
+   */
+  async deleteContext(): Promise<void> {
+    this.contexts.delete('temp_visit_id');
   }
 
   /**
@@ -15,7 +56,7 @@ export class MCPManager {
    * @param patientId ID del paciente para obtener memoria persistente
    * @returns Contexto estructurado con datos de Firestore
    */
-  async buildContext(visitId: string, patientId: string) {
+  async buildContext(): Promise<MCPContext> {
     // TODO: Implementar integración real con Firestore
     // Por ahora, devolver estructura mockeada
     return {

@@ -4,7 +4,7 @@
  * Implementación del Blueprint Oficial
  */
 
-import ProfessionalProfileService, { ProfessionalProfile } from './ProfessionalProfileService';
+import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface MedicalKnowledge {
   id: string;
@@ -383,8 +383,7 @@ export class KnowledgeBaseService {
    */
   getSuggestedTests(
     professionalProfileId: string,
-    symptoms: string[],
-    specialty: string
+    symptoms: string[]
   ): DiagnosticTest[] {
     const profile = this.profileService.getProfile(professionalProfileId);
     if (!profile) {
