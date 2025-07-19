@@ -2,13 +2,9 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
 import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
+import AccessPage from '@/pages/AccessPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import { MVPTestPage } from '@/pages/MVPTestPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
-import PhysiotherapyCaseEvaluator from '../pages/PhysiotherapyCaseEvaluator';
-import PhysiotherapyPipelineTest from '../pages/PhysiotherapyPipelineTest';
-import BackendTestingPage from '../pages/BackendTestingPage';
-import CompletePipelineTestPage from '../pages/CompletePipelineTestPage';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
 
@@ -19,41 +15,20 @@ const future = {
 };
 
 export const router = createBrowserRouter([
-  // Página principal: Login limpio
+  // Página principal: Acceso directo
   {
     path: '/',
-    element: <LoginPage />,
+    element: <AccessPage />,
   },
   // Login
   {
     path: '/login',
     element: <LoginPage />,
   },
-  // Página de testing/validación
-  {
-    path: '/testing',
-    element: <MVPTestPage />,
-  },
   // Onboarding
   {
     path: '/onboarding',
     element: <OnboardingPage />,
-  },
-  {
-    path: '/physiotherapy-evaluator',
-    element: <PhysiotherapyCaseEvaluator />
-  },
-  {
-    path: '/physiotherapy-pipeline-test',
-    element: <PhysiotherapyPipelineTest />
-  },
-  {
-    path: '/backend-testing',
-    element: <BackendTestingPage />
-  },
-  {
-    path: '/pipeline-test',
-    element: <CompletePipelineTestPage />
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
