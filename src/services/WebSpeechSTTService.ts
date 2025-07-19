@@ -1,10 +1,12 @@
 import { TranscriptionSegment, TranscriptionActor, TranscriptionConfidence } from '../core/audio/AudioCaptureService';
 
-// Extender Window para TypeScript con Web Speech API
+// Extender Window para TypeScript con Web Speech API (usando any para evitar conflictos)
 declare global {
   interface Window {
-    SpeechRecognition: new() => SpeechRecognition;
-    webkitSpeechRecognition: new() => SpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    SpeechRecognition: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    webkitSpeechRecognition: any;
   }
 }
 

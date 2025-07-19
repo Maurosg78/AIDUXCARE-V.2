@@ -17,54 +17,30 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 function checkEnvVars() {
-  // Variables críticas de Firebase para funcionamiento básico
-  const requiredVars = [
-    'VITE_FIREBASE_API_KEY',
-    'VITE_FIREBASE_PROJECT_ID',
-    'VITE_FIREBASE_APP_ID'
-  ];
+  // Validar configuración Firebase
+  const firebaseConfig = {
+    projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+    apiKey: process.env.VITE_FIREBASE_API_KEY,
+    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.VITE_FIREBASE_APP_ID
+  };
 
-  const missingVars: string[] = [];
+  // Verificar que todas las variables requeridas estén presentes
+  const requiredVars = ['VITE_FIREBASE_PROJECT_ID', 'VITE_FIREBASE_API_KEY'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
-  // Verificar cada variable requerida
-  requiredVars.forEach(varName => {
-    if (!process.env[varName]) {
-      missingVars.push(varName);
-    }
-  });
-
-  // Si hay variables faltantes, mostrar advertencia pero continuar (modo migración)
   if (missingVars.length > 0) {
-    console.warn('\n⚠️ ADVERTENCIA: Faltan variables de entorno requeridas para Firebase:');
-    missingVars.forEach(varName => {
-      console.warn(`   - ${varName}`);
-    });
-    console.warn('\n🔧 MODO MIGRACIÓN: Continuando con valores temporales para CI/CD');
-    console.warn('En producción, configura estas variables en el panel de Vercel\n');
-    
-    // En modo migración, no terminar el proceso
-    // process.exit(1); // Comentado para permitir CI/CD
+    console.error('❌ Variables de entorno Firebase faltantes:', missingVars);
+    process.exit(1);
   }
 
-  // Verificar formato básico de las claves de Firebase
-  const firebaseApiKey = process.env.VITE_FIREBASE_API_KEY;
-  if (firebaseApiKey && firebaseApiKey.length < 20) {
-    console.warn('\n⚠️ ADVERTENCIA: La API Key de Firebase parece demasiado corta.');
-    console.warn('Verifica que sea la clave correcta.');
-  }
-
-  // Todo está bien - Configuración Firebase validada
-  console.log('\n✅ Configuración Firebase validada correctamente.');
+  // Mostrar solo información no sensible
+  console.log('✅ Configuración Firebase validada correctamente.');
   console.log(`   VITE_FIREBASE_PROJECT_ID: ${process.env.VITE_FIREBASE_PROJECT_ID}`);
-  
-  // Mostrar API key parcialmente por seguridad
-  if (firebaseApiKey) {
-    const maskedKey = firebaseApiKey.substring(0, 8) + '...' + 
-      firebaseApiKey.substring(firebaseApiKey.length - 8);
-    console.log(`   VITE_FIREBASE_API_KEY: ${maskedKey}`);
-  }
-  
-  console.log('   ✅ Sistema preparado para arquitectura Firebase\n');
+  console.log('   VITE_FIREBASE_API_KEY: [PROTEGIDO]');
+  console.log('   ✅ Sistema preparado para arquitectura Firebase');
 }
 
 // Ejecutar la verificación

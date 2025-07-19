@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
-import ProfessionalWorkflowPage from '@/pages/ProfessionalWorkflowPage';
+import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
 import AccessPage from '@/pages/AccessPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
