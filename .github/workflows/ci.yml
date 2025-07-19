@@ -66,7 +66,7 @@ jobs:
 
     - name: Build & Type-check
       run: |
-        echo "🔧 Configurando entorno para build..."
+        echo "🔧 Configurando entorno para build CI..."
         export NODE_OPTIONS="--max-old-space-size=4096"
-        npm run build
-      # Verificación de compilación y tipos
+        npm run build:ci
+      # Verificación de compilación y tipos con configuración CI

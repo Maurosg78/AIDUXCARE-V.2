@@ -1,20 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from 'path';
-import { visualizer } from 'rollup-plugin-visualizer';
 
-// Configuración optimizada de Vite
+// Configuración específica para CI/CD - Resuelve crypto.hash
 export default defineConfig({
-  plugins: [
-    react(),
-    // Bundle analyzer - genera stats.html después del build
-    visualizer({
-      filename: 'dist/stats.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-    })
-  ],
+  plugins: [react()],
   css: {
     postcss: './postcss.config.js',
   },
@@ -26,7 +16,6 @@ export default defineConfig({
       "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
     }
   },
-  // Mejorar la configuración de dependencias
   optimizeDeps: {
     include: [
       '@tanstack/react-virtual',
@@ -50,17 +39,14 @@ export default defineConfig({
       }
     }
   },
-  // Configuración del servidor de desarrollo
   server: {
     port: 5174,
     strictPort: false,
-    open: true,
+    open: false,
     host: true
   },
-  // Configuración para evitar problemas de crypto en build
   build: {
     sourcemap: false,
-    // Optimizaciones de bundle
     rollupOptions: {
       output: {
         manualChunks: {
@@ -71,26 +57,23 @@ export default defineConfig({
         }
       }
     },
-    // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
     target: 'esnext',
-    // Optimizaciones adicionales
     assetsInlineLimit: 4096,
     cssCodeSplit: true
   },
   define: {
-    // Eliminar referencias a service workers que causan errores
     'self': 'globalThis',
     'global': 'globalThis',
-    // Prevenir carga de Vitest en el navegador
-    'process.env.NODE_ENV': '"development"'
+    'process.env.NODE_ENV': '"production"',
+    // Resolver crypto.hash específicamente
+    'crypto.hash': 'undefined'
   },
-  // Resolver problema de crypto.hash en CI
   esbuild: {
     define: {
       'crypto.hash': 'undefined',
       'global': 'globalThis'
     }
   }
-});
+}); 
