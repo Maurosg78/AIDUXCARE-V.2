@@ -7,7 +7,7 @@
     "node": "20"
   },
   "scripts": {
-    "start": "functions-framework --target=clinicalBrain",
+    "start": "functions-framework --target=clinicalBrain --port=8080",
     "deploy": "gcloud functions deploy clinical-brain --gen2 --runtime=nodejs20 --region=us-east1 --source=. --entry-point=clinicalBrain --trigger-http --allow-unauthenticated",
     "test": "node test-clinical-brain.js"
   },
