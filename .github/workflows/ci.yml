@@ -65,5 +65,8 @@ jobs:
       # Verificación de calidad de código
 
     - name: Build & Type-check
-      run: npm run build
+      run: |
+        echo "🔧 Configurando entorno para build..."
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        npm run build
       # Verificación de compilación y tipos

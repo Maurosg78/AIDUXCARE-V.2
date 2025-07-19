@@ -58,7 +58,22 @@ export default defineConfig({
     open: true,
     host: true
   },
-  // Optimización del build
+
+  define: {
+    // Eliminar referencias a service workers que causan errores
+    'self': 'globalThis',
+    'global': 'globalThis',
+    // Prevenir carga de Vitest en el navegador
+    'process.env.NODE_ENV': '"development"'
+  },
+  // Resolver problema de crypto.hash en CI
+  esbuild: {
+    define: {
+      'crypto.hash': 'undefined',
+      'global': 'globalThis'
+    }
+  },
+  // Configuración para evitar problemas de crypto en build
   build: {
     sourcemap: false,
     // Optimizaciones de bundle
@@ -79,18 +94,5 @@ export default defineConfig({
     // Optimizaciones adicionales
     assetsInlineLimit: 4096,
     cssCodeSplit: true
-  },
-  define: {
-    // Eliminar referencias a service workers que causan errores
-    'self': 'globalThis',
-    'global': 'globalThis',
-    // Prevenir carga de Vitest en el navegador
-    'process.env.NODE_ENV': '"development"'
-  },
-  // Resolver problema de crypto.hash en CI
-  esbuild: {
-    define: {
-      'crypto.hash': 'undefined'
-    }
   }
 });
