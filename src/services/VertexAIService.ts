@@ -4,8 +4,9 @@
  * Arquitectura: PromptFactory + ModelSelector + Vertex AI
  */
 
-import { PromptFactory, PromptContext } from '../core/ai/PromptFactory';
-import { ModelSelector, ComplexityAnalysis } from '../core/ai/ModelSelector';
+// Imports comentados hasta implementación completa
+// import { PromptFactory, PromptContext } from '../core/ai/PromptFactory';
+// import { ModelSelector, ComplexityAnalysis } from '../core/ai/ModelSelector';
 
 export interface VertexAIResponse {
   response: string;
@@ -40,8 +41,8 @@ export class VertexAIService {
   constructor() {
     // Manejo seguro de variables de entorno
     const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
-    this.baseUrl = (env as any).VITE_VERTEX_AI_URL || 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net';
-    this.apiKey = (env as any).VITE_VERTEX_AI_API_KEY || '';
+    this.baseUrl = (env as Record<string, string>).VITE_VERTEX_AI_URL || 'https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net';
+    this.apiKey = (env as Record<string, string>).VITE_VERTEX_AI_API_KEY || '';
     this.model = 'gemini-1.5-pro';
     this.timeout = 30000;
   }
