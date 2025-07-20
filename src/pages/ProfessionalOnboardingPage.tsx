@@ -711,7 +711,9 @@ const ProfessionalInfoStep: React.FC<{
 );
 
 const CertificationsStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
@@ -733,7 +735,7 @@ const CertificationsStep: React.FC<{
           Técnicas y Modalidades Certificadas
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {TECHNICAL_SPECIALIZATIONS.map((technique: any) => (
+          {TECHNICAL_SPECIALIZATIONS.map((technique) => (
             <div key={technique.id} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-start">
                 <input
@@ -789,7 +791,9 @@ const CertificationsStep: React.FC<{
 );
 
 const PreferencesStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
@@ -848,7 +852,9 @@ const PreferencesStep: React.FC<{
 );
 
 const CredentialsStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
@@ -935,7 +941,9 @@ const CredentialsStep: React.FC<{
 );
 
 const ProfilingStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
@@ -1066,7 +1074,9 @@ const ProfilingStep: React.FC<{
 );
 
 const ComplianceStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
