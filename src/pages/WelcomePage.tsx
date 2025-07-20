@@ -53,7 +53,7 @@ export const WelcomePage: React.FC = () => {
         isLoading: false,
         isAuthenticated: true,
         hasProfile: !!profile,
-        profile
+        profile: profile || undefined
       });
 
     } catch (error) {

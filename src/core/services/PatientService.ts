@@ -38,7 +38,7 @@ export class PatientService {
   ): Promise<string> {
     try {
       // Validar paciente antes de crear
-      const validation = validatePatientProfile(patient as PatientProfile);
+      const validation = validatePatientProfile(patient as Patient);
       if (!validation.isValid) {
         throw new Error(`Paciente inválido: ${validation.errors.join(', ')}`);
       }
@@ -97,7 +97,7 @@ export class PatientService {
   /**
    * Obtener paciente por ID
    */
-  static async getPatientById(patientId: string, requestingUserId: string): Promise<PatientProfile | null> {
+  static async getPatientById(patientId: string, requestingUserId: string): Promise<Patient | null> {
     try {
       const docRef = doc(db, this.collectionName, patientId);
       const docSnap = await getDoc(docRef);
@@ -124,7 +124,7 @@ export class PatientService {
         }
       });
 
-      return decryptedPatient as PatientProfile;
+      return decryptedPatient as Patient;
 
     } catch (error) {
       console.error('❌ Error al obtener paciente:', error);
@@ -143,7 +143,7 @@ export class PatientService {
       includeInactive?: boolean;
       sortBy?: 'name' | 'lastVisit' | 'createdAt';
     } = {}
-  ): Promise<PatientProfile[]> {
+  ): Promise<Patient[]> {
     try {
       const { limit: limitCount = 50, includeInactive = false, sortBy = 'lastVisit' } = options;
 
@@ -177,7 +177,7 @@ export class PatientService {
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data();
           const decryptedPatient = await this.decryptSensitiveData(data);
-          return decryptedPatient as PatientProfile;
+          return decryptedPatient as Patient;
         })
       );
 
@@ -209,7 +209,7 @@ export class PatientService {
     professionalId: string,
     searchTerm: string,
     requestingUserId: string
-  ): Promise<PatientProfile[]> {
+  ): Promise<Patient[]> {
     try {
       // Buscar por nombre o apellido (Firestore no soporta búsqueda de texto completo)
       // Implementación básica - en producción usar Algolia o similar
@@ -246,7 +246,7 @@ export class PatientService {
    */
   static async updatePatient(
     patientId: string,
-    updates: Partial<PatientProfile>,
+    updates: Partial<Patient>,
     updatedBy: string
   ): Promise<void> {
     try {
@@ -372,7 +372,7 @@ export class PatientService {
     professionalId: string,
     requestingUserId: string,
     daysThreshold: number = 30
-  ): Promise<PatientProfile[]> {
+  ): Promise<Patient[]> {
     try {
       const allPatients = await this.getPatientsByProfessional(professionalId, requestingUserId, { includeInactive: true });
       
@@ -404,7 +404,7 @@ export class PatientService {
    * Cifrar datos sensibles del paciente
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private static async encryptSensitiveData(patient: Partial<PatientProfile>): Promise<any> {
+  private static async encryptSensitiveData(patient: Partial<Patient>): Promise<any> {
     const encryptedPatient = { ...patient };
 
     // Cifrar información personal sensible
