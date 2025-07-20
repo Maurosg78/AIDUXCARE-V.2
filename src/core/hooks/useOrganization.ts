@@ -12,7 +12,6 @@ import {
   OrganizationInvitation,
   UserCustomClaims,
   hasPermission,
-  hasRole,
   isOwnerOrAdmin,
   isIndependentProfessional
 } from '../domain/organizationType';

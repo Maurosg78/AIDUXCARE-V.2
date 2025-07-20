@@ -13,8 +13,7 @@ import {
   where, 
   getDocs,
   orderBy,
-  limit,
-  Timestamp 
+  limit
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseClient';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
@@ -23,10 +22,7 @@ import {
   ClinicalVisit,
   generatePatientId,
   validatePatientProfile,
-  getPatientSummary,
-  needsFollowUp,
-  getActiveMedications,
-  getRecentVisits
+  needsFollowUp
 } from '../domain/patientType';
 import { encryptMetadata, decryptMetadata } from '../security/encryption';
 

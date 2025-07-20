@@ -13,16 +13,13 @@ import {
   deleteDoc, 
   query, 
   where, 
-  orderBy,
-  writeBatch,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseClient';
 import { 
   Organization, 
   OrganizationMember, 
   OrganizationInvitation,
-  UserCustomClaims,
   ORGANIZATION_ROLES 
 } from '../domain/organizationType';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
