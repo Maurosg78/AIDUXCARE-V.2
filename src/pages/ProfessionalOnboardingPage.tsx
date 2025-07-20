@@ -457,7 +457,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
 // Componentes de pasos individuales
 const PersonalInfoStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
@@ -577,7 +579,9 @@ const PersonalInfoStep: React.FC<{
 );
 
 const ProfessionalInfoStep: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onInputChange: (field: string, value: any) => void;
 }> = ({ formData, onInputChange }) => (
   <div className="space-y-6">
