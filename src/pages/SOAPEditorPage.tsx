@@ -209,7 +209,7 @@ export const SOAPEditorPage: React.FC<SOAPEditorPageProps> = ({
                 {sections.map((section) => (
                   <button
                     key={section.id}
-                    onClick={() => setActiveSection(section.id as any)}
+                    onClick={() => setActiveSection(section.id as keyof Pick<SOAPNote, 'subjective' | 'objective' | 'assessment' | 'plan'>)}
                     className={`px-4 py-2 text-sm font-medium transition-colors ${
                       activeSection === section.id
                         ? 'text-blue-600 border-b-2 border-blue-600'

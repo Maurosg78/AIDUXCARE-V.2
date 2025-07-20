@@ -3,9 +3,9 @@
  * Página para gestionar miembros de la organización
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useOrganization } from '../core/hooks/useOrganization';
-import { OrganizationMember, OrganizationInvitation } from '../core/domain/organizationType';
+import { OrganizationMember } from '../core/domain/organizationType';
 import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
 
 interface InvitationModalProps {

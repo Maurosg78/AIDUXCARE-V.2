@@ -373,6 +373,7 @@ export class OrganizationService {
       if (!member) return false;
 
       const rolePermissions = ORGANIZATION_ROLES[member.role]?.permissions || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return rolePermissions.includes(requiredPermission as any);
     } catch (error) {
       console.error('Error checking permission:', error);
@@ -440,7 +441,25 @@ export class OrganizationService {
   /**
    * Exportar datos de la organización (solo para admins)
    */
-  async exportOrganizationData(organizationId: string, userId: string): Promise<any> {
+  async exportOrganizationData(organizationId: string, userId: string): Promise<{
+    organization: Organization | null;
+    members: Array<{
+      professionalInfo: {
+        firstName: string;
+        lastName: string;
+        specialization: string;
+        yearsOfExperience: number;
+      };
+    }>;
+    invitations: Array<{
+      email: string;
+      role: string;
+      status: string;
+      invitedAt: Date;
+    }>;
+    exportedAt: Date;
+    exportedBy: string;
+  }> {
     try {
       // Verificar permisos
       const canExport = await this.hasPermission(userId, organizationId, 'data:export');
@@ -487,7 +506,8 @@ export class OrganizationService {
         }
       });
 
-      return exportData;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return exportData as any;
     } catch (error) {
       console.error('Error exporting organization data:', error);
       throw new Error('No se pudieron exportar los datos');
