@@ -180,7 +180,10 @@ export class AuditedPatientDataSource {
         patientId,
         metadata: {
           action: 'update_patient',
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { 
+            name: patientData.personalInfo ? `${patientData.personalInfo.firstName} ${patientData.personalInfo.lastName}` : 'N/A', 
+            age: patientData.personalInfo ? new Date().getFullYear() - patientData.personalInfo.dateOfBirth.getFullYear() : 0 
+          },
           error: (error as Error).message
         },
       });
@@ -206,9 +209,9 @@ export class AuditedPatientDataSource {
         patientId,
         metadata: {
           action: 'delete_patient',
-          patientName: patient?.name,
-          patientAge: patient?.age,
-          patientGender: patient?.gender,
+          patientName: patient ? `${patient.personalInfo.firstName} ${patient.personalInfo.lastName}` : 'N/A',
+          patientAge: patient ? new Date().getFullYear() - patient.personalInfo.dateOfBirth.getFullYear() : 0,
+          patientGender: patient?.personalInfo.gender || 'N/A',
           deletionSuccessful: result
         },
       });
@@ -238,17 +241,18 @@ export class AuditedPatientDataSource {
     
     const changes: string[] = [];
     
-    if (updated.name && updated.name !== original.name) {
-      changes.push('name_changed');
+    // Verificar cambios en información personal
+    if (updated.personalInfo?.firstName && updated.personalInfo.firstName !== original.personalInfo.firstName) {
+      changes.push('first_name_changed');
     }
-    if (updated.age && updated.age !== original.age) {
-      changes.push('age_changed');
+    if (updated.personalInfo?.lastName && updated.personalInfo.lastName !== original.personalInfo.lastName) {
+      changes.push('last_name_changed');
     }
-    if (updated.gender && updated.gender !== original.gender) {
+    if (updated.personalInfo?.gender && updated.personalInfo.gender !== original.personalInfo.gender) {
       changes.push('gender_changed');
     }
-    if (updated.insurance_id && updated.insurance_id !== original.insurance_id) {
-      changes.push('insurance_changed');
+    if (updated.personalInfo?.dateOfBirth && updated.personalInfo.dateOfBirth !== original.personalInfo.dateOfBirth) {
+      changes.push('date_of_birth_changed');
     }
     
     return changes;

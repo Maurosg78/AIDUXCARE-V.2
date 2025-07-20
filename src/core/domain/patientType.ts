@@ -298,5 +298,8 @@ export const PatientSchema = {
     hipaaConsent: 'boolean',
     gdprConsent: 'boolean',
     dataProcessingConsent: 'boolean'
+  },
+  parse: function(data: any) {
+    return data as Patient;
   }
 };

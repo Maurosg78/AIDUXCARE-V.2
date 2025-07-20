@@ -18,7 +18,7 @@ import {
 import { db } from '../firebase/firebaseClient';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 import { 
-  PatientProfile, 
+  Patient, 
   ClinicalVisit,
   generatePatientId,
   validatePatientProfile,
@@ -33,7 +33,7 @@ export class PatientService {
    * Crear paciente con auditoría completa
    */
   static async createPatient(
-    patient: Omit<PatientProfile, 'id' | 'metadata'>,
+    patient: Omit<Patient, 'id' | 'metadata'>,
     createdBy: string
   ): Promise<string> {
     try {

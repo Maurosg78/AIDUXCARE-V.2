@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Button } from '@/shared/components/UI/Button';
+import Button from '../ui/button';
 
 interface AudioFileUploadProps {
   onFileSelect: (file: File) => void;
