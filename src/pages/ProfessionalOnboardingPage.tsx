@@ -283,7 +283,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           }
         },
         clinicalPreferences: {
-          preferredTests: specialization.clinicalTests.filter((test: any) => test.isDefault),
+          preferredTests: specialization.clinicalTests.filter((test) => test.isDefault),
           customTests: [],
           assessmentStyle: formData.assessmentStyle,
           documentationStyle: formData.documentationStyle,
