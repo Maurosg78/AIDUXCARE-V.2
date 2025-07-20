@@ -106,9 +106,9 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'create_patient',
           professionalId,
-          patientName: patient.name,
-          patientAge: patient.age,
-          patientGender: patient.gender
+          patientName: `${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`,
+          patientAge: new Date().getFullYear() - patient.personalInfo.dateOfBirth.getFullYear(),
+          patientGender: patient.personalInfo.gender
         },
       });
 
@@ -122,7 +122,10 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'create_patient',
           professionalId,
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { 
+            name: `${patientData.personalInfo.firstName} ${patientData.personalInfo.lastName}`, 
+            age: new Date().getFullYear() - patientData.personalInfo.dateOfBirth.getFullYear() 
+          },
           error: (error as Error).message
         },
       });
@@ -154,14 +157,14 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'update_patient',
           originalData: originalPatient ? {
-            name: originalPatient.name,
-            age: originalPatient.age,
-            gender: originalPatient.gender
+            name: `${originalPatient.personalInfo.firstName} ${originalPatient.personalInfo.lastName}`,
+            age: new Date().getFullYear() - originalPatient.personalInfo.dateOfBirth.getFullYear(),
+            gender: originalPatient.personalInfo.gender
           } : null,
           newData: {
-            name: patientData.name,
-            age: patientData.age,
-            gender: patientData.gender
+            name: patientData.personalInfo ? `${patientData.personalInfo.firstName} ${patientData.personalInfo.lastName}` : 'N/A',
+            age: patientData.personalInfo ? new Date().getFullYear() - patientData.personalInfo.dateOfBirth.getFullYear() : 0,
+            gender: patientData.personalInfo?.gender || 'N/A'
           },
           changesDetected: this.detectChanges(originalPatient, patientData)
         },

@@ -3,7 +3,7 @@
  * Cumple HIPAA/GDPR: Datos sensibles cifrados, auditoría completa, consentimiento explícito
  */
 
-export interface PatientProfile {
+export interface Patient {
   id: string;
   professionalId: string; // ID del profesional que creó/atiende al paciente
   personalInfo: {
@@ -166,7 +166,7 @@ export function generatePatientId(professionalId: string, firstName: string, las
 }
 
 // Función para validar perfil de paciente
-export function validatePatientProfile(profile: PatientProfile): {
+export function validatePatientProfile(profile: Patient): {
   isValid: boolean;
   errors: string[];
 } {
@@ -225,7 +225,7 @@ export function calculateAge(dateOfBirth: Date): number {
 }
 
 // Función para obtener información resumida del paciente
-export function getPatientSummary(patient: PatientProfile): {
+export function getPatientSummary(patient: Patient): {
   fullName: string;
   age: number;
   primaryCondition: string;
@@ -244,7 +244,7 @@ export function getPatientSummary(patient: PatientProfile): {
 }
 
 // Función para verificar si un paciente necesita seguimiento
-export function needsFollowUp(patient: PatientProfile, daysThreshold: number = 30): boolean {
+export function needsFollowUp(patient: Patient, daysThreshold: number = 30): boolean {
   if (!patient.metadata.lastVisitDate) {
     return true; // Nunca ha visitado
   }
@@ -257,9 +257,9 @@ export function needsFollowUp(patient: PatientProfile, daysThreshold: number = 3
 }
 
 // Función para obtener medicamentos activos
-export function getActiveMedications(patient: PatientProfile): Medication[] {
+export function getActiveMedications(patient: Patient): Medication[] {
   const today = new Date();
-  return patient.medicalInfo.currentMedications.filter(med => {
+  return patient.medicalInfo.currentMedications.filter((med: Medication) => {
     if (med.endDate) {
       return med.startDate <= today && med.endDate >= today;
     }
@@ -268,11 +268,35 @@ export function getActiveMedications(patient: PatientProfile): Medication[] {
 }
 
 // Función para obtener visitas recientes
-export function getRecentVisits(patient: PatientProfile, days: number = 30): ClinicalVisit[] {
+export function getRecentVisits(patient: Patient, days: number = 30): ClinicalVisit[] {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
   return patient.clinicalHistory.visits
-    .filter(visit => visit.date >= cutoffDate)
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
-} 
+    .filter((visit: ClinicalVisit) => visit.date >= cutoffDate)
+    .sort((a: ClinicalVisit, b: ClinicalVisit) => b.date.getTime() - a.date.getTime());
+}
+
+// Schema de validación para Patient (usando Zod)
+export const PatientSchema = {
+  id: 'string',
+  professionalId: 'string',
+  personalInfo: {
+    firstName: 'string',
+    lastName: 'string',
+    dateOfBirth: 'Date',
+    gender: 'string',
+    email: 'string?',
+    phone: 'string?'
+  },
+  medicalInfo: {
+    primaryCondition: 'string',
+    secondaryConditions: 'string[]',
+    allergies: 'string[]'
+  },
+  consent: {
+    hipaaConsent: 'boolean',
+    gdprConsent: 'boolean',
+    dataProcessingConsent: 'boolean'
+  }
+};
