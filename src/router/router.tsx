@@ -1,19 +1,19 @@
 import { createBrowserRouter } from 'react-router-dom';
-import Layout from '@/core/components/Layout';
-import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
-import ClinicalInfoPage from '@/pages/ClinicalInfoPage';
-import HumanFigurePage from '@/pages/HumanFigurePage';
-import SOAPEditorPage from '@/pages/SOAPEditorPage';
-import ProfessionalOnboardingPage from '@/pages/ProfessionalOnboardingPage';
-import WelcomePage from '@/pages/WelcomePage';
-import LoginPage from '@/pages/LoginPage';
-import AccessPage from '@/pages/AccessPage';
-import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import { OnboardingPage } from '@/pages/OnboardingPage';
-import { AuditPage } from '@/features/admin/AuditPage';
-import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
-import OrganizationTeamPage from '@/pages/OrganizationTeamPage';
-import OrganizationDashboardPage from '@/pages/OrganizationDashboardPage';
+import Layout from '../core/components/Layout';
+import { ProfessionalWorkflowPage } from '../pages/ProfessionalWorkflowPage';
+import ClinicalInfoPage from '../pages/ClinicalInfoPage';
+import HumanFigurePage from '../pages/HumanFigurePage';
+import SOAPEditorPage from '../pages/SOAPEditorPage';
+import ProfessionalOnboardingPage from '../pages/ProfessionalOnboardingPage';
+import WelcomePage from '../pages/WelcomePage';
+import LoginPage from '../pages/LoginPage';
+import AccessPage from '../pages/AccessPage';
+import ProtectedRoute from '../features/auth/ProtectedRoute';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { AuditPage } from '../features/admin/AuditPage';
+import { AuditMetricsDashboard } from '../features/admin/AuditMetricsDashboard';
+import OrganizationTeamPage from '../pages/OrganizationTeamPage';
+import OrganizationDashboardPage from '../pages/OrganizationDashboardPage';
 
 // Configuración de future flags para React Router v7
 const future = {
