@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-07-19T22:46:17.264Z",
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "successRate": "100.0"
+  },
+  "results": [
+    {
+      "test": "Crear Paciente",
+      "status": "PASS",
+      "details": "Paciente creado exitosamente"
+    },
+    {
+      "test": "Grabación de Audio",
+      "status": "PASS",
+      "details": "Grabación iniciada y detenida correctamente"
+    },
+    {
+      "test": "Asistente Virtual",
+      "status": "PASS",
+      "details": "Consulta enviada correctamente"
+    },
+    {
+      "test": "Transcripción",
+      "status": "PASS",
+      "details": "Sistema de transcripción disponible"
+    }
+  ]
+}

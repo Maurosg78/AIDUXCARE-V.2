@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-07-19T22:43:13.125Z",
+  "summary": {
+    "total": 7,
+    "passed": 6,
+    "failed": 1,
+    "successRate": "85.7"
+  },
+  "tests": [
+    {
+      "test": "Carga de página",
+      "status": "PASS",
+      "details": "Página cargada correctamente con todos los elementos"
+    },
+    {
+      "test": "Gestión de pacientes",
+      "status": "PASS",
+      "details": "Modal de paciente abierto y campos disponibles"
+    },
+    {
+      "test": "Captura de audio",
+      "status": "PASS",
+      "details": "Grabación iniciada correctamente"
+    },
+    {
+      "test": "Asistente virtual",
+      "status": "PASS",
+      "details": "Consulta enviada correctamente"
+    },
+    {
+      "test": "Transcripción",
+      "status": "PASS",
+      "details": "Sistema de transcripción disponible"
+    },
+    {
+      "test": "Análisis clínico",
+      "status": "PASS",
+      "details": "Sistema de análisis clínico disponible"
+    },
+    {
+      "test": "Seguridad",
+      "status": "FAIL",
+      "details": "Passed function cannot be serialized!"
+    }
+  ]
+}

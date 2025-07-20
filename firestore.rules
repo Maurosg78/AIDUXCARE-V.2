@@ -1,68 +1,215 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Función helper para verificar autenticación
+    
+    // ===== REGLAS DE AUTENTICACIÓN =====
+    
+    // Verificar que el usuario esté autenticado
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Función helper para verificar roles
-    function hasRole(roles) {
-      return isAuthenticated() && request.auth.token.role in roles;
+    // Verificar que el usuario tenga custom claims válidos
+    function hasValidClaims() {
+      return request.auth.token.role != null;
     }
     
-    // Función helper para verificar si es propietario del recurso
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    // Verificar si el usuario es profesional independiente
+    function isIndependentProfessional() {
+      return request.auth.token.role == 'INDEPENDENT' || request.auth.token.organizationId == null;
     }
     
-    // Función helper para verificar acceso a paciente
-    function canAccessPatient(patientId) {
-      return hasRole(['OWNER', 'ADMIN']) || 
-             (hasRole(['PHYSICIAN']) && resource.data.assignedPhysician == request.auth.uid);
+    // Verificar si el usuario pertenece a una organización específica
+    function belongsToOrganization(organizationId) {
+      return request.auth.token.organizationId == organizationId;
     }
     
-    // AUDIT LOGS - Permitir escritura para usuarios autenticados
-    match /audit_logs/{document} {
-      allow read: if hasRole(['ADMIN', 'OWNER']);
-      allow create: if isAuthenticated(); // Permitir creación de logs para usuarios autenticados
-      allow update: if false; // Los logs son inmutables una vez creados
-      allow delete: if false; // Los logs no se pueden eliminar
+    // Verificar si el usuario tiene un rol específico
+    function hasRole(role) {
+      return request.auth.token.role == role;
     }
     
-    // PATIENTS - Control de acceso basado en roles
-    match /patients/{patientId} {
-      allow read: if canAccessPatient(patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']); // Solo admin puede eliminar
+    // Verificar si el usuario es dueño o admin
+    function isOwnerOrAdmin() {
+      return request.auth.token.role == 'OWNER' || request.auth.token.role == 'ADMIN';
     }
     
-    // VISITS - Control de acceso basado en paciente
-    match /visits/{visitId} {
-      allow read: if canAccessPatient(resource.data.patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(resource.data.patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
+    // Verificar si el usuario tiene un permiso específico
+    function hasPermission(permission) {
+      return permission in request.auth.token.permissions;
     }
     
-    // USER PROFILES - Permitir creación de propio perfil y acceso ADMIN
-    match /users/{userId} {
-      allow read: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
-      allow create: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']); // Permitir creación de propio perfil
-      allow update: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
+    // ===== ORGANIZACIONES =====
+    
+    // Reglas para la colección de organizaciones
+    match /organizations/{organizationId} {
+      // Permitir lectura si el usuario pertenece a la organización
+      allow read: if isAuthenticated() && 
+        (belongsToOrganization(organizationId) || isOwnerOrAdmin());
+      
+      // Permitir escritura solo a dueños y admins de la organización
+      allow write: if isAuthenticated() && 
+        belongsToOrganization(organizationId) && 
+        isOwnerOrAdmin();
+      
+      // ===== MIEMBROS DE ORGANIZACIÓN =====
+      match /members/{memberId} {
+        // Permitir lectura a miembros de la organización
+        allow read: if isAuthenticated() && belongsToOrganization(organizationId);
+        
+        // Permitir escritura solo a dueños y admins
+        allow write: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+      }
+      
+      // ===== INVITACIONES =====
+      match /invitations/{invitationId} {
+        // Permitir lectura a dueños y admins
+        allow read: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+        
+        // Permitir creación solo a dueños y admins
+        allow create: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+        
+        // Permitir actualización solo a dueños y admins
+        allow update: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+      }
+      
+      // ===== PACIENTES DE LA ORGANIZACIÓN =====
+      match /patients/{patientId} {
+        // Permitir lectura a miembros de la organización
+        allow read: if isAuthenticated() && belongsToOrganization(organizationId);
+        
+        // Permitir escritura a miembros de la organización
+        allow write: if isAuthenticated() && belongsToOrganization(organizationId);
+        
+        // ===== VISITAS DE PACIENTES =====
+        match /visits/{visitId} {
+          // Permitir lectura a miembros de la organización
+          allow read: if isAuthenticated() && belongsToOrganization(organizationId);
+          
+          // Permitir escritura a miembros de la organización
+          allow write: if isAuthenticated() && belongsToOrganization(organizationId);
+        }
+        
+        // ===== DOCUMENTOS SOAP =====
+        match /soap_documents/{documentId} {
+          // Permitir lectura a miembros de la organización
+          allow read: if isAuthenticated() && belongsToOrganization(organizationId);
+          
+          // Permitir escritura a miembros de la organización
+          allow write: if isAuthenticated() && belongsToOrganization(organizationId);
+        }
+      }
+      
+      // ===== AUDITORÍA DE LA ORGANIZACIÓN =====
+      match /audit_logs/{logId} {
+        // Permitir lectura solo a dueños y admins
+        allow read: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+        
+        // Permitir escritura solo al sistema (Cloud Functions)
+        allow write: if false; // Los logs se crean solo desde Cloud Functions
+      }
+      
+      // ===== CONFIGURACIÓN DE LA ORGANIZACIÓN =====
+      match /settings/{settingId} {
+        // Permitir lectura a miembros de la organización
+        allow read: if isAuthenticated() && belongsToOrganization(organizationId);
+        
+        // Permitir escritura solo a dueños y admins
+        allow write: if isAuthenticated() && 
+          belongsToOrganization(organizationId) && 
+          isOwnerOrAdmin();
+      }
     }
     
-    // CLINICAL DATA - Control estricto
-    match /clinical_data/{document} {
-      allow read: if canAccessPatient(resource.data.patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(resource.data.patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
+    // ===== PROFESIONALES INDEPENDIENTES =====
+    
+    // Reglas para profesionales independientes (sin organización)
+    match /independent_professionals/{userId} {
+      // Permitir lectura solo al propio usuario
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Permitir escritura solo al propio usuario
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      
+      // ===== PACIENTES DE PROFESIONALES INDEPENDIENTES =====
+      match /patients/{patientId} {
+        // Permitir lectura solo al propio profesional
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        
+        // Permitir escritura solo al propio profesional
+        allow write: if isAuthenticated() && request.auth.uid == userId;
+        
+        // ===== VISITAS DE PACIENTES =====
+        match /visits/{visitId} {
+          // Permitir lectura solo al propio profesional
+          allow read: if isAuthenticated() && request.auth.uid == userId;
+          
+          // Permitir escritura solo al propio profesional
+          allow write: if isAuthenticated() && request.auth.uid == userId;
+        }
+        
+        // ===== DOCUMENTOS SOAP =====
+        match /soap_documents/{documentId} {
+          // Permitir lectura solo al propio profesional
+          allow read: if isAuthenticated() && request.auth.uid == userId;
+          
+          // Permitir escritura solo al propio profesional
+          allow write: if isAuthenticated() && request.auth.uid == userId;
+        }
+      }
     }
     
-    // Denegar acceso a todo lo demás
+    // ===== PERFILES PROFESIONALES =====
+    
+    // Reglas para perfiles profesionales
+    match /professional_profiles/{profileId} {
+      // Permitir lectura al propio usuario o miembros de su organización
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == profileId || 
+         (request.auth.token.organizationId != null && 
+          hasPermission('team:manage')));
+      
+      // Permitir escritura solo al propio usuario
+      allow write: if isAuthenticated() && request.auth.uid == profileId;
+    }
+    
+    // ===== AUDITORÍA GLOBAL =====
+    
+    // Reglas para logs de auditoría globales
+    match /audit_logs/{logId} {
+      // Permitir lectura solo a usuarios con permisos de auditoría
+      allow read: if isAuthenticated() && 
+        (hasPermission('audit:view') || isOwnerOrAdmin());
+      
+      // Permitir escritura solo al sistema (Cloud Functions)
+      allow write: if false; // Los logs se crean solo desde Cloud Functions
+    }
+    
+    // ===== CONFIGURACIÓN GLOBAL =====
+    
+    // Reglas para configuración global
+    match /global_settings/{settingId} {
+      // Permitir lectura a usuarios autenticados
+      allow read: if isAuthenticated();
+      
+      // Permitir escritura solo a administradores del sistema
+      allow write: if isAuthenticated() && 
+        (hasRole('OWNER') || hasPermission('organization:manage'));
+    }
+    
+    // ===== REGLAS DE SEGURIDAD ADICIONALES =====
+    
+    // Denegar acceso a todas las demás colecciones por defecto
     match /{document=**} {
       allow read, write: if false;
     }

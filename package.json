@@ -41,6 +41,7 @@
     "demo:rag-solo": "tsx scripts/test-rag-solo.ts",
     "test:backend-blueprint": "tsx scripts/test-backend-blueprint.ts",
     "test:backend-blueprint:bash": "bash scripts/run-backend-blueprint-test.sh",
+    "test:organization-ui": "tsx scripts/test-organization-ui.ts",
     "analyze": "node scripts/analyze-bundle.cjs",
     "emulator:firestore": "firebase emulators:start --only firestore --project test-project"
   },
@@ -93,6 +94,7 @@
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "postcss": "^8.4.33",
+    "puppeteer": "^24.14.0",
     "rollup-plugin-visualizer": "^6.0.1",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
