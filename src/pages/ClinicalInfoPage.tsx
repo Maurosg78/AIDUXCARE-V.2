@@ -96,10 +96,11 @@ export const ClinicalInfoPage: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
+              <label htmlFor="name" className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
                 Nombre Completo
               </label>
               <input
+                id="name"
                 type="text"
                 value={patientData.name}
                 onChange={(e) => setPatientData({...patientData, name: e.target.value})}
@@ -109,10 +110,11 @@ export const ClinicalInfoPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
+              <label htmlFor="age" className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
                 Edad
               </label>
               <input
+                id="age"
                 type="number"
                 value={patientData.age}
                 onChange={(e) => setPatientData({...patientData, age: parseInt(e.target.value)})}
@@ -122,10 +124,11 @@ export const ClinicalInfoPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
+              <label htmlFor="contact" className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
                 Teléfono
               </label>
               <input
+                id="contact"
                 type="tel"
                 value={patientData.contact}
                 onChange={(e) => setPatientData({...patientData, contact: e.target.value})}
@@ -135,10 +138,11 @@ export const ClinicalInfoPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
+              <label htmlFor="emergencyContact" className="block text-sm font-medium mb-1" style={{ color: '#2C3E50' }}>
                 Contacto de Emergencia
               </label>
               <input
+                id="emergencyContact"
                 type="tel"
                 value={patientData.emergencyContact}
                 onChange={(e) => setPatientData({...patientData, emergencyContact: e.target.value})}

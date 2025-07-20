@@ -36,10 +36,11 @@ const InvitationModal: React.FC<InvitationModalProps> = ({ isOpen, onClose, onIn
         <h3 className="text-lg font-semibold mb-4">Invitar Miembro</h3>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -49,10 +50,11 @@ const InvitationModal: React.FC<InvitationModalProps> = ({ isOpen, onClose, onIn
             />
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               Rol
             </label>
             <select
+              id="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

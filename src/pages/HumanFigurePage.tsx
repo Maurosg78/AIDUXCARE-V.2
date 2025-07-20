@@ -230,6 +230,14 @@ export const HumanFigurePage: React.FC = () => {
             <div
               className="w-full h-96 cursor-crosshair"
               onClick={handleFigureClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  handleFigureClick(e as any);
+                }
+              }}
+              role="button"
+              tabIndex={0}
               style={{
                 backgroundImage: `url('/api/human-figure/${activeView}')`,
                 backgroundSize: 'contain',
@@ -270,6 +278,13 @@ export const HumanFigurePage: React.FC = () => {
                     }}
                     title={`${painPoint.description} (Intensidad: ${painPoint.intensity}/10)`}
                     onClick={() => removePainPoint(painPoint.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        removePainPoint(painPoint.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   />
                 ))}
             </div>
