@@ -1,0 +1,65 @@
+{
+  "name": "AiDuxCare V.2 Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-json",
+        "firefox-devtools.vscode-firefox-debug",
+        "ms-vscode.vscode-jest",
+        "ms-vscode.vscode-js-debug",
+        "ms-vscode.vscode-js-debug-companion"
+      ],
+      "settings": {
+        "typescript.preferences.includePackageJsonAutoImports": "on",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [5173, 5174, 5175, 5176, 5177, 3000, 3001, 8080, 4000],
+  
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    },
+    "5174": {
+      "label": "Vite Dev Server (Alt)",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "React App",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Firebase Emulator",
+      "onAutoForward": "notify"
+    },
+    "4000": {
+      "label": "Firebase UI",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "postCreateCommand": "npm ci --legacy-peer-deps",
+  
+  "postStartCommand": "echo 'AiDuxCare V.2 environment ready! Run: npm run dev'",
+  
+  "remoteUser": "node"
+} 

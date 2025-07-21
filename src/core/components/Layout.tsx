@@ -15,7 +15,7 @@ const Layout = () => {
   const [activeTool, setActiveTool] = useState('assistant');
   const location = useLocation();
   
-  // Navegación principal
+  // LIMPIO: Solo navegación esencial
   const navigation = [
     { name: 'Captura', href: '/professional-workflow', icon: 'microphone' },
     { name: 'Pacientes', href: '/patients', icon: 'users' },
@@ -145,6 +145,7 @@ const Layout = () => {
                 }`}
                 style={{
                   backgroundColor: isActive(item.href) ? '#5DA5A3' : 'transparent',
+                  color: isActive(item.href) ? 'white' : '#2C3E50',
                   fontFamily: 'Inter, sans-serif'
                 }}
               >
@@ -174,12 +175,18 @@ const Layout = () => {
               onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
               className="p-2 rounded-md hover:bg-gray-100 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2C3E50' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8E6CF' }}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2C3E50' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <span className="hidden md:block font-medium" style={{ color: '#2C3E50', fontFamily: 'Inter, sans-serif' }}>
+                Usuario
+              </span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#BDC3C7' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
               </svg>
-            </button>
-            
-            <div className="relative">
+            </button>            <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center space-x-3 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
@@ -196,37 +203,13 @@ const Layout = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
-
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm border-b" style={{ color: '#2C3E50', borderColor: '#BDC3C7' }}>
                       <div className="font-medium">Usuario</div>
                       <div style={{ color: '#BDC3C7' }}>Profesional</div>
                     </div>
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm hover:opacity-80"
-                      style={{ color: '#2C3E50' }}
-                    >
-                      Mi Perfil
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm hover:opacity-80"
-                      style={{ color: '#2C3E50' }}
-                    >
-                      Configuración
-                    </Link>
-                    <button
-                      className="block w-full text-left px-4 py-2 text-sm hover:opacity-80"
-                      style={{ color: '#2C3E50' }}
-                      onClick={() => {
-                        window.location.href = '/';
-                      }}
-                    >
-                      Cerrar Sesión
-                    </button>
                   </div>
                 </div>
               )}

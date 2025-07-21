@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 
 import * as esbuild from 'esbuild';
 import { spawn } from 'child_process';

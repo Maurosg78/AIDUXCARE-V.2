@@ -7,5 +7,29 @@ dist/
 .vercel/output/
 .vercel
 .env*
-google-cloud-credentials.json
-*.json
+
+# SECURITY: Logs sensibles - HIPAA/GDPR Compliance
+*.log
+firebase-debug.log
+firestore-debug.log
+backend-*.log
+backend-output.log
+backend-test-results.log
+npm-install-log.txt
+
+# SECURITY: Archivos duplicados y temporales
+* 2*
+* 2/
+temp_backup/
+deployment/
+k8s/
+logs/
+maintenance/
+
+# SECURITY: Archivos de configuración sensibles
+firebase-debug*.log
+firestore-debug*.log
+backend-*.log
+*.log.*
+
+# CI/CD Force Re-run Fri Jul 11 13:23:21 CEST 2025

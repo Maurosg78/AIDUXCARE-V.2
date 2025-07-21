@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 
 /**
  * Script para ejecutar la migración de la tabla metrics_by_visit en Supabase

@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "aiduxcare-mvp-uat",
-    "UAT": "aiduxcare-mvp-uat"
+    "default": "aiduxcare-mvp-uat"
   },
   "targets": {},
   "etags": {}

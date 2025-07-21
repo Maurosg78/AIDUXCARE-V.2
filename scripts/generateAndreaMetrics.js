@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * Script para generar métricas longitudinales simuladas
  * 

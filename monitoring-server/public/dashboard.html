@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 AiDuxCare - Dashboard de Monitoreo Remoto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/chart.js"></script>
+    <style>
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .event-item {
+            transition: all 0.3s ease;
+        }
+        .event-item:hover {
+            transform: translateX(5px);
+        }
+        .critical {
+            border-left: 4px solid #ef4444;
+            background-color: #fef2f2;
+        }
+        .warning {
+            border-left: 4px solid #f59e0b;
+            background-color: #fffbeb;
+        }
+        .info {
+            border-left: 4px solid #3b82f6;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <h1 class="text-2xl font-bold text-gray-900">🔍 AiDuxCare</h1>
+                    <span class="text-sm text-gray-500">Monitoreo Remoto</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div id="connectionStatus" class="w-3 h-3 rounded-full bg-green-500 status-indicator"></div>
+                        <span id="connectionText" class="text-sm text-gray-600">Conectado</span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Última actualización: <span id="lastUpdate">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Resumen -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Sesiones Activas</p>
+                        <p id="activeSessions" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Errores</p>
+                        <p id="totalErrors" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Advertencias</p>
+                        <p id="totalWarnings" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Eventos</p>
+                        <p id="totalEvents" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Sesiones Activas -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Sesiones Activas</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="sessionsList" class="space-y-3">
+                            <p class="text-gray-500 text-center py-4">No hay sesiones activas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eventos Recientes -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Eventos Recientes</h3>
+                            <div class="flex space-x-2">
+                                <select id="categoryFilter" class="text-sm border rounded px-2 py-1">
+                                    <option value="all">Todas las categorías</option>
+                                    <option value="auth">Autenticación</option>
+                                    <option value="firebase">Firebase</option>
+                                    <option value="network">Red</option>
+                                    <option value="ui">Interfaz</option>
+                                    <option value="performance">Performance</option>
+                                    <option value="api">API</option>
+                                    <option value="system">Sistema</option>
+                                </select>
+                                <button id="refreshBtn" class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                                    🔄 Actualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div id="eventsList" class="space-y-3 max-h-96 overflow-y-auto">
+                            <p class="text-gray-500 text-center py-4">No hay eventos para mostrar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Eventos -->
+        <div class="mt-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Estadísticas por Categoría</h3>
+                <canvas id="eventsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventsChart;
+        let refreshInterval;
+
+        // Inicializar dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupEventListeners();
+            startAutoRefresh();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('refreshBtn').addEventListener('click', loadDashboardData);
+            document.getElementById('categoryFilter').addEventListener('change', filterEvents);
+        }
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(loadDashboardData, 5000); // Actualizar cada 5 segundos
+        }
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                updateSummary(data.summary);
+                updateSessions(data.sessions);
+                updateEvents(data.criticalEvents);
+                updateChart(data.categoryStats);
+                updateConnectionStatus(true);
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateSummary(summary) {
+            document.getElementById('activeSessions').textContent = summary.activeSessions;
+            document.getElementById('totalErrors').textContent = summary.errors;
+            document.getElementById('totalWarnings').textContent = summary.warnings;
+            document.getElementById('totalEvents').textContent = summary.totalEvents;
+            document.getElementById('lastUpdate').textContent = new Date(summary.lastUpdate).toLocaleTimeString();
+        }
+
+        function updateSessions(sessions) {
+            const sessionsList = document.getElementById('sessionsList');
+            
+            if (sessions.length === 0) {
+                sessionsList.innerHTML = '<p class="text-gray-500 text-center py-4">No hay sesiones activas</p>';
+                return;
+            }
+
+            sessionsList.innerHTML = sessions.map(session => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">${session.sessionId.substring(0, 20)}...</p>
+                        <p class="text-xs text-gray-500">${session.url}</p>
+                        <p class="text-xs text-gray-400">Última actividad: ${new Date(session.lastActivity).toLocaleTimeString()}</p>
+                    </div>
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+            `).join('');
+        }
+
+        function updateEvents(events) {
+            const eventsList = document.getElementById('eventsList');
+            
+            if (events.length === 0) {
+                eventsList.innerHTML = '<p class="text-gray-500 text-center py-4">No hay eventos para mostrar</p>';
+                return;
+            }
+
+            eventsList.innerHTML = events.map(event => `
+                <div class="event-item p-4 rounded-lg border ${getEventClass(event.type)}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-lg">${getEventIcon(event.type)}</span>
+                            <div>
+                                <p class="font-medium text-gray-900">${event.message}</p>
+                                <p class="text-sm text-gray-500">
+                                    ${event.category.toUpperCase()} • ${new Date(event.timestamp).toLocaleTimeString()}
+                                </p>
+                                <p class="text-xs text-gray-400">Sesión: ${event.sessionId.substring(0, 15)}...</p>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded ${getEventBadgeClass(event.type)}">
+                            ${event.type}
+                        </span>
+                    </div>
+                    ${event.details ? `
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-800 text-sm">
+                                Ver detalles
+                            </summary>
+                            <pre class="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">${JSON.stringify(event.details, null, 2)}</pre>
+                        </details>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateChart(categoryStats) {
+            const ctx = document.getElementById('eventsChart').getContext('2d');
+            
+            if (eventsChart) {
+                eventsChart.destroy();
+            }
+
+            const categories = Object.keys(categoryStats);
+            const totalData = categories.map(cat => categoryStats[cat].total);
+            const errorData = categories.map(cat => categoryStats[cat].errors);
+            const warningData = categories.map(cat => categoryStats[cat].warnings);
+
+            eventsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [
+                        {
+                            label: 'Total',
+                            data: totalData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Errores',
+                            data: errorData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Advertencias',
+                            data: warningData,
+                            backgroundColor: 'rgba(245, 158, 11, 0.5)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusIndicator = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500 status-indicator';
+                statusText.textContent = 'Conectado';
+                statusText.className = 'text-sm text-gray-600';
+            } else {
+                statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                statusText.textContent = 'Desconectado';
+                statusText.className = 'text-sm text-red-600';
+            }
+        }
+
+        function getEventClass(type) {
+            switch (type) {
+                case 'error': return 'critical';
+                case 'warning': return 'warning';
+                default: return 'info';
+            }
+        }
+
+        function getEventIcon(type) {
+            switch (type) {
+                case 'error': return '❌';
+                case 'warning': return '⚠️';
+                case 'success': return '✅';
+                default: return 'ℹ️';
+            }
+        }
+
+        function getEventBadgeClass(type) {
+            switch (type) {
+                case 'error': return 'bg-red-100 text-red-800';
+                case 'warning': return 'bg-yellow-100 text-yellow-800';
+                case 'success': return 'bg-green-100 text-green-800';
+                default: return 'bg-blue-100 text-blue-800';
+            }
+        }
+
+        function filterEvents() {
+            const category = document.getElementById('categoryFilter').value;
+            // Implementar filtrado de eventos
+            loadDashboardData();
+        }
+
+        // Limpiar intervalo al cerrar la página
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html> 

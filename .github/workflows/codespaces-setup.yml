@@ -1,0 +1,107 @@
+name: Codespaces Setup and Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  setup-codespaces:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+
+    - name: Create .env.local
+      run: |
+        echo "VITE_FIREBASE_API_KEY=mock-firebase-api-key" >> .env.local
+        echo "VITE_FIREBASE_PROJECT_ID=mock-firebase-project" >> .env.local
+        echo "VITE_FIREBASE_APP_ID=mock-firebase-app-id" >> .env.local
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run type checking
+      run: npm run type-check
+
+    - name: Build application
+      run: |
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        export NODE_ENV=production
+        export VITE_DISABLE_CRYPTO_HASH=true
+        npm run build:ci
+
+    - name: Validate build output
+      run: |
+        if [ -d "dist" ]; then
+          echo "✅ Build successful - dist directory exists"
+          ls -la dist/
+        else
+          echo "❌ Build failed - dist directory not found"
+          exit 1
+        fi
+
+  validate-codespaces:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+
+    - name: Create .env.local
+      run: |
+        echo "VITE_FIREBASE_API_KEY=mock-firebase-api-key" >> .env.local
+        echo "VITE_FIREBASE_PROJECT_ID=mock-firebase-project" >> .env.local
+        echo "VITE_FIREBASE_APP_ID=mock-firebase-app-id" >> .env.local
+
+    - name: Start development server (background)
+      run: |
+        export NODE_OPTIONS="--max-old-space-size=4096"
+        export NODE_ENV=development
+        npm run dev &
+        sleep 10
+
+    - name: Check if server is running
+      run: |
+        if curl -f http://localhost:5174 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5174"
+        elif curl -f http://localhost:5173 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5173"
+        elif curl -f http://localhost:5175 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5175"
+        elif curl -f http://localhost:5176 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5176"
+        elif curl -f http://localhost:5177 > /dev/null 2>&1; then
+          echo "✅ Development server is running on port 5177"
+        else
+          echo "❌ Development server is not running"
+          echo "🔍 Checking process status..."
+          ps aux | grep vite || true
+          echo "🔍 Checking port status..."
+          netstat -tlnp | grep :517 || true
+          exit 1
+        fi
+
+    - name: Stop development server
+      run: pkill -f "vite" || true 
