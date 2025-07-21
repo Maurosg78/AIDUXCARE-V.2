@@ -362,19 +362,19 @@ export const WelcomePage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Profesión</p>
-                <p className="font-medium">{state.profile.profession || 'No especificada'}</p>
+                <p className="font-medium">No disponible</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Especialidad</p>
-                <p className="font-medium">{state.profile.specialty || 'No especificada'}</p>
+                <p className="font-medium">No especificada</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Años de Experiencia</p>
-                <p className="font-medium">{state.profile.yearsOfExperience || 0} años</p>
+                <p className="font-medium">0 años</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Última Actualización</p>
-                <p className="font-medium">{state.profile.updatedAt ? new Date(state.profile.updatedAt).toLocaleDateString() : 'No disponible'}</p>
+                <p className="font-medium">No disponible</p>
               </div>
             </div>
           </div>
