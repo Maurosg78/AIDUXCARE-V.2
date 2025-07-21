@@ -242,169 +242,143 @@ export const WelcomePage: React.FC = () => {
     );
   }
 
-  // Usuario con perfil completo
-  const profile = state.profile!;
-  const signature = profile.professionalInfo.professionalSignature;
-
+  // Usuario autenticado con perfil
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        {/* Header Personalizado */}
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        {/* Header */}
         <div className="text-center mb-12">
           <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🎉 ¡Bienvenido de vuelta, {profile.personalInfo.firstName}!
+            🏥 ¡Bienvenido de vuelta a AiDuxCare!
           </h1>
-          <p className="text-xl text-gray-600 mb-2">
-            {signature.title}
-          </p>
-          <p className="text-lg text-gray-500">
-            Tu perfil está completo y listo para usar
-          </p>
-        </div>
-
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {/* Perfil Profesional */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Perfil Profesional</h3>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Especialización:</span> {profile.professionalInfo.specialization.name}
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Experiencia:</span> {profile.professionalInfo.yearsOfExperience} años
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Población:</span> {profile.professionalInfo.patientPopulation}
-              </p>
-            </div>
-          </div>
-
-          {/* Certificaciones Técnicas */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Certificaciones</h3>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Técnicas:</span> {profile.professionalInfo.technicalCertifications.length} certificadas
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Educación:</span> {profile.professionalInfo.continuingEducation.hoursCompleted} horas
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Áreas:</span> {profile.professionalInfo.areasOfInterest.length} de interés
-              </p>
-            </div>
-          </div>
-
-          {/* Acceso Rápido */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Acceso Rápido</h3>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={handleGoToDashboard}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                Ir al Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/professional-onboarding')}
-                className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
-                Editar Perfil
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-8 shadow-lg">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+          <p className="text-xl text-gray-600 mb-8">
             ¿Qué te gustaría hacer hoy?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button
-              onClick={() => navigate('/professional-workflow')}
-              className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <span className="font-medium">Evaluar Paciente</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/patients')}
-              className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <span className="font-medium">Gestionar Pacientes</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/soap-editor')}
-              className="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <span className="font-medium">Crear SOAP</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/audit')}
-              className="bg-orange-600 text-white p-4 rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <span className="font-medium">Ver Auditoría</span>
-              </div>
-            </button>
-          </div>
+          </p>
         </div>
+
+        {/* Opciones principales */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {/* Opción 1: Ingresar al Portal */}
+          <button 
+            className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow cursor-pointer w-full text-left"
+            onClick={handleGoToDashboard}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleGoToDashboard();
+              }
+            }}
+            aria-label="Ingresar al portal principal"
+          >
+            <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-6 mx-auto">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">Ingresar al Portal</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Accede a tu dashboard principal y comienza a trabajar con tus pacientes
+            </p>
+            <div className="text-center">
+              <span className="inline-flex items-center text-blue-600 font-medium">
+                Continuar
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </button>
+
+          {/* Opción 2: Actualizar Mi Perfil */}
+          <button 
+            className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow cursor-pointer w-full text-left"
+            onClick={() => navigate('/professional-onboarding')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                navigate('/professional-onboarding');
+              }
+            }}
+            aria-label="Actualizar mi perfil profesional"
+          >
+            <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6 mx-auto">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">Actualizar Mi Perfil</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Modifica tu información profesional, especialidades o certificaciones
+            </p>
+            <div className="text-center">
+              <span className="inline-flex items-center text-green-600 font-medium">
+                Editar
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </span>
+            </div>
+          </button>
+
+          {/* Opción 3: Crear Mi Perfil (Primera Vez) */}
+          <button 
+            className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow cursor-pointer w-full text-left"
+            onClick={handleCreateProfile}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleCreateProfile();
+              }
+            }}
+            aria-label="Crear mi perfil profesional por primera vez"
+          >
+            <div className="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-6 mx-auto">
+              <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center">Crear Mi Perfil</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Configura tu perfil profesional por primera vez
+            </p>
+            <div className="text-center">
+              <span className="inline-flex items-center text-orange-600 font-medium">
+                Comenzar
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </div>
+          </button>
+        </div>
+
+        {/* Información del perfil actual */}
+        {state.profile && (
+          <div className="bg-white rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Tu Perfil Actual</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Profesión</p>
+                <p className="font-medium">{state.profile.profession || 'No especificada'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Especialidad</p>
+                <p className="font-medium">{state.profile.specialty || 'No especificada'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Años de Experiencia</p>
+                <p className="font-medium">{state.profile.yearsOfExperience || 0} años</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Última Actualización</p>
+                <p className="font-medium">{state.profile.updatedAt ? new Date(state.profile.updatedAt).toLocaleDateString() : 'No disponible'}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

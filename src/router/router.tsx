@@ -14,6 +14,10 @@ import { AuditPage } from '../features/admin/AuditPage';
 import { AuditMetricsDashboard } from '../features/admin/AuditMetricsDashboard';
 import OrganizationTeamPage from '../pages/OrganizationTeamPage';
 import OrganizationDashboardPage from '../pages/OrganizationDashboardPage';
+import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
+import MFAGuidePage from '../pages/MFAGuidePage';
+import OnboardingConfirmationPage from '../pages/OnboardingConfirmationPage';
+
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -41,6 +45,29 @@ export const router = createBrowserRouter([
   {
     path: '/onboarding',
     element: <OnboardingPage />,
+  },
+  // Onboarding Profesional - SIN LAYOUT
+  {
+    path: '/professional-onboarding',
+    element: (
+      <ProtectedRoute>
+        <ProfessionalOnboardingPage />
+      </ProtectedRoute>
+    ),
+  },
+  // Páginas de Documentación - PÚBLICAS
+  {
+    path: '/privacy-policy',
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: '/mfa-guide',
+    element: <MFAGuidePage />,
+  },
+  // Página de Confirmación de Onboarding - PÚBLICA
+  {
+    path: '/onboarding-confirmation',
+    element: <OnboardingConfirmationPage />,
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
@@ -80,14 +107,7 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: "professional-onboarding",
-        element: (
-          <ProtectedRoute>
-            <ProfessionalOnboardingPage />
-          </ProtectedRoute>
-        ),
-      },
+
       {
         path: "audit",
         element: (
@@ -156,6 +176,7 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         )
       },
+
       // Rutas de Organización
       {
         path: "organization",
