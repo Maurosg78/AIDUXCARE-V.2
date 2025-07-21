@@ -1,0 +1,12 @@
+/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/security/encryption.ts:6
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'default-key-change-in-production';
+                                       ^
+
+
+TypeError: Cannot read properties of undefined (reading 'VITE_ENCRYPTION_KEY')
+    at <anonymous> (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/security/encryption.ts:6:40)
+    at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v20.19.3

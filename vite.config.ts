@@ -1,20 +1,10 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig, ConfigEnv } from 'vite';
+import react from '@vitejs/plugin-react';
 import path from 'path';
-import { visualizer } from 'rollup-plugin-visualizer';
 
-// Configuración optimizada de Vite
-export default defineConfig({
-  plugins: [
-    react(),
-    // Bundle analyzer - genera stats.html después del build
-    visualizer({
-      filename: 'dist/stats.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true,
-    })
-  ],
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }: ConfigEnv) => ({
+  plugins: [react()],
   css: {
     postcss: './postcss.config.js',
   },
@@ -26,7 +16,6 @@ export default defineConfig({
       "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
     }
   },
-  // Mejorar la configuración de dependencias
   optimizeDeps: {
     include: [
       '@tanstack/react-virtual',
@@ -50,17 +39,14 @@ export default defineConfig({
       }
     }
   },
-  // Configuración del servidor de desarrollo
   server: {
     port: 5174,
     strictPort: false,
     open: true,
     host: true
   },
-  // Configuración para evitar problemas de crypto en build
   build: {
-    sourcemap: false,
-    // Optimizaciones de bundle
+    outDir: 'dist',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -71,26 +57,21 @@ export default defineConfig({
         }
       }
     },
-    // Configuraciones de optimización
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
     target: 'esnext',
-    // Optimizaciones adicionales
     assetsInlineLimit: 4096,
     cssCodeSplit: true
   },
   define: {
-    // Eliminar referencias a service workers que causan errores
     'self': 'globalThis',
     'global': 'globalThis',
-    // Prevenir carga de Vitest en el navegador
-    'process.env.NODE_ENV': '"development"'
+    'process.env.NODE_ENV': JSON.stringify(mode)
   },
-  // Resolver problema de crypto.hash en CI
   esbuild: {
     define: {
       'crypto.hash': 'undefined',
       'global': 'globalThis'
     }
   }
-});
+}));

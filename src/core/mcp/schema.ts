@@ -15,7 +15,7 @@ export const MCPMemoryBlockSchema = z.object({
   // Mejoramos la validación de fechas para que sea más robusta en tests
   created_at: z.string()
     .refine(
-      (val) => {
+      (val: string) => {
         try {
           // Verificar si es un formato ISO válido
           return !isNaN(new Date(val).getTime());
@@ -49,7 +49,7 @@ const MemoryItemSchema = z.object({
   // Permitimos que timestamp sea opcional si existe created_at
   timestamp: z.string()
     .refine(
-      (val) => {
+      (val: string) => {
         try {
           return !isNaN(new Date(val).getTime());
         } catch (e) {
@@ -62,7 +62,7 @@ const MemoryItemSchema = z.object({
   // Agregamos created_at como campo opcional para compatibilidad
   created_at: z.string()
     .refine(
-      (val) => {
+      (val: string) => {
         try {
           return !isNaN(new Date(val).getTime());
         } catch (e) {
@@ -78,7 +78,8 @@ const MemoryItemSchema = z.object({
   validated: z.boolean().optional()
 })
 // Transformar los datos para agregar timestamp si no existe pero hay created_at
-.transform(data => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+.transform((data: any) => {
   if (!data.timestamp && data.created_at) {
     return {
       ...data,
@@ -88,7 +89,8 @@ const MemoryItemSchema = z.object({
   return data;
 })
 // Refinamiento para asegurar que hay al menos timestamp o created_at
-.refine(data => data.timestamp || data.created_at, {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+.refine((data: any) => data.timestamp || data.created_at, {
   message: "Debe existir al menos 'timestamp' o 'created_at'"
 });
 

@@ -1,4 +1,4 @@
-import { Patient } from '../domain/patientType';
+import { Patient, calculateAge } from '../domain/patientType';
 import { patientDataSourceFirestore } from './patientDataSourceFirestore';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 
@@ -106,9 +106,9 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'create_patient',
           professionalId,
-          patientName: patient.name,
-          patientAge: patient.age,
-          patientGender: patient.gender
+          patientName: `${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`,
+          patientAge: calculateAge(patient.personalInfo.dateOfBirth),
+          patientGender: patient.personalInfo.gender
         },
       });
 
@@ -122,7 +122,7 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'create_patient',
           professionalId,
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { name: patientData.personalInfo?.firstName ?? '', age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined },
           error: (error as Error).message
         },
       });
@@ -154,14 +154,14 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'update_patient',
           originalData: originalPatient ? {
-            name: originalPatient.name,
-            age: originalPatient.age,
-            gender: originalPatient.gender
+            name: `${originalPatient.personalInfo.firstName} ${originalPatient.personalInfo.lastName}`,
+            age: calculateAge(originalPatient.personalInfo.dateOfBirth),
+            gender: originalPatient.personalInfo.gender
           } : null,
           newData: {
-            name: patientData.name,
-            age: patientData.age,
-            gender: patientData.gender
+            name: `${patientData.personalInfo?.firstName ?? ''} ${patientData.personalInfo?.lastName ?? ''}`,
+            age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined,
+            gender: patientData.personalInfo?.gender
           },
           changesDetected: this.detectChanges(originalPatient, patientData)
         },
@@ -177,7 +177,7 @@ export class AuditedPatientDataSource {
         patientId,
         metadata: {
           action: 'update_patient',
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { name: patientData.personalInfo?.firstName ?? '', age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined },
           error: (error as Error).message
         },
       });
@@ -203,9 +203,9 @@ export class AuditedPatientDataSource {
         patientId,
         metadata: {
           action: 'delete_patient',
-          patientName: patient?.name,
-          patientAge: patient?.age,
-          patientGender: patient?.gender,
+          patientName: `${patient?.personalInfo.firstName} ${patient?.personalInfo.lastName}`,
+          patientAge: calculateAge(patient?.personalInfo?.dateOfBirth ?? new Date(0)),
+          patientGender: patient?.personalInfo.gender,
           deletionSuccessful: result
         },
       });
@@ -235,17 +235,17 @@ export class AuditedPatientDataSource {
     
     const changes: string[] = [];
     
-    if (updated.name && updated.name !== original.name) {
+    if (updated.personalInfo && updated.personalInfo.firstName && updated.personalInfo.firstName !== original.personalInfo.firstName) {
       changes.push('name_changed');
     }
-    if (updated.age && updated.age !== original.age) {
+    if (updated.personalInfo && updated.personalInfo.lastName && updated.personalInfo.lastName !== original.personalInfo.lastName) {
+      changes.push('name_changed');
+    }
+    if (updated.personalInfo && updated.personalInfo.dateOfBirth && updated.personalInfo.dateOfBirth !== original.personalInfo.dateOfBirth) {
       changes.push('age_changed');
     }
-    if (updated.gender && updated.gender !== original.gender) {
+    if (updated.personalInfo && updated.personalInfo.gender && updated.personalInfo.gender !== original.personalInfo.gender) {
       changes.push('gender_changed');
-    }
-    if (updated.insurance_id && updated.insurance_id !== original.insurance_id) {
-      changes.push('insurance_changed');
     }
     
     return changes;

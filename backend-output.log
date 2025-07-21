@@ -1,0 +1,141 @@
+🚀 INICIANDO SCRIPT DE VALIDACIÓN BACKEND
+📅 Fecha: 2025-07-17T06:16:56.517Z
+
+🔍 VALIDANDO CONECTIVIDAD CON EL CEREBRO CLÍNICO...
+   - Endpoint accesible: SÍ
+   - CORS habilitado: SÍ
+   - Métodos permitidos: GET, POST, OPTIONS
+
+🏥 INICIANDO PROTOCOLO DE VALIDACIÓN BACKEND END-TO-END
+================================================================================
+🎯 Objetivo: Validar el 'Cerebro Clínico' con casos de prueba reales
+🔗 Endpoint: https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net/clinicalBrain
+📊 Casos de prueba: 2
+================================================================================
+
+🧪 EJECUTANDO Caso 1: Lumbalgia Mecánica Simple
+------------------------------------------------------------
+📤 Enviando petición al Cerebro Clínico...
+📋 Datos enviados: {
+  "transcription": "Paciente refiere dolor lumbar en la zona derecha desde hace una semana después de levantar peso. El dolor aumenta con la flexión y se alivia con el reposo.",
+  "specialty": "physiotherapy",
+  "sessionType": "initial"
+}
+
+⏱️ Tiempo de respuesta - Caso 1: Lumbalgia Mecánica Simple: 47.551s
+⏱️ Tiempo total de procesamiento: 47552ms
+
+✅ RESPUESTA EXITOSA DEL CEREBRO CLÍNICO
+📊 Respuesta JSON completa y sin procesar:
+{
+  "warnings": [],
+  "suggestions": [],
+  "soap_quality": {
+    "subjective": 70,
+    "objective": 65,
+    "assessment": 70,
+    "plan": 70,
+    "overall": 69
+  },
+  "soap_note": {},
+  "functional_goals": [],
+  "treatment_techniques": [],
+  "analysis_metadata": {
+    "red_flags_detected": 0,
+    "risk_level": "LOW",
+    "confidence": 0,
+    "clinical_facts_extracted": 2,
+    "processing_stages": 3
+  },
+  "success": true,
+  "metadata": {
+    "processingTime": 47.269,
+    "modelUsed": "cascade-v2",
+    "totalTime": 47.271,
+    "timestamp": "2025-07-17T06:17:45.016Z",
+    "version": "2.0-optimized"
+  }
+}
+
+🔍 ANÁLISIS DE LA RESPUESTA:
+   - Status HTTP: 200
+   - Content-Type: application/json; charset=utf-8
+   - Tamaño respuesta: 473 caracteres
+   - Warnings detectados: 0
+✅ CASO EXITOSO
+
+================================================================================
+
+🧪 EJECUTANDO Caso 2: Cuadro Complejo con Banderas Rojas (Nuestro caso de prueba maestro)
+------------------------------------------------------------
+📤 Enviando petición al Cerebro Clínico...
+📋 Datos enviados: {
+  "transcription": "Hola Doctor hoy estoy muy adolorida de mi espalda esto no es nuevo me levanto cada mañana con mucho dolor en la parte baja de mi espalda y que a veces no me permite caminar incluso quedo como girada esto me viene pasando hace un tiempo y es mucho más molesto durante la mañana me cuesta partir incluso me cuesta salir de la cama y mi doctora sospecha de qué puede estar relacion con una posible celiaquía que tengo un estudio durante mucho tiempo me trataron como que fuera una enfermedad de artritis reumática sin embargo al parecer tengo un tema inmunológico también estoy deprimida y me están dando algunos medicamentos para la depresión trato de hacer ejercicio pero no puedo ser constante y no sé qué debo hacer me siento muy cansada constantemente y en el último examen de sangre me encontraron que el hierro estaba muy bajo y cuando estoy con mucho dolor estomacal porque he comido algo con gluten suelo tomar nolotil y paracetamol",
+  "specialty": "physiotherapy",
+  "sessionType": "initial"
+}
+
+⏱️ Tiempo de respuesta - Caso 2: Cuadro Complejo con Banderas Rojas (Nuestro caso de prueba maestro): 1:10.811 (m:ss.mmm)
+⏱️ Tiempo total de procesamiento: 70810ms
+
+✅ RESPUESTA EXITOSA DEL CEREBRO CLÍNICO
+📊 Respuesta JSON completa y sin procesar:
+{
+  "warnings": [
+    {
+      "severity": "HIGH",
+      "category": "red_flag",
+      "title": "Dolor nocturno/inflamatorio",
+      "description": "La paciente refiere dolor lumbar crónico que es 'mucho más molesto durante la mañana', 'le cuesta partir' y 'le cuesta salir de la cama'. Este patrón de dolor, que empeora con el reposo prolongado y mejora con la actividad, es altamente sugestivo de un dolor de tipo inflamatorio. Este síntoma, en el contexto de una sospecha de celiaquía, antecedentes de tratamiento por 'artritis reumática' y un 'tema inmunológico', así como fatiga y anemia por deficiencia de hierro, indica una posible enfermedad inflamatoria sistémica (ej. espondiloartritis) que requiere evaluación médica.",
+      "action": "Derivación médica urgente a reumatología o al médico tratante para una evaluación diagnóstica completa y manejo de la condición sistémica subyacente. La fisioterapia puede ser coadyuvante una vez que la condición médica esté bajo control y se haya descartado o manejado la fase aguda de la inflamación, pero no es el tratamiento primario para una enfermedad inflamatoria activa."
+    }
+  ],
+  "suggestions": [],
+  "soap_quality": {
+    "subjective": 70,
+    "objective": 65,
+    "assessment": 70,
+    "plan": 70,
+    "overall": 69
+  },
+  "soap_note": {},
+  "functional_goals": [],
+  "treatment_techniques": [],
+  "analysis_metadata": {
+    "red_flags_detected": 1,
+    "risk_level": "LOW",
+    "confidence": 0,
+    "clinical_facts_extracted": 2,
+    "processing_stages": 3
+  },
+  "success": true,
+  "metadata": {
+    "processingTime": 70.579,
+    "modelUsed": "cascade-v2",
+    "totalTime": 70.579,
+    "timestamp": "2025-07-17T06:18:55.879Z",
+    "version": "2.0-optimized"
+  }
+}
+
+🔍 ANÁLISIS DE LA RESPUESTA:
+   - Status HTTP: 200
+   - Content-Type: application/json; charset=utf-8
+   - Tamaño respuesta: 1538 caracteres
+   - Warnings detectados: 1
+✅ CASO EXITOSO
+
+🏁 RESUMEN FINAL DE LA VALIDACIÓN
+================================================================================
+📊 Total de casos ejecutados: 2
+✅ Casos exitosos: 2
+❌ Casos fallidos: 0
+⏱️ Tiempo total de procesamiento: 118362ms
+📈 Tiempo promedio por caso: 59181ms
+🎯 Tasa de éxito: 100.0%
+================================================================================
+📈 EVALUACIÓN DE RENDIMIENTO:
+   🔴 CRÍTICO: Tiempo de respuesta > 10 segundos
+   🟢 EXCELENTE: 100% de casos exitosos
+================================================================================
+🏥 PROTOCOLO DE VALIDACIÓN BACKEND COMPLETADO

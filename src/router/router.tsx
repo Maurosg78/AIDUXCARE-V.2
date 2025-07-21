@@ -7,6 +7,15 @@ import ProtectedRoute from '@/features/auth/ProtectedRoute';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
+import OrganizationTeamPage from '../pages/OrganizationTeamPage';
+import OrganizationDashboardPage from '../pages/OrganizationDashboardPage';
+import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
+import MFAGuidePage from '../pages/MFAGuidePage';
+import OnboardingConfirmationPage from '../pages/OnboardingConfirmationPage';
+import ProfessionalOnboardingPage from '../pages/ProfessionalOnboardingPage';
+import ClinicalInfoPage from '../pages/ClinicalInfoPage';
+import HumanFigurePage from '../pages/HumanFigurePage';
+import SOAPEditorPage from '../pages/SOAPEditorPage';
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -30,6 +39,29 @@ export const router = createBrowserRouter([
     path: '/onboarding',
     element: <OnboardingPage />,
   },
+  // Onboarding Profesional - SIN LAYOUT
+  {
+    path: '/professional-onboarding',
+    element: (
+      <ProtectedRoute>
+        <ProfessionalOnboardingPage />
+      </ProtectedRoute>
+    ),
+  },
+  // Páginas de Documentación - PÚBLICAS
+  {
+    path: '/privacy-policy',
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: '/mfa-guide',
+    element: <MFAGuidePage />,
+  },
+  // Página de Confirmación de Onboarding - PÚBLICA
+  {
+    path: '/onboarding-confirmation',
+    element: <OnboardingConfirmationPage />,
+  },
 
   // Rutas principales con layout profesional - PROTEGIDAS
   {
@@ -44,6 +76,31 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "clinical-info",
+        element: (
+          <ProtectedRoute>
+            <ClinicalInfoPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "human-figure",
+        element: (
+          <ProtectedRoute>
+            <HumanFigurePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "soap-editor",
+        element: (
+          <ProtectedRoute>
+            <SOAPEditorPage />
+          </ProtectedRoute>
+        ),
+      },
+
       {
         path: "audit",
         element: (
@@ -111,6 +168,81 @@ export const router = createBrowserRouter([
             </div>
           </ProtectedRoute>
         )
+      },
+
+      // Rutas de Organización
+      {
+        path: "organization",
+        children: [
+          {
+            path: "dashboard",
+            element: (
+              <ProtectedRoute>
+                <OrganizationDashboardPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "team",
+            element: (
+              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+                <OrganizationTeamPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "patients",
+            element: (
+              <ProtectedRoute>
+                <div className="max-w-4xl mx-auto">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Pacientes de la Organización</h1>
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <p className="text-gray-600">Gestión de pacientes de la organización en desarrollo</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "analytics",
+            element: (
+              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+                <div className="max-w-4xl mx-auto">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Analytics de la Organización</h1>
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <p className="text-gray-600">Analytics y métricas de la organización en desarrollo</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "audit",
+            element: (
+              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+                <div className="max-w-4xl mx-auto">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Auditoría de la Organización</h1>
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <p className="text-gray-600">Logs de auditoría de la organización en desarrollo</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "settings",
+            element: (
+              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
+                <div className="max-w-4xl mx-auto">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración de la Organización</h1>
+                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                    <p className="text-gray-600">Configuración de la organización en desarrollo</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            ),
+          },
+        ],
       },
     ]
   },

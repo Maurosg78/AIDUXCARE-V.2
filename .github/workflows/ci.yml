@@ -7,12 +7,12 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
-  validate:
+  build:
     runs-on: ubuntu-latest
     env:
       # Variables de Firebase (requeridas)
@@ -27,50 +27,28 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      # Clona el repositorio y asegura contexto limpio
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-      # Node 20 para compatibilidad con Vite 7.0.5
-
-    - name: Print Environment Status (debug)
-      run: |
-        echo "🔍 Verificando variables de entorno..."
-        echo "VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-'NO CONFIGURADA'}"
-        echo "VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-'NO CONFIGURADA'}"
-        echo "VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-'NO CONFIGURADA'}"
-      # Debug de variables críticas para reproducibilidad
-
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      # Instala dependencias exactas para entorno controlado
-
-    - name: Create .env.local (Migration Mode)
-      run: |
-        echo "🔧 MODO MIGRACIÓN: Creando .env.local con valores temporales"
-        echo "VITE_FIREBASE_API_KEY=mock-firebase-api-key" >> .env.local
-        echo "VITE_FIREBASE_PROJECT_ID=mock-firebase-project" >> .env.local
-        echo "VITE_FIREBASE_APP_ID=mock-firebase-app-id" >> .env.local
-        echo "VITE_SUPABASE_URL=mock-supabase-url" >> .env.local
-        echo "VITE_SUPABASE_ANON_KEY=mock-supabase-key" >> .env.local
-        echo "✅ .env.local creado con valores temporales para CI/CD"
-      # Variables mock para evitar exposición de datos reales
-
-    - name: Lint
-      run: npm run lint
-      # Verificación de calidad de código
-
-    - name: Build & Type-check
-      run: |
-        echo "🔧 Configurando entorno para build CI..."
-        export NODE_OPTIONS="--max-old-space-size=4096"
-        export NODE_ENV=production
-        # Resolver crypto.hash específicamente para CI
-        export VITE_DISABLE_CRYPTO_HASH=true
-        npm run build:ci
-      # Verificación de compilación y tipos con configuración CI
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Check required Firebase secrets
+        run: |
+          missing=0
+          if [ -z "${{ secrets.VITE_FIREBASE_API_KEY }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_API_KEY en GitHub Actions"; missing=1; fi
+          if [ -z "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_PROJECT_ID en GitHub Actions"; missing=1; fi
+          if [ -z "${{ secrets.VITE_FIREBASE_APP_ID }}" ]; then
+            echo "❌ FALTA el secreto VITE_FIREBASE_APP_ID en GitHub Actions"; missing=1; fi
+          if [ "$missing" -eq 1 ]; then
+            echo "❌ Debes definir todos los secretos de Firebase en Settings > Secrets and variables > Actions"; exit 1; fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run linter
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Build
+        run: npm run build

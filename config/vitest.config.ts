@@ -49,7 +49,7 @@ export default defineConfig({
       reporter: ['text-summary', 'html'],
       reportsDirectory: path.resolve(__dirname, '../coverage'),
       // Configuración de coverage optimizada
-      provider: 'c8',
+      provider: 'v8',
       all: false,
       // Exclusions optimizadas
       exclude: [

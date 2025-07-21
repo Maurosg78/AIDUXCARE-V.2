@@ -1,26 +1,22 @@
-/**
- * 🧠 AiDuxCare - Clinical Brain Cloud Function
- * Análisis médico con Vertex AI para fisioterapia
- * 
- * @author Mauricio Sobarzo - AiDuxCare
- * @version 2.0.0
- */
+// AiDuxCare - Clinical Brain Cloud Function
+// Análisis médico con Vertex AI para fisioterapia y especialidades
+// Enterprise, logging avanzado, CORS robusto, prompt especializado
+// @author Mauricio Sobarzo - AiDuxCare
+// @version 2.0.0
 
 const functions = require('@google-cloud/functions-framework');
 const { VertexAI } = require('@google/generative-ai');
 const cors = require('cors');
 const winston = require('winston');
 
-// Configuración de logging
+// Logger enterprise
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.json()
   ),
-  transports: [
-    new winston.transports.Console()
-  ]
+  transports: [new winston.transports.Console()]
 });
 
 // Configuración de Vertex AI
@@ -29,13 +25,14 @@ const vertexAI = new VertexAI({
   location: 'us-east1'
 });
 
-// Configuración CORS
+// CORS robusto
 const corsMiddleware = cors({
   origin: [
     'http://localhost:5174',
     'http://localhost:3000',
     'https://bucolic-marshmallow-92c5fb.netlify.app',
-    'https://aiduxcare.com'
+    'https://aiduxcare.com',
+    'https://aiduxcare-v2.vercel.app'
   ],
   credentials: true
 });
@@ -45,11 +42,8 @@ const corsMiddleware = cors({
  */
 functions.http('clinicalBrain', async (req, res) => {
   const startTime = Date.now();
-  
-  // Aplicar CORS
   corsMiddleware(req, res, async () => {
     try {
-      // Validar método HTTP
       if (req.method !== 'POST') {
         return res.status(405).json({
           success: false,
@@ -57,10 +51,7 @@ functions.http('clinicalBrain', async (req, res) => {
           message: 'Only POST requests are supported'
         });
       }
-
-      // Validar campos requeridos
       const { transcription, specialty, model = 'gemini-1.5-pro' } = req.body;
-      
       if (!transcription || !specialty) {
         return res.status(400).json({
           success: false,
@@ -69,18 +60,15 @@ functions.http('clinicalBrain', async (req, res) => {
           received: Object.keys(req.body)
         });
       }
-
       logger.info('Clinical analysis request', {
         specialty,
         model,
         transcriptionLength: transcription.length,
         timestamp: new Date().toISOString()
       });
-
-      // Generar prompt especializado según especialidad
+      // Prompt especializado
       const prompt = generateSpecializedPrompt(transcription, specialty);
-      
-      // Obtener modelo de Vertex AI
+      // Modelo Vertex AI
       const generativeModel = vertexAI.getGenerativeModel({
         model: model,
         generation_config: {
@@ -90,12 +78,10 @@ functions.http('clinicalBrain', async (req, res) => {
           top_k: 40
         }
       });
-
       // Generar respuesta
       const result = await generativeModel.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-
       // Parsear respuesta JSON
       let analysisResult;
       try {
@@ -113,17 +99,13 @@ functions.http('clinicalBrain', async (req, res) => {
           }
         };
       }
-
       const processingTime = Date.now() - startTime;
-
       logger.info('Clinical analysis completed', {
         processingTime,
         specialty,
         model,
         success: true
       });
-
-      // Respuesta exitosa
       res.status(200).json({
         success: true,
         ...analysisResult,
@@ -134,16 +116,13 @@ functions.http('clinicalBrain', async (req, res) => {
           timestamp: new Date().toISOString()
         }
       });
-
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      
       logger.error('Clinical analysis failed', {
         error: error.message,
         processingTime,
         timestamp: new Date().toISOString()
       });
-
       res.status(500).json({
         success: false,
         error: 'Clinical analysis failed',
@@ -180,21 +159,16 @@ Genera una respuesta en formato JSON con la siguiente estructura:
 }
 
 Responde SOLO en formato JSON válido.`;
-
-  // Personalizar según especialidad
   switch (specialty) {
     case 'fisioterapia':
       return basePrompt + `\n\nEnfoque específico en fisioterapia: biomecánica, ejercicios terapéuticos, técnicas manuales.`;
-    
     case 'psicologia':
       return basePrompt + `\n\nEnfoque específico en psicología: evaluación mental, riesgo suicida, plan de seguridad.`;
-    
     case 'medicina_general':
       return basePrompt + `\n\nEnfoque específico en medicina general: diagnóstico diferencial, derivación a especialistas.`;
-    
     default:
       return basePrompt;
   }
 }
 
-module.exports = { clinicalBrain: functions.http('clinicalBrain') }; 
+module.exports = { clinicalBrain: functions.http('clinicalBrain') };

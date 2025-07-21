@@ -25,7 +25,9 @@
     "types": [
       "vite/client",
       "node"
-    ]
+    ],
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "src",

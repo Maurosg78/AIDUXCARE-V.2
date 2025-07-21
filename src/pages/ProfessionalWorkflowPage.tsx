@@ -47,6 +47,14 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   
+  // Tabs de navegación clínica
+  const tabs = [
+    { id: 'clinical', label: 'Evaluación Clínica' },
+    { id: 'soap', label: 'SOAP' },
+    { id: 'summary', label: 'Resumen' }
+  ];
+  const [activeTab, setActiveTab] = useState<string>('clinical');
+
   // Referencias para audio
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -421,6 +429,33 @@ Basado en la evidencia clínica disponible, se recomienda realizar una evaluaci�
                 </div>
               </div>
             </div>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => {
+                const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                if (currentIndex > 0) {
+                  setActiveTab(tabs[currentIndex - 1].id);
+                }
+              }}
+              disabled={activeTab === 'clinical'}
+              className="px-3 py-1 text-xs border rounded transition-colors disabled:opacity-50"
+              style={{ borderColor: '#BDC3C7', color: '#2C3E50' }}
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => {
+                const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                if (currentIndex < tabs.length - 1) {
+                  setActiveTab(tabs[currentIndex + 1].id);
+                }
+              }}
+              disabled={activeTab === 'soap'}
+              className="px-3 py-1 text-xs bg-blue-500 text-white rounded transition-colors disabled:opacity-50"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>
