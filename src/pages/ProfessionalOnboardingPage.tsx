@@ -9,7 +9,7 @@ import { getAuth } from 'firebase/auth';
 import { app } from '../core/firebase/firebaseClient';
 import { geolocationService, ComplianceConfig } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
-import { professionalProfileService } from '../services/ProfessionalProfileService';
+import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import { emailVerificationService } from '../services/EmailVerificationService';
 
 interface OnboardingStep {
@@ -178,40 +178,31 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         return;
       }
 
-      // Crear perfil profesional en Firebase Firestore
-      const profileData = {
-        personalInfo: {
-          firstName: formData.firstName,
-          secondName: formData.secondName,
-          lastName: formData.lastName,
-          secondLastName: formData.secondLastName,
-          email: formData.email,
-          phone: formData.phone,
-          licenseNumber: formData.licenseNumber,
+      // Mapear los datos del formulario a la estructura esperada por ProfessionalProfileService
+      const mappedProfileData = {
+        license: formData.licenseNumber,
+        country: formData.country,
+        city: formData.city,
+        state: formData.state,
+        specialties: formData.specialty ? [formData.specialty] : [],
+        certifications: formData.certifications ? formData.certifications.split(',').map((c: string) => c.trim()) : [],
+        practiceType: 'clínica' as 'clínica' | 'hospital' | 'consultorio' | 'domicilio',
+        licenseExpiry: new Date(), // O ajustar según lógica de negocio
+        isActive: true,
+        complianceSettings: {
           country: formData.country,
-          licenseRenewalType: formData.licenseRenewalType,
-          licenseExpiryNotification: formData.licenseExpiryNotification
+          regulations: [],
+          allowedTechniques: [],
+          forbiddenTechniques: [],
+          medicationRestrictions: [],
+          referralRequirements: [],
+          documentationStandards: [],
+          dataRetentionPolicy: ''
         },
-        professionalInfo: {
-          profession: formData.profession,
-          specialty: formData.specialty,
-          certifications: formData.certifications,
-          yearsOfExperience: formData.yearsOfExperience
-        },
-        complianceInfo: {
-          hipaaConsent: formData.hipaaConsent,
-          gdprConsent: formData.gdprConsent,
-          dataProcessingConsent: formData.dataProcessingConsent,
-          auditTrailEnabled: formData.auditTrailEnabled,
-          mfaEnabled: formData.mfaEnabled,
-          licenseNotifications: formData.licenseNotifications,
-          latamConsent: formData.latamConsent,
-          canadaConsent: formData.canadaConsent,
-          pipedaConsent: formData.pipedaConsent
-        }
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
-
-      await professionalProfileService.createOrUpdateProfile(user.uid, profileData);
+      await ProfessionalProfileService.getInstance().createProfile(mappedProfileData);
       
       console.log('Perfil profesional guardado exitosamente en Firebase Firestore');
 

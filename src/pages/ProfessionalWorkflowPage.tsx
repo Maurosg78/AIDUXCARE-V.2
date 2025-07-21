@@ -47,6 +47,14 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   
+  // Tabs de navegación clínica
+  const tabs = [
+    { id: 'clinical', label: 'Evaluación Clínica' },
+    { id: 'soap', label: 'SOAP' },
+    { id: 'summary', label: 'Resumen' }
+  ];
+  const [activeTab, setActiveTab] = useState<string>('clinical');
+
   // Referencias para audio
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);

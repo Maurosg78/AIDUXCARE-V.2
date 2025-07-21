@@ -122,7 +122,7 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'create_patient',
           professionalId,
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { name: patientData.personalInfo?.firstName ?? '', age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined },
           error: (error as Error).message
         },
       });
@@ -159,9 +159,9 @@ export class AuditedPatientDataSource {
             gender: originalPatient.personalInfo.gender
           } : null,
           newData: {
-            name: `${patientData.personalInfo.firstName} ${patientData.personalInfo.lastName}`,
-            age: calculateAge(patientData.personalInfo.dateOfBirth),
-            gender: patientData.personalInfo.gender
+            name: `${patientData.personalInfo?.firstName ?? ''} ${patientData.personalInfo?.lastName ?? ''}`,
+            age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined,
+            gender: patientData.personalInfo?.gender
           },
           changesDetected: this.detectChanges(originalPatient, patientData)
         },
@@ -177,7 +177,7 @@ export class AuditedPatientDataSource {
         patientId,
         metadata: {
           action: 'update_patient',
-          patientData: { name: patientData.name, age: patientData.age },
+          patientData: { name: patientData.personalInfo?.firstName ?? '', age: patientData.personalInfo?.dateOfBirth ? calculateAge(patientData.personalInfo.dateOfBirth) : undefined },
           error: (error as Error).message
         },
       });
@@ -204,7 +204,7 @@ export class AuditedPatientDataSource {
         metadata: {
           action: 'delete_patient',
           patientName: `${patient?.personalInfo.firstName} ${patient?.personalInfo.lastName}`,
-          patientAge: calculateAge(patient?.personalInfo.dateOfBirth),
+          patientAge: calculateAge(patient?.personalInfo?.dateOfBirth ?? new Date(0)),
           patientGender: patient?.personalInfo.gender,
           deletionSuccessful: result
         },
@@ -235,16 +235,16 @@ export class AuditedPatientDataSource {
     
     const changes: string[] = [];
     
-    if (updated.personalInfo.firstName && updated.personalInfo.firstName !== original.personalInfo.firstName) {
+    if (updated.personalInfo && updated.personalInfo.firstName && updated.personalInfo.firstName !== original.personalInfo.firstName) {
       changes.push('name_changed');
     }
-    if (updated.personalInfo.lastName && updated.personalInfo.lastName !== original.personalInfo.lastName) {
+    if (updated.personalInfo && updated.personalInfo.lastName && updated.personalInfo.lastName !== original.personalInfo.lastName) {
       changes.push('name_changed');
     }
-    if (updated.personalInfo.dateOfBirth && updated.personalInfo.dateOfBirth !== original.personalInfo.dateOfBirth) {
+    if (updated.personalInfo && updated.personalInfo.dateOfBirth && updated.personalInfo.dateOfBirth !== original.personalInfo.dateOfBirth) {
       changes.push('age_changed');
     }
-    if (updated.personalInfo.gender && updated.personalInfo.gender !== original.personalInfo.gender) {
+    if (updated.personalInfo && updated.personalInfo.gender && updated.personalInfo.gender !== original.personalInfo.gender) {
       changes.push('gender_changed');
     }
     

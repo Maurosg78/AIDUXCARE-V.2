@@ -40,7 +40,7 @@ async function testIntegratedSystem() {
     
     const availableServices = professionalServicesService.getAvailableServices(
       location.countryCode,
-      location.region
+      []
     );
 
     console.log(`✅ Servicios disponibles: ${availableServices.filter(s => s.isAvailable).length}/${availableServices.length}`);
@@ -105,7 +105,6 @@ async function testIntegratedSystem() {
       // Obtener servicios disponibles
       const services = professionalServicesService.getAvailableServices(
         scenario.location.countryCode,
-        scenario.location.region,
         scenario.certifications
       );
       
