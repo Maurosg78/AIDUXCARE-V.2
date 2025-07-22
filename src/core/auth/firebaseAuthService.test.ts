@@ -1,15 +1,26 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { FirebaseAuthService } from './firebaseAuthService';
 
+// Interfaces locales para mocks y usuarios
+interface MockUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  emailVerified: boolean;
+}
+interface MockAuth {
+  currentUser?: { sendEmailVerification: () => Promise<void> };
+}
+
 // Subclase para exponer getUserProfile solo en test
 class TestableFirebaseAuthService extends FirebaseAuthService {
-  public getUserProfilePublic(...args: Parameters<FirebaseAuthService['getUserProfile']>) {
-    // @ts-expect-error: Acceso solo para test
-    return this.getUserProfile(...args);
+  // Implementación pública para test, mockeable
+  public async getUserProfilePublic(/* uid: string */) {
+    // En los tests, este método será mockeado con vi.fn().mockResolvedValue(...)
+    throw new Error('Debe ser mockeado en los tests');
   }
 }
 
-// Declarar los mocks como variables globales de tipo Mock
 let mockSignInWithEmailAndPassword: Mock;
 let mockCreateUserWithEmailAndPassword: Mock;
 let mockSendEmailVerification: Mock;
@@ -64,7 +75,7 @@ describe('FirebaseAuthService', () => {
   });
 
   it('debe registrar un usuario y crear perfil', async () => {
-    const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
+    const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
     mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
     mockSetDoc.mockResolvedValue(undefined);
     const user = await authService.signUp('test@aiduxcare.com', 'password', 'Test User');
@@ -74,7 +85,7 @@ describe('FirebaseAuthService', () => {
   });
 
   it('debe iniciar sesión y retornar perfil', async () => {
-    const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
+    const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
     mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
@@ -85,7 +96,7 @@ describe('FirebaseAuthService', () => {
   });
 
   it('debe bloquear acceso a usuario no verificado', async () => {
-    const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
+    const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
     mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: false,
@@ -94,14 +105,14 @@ describe('FirebaseAuthService', () => {
   });
 
   it('debe reenviar correo de verificación', async () => {
-    const mockCurrentUser = { sendEmailVerification: mockSendEmailVerification };
+    const mockCurrentUser: MockAuth['currentUser'] = { sendEmailVerification: mockSendEmailVerification };
     mockGetAuth.mockReturnValue({ currentUser: mockCurrentUser });
     await mockSendEmailVerification();
     expect(mockSendEmailVerification).toHaveBeenCalled();
   });
 
   it('debe actualizar emailVerified tras verificación', async () => {
-    const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
+    const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
     mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,

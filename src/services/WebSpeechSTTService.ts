@@ -1,26 +1,7 @@
 import { TranscriptionSegment, TranscriptionActor, TranscriptionConfidence } from '../core/audio/AudioCaptureService';
 
-// Extender Window para TypeScript con Web Speech API (usando any para evitar conflictos)
-// Definir interfaz mínima si no existe globalmente
-interface LocalSpeechRecognition extends EventTarget {
-  start(): void;
-  stop(): void;
-  abort(): void;
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((this: LocalSpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((this: LocalSpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
-  onstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onspeechstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onspeechend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onnomatch: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-}
-
-// Eliminar declaración global redundante y usar solo LocalSpeechRecognition para tipado interno
-// Definir tipos de Web Speech API que faltan
+// Eliminar la interfaz LocalSpeechRecognition y usar solo SpeechRecognition
+// Cambiar todos los tipos LocalSpeechRecognition a SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
   resultIndex: number;
@@ -44,30 +25,6 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  maxAlternatives: number;
-  
-  start(): void;
-  stop(): void;
-  abort(): void;
-  
-  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onspeechstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onnomatch: ((this: SpeechRecognition, ev: Event) => void) | null;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
-}
-
 export interface SpeechRecognitionConfig {
   language: 'es' | 'en';
   continuous: boolean;
@@ -84,12 +41,41 @@ export interface RealtimeTranscriptionOptions {
   onSpeechEnd?: () => void;
 }
 
+// Helper de tipo seguro para obtener el constructor de SpeechRecognition
+function getSpeechRecognitionConstructor(): unknown {
+  if (typeof window !== 'undefined') {
+    if (window.SpeechRecognition && typeof window.SpeechRecognition === 'function') {
+      return window.SpeechRecognition;
+    } else if (window.webkitSpeechRecognition && typeof window.webkitSpeechRecognition === 'function') {
+      return window.webkitSpeechRecognition;
+    }
+  }
+  return undefined;
+}
+
+interface SpeechRecognition extends EventTarget {
+  start(): void;
+  stop(): void;
+  abort(): void;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onnomatch: ((this: SpeechRecognition, ev: Event) => void) | null;
+}
+
 /**
  * Servicio de Speech-to-Text usando Web Speech API (GRATUITO)
  * Compatible con Chrome, Edge y Firefox (limitado)
  */
 export class WebSpeechSTTService {
-  private recognition: LocalSpeechRecognition | null = null;
+  private recognition: SpeechRecognition | null = null;
   private isSupported: boolean = false;
   private currentStream: MediaStream | null = null;
   private isListening: boolean = false;
@@ -99,19 +85,11 @@ export class WebSpeechSTTService {
   // Declaración global estricta sin any
 
   constructor(config: Partial<SpeechRecognitionConfig> = {}) {
-    // Verificar soporte del navegador con type guard
-    let SpeechRecognitionConstructor: { new (): LocalSpeechRecognition } | undefined;
-    if (typeof window !== 'undefined') {
-      if (window.SpeechRecognition && typeof window.SpeechRecognition === 'function') {
-        SpeechRecognitionConstructor = window.SpeechRecognition;
-      } else if (window.webkitSpeechRecognition && typeof window.webkitSpeechRecognition === 'function') {
-        SpeechRecognitionConstructor = window.webkitSpeechRecognition;
-      }
-    }
+    const SpeechRecognitionConstructor = getSpeechRecognitionConstructor();
     this.isSupported = !!SpeechRecognitionConstructor;
     this.config = { ...config } as SpeechRecognitionConfig;
     if (this.isSupported && SpeechRecognitionConstructor) {
-      this.recognition = new SpeechRecognitionConstructor();
+      this.recognition = new (SpeechRecognitionConstructor as { new (): SpeechRecognition })();
     }
   }
 
@@ -147,11 +125,11 @@ export class WebSpeechSTTService {
       });
     };
     
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('❌ Error en reconocimiento:', event.error);
+    this.recognition.onerror = (event: Event) => {
+      console.error('❌ Error en reconocimiento:', (event as { error?: string }).error);
       this.isListening = false;
       this.logSimple('stt.webspeech.error', { 
-        error: event.error,
+        error: (event as { error?: string }).error,
         provider: 'browser_native',
         sessionId: this.sessionId
       });
@@ -273,8 +251,8 @@ export class WebSpeechSTTService {
       options.onSpeechEnd?.();
     };
 
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      const errorMsg = `Error STT: ${event.error}`;
+    this.recognition.onerror = (event: Event) => {
+      const errorMsg = `Error STT: ${((event as { error?: string }).error ?? 'desconocido')}`;
       console.error(errorMsg);
       options.onError?.(errorMsg);
     };
