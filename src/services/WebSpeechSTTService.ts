@@ -97,8 +97,15 @@ export class WebSpeechSTTService {
   private sessionId: string = '';
 
   constructor(config: Partial<SpeechRecognitionConfig> = {}) {
-    // Verificar soporte del navegador
-    const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // Verificar soporte del navegador con type guard
+    let SpeechRecognitionConstructor: { new (): LocalSpeechRecognition } | undefined;
+    if (typeof window !== 'undefined') {
+      if ('SpeechRecognition' in window && typeof window.SpeechRecognition === 'function') {
+        SpeechRecognitionConstructor = window.SpeechRecognition as { new (): LocalSpeechRecognition };
+      } else if ('webkitSpeechRecognition' in window && typeof window.webkitSpeechRecognition === 'function') {
+        SpeechRecognitionConstructor = window.webkitSpeechRecognition as { new (): LocalSpeechRecognition };
+      }
+    }
     this.isSupported = !!SpeechRecognitionConstructor;
     
     // Configuración por defecto optimizada para español médico
@@ -110,8 +117,8 @@ export class WebSpeechSTTService {
       ...config
     };
     
-    if (this.isSupported) {
-      this.recognition = new SpeechRecognitionConstructor() as LocalSpeechRecognition;
+    if (this.isSupported && SpeechRecognitionConstructor) {
+      this.recognition = new SpeechRecognitionConstructor();
       this.setupRecognition();
     }
   }
