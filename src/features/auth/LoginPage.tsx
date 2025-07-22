@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { getAuth } from 'firebase/auth';
+import { app } from '../../core/firebase/firebaseClient';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const auth = getAuth(app);
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (err) {

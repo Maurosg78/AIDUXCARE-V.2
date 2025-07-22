@@ -20,6 +20,7 @@
     "analyze": "node scripts/analyze-bundle.cjs"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -42,6 +43,7 @@
     "dotenv": "^17.2.0",
     "firebase": "^11.10.0",
     "lucide-react": "^0.323.0",
+    "node-fetch": "^3.3.2",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.0",
     "react-dom": "^18.3.1",
