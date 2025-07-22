@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FirebaseAuthService } from './firebaseAuthService';
 
 // Interfaces locales para mocks y usuarios
@@ -21,48 +21,67 @@ class TestableFirebaseAuthService extends FirebaseAuthService {
   }
 }
 
-let mockSignInWithEmailAndPassword: Mock;
-let mockCreateUserWithEmailAndPassword: Mock;
-let mockSendEmailVerification: Mock;
-let mockSignOut: Mock;
-let mockOnAuthStateChanged: Mock;
-let mockGetAuth: Mock;
-let mockGetFirestore: Mock;
-let mockDoc: Mock;
-let mockSetDoc: Mock;
-let mockGetDoc: Mock;
-let mockUpdateDoc: Mock;
+// Tipos explícitos para los mocks
+interface AuthMocks {
+  mockSignInWithEmailAndPassword: ReturnType<typeof vi.fn>;
+  mockCreateUserWithEmailAndPassword: ReturnType<typeof vi.fn>;
+  mockSendEmailVerification: () => Promise<void>;
+  mockSignOut: ReturnType<typeof vi.fn>;
+  mockOnAuthStateChanged: ReturnType<typeof vi.fn>;
+  mockGetAuth: ReturnType<typeof vi.fn>;
+}
+interface FirestoreMocks {
+  mockGetFirestore: ReturnType<typeof vi.fn>;
+  mockDoc: ReturnType<typeof vi.fn>;
+  mockSetDoc: ReturnType<typeof vi.fn>;
+  mockGetDoc: ReturnType<typeof vi.fn>;
+  mockUpdateDoc: ReturnType<typeof vi.fn>;
+}
+
+declare global {
+  // Extiende globalThis para tipar los mocks
+  // eslint-disable-next-line no-var
+  var authMocks: AuthMocks;
+  // eslint-disable-next-line no-var
+  var firestoreMocks: FirestoreMocks;
+}
 
 vi.mock('firebase/auth', async () => {
-  mockSignInWithEmailAndPassword = vi.fn();
-  mockCreateUserWithEmailAndPassword = vi.fn();
-  mockSendEmailVerification = vi.fn();
-  mockSignOut = vi.fn();
-  mockOnAuthStateChanged = vi.fn();
-  mockGetAuth = vi.fn();
+  const authMocks: AuthMocks = {
+    mockSignInWithEmailAndPassword: vi.fn(),
+    mockCreateUserWithEmailAndPassword: vi.fn(),
+    mockSendEmailVerification: vi.fn(async () => {}),
+    mockSignOut: vi.fn(),
+    mockOnAuthStateChanged: vi.fn(),
+    mockGetAuth: vi.fn(),
+  };
+  globalThis.authMocks = authMocks;
   return {
-    getAuth: mockGetAuth,
-    signInWithEmailAndPassword: mockSignInWithEmailAndPassword,
-    createUserWithEmailAndPassword: mockCreateUserWithEmailAndPassword,
-    sendEmailVerification: mockSendEmailVerification,
-    signOut: mockSignOut,
-    onAuthStateChanged: mockOnAuthStateChanged,
+    getAuth: authMocks.mockGetAuth,
+    signInWithEmailAndPassword: authMocks.mockSignInWithEmailAndPassword,
+    createUserWithEmailAndPassword: authMocks.mockCreateUserWithEmailAndPassword,
+    sendEmailVerification: authMocks.mockSendEmailVerification,
+    signOut: authMocks.mockSignOut,
+    onAuthStateChanged: authMocks.mockOnAuthStateChanged,
     __esModule: true,
   };
 });
 
 vi.mock('firebase/firestore', async () => {
-  mockGetFirestore = vi.fn();
-  mockDoc = vi.fn();
-  mockSetDoc = vi.fn();
-  mockGetDoc = vi.fn();
-  mockUpdateDoc = vi.fn();
+  const firestoreMocks: FirestoreMocks = {
+    mockGetFirestore: vi.fn(),
+    mockDoc: vi.fn(),
+    mockSetDoc: vi.fn(),
+    mockGetDoc: vi.fn(),
+    mockUpdateDoc: vi.fn(),
+  };
+  globalThis.firestoreMocks = firestoreMocks;
   return {
-    getFirestore: mockGetFirestore,
-    doc: mockDoc,
-    setDoc: mockSetDoc,
-    getDoc: mockGetDoc,
-    updateDoc: mockUpdateDoc,
+    getFirestore: firestoreMocks.mockGetFirestore,
+    doc: firestoreMocks.mockDoc,
+    setDoc: firestoreMocks.mockSetDoc,
+    getDoc: firestoreMocks.mockGetDoc,
+    updateDoc: firestoreMocks.mockUpdateDoc,
     __esModule: true,
   };
 });
@@ -76,28 +95,32 @@ describe('FirebaseAuthService', () => {
 
   it('debe registrar un usuario y crear perfil', async () => {
     const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    mockSetDoc.mockResolvedValue(undefined);
+    globalThis.authMocks.mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.firestoreMocks.mockSetDoc.mockResolvedValue(undefined);
+    // Mock getDoc para que no falle si se llama
+    globalThis.firestoreMocks.mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ id: '123', email: 'test@aiduxcare.com', name: 'Test User', role: 'PHYSICIAN', createdAt: { toDate: () => new Date() }, updatedAt: { toDate: () => new Date() }, mfaEnabled: false, emailVerified: false }) });
     const user = await authService.signUp('test@aiduxcare.com', 'password', 'Test User');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
-    expect(mockSetDoc).toHaveBeenCalled();
+    expect(globalThis.authMocks.mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
+    expect(globalThis.firestoreMocks.mockSetDoc).toHaveBeenCalled();
   });
 
   it('debe iniciar sesión y retornar perfil', async () => {
     const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.firestoreMocks.mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ id: '123', email: 'test@aiduxcare.com', name: 'Test User', role: 'PHYSICIAN', createdAt: { toDate: () => new Date() }, updatedAt: { toDate: () => new Date() }, mfaEnabled: false, emailVerified: true }) });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
     });
     const user = await authService.signIn('test@aiduxcare.com', 'password');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect(mockSignInWithEmailAndPassword).toHaveBeenCalled();
+    expect(globalThis.authMocks.mockSignInWithEmailAndPassword).toHaveBeenCalled();
   });
 
   it('debe bloquear acceso a usuario no verificado', async () => {
     const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.firestoreMocks.mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ id: '123', email: 'test@aiduxcare.com', name: 'Test User', role: 'PHYSICIAN', createdAt: { toDate: () => new Date() }, updatedAt: { toDate: () => new Date() }, mfaEnabled: false, emailVerified: false }) });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: false,
     });
@@ -105,15 +128,16 @@ describe('FirebaseAuthService', () => {
   });
 
   it('debe reenviar correo de verificación', async () => {
-    const mockCurrentUser: MockAuth['currentUser'] = { sendEmailVerification: mockSendEmailVerification };
-    mockGetAuth.mockReturnValue({ currentUser: mockCurrentUser });
-    await mockSendEmailVerification();
-    expect(mockSendEmailVerification).toHaveBeenCalled();
+    const mockCurrentUser: MockAuth['currentUser'] = { sendEmailVerification: globalThis.authMocks.mockSendEmailVerification };
+    globalThis.authMocks.mockGetAuth.mockReturnValue({ currentUser: mockCurrentUser });
+    await globalThis.authMocks.mockSendEmailVerification();
+    expect(globalThis.authMocks.mockSendEmailVerification).toHaveBeenCalled();
   });
 
   it('debe actualizar emailVerified tras verificación', async () => {
     const mockUser: MockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    globalThis.firestoreMocks.mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ id: '123', email: 'test@aiduxcare.com', name: 'Test User', role: 'PHYSICIAN', createdAt: { toDate: () => new Date() }, updatedAt: { toDate: () => new Date() }, mfaEnabled: false, emailVerified: true }) });
     authService.getUserProfilePublic = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
     });
