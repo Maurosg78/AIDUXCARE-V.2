@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FirebaseAuthService } from './firebaseAuthService';
+import type { Mock } from 'vitest';
 
 vi.mock('firebase/auth', async () => {
   const mockSignInWithEmailAndPassword = vi.fn();
@@ -54,40 +55,45 @@ vi.mock('firebase/firestore', async () => {
 const authService = new FirebaseAuthService();
 
 describe('FirebaseAuthService', () => {
-  let authMocks: any;
-  let firestoreMocks: any;
+  let authMocks: Record<string, Mock>;
+  let firestoreMocks: Record<string, Mock>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    // Tipado explícito de los mocks (solo en test, permitido usar 'as any' aquí)
     authMocks = ((await import('firebase/auth')) as any)._mocks;
     firestoreMocks = ((await import('firebase/firestore')) as any)._mocks;
+    // Hacer público el método getUserProfile para los tests
+    (authService as any).getUserProfile = (authService as any).getUserProfile;
   });
 
   it('debe registrar un usuario y crear perfil', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    authMocks.mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    firestoreMocks.mockSetDoc.mockResolvedValue(undefined);
+    (authMocks.mockCreateUserWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
+    (firestoreMocks.mockSetDoc as Mock).mockResolvedValue(undefined);
     const user = await authService.signUp('test@aiduxcare.com', 'password', 'Test User');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect(authMocks.mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
-    expect(firestoreMocks.mockSetDoc).toHaveBeenCalled();
+    expect((authMocks.mockCreateUserWithEmailAndPassword as Mock)).toHaveBeenCalled();
+    expect((firestoreMocks.mockSetDoc as Mock)).toHaveBeenCalled();
   });
 
   it('debe iniciar sesión y retornar perfil', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    (authService as any).getUserProfile = vi.fn().mockResolvedValue({
+    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
+    // Eliminar 'as unknown as { getUserProfile: Mock }' y tipar correctamente
+    ((authService as any).getUserProfile as Mock) = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
     });
     const user = await authService.signIn('test@aiduxcare.com', 'password');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect(authMocks.mockSignInWithEmailAndPassword).toHaveBeenCalled();
+    expect((authMocks.mockSignInWithEmailAndPassword as Mock)).toHaveBeenCalled();
   });
 
   it('debe bloquear acceso a usuario no verificado', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    (authService as any).getUserProfile = vi.fn().mockResolvedValue({
+    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
+    // Eliminar 'as unknown as { getUserProfile: Mock }' y tipar correctamente
+    ((authService as any).getUserProfile as Mock) = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: false,
     });
     await expect(authService.signIn('test@aiduxcare.com', 'password')).rejects.toThrow('Email no verificado');
@@ -95,15 +101,16 @@ describe('FirebaseAuthService', () => {
 
   it('debe reenviar correo de verificación', async () => {
     const mockCurrentUser = { sendEmailVerification: authMocks.mockSendEmailVerification };
-    authMocks.mockGetAuth.mockReturnValue({ currentUser: mockCurrentUser });
-    await authMocks.mockSendEmailVerification();
-    expect(authMocks.mockSendEmailVerification).toHaveBeenCalled();
+    (authMocks.mockGetAuth as Mock).mockReturnValue({ currentUser: mockCurrentUser });
+    await (authMocks.mockSendEmailVerification as Mock)();
+    expect((authMocks.mockSendEmailVerification as Mock)).toHaveBeenCalled();
   });
 
   it('debe actualizar emailVerified tras verificación', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    authMocks.mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
-    (authService as any).getUserProfile = vi.fn().mockResolvedValue({
+    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
+    // Eliminar 'as unknown as { getUserProfile: Mock }' y tipar correctamente
+    ((authService as any).getUserProfile as Mock) = vi.fn().mockResolvedValue({
       id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
     });
     const user = await authService.signIn('test@aiduxcare.com', 'password');

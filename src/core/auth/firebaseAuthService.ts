@@ -300,7 +300,7 @@ export class FirebaseAuthService {
     if (user.emailVerified) {
       throw new Error('El email ya está verificado.');
     }
-    await (user as any).sendEmailVerification();
+    await (user as FirebaseUser & { sendEmailVerification: () => Promise<void> }).sendEmailVerification();
   }
 
   /**

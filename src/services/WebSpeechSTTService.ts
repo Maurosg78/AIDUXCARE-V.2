@@ -1,15 +1,25 @@
 import { TranscriptionSegment, TranscriptionActor, TranscriptionConfidence } from '../core/audio/AudioCaptureService';
 
 // Extender Window para TypeScript con Web Speech API (usando any para evitar conflictos)
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SpeechRecognition: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    webkitSpeechRecognition: any;
-  }
+// Definir interfaz mínima si no existe globalmente
+interface LocalSpeechRecognition extends EventTarget {
+  start(): void;
+  stop(): void;
+  abort(): void;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((this: LocalSpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: LocalSpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onspeechstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onspeechend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onnomatch: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
 }
 
+// Eliminar declaración global redundante y usar solo LocalSpeechRecognition para tipado interno
 // Definir tipos de Web Speech API que faltan
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
@@ -79,7 +89,7 @@ export interface RealtimeTranscriptionOptions {
  * Compatible con Chrome, Edge y Firefox (limitado)
  */
 export class WebSpeechSTTService {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: LocalSpeechRecognition | null = null;
   private isSupported: boolean = false;
   private currentStream: MediaStream | null = null;
   private isListening: boolean = false;
@@ -88,7 +98,7 @@ export class WebSpeechSTTService {
 
   constructor(config: Partial<SpeechRecognitionConfig> = {}) {
     // Verificar soporte del navegador
-    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     this.isSupported = !!SpeechRecognitionConstructor;
     
     // Configuración por defecto optimizada para español médico
@@ -100,8 +110,8 @@ export class WebSpeechSTTService {
       ...config
     };
     
-    if (this.isSupported && SpeechRecognitionConstructor) {
-      this.recognition = new SpeechRecognitionConstructor();
+    if (this.isSupported) {
+      this.recognition = new SpeechRecognitionConstructor() as LocalSpeechRecognition;
       this.setupRecognition();
     }
   }

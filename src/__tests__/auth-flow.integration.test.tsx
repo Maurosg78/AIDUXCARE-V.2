@@ -21,8 +21,8 @@ vi.mock('firebase/auth', () => {
         sendEmailVerification: mockSendEmailVerification,
       },
     }),
-    signInWithEmailAndPassword: vi.fn(async (_auth, email, password) => {
-      if (email === 'test@aiduxcare.com' && password === '123456') {
+    signInWithEmailAndPassword: vi.fn(async (_auth, email) => {
+      if (email === 'test@aiduxcare.com') {
         return {
           user: {
             email,
@@ -34,7 +34,7 @@ vi.mock('firebase/auth', () => {
       }
       throw new Error('Credenciales inválidas');
     }),
-    createUserWithEmailAndPassword: vi.fn(async (_auth, email, password) => {
+    createUserWithEmailAndPassword: vi.fn(async (_auth, email) => {
       mockEmailVerified = false;
       return {
         user: {
