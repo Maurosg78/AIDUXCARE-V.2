@@ -1,8 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
 import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
-import AccessPage from '@/pages/AccessPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { AuditPage } from '@/features/admin/AuditPage';
@@ -11,11 +10,12 @@ import OrganizationTeamPage from '../pages/OrganizationTeamPage';
 import OrganizationDashboardPage from '../pages/OrganizationDashboardPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import MFAGuidePage from '../pages/MFAGuidePage';
-import OnboardingConfirmationPage from '../pages/OnboardingConfirmationPage';
 import ProfessionalOnboardingPage from '../pages/ProfessionalOnboardingPage';
 import ClinicalInfoPage from '../pages/ClinicalInfoPage';
 import HumanFigurePage from '../pages/HumanFigurePage';
 import SOAPEditorPage from '../pages/SOAPEditorPage';
+import WelcomePage from '../pages/WelcomePage';
+import VerifyEmailPage from '../pages/VerifyEmailPage';
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -27,7 +27,7 @@ export const router = createBrowserRouter([
   // Página principal: Acceso directo
   {
     path: '/',
-    element: <AccessPage />,
+    element: <WelcomePage />,
   },
   // Login
   {
@@ -60,7 +60,15 @@ export const router = createBrowserRouter([
   // Página de Confirmación de Onboarding - PÚBLICA
   {
     path: '/onboarding-confirmation',
-    element: <OnboardingConfirmationPage />,
+    element: <Navigate to="/professional-onboarding" replace />, // Redirige a onboarding profesional
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmailPage />,
+  },
+  {
+    path: '/register',
+    element: <Navigate to="/professional-onboarding" replace />, // Redirige al onboarding profesional oficial
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
