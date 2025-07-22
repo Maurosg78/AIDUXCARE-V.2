@@ -96,14 +96,16 @@ export class WebSpeechSTTService {
   private config: SpeechRecognitionConfig;
   private sessionId: string = '';
 
+  // Declaración global estricta sin any
+
   constructor(config: Partial<SpeechRecognitionConfig> = {}) {
     // Verificar soporte del navegador con type guard
     let SpeechRecognitionConstructor: { new (): LocalSpeechRecognition } | undefined;
     if (typeof window !== 'undefined') {
-      if ('SpeechRecognition' in window && typeof window.SpeechRecognition === 'function') {
-        SpeechRecognitionConstructor = window.SpeechRecognition as { new (): LocalSpeechRecognition };
-      } else if ('webkitSpeechRecognition' in window && typeof window.webkitSpeechRecognition === 'function') {
-        SpeechRecognitionConstructor = window.webkitSpeechRecognition as { new (): LocalSpeechRecognition };
+      if (window.SpeechRecognition && typeof window.SpeechRecognition === 'function') {
+        SpeechRecognitionConstructor = window.SpeechRecognition;
+      } else if (window.webkitSpeechRecognition && typeof window.webkitSpeechRecognition === 'function') {
+        SpeechRecognitionConstructor = window.webkitSpeechRecognition;
       }
     }
     this.isSupported = !!SpeechRecognitionConstructor;
