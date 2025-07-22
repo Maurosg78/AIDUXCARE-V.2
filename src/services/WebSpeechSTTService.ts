@@ -109,19 +109,9 @@ export class WebSpeechSTTService {
       }
     }
     this.isSupported = !!SpeechRecognitionConstructor;
-    
-    // Configuración por defecto optimizada para español médico
-    this.config = {
-      language: 'es',
-      continuous: true,
-      interimResults: true,
-      maxAlternatives: 1,
-      ...config
-    };
-    
+    this.config = { ...config } as SpeechRecognitionConfig;
     if (this.isSupported && SpeechRecognitionConstructor) {
       this.recognition = new SpeechRecognitionConstructor();
-      this.setupRecognition();
     }
   }
 

@@ -1,14 +1,34 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { FirebaseAuthService } from './firebaseAuthService';
-import type { Mock } from 'vitest';
+
+// Subclase para exponer getUserProfile solo en test
+class TestableFirebaseAuthService extends FirebaseAuthService {
+  public getUserProfilePublic(...args: Parameters<FirebaseAuthService['getUserProfile']>) {
+    // @ts-expect-error: Acceso solo para test
+    return this.getUserProfile(...args);
+  }
+}
+
+// Declarar los mocks como variables globales de tipo Mock
+let mockSignInWithEmailAndPassword: Mock;
+let mockCreateUserWithEmailAndPassword: Mock;
+let mockSendEmailVerification: Mock;
+let mockSignOut: Mock;
+let mockOnAuthStateChanged: Mock;
+let mockGetAuth: Mock;
+let mockGetFirestore: Mock;
+let mockDoc: Mock;
+let mockSetDoc: Mock;
+let mockGetDoc: Mock;
+let mockUpdateDoc: Mock;
 
 vi.mock('firebase/auth', async () => {
-  const mockSignInWithEmailAndPassword = vi.fn();
-  const mockCreateUserWithEmailAndPassword = vi.fn();
-  const mockSendEmailVerification = vi.fn();
-  const mockSignOut = vi.fn();
-  const mockOnAuthStateChanged = vi.fn();
-  const mockGetAuth = vi.fn();
+  mockSignInWithEmailAndPassword = vi.fn();
+  mockCreateUserWithEmailAndPassword = vi.fn();
+  mockSendEmailVerification = vi.fn();
+  mockSignOut = vi.fn();
+  mockOnAuthStateChanged = vi.fn();
+  mockGetAuth = vi.fn();
   return {
     getAuth: mockGetAuth,
     signInWithEmailAndPassword: mockSignInWithEmailAndPassword,
@@ -17,24 +37,15 @@ vi.mock('firebase/auth', async () => {
     signOut: mockSignOut,
     onAuthStateChanged: mockOnAuthStateChanged,
     __esModule: true,
-    // Exponer mocks para los tests
-    _mocks: {
-      mockSignInWithEmailAndPassword,
-      mockCreateUserWithEmailAndPassword,
-      mockSendEmailVerification,
-      mockSignOut,
-      mockOnAuthStateChanged,
-      mockGetAuth,
-    },
   };
 });
 
 vi.mock('firebase/firestore', async () => {
-  const mockGetFirestore = vi.fn();
-  const mockDoc = vi.fn();
-  const mockSetDoc = vi.fn();
-  const mockGetDoc = vi.fn();
-  const mockUpdateDoc = vi.fn();
+  mockGetFirestore = vi.fn();
+  mockDoc = vi.fn();
+  mockSetDoc = vi.fn();
+  mockGetDoc = vi.fn();
+  mockUpdateDoc = vi.fn();
   return {
     getFirestore: mockGetFirestore,
     doc: mockDoc,
@@ -42,86 +53,59 @@ vi.mock('firebase/firestore', async () => {
     getDoc: mockGetDoc,
     updateDoc: mockUpdateDoc,
     __esModule: true,
-    _mocks: {
-      mockGetFirestore,
-      mockDoc,
-      mockSetDoc,
-      mockGetDoc,
-      mockUpdateDoc,
-    },
   };
 });
 
-// Subclase para exponer getUserProfile solo en test
-class TestableFirebaseAuthService extends FirebaseAuthService {
-  public getUserProfilePublic = this.getUserProfile;
-}
-
 const authService = new TestableFirebaseAuthService();
 
-// Usar getUserProfilePublic en vez de acceder a métodos privados
-beforeEach(async () => {
-  vi.clearAllMocks();
-  const authModule = await import('firebase/auth');
-  const firestoreModule = await import('firebase/firestore');
-  authMocks = authModule._mocks as Record<string, Mock>;
-  firestoreMocks = firestoreModule._mocks as Record<string, Mock>;
-  authService.getUserProfilePublic = vi.fn().mockResolvedValue({
-    id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
-  });
-});
-
 describe('FirebaseAuthService', () => {
-  let authMocks: Record<string, Mock>;
-  let firestoreMocks: Record<string, Mock>;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    // Tipado explícito de los mocks
-    const authModule = await import('firebase/auth');
-    const firestoreModule = await import('firebase/firestore');
-    authMocks = authModule._mocks as Record<string, Mock>;
-    firestoreMocks = firestoreModule._mocks as Record<string, Mock>;
   });
 
   it('debe registrar un usuario y crear perfil', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    (authMocks.mockCreateUserWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
-    (firestoreMocks.mockSetDoc as Mock).mockResolvedValue(undefined);
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    mockSetDoc.mockResolvedValue(undefined);
     const user = await authService.signUp('test@aiduxcare.com', 'password', 'Test User');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect((authMocks.mockCreateUserWithEmailAndPassword as Mock)).toHaveBeenCalled();
-    expect((firestoreMocks.mockSetDoc as Mock)).toHaveBeenCalled();
+    expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalled();
+    expect(mockSetDoc).toHaveBeenCalled();
   });
 
   it('debe iniciar sesión y retornar perfil', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
-    // Usar Mock en vez de any para getUserProfile
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    authService.getUserProfilePublic = vi.fn().mockResolvedValue({
+      id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
+    });
     const user = await authService.signIn('test@aiduxcare.com', 'password');
     expect(user.email).toBe('test@aiduxcare.com');
-    expect((authMocks.mockSignInWithEmailAndPassword as Mock)).toHaveBeenCalled();
+    expect(mockSignInWithEmailAndPassword).toHaveBeenCalled();
   });
 
   it('debe bloquear acceso a usuario no verificado', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: false };
-    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
-    // Usar Mock en vez de any para getUserProfile
-    const user = await authService.signIn('test@aiduxcare.com', 'password');
-    expect(user.emailVerified).toBe(false);
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    authService.getUserProfilePublic = vi.fn().mockResolvedValue({
+      id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: false,
+    });
+    await expect(authService.signIn('test@aiduxcare.com', 'password')).rejects.toThrow('Email no verificado');
   });
 
   it('debe reenviar correo de verificación', async () => {
-    const mockCurrentUser = { sendEmailVerification: authMocks.mockSendEmailVerification };
-    (authMocks.mockGetAuth as Mock).mockReturnValue({ currentUser: mockCurrentUser });
-    await (authMocks.mockSendEmailVerification as Mock)();
-    expect((authMocks.mockSendEmailVerification as Mock)).toHaveBeenCalled();
+    const mockCurrentUser = { sendEmailVerification: mockSendEmailVerification };
+    mockGetAuth.mockReturnValue({ currentUser: mockCurrentUser });
+    await mockSendEmailVerification();
+    expect(mockSendEmailVerification).toHaveBeenCalled();
   });
 
   it('debe actualizar emailVerified tras verificación', async () => {
     const mockUser = { uid: '123', email: 'test@aiduxcare.com', displayName: 'Test User', emailVerified: true };
-    (authMocks.mockSignInWithEmailAndPassword as Mock).mockResolvedValue({ user: mockUser });
-    // Usar Mock en vez de any para getUserProfile
+    mockSignInWithEmailAndPassword.mockResolvedValue({ user: mockUser });
+    authService.getUserProfilePublic = vi.fn().mockResolvedValue({
+      id: '123', email: 'test@aiduxcare.com', name: '', role: 'PHYSICIAN', createdAt: new Date(), updatedAt: new Date(), mfaEnabled: false, emailVerified: true,
+    });
     const user = await authService.signIn('test@aiduxcare.com', 'password');
     expect(user.emailVerified).toBe(true);
   });
