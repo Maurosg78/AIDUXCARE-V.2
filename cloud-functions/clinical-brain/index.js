@@ -5,7 +5,7 @@
 // @version 2.0.0
 
 const functions = require('@google-cloud/functions-framework');
-const { VertexAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cors = require('cors');
 const winston = require('winston');
 
@@ -19,11 +19,8 @@ const logger = winston.createLogger({
   transports: [new winston.transports.Console()]
 });
 
-// Configuración de Vertex AI
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'aiduxcare-stt-20250706',
-  location: 'us-east1'
-});
+// Inicialización de Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // CORS robusto
 const corsMiddleware = cors({
@@ -69,17 +66,9 @@ functions.http('clinicalBrain', async (req, res) => {
       // Prompt especializado
       const prompt = generateSpecializedPrompt(transcription, specialty);
       // Modelo Vertex AI
-      const generativeModel = vertexAI.getGenerativeModel({
-        model: model,
-        generation_config: {
-          max_output_tokens: 2048,
-          temperature: 0.3,
-          top_p: 0.8,
-          top_k: 40
-        }
-      });
+      const geminiModel = genAI.getGenerativeModel({ model: model });
       // Generar respuesta
-      const result = await generativeModel.generateContent(prompt);
+      const result = await geminiModel.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       // Parsear respuesta JSON
@@ -111,7 +100,7 @@ functions.http('clinicalBrain', async (req, res) => {
         ...analysisResult,
         metadata: {
           processingTimeMs: processingTime,
-          model: model,
+          model: geminiModel,
           specialty: specialty,
           timestamp: new Date().toISOString()
         }
@@ -170,5 +159,3 @@ Responde SOLO en formato JSON válido.`;
       return basePrompt;
   }
 }
-
-module.exports = { clinicalBrain: functions.http('clinicalBrain') };

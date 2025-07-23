@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
 
 const VerifyEmailPage: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
@@ -12,17 +13,18 @@ const VerifyEmailPage: React.FC = () => {
 
   // Efecto para refrescar el usuario y detectar verificación
   useEffect(() => {
+    let interval: NodeJS.Timeout | undefined = undefined;
     const checkVerification = async () => {
       if (user) {
         await user.reload();
+        setIsVerified(user.emailVerified);
         if (user.emailVerified) {
-          setIsVerified(true);
-          setTimeout(() => navigate('/login', { replace: true }), 2000);
+          setMessage('¡Email verificado! Redirigiendo...');
+          setTimeout(() => navigate('/login'), 1500);
         }
       }
     };
-    checkVerification();
-    const interval = setInterval(checkVerification, 2000);
+    interval = setInterval(checkVerification, 2000);
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -35,6 +37,12 @@ const VerifyEmailPage: React.FC = () => {
     try {
       if (user) {
         await sendEmailVerification(user);
+        await FirestoreAuditLogger.logEvent({
+          type: 'verification_email_resent',
+          userId: user.uid,
+          userRole: 'unknown',
+          metadata: { email: user.email },
+        });
         setMessage('Correo de verificación reenviado exitosamente. Revisa tu bandeja de entrada.');
       } else {
         setError('No se encontró usuario autenticado.');
@@ -75,11 +83,12 @@ const VerifyEmailPage: React.FC = () => {
           <button
             onClick={handleResend}
             disabled={loading}
-            className="bg-[#5DA5A3] hover:bg-[#48918f] text-white font-semibold py-2 px-6 rounded transition-colors disabled:opacity-60"
+            className="aidux-btn-secondary w-full py-2 px-6 rounded font-semibold transition-colors disabled:opacity-60"
+            aria-busy={loading}
           >
             {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
           </button>
-          {message && <div className="text-green-600 text-sm mt-2">{message}</div>}
+          {message && <div className="text-green-700 text-sm mt-2">{message}</div>}
           {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
         </div>
         <div className="mt-8 text-xs text-center text-slate-500">

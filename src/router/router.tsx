@@ -3,7 +3,6 @@ import Layout from '@/core/components/Layout';
 import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import { OnboardingPage } from '@/pages/OnboardingPage';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
 import OrganizationTeamPage from '../pages/OrganizationTeamPage';
@@ -34,11 +33,6 @@ export const router = createBrowserRouter([
     path: '/login',
     element: <LoginPage />,
   },
-  // Onboarding
-  {
-    path: '/onboarding',
-    element: <OnboardingPage />,
-  },
   // Onboarding Profesional - SIN LAYOUT
   {
     path: '/professional-onboarding',
@@ -60,7 +54,7 @@ export const router = createBrowserRouter([
   // Página de Confirmación de Onboarding - PÚBLICA
   {
     path: '/onboarding-confirmation',
-    element: <Navigate to="/professional-onboarding" replace />, // Redirige a onboarding profesional
+    element: <Navigate to="/" replace />, // Redirige a la página de bienvenida oficial
   },
   {
     path: '/verify-email',

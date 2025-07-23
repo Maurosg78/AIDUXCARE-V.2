@@ -65,6 +65,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       : <Navigate to="/login" replace />;
   }
 
+  // Si está autenticado pero no ha verificado su email, redirigir a /verify-email
+  if (user && user.emailVerified === false) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   // Si está autorizado, mostramos los hijos
   return <>{children}</>;
 };

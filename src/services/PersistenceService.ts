@@ -4,6 +4,7 @@
  */
 
 import CryptoService from './CryptoService';
+import { getAuth } from 'firebase/auth';
 
 type SOAPData = {
   subjective: string;
@@ -20,7 +21,7 @@ type EncryptedData = {
   salt?: string;
 };
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { app, db } from '../core/firebase/firebaseClient';
 
 export interface SavedNote {
   id: string;
@@ -39,7 +40,7 @@ export class PersistenceService {
    * Obtiene el ID del usuario actual autenticado
    */
   private static getCurrentUserId(): string {
-    const user = auth.currentUser;
+    const user = getAuth(app).currentUser;
     if (!user) {
       throw new Error('Usuario no autenticado');
     }

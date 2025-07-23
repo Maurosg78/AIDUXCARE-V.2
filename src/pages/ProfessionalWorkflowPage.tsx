@@ -7,11 +7,25 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-// Declaraciones de tipos para Web Speech API
+// Declaración mínima local para SpeechRecognition (solo métodos usados)
+interface LocalSpeechRecognition extends EventTarget {
+  start(): void;
+  stop(): void;
+  abort(): void;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onerror: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
+}
+
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: { new (): LocalSpeechRecognition };
+    webkitSpeechRecognition: { new (): LocalSpeechRecognition };
   }
 }
 
@@ -58,7 +72,7 @@ export const ProfessionalWorkflowPage: React.FC = () => {
   // Referencias para audio
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<LocalSpeechRecognition | null>(null);
 
   // Función para crear nuevo paciente
   const createNewPatient = () => {

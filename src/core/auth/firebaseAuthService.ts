@@ -6,44 +6,14 @@
  * Reemplaza completamente Supabase Auth para migración total
  */
 
-import { 
-  initializeApp, 
-  FirebaseApp 
-} from 'firebase/app';
-import { 
-  getAuth, 
-  Auth, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User as FirebaseUser,
-  UserCredential,
-  AuthError
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  Firestore,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc
-} from 'firebase/firestore';
+import { app, db } from '../firebase/firebaseClient';
+import { getAuth, Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User as FirebaseUser, UserCredential, AuthError } from 'firebase/auth';
+import { Firestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
-// Configuración Firebase desde variables de entorno
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef123456'
-};
-
-// Inicialización Firebase
-const app: FirebaseApp = initializeApp(firebaseConfig);
-const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
+// Eliminar inicialización directa:
+// const app: FirebaseApp = initializeApp(firebaseConfig);
+// const auth: Auth = getAuth(app);
+// const db: Firestore = getFirestore(app);
 
 // Tipos de usuario
 export interface UserProfile {
@@ -56,6 +26,7 @@ export interface UserProfile {
   updatedAt: Date;
   mfaEnabled: boolean;
   lastLoginAt?: Date;
+  emailVerified: boolean; // NUEVO
 }
 
 export interface AuthSession {
@@ -88,7 +59,7 @@ export class FirebaseAuthService {
   private db: Firestore;
 
   constructor() {
-    this.auth = auth;
+    this.auth = getAuth(app);
     this.db = db;
   }
 
@@ -112,6 +83,11 @@ export class FirebaseAuthService {
       
       if (!userProfile) {
         throw new Error('Perfil de usuario no encontrado');
+      }
+
+      // Validar email verificado
+      if (!userProfile.emailVerified) {
+        throw new Error('Email no verificado');
       }
 
       // Actualizar último login
@@ -148,15 +124,17 @@ export class FirebaseAuthService {
       const role = this.determineUserRole(name);
       
       // Crear perfil de usuario en Firestore
+      const isSuperUser = firebaseUser.email === 'mauricio@aiduxcare.com';
       const userProfile: UserProfile = {
         id: firebaseUser.uid,
         email: firebaseUser.email!,
-        name,
-        role,
-        specialization,
+        name: firebaseUser.displayName || '',
+        role: isSuperUser ? 'OWNER' : role,
+        specialization: specialization,
         createdAt: new Date(),
         updatedAt: new Date(),
-        mfaEnabled: false
+        mfaEnabled: false,
+        emailVerified: firebaseUser.emailVerified
       };
 
       await this.createUserProfile(userProfile);
@@ -311,6 +289,21 @@ export class FirebaseAuthService {
   }
 
   /**
+   * Reenviar correo de verificación a un usuario dado su email
+   */
+  async sendVerificationEmail(email: string): Promise<void> {
+    // Buscar usuario autenticado actual
+    const user = this.auth.currentUser;
+    if (!user || user.email !== email) {
+      throw new Error('Debes iniciar sesión para reenviar el correo de verificación.');
+    }
+    if (user.emailVerified) {
+      throw new Error('El email ya está verificado.');
+    }
+    await (user as FirebaseUser & { sendEmailVerification: () => Promise<void> }).sendEmailVerification();
+  }
+
+  /**
    * Obtener perfil de usuario desde Firestore
    */
   private async getUserProfile(userId: string): Promise<UserProfile | null> {
@@ -320,17 +313,20 @@ export class FirebaseAuthService {
       
       if (userSnapshot.exists()) {
         const data = userSnapshot.data();
-        return {
+        const isSuperUser = data.email === 'mauricio@aiduxcare.com';
+        const userProfile: UserProfile = {
           id: userId,
           email: data.email,
           name: data.name,
-          role: data.role,
+          role: isSuperUser ? 'OWNER' : data.role,
           specialization: data.specialization,
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate(),
           mfaEnabled: data.mfaEnabled || false,
-          lastLoginAt: data.lastLoginAt?.toDate()
+          lastLoginAt: data.lastLoginAt?.toDate(),
+          emailVerified: data.emailVerified || false
         };
+        return userProfile;
       }
       
       return null;
@@ -353,7 +349,8 @@ export class FirebaseAuthService {
         specialization: userProfile.specialization,
         createdAt: userProfile.createdAt,
         updatedAt: userProfile.updatedAt,
-        mfaEnabled: userProfile.mfaEnabled
+        mfaEnabled: userProfile.mfaEnabled,
+        emailVerified: userProfile.emailVerified
       });
     } catch (error: unknown) {
       console.error('Error al crear perfil de usuario:', error);

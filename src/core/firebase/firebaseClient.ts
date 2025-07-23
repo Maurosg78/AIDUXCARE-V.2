@@ -22,5 +22,6 @@ const firebaseConfig = {
 };
 
 // Inicializar solo si no existe
-export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-export const db = getFirestore(app); 
+const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+export const app = firebaseApp;
+export const db = getFirestore(firebaseApp); 

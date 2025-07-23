@@ -122,20 +122,23 @@ export const EnhancedAudioCapture: React.FC<EnhancedAudioCaptureProps> = ({
       }
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Error en reconocimiento:', event.error);
-      setError(`Error en reconocimiento: ${event.error}`);
+    // Asignar handlers con type assertion para cumplir el tipado estricto
+    recognition.onerror = ((event) => {
+      const errorEvent = event as SpeechRecognitionErrorEvent;
+      console.error('Error en reconocimiento:', errorEvent.error);
+      setError(`Error en reconocimiento: ${errorEvent.error}`);
       setIsRecording(false);
-    };
+    }) as typeof recognition.onerror;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = ((event) => {
+      const resultEvent = event as SpeechRecognitionEvent;
       let interimTranscript = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        const confidence = event.results[i][0].confidence || 0.8;
+      for (let i = resultEvent.resultIndex; i < resultEvent.results.length; i++) {
+        const transcript = resultEvent.results[i][0].transcript;
+        const confidence = resultEvent.results[i][0].confidence || 0.8;
 
-        if (event.results[i].isFinal) {
+        if (resultEvent.results[i].isFinal) {
           // finalTranscript += transcript; // No se usa
           
           const newSegment: AudioSegment = {
@@ -175,7 +178,7 @@ export const EnhancedAudioCapture: React.FC<EnhancedAudioCaptureProps> = ({
           return updated;
         });
       }
-    };
+    }) as typeof recognition.onresult;
 
     return recognition;
   }, [isSupported, language, onTranscriptionUpdate]);
