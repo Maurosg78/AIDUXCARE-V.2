@@ -2,70 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Función helper para verificar autenticación
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Función helper para verificar roles
-    function hasRole(roles) {
-      return isAuthenticated() && request.auth.token.role in roles;
-    }
-    
-    // Función helper para verificar si es propietario del recurso
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    
-    // Función helper para verificar acceso a paciente
-    function canAccessPatient(patientId) {
-      return hasRole(['OWNER', 'ADMIN']) || 
-             (hasRole(['PHYSICIAN']) && resource.data.assignedPhysician == request.auth.uid);
-    }
-    
-    // AUDIT LOGS - Permitir escritura amplia para desarrollo
-    match /audit_logs/{document} {
-      allow read: if hasRole(['ADMIN', 'OWNER']) || true; // Más permisivo en desarrollo
-      allow create: if true; // Permitir cualquier creación de logs en desarrollo
-      allow update: if false; // Los logs son inmutables una vez creados
-      allow delete: if false; // Los logs no se pueden eliminar
-    }
-    
-    // PATIENTS - Control de acceso basado en roles
-    match /patients/{patientId} {
-      allow read: if canAccessPatient(patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']); // Solo admin puede eliminar
-    }
-    
-    // VISITS - Control de acceso basado en paciente
-    match /visits/{visitId} {
-      allow read: if canAccessPatient(resource.data.patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(resource.data.patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
-    }
-    
-    // USER PROFILES - Permitir creación más amplia para registro
-    match /users/{userId} {
-      allow read: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']) || true; // Más permisivo
-      allow create: if true; // Permitir cualquier creación durante registro
-      allow update: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
-    }
-    
-    // CLINICAL DATA - Control estricto
-    match /clinical_data/{document} {
-      allow read: if canAccessPatient(resource.data.patientId);
-      allow create: if hasRole(['PHYSICIAN', 'ADMIN', 'OWNER']);
-      allow update: if canAccessPatient(resource.data.patientId);
-      allow delete: if hasRole(['ADMIN', 'OWNER']);
-    }
-    
-    // Permitir todo lo demás en desarrollo (TEMPORAL)
+    // REGLAS COMPLETAMENTE PERMISIVAS PARA DESARROLLO
+    // Permitir TODAS las operaciones en TODOS los documentos
     match /{document=**} {
-      allow read, write: if true; // MUY PERMISIVO para desarrollo
+      allow read, write: if true;
     }
   }
 } 
