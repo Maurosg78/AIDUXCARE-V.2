@@ -62,7 +62,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/register',
-    element: <Navigate to="/professional-onboarding" replace />, // Redirige al onboarding profesional oficial
+    element: <Navigate to="/" replace />, // Redirige directamente a WelcomePage (página principal)
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
