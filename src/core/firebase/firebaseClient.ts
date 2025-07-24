@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 
 // Helper para obtener variable de entorno compatible con Vite y Node
@@ -32,9 +32,9 @@ export const auth = getAuth(firebaseApp);
 window.DISABLE_PHONE_AUTH = true;
 window.FORCE_EMAIL_ONLY = true;
 
-// Conexión automática al emulador de Auth en entorno local
+// Conexión automática a emuladores en entorno local
 if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-  // Solo conectar si no está ya conectado
+  // Conectar Auth al emulador
   try {
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     // eslint-disable-next-line no-console
@@ -42,6 +42,16 @@ if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' |
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('[Firebase] No se pudo conectar al emulador de Auth:', e);
+  }
+
+  // Conectar Firestore al emulador
+  try {
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    // eslint-disable-next-line no-console
+    console.info('[Firebase] Firestore conectado al emulador en localhost:8080');
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[Firebase] No se pudo conectar al emulador de Firestore:', e);
   }
 }
 

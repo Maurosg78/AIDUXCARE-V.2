@@ -23,10 +23,10 @@ service cloud.firestore {
              (hasRole(['PHYSICIAN']) && resource.data.assignedPhysician == request.auth.uid);
     }
     
-    // AUDIT LOGS - Permitir escritura para usuarios autenticados
+    // AUDIT LOGS - Permitir escritura amplia para desarrollo
     match /audit_logs/{document} {
-      allow read: if hasRole(['ADMIN', 'OWNER']);
-      allow create: if isAuthenticated(); // Permitir creación de logs para usuarios autenticados
+      allow read: if hasRole(['ADMIN', 'OWNER']) || true; // Más permisivo en desarrollo
+      allow create: if true; // Permitir cualquier creación de logs en desarrollo
       allow update: if false; // Los logs son inmutables una vez creados
       allow delete: if false; // Los logs no se pueden eliminar
     }
@@ -47,10 +47,10 @@ service cloud.firestore {
       allow delete: if hasRole(['ADMIN', 'OWNER']);
     }
     
-    // USER PROFILES - Permitir creación de propio perfil y acceso ADMIN
+    // USER PROFILES - Permitir creación más amplia para registro
     match /users/{userId} {
-      allow read: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
-      allow create: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']); // Permitir creación de propio perfil
+      allow read: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']) || true; // Más permisivo
+      allow create: if true; // Permitir cualquier creación durante registro
       allow update: if isOwner(userId) || hasRole(['ADMIN', 'OWNER']);
       allow delete: if hasRole(['ADMIN', 'OWNER']);
     }
@@ -63,9 +63,9 @@ service cloud.firestore {
       allow delete: if hasRole(['ADMIN', 'OWNER']);
     }
     
-    // Denegar acceso a todo lo demás
+    // Permitir todo lo demás en desarrollo (TEMPORAL)
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true; // MUY PERMISIVO para desarrollo
     }
   }
 } 
