@@ -230,9 +230,7 @@ export const storage = firebaseClient.getStorage();
 export const firebaseApp = firebaseClient.getApp();
 
 // Re-export Firebase types for convenience
-export type { 
-  Auth, 
-  Firestore, 
-  FirebaseStorage, 
-  FirebaseApp 
-} from 'firebase/app';
+export type { FirebaseApp } from 'firebase/app';
+export type { Auth } from 'firebase/auth';
+export type { Firestore } from 'firebase/firestore';
+export type { FirebaseStorage } from 'firebase/storage';

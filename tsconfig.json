@@ -38,6 +38,10 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/__tests__/**",
+    "scripts/nlp-service-mock.ts",
+    "scripts/test-geolocation.ts",
+    "scripts/test-integrated-geolocation.ts",
+    "scripts/test-professional-services.ts",
     "**/__mocks__/**"
   ]
 }

@@ -10,10 +10,7 @@ export default defineConfig(({ mode }: ConfigEnv) => ({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@headlessui/react": path.resolve(__dirname, "./src/lib/headless-ui.tsx"),
-      "use-sync-external-store": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts"),
-      "use-sync-external-store/with-selector": path.resolve(__dirname, "./src/lib/use-sync-external-store-mock.ts")
+      "@": path.resolve(__dirname, "./src")
     }
   },
   optimizeDeps: {

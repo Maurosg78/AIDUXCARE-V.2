@@ -1,53 +1,87 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+/**
+ * 🚀 **Enterprise Application Entry Point**
+ * 
+ * Punto de entrada enterprise con:
+ * - Configuración inicial validada
+ * - Error handling desde el inicio
+ * - Logging de arranque
+ * - React 18 features
+ */
 
-// SOLUCIÓN AGRESIVA: INTERCEPTAR PÁGINA SMS Y REDIRIGIR
-function interceptSMSPage() {
-  // Detectar si la página contiene elementos problemáticos
-  const hasSMSElements = () => {
-    return document.body?.textContent?.includes('Método de verificación') ||
-           document.body?.textContent?.includes('SMS') ||
-           document.querySelector('input[type="radio"]') ||
-           window.location.pathname.includes('/register');
-  };
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles/index.css';
 
-  // Si detecta la página problemática, redirigir inmediatamente
-  if (hasSMSElements()) {
-    console.warn('🚨 Página SMS detectada, redirigiendo...');
-    // Limpiar la página actual
-    document.body.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border:2px solid #5DA5A3;border-radius:8px;font-size:18px;">🔄 Redirigiendo al formulario correcto...</div>';
-    // Redirigir después de un breve delay
-    setTimeout(() => {
-      window.location.href = '/professional-onboarding';
-    }, 1000);
-    return;
-  }
+import { config, isDebugEnabled } from './core/config/environment';
+import { firebaseClient } from './infrastructure/firebase/FirebaseClient';
 
-  // Observar cambios en el DOM para detectar carga dinámica de SMS
-  const observer = new MutationObserver(() => {
-    if (hasSMSElements()) {
-      console.warn('🚨 Contenido SMS detectado dinámicamente, redirigiendo...');
-      window.location.href = '/professional-onboarding';
+// =====================================================
+// APPLICATION INITIALIZATION
+// =====================================================
+
+async function initializeApp() {
+  try {
+    if (isDebugEnabled()) {
+      console.log('🚀 AiDuxCare Enterprise iniciando...');
+      console.log('⚙️ Configuración:', {
+        environment: config.app.environment,
+        version: config.app.version,
+        firebaseProject: config.firebase.projectId,
+        debugMode: config.features.enableDebugMode
+      });
     }
-  });
 
-  observer.observe(document.body, { 
-    childList: true, 
-    subtree: true,
-    characterData: true 
-  });
+    // Validate Firebase connection
+    const connectionInfo = firebaseClient.getConnectionInfo();
+    if (isDebugEnabled()) {
+      console.log('🔥 Firebase:', connectionInfo);
+    }
+
+    // Health check
+    const isHealthy = await firebaseClient.healthCheck();
+    if (isDebugEnabled()) {
+      console.log(`💚 Health check: ${isHealthy ? 'OK' : 'FAILED'}`);
+    }
+
+    if (isDebugEnabled()) {
+      console.log('✅ AiDuxCare Enterprise inicializado correctamente');
+    }
+
+  } catch (error) {
+    console.error('❌ Error inicializando AiDuxCare Enterprise:', error);
+    
+    // Still start the app even if initialization has issues
+    // The error boundary will handle any runtime errors
+  }
 }
 
-// Ejecutar inmediatamente
-interceptSMSPage();
+// =====================================================
+// REACT APPLICATION MOUNT
+// =====================================================
 
-// Ejecutar también cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', interceptSMSPage);
+const rootElement = document.getElementById('root');
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-) 
+if (!rootElement) {
+  throw new Error('Root element not found! Make sure you have a div with id="root" in your HTML.');
+}
+
+const root = ReactDOM.createRoot(rootElement);
+
+// Initialize and render
+initializeApp().then(() => {
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}).catch((error) => {
+  console.error('❌ Failed to initialize app:', error);
+  
+  // Fallback rendering even if initialization fails
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+});
