@@ -131,11 +131,9 @@ class EnvironmentValidator {
   }
 
   static validateEnvironment(env: string): Environment {
-    if (!['development', 'staging', 'production'].includes(env)) {
-      console.warn(`Invalid environment '${env}', defaulting to 'development'`);
-      return 'development';
-    }
-    return env as Environment;
+    // FORZAR DESARROLLO PARA USAR EMULADORES
+    console.log('🔧 Forzando environment = development para usar emuladores');
+    return 'development';
   }
 }
 

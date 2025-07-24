@@ -52,10 +52,9 @@ export class FirebaseClient {
       this.firestore = getFirestore(this.app);
       this.storage = getStorage(this.app);
 
-      // Connect to emulators in development
-      if (isDevelopment()) {
-        this.connectToEmulators();
-      }
+      // FORZAR CONEXIÓN A EMULADORES SIEMPRE
+      console.log('🔧 Forzando conexión a emuladores Firebase');
+      this.connectToEmulators();
 
       if (isDebugEnabled()) {
         console.log('🔥 Firebase Client inicializado correctamente');
@@ -117,13 +116,9 @@ export class FirebaseClient {
         disableWarnings: true
       });
       
-      if (isDebugEnabled()) {
-        console.log('🔐 Auth emulator conectado en http://localhost:9099');
-      }
+      console.log('✅ Auth emulator FORZADO en http://localhost:9099');
     } catch (error) {
-      if (isDebugEnabled()) {
-        console.warn('⚠️ Auth emulator no conectado:', error);
-      }
+      console.error('❌ ERROR conectando Auth emulator:', error);
     }
   }
 
@@ -131,13 +126,9 @@ export class FirebaseClient {
     try {
       connectFirestoreEmulator(this.firestore, 'localhost', 8080);
       
-      if (isDebugEnabled()) {
-        console.log('🗃️ Firestore emulator conectado en localhost:8080');
-      }
+      console.log('✅ Firestore emulator FORZADO en localhost:8080');
     } catch (error) {
-      if (isDebugEnabled()) {
-        console.warn('⚠️ Firestore emulator no conectado:', error);
-      }
+      console.error('❌ ERROR conectando Firestore emulator:', error);
     }
   }
 
