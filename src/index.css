@@ -17,3 +17,32 @@ body {
   padding: 0;
   line-height: 1.5;
 }
+
+/* DESACTIVAR GLOBALMENTE FUNCIONALIDAD SMS/PHONE AUTH */
+input[value="sms"],
+input[value="SMS"],
+label:has(input[value="sms"]),
+label:has(input[value="SMS"]),
+[data-testid*="sms"],
+[data-testid*="phone"],
+.phone-auth,
+.sms-verification,
+input[type="radio"][value="sms"],
+input[type="radio"][value="SMS"] {
+  display: none !important;
+}
+
+/* Ocultar texto relacionado con SMS */
+*:contains("SMS"),
+*:contains("Teléfono"),
+*:contains("Phone") {
+  display: none !important;
+}
+
+/* Forzar solo email visible */
+input[value="email"],
+input[value="Email"],
+label:has(input[value="email"]),
+label:has(input[value="Email"]) {
+  display: block !important;
+}
