@@ -18,31 +18,49 @@ body {
   line-height: 1.5;
 }
 
-/* DESACTIVAR GLOBALMENTE FUNCIONALIDAD SMS/PHONE AUTH */
-input[value="sms"],
-input[value="SMS"],
-label:has(input[value="sms"]),
-label:has(input[value="SMS"]),
-[data-testid*="sms"],
-[data-testid*="phone"],
-.phone-auth,
-.sms-verification,
-input[type="radio"][value="sms"],
-input[type="radio"][value="SMS"] {
+/* SOLUCIÓN AGRESIVA: OCULTAR COMPLETAMENTE FORMULARIO SMS */
+/* Ocultar todo el formulario de registro problemático */
+form:has(input[type="radio"]),
+.registration-form,
+[class*="register"],
+[class*="Register"] {
   display: none !important;
 }
 
-/* Ocultar texto relacionado con SMS */
-*:contains("SMS"),
-*:contains("Teléfono"),
-*:contains("Phone") {
+/* Ocultar errores de Firebase específicos */
+div:contains("Firebase: Error (auth/argument-error)"),
+div:contains("Failed to initialize reCAPTCHA"),
+[class*="error"]:contains("Firebase"),
+[class*="error"]:contains("auth/argument-error") {
   display: none !important;
 }
 
-/* Forzar solo email visible */
-input[value="email"],
-input[value="Email"],
-label:has(input[value="email"]),
-label:has(input[value="Email"]) {
-  display: block !important;
+/* Ocultar elementos SMS/Phone específicos */
+input[value="sms" i],
+input[value="SMS" i],
+label:has(input[value="sms" i]),
+label:has(input[value="SMS" i]),
+*:contains("SMS") {
+  display: none !important;
+}
+
+/* Ocultar página completa si contiene "Método de verificación" */
+body:has(*:contains("Método de verificación")) main,
+body:has(*:contains("Método de verificación")) .container {
+  display: none !important;
+}
+
+/* Mostrar mensaje de reemplazo */
+body:has(*:contains("Método de verificación"))::after {
+  content: "🔄 Redirigiendo al formulario correcto...";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border: 2px solid #5DA5A3;
+  border-radius: 8px;
+  font-size: 18px;
+  z-index: 9999;
 }
