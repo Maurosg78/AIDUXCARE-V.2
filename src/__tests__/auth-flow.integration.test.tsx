@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderWithRouter } from './test-utils';
 import WelcomePage from '../pages/WelcomePage';
-import LoginPage from '../pages/LoginPage';
 import VerifyEmailPage from '../pages/VerifyEmailPage';
 
 // Mocks globales para firebase/auth y firestore
@@ -109,7 +108,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
       ref: {},
       metadata: {},
     } as any));
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(<WelcomePage />);
     const emailInput = screen.getByPlaceholderText(/correo electrónico/i);
     const passwordInput = screen.getByPlaceholderText(/contraseña/i);
     fireEvent.change(emailInput, { target: { value: 'test@aiduxcare.com' } });
@@ -137,7 +136,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
   it('usuario verificado puede acceder tras login', async () => {
     // Simular verificación
     mockEmailVerified = true;
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(<WelcomePage />);
     const emailInput = screen.getByPlaceholderText(/correo electrónico/i);
     const passwordInput = screen.getByPlaceholderText(/contraseña/i);
     fireEvent.change(emailInput, { target: { value: 'test@aiduxcare.com' } });

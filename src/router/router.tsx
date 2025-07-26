@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
 import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
-import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
@@ -23,15 +22,15 @@ const future = {
 };
 
 export const router = createBrowserRouter([
-  // Página principal: Acceso directo
+  // Página principal: Acceso directo (incluye login y registro)
   {
     path: '/',
     element: <WelcomePage />,
   },
-  // Login
+  // Redirección de /login a página principal
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <Navigate to="/" replace />,
   },
   // Onboarding Profesional - SIN LAYOUT
   {
