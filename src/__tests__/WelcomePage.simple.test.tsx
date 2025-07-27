@@ -89,7 +89,8 @@ describe('🏥 WelcomePage - Tests Básicos de Integración', () => {
     it('debe mostrar placeholders médicos apropiados', () => {
       renderWithRouter(<WelcomePage />);
       
-      expect(screen.getByPlaceholderText('tu.email@hospital.com')).toBeInTheDocument();
+      // Hay dos inputs con el mismo placeholder (login y registro)
+      expect(screen.getAllByPlaceholderText('tu.email@hospital.com')).toHaveLength(2);
       expect(screen.getByPlaceholderText('Tu contraseña segura')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Dr. Juan Pérez o María González')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Mínimo 8 caracteres con mayús, minus, números y símbolos')).toBeInTheDocument();
@@ -171,8 +172,8 @@ describe('🏥 WelcomePage - Tests Básicos de Integración', () => {
       
       await waitFor(() => {
         // El input debería tener clases de éxito (verde)
-        expect(emailInput).toHaveClass('border-green-500');
-        expect(emailInput).toHaveClass('bg-green-50');
+        expect(emailInput.classList.contains('border-green-500')).toBe(true);
+        expect(emailInput.classList.contains('bg-green-50')).toBe(true);
       });
     });
     
@@ -189,8 +190,8 @@ describe('🏥 WelcomePage - Tests Básicos de Integración', () => {
       
       await waitFor(() => {
         // El input debería tener clases de error (rojo)
-        expect(emailInput).toHaveClass('border-red-500');
-        expect(emailInput).toHaveClass('bg-red-50');
+        expect(emailInput.classList.contains('border-red-500')).toBe(true);
+        expect(emailInput.classList.contains('bg-red-50')).toBe(true);
       });
     });
   });
@@ -247,9 +248,9 @@ describe('🏥 WelcomePage - Tests Básicos de Integración', () => {
       const mainContainer = screen.getByRole('main');
       
       // Verificar clases responsivas
-      expect(mainContainer).toHaveClass('flex-col');
-      expect(mainContainer).toHaveClass('lg:flex-row');
-      expect(mainContainer).toHaveClass('max-w-6xl');
+      expect(mainContainer.classList.contains('flex-col')).toBe(true);
+      expect(mainContainer.classList.contains('lg:flex-row')).toBe(true);
+      expect(mainContainer.classList.contains('max-w-6xl')).toBe(true);
     });
     
     it('debe usar clases de Tailwind CSS médicas', () => {
@@ -257,9 +258,9 @@ describe('🏥 WelcomePage - Tests Básicos de Integración', () => {
       
       // Verificar gradientes médicos
       const container = screen.getByRole('main').parentElement;
-      expect(container).toHaveClass('bg-gradient-to-br');
-      expect(container).toHaveClass('from-blue-50');
-      expect(container).toHaveClass('to-green-50');
+      expect(container?.classList.contains('bg-gradient-to-br')).toBe(true);
+      expect(container?.classList.contains('from-blue-50')).toBe(true);
+      expect(container?.classList.contains('to-green-50')).toBe(true);
     });
   });
 

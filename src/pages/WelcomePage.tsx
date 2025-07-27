@@ -415,10 +415,11 @@ const WelcomePage: React.FC = () => {
           
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="login-email" className="block text-sm font-semibold text-gray-700 mb-2">
                 Email Profesional
               </label>
               <input 
+                id="login-email"
                 type="email" 
                 name="email" 
                 value={loginForm.email} 
@@ -442,10 +443,11 @@ const WelcomePage: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700 mb-2">
                 Contraseña
               </label>
               <input 
+                id="login-password"
                 type="password" 
                 name="password" 
                 value={loginForm.password} 
@@ -585,10 +587,11 @@ const WelcomePage: React.FC = () => {
           ) : (
             <form onSubmit={handleRegister} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="register-name" className="block text-sm font-semibold text-gray-700 mb-2">
                   Nombre Completo *
                 </label>
                 <input 
+                  id="register-name"
                   type="text" 
                   name="name" 
                   value={regForm.name} 
@@ -612,10 +615,11 @@ const WelcomePage: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="register-email" className="block text-sm font-semibold text-gray-700 mb-2">
                   Email Profesional *
                 </label>
                 <input 
+                  id="register-email"
                   type="email" 
                   name="email" 
                   value={regForm.email} 
@@ -639,10 +643,11 @@ const WelcomePage: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="register-password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Contraseña Segura *
                 </label>
                 <input 
+                  id="register-password"
                   type="password" 
                   name="password" 
                   value={regForm.password} 
