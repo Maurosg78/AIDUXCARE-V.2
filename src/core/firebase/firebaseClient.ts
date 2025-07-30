@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 // Helper para obtener variable de entorno compatible con Vite y Node
 function getEnv(key: string): string | undefined {
@@ -24,4 +25,5 @@ const firebaseConfig = {
 // Inicializar solo si no existe
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const app = firebaseApp;
-export const db = getFirestore(firebaseApp); 
+export const db = getFirestore(firebaseApp);
+export const functions = getFunctions(firebaseApp); 
