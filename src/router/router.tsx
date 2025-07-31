@@ -8,6 +8,9 @@ import { OnboardingPage } from '@/pages/OnboardingPage';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
 
+// Importaciones premium con nombres únicos
+import { PremiumLoginPage_20250731, PremiumWorkflowPage_20250731 } from '@/pages/premium';
+
 // Configuración de future flags para React Router v7
 const future = {
   v7_startTransition: true,
@@ -29,6 +32,16 @@ export const router = createBrowserRouter([
   {
     path: '/onboarding',
     element: <OnboardingPage />,
+  },
+
+  // RUTAS PREMIUM - NUEVAS CON NOMBRES ÚNICOS
+  {
+    path: '/premium-login',
+    element: <PremiumLoginPage_20250731 />,
+  },
+  {
+    path: '/premium-workflow',
+    element: <PremiumWorkflowPage_20250731 />,
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
