@@ -3,16 +3,26 @@
  * Componente para capturar audio en tiempo real para el workflow clínico
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Button from '../ui/button';
+import { audioManager } from '../../services/AudioCaptureManager';
+import { MedicalPhase } from '../../services/SemanticChunkingService';
 
 interface ProfessionalAudioCaptureProps {
-  onRecordingComplete: (audioBlob: Blob) => void;
+  onRecordingStart?: () => void;
+  onRecordingStop?: () => void;
+  onPhaseChange?: (phase: MedicalPhase) => void;
+  currentPhase?: MedicalPhase;
+  onRecordingComplete?: (audioBlob: Blob) => void;
   isProcessing?: boolean;
   className?: string;
 }
 
 export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> = ({
+  onRecordingStart,
+  onRecordingStop,
+  onPhaseChange,
+  currentPhase = 'anamnesis',
   onRecordingComplete,
   isProcessing = false,
   className = ''
@@ -20,10 +30,42 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioPermission, setAudioPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
+  const [audioLevel, setAudioLevel] = useState(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Efectos para escuchar eventos del audio manager
+   */
+  useEffect(() => {
+    const handleLiveTranscription = (event: CustomEvent) => {
+      // Actualizar nivel de audio simulado
+      setAudioLevel(Math.random() * 100);
+    };
+
+    const handleTranscriptionError = (event: CustomEvent) => {
+      console.error('Error en transcripción:', event.detail);
+      setAudioPermission('denied');
+    };
+
+    window.addEventListener('liveTranscription', handleLiveTranscription as EventListener);
+    window.addEventListener('transcriptionError', handleTranscriptionError as EventListener);
+
+    return () => {
+      window.removeEventListener('liveTranscription', handleLiveTranscription as EventListener);
+      window.removeEventListener('transcriptionError', handleTranscriptionError as EventListener);
+    };
+  }, []);
+
+  /**
+   * Cambiar fase médica
+   */
+  const handlePhaseChange = (phase: MedicalPhase) => {
+    audioManager.changePhase(phase);
+    onPhaseChange?.(phase);
+  };
 
   /**
    * Solicita permisos de micrófono
@@ -41,55 +83,55 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   }, []);
 
   /**
-   * Inicia la grabación
+   * Inicia la grabación con semantic chunking
    */
   const startRecording = useCallback(async () => {
-    const stream = await requestMicrophonePermission();
-    if (!stream) return;
-
-    audioChunksRef.current = [];
-    setRecordingTime(0);
-
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      onRecordingComplete(audioBlob);
+    try {
+      await audioManager.startRecording();
+      setIsRecording(true);
+      setRecordingTime(0);
       
-      // Detener todas las pistas de audio
-      stream.getTracks().forEach(track => track.stop());
-    };
+      // Notificar al componente padre
+      onRecordingStart?.();
 
-    mediaRecorder.start(100); // Grabar en chunks de 100ms
-    setIsRecording(true);
+      // Iniciar timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
 
-    // Iniciar timer
-    timerRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
-    }, 1000);
-  }, [onRecordingComplete, requestMicrophonePermission]);
+      console.log('🎤 Grabación iniciada con semantic chunking');
+    } catch (error) {
+      console.error('❌ Error al iniciar grabación:', error);
+      setAudioPermission('denied');
+    }
+  }, [onRecordingStart]);
 
   /**
-   * Detiene la grabación
+   * Detiene la grabación con semantic chunking
    */
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (isRecording) {
+      const segments = audioManager.stopRecording();
       setIsRecording(false);
       
+      // Detener timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+
+      // Notificar al componente padre
+      onRecordingStop?.();
+
+      // Crear un blob simulado para compatibilidad
+      if (onRecordingComplete) {
+        const audioBlob = new Blob([''], { type: 'audio/wav' });
+        onRecordingComplete(audioBlob);
+      }
+
+      console.log('⏹️ Grabación detenida, segments:', segments.length);
     }
-  }, [isRecording]);
+  }, [isRecording, onRecordingStop, onRecordingComplete]);
 
   /**
    * Formatea el tiempo de grabación
@@ -116,7 +158,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
           
           // Crear blob simulado
           const simulatedBlob = new Blob(['simulated audio'], { type: 'audio/wav' });
-          onRecordingComplete(simulatedBlob);
+          onRecordingComplete?.(simulatedBlob);
           
           return 0;
         }
@@ -164,6 +206,56 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
             </div>
           )}
         </div>
+
+        {/* Fase Médica Actual */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 w-full">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium text-blue-800">Fase Actual:</span>
+              <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded font-medium">
+                {currentPhase === 'anamnesis' ? 'Anamnesis' :
+                 currentPhase === 'exploration' ? 'Exploración' :
+                 currentPhase === 'evaluation' ? 'Evaluación' : 'Planificación'}
+              </span>
+            </div>
+            {isRecording && (
+              <div className="flex items-center">
+                <span className="text-xs text-blue-600 mr-2">Audio:</span>
+                <div className="w-16 h-2 bg-blue-200 rounded">
+                  <div 
+                    className="h-full bg-blue-600 rounded transition-all duration-200"
+                    style={{ width: `${audioLevel}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Controles de Fase (solo visible cuando está grabando) */}
+        {isRecording && (
+          <div className="grid grid-cols-2 gap-2 mb-4 w-full">
+            {[
+              { phase: 'anamnesis' as MedicalPhase, label: 'Anamnesis', icon: '📋' },
+              { phase: 'exploration' as MedicalPhase, label: 'Exploración', icon: '🔍' },
+              { phase: 'evaluation' as MedicalPhase, label: 'Evaluación', icon: '⚕️' },
+              { phase: 'planning' as MedicalPhase, label: 'Planificación', icon: '📝' }
+            ].map(({ phase, label, icon }) => (
+              <button
+                key={phase}
+                onClick={() => handlePhaseChange(phase)}
+                className={`p-2 rounded text-xs border transition-all ${
+                  currentPhase === phase
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                <div className="text-base mb-1">{icon}</div>
+                <div className="font-medium">{label}</div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Control de Grabación Principal */}
         <div className="flex flex-col items-center mb-4">
