@@ -25,7 +25,7 @@ export interface WorkflowState {
   metrics: SessionMetrics;
 }
 
-export const PremiumWorkflowPage_20250731: React.FC = () => {
+export const PremiumWorkflowPage: React.FC = () => {
   const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<MedicalPhase>('anamnesis');
@@ -387,4 +387,4 @@ export const PremiumWorkflowPage_20250731: React.FC = () => {
   );
 };
 
-export default PremiumWorkflowPage_20250731; 
+export default PremiumWorkflowPage; 

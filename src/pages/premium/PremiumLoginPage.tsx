@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AiDuxCareLogo } from '../../components/branding/AiDuxCareLogo';
 
-const PremiumLoginPage_20250731: React.FC = () => {
+const PremiumLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -190,4 +190,4 @@ const PremiumLoginPage_20250731: React.FC = () => {
   );
 };
 
-export default PremiumLoginPage_20250731; 
+export default PremiumLoginPage; 

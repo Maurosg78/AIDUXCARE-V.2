@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
+import { useAuth } from '../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +20,43 @@ const LoginPage: React.FC = () => {
       // Simulación de login exitoso
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Guardar estado de autenticación
-      sessionStorage.setItem('isAuthenticated', 'true');
-      sessionStorage.setItem('userEmail', email);
+      // Determinar tipo de usuario basado en email
+      let userData = {
+        displayName: 'Usuario',
+        email: email,
+        professionalTitle: 'FT',
+        specialty: 'Fisioterapia',
+        country: 'España'
+      };
+
+      if (email === 'demo@aiduxcare.com') {
+        userData = {
+          displayName: 'Dr. Ana García',
+          email: email,
+          professionalTitle: 'FT',
+          specialty: 'Fisioterapia Traumatológica',
+          country: 'España'
+        };
+      } else if (email === 'maurosg.2023@gmail.com') {
+        userData = {
+          displayName: 'FT. Mauricio Sobarzo',
+          email: email,
+          professionalTitle: 'FT',
+          specialty: 'Fisioterapia Traumatológica',
+          country: 'España'
+        };
+      } else if (email === 'admin@aiduxcare.com') {
+        userData = {
+          displayName: 'Dr. Carlos Admin',
+          email: email,
+          professionalTitle: 'FT',
+          specialty: 'Administración',
+          country: 'España'
+        };
+      }
+      
+      // Guardar datos del usuario usando el hook
+      login(userData);
       
       // Redirigir al workflow profesional
       navigate('/professional-workflow');

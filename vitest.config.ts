@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "../src")
+      "@": path.resolve(__dirname, "./src")
     }
   },
   test: {
@@ -23,9 +23,10 @@ export default defineConfig({
       '**/evals/future_evals/**',
       '**/__tests__/future_evals/**'
     ],
+    css: false,
     coverage: {
       reporter: ['text-summary', 'html'],
-      reportsDirectory: path.resolve(__dirname, '../coverage'),
+      reportsDirectory: path.resolve(__dirname, './coverage'),
       provider: 'v8',
       all: false,
       exclude: [

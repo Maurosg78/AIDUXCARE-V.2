@@ -1,15 +1,17 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '@/core/components/Layout';
 import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
+import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import LoginPage from '@/pages/LoginPage';
 import AccessPage from '@/pages/AccessPage';
+import WelcomePage from '@/pages/WelcomePage';
 import ProtectedRoute from '@/features/auth/ProtectedRoute';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { AuditPage } from '@/features/admin/AuditPage';
 import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
 
 // Importaciones premium con nombres únicos
-import { PremiumLoginPage_20250731, PremiumWorkflowPage_20250731 } from '@/pages/premium';
+import { PremiumLoginPage, PremiumWorkflowPage } from '@/pages/premium';
 
 // Configuración de future flags para React Router v7
 const future = {
@@ -18,9 +20,14 @@ const future = {
 };
 
 export const router = createBrowserRouter([
-  // Página principal: Acceso directo
+  // Página principal: WelcomePage con wizard
   {
     path: '/',
+    element: <WelcomePage />,
+  },
+  // Página de acceso directo
+  {
+    path: '/access',
     element: <AccessPage />,
   },
   // Login
@@ -33,15 +40,20 @@ export const router = createBrowserRouter([
     path: '/onboarding',
     element: <OnboardingPage />,
   },
+  // Register (redirige al wizard)
+  {
+    path: '/register',
+    element: <WelcomePage />,
+  },
 
   // RUTAS PREMIUM - NUEVAS CON NOMBRES ÚNICOS
   {
     path: '/premium-login',
-    element: <PremiumLoginPage_20250731 />,
+    element: <PremiumLoginPage />,
   },
   {
     path: '/premium-workflow',
-    element: <PremiumWorkflowPage_20250731 />,
+    element: <PremiumWorkflowPage />,
   },
 
   // Rutas principales con layout profesional - PROTEGIDAS
@@ -54,6 +66,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ProfessionalWorkflowPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "patient-detail",
+        element: (
+          <ProtectedRoute>
+            <PatientDetailPage />
           </ProtectedRoute>
         ),
       },
