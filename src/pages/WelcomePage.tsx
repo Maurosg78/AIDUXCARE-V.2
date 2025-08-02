@@ -56,18 +56,43 @@ export const WelcomePage: React.FC = () => {
 
     switch (step) {
       case WizardStep.PERSONAL_DATA:
-        if (!wizardData.personal.firstName.trim()) errors.firstName = 'Nombre requerido';
-        if (!wizardData.personal.lastName.trim()) errors.lastName = 'Apellido requerido';
+        // Campos obligatorios del paso personal
+        if (!wizardData.personal.firstName.trim()) errors.firstName = 'Primer nombre requerido';
+        if (!wizardData.personal.lastName.trim()) errors.lastName = 'Primer apellido requerido';
         if (!wizardData.personal.email.trim()) errors.email = 'Email requerido';
+        if (!wizardData.personal.birthDate.trim()) errors.birthDate = 'Fecha de nacimiento requerida';
+        if (!wizardData.personal.phone.trim()) errors.phone = 'Teléfono requerido';
+        if (!wizardData.personal.gender.trim()) errors.gender = 'Género requerido';
+        if (!wizardData.personal.password.trim()) errors.password = 'Contraseña requerida';
+        if (!wizardData.personal.confirmPassword.trim()) errors.confirmPassword = 'Confirmar contraseña requerida';
+        
+        // Validación de contraseñas
+        if (wizardData.personal.password && wizardData.personal.confirmPassword) {
+          if (wizardData.personal.password !== wizardData.personal.confirmPassword) {
+            errors.confirmPassword = 'Las contraseñas no coinciden';
+          }
+          if (wizardData.personal.password.length < 8) {
+            errors.password = 'La contraseña debe tener al menos 8 caracteres';
+          }
+        }
         break;
 
       case WizardStep.PROFESSIONAL_DATA:
+        // Campos obligatorios del paso profesional
         if (!wizardData.professional.professionalTitle.trim()) errors.professionalTitle = 'Título profesional requerido';
         if (!wizardData.professional.specialty.trim()) errors.specialty = 'Especialidad requerida';
+        if (!wizardData.professional.university.trim()) errors.university = 'Universidad requerida';
+        if (!wizardData.professional.licenseNumber.trim()) errors.licenseNumber = 'Número de licencia requerido';
+        if (!wizardData.professional.experienceYears.trim()) errors.experienceYears = 'Años de experiencia requeridos';
         break;
 
       case WizardStep.LOCATION_DATA:
+        // Campos obligatorios del paso ubicación
         if (!wizardData.location.country.trim()) errors.country = 'País requerido';
+        if (!wizardData.location.province.trim()) errors.province = 'Provincia requerida';
+        if (!wizardData.location.city.trim()) errors.city = 'Ciudad requerida';
+        if (!wizardData.location.consentGDPR) errors.consentGDPR = 'Debe aceptar los términos y condiciones';
+        if (!wizardData.location.consentHIPAA) errors.consentHIPAA = 'Debe aceptar la política de privacidad';
         break;
     }
 
