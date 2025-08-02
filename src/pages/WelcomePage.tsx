@@ -206,14 +206,14 @@ export const WelcomePage: React.FC = () => {
     <div className="bg-white flex items-center justify-center py-2 px-4 h-screen overflow-hidden">
       <div className="w-full max-w-lg max-h-full overflow-y-auto">
         {/* Header Apple-style */}
-        <div className="text-center space-y-3 mb-6">
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight">
+        <div className="text-center space-y-2 mb-4">
+          <h1 className="text-2xl font-light text-gray-900 tracking-tight">
             Bienvenido a{' '}
             <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
               AiDuxCare
             </span>
           </h1>
-          <p className="text-gray-500 text-sm leading-relaxed font-light">
+          <p className="text-gray-500 text-xs leading-relaxed font-light">
             Ficha médica electrónica asistida por AI.<br/>
             Menos papeleo, más seguridad, más tiempo.
           </p>
@@ -225,18 +225,18 @@ export const WelcomePage: React.FC = () => {
         </div>
 
         {/* Navegación Apple-style */}
-        <div className="flex space-x-4 pt-4">
+        <div className="flex space-x-4 pt-2">
           {currentStep !== WizardStep.PERSONAL_DATA && (
             <button
               onClick={prevStep}
-              className="flex-1 py-3 px-6 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-base font-medium"
+              className="flex-1 py-2 px-4 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-sm font-medium"
             >
               Anterior
             </button>
           )}
           <button
             onClick={currentStep === WizardStep.LOCATION_DATA ? handleSubmit : nextStep}
-            className="flex-1 py-3 px-6 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base font-medium"
+            className="flex-1 py-2 px-4 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium"
             disabled={!isStepValid}
           >
             {currentStep === WizardStep.LOCATION_DATA ? 'Completar Registro' : 'Siguiente'}
