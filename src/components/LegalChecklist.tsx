@@ -275,11 +275,11 @@ Al usar AiDuxCare, usted:
     : 0;
 
   return (
-    <div className="space-y-2">
-      {/* Header compacto */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-900">
+    <div className="space-y-1">
+      {/* Header ultra-compacto */}
+      <div className="bg-white rounded-lg border border-gray-200 p-2">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xs font-semibold text-gray-900">
             Consentimientos Legales Requeridos
           </h3>
           <div className="text-xs text-gray-600">
@@ -288,9 +288,9 @@ Al usar AiDuxCare, usted:
         </div>
         
         {/* Barra de progreso */}
-        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+        <div className="w-full bg-gray-200 rounded-full h-1 mb-1">
           <div 
-            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-1 rounded-full transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
@@ -300,17 +300,17 @@ Al usar AiDuxCare, usted:
         </p>
       </div>
 
-      {/* Checklist compacto */}
-      <div className="space-y-2">
+      {/* Checklist ultra-compacto */}
+      <div className="space-y-1">
         {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-3">
-            <div className="flex items-start space-x-2">
+          <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-2">
+            <div className="flex items-start space-x-1">
               <input
                 type="checkbox"
                 id={item.id}
                 checked={item.checked}
                 onChange={(e) => handleItemChange(item.id, e.target.checked)}
-                className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="mt-0 h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 required={item.required}
               />
               <div className="flex-1">
@@ -318,9 +318,9 @@ Al usar AiDuxCare, usted:
                   htmlFor={item.id} 
                   className="cursor-pointer"
                 >
-                  <div className="flex items-center space-x-1 mb-1">
-                    <span className="text-sm">{getCategoryIcon(item.category)}</span>
-                    <span className="font-medium text-gray-900 text-sm">
+                  <div className="flex items-center space-x-1 mb-0.5">
+                    <span className="text-xs">{getCategoryIcon(item.category)}</span>
+                    <span className="font-medium text-gray-900 text-xs">
                       {item.title}
                     </span>
                     {item.required && (
@@ -328,7 +328,7 @@ Al usar AiDuxCare, usted:
                     )}
                   </div>
                   
-                  <p className="text-xs text-gray-600 mb-1">
+                  <p className="text-xs text-gray-600 mb-0.5">
                     {item.description}
                   </p>
                   
@@ -340,7 +340,7 @@ Al usar AiDuxCare, usted:
                       e.stopPropagation();
                       openTermsModal(item.title, getTermsContent(item.id));
                     }}
-                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1"
                   >
                     📄 Leer términos completos
                   </button>
@@ -351,12 +351,12 @@ Al usar AiDuxCare, usted:
         ))}
       </div>
 
-      {/* Resumen compacto */}
+      {/* Resumen ultra-compacto */}
       {progressPercentage === 100 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="flex items-center space-x-2">
-            <span className="text-green-600 text-sm">✅</span>
-            <p className="text-green-800 font-medium text-sm">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+          <div className="flex items-center space-x-1">
+            <span className="text-green-600 text-xs">✅</span>
+            <p className="text-green-800 font-medium text-xs">
               Todos los consentimientos han sido aceptados
             </p>
           </div>
