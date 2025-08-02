@@ -167,28 +167,28 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
               {/* Formulario Apple-style */}
         <div className="space-y-3">
           {/* Nombres */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">Primer Nombre *</label>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">Primer Nombre *</label>
               <input 
                 id="firstName" 
                 type="text" 
                 value={data.firstName} 
                 onChange={(e) => onFieldChange('firstName', e.target.value)} 
-                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
                 autoComplete="given-name" 
                 placeholder="Tu nombre"
               />
-              {errors.firstName && (<p className="text-sm text-red-600 mt-1">{errors.firstName}</p>)}
+              {errors.firstName && (<p className="text-xs text-red-600 mt-1">{errors.firstName}</p>)}
             </div>
             <div>
-              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Nombre</label>
+              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
               <input 
                 id="secondName" 
                 type="text" 
                 value={data.secondName || ''} 
                 onChange={(e) => onFieldChange('secondName', e.target.value)} 
-                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm" 
                 autoComplete="additional-name" 
                 placeholder="Tu segundo nombre"
               />
@@ -292,7 +292,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   type="tel"
                   value={data.phone}
                   onChange={(e) => onFieldChange('phone', e.target.value)}
-                  className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.phone ? 'border-red-300' : ''}`}
+                  className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.phone ? 'border-red-300' : ''}`}
                   autoComplete="tel"
                   placeholder="XXX XXX XXX"
                 />
@@ -309,7 +309,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 id="gender" 
                 value={data.gender} 
                 onChange={(e) => onFieldChange('gender', e.target.value)} 
-                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm"
               >
                 <option value="">Selecciona tu género</option>
                 <option value="masculino">Masculino</option>
@@ -329,7 +329,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 type="password" 
                 value={data.password} 
                 onChange={(e) => onFieldChange('password', e.target.value)} 
-                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
                 placeholder="••••••••" 
                 autoComplete="new-password" 
               />
@@ -351,7 +351,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 type="password" 
                 value={data.confirmPassword} 
                 onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
-                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
                 placeholder="••••••••" 
                 autoComplete="new-password" 
               />
