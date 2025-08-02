@@ -203,27 +203,20 @@ export const WelcomePage: React.FC = () => {
   const isStepValid = validateStep(currentStep).isValid;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="wizard-card">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">
+    <div className="min-h-screen bg-white flex items-center justify-center py-8 px-4">
+      <div className="max-w-2xl w-full">
+        {/* Header con diseño exacto de la captura */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold mb-4">
             Bienvenido a{' '}
-            <span className="aiduxcare-gradient">AiDuxCare</span>
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+              AiDuxCare
+            </span>
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-700 text-lg leading-relaxed">
             Ficha médica electrónica asistida por AI.<br/>
             Menos papeleo, más seguridad, más tiempo.
           </p>
-          {/* Indicador progreso del .md */}
-          <div className="flex items-center justify-center mt-6">
-            <div className="progress-indicator">
-              {currentStep}/3
-            </div>
-            <span className="ml-3 text-gray-600">
-              Paso {currentStep} de 3
-            </span>
-          </div>
         </div>
 
         {/* Contenido del paso */}
