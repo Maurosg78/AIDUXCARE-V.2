@@ -106,7 +106,7 @@ export class EmailActivationService {
 
       // Guardar en Firestore
       const professionalDoc = doc(db, 'professionals', professionalId);
-      const firestoreData = {
+      const firestoreData: any = {
         ...professional,
         registrationDate: professional.registrationDate.toISOString(),
         createdAt: professional.createdAt.toISOString(),
