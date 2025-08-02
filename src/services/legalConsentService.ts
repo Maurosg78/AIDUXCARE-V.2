@@ -58,7 +58,6 @@ export class LegalConsentService {
       const consentWithMetadata: LegalConsent = {
         ...consent,
         version: '1.0.0',
-        timestamp: new Date(),
         userAgent: navigator.userAgent,
         // IP address se obtendría del backend en producción
       };
@@ -217,7 +216,7 @@ export class LegalConsentService {
   public exportConsentData(): {
     consent: LegalConsent | null;
     auditLog: ConsentAuditLog[];
-    report: ReturnType<typeof this.generateConsentReport>;
+    report: ReturnType<LegalConsentService['generateConsentReport']>;
   } {
     return {
       consent: this.getCurrentConsent(),

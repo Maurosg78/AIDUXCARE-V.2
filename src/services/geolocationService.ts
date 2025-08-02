@@ -231,8 +231,9 @@ export class GeolocationService {
       await this.getCurrentPosition(100);
       return 'granted';
     } catch (error: unknown) {
-      if (error.code === 1) return 'denied';
-      if (error.code === 2) return 'denied';
+      const geolocationError = error as GeolocationPositionError;
+      if (geolocationError.code === 1) return 'denied';
+      if (geolocationError.code === 2) return 'denied';
       return 'prompt';
     }
   }

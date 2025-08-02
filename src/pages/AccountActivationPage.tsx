@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { emailActivationService, type ActivationResult } from '../services/emailActivationService';
+import { emailActivationService, type ActivationResult, type ProfessionalRegistration } from '../services/emailActivationService';
 import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 
 export const AccountActivationPage: React.FC = () => {
