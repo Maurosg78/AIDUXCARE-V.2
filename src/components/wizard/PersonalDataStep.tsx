@@ -165,30 +165,30 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       )}
 
               {/* Formulario Apple-style */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {/* Nombres */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">Primer Nombre *</label>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">Primer Nombre *</label>
               <input 
                 id="firstName" 
                 type="text" 
                 value={data.firstName} 
                 onChange={(e) => onFieldChange('firstName', e.target.value)} 
-                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
                 autoComplete="given-name" 
                 placeholder="Tu nombre"
               />
-              {errors.firstName && (<p className="text-xs text-red-600 mt-1">{errors.firstName}</p>)}
+              {errors.firstName && (<p className="text-sm text-red-600 mt-1">{errors.firstName}</p>)}
             </div>
             <div>
-              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
+              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Nombre</label>
               <input 
                 id="secondName" 
                 type="text" 
                 value={data.secondName || ''} 
                 onChange={(e) => onFieldChange('secondName', e.target.value)} 
-                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm" 
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
                 autoComplete="additional-name" 
                 placeholder="Tu segundo nombre"
               />
@@ -268,8 +268,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
               )}
             </div>
           </div>
-                  {/* Teléfono y Género - Separados para evitar desbalance */}
-          <div className="space-y-2">
+                  {/* Teléfono y Género - En la misma línea */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Teléfono */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
@@ -278,11 +278,11 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowCountryCodeSelector(true)}
-                    className="flex items-center space-x-2 px-2 py-2 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                    className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
                   >
-                    <span className="text-sm">{selectedCountryCode?.flag || '🌍'}</span>
-                    <span className="text-xs font-medium">{selectedCountryCode?.code || '+XX'}</span>
-                    <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="text-base">{selectedCountryCode?.flag || '🌍'}</span>
+                    <span className="text-sm font-medium">{selectedCountryCode?.code || '+XX'}</span>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -292,13 +292,13 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   type="tel"
                   value={data.phone}
                   onChange={(e) => onFieldChange('phone', e.target.value)}
-                  className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.phone ? 'border-red-300' : ''}`}
+                  className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.phone ? 'border-red-300' : ''}`}
                   autoComplete="tel"
                   placeholder={selectedCountryCode?.format || 'Número de teléfono'}
                 />
               </div>
               {errors.phone && (
-                <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
               )}
             </div>
             
@@ -309,7 +309,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 id="gender" 
                 value={data.gender} 
                 onChange={(e) => onFieldChange('gender', e.target.value)} 
-                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm"
+                className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
               >
                 <option value="">Selecciona tu género</option>
                 <option value="masculino">Masculino</option>
@@ -319,8 +319,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
               </select>
             </div>
           </div>
-                  {/* Contraseñas - Separadas para evitar desbalance */}
-          <div className="space-y-2">
+                  {/* Contraseñas - En la misma línea */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Contraseña */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
@@ -329,18 +329,18 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 type="password" 
                 value={data.password} 
                 onChange={(e) => onFieldChange('password', e.target.value)} 
-                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
                 placeholder="••••••••" 
                 autoComplete="new-password" 
               />
               {data.password && (
                 <div className="mt-1">
-                  <span className={`text-xs ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
+                  <span className={`text-sm ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
                     Fortaleza: {getPasswordStrengthText(checkPasswordStrength(data.password))}
                   </span>
                 </div>
               )}
-              {errors.password && (<p className="text-xs text-red-600 mt-1">{errors.password}</p>)}
+              {errors.password && (<p className="text-sm text-red-600 mt-1">{errors.password}</p>)}
             </div>
             
             {/* Confirmar Contraseña */}
@@ -351,11 +351,11 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 type="password" 
                 value={data.confirmPassword} 
                 onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
-                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
+                className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
                 placeholder="••••••••" 
                 autoComplete="new-password" 
               />
-              {errors.confirmPassword && (<p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>)}
+              {errors.confirmPassword && (<p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>)}
             </div>
           </div>
       </div>
