@@ -275,42 +275,42 @@ Al usar AiDuxCare, usted:
     : 0;
 
   return (
-    <div className="space-y-4">
-      {/* Header simplificado */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">
+    <div className="space-y-2">
+      {/* Header compacto */}
+      <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-gray-900">
             Consentimientos Legales Requeridos
           </h3>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs text-gray-600">
             {checkedRequiredItems.length} de {requiredItems.length} completados
           </div>
         </div>
         
         {/* Barra de progreso */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
           <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
         
-        <p className="text-sm text-gray-600">
+        <p className="text-xs text-gray-600">
           Debe aceptar los 3 consentimientos para continuar
         </p>
       </div>
 
-      {/* Checklist simplificado con links */}
-      <div className="space-y-3">
+      {/* Checklist compacto */}
+      <div className="space-y-2">
         {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-start space-x-3">
+          <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-start space-x-2">
               <input
                 type="checkbox"
                 id={item.id}
                 checked={item.checked}
                 onChange={(e) => handleItemChange(item.id, e.target.checked)}
-                className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 required={item.required}
               />
               <div className="flex-1">
@@ -318,9 +318,9 @@ Al usar AiDuxCare, usted:
                   htmlFor={item.id} 
                   className="cursor-pointer"
                 >
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-xl">{getCategoryIcon(item.category)}</span>
-                    <span className="font-medium text-gray-900">
+                  <div className="flex items-center space-x-1 mb-1">
+                    <span className="text-sm">{getCategoryIcon(item.category)}</span>
+                    <span className="font-medium text-gray-900 text-sm">
                       {item.title}
                     </span>
                     {item.required && (
@@ -328,7 +328,7 @@ Al usar AiDuxCare, usted:
                     )}
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-xs text-gray-600 mb-1">
                     {item.description}
                   </p>
                   
@@ -340,7 +340,7 @@ Al usar AiDuxCare, usted:
                       e.stopPropagation();
                       openTermsModal(item.title, getTermsContent(item.id));
                     }}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     📄 Leer términos completos
                   </button>
@@ -351,12 +351,12 @@ Al usar AiDuxCare, usted:
         ))}
       </div>
 
-      {/* Resumen simplificado */}
+      {/* Resumen compacto */}
       {progressPercentage === 100 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-center space-x-2">
-            <span className="text-green-600">✅</span>
-            <p className="text-green-800 font-medium">
+            <span className="text-green-600 text-sm">✅</span>
+            <p className="text-green-800 font-medium text-sm">
               Todos los consentimientos han sido aceptados
             </p>
           </div>
