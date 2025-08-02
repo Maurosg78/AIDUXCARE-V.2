@@ -17,7 +17,6 @@ import { emailActivationService } from '../services/emailActivationService';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [showWizard, setShowWizard] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<WizardStep>(WizardStep.PERSONAL_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [locationData, setLocationData] = useState<GeolocationData | null>(null);
@@ -116,15 +115,6 @@ export const WelcomePage: React.FC = () => {
   // Handler para recibir datos de geolocalización del PersonalDataStep
   const handleLocationDetected = useCallback((location: GeolocationData) => {
     setLocationData(location);
-  }, []);
-
-  // Handlers para navegación
-  const handleGoToLogin = useCallback(() => {
-    navigate('/login');
-  }, [navigate]);
-
-  const handleStartRegistration = useCallback(() => {
-    setShowWizard(true);
   }, []);
 
   // Finalizar wizard con registro real
