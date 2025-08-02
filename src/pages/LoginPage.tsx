@@ -20,40 +20,14 @@ const LoginPage: React.FC = () => {
       // Simulación de login exitoso
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Determinar tipo de usuario basado en email
-      let userData = {
+      // Datos básicos del usuario (en producción esto vendría de Firebase)
+      const userData = {
         displayName: 'Usuario',
         email: email,
         professionalTitle: 'FT',
         specialty: 'Fisioterapia',
         country: 'España'
       };
-
-      if (email === 'demo@aiduxcare.com') {
-        userData = {
-          displayName: 'Dr. Ana García',
-          email: email,
-          professionalTitle: 'FT',
-          specialty: 'Fisioterapia Traumatológica',
-          country: 'España'
-        };
-      } else if (email === 'maurosg.2023@gmail.com') {
-        userData = {
-          displayName: 'FT. Mauricio Sobarzo',
-          email: email,
-          professionalTitle: 'FT',
-          specialty: 'Fisioterapia Traumatológica',
-          country: 'España'
-        };
-      } else if (email === 'admin@aiduxcare.com') {
-        userData = {
-          displayName: 'Dr. Carlos Admin',
-          email: email,
-          professionalTitle: 'FT',
-          specialty: 'Administración',
-          country: 'España'
-        };
-      }
       
       // Guardar datos del usuario usando el hook
       login(userData);
@@ -198,16 +172,7 @@ const LoginPage: React.FC = () => {
           </Link>
         </div>
 
-        {/* Credenciales de demostración */}
-        <div className="mt-8 p-6 border border-slate-200 rounded-lg bg-white/60 backdrop-blur-sm">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">Credenciales de demostración:</h3>
-          <div className="space-y-2 text-xs text-slate-600">
-            <p><span className="font-medium">Profesional:</span> demo@aiduxcare.com / password123</p>
-            <p><span className="font-medium">Paciente:</span> paciente@aiduxcare.com / password123</p>
-            <p><span className="font-medium">Admin:</span> admin@aiduxcare.com / password123</p>
-            <p><span className="font-medium">Mauricio:</span> maurosg.2023@gmail.com / Mauro7812#</p>
-          </div>
-        </div>
+
 
         {/* Botón para volver al acceso directo */}
         <div className="text-center">

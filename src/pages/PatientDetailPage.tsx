@@ -77,8 +77,8 @@ export const PatientDetailPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="font-semibold">FT. Mauricio Sobarzo</div>
-                <div className="text-sm opacity-90">Fisioterapia Traumatológica</div>
+                <div className="font-semibold">Profesional</div>
+                <div className="text-sm opacity-90">Fisioterapia</div>
               </div>
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center font-bold">
                 MS

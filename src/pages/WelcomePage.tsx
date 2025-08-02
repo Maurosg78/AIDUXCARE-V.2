@@ -21,30 +21,30 @@ export const WelcomePage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [locationData, setLocationData] = useState<GeolocationData | null>(null);
 
-  // Datos del wizard según el .md
+  // Datos del wizard - Formulario limpio para producción
   const [wizardData, setWizardData] = useState<WizardData>({
     personal: {
-      firstName: 'Mauricio',
-      lastName: 'Sobarzo',
-      birthDate: '1985-03-15',
-      email: 'msobarzo78@gmail.com',
-      phone: '+34 600 000 000',
-      gender: 'masculino',
-      password: 'aidux2025',
-      confirmPassword: 'aidux2025'
+      firstName: '',
+      lastName: '',
+      birthDate: '',
+      email: '',
+      phone: '',
+      gender: '',
+      password: '',
+      confirmPassword: ''
     },
     professional: {
-      professionalTitle: 'FT',
-      specialty: 'fisioterapia',
-      university: 'Universidad Complutense de Madrid',
-      licenseNumber: 'FT-12345',
-      workplace: 'Clínica Privada',
-      experienceYears: '8'
+      professionalTitle: '',
+      specialty: '',
+      university: '',
+      licenseNumber: '',
+      workplace: '',
+      experienceYears: ''
     },
     location: {
-      country: 'España',
-      province: 'Madrid',
-      city: 'Madrid',
+      country: '',
+      province: '',
+      city: '',
       consentGDPR: false,
       consentHIPAA: false
     }
