@@ -224,7 +224,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
           )}
         </div>
         <div>
-          <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-1">
             {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
               ? 'Especialidad *' 
               : 'Área de Expertiz'}
@@ -233,7 +233,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             id="specialty"
             value={data.specialty} 
             onChange={(e) => handleSpecialtyChange(e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialty ? 'border-red-300' : 'border-gray-200'} ${!data.professionalTitle ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.specialty ? 'border-red-300' : 'border-gray-200'} ${!data.professionalTitle ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!data.professionalTitle}
           >
             <option value="">
@@ -248,7 +248,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             ))}
           </select>
           {errors.specialty && (
-            <p className="text-sm text-red-600 mt-1">{errors.specialty}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.specialty}</p>
           )}
         </div>
       </div>
@@ -256,7 +256,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
       {/* Campo "otro" para especialidad */}
       {showOtherSpecialty && (
         <div>
-          <label htmlFor="specialtyOther" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="specialtyOther" className="block text-sm font-medium text-gray-700 mb-1">
             {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
               ? 'Especifica tu especialidad *' 
               : 'Especifica tu área de expertiz *'}
@@ -266,7 +266,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             type="text" 
             value={data.specialtyOther || ''} 
             onChange={(e) => onFieldChange('specialtyOther', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
             placeholder={
               data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
                 ? 'Ej: Medicina Interna, Cirugía Vascular...' 
@@ -274,20 +274,20 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             }
           />
           {errors.specialtyOther && (
-            <p className="text-sm text-red-600 mt-1">{errors.specialtyOther}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.specialtyOther}</p>
           )}
         </div>
       )}
 
       {/* Universidad y Licencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-2">Universidad/Institución *</label>
+          <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Universidad/Institución *</label>
           <select 
             id="university"
             value={data.university} 
             onChange={(e) => handleUniversityChange(e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.university ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.university ? 'border-red-300' : 'border-gray-200'}`}
           >
             <option value="">Selecciona tu universidad</option>
             {universities.map((university) => (
@@ -297,21 +297,21 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             ))}
           </select>
           {errors.university && (
-            <p className="text-sm text-red-600 mt-1">{errors.university}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.university}</p>
           )}
         </div>
         <div>
-          <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-2">Número de Licencia/Colegiado *</label>
+          <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-1">Número de Licencia/Colegiado *</label>
           <input 
             id="licenseNumber"
             type="text" 
             value={data.licenseNumber} 
             onChange={(e) => onFieldChange('licenseNumber', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.licenseNumber ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.licenseNumber ? 'border-red-300' : 'border-gray-200'}`}
             placeholder="Tu número de licencia"
           />
           {errors.licenseNumber && (
-            <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.licenseNumber}</p>
           )}
         </div>
       </div>
@@ -319,44 +319,44 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
       {/* Campo "otro" para universidad */}
       {showOtherUniversity && (
         <div>
-          <label htmlFor="universityOther" className="block text-sm font-medium text-gray-700 mb-2">Especifica tu universidad *</label>
+          <label htmlFor="universityOther" className="block text-sm font-medium text-gray-700 mb-1">Especifica tu universidad *</label>
           <input 
             id="universityOther"
             type="text" 
             value={data.universityOther || ''} 
             onChange={(e) => onFieldChange('universityOther', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.universityOther ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.universityOther ? 'border-red-300' : 'border-gray-200'}`}
             placeholder="Ej: Universidad de [Ciudad], Instituto [Nombre]..."
           />
           {errors.universityOther && (
-            <p className="text-sm text-red-600 mt-1">{errors.universityOther}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.universityOther}</p>
           )}
         </div>
       )}
 
       {/* Centro de Trabajo y Años de Experiencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="workplace" className="block text-sm font-medium text-gray-700 mb-2">Centro de Trabajo</label>
+          <label htmlFor="workplace" className="block text-sm font-medium text-gray-700 mb-1">Centro de Trabajo</label>
           <input 
             id="workplace"
             type="text" 
             value={data.workplace} 
             onChange={(e) => onFieldChange('workplace', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.workplace ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.workplace ? 'border-red-300' : 'border-gray-200'}`}
             placeholder="Ej: Clínica, Hospital, Consulta particular..."
           />
           {errors.workplace && (
-            <p className="text-sm text-red-600 mt-1">{errors.workplace}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.workplace}</p>
           )}
         </div>
         <div>
-          <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700 mb-2">Años de Experiencia *</label>
+          <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700 mb-1">Años de Experiencia *</label>
           <select 
             id="experienceYears"
             value={data.experienceYears} 
             onChange={(e) => onFieldChange('experienceYears', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.experienceYears ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.experienceYears ? 'border-red-300' : 'border-gray-200'}`}
           >
             <option value="">Selecciona tus años de experiencia</option>
             {experienceLevels.map((level) => (
@@ -366,7 +366,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             ))}
           </select>
           {errors.experienceYears && (
-            <p className="text-sm text-red-600 mt-1">{errors.experienceYears}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.experienceYears}</p>
           )}
         </div>
       </div>
