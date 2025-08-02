@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      console.log('🔍 [DEBUG] Intentando login con email:', email);
+      console.log('[DEBUG] Intentando login con email:', email);
 
       // Verificar si el profesional existe y está activo
       const professional = await emailActivationService.getProfessional(email);
@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      console.log('✅ [DEBUG] Profesional activo encontrado:', professional.displayName);
+      console.log('[DEBUG] Profesional activo encontrado:', professional.displayName);
 
       // Actualizar último login
       await emailActivationService.updateLastLogin(email);
@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
       // Redirigir al workflow profesional
       navigate('/professional-workflow');
     } catch (err) {
-      console.error('❌ [DEBUG] Error en login:', err);
+      console.error('[DEBUG] Error en login:', err);
       setError('Error al iniciar sesión. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
