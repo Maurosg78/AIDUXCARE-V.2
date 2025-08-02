@@ -201,189 +201,206 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   };
 
   return (
-    <div className="space-y-2">
-      {/* Título Profesional y Especialidad/Área */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-1">Título Profesional *</label>
-          <select 
-            id="professionalTitle"
-            value={data.professionalTitle} 
-            onChange={(e) => onFieldChange('professionalTitle', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
-          >
-            <option value="">Selecciona tu título</option>
-            {professionalTitles.map((title) => (
-              <option key={title.value} value={title.value}>
-                {title.label}
-              </option>
-            ))}
-          </select>
-          {errors.professionalTitle && (
-            <p className="text-xs text-red-600 mt-1">{errors.professionalTitle}</p>
-          )}
-        </div>
-        <div>
-          <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-1">
-            {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-              ? 'Especialidad *' 
-              : 'Área de Expertiz'}
-          </label>
-          <select 
-            id="specialty"
-            value={data.specialty} 
-            onChange={(e) => handleSpecialtyChange(e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.specialty ? 'border-red-300' : 'border-gray-200'} ${!data.professionalTitle ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={!data.professionalTitle}
-          >
-            <option value="">
+    <>
+      {/* Formulario con Grid Simétrico Perfecto */}
+      <div className="max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Fila 1: Título Profesional y Especialidad */}
+          <div className="form-group">
+            <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-2">
+              Título Profesional *
+            </label>
+            <select 
+              id="professionalTitle"
+              value={data.professionalTitle} 
+              onChange={(e) => onFieldChange('professionalTitle', e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
+            >
+              <option value="">Selecciona tu título</option>
+              {professionalTitles.map((title) => (
+                <option key={title.value} value={title.value}>
+                  {title.label}
+                </option>
+              ))}
+            </select>
+            {errors.professionalTitle && (
+              <p className="text-sm text-red-600 mt-1">{errors.professionalTitle}</p>
+            )}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-2">
               {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                ? 'Selecciona tu especialidad' 
-                : 'Selecciona tu área'}
-            </option>
-            {data.professionalTitle && getSpecialtiesByTitle(data.professionalTitle).map((specialty) => (
-              <option key={specialty.value} value={specialty.value}>
-                {specialty.label}
+                ? 'Especialidad *' 
+                : 'Área de Expertiz'}
+            </label>
+            <select 
+              id="specialty"
+              value={data.specialty} 
+              onChange={(e) => handleSpecialtyChange(e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialty ? 'border-red-300' : 'border-gray-200'} ${!data.professionalTitle ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!data.professionalTitle}
+            >
+              <option value="">
+                {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
+                  ? 'Selecciona tu especialidad' 
+                  : 'Selecciona tu área'}
               </option>
-            ))}
-          </select>
-          {errors.specialty && (
-            <p className="text-xs text-red-600 mt-1">{errors.specialty}</p>
+              {data.professionalTitle && getSpecialtiesByTitle(data.professionalTitle).map((specialty) => (
+                <option key={specialty.value} value={specialty.value}>
+                  {specialty.label}
+                </option>
+              ))}
+            </select>
+            {errors.specialty && (
+              <p className="text-sm text-red-600 mt-1">{errors.specialty}</p>
+            )}
+          </div>
+          
+          {/* Campo "otro" para especialidad - Ancho completo */}
+          {showOtherSpecialty && (
+            <div className="form-group md:col-span-2">
+              <label htmlFor="specialtyOther" className="block text-sm font-medium text-gray-700 mb-2">
+                {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
+                  ? 'Especifica tu especialidad *' 
+                  : 'Especifica tu área de expertiz *'}
+              </label>
+              <input 
+                id="specialtyOther"
+                type="text" 
+                value={data.specialtyOther || ''} 
+                onChange={(e) => onFieldChange('specialtyOther', e.target.value)} 
+                className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
+                placeholder={
+                  data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
+                    ? 'Ej: Medicina Interna, Cirugía Vascular...' 
+                    : 'Ej: Terapia Manual, Rehabilitación Deportiva...'
+                }
+              />
+              {errors.specialtyOther && (
+                <p className="text-sm text-red-600 mt-1">{errors.specialtyOther}</p>
+              )}
+            </div>
           )}
-        </div>
-      </div>
-
-      {/* Campo "otro" para especialidad */}
-      {showOtherSpecialty && (
-        <div>
-          <label htmlFor="specialtyOther" className="block text-sm font-medium text-gray-700 mb-1">
-            {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-              ? 'Especifica tu especialidad *' 
-              : 'Especifica tu área de expertiz *'}
-          </label>
-          <input 
-            id="specialtyOther"
-            type="text" 
-            value={data.specialtyOther || ''} 
-            onChange={(e) => onFieldChange('specialtyOther', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
-            placeholder={
-              data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                ? 'Ej: Medicina Interna, Cirugía Vascular...' 
-                : 'Ej: Terapia Manual, Rehabilitación Deportiva...'
-            }
-          />
-          {errors.specialtyOther && (
-            <p className="text-xs text-red-600 mt-1">{errors.specialtyOther}</p>
+          
+          {/* Fila 2: Universidad y Licencia */}
+          <div className="form-group">
+            <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-2">
+              Universidad/Institución *
+            </label>
+            <select 
+              id="university"
+              value={data.university} 
+              onChange={(e) => handleUniversityChange(e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.university ? 'border-red-300' : 'border-gray-200'}`}
+            >
+              <option value="">Selecciona tu universidad</option>
+              {universities.map((university) => (
+                <option key={university.value} value={university.value}>
+                  {university.label}
+                </option>
+              ))}
+            </select>
+            {errors.university && (
+              <p className="text-sm text-red-600 mt-1">{errors.university}</p>
+            )}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              Número de Licencia/Colegiado *
+            </label>
+            <input 
+              id="licenseNumber"
+              type="text" 
+              value={data.licenseNumber} 
+              onChange={(e) => onFieldChange('licenseNumber', e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.licenseNumber ? 'border-red-300' : 'border-gray-200'}`}
+              placeholder="Tu número de licencia"
+            />
+            {errors.licenseNumber && (
+              <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
+            )}
+          </div>
+          
+          {/* Campo "otro" para universidad - Ancho completo */}
+          {showOtherUniversity && (
+            <div className="form-group md:col-span-2">
+              <label htmlFor="universityOther" className="block text-sm font-medium text-gray-700 mb-2">
+                Especifica tu universidad *
+              </label>
+              <input 
+                id="universityOther"
+                type="text" 
+                value={data.universityOther || ''} 
+                onChange={(e) => onFieldChange('universityOther', e.target.value)} 
+                className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.universityOther ? 'border-red-300' : 'border-gray-200'}`}
+                placeholder="Ej: Universidad de [Ciudad], Instituto [Nombre]..."
+              />
+              {errors.universityOther && (
+                <p className="text-sm text-red-600 mt-1">{errors.universityOther}</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
-
-      {/* Universidad y Licencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Universidad/Institución *</label>
-          <select 
-            id="university"
-            value={data.university} 
-            onChange={(e) => handleUniversityChange(e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.university ? 'border-red-300' : 'border-gray-200'}`}
-          >
-            <option value="">Selecciona tu universidad</option>
-            {universities.map((university) => (
-              <option key={university.value} value={university.value}>
-                {university.label}
-              </option>
-            ))}
-          </select>
-          {errors.university && (
-            <p className="text-xs text-red-600 mt-1">{errors.university}</p>
-          )}
-        </div>
-        <div>
-          <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-1">Número de Licencia/Colegiado *</label>
-          <input 
-            id="licenseNumber"
-            type="text" 
-            value={data.licenseNumber} 
-            onChange={(e) => onFieldChange('licenseNumber', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.licenseNumber ? 'border-red-300' : 'border-gray-200'}`}
-            placeholder="Tu número de licencia"
-          />
-          {errors.licenseNumber && (
-            <p className="text-xs text-red-600 mt-1">{errors.licenseNumber}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Campo "otro" para universidad */}
-      {showOtherUniversity && (
-        <div>
-          <label htmlFor="universityOther" className="block text-sm font-medium text-gray-700 mb-1">Especifica tu universidad *</label>
-          <input 
-            id="universityOther"
-            type="text" 
-            value={data.universityOther || ''} 
-            onChange={(e) => onFieldChange('universityOther', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.universityOther ? 'border-red-300' : 'border-gray-200'}`}
-            placeholder="Ej: Universidad de [Ciudad], Instituto [Nombre]..."
-          />
-          {errors.universityOther && (
-            <p className="text-xs text-red-600 mt-1">{errors.universityOther}</p>
-          )}
-        </div>
-      )}
-
-      {/* Centro de Trabajo y Años de Experiencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="workplace" className="block text-sm font-medium text-gray-700 mb-1">Centro de Trabajo</label>
-          <input 
-            id="workplace"
-            type="text" 
-            value={data.workplace} 
-            onChange={(e) => onFieldChange('workplace', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.workplace ? 'border-red-300' : 'border-gray-200'}`}
-            placeholder="Ej: Clínica, Hospital, Consulta particular..."
-          />
-          {errors.workplace && (
-            <p className="text-xs text-red-600 mt-1">{errors.workplace}</p>
-          )}
-        </div>
-        <div>
-          <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700 mb-1">Años de Experiencia *</label>
-          <select 
-            id="experienceYears"
-            value={data.experienceYears} 
-            onChange={(e) => onFieldChange('experienceYears', e.target.value)} 
-            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.experienceYears ? 'border-red-300' : 'border-gray-200'}`}
-          >
-            <option value="">Selecciona tus años de experiencia</option>
-            {experienceLevels.map((level) => (
-              <option key={level.value} value={level.value}>
-                {level.label}
-              </option>
-            ))}
-          </select>
-          {errors.experienceYears && (
-            <p className="text-xs text-red-600 mt-1">{errors.experienceYears}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Información adicional Apple-style */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <svg className="h-5 w-5 text-gray-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-gray-600">
-              Esta información nos ayuda a personalizar tu experiencia y asegurar que cumples con los requisitos profesionales para el uso de AiDuxCare.
-            </p>
+          
+          {/* Fila 3: Centro de Trabajo y Años de Experiencia */}
+          <div className="form-group">
+            <label htmlFor="workplace" className="block text-sm font-medium text-gray-700 mb-2">
+              Centro de Trabajo
+            </label>
+            <input 
+              id="workplace"
+              type="text" 
+              value={data.workplace} 
+              onChange={(e) => onFieldChange('workplace', e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.workplace ? 'border-red-300' : 'border-gray-200'}`}
+              placeholder="Ej: Clínica, Hospital, Consulta particular..."
+            />
+            {errors.workplace && (
+              <p className="text-sm text-red-600 mt-1">{errors.workplace}</p>
+            )}
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700 mb-2">
+              Años de Experiencia *
+            </label>
+            <select 
+              id="experienceYears"
+              value={data.experienceYears} 
+              onChange={(e) => onFieldChange('experienceYears', e.target.value)} 
+              className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.experienceYears ? 'border-red-300' : 'border-gray-200'}`}
+            >
+              <option value="">Selecciona tus años de experiencia</option>
+              {experienceLevels.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
+                </option>
+              ))}
+            </select>
+            {errors.experienceYears && (
+              <p className="text-sm text-red-600 mt-1">{errors.experienceYears}</p>
+            )}
+          </div>
+          
+          {/* Información adicional - Ancho completo */}
+          <div className="form-group md:col-span-2">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <svg className="h-5 w-5 text-gray-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-gray-600">
+                    Esta información nos ayuda a personalizar tu experiencia y asegurar que cumples con los requisitos profesionales para el uso de AiDuxCare.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }; 
