@@ -220,7 +220,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Información de ubicación detectada Apple-style */}
         {detectedLocation && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">

@@ -165,7 +165,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       )}
 
       {/* Formulario Apple-style */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Nombres */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>

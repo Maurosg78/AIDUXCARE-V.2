@@ -203,29 +203,29 @@ export const WelcomePage: React.FC = () => {
   const isStepValid = validateStep(currentStep).isValid;
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
+    <div className="bg-white flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-lg">
         {/* Header Apple-style */}
-        <div className="text-center space-y-6 mb-12">
-          <h1 className="text-4xl font-light text-gray-900 tracking-tight">
+        <div className="text-center space-y-4 mb-8">
+          <h1 className="text-3xl font-light text-gray-900 tracking-tight">
             Bienvenido a{' '}
             <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
               AiDuxCare
             </span>
           </h1>
-          <p className="text-gray-500 text-base leading-relaxed font-light">
+          <p className="text-gray-500 text-sm leading-relaxed font-light">
             Ficha médica electrónica asistida por AI.<br/>
             Menos papeleo, más seguridad, más tiempo.
           </p>
         </div>
 
         {/* Contenido del paso Apple-style */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {renderCurrentStep()}
         </div>
 
         {/* Navegación Apple-style */}
-        <div className="flex space-x-4 pt-6">
+        <div className="flex space-x-4 pt-4">
           {currentStep !== WizardStep.PERSONAL_DATA && (
             <button
               onClick={prevStep}

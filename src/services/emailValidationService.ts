@@ -22,16 +22,8 @@ export interface EmailRecoveryOptions {
 
 export class EmailValidationService {
   private static instance: EmailValidationService;
-  private existingEmails: Set<string> = new Set([
-    'mauricio@aiduxcare.com',
-    'admin@aiduxcare.com',
-    'test@aiduxcare.com'
-  ]);
-
-  private activeEmails: Set<string> = new Set([
-    'mauricio@aiduxcare.com',
-    'admin@aiduxcare.com'
-  ]);
+  private existingEmails: Set<string> = new Set([]);
+  private activeEmails: Set<string> = new Set([]);
 
   public static getInstance(): EmailValidationService {
     if (!EmailValidationService.instance) {
