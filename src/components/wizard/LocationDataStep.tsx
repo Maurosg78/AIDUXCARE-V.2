@@ -220,7 +220,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Información de ubicación detectada Apple-style */}
         {detectedLocation && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
@@ -241,7 +241,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
         )}
 
         {/* País y Provincia */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
               País *

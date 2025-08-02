@@ -165,9 +165,9 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       )}
 
       {/* Formulario Apple-style */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Nombres */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">Primer Nombre *</label>
             <input 
@@ -195,7 +195,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           </div>
         </div>
         {/* Apellidos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">Primer Apellido *</label>
             <input 
@@ -223,7 +223,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           </div>
         </div>
         {/* Fecha de Nacimiento y Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
             <input 
@@ -269,7 +269,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           </div>
         </div>
         {/* Teléfono y Género - Separados para evitar desbalance */}
-        <div className="space-y-5">
+        <div className="space-y-3">
           {/* Teléfono */}
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
@@ -320,7 +320,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           </div>
         </div>
         {/* Contraseñas - Separadas para evitar desbalance */}
-        <div className="space-y-5">
+        <div className="space-y-3">
           {/* Contraseña */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>

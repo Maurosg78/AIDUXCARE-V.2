@@ -201,9 +201,9 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Título Profesional y Especialidad/Área */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-2">Título Profesional *</label>
           <select 
@@ -280,7 +280,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
       )}
 
       {/* Universidad y Licencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-2">Universidad/Institución *</label>
           <select 
@@ -335,7 +335,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
       )}
 
       {/* Centro de Trabajo y Años de Experiencia */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="workplace" className="block text-sm font-medium text-gray-700 mb-2">Centro de Trabajo</label>
           <input 

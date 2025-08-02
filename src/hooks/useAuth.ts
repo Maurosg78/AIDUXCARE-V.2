@@ -19,42 +19,27 @@ export const useAuth = () => {
       const userEmail = sessionStorage.getItem('userEmail');
       const userData = localStorage.getItem('userData');
       
-      if (isAuthenticated && userEmail) {
+      if (isAuthenticated && userEmail && userData) {
         try {
-          // Intentar obtener datos del usuario desde localStorage
-          let userInfo: User;
+          // Solo cargar datos si existen y son válidos
+          const parsedData = JSON.parse(userData);
+          const userInfo: User = {
+            displayName: parsedData.displayName || '',
+            email: userEmail,
+            professionalTitle: parsedData.professionalTitle || '',
+            specialty: parsedData.specialty || '',
+            country: parsedData.country || ''
+          };
           
-          if (userData) {
-            const parsedData = JSON.parse(userData);
-            userInfo = {
-              displayName: parsedData.displayName || 'Usuario',
-              email: userEmail,
-              professionalTitle: parsedData.professionalTitle || 'FT',
-              specialty: parsedData.specialty || 'Fisioterapia',
-              country: parsedData.country || 'España'
-            };
+          // Solo establecer usuario si tiene datos válidos
+          if (userInfo.displayName && userInfo.email) {
+            setUser(userInfo);
           } else {
-            // Datos por defecto si no hay información guardada
-            userInfo = {
-              displayName: 'Usuario',
-              email: userEmail,
-              professionalTitle: 'FT',
-              specialty: 'Fisioterapia',
-              country: 'España'
-            };
+            setUser(null);
           }
-          
-          setUser(userInfo);
         } catch (error) {
           console.error('Error loading user data:', error);
-          // Datos por defecto en caso de error
-          setUser({
-            displayName: 'Usuario',
-            email: userEmail,
-            professionalTitle: 'FT',
-            specialty: 'Fisioterapia',
-            country: 'España'
-          });
+          setUser(null);
         }
       } else {
         setUser(null);
