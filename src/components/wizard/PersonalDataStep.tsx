@@ -269,7 +269,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             </div>
           </div>
                   {/* Teléfono y Género - En la misma línea */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Teléfono */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
@@ -278,11 +278,11 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowCountryCodeSelector(true)}
-                    className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                    className="flex items-center space-x-1 px-2 py-2 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
                   >
-                    <span className="text-base">{selectedCountryCode?.flag || '🌍'}</span>
-                    <span className="text-sm font-medium">{selectedCountryCode?.code || '+XX'}</span>
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="text-sm">{selectedCountryCode?.flag || '🌍'}</span>
+                    <span className="text-xs font-medium">{selectedCountryCode?.code || '+XX'}</span>
+                    <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -294,7 +294,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   onChange={(e) => onFieldChange('phone', e.target.value)}
                   className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.phone ? 'border-red-300' : ''}`}
                   autoComplete="tel"
-                  placeholder={selectedCountryCode?.format || 'Número de teléfono'}
+                  placeholder="XXX XXX XXX"
                 />
               </div>
               {errors.phone && (
