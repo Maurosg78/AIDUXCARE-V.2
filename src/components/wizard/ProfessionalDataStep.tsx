@@ -201,16 +201,16 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Título Profesional y Especialidad/Área */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-2">Título Profesional *</label>
+          <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-1">Título Profesional *</label>
           <select 
             id="professionalTitle"
             value={data.professionalTitle} 
             onChange={(e) => onFieldChange('professionalTitle', e.target.value)} 
-            className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
+            className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
           >
             <option value="">Selecciona tu título</option>
             {professionalTitles.map((title) => (

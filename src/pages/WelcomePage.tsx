@@ -203,11 +203,11 @@ export const WelcomePage: React.FC = () => {
   const isStepValid = validateStep(currentStep).isValid;
 
   return (
-    <div className="bg-white flex items-center justify-center py-4 px-4 min-h-screen">
-      <div className="w-full max-w-lg">
+    <div className="bg-white flex items-center justify-center py-2 px-4 h-screen overflow-hidden">
+      <div className="w-full max-w-lg max-h-full overflow-y-auto">
         {/* Header Apple-style */}
-        <div className="text-center space-y-3 mb-6">
-          <h1 className="text-2xl font-light text-gray-900 tracking-tight">
+        <div className="text-center space-y-2 mb-4">
+          <h1 className="text-xl font-light text-gray-900 tracking-tight">
             Bienvenido a{' '}
             <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
               AiDuxCare
@@ -220,12 +220,12 @@ export const WelcomePage: React.FC = () => {
         </div>
 
         {/* Contenido del paso Apple-style */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {renderCurrentStep()}
         </div>
 
         {/* Navegación Apple-style */}
-        <div className="flex space-x-4 pt-3">
+        <div className="flex space-x-4 pt-2">
           {currentStep !== WizardStep.PERSONAL_DATA && (
             <button
               onClick={prevStep}
