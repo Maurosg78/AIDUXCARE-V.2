@@ -164,200 +164,200 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
         />
       )}
 
-      {/* Formulario Apple-style */}
-      <div className="space-y-2">
-        {/* Nombres */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">Primer Nombre *</label>
-            <input 
-              id="firstName" 
-              type="text" 
-              value={data.firstName} 
-              onChange={(e) => onFieldChange('firstName', e.target.value)} 
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
-              autoComplete="given-name" 
-              placeholder="Tu nombre"
-            />
-            {errors.firstName && (<p className="text-xs text-red-600 mt-1">{errors.firstName}</p>)}
-          </div>
-          <div>
-            <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
-            <input 
-              id="secondName" 
-              type="text" 
-              value={data.secondName || ''} 
-              onChange={(e) => onFieldChange('secondName', e.target.value)} 
-              className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm" 
-              autoComplete="additional-name" 
-              placeholder="Tu segundo nombre"
-            />
-          </div>
-        </div>
-        {/* Apellidos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Primer Apellido *</label>
-            <input 
-              id="lastName" 
-              type="text" 
-              value={data.lastName} 
-              onChange={(e) => onFieldChange('lastName', e.target.value)} 
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.lastName ? 'border-red-300' : 'border-gray-200'}`} 
-              autoComplete="family-name" 
-              placeholder="Tu apellido"
-            />
-            {errors.lastName && (<p className="text-xs text-red-600 mt-1">{errors.lastName}</p>)}
-          </div>
-          <div>
-            <label htmlFor="secondLastName" className="block text-sm font-medium text-gray-700 mb-1">Segundo Apellido</label>
-            <input 
-              id="secondLastName" 
-              type="text" 
-              value={data.secondLastName || ''} 
-              onChange={(e) => onFieldChange('secondLastName', e.target.value)} 
-              className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm" 
-              autoComplete="family-name" 
-              placeholder="Tu segundo apellido"
-            />
-          </div>
-        </div>
-        {/* Fecha de Nacimiento y Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-            <input 
-              id="birthDate" 
-              type="date" 
-              value={data.birthDate} 
-              onChange={(e) => onFieldChange('birthDate', e.target.value)} 
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.birthDate ? 'border-red-300' : 'border-gray-200'}`} 
-            />
-            {errors.birthDate && (<p className="text-xs text-red-600 mt-1">{errors.birthDate}</p>)}
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={data.email}
-              onChange={(e) => onFieldChange('email', e.target.value)}
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.email ? 'border-red-300' : 'border-gray-200'}`}
-              autoComplete="email"
-              placeholder="tu@email.com"
-            />
-            {emailValidationMessage && (
-              <p className={`text-xs mt-1 ${
-                emailValidationMessage === 'Email disponible'
-                  ? 'text-green-600'
-                  : emailValidationMessage === 'Email ya registrado'
-                  ? 'text-red-600'
-                  : 'text-gray-500'
-              }`}>
-                {isValidatingEmail && (
-                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                {emailValidationMessage}
-              </p>
-            )}
-            {errors.email && (
-              <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-            )}
-          </div>
-        </div>
-        {/* Teléfono y Género - Separados para evitar desbalance */}
-        <div className="space-y-2">
-          {/* Teléfono */}
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowCountryCodeSelector(true)}
-                  className="flex items-center space-x-2 px-2 py-2 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                >
-                  <span className="text-sm">{selectedCountryCode?.flag || '🌍'}</span>
-                  <span className="text-xs font-medium">{selectedCountryCode?.code || '+XX'}</span>
-                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              </div>
-              <input
-                id="phone"
-                type="tel"
-                value={data.phone}
-                onChange={(e) => onFieldChange('phone', e.target.value)}
-                className={`flex-1 px-3 py-2 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.phone ? 'border-red-300' : ''}`}
-                autoComplete="tel"
-                placeholder={selectedCountryCode?.format || 'Número de teléfono'}
+              {/* Formulario Apple-style */}
+        <div className="space-y-3">
+          {/* Nombres */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">Primer Nombre *</label>
+              <input 
+                id="firstName" 
+                type="text" 
+                value={data.firstName} 
+                onChange={(e) => onFieldChange('firstName', e.target.value)} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
+                autoComplete="given-name" 
+                placeholder="Tu nombre"
+              />
+              {errors.firstName && (<p className="text-sm text-red-600 mt-1">{errors.firstName}</p>)}
+            </div>
+            <div>
+              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Nombre</label>
+              <input 
+                id="secondName" 
+                type="text" 
+                value={data.secondName || ''} 
+                onChange={(e) => onFieldChange('secondName', e.target.value)} 
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
+                autoComplete="additional-name" 
+                placeholder="Tu segundo nombre"
               />
             </div>
-            {errors.phone && (
-              <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
-            )}
           </div>
-          
-          {/* Género */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Género</label>
-            <select 
-              id="gender" 
-              value={data.gender} 
-              onChange={(e) => onFieldChange('gender', e.target.value)} 
-              className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm"
-            >
-              <option value="">Selecciona tu género</option>
-              <option value="masculino">Masculino</option>
-              <option value="femenino">Femenino</option>
-              <option value="otro">Otro</option>
-              <option value="prefiero-no-decir">Prefiero no decir</option>
-            </select>
+                  {/* Apellidos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">Primer Apellido *</label>
+              <input 
+                id="lastName" 
+                type="text" 
+                value={data.lastName} 
+                onChange={(e) => onFieldChange('lastName', e.target.value)} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.lastName ? 'border-red-300' : 'border-gray-200'}`} 
+                autoComplete="family-name" 
+                placeholder="Tu apellido"
+              />
+              {errors.lastName && (<p className="text-sm text-red-600 mt-1">{errors.lastName}</p>)}
+            </div>
+            <div>
+              <label htmlFor="secondLastName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Apellido</label>
+              <input 
+                id="secondLastName" 
+                type="text" 
+                value={data.secondLastName || ''} 
+                onChange={(e) => onFieldChange('secondLastName', e.target.value)} 
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
+                autoComplete="family-name" 
+                placeholder="Tu segundo apellido"
+              />
+            </div>
           </div>
-        </div>
-        {/* Contraseñas - Separadas para evitar desbalance */}
-        <div className="space-y-2">
-          {/* Contraseña */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-            <input 
-              id="password" 
-              type="password" 
-              value={data.password} 
-              onChange={(e) => onFieldChange('password', e.target.value)} 
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
-              placeholder="••••••••" 
-              autoComplete="new-password" 
-            />
-            {data.password && (
-              <div className="mt-1">
-                <span className={`text-xs ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
-                  Fortaleza: {getPasswordStrengthText(checkPasswordStrength(data.password))}
-                </span>
+                  {/* Fecha de Nacimiento y Email */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+              <input 
+                id="birthDate" 
+                type="date" 
+                value={data.birthDate} 
+                onChange={(e) => onFieldChange('birthDate', e.target.value)} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.birthDate ? 'border-red-300' : 'border-gray-200'}`} 
+              />
+              {errors.birthDate && (<p className="text-sm text-red-600 mt-1">{errors.birthDate}</p>)}
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={data.email}
+                onChange={(e) => onFieldChange('email', e.target.value)}
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.email ? 'border-red-300' : 'border-gray-200'}`}
+                autoComplete="email"
+                placeholder="tu@email.com"
+              />
+              {emailValidationMessage && (
+                <p className={`text-sm mt-1 ${
+                  emailValidationMessage === 'Email disponible'
+                    ? 'text-green-600'
+                    : emailValidationMessage === 'Email ya registrado'
+                    ? 'text-red-600'
+                    : 'text-gray-500'
+                }`}>
+                  {isValidatingEmail && (
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {emailValidationMessage}
+                </p>
+              )}
+              {errors.email && (
+                <p className="text-sm text-red-600 mt-1">{errors.email}</p>
+              )}
+            </div>
+          </div>
+                  {/* Teléfono y Género - Separados para evitar desbalance */}
+          <div className="space-y-3">
+            {/* Teléfono */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowCountryCodeSelector(true)}
+                    className="flex items-center space-x-2 px-3 py-3 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                  >
+                    <span className="text-base">{selectedCountryCode?.flag || '🌍'}</span>
+                    <span className="text-sm font-medium">{selectedCountryCode?.code || '+XX'}</span>
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={data.phone}
+                  onChange={(e) => onFieldChange('phone', e.target.value)}
+                  className={`flex-1 px-4 py-3 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.phone ? 'border-red-300' : ''}`}
+                  autoComplete="tel"
+                  placeholder={selectedCountryCode?.format || 'Número de teléfono'}
+                />
               </div>
-            )}
-            {errors.password && (<p className="text-xs text-red-600 mt-1">{errors.password}</p>)}
+              {errors.phone && (
+                <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
+              )}
+            </div>
+            
+            {/* Género */}
+            <div>
+              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">Género</label>
+              <select 
+                id="gender" 
+                value={data.gender} 
+                onChange={(e) => onFieldChange('gender', e.target.value)} 
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
+              >
+                <option value="">Selecciona tu género</option>
+                <option value="masculino">Masculino</option>
+                <option value="femenino">Femenino</option>
+                <option value="otro">Otro</option>
+                <option value="prefiero-no-decir">Prefiero no decir</option>
+              </select>
+            </div>
           </div>
-          
-          {/* Confirmar Contraseña */}
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
-            <input 
-              id="confirmPassword" 
-              type="password" 
-              value={data.confirmPassword} 
-              onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
-              className={`block w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-sm ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
-              placeholder="••••••••" 
-              autoComplete="new-password" 
-            />
-            {errors.confirmPassword && (<p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>)}
+                  {/* Contraseñas - Separadas para evitar desbalance */}
+          <div className="space-y-3">
+            {/* Contraseña */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+              <input 
+                id="password" 
+                type="password" 
+                value={data.password} 
+                onChange={(e) => onFieldChange('password', e.target.value)} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
+                placeholder="••••••••" 
+                autoComplete="new-password" 
+              />
+              {data.password && (
+                <div className="mt-2">
+                  <span className={`text-sm ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
+                    Fortaleza: {getPasswordStrengthText(checkPasswordStrength(data.password))}
+                  </span>
+                </div>
+              )}
+              {errors.password && (<p className="text-sm text-red-600 mt-1">{errors.password}</p>)}
+            </div>
+            
+            {/* Confirmar Contraseña */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
+              <input 
+                id="confirmPassword" 
+                type="password" 
+                value={data.confirmPassword} 
+                onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
+                className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
+                placeholder="••••••••" 
+                autoComplete="new-password" 
+              />
+              {errors.confirmPassword && (<p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>)}
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Modal de recuperación de email */}
