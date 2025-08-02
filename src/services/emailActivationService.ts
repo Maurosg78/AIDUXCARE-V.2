@@ -145,13 +145,14 @@ export class EmailActivationService {
           activationToken
         };
 
-      } catch (authError: any) {
+      } catch (authError: unknown) {
         console.error('❌ [DEBUG] Error en Firebase Auth:', authError);
         
         // Si falla la creación en Auth, eliminar de Firestore
         await deleteDoc(professionalDoc);
         
-        if (authError.code === 'auth/email-already-in-use') {
+        const error = authError as { code?: string };
+        if (error.code === 'auth/email-already-in-use') {
           return {
             success: false,
             message: 'Este email ya está registrado en el sistema'
