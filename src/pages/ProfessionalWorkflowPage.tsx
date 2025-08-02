@@ -1,37 +1,5 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * 🏥 Professional Workflow Page - AiDuxCare V.2
- * Layout completamente funcional con captura de audio y asistente virtual
- * RESTAURADO: Funcionalidad completa de Anamnesis Clínica
- */
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-
-export type MedicalPhase = 'anamnesis' | 'exploration' | 'evaluation' | 'planning';
-
-export interface SessionMetrics {
-  totalChunks: number;
-  analyzedChunks: number;
-  averageProcessingTime: number;
-  clinicalRelevance: number;
-  redFlagsCount: number;
-  soapCompleteness: {
-    S: number;
-    O: number;
-    A: number;
-    P: number;
-  };
-}
-
-export interface WorkflowState {
-  isRecording: boolean;
-  currentPhase: MedicalPhase;
-  sessionStartTime: number | null;
-  sessionDuration: number;
-  metrics: SessionMetrics;
-}
 
 interface Alerta {
   id: number;
@@ -42,101 +10,34 @@ interface Alerta {
 interface Highlight {
   id: number;
   contenido: string;
+  selected?: boolean;
 }
 
-export const ProfessionalWorkflowPage: React.FC = () => {
+export const ProfessionalWorkflowPage = () => {
   const { user } = useAuth();
-  
-  // === 1. ESTRUCTURA BÁSICA ===
   const [activeSection, setActiveSection] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState('00:00');
   const [transcriptionText, setTranscriptionText] = useState('');
   const [alertasPersistentes, setAlertasPersistentes] = useState<Alerta[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [analysisFinished, setAnalysisFinished] = useState(false);
-  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
-  const [sessionDuration, setSessionDuration] = useState(0);
 
-  // Timer para duración de sesión
-  useEffect(() => {
-    if (!sessionStartTime) return;
-
-    const interval = setInterval(() => {
-      setSessionDuration(Date.now() - sessionStartTime);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [sessionStartTime]);
-
-  // Timer para grabación
+  // Timer de grabación
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
+      let seconds = 0;
       interval = setInterval(() => {
-        setRecordingTime(prev => {
-          const [mins, secs] = prev.split(':').map(Number);
-          const totalSeconds = mins * 60 + secs + 1;
-          const newMins = Math.floor(totalSeconds / 60);
-          const newSecs = totalSeconds % 60;
-          return `${newMins.toString().padStart(2, '0')}:${newSecs.toString().padStart(2, '0')}`;
-        });
+        seconds++;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        setRecordingTime(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
       }, 1000);
     }
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // === 5. FUNCIONALIDADES CRÍTICAS ===
-  
-  // Sistema de alertas persistentes
-  const agregarAlerta = (nuevaAlerta: Alerta) => {
-    setAlertasPersistentes(prev => {
-      const existe = prev.find(a => a.mensaje === nuevaAlerta.mensaje);
-      if (existe) return prev;
-      return [...prev, { ...nuevaAlerta, id: Date.now() }];
-    });
-  };
-
-  // Eliminar duplicados en highlights
-  const uniqueHighlights = highlights.filter((highlight, index, self) =>
-    index === self.findIndex(h => h.contenido === highlight.contenido)
-  );
-
-  // Flujo de botones
-  const toggleRecording = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setAnalysisFinished(true);
-      // Generar highlights finales
-      setHighlights(highlightsSimulados);
-    } else {
-      setIsRecording(true);
-      setAnalysisFinished(false);
-      setRecordingTime('00:00');
-      // Iniciar transcripción simulada
-      setTranscriptionText('Iniciando transcripción en tiempo real...');
-    }
-  };
-
-  // Funciones de acción de alertas
-  const confirmarAlerta = (alertaId: number) => {
-    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-  };
-
-  const descartarAlerta = (alertaId: number) => {
-    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-  };
-
-  const guardarMetrica = (alertaId: number) => {
-    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-  };
-
-  const toggleHighlight = (highlightId: number) => {
-    // Implementar toggle de highlight
-    console.log('Toggle highlight:', highlightId);
-  };
-
-  // === 6. SIMULACIÓN DE DATOS ===
+  // Datos simulados para testing
   const alertasSimuladas: Alerta[] = [
     {
       id: 1,
@@ -157,15 +58,48 @@ export const ProfessionalWorkflowPage: React.FC = () => {
     { id: 4, contenido: "Revisar medicación actual" }
   ];
 
-  // Cargar datos simulados al inicio
-  useEffect(() => {
-    setAlertasPersistentes(alertasSimuladas);
-  }, []);
+  // Eliminar duplicados en highlights
+  const uniqueHighlights = highlights.filter((highlight, index, self) =>
+    index === self.findIndex(h => h.contenido === highlight.contenido)
+  );
 
-  const formatDuration = (ms: number): string => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const toggleRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      // Generar highlights finales
+      setHighlights(highlightsSimulados);
+      setTranscriptionText("Transcripción simulada: El paciente refiere dolor cervical irradiado hacia el brazo derecho, con parestesias en los dedos índice y medio. El dolor se agrava con movimientos de flexión cervical y rotación hacia la derecha. No refiere traumatismo previo. El dolor comenzó hace 3 semanas de forma progresiva.");
+    } else {
+      setIsRecording(true);
+      setTranscriptionText('');
+      setHighlights([]);
+      // Agregar alertas simuladas
+      setAlertasPersistentes(alertasSimuladas);
+    }
+  };
+
+  const confirmarAlerta = (alertaId: number) => {
+    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+  };
+
+  const descartarAlerta = (alertaId: number) => {
+    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+  };
+
+  const guardarMetrica = (alertaId: number) => {
+    setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+  };
+
+  const toggleHighlight = (highlightId: number) => {
+    setHighlights(prev => prev.map(h => 
+      h.id === highlightId ? { ...h, selected: !h.selected } : h
+    ));
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -182,7 +116,7 @@ export const ProfessionalWorkflowPage: React.FC = () => {
               </div>
             </div>
             <div className="text-sm text-gray-600">
-              Duración: {formatDuration(sessionDuration)}
+              Duración: {formatDuration(0)}
             </div>
           </div>
         </div>
@@ -281,7 +215,7 @@ export const ProfessionalWorkflowPage: React.FC = () => {
           <div className="bg-white p-6 rounded-xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Transcripción en Tiempo Real</h3>
             <div className="min-h-[400px] bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">
                 {transcriptionText || 'Presiona "Iniciar Grabación" para comenzar'}
               </p>
             </div>
@@ -294,27 +228,27 @@ export const ProfessionalWorkflowPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Alertas Críticas</h3>
               <div className="space-y-2">
                 {alertasPersistentes.map(alerta => (
-                  <div key={alerta.id} className="border-l-4 border-red-500 bg-red-50 p-2">
+                  <div key={alerta.id} className="border-l-4 border-red-500 bg-red-50 p-3 rounded">
                     <p className="font-medium text-red-800">{alerta.mensaje}</p>
-                    <p className="text-red-600 text-sm">{alerta.sugerencia}</p>
-                    <div className="flex gap-1 mt-2">
+                    <p className="text-red-600 text-sm mt-1">{alerta.sugerencia}</p>
+                    <div className="flex gap-2 mt-3">
                       <button 
                         onClick={() => confirmarAlerta(alerta.id)}
-                        className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                        className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
                       >
-                        ✓
+                        ✓ Confirmar
                       </button>
                       <button 
                         onClick={() => descartarAlerta(alerta.id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                        className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
                       >
-                        ✗
+                        ✗ Descartar
                       </button>
                       <button 
                         onClick={() => guardarMetrica(alerta.id)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                        className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
                       >
-                        💾
+                        💾 Guardar
                       </button>
                     </div>
                   </div>
@@ -331,7 +265,7 @@ export const ProfessionalWorkflowPage: React.FC = () => {
                     <input 
                       type="checkbox" 
                       onChange={() => toggleHighlight(highlight.id)}
-                      className="rounded"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700">{highlight.contenido}</span>
                   </div>

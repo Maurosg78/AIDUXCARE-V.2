@@ -99,7 +99,7 @@ export const PatientDetailPage: React.FC = () => {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as string)}
                 className={`px-6 py-3 text-sm font-medium rounded-t-lg transition-all ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-sm'
