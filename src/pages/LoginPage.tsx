@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 import { useAuth } from '../hooks/useAuth';
+import { emailActivationService } from '../services/emailActivationService';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,16 +18,33 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      // Simulación de login exitoso
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('🔍 [DEBUG] Intentando login con email:', email);
+
+      // Verificar si el profesional existe y está activo
+      const professional = await emailActivationService.getProfessional(email);
       
-      // Datos básicos del usuario (en producción esto vendría de Firebase)
+      if (!professional) {
+        setError('Email no registrado. Completa el registro primero.');
+        return;
+      }
+
+      if (!professional.isActive) {
+        setError('Tu cuenta no está activada. Revisa tu email y activa tu cuenta antes de iniciar sesión.');
+        return;
+      }
+
+      console.log('✅ [DEBUG] Profesional activo encontrado:', professional.displayName);
+
+      // Actualizar último login
+      await emailActivationService.updateLastLogin(email);
+
+      // Datos del usuario desde Firestore
       const userData = {
-        displayName: 'Usuario',
-        email: email,
-        professionalTitle: 'FT',
-        specialty: 'Fisioterapia',
-        country: 'España'
+        displayName: professional.displayName,
+        email: professional.email,
+        professionalTitle: professional.professionalTitle,
+        specialty: professional.specialty,
+        country: professional.country
       };
       
       // Guardar datos del usuario usando el hook
@@ -35,6 +53,7 @@ const LoginPage: React.FC = () => {
       // Redirigir al workflow profesional
       navigate('/professional-workflow');
     } catch (err) {
+      console.error('❌ [DEBUG] Error en login:', err);
       setError('Error al iniciar sesión. Inténtalo de nuevo.');
     } finally {
       setLoading(false);

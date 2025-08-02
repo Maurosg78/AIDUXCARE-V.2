@@ -1,10 +1,29 @@
 /**
  * EmailActivationService - Sistema completo de activación por email
- * Envío real de emails y registro en base de datos
+ * Integración real con Firebase Firestore
  * 
- * @version 1.0.0
+ * @version 2.0.0
  * @author CTO/Implementador Jefe
  */
+
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+
+// Configuración Firebase
+const firebaseConfig = {
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 export interface ProfessionalRegistration {
   id: string;
@@ -41,8 +60,6 @@ export interface ActivationResult {
 
 export class EmailActivationService {
   private static instance: EmailActivationService;
-  private professionals: Map<string, ProfessionalRegistration> = new Map();
-  private activationTokens: Map<string, string> = new Map(); // token -> email
 
   public static getInstance(): EmailActivationService {
     if (!EmailActivationService.instance) {
@@ -56,11 +73,15 @@ export class EmailActivationService {
    */
   public async registerProfessional(professionalData: Omit<ProfessionalRegistration, 'id' | 'activationToken' | 'isActive' | 'emailVerified' | 'createdAt' | 'updatedAt'>): Promise<ActivationResult> {
     try {
-      // Verificar si el email ya existe
-      const existingProfessional = Array.from(this.professionals.values())
-        .find(p => p.email.toLowerCase() === professionalData.email.toLowerCase());
+      console.log('🔍 [DEBUG] Iniciando registro de profesional:', professionalData.email);
 
-      if (existingProfessional) {
+      // Verificar si el email ya existe en Firestore
+      const professionalsRef = collection(db, 'professionals');
+      const emailQuery = query(professionalsRef, where('email', '==', professionalData.email.toLowerCase()));
+      const emailSnapshot = await getDocs(emailQuery);
+
+      if (!emailSnapshot.empty) {
+        console.log('❌ [DEBUG] Email ya registrado:', professionalData.email);
         return {
           success: false,
           message: 'Este email ya está registrado en el sistema'
@@ -69,11 +90,12 @@ export class EmailActivationService {
 
       // Generar token de activación único
       const activationToken = this.generateActivationToken();
+      const professionalId = this.generateProfessionalId();
       
       // Crear registro del profesional
       const professional: ProfessionalRegistration = {
         ...professionalData,
-        id: this.generateProfessionalId(),
+        id: professionalId,
         activationToken,
         isActive: false,
         emailVerified: false,
@@ -82,33 +104,68 @@ export class EmailActivationService {
         updatedAt: new Date()
       };
 
-      // Guardar en "base de datos"
-      this.professionals.set(professional.id, professional);
-      this.activationTokens.set(activationToken, professional.email);
+      // Guardar en Firestore
+      const professionalDoc = doc(db, 'professionals', professionalId);
+      await setDoc(professionalDoc, {
+        ...professional,
+        registrationDate: professional.registrationDate.toISOString(),
+        createdAt: professional.createdAt.toISOString(),
+        updatedAt: professional.updatedAt.toISOString(),
+        lastLogin: professional.lastLogin?.toISOString()
+      });
 
-      // Enviar email de activación
-      const emailSent = await this.sendActivationEmail(professional.email, professional.displayName, activationToken);
-      
-      if (!emailSent) {
-        // Si falla el envío, eliminar el registro
-        this.professionals.delete(professional.id);
-        this.activationTokens.delete(activationToken);
+      console.log('✅ [DEBUG] Profesional guardado en Firestore:', professionalId);
+
+      // Crear cuenta de usuario en Firebase Auth
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth, 
+          professionalData.email, 
+          'tempPassword123!' // Contraseña temporal
+        );
+
+        // Enviar email de verificación de Firebase
+        await sendEmailVerification(userCredential.user);
+
+        console.log('✅ [DEBUG] Usuario creado en Firebase Auth y email enviado');
+
+        // Guardar token de activación en Firestore
+        const tokenDoc = doc(db, 'activationTokens', activationToken);
+        await setDoc(tokenDoc, {
+          email: professionalData.email,
+          professionalId: professionalId,
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
+        });
+
+        return {
+          success: true,
+          message: 'Registro exitoso. Revisa tu email para activar tu cuenta.',
+          professionalId: professional.id,
+          activationToken
+        };
+
+      } catch (authError: any) {
+        console.error('❌ [DEBUG] Error en Firebase Auth:', authError);
+        
+        // Si falla la creación en Auth, eliminar de Firestore
+        await deleteDoc(professionalDoc);
+        
+        if (authError.code === 'auth/email-already-in-use') {
+          return {
+            success: false,
+            message: 'Este email ya está registrado en el sistema'
+          };
+        }
         
         return {
           success: false,
-          message: 'Error al enviar el email de activación. Inténtalo de nuevo.'
+          message: 'Error al crear la cuenta de usuario. Inténtalo de nuevo.'
         };
       }
 
-      return {
-        success: true,
-        message: 'Registro exitoso. Revisa tu email para activar tu cuenta.',
-        professionalId: professional.id,
-        activationToken
-      };
-
     } catch (error) {
-      console.error('Error en registro de profesional:', error);
+      console.error('❌ [DEBUG] Error en registro de profesional:', error);
       return {
         success: false,
         message: 'Error interno del sistema. Contacta soporte.'
@@ -121,49 +178,67 @@ export class EmailActivationService {
    */
   public async activateAccount(token: string): Promise<ActivationResult> {
     try {
-      const email = this.activationTokens.get(token);
+      console.log('🔍 [DEBUG] Activando cuenta con token:', token);
+
+      // Buscar token en Firestore
+      const tokenDoc = doc(db, 'activationTokens', token);
+      const tokenSnapshot = await getDoc(tokenDoc);
       
-      if (!email) {
+      if (!tokenSnapshot.exists()) {
+        console.log('❌ [DEBUG] Token no encontrado:', token);
         return {
           success: false,
           message: 'Token de activación inválido o expirado'
         };
       }
 
-      const professional = Array.from(this.professionals.values())
-        .find(p => p.email === email);
+      const tokenData = tokenSnapshot.data();
+      const email = tokenData.email;
+      const professionalId = tokenData.professionalId;
 
-      if (!professional) {
+      // Verificar expiración
+      const expiresAt = new Date(tokenData.expiresAt);
+      if (expiresAt < new Date()) {
+        console.log('❌ [DEBUG] Token expirado:', token);
+        await deleteDoc(tokenDoc);
+        return {
+          success: false,
+          message: 'Token de activación expirado'
+        };
+      }
+
+      // Buscar profesional en Firestore
+      const professionalDoc = doc(db, 'professionals', professionalId);
+      const professionalSnapshot = await getDoc(professionalDoc);
+
+      if (!professionalSnapshot.exists()) {
+        console.log('❌ [DEBUG] Profesional no encontrado:', professionalId);
         return {
           success: false,
           message: 'Profesional no encontrado'
         };
       }
 
-      if (professional.isActive) {
-        return {
-          success: false,
-          message: 'Esta cuenta ya está activada'
-        };
-      }
+      // Activar cuenta
+      await updateDoc(professionalDoc, {
+        isActive: true,
+        emailVerified: true,
+        updatedAt: new Date().toISOString()
+      });
 
-      // Activar la cuenta
-      professional.isActive = true;
-      professional.emailVerified = true;
-      professional.updatedAt = new Date();
-      professional.activationToken = ''; // Limpiar token usado
+      // Eliminar token usado
+      await deleteDoc(tokenDoc);
 
-      // Limpiar token de la memoria
-      this.activationTokens.delete(token);
+      console.log('✅ [DEBUG] Cuenta activada exitosamente:', email);
 
       return {
         success: true,
         message: 'Cuenta activada exitosamente. Ya puedes iniciar sesión.',
-        professionalId: professional.id
+        professionalId: professionalId
       };
 
     } catch (error) {
-      console.error('Error en activación de cuenta:', error);
+      console.error('❌ [DEBUG] Error en activación:', error);
       return {
         success: false,
         message: 'Error interno del sistema. Contacta soporte.'
@@ -175,146 +250,96 @@ export class EmailActivationService {
    * Verifica si un profesional está activo
    */
   public async isProfessionalActive(email: string): Promise<boolean> {
-    const professional = Array.from(this.professionals.values())
-      .find(p => p.email.toLowerCase() === email.toLowerCase());
-    
-    return professional?.isActive || false;
+    try {
+      const professionalsRef = collection(db, 'professionals');
+      const emailQuery = query(professionalsRef, where('email', '==', email.toLowerCase()));
+      const snapshot = await getDocs(emailQuery);
+
+      if (snapshot.empty) return false;
+
+      const professional = snapshot.docs[0].data();
+      return professional.isActive === true;
+    } catch (error) {
+      console.error('Error verificando estado del profesional:', error);
+      return false;
+    }
   }
 
   /**
    * Obtiene datos del profesional
    */
   public async getProfessional(email: string): Promise<ProfessionalRegistration | null> {
-    const professional = Array.from(this.professionals.values())
-      .find(p => p.email.toLowerCase() === email.toLowerCase());
-    
-    return professional || null;
+    try {
+      const professionalsRef = collection(db, 'professionals');
+      const emailQuery = query(professionalsRef, where('email', '==', email.toLowerCase()));
+      const snapshot = await getDocs(emailQuery);
+
+      if (snapshot.empty) return null;
+
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      
+      return {
+        ...data,
+        registrationDate: new Date(data.registrationDate),
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+        lastLogin: data.lastLogin ? new Date(data.lastLogin) : undefined
+      } as ProfessionalRegistration;
+    } catch (error) {
+      console.error('Error obteniendo profesional:', error);
+      return null;
+    }
   }
 
   /**
    * Actualiza último login
    */
   public async updateLastLogin(email: string): Promise<void> {
-    const professional = Array.from(this.professionals.values())
-      .find(p => p.email.toLowerCase() === email.toLowerCase());
-    
-    if (professional) {
-      professional.lastLogin = new Date();
-      professional.updatedAt = new Date();
-    }
-  }
-
-  /**
-   * Envía email de activación real
-   */
-  private async sendActivationEmail(email: string, displayName: string, token: string): Promise<boolean> {
     try {
-      const activationUrl = `${window.location.origin}/activate?token=${token}`;
-      
-      const emailTemplate = this.generateActivationEmailTemplate(displayName, activationUrl);
-      
-      // En producción, aquí se integraría con un servicio de email real
-      // Por ahora, simulamos el envío exitoso
-      console.log('📧 Email de activación enviado:');
-      console.log('   Destinatario:', email);
-      console.log('   Asunto:', emailTemplate.subject);
-      console.log('   URL de activación:', activationUrl);
-      
-      // Simular delay de envío
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return true;
+      const professionalsRef = collection(db, 'professionals');
+      const emailQuery = query(professionalsRef, where('email', '==', email.toLowerCase()));
+      const snapshot = await getDocs(emailQuery);
+
+      if (!snapshot.empty) {
+        const docRef = doc(db, 'professionals', snapshot.docs[0].id);
+        await updateDoc(docRef, {
+          lastLogin: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
     } catch (error) {
-      console.error('Error enviando email de activación:', error);
-      return false;
+      console.error('Error actualizando último login:', error);
     }
   }
 
   /**
-   * Genera template de email de activación
+   * Obtiene estadísticas del sistema
    */
-  private generateActivationEmailTemplate(displayName: string, activationUrl: string): EmailTemplate {
-    const subject = 'Activa tu cuenta de AiDuxCare - Confirmación requerida';
-    
-    const html = `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Activa tu cuenta - AiDuxCare</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #5DA5A3 0%, #4A90A8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: #5DA5A3; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>¡Bienvenido a AiDuxCare!</h1>
-            <p>Tu cuenta está lista para activarse</p>
-          </div>
-          <div class="content">
-            <h2>Hola ${displayName},</h2>
-            <p>Gracias por registrarte en <strong>AiDuxCare</strong>, tu asistente clínico inteligente.</p>
-            
-            <p>Para completar tu registro y acceder a todas las funcionalidades, necesitas activar tu cuenta:</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${activationUrl}" class="button">Activar Mi Cuenta</a>
-            </div>
-            
-            <p><strong>¿Qué obtienes al activar tu cuenta?</strong></p>
-            <ul>
-              <li>✅ Acceso completo al sistema AiDuxCare</li>
-              <li>✅ Transcripción automática de sesiones clínicas</li>
-              <li>✅ Generación de notas SOAP estructuradas</li>
-              <li>✅ Detección de banderas rojas y contraindicaciones</li>
-              <li>✅ Soporte técnico prioritario</li>
-            </ul>
-            
-            <p><strong>Importante:</strong> Este enlace de activación expira en 24 horas por seguridad.</p>
-            
-            <p>Si no solicitaste esta cuenta, puedes ignorar este email.</p>
-          </div>
-          <div class="footer">
-            <p>© 2025 AiDuxCare. Todos los derechos reservados.</p>
-            <p>Este es un email automático, no respondas a esta dirección.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const text = `
-      ¡Bienvenido a AiDuxCare!
+  public async getSystemStats() {
+    try {
+      const professionalsRef = collection(db, 'professionals');
+      const snapshot = await getDocs(professionalsRef);
       
-      Hola ${displayName},
-      
-      Gracias por registrarte en AiDuxCare, tu asistente clínico inteligente.
-      
-      Para completar tu registro y acceder a todas las funcionalidades, activa tu cuenta visitando:
-      ${activationUrl}
-      
-      ¿Qué obtienes al activar tu cuenta?
-      ✅ Acceso completo al sistema AiDuxCare
-      ✅ Transcripción automática de sesiones clínicas
-      ✅ Generación de notas SOAP estructuradas
-      ✅ Detección de banderas rojas y contraindicaciones
-      ✅ Soporte técnico prioritario
-      
-      Importante: Este enlace de activación expira en 24 horas por seguridad.
-      
-      Si no solicitaste esta cuenta, puedes ignorar este email.
-      
-      © 2025 AiDuxCare. Todos los derechos reservados.
-    `;
-    
-    return { subject, html, text };
+      const total = snapshot.size;
+      const active = snapshot.docs.filter(doc => doc.data().isActive).length;
+      const pending = total - active;
+
+      return {
+        total,
+        active,
+        pending,
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error obteniendo estadísticas:', error);
+      return {
+        total: 0,
+        active: 0,
+        pending: 0,
+        lastUpdated: new Date().toISOString()
+      };
+    }
   }
 
   /**
@@ -330,23 +355,7 @@ export class EmailActivationService {
   private generateActivationToken(): string {
     return `act_${Date.now()}_${Math.random().toString(36).substr(2, 12)}`;
   }
-
-  /**
-   * Obtiene estadísticas del sistema
-   */
-  public getSystemStats() {
-    const totalProfessionals = this.professionals.size;
-    const activeProfessionals = Array.from(this.professionals.values())
-      .filter(p => p.isActive).length;
-    const pendingActivations = this.activationTokens.size;
-    
-    return {
-      totalProfessionals,
-      activeProfessionals,
-      pendingActivations,
-      activationRate: totalProfessionals > 0 ? (activeProfessionals / totalProfessionals * 100).toFixed(1) : '0'
-    };
-  }
 }
 
+// Exportar instancia singleton
 export const emailActivationService = EmailActivationService.getInstance(); 

@@ -158,7 +158,8 @@ export const WelcomePage: React.FC = () => {
 
   const handleCompleteRegistration = () => {
     setShowSuccessModal(false);
-    navigate('/professional-workflow');
+    // NO navegar al dashboard - el usuario debe activar su cuenta primero
+    navigate('/login');
   };
 
   // Renderizar paso actual
@@ -303,7 +304,7 @@ export const WelcomePage: React.FC = () => {
                 onClick={handleCompleteRegistration}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
               >
-                Continuar al Dashboard
+                Ir al Login
               </button>
             </div>
           </div>
