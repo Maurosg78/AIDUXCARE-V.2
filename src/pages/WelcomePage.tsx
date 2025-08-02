@@ -203,40 +203,40 @@ export const WelcomePage: React.FC = () => {
   const isStepValid = validateStep(currentStep).isValid;
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-8 px-4">
-      <div className="max-w-2xl w-full">
-        {/* Header con diseño exacto de la captura */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-lg">
+        {/* Header Apple-style */}
+        <div className="text-center space-y-6 mb-12">
+          <h1 className="text-4xl font-light text-gray-900 tracking-tight">
             Bienvenido a{' '}
-            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
               AiDuxCare
             </span>
           </h1>
-          <p className="text-gray-700 text-lg leading-relaxed">
+          <p className="text-gray-500 text-base leading-relaxed font-light">
             Ficha médica electrónica asistida por AI.<br/>
             Menos papeleo, más seguridad, más tiempo.
           </p>
         </div>
 
-        {/* Contenido del paso */}
-        <div className="wizard-step">
+        {/* Contenido del paso Apple-style */}
+        <div className="space-y-8">
           {renderCurrentStep()}
         </div>
 
-        {/* Navegación */}
-        <div className="flex space-x-4">
+        {/* Navegación Apple-style */}
+        <div className="flex space-x-4 pt-6">
           {currentStep !== WizardStep.PERSONAL_DATA && (
             <button
               onClick={prevStep}
-              className="secondary-button w-full"
+              className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-base font-medium"
             >
               Anterior
             </button>
           )}
           <button
             onClick={currentStep === WizardStep.LOCATION_DATA ? handleSubmit : nextStep}
-            className="primary-button w-full"
+            className="flex-1 py-3 px-4 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base font-medium"
             disabled={!isStepValid}
           >
             {currentStep === WizardStep.LOCATION_DATA ? 'Completar Registro' : 'Siguiente'}
@@ -244,33 +244,35 @@ export const WelcomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal de Éxito */}
+      {/* Modal de Éxito Apple-style */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="text-center space-y-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-50">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                ¡Registro Completado Exitosamente!
-              </h2>
-              <p className="text-gray-600">
-                Bienvenido a AiDuxCare. Tu cuenta ha sido creada y está pendiente de activación.
-              </p>
+              <div>
+                <h2 className="text-xl font-medium text-gray-900 mb-2">
+                  Registro Completado
+                </h2>
+                <p className="text-gray-500 text-sm">
+                  Tu cuenta ha sido creada y está pendiente de activación.
+                </p>
+              </div>
             </div>
 
-            {/* Instrucciones de Verificación */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                📧 Verificación de Email Requerida
+            {/* Instrucciones de Verificación Apple-style */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 my-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">
+                Verificación de Email Requerida
               </h3>
-              <p className="text-blue-800 mb-3">
-                Para completar tu registro y activar tu cuenta, debes:
+              <p className="text-gray-600 text-sm mb-3">
+                Para completar tu registro y activar tu cuenta:
               </p>
-              <ul className="text-blue-700 space-y-1 text-sm">
+              <ul className="text-gray-500 text-sm space-y-1">
                 <li>• Revisar tu bandeja de entrada (y carpeta de spam)</li>
                 <li>• Hacer clic en el enlace de verificación enviado a tu email</li>
                 <li>• Confirmar tu dirección de email</li>
@@ -278,9 +280,9 @@ export const WelcomePage: React.FC = () => {
               </ul>
               
               {registrationResult && (
-                <div className="mt-3 p-2 bg-green-100 border border-green-300 rounded">
-                  <p className="text-green-800 text-xs">
-                    <strong>Email enviado a:</strong> {wizardData.personal.email}
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-700 text-xs">
+                    <span className="font-medium">Email enviado a:</span> {wizardData.personal.email}
                   </p>
                 </div>
               )}
@@ -289,13 +291,13 @@ export const WelcomePage: React.FC = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex-1 py-2 px-4 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-sm font-medium"
               >
                 Cerrar
               </button>
               <button
                 onClick={handleCompleteRegistration}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                className="flex-1 py-2 px-4 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-sm font-medium"
               >
                 Ir al Login
               </button>

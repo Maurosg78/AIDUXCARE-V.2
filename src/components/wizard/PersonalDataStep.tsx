@@ -164,48 +164,87 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
         />
       )}
 
-      {/* Resto del formulario */}
+      {/* Formulario Apple-style */}
       <div className="space-y-6">
         {/* Nombres */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="firstName" className="wizard-label">Primer Nombre *</label>
-            <input id="firstName" type="text" value={data.firstName} onChange={(e) => onFieldChange('firstName', e.target.value)} className={`wizard-input ${errors.firstName ? 'error' : ''}`} autoComplete="given-name" />
-            {errors.firstName && (<p className="wizard-error">{errors.firstName}</p>)}
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">Primer Nombre *</label>
+            <input 
+              id="firstName" 
+              type="text" 
+              value={data.firstName} 
+              onChange={(e) => onFieldChange('firstName', e.target.value)} 
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
+              autoComplete="given-name" 
+              placeholder="Tu nombre"
+            />
+            {errors.firstName && (<p className="text-sm text-red-600 mt-1">{errors.firstName}</p>)}
           </div>
           <div>
-            <label htmlFor="secondName" className="wizard-label">Segundo Nombre</label>
-            <input id="secondName" type="text" value={data.secondName || ''} onChange={(e) => onFieldChange('secondName', e.target.value)} className="wizard-input" autoComplete="additional-name" />
+            <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Nombre</label>
+            <input 
+              id="secondName" 
+              type="text" 
+              value={data.secondName || ''} 
+              onChange={(e) => onFieldChange('secondName', e.target.value)} 
+              className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
+              autoComplete="additional-name" 
+              placeholder="Tu segundo nombre"
+            />
           </div>
         </div>
         {/* Apellidos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="lastName" className="wizard-label">Primer Apellido *</label>
-            <input id="lastName" type="text" value={data.lastName} onChange={(e) => onFieldChange('lastName', e.target.value)} className={`wizard-input ${errors.lastName ? 'error' : ''}`} autoComplete="family-name" />
-            {errors.lastName && (<p className="wizard-error">{errors.lastName}</p>)}
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">Primer Apellido *</label>
+            <input 
+              id="lastName" 
+              type="text" 
+              value={data.lastName} 
+              onChange={(e) => onFieldChange('lastName', e.target.value)} 
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.lastName ? 'border-red-300' : 'border-gray-200'}`} 
+              autoComplete="family-name" 
+              placeholder="Tu apellido"
+            />
+            {errors.lastName && (<p className="text-sm text-red-600 mt-1">{errors.lastName}</p>)}
           </div>
           <div>
-            <label htmlFor="secondLastName" className="wizard-label">Segundo Apellido</label>
-            <input id="secondLastName" type="text" value={data.secondLastName || ''} onChange={(e) => onFieldChange('secondLastName', e.target.value)} className="wizard-input" autoComplete="family-name" />
+            <label htmlFor="secondLastName" className="block text-sm font-medium text-gray-700 mb-2">Segundo Apellido</label>
+            <input 
+              id="secondLastName" 
+              type="text" 
+              value={data.secondLastName || ''} 
+              onChange={(e) => onFieldChange('secondLastName', e.target.value)} 
+              className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
+              autoComplete="family-name" 
+              placeholder="Tu segundo apellido"
+            />
           </div>
         </div>
         {/* Fecha de Nacimiento y Email */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="birthDate" className="wizard-label">Fecha de Nacimiento</label>
-            <input id="birthDate" type="date" value={data.birthDate} onChange={(e) => onFieldChange('birthDate', e.target.value)} className={`wizard-input ${errors.birthDate ? 'error' : ''}`} />
-            {errors.birthDate && (<p className="wizard-error">{errors.birthDate}</p>)}
+            <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+            <input 
+              id="birthDate" 
+              type="date" 
+              value={data.birthDate} 
+              onChange={(e) => onFieldChange('birthDate', e.target.value)} 
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.birthDate ? 'border-red-300' : 'border-gray-200'}`} 
+            />
+            {errors.birthDate && (<p className="text-sm text-red-600 mt-1">{errors.birthDate}</p>)}
           </div>
           <div>
-            <label htmlFor="email" className="wizard-label">Email</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <input
               id="email"
               type="email"
               value={data.email}
               onChange={(e) => onFieldChange('email', e.target.value)}
-              className={`wizard-input ${errors.email ? 'error' : ''}`}
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.email ? 'border-red-300' : 'border-gray-200'}`}
               autoComplete="email"
+              placeholder="tu@email.com"
             />
             {emailValidationMessage && (
               <p className={`text-sm mt-1 ${
@@ -213,7 +252,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   ? 'text-green-600'
                   : emailValidationMessage === 'Email ya registrado'
                   ? 'text-red-600'
-                  : 'text-gray-600'
+                  : 'text-gray-500'
               }`}>
                 {isValidatingEmail && (
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -225,20 +264,20 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
               </p>
             )}
             {errors.email && (
-              <p className="wizard-error">{errors.email}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.email}</p>
             )}
           </div>
         </div>
         {/* Teléfono con código de país */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="phone" className="wizard-label">Teléfono</label>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
             <div className="flex">
               <div className="flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowCountryCodeSelector(true)}
-                  className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-3 border border-gray-200 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
                 >
                   <span className="text-lg">{selectedCountryCode?.flag || '🌍'}</span>
                   <span className="text-sm font-medium">{selectedCountryCode?.code || '+XX'}</span>
@@ -252,18 +291,23 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 type="tel"
                 value={data.phone}
                 onChange={(e) => onFieldChange('phone', e.target.value)}
-                className={`flex-1 wizard-input rounded-l-none ${errors.phone ? 'error' : ''}`}
+                className={`flex-1 px-4 py-3 border border-gray-200 rounded-r-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.phone ? 'border-red-300' : ''}`}
                 autoComplete="tel"
                 placeholder={selectedCountryCode?.format || 'Número de teléfono'}
               />
             </div>
             {errors.phone && (
-              <p className="wizard-error">{errors.phone}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
             )}
           </div>
           <div>
-            <label htmlFor="gender" className="wizard-label">Género</label>
-            <select id="gender" value={data.gender} onChange={(e) => onFieldChange('gender', e.target.value)} className="wizard-input">
+            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">Género</label>
+            <select 
+              id="gender" 
+              value={data.gender} 
+              onChange={(e) => onFieldChange('gender', e.target.value)} 
+              className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
+            >
               <option value="">Selecciona tu género</option>
               <option value="masculino">Masculino</option>
               <option value="femenino">Femenino</option>
@@ -273,10 +317,18 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           </div>
         </div>
         {/* Contraseñas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="password" className="wizard-label">Contraseña</label>
-            <input id="password" type="password" value={data.password} onChange={(e) => onFieldChange('password', e.target.value)} className={`wizard-input ${errors.password ? 'error' : ''}`} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+            <input 
+              id="password" 
+              type="password" 
+              value={data.password} 
+              onChange={(e) => onFieldChange('password', e.target.value)} 
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
+              placeholder="••••••••" 
+              autoComplete="new-password" 
+            />
             {data.password && (
               <div className="mt-2">
                 <span className={`text-sm ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
@@ -284,12 +336,20 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                 </span>
               </div>
             )}
-            {errors.password && (<p className="wizard-error">{errors.password}</p>)}
+            {errors.password && (<p className="text-sm text-red-600 mt-1">{errors.password}</p>)}
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="wizard-label">Confirmar Contraseña</label>
-            <input id="confirmPassword" type="password" value={data.confirmPassword} onChange={(e) => onFieldChange('confirmPassword', e.target.value)} className={`wizard-input ${errors.confirmPassword ? 'error' : ''}`} autoComplete="new-password" />
-            {errors.confirmPassword && (<p className="wizard-error">{errors.confirmPassword}</p>)}
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
+            <input 
+              id="confirmPassword" 
+              type="password" 
+              value={data.confirmPassword} 
+              onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
+              placeholder="••••••••" 
+              autoComplete="new-password" 
+            />
+            {errors.confirmPassword && (<p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>)}
           </div>
         </div>
       </div>

@@ -221,18 +221,18 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   return (
     <>
       <div className="space-y-6">
-        {/* Información de ubicación detectada */}
+        {/* Información de ubicación detectada Apple-style */}
         {detectedLocation && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
             <div className="flex items-center space-x-3">
-              <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <div>
-                <p className="text-green-800 font-medium">
+                <p className="text-gray-900 font-medium text-sm">
                   Ubicación detectada automáticamente
                 </p>
-                <p className="text-green-700 text-sm">
+                <p className="text-gray-600 text-sm">
                   {detectedLocation.country} - {detectedLocation.city || detectedLocation.region}
                 </p>
               </div>
@@ -241,16 +241,16 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
         )}
 
         {/* País y Provincia */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="country" className="wizard-label">
+            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
               País *
             </label>
             <select
               id="country"
               value={data.country}
               onChange={(e) => handleCountryChange(e.target.value)}
-              className={`wizard-input ${errors.country ? 'error' : ''}`}
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.country ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu país</option>
               {countries.map((country) => (
@@ -260,19 +260,19 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
               ))}
             </select>
             {errors.country && (
-              <p className="wizard-error">{errors.country}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.country}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="province" className="wizard-label">
+            <label htmlFor="province" className="block text-sm font-medium text-gray-700 mb-2">
               Provincia/Estado *
             </label>
             <select
               id="province"
               value={data.province}
               onChange={(e) => onFieldChange('province', e.target.value)}
-              className={`wizard-input ${errors.province ? 'error' : ''}`}
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.province ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu provincia</option>
               {data.country === 'es' ? (
@@ -286,14 +286,14 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
               )}
             </select>
             {errors.province && (
-              <p className="wizard-error">{errors.province}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.province}</p>
             )}
           </div>
         </div>
 
         {/* Ciudad con autocompletado */}
         <div>
-          <label htmlFor="city" className="wizard-label">
+          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
             Ciudad *
           </label>
           {data.country === 'es' && data.province && availableCities.length > 0 ? (
@@ -301,7 +301,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
               id="city"
               value={data.city}
               onChange={(e) => onFieldChange('city', e.target.value)}
-              className={`wizard-input ${errors.city ? 'error' : ''}`}
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.city ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu ciudad</option>
               {availableCities.map((city) => (
@@ -316,18 +316,18 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
               type="text"
               value={data.city}
               onChange={(e) => onFieldChange('city', e.target.value)}
-              className={`wizard-input ${errors.city ? 'error' : ''}`}
+              className={`block w-full px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.city ? 'border-red-300' : 'border-gray-200'}`}
               placeholder="Ingresa tu ciudad"
             />
           )}
           {errors.city && (
-            <p className="wizard-error">{errors.city}</p>
+            <p className="text-sm text-red-600 mt-1">{errors.city}</p>
           )}
         </div>
 
-        {/* Checklist Legal Mejorado */}
+        {/* Checklist Legal Mejorado Apple-style */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-base font-medium text-gray-900 mb-4">
             Consentimientos Legales *
           </h3>
           
