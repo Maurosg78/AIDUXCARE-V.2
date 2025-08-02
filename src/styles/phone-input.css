@@ -1,0 +1,110 @@
+/* PhoneInput Styles - SIN SUPERPOSICIONES */
+
+.phone-input-container {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  transition: border-color 0.2s ease;
+  
+  /* CRÍTICO: Sin positioning que cause superposiciones */
+  position: relative;
+  z-index: auto;
+}
+
+.phone-input-container:focus-within {
+  border-color: #E91E63;
+  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+}
+
+.country-code-select {
+  flex: 0 0 80px;
+  min-width: 80px;
+  max-width: 80px;
+  height: 100%;
+  border: none;
+  background: #f9fafb;
+  padding: 0 8px;
+  font-size: 14px;
+  outline: none;
+  border-right: 1px solid #e5e7eb;
+  cursor: pointer;
+  
+  /* CRÍTICO: Sin positioning que cause superposiciones */
+  position: static;
+  z-index: auto;
+  float: none;
+  
+  /* Asegurar que no haya overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.country-code-select:focus {
+  background: #f3f4f6;
+}
+
+.phone-number-input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  padding: 0 16px;
+  font-size: 16px;
+  outline: none;
+  background: white;
+  
+  /* CRÍTICO: Sin positioning que cause superposiciones */
+  position: static;
+  z-index: auto;
+  float: none;
+}
+
+.phone-number-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Responsive: En móviles, ajustar selector */
+@media (max-width: 640px) {
+  .country-code-select {
+    flex: 0 0 70px;
+    min-width: 70px;
+    max-width: 70px;
+    font-size: 12px;
+    padding: 0 4px;
+  }
+  
+  .phone-number-input {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+}
+
+/* Estados de error */
+.phone-input-container.error {
+  border-color: #ef4444;
+}
+
+.phone-input-container.error:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Asegurar que los elementos no se superpongan */
+.phone-input-container * {
+  position: static !important;
+  z-index: auto !important;
+  float: none !important;
+}
+
+/* Eliminar cualquier transform que pueda causar problemas */
+.phone-input-container,
+.country-code-select,
+.phone-number-input {
+  transform: none !important;
+  transform-origin: initial !important;
+} 
