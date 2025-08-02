@@ -268,8 +268,9 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             )}
           </div>
         </div>
-        {/* Teléfono con código de país */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Teléfono y Género - Separados para evitar desbalance */}
+        <div className="space-y-5">
+          {/* Teléfono */}
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
             <div className="flex">
@@ -300,6 +301,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
               <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
             )}
           </div>
+          
+          {/* Género */}
           <div>
             <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">Género</label>
             <select 
@@ -316,8 +319,9 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             </select>
           </div>
         </div>
-        {/* Contraseñas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Contraseñas - Separadas para evitar desbalance */}
+        <div className="space-y-5">
+          {/* Contraseña */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
             <input 
@@ -338,6 +342,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             )}
             {errors.password && (<p className="text-sm text-red-600 mt-1">{errors.password}</p>)}
           </div>
+          
+          {/* Confirmar Contraseña */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
             <input 
