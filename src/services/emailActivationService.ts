@@ -106,13 +106,19 @@ export class EmailActivationService {
 
       // Guardar en Firestore
       const professionalDoc = doc(db, 'professionals', professionalId);
-      await setDoc(professionalDoc, {
+      const firestoreData = {
         ...professional,
         registrationDate: professional.registrationDate.toISOString(),
         createdAt: professional.createdAt.toISOString(),
-        updatedAt: professional.updatedAt.toISOString(),
-        lastLogin: professional.lastLogin?.toISOString()
-      });
+        updatedAt: professional.updatedAt.toISOString()
+      };
+      
+      // Solo agregar lastLogin si existe
+      if (professional.lastLogin) {
+        firestoreData.lastLogin = professional.lastLogin.toISOString();
+      }
+      
+      await setDoc(professionalDoc, firestoreData);
 
       console.log('✅ [DEBUG] Profesional guardado en Firestore:', professionalId);
 
