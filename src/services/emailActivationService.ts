@@ -8,7 +8,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from 'firebase/auth';
 
 // Configuración Firebase
 const firebaseConfig = {
@@ -81,11 +81,25 @@ export class EmailActivationService {
       const emailSnapshot = await getDocs(emailQuery);
 
       if (!emailSnapshot.empty) {
-        console.log('❌ [DEBUG] Email ya registrado:', professionalData.email);
+        console.log('❌ [DEBUG] Email ya registrado en Firestore:', professionalData.email);
         return {
           success: false,
           message: 'Este email ya está registrado en el sistema'
         };
+      }
+
+      // Verificar si el email ya existe en Firebase Auth
+      try {
+        const methods = await fetchSignInMethodsForEmail(auth, professionalData.email);
+        if (methods.length > 0) {
+          console.log('❌ [DEBUG] Email ya registrado en Firebase Auth:', professionalData.email);
+          return {
+            success: false,
+            message: 'Este email ya está registrado en el sistema'
+          };
+        }
+      } catch (authCheckError) {
+        console.log('⚠️ [DEBUG] No se pudo verificar Firebase Auth, continuando:', authCheckError);
       }
 
       // Generar token de activación único
