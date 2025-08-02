@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 import { useAuth } from '../hooks/useAuth';
 import { emailActivationService } from '../services/emailActivationService';
 
@@ -66,16 +65,17 @@ const LoginPage: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-blue-50/60 to-indigo-100/40"></div>
       
       <div className="relative w-full max-w-md space-y-8 z-10">
-        {/* Logo y branding */}
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <AiDuxCareLogo size="lg" variant="full" className="transform hover:scale-105 transition-transform duration-300" />
-          </div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-700 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Iniciar Sesión
-          </h2>
-          <p className="mt-3 text-sm text-slate-600">
-            Accede a tu cuenta para gestionar pacientes y consultas
+        {/* Header con diseño exacto de la captura */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold mb-4">
+            Bienvenido a{' '}
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+              AiDuxCare
+            </span>
+          </h1>
+          <p className="text-gray-700 text-lg leading-relaxed">
+            Ficha médica electrónica asistida por AI.<br/>
+            Menos papeleo, más seguridad, más tiempo.
           </p>
         </div>
 
@@ -115,7 +115,7 @@ const LoginPage: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white"
                   placeholder="Correo electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -140,7 +140,7 @@ const LoginPage: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white"
                   placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -154,7 +154,7 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -173,11 +173,11 @@ const LoginPage: React.FC = () => {
 
         {/* Enlaces adicionales */}
         <div className="text-center space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-gray-600">
             ¿No tienes cuenta?{' '}
             <Link 
               to="/register" 
-              className="font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200 hover:underline"
+              className="font-medium text-purple-600 hover:text-purple-700 transition-colors duration-200 hover:underline"
             >
               Regístrate
             </Link>
@@ -185,7 +185,7 @@ const LoginPage: React.FC = () => {
           
           <Link 
             to="/forgot-password" 
-            className="text-sm text-slate-500 hover:text-slate-700 transition-colors duration-200"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
           >
             ¿Olvidaste tu contraseña?
           </Link>
@@ -197,7 +197,7 @@ const LoginPage: React.FC = () => {
         <div className="text-center">
           <Link 
             to="/" 
-            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200 hover:underline"
+            className="inline-flex items-center text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200 hover:underline"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
