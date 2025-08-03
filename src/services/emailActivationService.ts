@@ -6,24 +6,9 @@
  * @author CTO/Implementador Jefe
  */
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from 'firebase/auth';
-
-// Configuración Firebase
-const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { db, auth } from '../lib/firebase';
 
 export interface ProfessionalRegistration {
   id: string;
@@ -89,8 +74,10 @@ export class EmailActivationService {
       }
 
       // Verificar si el email ya existe en Firebase Auth
+      console.log('🔍 [DEBUG] Verificando Firebase Auth para:', professionalData.email);
       try {
         const methods = await fetchSignInMethodsForEmail(auth, professionalData.email);
+        console.log('🔍 [DEBUG] Métodos encontrados:', methods);
         if (methods.length > 0) {
           console.log('❌ [DEBUG] Email ya registrado en Firebase Auth:', professionalData.email);
           return {
@@ -98,6 +85,7 @@ export class EmailActivationService {
             message: 'Este email ya está registrado en el sistema'
           };
         }
+        console.log('✅ [DEBUG] Email disponible en Firebase Auth');
       } catch (authCheckError) {
         console.error('❌ [DEBUG] Error al verificar Firebase Auth:', authCheckError);
         return {
