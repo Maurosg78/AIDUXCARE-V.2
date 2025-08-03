@@ -44,7 +44,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       description: 'Autorizo el procesamiento de datos según la política de privacidad',
       required: true,
       category: 'privacy',
-      checked: data.consentGDPR || false
+      checked: data.consentHIPAA || false
     },
     {
       id: 'medical-disclaimer',
@@ -209,8 +209,15 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       )
     );
 
-    // Actualizar el estado del formulario - todos los elementos actualizan consentGDPR
-    onFieldChange('consentGDPR', checked);
+    // Actualizar el estado del formulario según el tipo de consentimiento
+    if (itemId === 'terms-accepted') {
+      onFieldChange('consentGDPR', checked);
+    } else if (itemId === 'privacy-accepted') {
+      onFieldChange('consentHIPAA', checked);
+    } else if (itemId === 'medical-disclaimer') {
+      // Para el disclaimer médico, también actualizar consentGDPR como fallback
+      onFieldChange('consentGDPR', checked);
+    }
   };
 
   const handleLegalChecklistComplete = (allChecked: boolean) => {
