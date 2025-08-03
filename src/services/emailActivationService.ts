@@ -99,7 +99,11 @@ export class EmailActivationService {
           };
         }
       } catch (authCheckError) {
-        console.log('⚠️ [DEBUG] No se pudo verificar Firebase Auth, continuando:', authCheckError);
+        console.error('❌ [DEBUG] Error al verificar Firebase Auth:', authCheckError);
+        return {
+          success: false,
+          message: 'Error al verificar el email. Inténtalo de nuevo.'
+        };
       }
 
       // Generar token de activación único
@@ -169,7 +173,12 @@ export class EmailActivationService {
         console.error('❌ [DEBUG] Error en Firebase Auth:', authError);
         
         // Si falla la creación en Auth, eliminar de Firestore
-        await deleteDoc(professionalDoc);
+        try {
+          await deleteDoc(professionalDoc);
+          console.log('✅ [DEBUG] Registro eliminado de Firestore después del error de Auth');
+        } catch (deleteError) {
+          console.error('⚠️ [DEBUG] Error al eliminar registro de Firestore:', deleteError);
+        }
         
         const error = authError as { code?: string };
         if (error.code === 'auth/email-already-in-use') {
