@@ -1,0 +1,71 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FHIR Encounter snapshot > matches expected snapshot for an ambulatory encounter 1`] = `
+{
+  "class": {
+    "code": "AMB",
+    "display": "Ambulatory",
+    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+  },
+  "id": "enc-1001",
+  "meta": {
+    "lastUpdated": "2025-08-11T20:31:27.761Z",
+    "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter",
+    ],
+  },
+  "participant": [
+    {
+      "individual": {
+        "display": "Provider pr-001",
+        "reference": "urn:uuid:0ba807a5-0ba8-07a5-0ba8-0ba807a50ba8",
+      },
+      "type": [
+        {
+          "coding": [
+            {
+              "code": "ATND",
+              "display": "attender",
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  "period": {
+    "end": "2025-08-01T10:10:00Z",
+    "start": "2025-08-01T09:30:00Z",
+  },
+  "reasonCode": [
+    {
+      "coding": [
+        {
+          "code": "unknown",
+          "display": "Dolor de hombro derecho tras esfuerzo",
+          "system": "http://snomed.info/sct",
+        },
+      ],
+      "text": "Dolor de hombro derecho tras esfuerzo",
+    },
+  ],
+  "resourceType": "Encounter",
+  "status": "finished",
+  "subject": {
+    "display": "Patient pt-0001",
+    "reference": "urn:uuid:36ca3300-36ca-3300-36ca-36ca330036ca",
+  },
+  "type": [
+    {
+      "coding": [
+        {
+          "code": "AMB",
+          "display": "Ambulatory",
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+        },
+      ],
+      "text": "Dolor de hombro derecho tras esfuerzo",
+    },
+  ],
+}
+`;

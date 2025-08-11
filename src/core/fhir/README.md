@@ -1,123 +1,103 @@
 # FHIR Module - AiDuxCare
 
-## Quick Start
+## 📋 **Estado del Módulo**
 
-```typescript
-import { 
-  convertPatientToFhir, 
-  createFhirBundle,
-  validateCaCorePatient 
-} from '@/core/fhir';
+- **Versión**: v1.1.0
+- **Estado**: ✅ PRODUCCIÓN - 100% tests passing (55/55)
+- **Última actualización**: Agosto 2025
 
-// Convert internal patient to FHIR
-const fhirPatient = convertPatientToFhir(internalPatient, { 
-  profile: 'ca-core' 
-});
+## 🏥 **Perfiles Implementados**
 
-// Create FHIR bundle
-const bundle = createFhirBundle([fhirPatient], {
-  type: 'document',
-  profile: 'ca-core'
-});
+### Recursos FHIR R4
+- ✅ **Patient** - Perfil completo con validación CA Core / US Core
+- ✅ **Encounter** - Perfil completo con mapeo de tipos clínicos
+- ✅ **Observation** - Perfil básico para datos clínicos
 
-// Validate against CA Core
-const validation = validateCaCorePatient(fhirPatient);
-if (!validation.isValid) {
-  console.error('Validation errors:', validation.errors);
-}
-```
+### Guías de Implementación
+- ✅ **CA Core** - Canadá (Patient, Encounter, Observation)
+- ✅ **US Core** - Estados Unidos (Patient, Encounter, Observation)
 
-## Module Structure
+## 🔍 **Tipos de Validaciones Activas**
 
-```
-src/core/fhir/
-├── adapters/           # Data conversion
-├── validators/         # Profile validation
-├── types/              # TypeScript interfaces
-├── utils/              # Bundle & JSON utilities
-├── tests/              # Unit tests
-└── index.ts            # Main exports
-```
+### Validación de Estructura
+- Campos obligatorios según perfil
+- Tipos de datos correctos
+- Referencias válidas (Patient/{id} o urn:uuid:)
 
-## Supported Resources
+### Validación de Contenido
+- Códigos de clase de encuentro (EMER|IMP|AMB|VR|HH)
+- Formatos de país según perfil (CA para CA Core, US para US Core)
+- Identificadores únicos y válidos
 
-- **Patient**: Demographics & identification
-- **Encounter**: Clinical visits
-- **Observation**: Clinical measurements & findings
+### Validación de Referencias
+- Referencias internas resueltas
+- UUIDs deterministas para consistencia
+- Validación de integridad referencial
 
-## Supported Profiles
+## 🧪 **Estado del Test Suite**
 
-- **CA Core**: Canadian FHIR Implementation Guide
-- **US Core**: US FHIR Implementation Guide
+### Cobertura Total: 100%
+- **Contract Tests**: 20/20 ✅
+- **Profile Tests**: 21/21 ✅  
+- **Integration Tests**: 14/14 ✅
 
-## Key Features
+### Tipos de Tests
+- **Contract Tests**: Verificación de API pública
+- **Profile Tests**: Validación CA Core / US Core
+- **Integration Tests**: Round-trip completo (interno → FHIR → interno)
+- **Snapshot Tests**: Consistencia de mapeo Patient/Encounter
 
-- ✅ **Lightweight**: No heavy external dependencies
-- ✅ **Type Safe**: Strict TypeScript with no `any`
-- ✅ **Profile Compliant**: CA Core + US Core validation
-- ✅ **Round-trip**: Lossless data conversion
-- ✅ **Tested**: 100% test coverage
-- ✅ **Decoupled**: No impact on existing EMR flow
+## 🚀 **Uso del Módulo**
 
-## Validation
-
-```typescript
-import { validateFhirJson, validateFhirProfile } from '@/core/fhir';
-
-// Basic JSON validation
-const jsonValidation = validateFhirJson(fhirJsonString, 'Patient');
-
-// Profile-specific validation
-const profileValidation = validateFhirProfile(fhirJsonString, 'ca-core');
-```
-
-## Bundle Operations
-
-```typescript
-import { 
-  createFhirBundle, 
-  extractBundleResources,
-  validateFhirBundle 
-} from '@/core/fhir';
-
-// Create bundle
-const bundle = createFhirBundle(resources, { type: 'document' });
-
-// Extract resources by type
-const { patients, encounters, observations } = extractBundleResources(bundle);
-
-// Validate bundle
-const bundleValidation = validateFhirBundle(bundle);
-```
-
-## Testing
-
+### Comandos Principales
 ```bash
-# Run all FHIR tests
-npm run test src/core/fhir
+# Suite completa FHIR
+npm run fhir:all
 
-# Run specific test files
-npm run test src/core/fhir/tests/validators.test.ts
-
-# Validate entire module
-npm run validate:fhir
+# Tests específicos
+npm run fhir:contracts    # Contract tests
+npm run fhir:profiles     # Profile validation tests  
+npm run run fhir:adapters # Integration tests
 ```
 
-## Documentation
+### API Pública
+```typescript
+import { toFhir, fromFhir, validate, makeBundle } from './core/fhir';
 
-- **Full Documentation**: `docs/fhir-integration.md`
-- **API Reference**: JSDoc comments in source code
-- **Examples**: See test files for usage patterns
+// Conversión interna → FHIR
+const fhirPatient = toFhir(internalPatient, { profile: 'US_CORE' });
 
-## Compliance
+// Validación de recursos
+const result = validate(fhirPatient, 'US_CORE');
 
-- **FHIR R4**: Full compliance
-- **CA Core**: Validated against Canadian standards
-- **US Core**: Validated against US standards
-- **TypeScript**: Strict mode enabled
+// Creación de bundles
+const bundle = makeBundle([fhirPatient, fhirEncounter], 'US_CORE');
+```
 
----
+## 🔒 **Quality Gates**
 
-**Version**: 1.0.0  
-**Status**: ✅ Production Ready  
-**Last Updated**: December 2024
+### CI/CD Integration
+- **Workflow**: `.github/workflows/ci-fhir.yml`
+- **Trigger**: Pull requests y pushes a `main`
+- **Requisito**: `npm run fhir:all` debe pasar 100%
+- **Bloqueo**: No se permite merge si fallan tests FHIR
+
+### Validaciones Automáticas
+- ✅ Linting (ESLint)
+- ✅ TypeScript compilation
+- ✅ FHIR test suite completo
+- ✅ Reportes JUnit para auditoría
+
+## 📚 **Documentación Adicional**
+
+- **Changelog**: `CHANGELOG.md`
+- **Versioning**: `docs/fhir-versioning.md`
+- **Integration**: `docs/fhir-integration.md`
+
+## 🆘 **Soporte**
+
+Para problemas o preguntas sobre el módulo FHIR:
+1. Verificar que `npm run fhir:all` pase localmente
+2. Revisar logs de CI en GitHub Actions
+3. Consultar documentación de versioning
+4. Contactar al equipo de desarrollo

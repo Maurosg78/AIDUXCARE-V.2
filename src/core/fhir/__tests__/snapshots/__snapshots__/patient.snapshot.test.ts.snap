@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FHIR Patient snapshot > matches expected snapshot for a representative internal patient 1`] = `
+{
+  "active": true,
+  "address": [
+    {
+      "city": "Valencia",
+      "country": "US",
+      "line": [
+        undefined,
+      ],
+      "postalCode": undefined,
+      "state": "VC",
+      "type": "physical",
+      "use": "home",
+    },
+  ],
+  "birthDate": "1988-03-15",
+  "gender": "female",
+  "id": "pt-0001",
+  "meta": {
+    "lastUpdated": "2025-08-11T20:31:27.760Z",
+    "profile": [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+    ],
+  },
+  "name": [
+    {
+      "family": "García",
+      "given": [
+        "Elena",
+      ],
+      "use": "official",
+    },
+  ],
+  "resourceType": "Patient",
+}
+`;
