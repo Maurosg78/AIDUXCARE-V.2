@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetCompletePage } from '../pages/ResetCompletePage';
 import { CommandCenterPage } from '../features/command-center/CommandCenterPage';
 import { ProfessionalWorkflowPage } from '../pages/ProfessionalWorkflowPage';
 import { RegistrationSuccessPage } from '../pages/RegistrationSuccessPage';
@@ -20,6 +22,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
     const isAuthRoute = location.pathname.startsWith('/login') || 
                        location.pathname.startsWith('/register') || 
                        location.pathname.startsWith('/forgot-password') ||
+                       location.pathname.startsWith('/reset-complete') ||
                        location.pathname.startsWith('/verify') ||
                        location.pathname.startsWith('/activate');
     
@@ -63,6 +66,22 @@ const router = createBrowserRouter([
     element: (
       <LayoutWrapper>
         <LoginPage />
+      </LayoutWrapper>
+    )
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <LayoutWrapper>
+        <ForgotPasswordPage />
+      </LayoutWrapper>
+    )
+  },
+  {
+    path: '/reset-complete',
+    element: (
+      <LayoutWrapper>
+        <ResetCompletePage />
       </LayoutWrapper>
     )
   },
