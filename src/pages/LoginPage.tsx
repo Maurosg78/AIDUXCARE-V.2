@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+// import { useProfessionalProfile } from '../hooks/useProfessionalProfile';
 import { emailActivationService } from '../services/emailActivationService';
+
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  
+  // Hook para perfil profesional (preparado para futuras integraciones)
+  // const { profile } = useProfessionalProfile();
+
+  // Manejar mensajes de éxito desde navegación
+  useEffect(() => {
+    if (location.state?.message && location.state?.type === 'success') {
+      setSuccessMessage(location.state.message);
+      // Limpiar el estado de navegación para evitar mostrar el mensaje múltiples veces
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +34,9 @@ const LoginPage: React.FC = () => {
 
     try {
       console.log('[DEBUG] Intentando login con email:', email);
+
+      // Autenticar con Firebase usando el hook
+      await login(email, password);
 
       // Verificar si el profesional existe y está activo
       const professional = await emailActivationService.getProfessional(email);
@@ -37,20 +56,10 @@ const LoginPage: React.FC = () => {
       // Actualizar último login
       await emailActivationService.updateLastLogin(email);
 
-      // Datos del usuario desde Firestore
-      const userData = {
-        displayName: professional.displayName,
-        email: professional.email,
-        professionalTitle: professional.professionalTitle,
-        specialty: professional.specialty,
-        country: professional.country
-      };
+
       
-      // Guardar datos del usuario usando el hook
-      login(userData);
-      
-      // Redirigir al workflow profesional
-      navigate('/professional-workflow');
+      // Redirigir al centro de comando
+      navigate('/command-center');
     } catch (err) {
       console.error('[DEBUG] Error en login:', err);
       setError('Error al iniciar sesión. Inténtalo de nuevo.');
@@ -75,6 +84,13 @@ const LoginPage: React.FC = () => {
             Menos papeleo, más seguridad, más tiempo.
           </p>
         </div>
+
+        {/* Mensaje de éxito Apple-style */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-600 font-medium">{successMessage}</p>
+          </div>
+        )}
 
         {/* Mensaje de error Apple-style */}
         {error && (

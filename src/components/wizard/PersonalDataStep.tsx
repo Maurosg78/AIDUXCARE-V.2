@@ -9,10 +9,13 @@
 import React, { useState, useEffect } from 'react';
 import { PersonalData } from '../../types/wizard';
 import { emailValidationService, type EmailValidationResult } from '../../services/emailValidationService';
-import { geolocationService, GeolocationData } from '../../services/geolocationService';
+import { GeolocationData, GeolocationService } from '../../services/geolocationService';
 import { EmailRecoveryModal } from './EmailRecoveryModal';
-import { GeolocationPermission } from './GeolocationPermission';
+import { LocationAwarenessModal } from './LocationAwarenessModal';
+import { GeolocationPermissionModal } from './GeolocationPermissionModal';
 import { PhoneInput } from './PhoneInput';
+import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+import '../../styles/form.css';
 
 interface PersonalDataStepProps {
   data: PersonalData;
@@ -27,14 +30,181 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
   onFieldChange,
   onLocationDetected
 }) => {
-  const [showGeolocationModal, setShowGeolocationModal] = useState(false);
+  // Debug: Log de datos recibidos
+  console.log('PersonalDataStep - Datos recibidos:', data);
+  console.log('PersonalDataStep - Teléfono recibido:', data.phone);
+  console.log('PersonalDataStep - Código de país recibido:', data.phoneCountryCode);
+  
+  const { updateWizardData } = useProfessionalProfile();
+  // const [showGeolocationModal, setShowGeolocationModal] = useState(false);
+  
+  // Ejecutar geolocalización automáticamente solo una vez al montar
+  useEffect(() => {
+    detectLocationAutomatically();
+  }, []);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLocationAwareness, setShowLocationAwareness] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
-  useEffect(() => {
-    // Mostrar modal de geolocalización al cargar el componente
-    setShowGeolocationModal(true);
-  }, []);
+  // Protección contra data undefined
+  const safeData = data || {
+    firstName: '',
+    lastName: '',
+    secondName: '',
+    secondLastName: '',
+    birthDate: '',
+    email: '',
+    phone: '',
+    phoneCountryCode: '+34',
+    gender: '',
+    password: '',
+    confirmPassword: ''
+  };
+  
+  // Función para detectar ubicación automáticamente
+  const detectLocationAutomatically = async () => {
+    try {
+      // Usar el servicio de geolocalización que maneja fallbacks automáticamente
+      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+      const locationData = await geolocationService.detectLocation();
+      
+      if (locationData) {
+        // Verificar si se necesitan resetear permisos
+        if (locationData.needsPermissionReset) {
+          console.log('🚫 Permisos denegados - Mostrando modal de instrucciones');
+          setShowPermissionModal(true);
+          return;
+        }
+        
+        // Llenar automáticamente los campos de ciudad y país si están disponibles
+        if (locationData.city) {
+          handleFieldChangeWithContext('city', locationData.city);
+        }
+        if (locationData.country) {
+          handleFieldChangeWithContext('country', locationData.country);
+        }
+        
+        // ACTUALIZAR AUTOMÁTICAMENTE EL CÓDIGO DE PAÍS DEL TELÉFONO
+        if (locationData.country) {
+          const countryCode = getCountryCodeFromCountry(locationData.country);
+          if (countryCode) {
+            handleFieldChangeWithContext('phoneCountryCode', countryCode);
+          }
+        }
+        
+        // Llamar al callback si existe
+        if (onLocationDetected) {
+          onLocationDetected(locationData);
+        }
+      }
+    } catch (error) {
+      console.error('PersonalDataStep - Error en geolocalización automática:', error);
+    }
+  };
+
+  // Función para obtener el código de país del teléfono basado en el nombre del país
+  const getCountryCodeFromCountry = (countryName: string): string => {
+    const countryMap: Record<string, string> = {
+      'España': '+34',
+      'Spain': '+34',
+      'Estados Unidos': '+1',
+      'United States': '+1',
+      'United States of America': '+1',
+      'Reino Unido': '+44',
+      'United Kingdom': '+44',
+      'Great Britain': '+44',
+      'Francia': '+33',
+      'France': '+33',
+      'Alemania': '+49',
+      'Germany': '+49',
+      'Italia': '+39',
+      'Italy': '+39',
+      'Países Bajos': '+31',
+      'Netherlands': '+31',
+      'Bélgica': '+32',
+      'Belgium': '+32',
+      'Portugal': '+351',
+      'México': '+52',
+      'Argentina': '+54',
+      'Chile': '+56',
+      'Colombia': '+57',
+      'Perú': '+51',
+      'Venezuela': '+58',
+      'Brasil': '+55',
+      'Uruguay': '+598',
+      'Paraguay': '+595',
+      'Bolivia': '+591',
+      'Ecuador': '+593'
+    };
+    
+    return countryMap[countryName] || '+34'; // Default a España
+  };
+
+  // Función para manejar selección manual de país
+  const handleManualCountrySelection = (countryCode: string) => {
+    const geolocationService = GeolocationService.getInstance();
+    const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
+    
+    if (fiduciaryData) {
+      // Llenar campos con datos fiduciarios
+      if (fiduciaryData.location.city) {
+        handleFieldChangeWithContext('city', fiduciaryData.location.city);
+      }
+      if (fiduciaryData.location.region) {
+        handleFieldChangeWithContext('province', fiduciaryData.location.region);
+      }
+      if (fiduciaryData.location.country) {
+        handleFieldChangeWithContext('country', fiduciaryData.location.country);
+      }
+      
+      console.log('PersonalDataStep - Datos fiduciarios aplicados para:', countryCode);
+    }
+  };
+
+  // Función para usar ubicación actual
+  const handleUseCurrentLocation = () => {
+    detectLocationAutomatically();
+  };
+
+  const handlePermissionModalClose = () => {
+    setShowPermissionModal(false);
+  };
+
+  const handlePermissionModalRetry = () => {
+    setShowPermissionModal(false);
+    // Reintentar después de un breve delay
+    setTimeout(() => {
+      detectLocationAutomatically();
+    }, 1000);
+  };
+
+  // Mapear campos del wizard a campos del contexto
+  const handleFieldChangeWithContext = (field: string, value: string | boolean) => {
+    // Solo logear cambios importantes, no cada letra
+    if (field === 'firstName' || field === 'lastName' || field === 'email' || field === 'city' || field === 'country' || field === 'phone' || field === 'phoneCountryCode') {
+      console.log(`PersonalDataStep - Campo cambiado: ${field} = ${value}`);
+    }
+    
+    // Actualizar el contexto del wizard
+    const fieldMapping: Record<string, keyof ProfessionalProfile> = {
+      firstName: 'fullName',
+      lastName: 'fullName', // Se maneja en el componente
+      email: 'email',
+      phone: 'phone'
+    };
+
+    const contextField = fieldMapping[field];
+    if (contextField) {
+      updateWizardData(contextField, value);
+    }
+    
+    // Llamar al callback original si existe
+    if (onFieldChange && typeof onFieldChange === 'function') {
+      onFieldChange(field, value);
+    }
+  };
 
   // Indicador de fortaleza de contraseña
   const checkPasswordStrength = (password: string): 'weak' | 'medium' | 'strong' => {
@@ -45,8 +215,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
     if (/[0-9]/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
     
-    if (score < 3) return 'weak';
-    if (score < 5) return 'medium';
+    if (score <= 2) return 'weak';
+    if (score <= 3) return 'medium';
     return 'strong';
   };
 
@@ -55,6 +225,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       case 'weak': return 'Débil';
       case 'medium': return 'Media';
       case 'strong': return 'Fuerte';
+      default: return 'Desconocida';
     }
   };
 
@@ -63,94 +234,134 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       case 'weak': return 'text-red-600';
       case 'medium': return 'text-yellow-600';
       case 'strong': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
-  // Email validation
-  const [emailValidationMessage, setEmailValidationMessage] = useState<string>('');
-  const [emailValidation, setEmailValidation] = useState<EmailValidationResult | null>(null);
+  // Validación de email en tiempo real
+  const [emailValidation] = useState<EmailValidationResult>({ 
+    exists: false, 
+    message: '',
+    isActive: false,
+    canRecover: false,
+    canActivate: false
+  });
+  // const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
 
-  useEffect(() => {
-    const validateEmail = async () => {
-      if (!data.email || data.email.length < 5) {
-        setEmailValidationMessage('');
-        return;
-      }
+  // Función para manejar ubicación detectada (ahora se llama automáticamente)
+  // const handleLocationDetected = (location: GeolocationData) => {
+  //   console.log('Ubicación detectada en PersonalDataStep:', location);
+  //   
+  //   // Mapear país a código correcto
+  //   const countryMapping: Record<string, string> = {
+  //     'España': 'es',
+  //     'Spain': 'es',
+  //     'México': 'mx',
+  //     'Mexico': 'mx',
+  //     'Argentina': 'ar',
+  //     'Colombia': 'co',
+  //     'Chile': 'cl',
+  //     'Perú': 'pe',
+  //     'Peru': 'pe',
+  //     'Estados Unidos': 'us',
+  //     'United States': 'us'
+  //   };
+  //   
+  //   // Mapear provincia a valor del dropdown
+  //   const provinceMapping: Record<string, string> = {
+  //     'Comunidad Valenciana': 'valencia',
+  //     'Valencia': 'valencia',
+  //     'Madrid': 'madrid',
+  //     'Barcelona': 'barcelona',
+  //     'Andalucía': 'andalucia',
+  //     'Cataluña': 'cataluna',
+  //     'Galicia': 'galicia',
+  //     'Castilla y León': 'castilla-leon',
+  //     'Castilla-La Mancha': 'castilla-mancha',
+  //     'País Vasco': 'pais-vasco',
+  //     'Aragón': 'aragon',
+  //     'Asturias': 'asturias',
+  //     'Cantabria': 'cantabria',
+  //     'La Rioja': 'la-rioja',
+  //     'Navarra': 'navarra',
+  //     'Extremadura': 'extremadura',
+  //     'Murcia': 'murcia',
+  //     'Islas Baleares': 'islas-balears',
+  //     'Islas Canarias': 'islas-canarias',
+  //     'Ceuta': 'ceuta',
+  //     'Melilla': 'melilla'
+  //   };
+  //   
+  //   const countryCode = countryMapping[location.country || ''] || location.country || '';
+  //   const provinceCode = provinceMapping[location.region || ''] || location.region || '';
+  //   
+  //   console.log('Mapeo de ubicación:', {
+  //     original: { country: location.country, region: location.region },
+  //     city: location.city,
+  //     countryCode,
+  //     provinceCode
+  //   };
+  //   
+  //   // Actualizar campos del wizard
+  //   if (location.city) {
+  //     handleFieldChangeWithContext('city', location.city);
+  //   }
+  //   if (countryCode) {
+  //     handleFieldChangeWithContext('country', countryCode);
+  //     if (provinceCode) {
+  //       handleFieldChangeWithContext('province', provinceCode);
+  //     }
+  //   }
+  // };
 
-      try {
-        const result = await emailValidationService.validateEmail(data.email);
-        setEmailValidation(result);
-        
-        if (result.exists) {
-          setEmailValidationMessage('Email ya registrado');
-          setShowRecoveryModal(true);
-        } else {
-          setEmailValidationMessage('Email disponible');
-        }
-      } catch (error) {
-        setEmailValidationMessage('');
-      }
-    };
+  // Función para manejar selección manual de ubicación (ya no se usa)
+  // const handleManualLocationSelection = () => {
+  //   console.log('Selección manual de ubicación');
+  //   // setShowGeolocationModal(false); // Eliminado
+  // };
 
-    const timeoutId = setTimeout(validateEmail, 500);
-    return () => clearTimeout(timeoutId);
-  }, [data.email]);
 
-  // Handlers para geolocalización
-  const handleLocationDetected = (location: GeolocationData) => {
-    setShowGeolocationModal(false);
-    
-    // Configurar código de país automáticamente
-    if (location.countryCode) {
-      const countryCode = geolocationService.getPhoneCountryCode(location.countryCode);
-      if (countryCode) {
-        onFieldChange('phoneCountryCode', countryCode.code);
-      }
-    }
-
-    // Notificar al componente padre sobre la ubicación detectada
-    if (onLocationDetected) {
-      onLocationDetected(location);
-    }
-  };
-
-  const handleManualLocationSelection = () => {
-    setShowGeolocationModal(false);
-  };
 
   // Handlers para email recovery
   const handlePasswordRecovery = async () => {
     try {
-      await emailValidationService.sendPasswordRecovery(data.email);
+      await emailValidationService.sendPasswordRecovery(safeData.email);
       setShowRecoveryModal(false);
     } catch (error) {
       console.error('Error sending password recovery:', error);
     }
   };
 
-  const handleAccountActivation = async () => {
-    try {
-      await emailValidationService.sendAccountActivation(data.email);
-      setShowRecoveryModal(false);
-    } catch (error) {
-      console.error('Error sending account activation:', error);
-    }
-  };
-
-  const handleContinueRegistration = () => {
-    setShowRecoveryModal(false);
-  };
+  // Debug: Log antes de renderizar
+  console.log('PersonalDataStep - Antes de renderizar con datos:', {
+    phone: safeData.phone,
+    phoneCountryCode: safeData.phoneCountryCode,
+    errors: errors
+  });
 
   return (
     <>
       {/* Modal de geolocalización */}
-      {showGeolocationModal && (
-        <GeolocationPermission
-          onLocationDetected={handleLocationDetected}
-          onManualSelection={handleManualLocationSelection}
-        />
-      )}
+      {/* Eliminado */}
+
+      {/* Botón opcional de geolocalización - SOLO si el usuario lo solicita */}
+      {/* <div className="max-w-2xl mx-auto mb-6">
+        <button
+          type="button"
+          onClick={() => setShowGeolocationModal(true)}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Detectar ubicación automáticamente
+        </button>
+        <p className="text-xs text-gray-500 mt-1">
+          Opcional: Permite completar automáticamente tu ciudad y país
+        </p>
+      </div> */}
 
       {/* Formulario con Grid Simétrico Perfecto */}
       <div className="max-w-2xl mx-auto">
@@ -164,8 +375,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input 
               id="firstName" 
               type="text" 
-              value={data.firstName} 
-              onChange={(e) => onFieldChange('firstName', e.target.value)} 
+              value={safeData.firstName} 
+              onChange={(e) => handleFieldChangeWithContext('firstName', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.firstName ? 'border-red-300' : 'border-gray-200'}`} 
               autoComplete="given-name" 
               placeholder="Tu nombre"
@@ -182,8 +393,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input 
               id="secondName" 
               type="text" 
-              value={data.secondName || ''} 
-              onChange={(e) => onFieldChange('secondName', e.target.value)} 
+              value={safeData.secondName || ''} 
+              onChange={(e) => handleFieldChangeWithContext('secondName', e.target.value)} 
               className="block w-full h-12 px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
               autoComplete="additional-name" 
               placeholder="Tu segundo nombre"
@@ -198,8 +409,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input 
               id="lastName" 
               type="text" 
-              value={data.lastName} 
-              onChange={(e) => onFieldChange('lastName', e.target.value)} 
+              value={safeData.lastName} 
+              onChange={(e) => handleFieldChangeWithContext('lastName', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.lastName ? 'border-red-300' : 'border-gray-200'}`} 
               autoComplete="family-name" 
               placeholder="Tu apellido"
@@ -216,8 +427,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input 
               id="secondLastName" 
               type="text" 
-              value={data.secondLastName || ''} 
-              onChange={(e) => onFieldChange('secondLastName', e.target.value)} 
+              value={safeData.secondLastName || ''} 
+              onChange={(e) => handleFieldChangeWithContext('secondLastName', e.target.value)} 
               className="block w-full h-12 px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base" 
               autoComplete="family-name" 
               placeholder="Tu segundo apellido"
@@ -232,8 +443,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input 
               id="birthDate" 
               type="date" 
-              value={data.birthDate} 
-              onChange={(e) => onFieldChange('birthDate', e.target.value)} 
+              value={safeData.birthDate} 
+              onChange={(e) => handleFieldChangeWithContext('birthDate', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.birthDate ? 'border-red-300' : 'border-gray-200'}`} 
             />
             {errors.birthDate && (
@@ -248,15 +459,15 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             <input
               id="email"
               type="email"
-              value={data.email}
-              onChange={(e) => onFieldChange('email', e.target.value)}
+              value={safeData.email}
+              onChange={(e) => handleFieldChangeWithContext('email', e.target.value)}
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.email ? 'border-red-300' : 'border-gray-200'}`}
               autoComplete="email"
               placeholder="tu@email.com"
             />
-            {emailValidationMessage && (
-              <p className={`text-sm mt-1 ${emailValidationMessage.includes('disponible') ? 'text-green-600' : 'text-red-600'}`}>
-                {emailValidationMessage}
+            {emailValidation && (
+              <p className={`text-sm mt-1 ${!emailValidation.exists ? 'text-green-600' : 'text-red-600'}`}>
+                {!emailValidation.exists ? 'Email válido y disponible' : emailValidation.message || 'Email ya existe'}
               </p>
             )}
             {errors.email && (
@@ -266,14 +477,11 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
           
           {/* Fila 4: Teléfono y Género */}
           <div className="form-group">
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Teléfono
-            </label>
             <PhoneInput
-              value={data.phone}
-              onChange={(phone) => onFieldChange('phone', phone)}
-              countryCode={data.phoneCountryCode || '+34'}
-              onCountryChange={(code) => onFieldChange('phoneCountryCode', code)}
+              value={safeData.phone}
+              onChange={(phone) => handleFieldChangeWithContext('phone', phone)}
+              countryCode={safeData.phoneCountryCode || '+34'}
+              onCountryChange={(code) => handleFieldChangeWithContext('phoneCountryCode', code)}
               error={errors.phone}
             />
             {errors.phone && (
@@ -287,8 +495,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
             </label>
             <select 
               id="gender" 
-              value={data.gender} 
-              onChange={(e) => onFieldChange('gender', e.target.value)} 
+              value={safeData.gender} 
+              onChange={(e) => handleFieldChangeWithContext('gender', e.target.value)} 
               className="block w-full h-12 px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
             >
               <option value="">Selecciona tu género</option>
@@ -310,8 +518,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   <input 
                     id="password" 
                     type={showPassword ? "text" : "password"} 
-                    value={data.password} 
-                    onChange={(e) => onFieldChange('password', e.target.value)} 
+                    value={safeData.password} 
+                    onChange={(e) => handleFieldChangeWithContext('password', e.target.value)} 
                     className={`block w-full h-12 px-4 py-3 pr-12 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.password ? 'border-red-300' : 'border-gray-200'}`} 
                     placeholder="••••••••" 
                     autoComplete="new-password" 
@@ -333,10 +541,10 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                     )}
                   </button>
                 </div>
-                {data.password && (
+                {safeData.password && (
                   <div className="mt-1">
-                    <span className={`text-sm ${getPasswordStrengthColor(checkPasswordStrength(data.password))}`}>
-                      Fortaleza: {getPasswordStrengthText(checkPasswordStrength(data.password))}
+                    <span className={`text-sm ${getPasswordStrengthColor(checkPasswordStrength(safeData.password))}`}>
+                      Fortaleza: {getPasswordStrengthText(checkPasswordStrength(safeData.password))}
                     </span>
                   </div>
                 )}
@@ -353,8 +561,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   <input 
                     id="confirmPassword" 
                     type={showConfirmPassword ? "text" : "password"} 
-                    value={data.confirmPassword} 
-                    onChange={(e) => onFieldChange('confirmPassword', e.target.value)} 
+                    value={safeData.confirmPassword} 
+                    onChange={(e) => handleFieldChangeWithContext('confirmPassword', e.target.value)} 
                     className={`block w-full h-12 px-4 py-3 pr-12 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'}`} 
                     placeholder="••••••••" 
                     autoComplete="new-password" 
@@ -377,9 +585,9 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
                   </button>
                 </div>
                 {/* Validación en tiempo real de coincidencia de contraseñas */}
-                {data.password && data.confirmPassword && (
+                {safeData.password && safeData.confirmPassword && (
                   <div className="mt-1">
-                    {data.password === data.confirmPassword ? (
+                    {safeData.password === safeData.confirmPassword ? (
                       <span className="text-sm text-green-600">✓ Las contraseñas coinciden</span>
                     ) : (
                       <span className="text-sm text-red-600">✗ Las contraseñas no coinciden</span>
@@ -399,14 +607,25 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
       {emailValidation && (
         <EmailRecoveryModal
           isOpen={showRecoveryModal}
-          email={data.email}
-          validationResult={emailValidation}
           onClose={() => setShowRecoveryModal(false)}
-          onPasswordRecovery={handlePasswordRecovery}
-          onAccountActivation={handleAccountActivation}
-          onContinueRegistration={handleContinueRegistration}
+          onRecover={handlePasswordRecovery}
         />
       )}
+
+      {/* Modal de concienciación de ubicación */}
+      <LocationAwarenessModal
+        isOpen={showLocationAwareness}
+        onClose={() => setShowLocationAwareness(false)}
+        onLocationSelected={handleManualCountrySelection}
+        onUseCurrentLocation={handleUseCurrentLocation}
+      />
+
+      {/* Modal de permisos de geolocalización */}
+      <GeolocationPermissionModal
+        isOpen={showPermissionModal}
+        onClose={handlePermissionModalClose}
+        onRetry={handlePermissionModalRetry}
+      />
     </>
   );
 }; 

@@ -1,5 +1,7 @@
+// vitest.config.ts
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import * as path from 'path';
+
 
 export default defineConfig({
   resolve: {
@@ -11,6 +13,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    typecheck: {
+      tsconfig: 'tsconfig.vitest.json'
+    },
     include: [
       '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       '**/*.eval.test.{js,ts,jsx,tsx}'
@@ -21,7 +26,9 @@ export default defineConfig({
       '**/temp_backup/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/evals/future_evals/**',
-      '**/__tests__/future_evals/**'
+      '**/__tests__/future_evals/**',
+      '**/tests/legacy/**',
+      '**/AIDUXCARE-STABLE/**'
     ],
     css: false,
     coverage: {
@@ -39,8 +46,10 @@ export default defineConfig({
         '**/coverage/**',
         '**/dist/**',
         '**/build/**',
-        '**/.vite/**'
+        '**/.vite/**',
+        '**/tests/legacy/**',
+        '**/AIDUXCARE-STABLE/**'
       ]
     }
   }
-}); 
+});

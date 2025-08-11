@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import '../styles/legal-checklist.css';
 
 export interface LegalChecklistItem {
   id: string;
@@ -36,33 +37,31 @@ const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, title, content
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
-            >
-              ×
-            </button>
+    <div className="terms-modal-overlay">
+      <div className="terms-modal">
+        <div className="terms-modal-header">
+          <h2 className="terms-modal-title">{title}</h2>
+          <button
+            onClick={onClose}
+            className="terms-modal-close"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="terms-modal-content">
+          <div className="terms-modal-text">
+            {content}
           </div>
-          
-          <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-              {content}
-            </div>
-          </div>
-          
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Entendido
-            </button>
-          </div>
+        </div>
+        
+        <div className="terms-modal-footer">
+          <button
+            onClick={onClose}
+            className="terms-modal-button"
+          >
+            Entendido
+          </button>
         </div>
       </div>
     </div>
@@ -112,20 +111,24 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
     });
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: string): string => {
     switch (category) {
       case 'terms':
         return '📋';
       case 'privacy':
         return '🔒';
       case 'medical':
-        return '🏥';
+        return '⚕️';
+      case 'compliance':
+        return '✅';
+      case 'security':
+        return '🛡️';
       default:
-        return '📝';
+        return '📄';
     }
   };
 
-  const getTermsContent = (itemId: string) => {
+  const getTermsContent = (itemId: string): string => {
     switch (itemId) {
       case 'terms-accepted':
         return `TÉRMINOS Y CONDICIONES DE USO - AiDuxCare
@@ -275,76 +278,78 @@ Al usar AiDuxCare, usted:
     : 0;
 
   return (
-    <div className="space-y-1">
+    <div className="legal-checklist-container">
       {/* Header ultra-compacto */}
-      <div className="bg-white rounded-lg border border-gray-200 p-2">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xs font-semibold text-gray-900">
+      <div className="legal-checklist-header">
+        <div className="legal-checklist-progress">
+          <h3 className="legal-checklist-title">
             Consentimientos Legales Requeridos
           </h3>
-          <div className="text-xs text-gray-600">
+          <div className="legal-checklist-progress-text">
             {checkedRequiredItems.length} de {requiredItems.length} completados
           </div>
         </div>
         
         {/* Barra de progreso */}
-        <div className="w-full bg-gray-200 rounded-full h-1 mb-1">
+        <div className="legal-checklist-progress-bar">
           <div 
-            className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+            className="legal-checklist-progress-fill"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
         
-        <p className="text-xs text-gray-600">
+        <p className="legal-checklist-instruction">
           Debe aceptar los 3 consentimientos para continuar
         </p>
       </div>
 
       {/* Checklist ultra-compacto */}
-      <div className="space-y-1">
+      <div className="legal-checklist-items">
         {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-2">
-            <div className="flex items-start space-x-1">
+          <div key={item.id} className="legal-checklist-item">
+            <div className="legal-checklist-item-content">
               <input
                 type="checkbox"
                 id={item.id}
                 checked={item.checked}
                 onChange={(e) => handleItemChange(item.id, e.target.checked)}
-                className="mt-0 h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="legal-checklist-checkbox"
                 required={item.required}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  margin: '0 8px 0 0',
+                  cursor: 'pointer',
+                  accentColor: '#2563eb'
+                }}
               />
-              <div className="flex-1">
-                <label 
-                  htmlFor={item.id} 
-                  className="cursor-pointer"
+              <div className="legal-checklist-label">
+                <div className="legal-checklist-item-header">
+                  <span className="legal-checklist-category-icon">{getCategoryIcon(item.category)}</span>
+                  <span className="legal-checklist-item-title">
+                    {item.title}
+                  </span>
+                  {item.required && (
+                    <span className="legal-checklist-required">*</span>
+                  )}
+                </div>
+                
+                <p className="legal-checklist-description">
+                  {item.description}
+                </p>
+                
+                {/* Link para ver términos */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openTermsModal(item.title, getTermsContent(item.id));
+                  }}
+                  className="legal-checklist-terms-link"
                 >
-                  <div className="flex items-center space-x-1 mb-0.5">
-                    <span className="text-xs">{getCategoryIcon(item.category)}</span>
-                    <span className="font-medium text-gray-900 text-xs">
-                      {item.title}
-                    </span>
-                    {item.required && (
-                      <span className="text-red-500 text-xs font-medium">*</span>
-                    )}
-                  </div>
-                  
-                  <p className="text-xs text-gray-600 mb-0.5">
-                    {item.description}
-                  </p>
-                  
-                  {/* Link para ver términos */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      openTermsModal(item.title, getTermsContent(item.id));
-                    }}
-                    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1"
-                  >
-                    📄 Leer términos completos
-                  </button>
-                </label>
+                  📄 Leer términos completos
+                </button>
               </div>
             </div>
           </div>
@@ -353,10 +358,10 @@ Al usar AiDuxCare, usted:
 
       {/* Resumen ultra-compacto */}
       {progressPercentage === 100 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-          <div className="flex items-center space-x-1">
-            <span className="text-green-600 text-xs">✅</span>
-            <p className="text-green-800 font-medium text-xs">
+        <div className="legal-checklist-success">
+          <div className="legal-checklist-success-content">
+            <span className="legal-checklist-success-icon">✅</span>
+            <p className="legal-checklist-success-text">
               Todos los consentimientos han sido aceptados
             </p>
           </div>

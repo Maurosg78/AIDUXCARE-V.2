@@ -6,6 +6,158 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tokens de diseño unificados */
+@layer base {
+  :root {
+    /* ===== COLORS ===== */
+    
+    /* Auth Colors (External) - Registro, Login, Página Web */
+    --color-auth-primary: #5DA5A3;           /* Verde intersección */
+    --color-auth-secondary: #4A8C8A;         /* Verde secundario */
+    --color-auth-accent: #3A6EA5;            /* Azul acento */
+    --color-auth-background: #f8fdfc;        /* Fondo claro */
+    --color-auth-surface: #ffffff;            /* Superficie blanca */
+    --color-auth-text: #1a202c;              /* Texto principal */
+    --color-auth-text-secondary: #4a5568;    /* Texto secundario */
+    --color-auth-border: #e2e8f0;            /* Bordes */
+    --color-auth-error: #e53e3e;             /* Error */
+    --color-auth-success: #38a169;           /* Éxito */
+    --color-auth-warning: #d69e2e;           /* Advertencia */
+
+    /* Internal Colors (Clinical) - Command Center, Workflow */
+    --color-internal-primary: #111111;       /* Negro principal */
+    --color-internal-secondary: #333333;     /* Gris oscuro */
+    --color-internal-accent: linear-gradient(135deg, #3A6EA5 0%, #5B8DB8 100%); /* Azul metalizado */
+    --color-internal-background: #ffffff;    /* Fondo blanco */
+    --color-internal-surface: #f8f9fa;       /* Superficie gris claro */
+    --color-internal-text: #111111;          /* Texto negro */
+    --color-internal-text-secondary: #666666; /* Texto gris */
+    --color-internal-border: #e5e7eb;        /* Bordes grises */
+    --color-internal-error: #dc2626;         /* Error rojo */
+    --color-internal-success: #059669;       /* Éxito verde */
+    --color-internal-warning: #d97706;       /* Advertencia naranja */
+
+    /* ===== TYPOGRAPHY ===== */
+    --font-family-base: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    
+    --font-size-xs: 0.75rem;    /* 12px */
+    --font-size-sm: 0.875rem;   /* 14px */
+    --font-size-base: 1rem;     /* 16px */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.25rem;    /* 20px */
+    --font-size-2xl: 1.5rem;    /* 24px */
+    --font-size-3xl: 1.875rem;  /* 30px */
+    --font-size-4xl: 2.25rem;   /* 36px */
+    
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* ===== SPACING ===== */
+    --spacing-xs: 0.25rem;   /* 4px */
+    --spacing-sm: 0.5rem;    /* 8px */
+    --spacing-md: 1rem;      /* 16px */
+    --spacing-lg: 1.5rem;    /* 24px */
+    --spacing-xl: 2rem;      /* 32px */
+    --spacing-2xl: 3rem;     /* 48px */
+    --spacing-3xl: 4rem;     /* 64px */
+
+    /* ===== BORDER RADIUS ===== */
+    --radius-sm: 0.25rem;    /* 4px */
+    --radius-md: 0.375rem;   /* 6px */
+    --radius-lg: 0.5rem;     /* 8px */
+    --radius-xl: 0.75rem;    /* 12px */
+    --radius-2xl: 1rem;      /* 16px */
+    --radius-full: 9999px;
+
+    /* ===== SHADOWS ===== */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* ===== TRANSITIONS ===== */
+    --transition-fast: 150ms ease-in-out;
+    --transition-normal: 200ms ease-in-out;
+    --transition-slow: 300ms ease-in-out;
+
+    /* ===== Z-INDEX ===== */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+  }
+
+  /* ===== SECTION-SPECIFIC STYLES ===== */
+  
+  /* Auth Section (External) */
+  body[data-section="auth"] {
+    --color-primary: var(--color-auth-primary);
+    --color-secondary: var(--color-auth-secondary);
+    --color-accent: var(--color-auth-accent);
+    --color-background: var(--color-auth-background);
+    --color-surface: var(--color-auth-surface);
+    --color-text: var(--color-auth-text);
+    --color-text-secondary: var(--color-auth-text-secondary);
+    --color-border: var(--color-auth-border);
+    --color-error: var(--color-auth-error);
+    --color-success: var(--color-auth-success);
+    --color-warning: var(--color-auth-warning);
+  }
+
+  /* Internal Section (Clinical) */
+  body[data-section="internal"] {
+    --color-primary: var(--color-internal-primary);
+    --color-secondary: var(--color-internal-secondary);
+    --color-accent: var(--color-internal-accent);
+    --color-background: var(--color-internal-background);
+    --color-surface: var(--color-internal-surface);
+    --color-text: var(--color-internal-text);
+    --color-text-secondary: var(--color-internal-text-secondary);
+    --color-border: var(--color-internal-border);
+    --color-error: var(--color-internal-error);
+    --color-success: var(--color-internal-success);
+    --color-warning: var(--color-internal-warning);
+  }
+
+  /* ===== BASE STYLES ===== */
+  body {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text);
+    background-color: var(--color-background);
+  }
+
+  /* ===== UTILITY CLASSES ===== */
+  .text-gradient {
+    background: var(--color-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-gradient {
+    background: var(--color-accent);
+  }
+
+  .border-gradient {
+    border: 2px solid transparent;
+    background: linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+                var(--color-accent) border-box;
+  }
+}
+
 /* Reset básico */
 * {
   box-sizing: border-box;

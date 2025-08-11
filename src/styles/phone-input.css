@@ -1,4 +1,4 @@
-/* PhoneInput Styles - SIN SUPERPOSICIONES */
+/* PhoneInput Styles - Diseño Profesional y Alineado */
 
 .phone-input-container {
   display: flex;
@@ -9,16 +9,18 @@
   border-radius: 8px;
   overflow: hidden;
   background: white;
-  transition: border-color 0.2s ease;
-  
-  /* CRÍTICO: Sin positioning que cause superposiciones */
-  position: relative;
-  z-index: auto;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.phone-input-container:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .phone-input-container:focus-within {
-  border-color: #E91E63;
-  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 244, 0.1);
 }
 
 .country-code-select {
@@ -27,17 +29,15 @@
   max-width: 80px;
   height: 100%;
   border: none;
-  background: #f9fafb;
+  background: #f8fafc;
   padding: 0 8px;
   font-size: 14px;
+  font-weight: 500;
+  color: #374151;
   outline: none;
   border-right: 1px solid #e5e7eb;
   cursor: pointer;
-  
-  /* CRÍTICO: Sin positioning que cause superposiciones */
-  position: static;
-  z-index: auto;
-  float: none;
+  transition: background-color 0.2s ease;
   
   /* Asegurar que no haya overflow */
   overflow: hidden;
@@ -45,8 +45,12 @@
   white-space: nowrap;
 }
 
+.country-code-select:hover {
+  background: #f1f5f9;
+}
+
 .country-code-select:focus {
-  background: #f3f4f6;
+  background: #e2e8f0;
 }
 
 .phone-number-input {
@@ -55,17 +59,20 @@
   border: none;
   padding: 0 16px;
   font-size: 16px;
+  font-weight: 400;
+  color: #111827;
   outline: none;
   background: white;
-  
-  /* CRÍTICO: Sin positioning que cause superposiciones */
-  position: static;
-  z-index: auto;
-  float: none;
+  transition: background-color 0.2s ease;
 }
 
 .phone-number-input::placeholder {
   color: #9ca3af;
+  font-weight: 400;
+}
+
+.phone-number-input:focus {
+  background: #fafafa;
 }
 
 /* Responsive: En móviles, ajustar selector */
@@ -87,6 +94,7 @@
 /* Estados de error */
 .phone-input-container.error {
   border-color: #ef4444;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1);
 }
 
 .phone-input-container.error:focus-within {
@@ -94,17 +102,40 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-/* Asegurar que los elementos no se superpongan */
+/* Asegurar que los elementos sean interactivos */
 .phone-input-container * {
-  position: static !important;
-  z-index: auto !important;
-  float: none !important;
+  pointer-events: auto;
+  user-select: text;
 }
 
-/* Eliminar cualquier transform que pueda causar problemas */
-.phone-input-container,
-.country-code-select,
+/* Asegurar que el input sea editable */
 .phone-number-input {
-  transform: none !important;
-  transform-origin: initial !important;
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+}
+
+/* Estilos para el texto de ayuda y errores */
+.phone-input-container .text-sm {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.phone-input-container .text-xs {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* Estilos para el div de debug (temporal) */
+.phone-input-container div[style*="background-color: #f0f0f0"] {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #374151 !important;
+  font-family: 'Courier New', monospace;
 } 

@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ProfessionalData, professionalTitles } from '../../types/wizard';
+import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
 
 interface ProfessionalDataStepProps {
   data: ProfessionalData;
@@ -21,8 +22,35 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   errors,
   onFieldChange
 }) => {
+  const { updateWizardData } = useProfessionalProfile();
   const [showOtherUniversity, setShowOtherUniversity] = useState(false);
   const [showOtherSpecialty, setShowOtherSpecialty] = useState(false);
+
+  // Mapear campos del wizard a campos del contexto
+  const handleFieldChangeWithContext = (field: string, value: string) => {
+    // Solo logear cambios importantes, no cada letra
+    if (field === 'professionalTitle' || field === 'specialty' || field === 'licenseNumber') {
+      console.log(`ProfessionalDataStep - Campo cambiado: ${field} = ${value}`);
+    }
+    
+    // Mapear campos del wizard a campos del contexto
+    const fieldMapping: Record<string, keyof ProfessionalProfile> = {
+      professionalTitle: 'professionalTitle',
+      specialty: 'specialty',
+      university: 'university',
+      licenseNumber: 'licenseNumber',
+      workplace: 'workplace',
+      experienceYears: 'experienceYears'
+    };
+
+    const contextField = fieldMapping[field];
+    if (contextField) {
+      updateWizardData(contextField, value);
+    }
+    
+    // También llamar al callback original para mantener compatibilidad
+    onFieldChange(field, value);
+  };
 
   // Universidades predefinidas
   const universities = [
@@ -187,16 +215,16 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   }, [data.university, data.specialty]);
 
   const handleUniversityChange = (value: string) => {
-    onFieldChange('university', value);
+    handleFieldChangeWithContext('university', value);
     if (value !== 'otro') {
-      onFieldChange('universityOther', '');
+      handleFieldChangeWithContext('universityOther', '');
     }
   };
 
   const handleSpecialtyChange = (value: string) => {
-    onFieldChange('specialty', value);
+    handleFieldChangeWithContext('specialty', value);
     if (value !== 'otro') {
-      onFieldChange('specialtyOther', '');
+      handleFieldChangeWithContext('specialtyOther', '');
     }
   };
 
@@ -214,7 +242,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             <select 
               id="professionalTitle"
               value={data.professionalTitle} 
-              onChange={(e) => onFieldChange('professionalTitle', e.target.value)} 
+              onChange={(e) => handleFieldChangeWithContext('professionalTitle', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu título</option>
@@ -270,7 +298,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
                 id="specialtyOther"
                 type="text" 
                 value={data.specialtyOther || ''} 
-                onChange={(e) => onFieldChange('specialtyOther', e.target.value)} 
+                onChange={(e) => handleFieldChangeWithContext('specialtyOther', e.target.value)} 
                 className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
                 placeholder={
                   data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
@@ -315,7 +343,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
               id="licenseNumber"
               type="text" 
               value={data.licenseNumber} 
-              onChange={(e) => onFieldChange('licenseNumber', e.target.value)} 
+              onChange={(e) => handleFieldChangeWithContext('licenseNumber', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.licenseNumber ? 'border-red-300' : 'border-gray-200'}`}
               placeholder="Tu número de licencia"
             />
@@ -334,7 +362,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
                 id="universityOther"
                 type="text" 
                 value={data.universityOther || ''} 
-                onChange={(e) => onFieldChange('universityOther', e.target.value)} 
+                onChange={(e) => handleFieldChangeWithContext('universityOther', e.target.value)} 
                 className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.universityOther ? 'border-red-300' : 'border-gray-200'}`}
                 placeholder="Ej: Universidad de [Ciudad], Instituto [Nombre]..."
               />
@@ -353,7 +381,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
               id="workplace"
               type="text" 
               value={data.workplace} 
-              onChange={(e) => onFieldChange('workplace', e.target.value)} 
+              onChange={(e) => handleFieldChangeWithContext('workplace', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.workplace ? 'border-red-300' : 'border-gray-200'}`}
               placeholder="Ej: Clínica, Hospital, Consulta particular..."
             />
@@ -369,7 +397,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             <select 
               id="experienceYears"
               value={data.experienceYears} 
-              onChange={(e) => onFieldChange('experienceYears', e.target.value)} 
+              onChange={(e) => handleFieldChangeWithContext('experienceYears', e.target.value)} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.experienceYears ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tus años de experiencia</option>

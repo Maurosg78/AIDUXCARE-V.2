@@ -1,0 +1,5 @@
+     250 src/hooks/useAuth.ts
+     106 src/lib/firebase.ts
+       0 src/pages/LoginPage.tsx
+     412 src/pages/WelcomePage.tsx
+       0 src/pages/DebugPage.tsx

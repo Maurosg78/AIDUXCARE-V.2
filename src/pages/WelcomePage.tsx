@@ -11,186 +11,298 @@ import { useNavigate } from 'react-router-dom';
 import { PersonalDataStep } from '../components/wizard/PersonalDataStep';
 import { ProfessionalDataStep } from '../components/wizard/ProfessionalDataStep';
 import { LocationDataStep } from '../components/wizard/LocationDataStep';
-import { WizardData, WizardStep, ValidationResult } from '../types/wizard';
+import { Gender, WizardStep, ValidationResult } from '../types/wizard';
+import { firebaseAuthService } from '../services/firebaseAuthService';
 import { GeolocationData } from '../services/geolocationService';
-import { emailActivationService } from '../services/emailActivationService';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<WizardStep>(WizardStep.PERSONAL_DATA);
+  const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [locationData, setLocationData] = useState<GeolocationData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [detectedLocationData, setDetectedLocationData] = useState<GeolocationData | null>(null);
 
-  // Datos del wizard - Formulario limpio para producción
-  const [wizardData, setWizardData] = useState<WizardData>({
-    personal: {
-      firstName: '',
-      lastName: '',
-      birthDate: '',
-      email: '',
-      phone: '',
-      gender: '',
-      password: '',
-      confirmPassword: ''
-    },
-    professional: {
-      professionalTitle: '',
-      specialty: '',
-      university: '',
-      licenseNumber: '',
-      workplace: '',
-      experienceYears: ''
-    },
-    location: {
-      country: '',
-      province: '',
-      city: '',
-      consentGDPR: false,
-      consentHIPAA: false
+  // Función para manejar ubicación detectada
+  const handleLocationDetected = useCallback((locationData: GeolocationData) => {
+    setDetectedLocationData(locationData);
+    
+    // Mapear país a código correcto
+    const countryMapping: Record<string, string> = {
+      'España': 'es',
+      'Spain': 'es',
+      'México': 'mx',
+      'Mexico': 'mx',
+      'Argentina': 'ar',
+      'Colombia': 'co',
+      'Chile': 'cl',
+      'Perú': 'pe',
+      'Peru': 'pe',
+      'Estados Unidos': 'us',
+      'United States': 'us'
+    };
+    
+    // Mapear provincia a valor del dropdown
+    const provinceMapping: Record<string, string> = {
+      'Comunidad Valenciana': 'valencia',
+      'Valencia': 'valencia',
+      'Madrid': 'madrid',
+      'Barcelona': 'barcelona',
+      'Andalucía': 'andalucia',
+      'Cataluña': 'cataluna',
+      'Galicia': 'galicia',
+      'Castilla y León': 'castilla-leon',
+      'Castilla-La Mancha': 'castilla-mancha',
+      'País Vasco': 'pais-vasco',
+      'Aragón': 'aragon',
+      'Asturias': 'asturias',
+      'Cantabria': 'cantabria',
+      'La Rioja': 'la-rioja',
+      'Navarra': 'navarra',
+      'Extremadura': 'extremadura',
+      'Murcia': 'murcia',
+      'Islas Baleares': 'islas-baleares',
+      'Islas Canarias': 'islas-canarias',
+      'Ceuta': 'ceuta',
+      'Melilla': 'melilla'
+    };
+    
+    const countryCode = countryMapping[locationData.country || ''] || locationData.country || '';
+    const provinceCode = provinceMapping[locationData.region || ''] || locationData.region || '';
+    
+    setWizardData((prev: typeof wizardData) => {
+      const newLocation = {
+        ...prev.location,
+        country: countryCode,
+        province: provinceCode,
+        city: locationData.city || prev.location.city
+      };
+      
+      return {
+        ...prev,
+        location: newLocation
+      };
+    });
+  }, []);
+
+  // Manejador optimizado para cambios de campos
+  const handleFieldChange = useCallback((field: string, value: string | boolean) => {
+    setWizardData((prev: typeof wizardData) => {
+      const newData = {
+        ...prev,
+        personal: {
+          ...prev.personal,
+          [field]: value
+        }
+      };
+      
+      // Guardar en localStorage para persistencia
+      try {
+        localStorage.setItem('aiduxcare-wizard-data', JSON.stringify(newData));
+      } catch (error) {
+        console.error('WelcomePage - Error al guardar en localStorage:', error);
+      }
+      
+      return newData;
+    });
+  }, []); // Sin dependencias para evitar re-creación
+
+  // Datos del wizard como estado - con persistencia local
+  const [wizardData, setWizardData] = useState(() => {
+    // LIMPIAR DATOS DE PRUEBA DEL LOCALSTORAGE POR SEGURIDAD
+    try {
+      localStorage.removeItem('aiduxcare-wizard-data');
+      console.log('WelcomePage - Datos de prueba eliminados del localStorage por seguridad');
+    } catch (error) {
+      console.error('WelcomePage - Error al limpiar localStorage:', error);
     }
+    
+    // Estado inicial por defecto - SIN DATOS SENSIBLES
+    const defaultData = {
+      personal: {
+        firstName: '',
+        secondName: '',
+        lastName: '',
+        secondLastName: '',
+        email: '',
+        phone: '',
+        phoneCountryCode: '+34',
+        birthDate: '',
+        gender: '' as Gender,
+        password: '',
+        confirmPassword: ''
+      },
+      professional: {
+        professionalTitle: '',
+        specialty: '',
+        licenseNumber: '',
+        university: '',
+        experienceYears: '',
+        workplace: ''
+      },
+      location: {
+        country: '',
+        province: '',
+        city: '',
+        consentGDPR: false,
+        consentHIPAA: false
+      }
+    };
+    
+    return defaultData;
   });
 
   // Validación de paso específico
-  const validateStep = useCallback((step: WizardStep): ValidationResult => {
+  const validateStep = useCallback((step: number): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
     switch (step) {
-      case WizardStep.PERSONAL_DATA:
-        // Campos obligatorios del paso personal
+      case 1: // Personal Data
         if (!wizardData.personal.firstName.trim()) errors.firstName = 'Primer nombre requerido';
-        if (!wizardData.personal.lastName.trim()) errors.lastName = 'Primer apellido requerido';
+        if (!wizardData.personal.lastName.trim()) errors.lastName = 'Apellido requerido';
         if (!wizardData.personal.email.trim()) errors.email = 'Email requerido';
-        if (!wizardData.personal.birthDate.trim()) errors.birthDate = 'Fecha de nacimiento requerida';
-        if (!wizardData.personal.phone.trim()) errors.phone = 'Teléfono requerido';
-        if (!wizardData.personal.gender.trim()) errors.gender = 'Género requerido';
-        if (!wizardData.personal.password.trim()) errors.password = 'Contraseña requerida';
-        if (!wizardData.personal.confirmPassword.trim()) errors.confirmPassword = 'Confirmar contraseña requerida';
-        
-        // Validación de contraseñas
-        if (wizardData.personal.password && wizardData.personal.confirmPassword) {
-          if (wizardData.personal.password !== wizardData.personal.confirmPassword) {
-            errors.confirmPassword = 'Las contraseñas no coinciden';
-          }
-          if (wizardData.personal.password.length < 8) {
-            errors.password = 'La contraseña debe tener al menos 8 caracteres';
-          }
-        }
         break;
 
-      case WizardStep.PROFESSIONAL_DATA:
-        // Campos obligatorios del paso profesional
+      case 2: // Professional Data
         if (!wizardData.professional.professionalTitle.trim()) errors.professionalTitle = 'Título profesional requerido';
         if (!wizardData.professional.specialty.trim()) errors.specialty = 'Especialidad requerida';
-        if (!wizardData.professional.university.trim()) errors.university = 'Universidad requerida';
         if (!wizardData.professional.licenseNumber.trim()) errors.licenseNumber = 'Número de licencia requerido';
-        if (!wizardData.professional.experienceYears.trim()) errors.experienceYears = 'Años de experiencia requeridos';
         break;
 
-      case WizardStep.LOCATION_DATA:
-        // Campos obligatorios del paso ubicación
+      case 3: // Location Data
         if (!wizardData.location.country.trim()) errors.country = 'País requerido';
         if (!wizardData.location.province.trim()) errors.province = 'Provincia requerida';
         if (!wizardData.location.city.trim()) errors.city = 'Ciudad requerida';
-        if (!wizardData.location.consentGDPR) errors.consentGDPR = 'Debe aceptar los términos y condiciones';
-        if (!wizardData.location.consentHIPAA) errors.consentHIPAA = 'Debe aceptar la política de privacidad';
         break;
     }
 
     return { isValid: Object.keys(errors).length === 0, errors };
   }, [wizardData]);
 
-  // Navegación entre pasos
-  const nextStep = useCallback(() => {
-    const validation = validateStep(currentStep);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
+  const isStepValid = validateStep(currentStep).isValid;
 
+  const nextStep = useCallback(() => {
     setErrors({});
-    if (currentStep < WizardStep.LOCATION_DATA) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   }, [currentStep, validateStep]);
 
   const prevStep = useCallback(() => {
-    if (currentStep > WizardStep.PERSONAL_DATA) {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   }, [currentStep]);
 
-  // Actualizar datos del wizard
-  const updateWizardData = useCallback((step: WizardStep, field: string, value: string | boolean) => {
-    setWizardData(prev => ({
-      ...prev,
-      [step === WizardStep.PERSONAL_DATA ? 'personal' : 
-       step === WizardStep.PROFESSIONAL_DATA ? 'professional' : 'location']: {
-        ...prev[step === WizardStep.PERSONAL_DATA ? 'personal' : 
-               step === WizardStep.PROFESSIONAL_DATA ? 'professional' : 'location'],
-        [field]: value
-      }
-    }));
-  }, []);
-
-  // Handler para cambios de campo
-  const handleFieldChange = useCallback((field: string, value: string | boolean) => {
-    updateWizardData(currentStep, field, value);
-  }, [currentStep, updateWizardData]);
-
-  // Handler para recibir datos de geolocalización del PersonalDataStep
-  const handleLocationDetected = useCallback((location: GeolocationData) => {
-    setLocationData(location);
-  }, []);
-
-  // Finalizar wizard con registro real
-  const handleSubmit = useCallback(async () => {
-    console.log('Datos del wizard:', wizardData);
-    console.log('Datos de ubicación:', locationData);
-    
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
-      // Registrar profesional en el sistema
-      const registrationData = {
+      console.log('=== INICIO DE REGISTRO ===');
+      
+      // VERIFICACIÓN CRÍTICA: Asegurar que estamos usando UAT
+      if (import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'aiduxcare-mvp-uat') {
+        console.error('❌ ERROR CRÍTICO: No estamos usando UAT!');
+        console.error('Proyecto actual:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
+        setErrors({ general: 'Error de configuración: Debe usar UAT para desarrollo' });
+        return;
+      }
+      
+      console.log('✅ CONFIGURACIÓN CORRECTA: Usando UAT');
+      console.log('Proyecto Firebase:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
+      
+      // Validar que todos los datos estén presentes
+      const allDataPresent = wizardData.personal && wizardData.professional && wizardData.location;
+      console.log('¿Todos los datos están presentes?', allDataPresent);
+      
+      if (!allDataPresent) {
+        console.error('Faltan datos en el wizard');
+        setErrors({ general: 'Por favor completa todos los campos requeridos' });
+        return;
+      }
+
+      // Validar consentimientos legales
+      if (!wizardData.location.consentGDPR || !wizardData.location.consentHIPAA) {
+        console.error('Faltan consentimientos legales');
+        setErrors({ general: 'Debes aceptar todos los consentimientos legales' });
+        return;
+      }
+
+      // Generar contraseña temporal segura
+      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4);
+      
+      console.log('Procediendo directamente con registro en Firebase Auth...');
+      console.log('Registrando usuario en Firebase Auth...');
+      
+      // Registrar usuario en Firebase Auth (Firebase manejará la verificación)
+      const authResult = await firebaseAuthService.register({
         email: wizardData.personal.email,
-        displayName: `${wizardData.personal.firstName} ${wizardData.personal.lastName}`,
+        password: tempPassword
+      });
+
+      if (!authResult.success) {
+        console.error('Error en registro de Firebase:', authResult.message);
+        
+        // Mensajes de error más específicos
+        let errorMessage = authResult.message;
+        if (authResult.message.includes('email-already-in-use')) {
+          errorMessage = 'Este email ya está registrado. Por favor, intenta iniciar sesión o usa un email diferente.';
+        } else if (authResult.message.includes('weak-password')) {
+          errorMessage = 'La contraseña es demasiado débil. Usa al menos 6 caracteres.';
+        } else if (authResult.message.includes('invalid-email')) {
+          errorMessage = 'El formato del email no es válido.';
+        }
+        
+        setErrors({ general: errorMessage });
+        return;
+      }
+
+      console.log('Usuario registrado exitosamente en Firebase Auth');
+
+      // Crear objeto de registro profesional
+      const professionalData = {
+        fullName: `${wizardData.personal.firstName} ${wizardData.personal.lastName}`,
+        email: wizardData.personal.email,
+        phone: wizardData.personal.phone,
         professionalTitle: wizardData.professional.professionalTitle,
         specialty: wizardData.professional.specialty,
-        country: wizardData.location.country,
-        city: wizardData.location.city,
-        province: wizardData.location.province,
-        phone: wizardData.personal.phone,
         licenseNumber: wizardData.professional.licenseNumber,
-        registrationDate: new Date()
+        university: wizardData.professional.university,
+        experienceYears: wizardData.professional.experienceYears,
+        workplace: wizardData.professional.workplace,
+        country: wizardData.location.country,
+        province: wizardData.location.province,
+        city: wizardData.location.city,
+        consentGranted: true
       };
 
-      const result = await emailActivationService.registerProfessional(registrationData);
-      
-      if (result.success) {
-        // Mostrar modal de éxito con información de activación
-        setShowSuccessModal(true);
-        setRegistrationResult(result);
-      } else {
-        // Mostrar error
-        alert(`Error en el registro: ${result.message}`);
-      }
+      console.log('=== DATOS FINALES PARA REGISTRO ===');
+      console.log('Datos profesionales completos:', professionalData);
+      console.log('Nombre completo:', professionalData.fullName);
+      console.log('Email para registro:', professionalData.email);
+      console.log('Especialidad:', professionalData.specialty);
+      console.log('Ubicación:', `${professionalData.city}, ${professionalData.province}, ${professionalData.country}`);
+
+      // Navegar a página de éxito de registro
+      console.log('Registro exitoso - Redirigiendo a página de éxito');
+      navigate('/registration-success', { 
+        state: { 
+          email: wizardData.personal.email,
+          fullName: professionalData.fullName,
+          specialty: professionalData.specialty,
+          location: `${professionalData.city}, ${professionalData.province}, ${professionalData.country}`
+        } 
+      });
+
     } catch (error) {
-      console.error('Error en registro:', error);
-      alert('Error interno del sistema. Inténtalo de nuevo.');
+      console.error('Error al registrar usuario:', error);
+      setErrors({ general: 'Error al registrar usuario. Por favor intenta nuevamente.' });
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [wizardData, locationData]);
-
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [registrationResult, setRegistrationResult] = useState<{ success: boolean; message: string; professionalId?: string; activationToken?: string } | null>(null);
-
-  const handleCompleteRegistration = () => {
-    setShowSuccessModal(false);
-    // NO navegar al dashboard - el usuario debe activar su cuenta primero
-    navigate('/login');
   };
 
-  // Renderizar paso actual
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case WizardStep.PERSONAL_DATA:
+      case 1:
         return (
           <PersonalDataStep
             data={wizardData.personal}
@@ -200,23 +312,42 @@ export const WelcomePage: React.FC = () => {
           />
         );
 
-      case WizardStep.PROFESSIONAL_DATA:
+      case 2:
         return (
           <ProfessionalDataStep
             data={wizardData.professional}
             errors={errors}
-            onFieldChange={handleFieldChange}
+            onFieldChange={(field: string, value: string | boolean) => {
+              setWizardData((prev: typeof wizardData) => ({
+                ...prev,
+                professional: {
+                  ...prev.professional,
+                  [field]: value
+                }
+              }));
+            }}
           />
         );
 
-      case WizardStep.LOCATION_DATA:
+      case 3:
         return (
           <LocationDataStep
             data={wizardData.location}
             errors={errors}
-            onFieldChange={handleFieldChange}
-            onValidation={validateStep}
-            locationData={locationData}
+            onFieldChange={(field: string, value: string | boolean) => {
+              setWizardData((prev: typeof wizardData) => ({
+                ...prev,
+                location: {
+                  ...prev.location,
+                  [field]: value
+                }
+              }));
+            }}
+            onValidation={(step: WizardStep): ValidationResult => {
+              const validation = validateStep(step);
+              return validation;
+            }}
+            locationData={detectedLocationData}
           />
         );
 
@@ -225,111 +356,78 @@ export const WelcomePage: React.FC = () => {
     }
   };
 
-  const isStepValid = validateStep(currentStep).isValid;
-
   return (
-    <div className="bg-white flex items-center justify-center py-2 px-4 h-screen overflow-hidden">
-      <div className="w-full max-w-lg max-h-full overflow-y-auto">
-        {/* Header Apple-style */}
-        <div className="text-center space-y-3 mb-6">
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight">
-            Bienvenido a{' '}
-            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-              AiDuxCare
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Bienvenido a AiDuxCare
           </h1>
-          <p className="text-gray-500 text-sm leading-relaxed font-light">
-            Ficha médica electrónica asistida por AI.<br/>
-            Menos papeleo, más seguridad, más tiempo.
+          <p className="text-xl text-gray-600">
+            Complete su perfil profesional para comenzar
           </p>
         </div>
 
-        {/* Contenido del paso Apple-style */}
-        <div className="space-y-3">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Paso {currentStep} de 3</span>
+            <span className="text-sm text-gray-500">{Math.round((currentStep / 3) * 100)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / 3) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+          {/* Mostrar errores generales */}
+          {errors.general && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Error en el registro
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>{errors.general}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {renderCurrentStep()}
         </div>
 
-        {/* Navegación Apple-style */}
-        <div className="flex space-x-4 pt-4">
-          {currentStep !== WizardStep.PERSONAL_DATA && (
+        {/* Navigation */}
+        <div className="flex space-x-4">
+          {currentStep !== 1 && (
             <button
               onClick={prevStep}
-              className="flex-1 py-3 px-6 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-base font-medium"
+              className="flex-1 py-3 px-6 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-base font-medium"
             >
               Anterior
             </button>
           )}
           <button
-            onClick={currentStep === WizardStep.LOCATION_DATA ? handleSubmit : nextStep}
+            onClick={currentStep === 3 ? handleSubmit : nextStep}
             className="flex-1 py-3 px-6 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-base font-medium"
-            disabled={!isStepValid}
+            disabled={!isStepValid || isSubmitting}
           >
-            {currentStep === WizardStep.LOCATION_DATA ? 'Completar Registro' : 'Siguiente'}
+            {currentStep === 3 ? (isSubmitting ? 'Enviando...' : 'Completar') : 'Siguiente'}
           </button>
         </div>
       </div>
-
-      {/* Modal de Éxito Apple-style */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
-            <div className="text-center space-y-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-50">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-xl font-medium text-gray-900 mb-2">
-                  Registro Completado
-                </h2>
-                <p className="text-gray-500 text-sm">
-                  Tu cuenta ha sido creada y está pendiente de activación.
-                </p>
-              </div>
-            </div>
-
-            {/* Instrucciones de Verificación Apple-style */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 my-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">
-                Verificación de Email Requerida
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Para completar tu registro y activar tu cuenta:
-              </p>
-              <ul className="text-gray-500 text-sm space-y-1">
-                <li>• Revisar tu bandeja de entrada (y carpeta de spam)</li>
-                <li>• Hacer clic en el enlace de verificación enviado a tu email</li>
-                <li>• Confirmar tu dirección de email</li>
-                <li>• Iniciar sesión con tus credenciales</li>
-              </ul>
-              
-              {registrationResult && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-700 text-xs">
-                    <span className="font-medium">Email enviado a:</span> {wizardData.personal.email}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="flex-1 py-2 px-4 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-sm font-medium"
-              >
-                Cerrar
-              </button>
-              <button
-                onClick={handleCompleteRegistration}
-                className="flex-1 py-2 px-4 border border-transparent text-white rounded-lg bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 text-sm font-medium"
-              >
-                Ir al Login
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }; 

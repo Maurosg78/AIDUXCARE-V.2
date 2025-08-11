@@ -1,0 +1,2 @@
+src/hooks/useAuth.ts(89,61): error TS1005: ')' expected.
+src/lib/firebase.ts(65,29): error TS1002: Unterminated string literal.

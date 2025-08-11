@@ -1,112 +1,206 @@
-/**
- * GeolocationPermission - Componente de solicitud de geolocalización
- * Solicita permisos y ofrece fallback manual para compliance legal
- * 
- * @version 1.0.0
- * @author AiDuxCare Development Team
- */
-
-import React, { useState } from 'react';
-import { geolocationService, GeolocationData } from '../../services/geolocationService';
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from 'react';
+import { GeolocationData } from '../../services/geolocationService';
 
 interface GeolocationPermissionProps {
+  isOpen: boolean;
+  onClose: () => void;
   onLocationDetected: (location: GeolocationData) => void;
   onManualSelection: () => void;
 }
 
 export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
+  isOpen,
+  onClose,
   onLocationDetected,
   onManualSelection
 }) => {
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPermissionModal, setShowPermissionModal] = useState(true);
+  const [permissionStatus, setPermissionStatus] = useState<'requesting' | 'granted' | 'denied' | 'error'>('requesting');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleGeolocationConsent = async () => {
-    setIsDetecting(true);
-    setError(null);
-    
+  // Debug: Log cuando cambie isOpen
+  useEffect(() => {
+    console.log('GeolocationPermission - isOpen cambió a:', isOpen);
+    if (isOpen) {
+      console.log('GeolocationPermission - Activando geolocalización automáticamente');
+      requestGeolocationPermission();
+    }
+  }, [isOpen]);
+
+  const requestGeolocationPermission = async () => {
     try {
-      const location = await geolocationService.detectLocation();
-      if (location) {
-        onLocationDetected(location);
-        setShowPermissionModal(false);
+      setPermissionStatus('requesting');
+      setErrorMessage('');
+
+      // Verificar si el navegador soporta geolocalización
+      if (!navigator.geolocation) {
+        setPermissionStatus('error');
+        setErrorMessage('Tu navegador no soporta geolocalización');
+        return;
       }
-    } catch (err) {
-      setError('No se pudo detectar tu ubicación. Puedes seleccionarla manualmente.');
-    } finally {
-      setIsDetecting(false);
+
+      // Verificar permisos usando la API de Permisos si está disponible
+      if ('permissions' in navigator) {
+        try {
+          const permission = await (navigator as Navigator & { permissions?: Permissions }).permissions?.query({ 
+            name: 'geolocation' as PermissionName 
+          });
+          
+          if (permission?.state === 'denied') {
+            setPermissionStatus('denied');
+            setErrorMessage('Permiso de geolocalización denegado. Por favor, habilítalo en la configuración de tu navegador.');
+            return;
+          }
+        } catch (error) {
+          console.log('No se pudo verificar el estado de permisos:', error);
+        }
+      }
+
+      // Solicitar ubicación
+      navigator.geolocation.getCurrentPosition(
+        async () => {
+          try {
+            // Usar el servicio de geolocalización para obtener datos completos
+            const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+            const locationData = await geolocationService.detectLocation();
+            
+            if (locationData) {
+              setPermissionStatus('granted');
+              onLocationDetected(locationData);
+              onClose();
+            } else {
+              setPermissionStatus('error');
+              setErrorMessage('No se pudo obtener la información de ubicación completa');
+            }
+          } catch (error) {
+            console.error('Error al obtener datos de ubicación:', error);
+            setPermissionStatus('error');
+            setErrorMessage('Error al procesar la información de ubicación');
+          }
+        },
+        (error) => {
+          console.error('Error de geolocalización:', error);
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setPermissionStatus('denied');
+              setErrorMessage('Permiso de geolocalización denegado. Por favor, habilítalo en la configuración de tu navegador.');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setPermissionStatus('error');
+              setErrorMessage('La información de ubicación no está disponible en este momento.');
+              break;
+            case error.TIMEOUT:
+              setPermissionStatus('error');
+              setErrorMessage('Se agotó el tiempo de espera para obtener la ubicación.');
+              break;
+            default:
+              setPermissionStatus('error');
+              setErrorMessage('Error desconocido al obtener la ubicación.');
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } catch (error) {
+      console.error('Error al solicitar permisos:', error);
+      setPermissionStatus('error');
+      setErrorMessage('Error al solicitar permisos de geolocalización');
     }
   };
 
   const handleManualSelection = () => {
-    setShowPermissionModal(false);
     onManualSelection();
+    onClose();
   };
 
-  if (!showPermissionModal) {
-    return null;
-  }
+  const handleRetry = () => {
+    requestGeolocationPermission();
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-        <div className="text-center mb-6">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-            <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Ubicación para Compliance Legal
-          </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Necesitamos conocer tu ubicación para aplicar las leyes de protección de datos correspondientes.
-          </p>
-        </div>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-medium text-gray-900">¿Por qué necesitamos tu ubicación?</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Aplicar leyes de protección de datos específicas de tu país</li>
-            <li>• Mostrar advertencias legales relevantes</li>
-            <li>• Cumplir con requisitos de compliance médico</li>
-          </ul>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-            <p className="text-sm text-red-800">{error}</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4">Permiso de Ubicación</h2>
+        
+        {permissionStatus === 'requesting' && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Solicitando permiso de ubicación...</p>
           </div>
         )}
 
-        <div className="flex space-x-3">
+        {permissionStatus === 'granted' && (
+          <div className="text-center py-8">
+            <div className="text-green-600 text-6xl mb-4">✓</div>
+            <p className="text-gray-600">¡Ubicación detectada exitosamente!</p>
+          </div>
+        )}
+
+        {permissionStatus === 'denied' && (
+          <div className="py-4">
+            <div className="text-red-600 text-6xl mb-4 text-center">⚠</div>
+            <p className="text-gray-700 mb-4">{errorMessage}</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Para habilitar la geolocalización:</strong>
+                <br />1. Haz clic en el candado 🔒 en la barra de direcciones
+                <br />2. Cambia &quot;Ubicación&quot; a &quot;Permitir&quot;
+                <br />3. Recarga la página
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleRetry}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Reintentar
+              </button>
+              <button
+                onClick={handleManualSelection}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Selección Manual
+              </button>
+            </div>
+          </div>
+        )}
+
+        {permissionStatus === 'error' && (
+          <div className="py-4">
+            <div className="text-red-600 text-6xl mb-4 text-center">❌</div>
+            <p className="text-gray-700 mb-4">{errorMessage}</p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleRetry}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Reintentar
+              </button>
+              <button
+                onClick={handleManualSelection}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Selección Manual
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 text-center">
           <button
-            onClick={handleGeolocationConsent}
-            disabled={isDetecting}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 underline"
           >
-            {isDetecting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Detectando...
-              </>
-            ) : (
-              'Permitir Acceso a Ubicación'
-            )}
-          </button>
-          <button
-            onClick={handleManualSelection}
-            className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
-          >
-            Seleccionar Manualmente
+            Cerrar
           </button>
         </div>
       </div>
     </div>
   );
-}; 
+};

@@ -9,7 +9,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { emailActivationService, type ActivationResult, type ProfessionalRegistration } from '../services/emailActivationService';
-import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 
 export const AccountActivationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -175,27 +174,34 @@ export const AccountActivationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 px-4 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-blue-50/60 to-indigo-100/40"></div>
-      
-      <div className="relative w-full max-w-md space-y-8 z-10">
-        {/* Logo y branding */}
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <AiDuxCareLogo size="lg" variant="full" className="transform hover:scale-105 transition-transform duration-300" />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-light text-gray-900 tracking-tight">
+            Activación de{' '}
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+              Cuenta
+            </span>
+          </h1>
+          <p className="text-gray-500 text-base leading-relaxed font-light">
+            Procesando tu solicitud de activación
+          </p>
         </div>
+      </div>
 
-        {/* Contenido principal */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl border border-gray-100">
           {renderContent()}
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="text-center text-sm text-gray-500">
-          <p>© 2025 AiDuxCare. Todos los derechos reservados.</p>
-          <p className="mt-1">Sistema de activación seguro</p>
-        </div>
+      <div className="text-center space-y-4 mt-6">
+        <p className="text-sm text-gray-500">
+          © 2025 AiDuxCare. Todos los derechos reservados.
+        </p>
+        <p className="text-xs text-gray-400">
+          Sistema de activación seguro
+        </p>
       </div>
     </div>
   );

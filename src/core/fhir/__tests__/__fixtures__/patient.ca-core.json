@@ -1,0 +1,21 @@
+{
+  "id": "patient-ca-123",
+  "firstName": "Marie",
+  "lastName": "Dubois",
+  "dateOfBirth": "1985-03-15",
+  "gender": "female",
+  "email": "marie.dubois@email.com",
+  "phone": "+1 514 600 1234",
+  "address": {
+    "street": "123 Main Street",
+    "city": "Montreal",
+    "state": "Quebec",
+    "zipCode": "H2X 1Y7",
+    "country": "CA"
+  },
+  "medicalRecordNumber": "MRN-CA-001",
+  "insuranceNumber": "INS-CA-001",
+  "ssn": "123456789",
+  "isActive": true
+}
+

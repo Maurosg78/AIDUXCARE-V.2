@@ -8,9 +8,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { LocationData, WizardStep, ValidationResult } from '../../types/wizard';
-import { GeolocationData } from '../../services/geolocationService';
+import { GeolocationData, GeolocationService } from '../../services/geolocationService';
 import { SPANISH_CITIES, getCitiesByProvince } from '../../data/spanishCities';
 import { LegalChecklist, type LegalChecklistItem } from '../LegalChecklist';
+import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+import { LocationAwarenessModal } from './LocationAwarenessModal';
 
 interface LocationDataStepProps {
   data: LocationData;
@@ -26,9 +28,97 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   onFieldChange,
   locationData
 }) => {
+  const { updateWizardData } = useProfessionalProfile();
   // const [legalCompliance, setLegalCompliance] = useState<LegalCompliance | null>(null);
-  const [detectedLocation] = useState<GeolocationData | null>(locationData || null);
+  const [detectedLocation, setDetectedLocation] = useState<GeolocationData | null>(locationData || null);
   const [availableCities, setAvailableCities] = useState<typeof SPANISH_CITIES>([]);
+  const [showLocationAwareness, setShowLocationAwareness] = useState(false);
+  
+  // Ejecutar geolocalización automáticamente al montarse el componente
+  useEffect(() => {
+    console.log('LocationDataStep - Componente montado, verificando geolocalización...');
+    
+    // Si ya tenemos datos de ubicación detectados, usarlos
+    if (locationData) {
+      console.log('LocationDataStep - Usando datos de ubicación ya detectados:', locationData);
+      setDetectedLocation(locationData);
+      return;
+    }
+    
+    // Si no tenemos datos, ejecutar geolocalización automáticamente
+    console.log('LocationDataStep - No hay datos de ubicación, ejecutando geolocalización automática...');
+    detectLocationAutomatically();
+  }, [locationData]);
+  
+  // Función para manejar selección manual de país
+  const handleManualCountrySelection = (countryCode: string) => {
+    const geolocationService = GeolocationService.getInstance();
+    const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
+    
+    if (fiduciaryData) {
+      // Llenar campos con datos fiduciarios
+      if (fiduciaryData.location.city) {
+        handleFieldChangeWithContext('city', fiduciaryData.location.city);
+      }
+      if (fiduciaryData.location.region) {
+        handleFieldChangeWithContext('province', fiduciaryData.location.region);
+      }
+      if (fiduciaryData.location.country) {
+        handleFieldChangeWithContext('country', fiduciaryData.location.country);
+      }
+      
+      console.log('LocationDataStep - Datos fiduciarios aplicados para:', countryCode);
+    }
+  };
+
+  // Función para usar ubicación actual
+  const handleUseCurrentLocation = () => {
+    detectLocationAutomatically();
+  };
+
+  // Función para detectar ubicación automáticamente
+  const detectLocationAutomatically = async () => {
+    try {
+      console.log('LocationDataStep - Iniciando detección automática de ubicación...');
+      
+      // Usar el servicio de geolocalización que maneja fallbacks automáticamente
+      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+      const newLocationData = await geolocationService.detectLocation();
+      
+      if (newLocationData) {
+        console.log('LocationDataStep - Datos de ubicación obtenidos:', newLocationData);
+        setDetectedLocation(newLocationData);
+        
+        // Llenar automáticamente los campos de ubicación si están disponibles
+        if (newLocationData.country) {
+          handleFieldChangeWithContext('country', newLocationData.country);
+        }
+        if (newLocationData.region) {
+          handleFieldChangeWithContext('province', newLocationData.region);
+        }
+        if (newLocationData.city) {
+          handleFieldChangeWithContext('city', newLocationData.city);
+        }
+      } else {
+        console.log('LocationDataStep - No se pudo obtener ubicación automáticamente');
+      }
+    } catch (error) {
+      console.error('LocationDataStep - Error en geolocalización automática:', error);
+    }
+  };
+  
+  // Usar datos de ubicación detectados si están disponibles
+  const currentData = {
+    ...data,
+    // Usar los datos del wizard que ya están mapeados correctamente
+    country: data.country,
+    province: data.province,
+    city: data.city
+  };
+  
+  console.log('LocationDataStep - Datos actuales:', currentData);
+  console.log('LocationDataStep - Datos detectados:', detectedLocation);
+  console.log('LocationDataStep - Datos del wizard:', data);
   const [legalChecklistItems, setLegalChecklistItems] = useState<LegalChecklistItem[]>([
     {
       id: 'terms-accepted',
@@ -36,7 +126,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       description: 'He leído y comprendo las condiciones de uso de AiDuxCare',
       required: true,
       category: 'terms',
-      checked: data.consentGDPR || false
+      checked: false // NO pre-cargar consentimientos
     },
     {
       id: 'privacy-accepted',
@@ -44,7 +134,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       description: 'Autorizo el procesamiento de datos según la política de privacidad',
       required: true,
       category: 'privacy',
-      checked: data.consentHIPAA || false
+      checked: false // NO pre-cargar consentimientos
     },
     {
       id: 'medical-disclaimer',
@@ -52,9 +142,34 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       description: 'Entiendo que AiDuxCare es un asistente y no reemplaza mi juicio clínico',
       required: true,
       category: 'medical',
-      checked: data.consentGDPR || false
+      checked: false // NO pre-cargar consentimientos
     }
   ]);
+
+  // Mapear campos del wizard a campos del contexto
+  const handleFieldChangeWithContext = (field: string, value: string | boolean) => {
+    // Solo logear cambios importantes, no cada letra
+    if (field === 'country' || field === 'province' || field === 'city') {
+      console.log(`LocationDataStep - Campo cambiado: ${field} = ${value}`);
+    }
+    
+    // Mapear campos del wizard a campos del contexto
+    const fieldMapping: Record<string, keyof ProfessionalProfile> = {
+      country: 'country',
+      province: 'province',
+      city: 'city',
+      consentGDPR: 'consentGranted',
+      consentHIPAA: 'consentGranted'
+    };
+
+    const contextField = fieldMapping[field];
+    if (contextField) {
+      updateWizardData(contextField, value);
+    }
+    
+    // También llamar al callback original para mantener compatibilidad
+    onFieldChange(field, value);
+  };
 
   // Provincias españolas ordenadas alfabéticamente
   const spanishProvinces = [
@@ -162,27 +277,27 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
     if (detectedLocation) {
       // Auto-completar país si se detectó ubicación
       if (!data.country && detectedLocation.countryCode) {
-        onFieldChange('country', detectedLocation.countryCode.toLowerCase());
+        handleFieldChangeWithContext('country', detectedLocation.countryCode.toLowerCase());
       }
       // Auto-completar provincia/región si está disponible
       if (!data.province && detectedLocation.region) {
-        onFieldChange('province', detectedLocation.region.toLowerCase().replace(/\s+/g, '-'));
+        handleFieldChangeWithContext('province', detectedLocation.region.toLowerCase().replace(/\s+/g, '-'));
       }
       // Auto-completar ciudad si está disponible
       if (!data.city && detectedLocation.city) {
-        onFieldChange('city', detectedLocation.city);
+        handleFieldChangeWithContext('city', detectedLocation.city);
       }
       // Obtener compliance legal para mostrar los checkboxes correctos
-      if (detectedLocation.countryCode) {
-        // const compliance = geolocationService.getLegalCompliance(detectedLocation.countryCode);
-        // setLegalCompliance(compliance);
-      }
+      // if (detectedLocation.countryCode) {
+      //   // const compliance = geolocationService.getLegalCompliance(detectedLocation.countryCode);
+      //   // setLegalCompliance(compliance);
+      // }
     } else if (data.country) {
       // Si se seleccionó país manualmente, obtener compliance
       // const compliance = geolocationService.getLegalCompliance(data.country.toUpperCase());
       // setLegalCompliance(compliance);
     }
-  }, [detectedLocation, data.country, onFieldChange]);
+  }, [detectedLocation, data.country, handleFieldChangeWithContext]);
 
   useEffect(() => {
     // Actualizar ciudades disponibles cuando cambie la provincia
@@ -195,7 +310,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   }, [data.province, data.country]);
 
   const handleCountryChange = (countryCode: string) => {
-    onFieldChange('country', countryCode);
+    handleFieldChangeWithContext('country', countryCode);
     
     // Obtener compliance legal para el país seleccionado
     // const compliance = geolocationService.getLegalCompliance(countryCode.toUpperCase());
@@ -211,12 +326,12 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
 
     // Actualizar el estado del formulario según el tipo de consentimiento
     if (itemId === 'terms-accepted') {
-      onFieldChange('consentGDPR', checked);
+      handleFieldChangeWithContext('consentGDPR', checked);
     } else if (itemId === 'privacy-accepted') {
-      onFieldChange('consentHIPAA', checked);
+      handleFieldChangeWithContext('consentHIPAA', checked);
     } else if (itemId === 'medical-disclaimer') {
       // Para el disclaimer médico, también actualizar consentGDPR como fallback
-      onFieldChange('consentGDPR', checked);
+      handleFieldChangeWithContext('consentGDPR', checked);
     }
   };
 
@@ -254,12 +369,25 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
           
           {/* Fila 1: País y Provincia */}
           <div className="form-group">
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-0.5">
-              País *
-            </label>
+            <div className="flex items-center justify-between mb-0.5">
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                País *
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowLocationAwareness(true)}
+                className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"
+                title="Información sobre ubicación y compliance legal"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ¿Por qué es importante?
+              </button>
+            </div>
             <select
               id="country"
-              value={data.country}
+              value={currentData.country}
               onChange={(e) => handleCountryChange(e.target.value)}
               className={`block w-full h-8 px-2 py-1 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-xs ${errors.country ? 'border-red-300' : 'border-gray-200'}`}
             >
@@ -281,12 +409,12 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
             </label>
             <select
               id="province"
-              value={data.province}
-              onChange={(e) => onFieldChange('province', e.target.value)}
+              value={currentData.province}
+              onChange={(e) => handleFieldChangeWithContext('province', e.target.value)}
               className={`block w-full h-8 px-2 py-1 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-xs ${errors.province ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu provincia</option>
-              {data.country === 'es' ? (
+              {currentData.country === 'es' ? (
                 spanishProvinces.map((province) => (
                   <option key={province.value} value={province.value}>
                     {province.label}
@@ -306,11 +434,11 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
             <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-0.5">
               Ciudad *
             </label>
-            {data.country === 'es' && data.province && availableCities.length > 0 ? (
+            {currentData.country === 'es' && currentData.province && availableCities.length > 0 ? (
               <select
                 id="city"
-                value={data.city}
-                onChange={(e) => onFieldChange('city', e.target.value)}
+                value={currentData.city}
+                onChange={(e) => handleFieldChangeWithContext('city', e.target.value)}
                 className={`block w-full h-8 px-2 py-1 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-xs ${errors.city ? 'border-red-300' : 'border-gray-200'}`}
               >
                 <option value="">Selecciona tu ciudad</option>
@@ -324,8 +452,8 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
               <input
                 id="city"
                 type="text"
-                value={data.city}
-                onChange={(e) => onFieldChange('city', e.target.value)}
+                value={currentData.city}
+                onChange={(e) => handleFieldChangeWithContext('city', e.target.value)}
                 className={`block w-full h-8 px-2 py-1 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-xs ${errors.city ? 'border-red-300' : 'border-gray-200'}`}
                 placeholder="Ingresa tu ciudad"
               />
@@ -350,6 +478,14 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal de concienciación de ubicación */}
+      <LocationAwarenessModal
+        isOpen={showLocationAwareness}
+        onClose={() => setShowLocationAwareness(false)}
+        onLocationSelected={handleManualCountrySelection}
+        onUseCurrentLocation={handleUseCurrentLocation}
+      />
     </>
   );
 }; 

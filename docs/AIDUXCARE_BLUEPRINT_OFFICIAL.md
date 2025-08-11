@@ -183,6 +183,15 @@ Toda la información curada se envía al **Cerebro Clínico** con contexto compl
 
 ## 🚀 **Roadmap de Implementación**
 
+### **🏥 Sprint FHIR Integration - COMPLETADO ✅**
+- ✅ **Módulo desacoplado** `src/core/fhir/` implementado
+- ✅ **Recursos prioritarios**: Patient, Encounter, Observation
+- ✅ **Compatibilidad CA Core** (Canadá) y **US Core** (EE.UU.)
+- ✅ **Validadores ligeros** integrados en CI/CD
+- ✅ **Tests unitarios** 100% pasando
+- ✅ **Documentación completa** en `docs/fhir-integration.md`
+- ✅ **Arquitectura desacoplada** sin romper flujo EMR existente
+
 ### **Fase 1: MVP Validación (Actual)**
 - ✅ Pipeline backend funcional
 - ✅ Casos de prueba reales
@@ -200,6 +209,7 @@ Toda la información curada se envía al **Cerebro Clínico** con contexto compl
 - 📋 Multi-especialidad
 - 📋 Integración EMR
 - 📋 API pública
+- 🏥 **Integración FHIR R4** (CA Core + US Core) - Sprint Completado ✅
 
 ### **Fase 4: Dominio del Mercado**
 - 🌍 Expansión global

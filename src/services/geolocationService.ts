@@ -14,8 +14,10 @@ export interface GeolocationData {
   city?: string;
   timezone?: string;
   ipAddress?: string;
-  source: 'geolocation' | 'ip' | 'manual';
+  source: 'geolocation' | 'ip' | 'manual' | 'fiduciary';
   timestamp: Date;
+  needsPermissionReset?: boolean;
+  permissionStatus?: 'granted' | 'denied' | 'prompt';
 }
 
 export interface LegalCompliance {
@@ -111,40 +113,128 @@ export class GeolocationService {
 
   /**
    * Detecta ubicación automáticamente usando geolocalización del navegador
+   * Garantiza que siempre se capture provincia o solicita manualmente
    */
   public async detectLocation(): Promise<GeolocationData | null> {
     if (!navigator.geolocation) {
       console.log('Geolocalización no soportada por el navegador');
-      return null;
+      return await this.detectLocationByIP();
     }
 
     try {
-      const position = await this.getCurrentPosition();
-      const { latitude, longitude } = position.coords;
+      console.log('Iniciando detección de ubicación...');
       
-      // Usar servicio de reverse geocoding
-      const locationData = await this.reverseGeocode(latitude, longitude);
+      // Verificar estado actual de permisos ANTES de intentar geolocalización
+      const permissionStatus = await this.checkGeolocationPermission();
+      console.log('Estado de permisos de geolocalización:', permissionStatus);
       
-      this.cachedData = {
-        ...locationData,
-        source: 'geolocation',
-        timestamp: new Date()
-      };
+      if (permissionStatus === 'denied') {
+        console.log('🚫 PERMISOS DENEGADOS - El navegador no mostrará el prompt');
+        console.log('💡 SOLUCIÓN: El usuario debe resetear permisos manualmente');
+        
+        // Retornar datos especiales para indicar que se necesitan permisos
+        return {
+          country: undefined,
+          countryCode: undefined,
+          region: undefined,
+          regionCode: undefined,
+          city: undefined,
+          timezone: undefined,
+          ipAddress: undefined,
+          source: 'manual',
+          timestamp: new Date(),
+          needsPermissionReset: true,
+          permissionStatus: 'denied'
+        };
+      }
+      
+      // Solo intentar geolocalización si los permisos no están denegados
+      if (permissionStatus === 'granted' || permissionStatus === 'prompt') {
+        console.log('✅ Permisos disponibles, intentando geolocalización...');
+        
+        try {
+          const position = await this.getCurrentPosition();
+          const { latitude, longitude } = position.coords;
+          
+          console.log('Coordenadas obtenidas:', { latitude, longitude });
+          
+          // Usar servicio de reverse geocoding
+          const locationData = await this.reverseGeocode(latitude, longitude);
+          
+          console.log('Datos de ubicación obtenidos:', locationData);
+          
+          // Verificar que se obtuvo provincia
+          if (!locationData.region && locationData.country) {
+            console.log('Provincia no detectada automáticamente, solicitando manualmente');
+            this.cachedData = {
+              ...locationData,
+              source: 'geolocation',
+              timestamp: new Date()
+            };
+            return this.cachedData;
+          }
+          
+          this.cachedData = {
+            ...locationData,
+            source: 'geolocation',
+            timestamp: new Date()
+          };
 
-      return this.cachedData;
+          console.log('Ubicación detectada exitosamente:', this.cachedData);
+          return this.cachedData;
+        } catch (geoError) {
+          const geolocationError = geoError as GeolocationPositionError;
+          console.log('Error en geolocalización:', {
+            code: geolocationError.code,
+            message: geolocationError.message
+          });
+          
+          // Si el usuario denegó permisos, usar IP
+          if (geolocationError.code === 1) {
+            console.log('Usuario denegó permisos de geolocalización, usando IP...');
+            return await this.detectLocationByIP();
+          }
+          
+          // Para otros errores (timeout, no disponible), también usar IP
+          console.log('Error en geolocalización, usando IP como fallback...');
+          return await this.detectLocationByIP();
+        }
+      } else {
+        console.log('⚠️ Estado de permisos inesperado:', permissionStatus);
+        return await this.detectLocationByIP();
+      }
     } catch (error) {
-      console.log('Error en geolocalización:', error);
-      return null;
+      console.log('Error general en geolocalización:', error);
+      return await this.detectLocationByIP();
     }
   }
 
   /**
    * Detecta ubicación por IP como fallback
+   * Garantiza que siempre se capture provincia o solicita manualmente
    */
   public async detectLocationByIP(): Promise<GeolocationData | null> {
     try {
       const response = await fetch('https://ipapi.co/json/');
       const data = await response.json();
+      
+      // Verificar que se obtuvo provincia
+      if (!data.region && data.country_name) {
+        console.log('Provincia no detectada por IP, solicitando manualmente');
+        // Retornar datos incompletos para que se solicite manualmente
+        this.cachedData = {
+          country: data.country_name,
+          countryCode: data.country_code,
+          region: undefined, // Provincia no detectada
+          regionCode: data.region_code,
+          city: data.city,
+          timezone: data.timezone,
+          ipAddress: data.ip,
+          source: 'ip',
+          timestamp: new Date()
+        };
+        return this.cachedData;
+      }
       
       this.cachedData = {
         country: data.country_name,
@@ -212,6 +302,99 @@ export class GeolocationService {
   }
 
   /**
+   * Obtiene explicación de por qué es importante la ubicación real
+   */
+  public getLocationImportanceExplanation(): string {
+    return `La ubicación es fundamental para:
+• Cumplir con las leyes de privacidad de tu país
+• Configurar correctamente el compliance legal (GDPR, HIPAA, etc.)
+• Establecer retención de datos médicos apropiada
+• Aplicar las regulaciones locales específicas
+• Garantizar que tu información esté protegida según tu jurisdicción`;
+  }
+
+  /**
+   * Obtiene países disponibles para selección manual con sus características
+   */
+  public getAvailableCountriesForManualSelection(): Array<{
+    code: string;
+    name: string;
+    gdpr: boolean;
+    hipaa: boolean;
+    dataRetention: number;
+    specialFeatures: string[];
+  }> {
+    return Object.entries(this.legalComplianceMap).map(([code, compliance]) => ({
+      code,
+      name: compliance.country,
+      gdpr: compliance.gdpr,
+      hipaa: compliance.hipaa,
+      dataRetention: compliance.dataRetention,
+      specialFeatures: compliance.specialRequirements
+    }));
+  }
+
+  /**
+   * Obtiene datos fiduciarios completos para un país específico
+   */
+  public getFiduciaryDataForCountry(countryCode: string): {
+    location: GeolocationData;
+    compliance: LegalCompliance;
+    explanation: string;
+  } | null {
+    const compliance = this.legalComplianceMap[countryCode.toUpperCase()];
+    if (!compliance) return null;
+
+    // Datos fiduciarios típicos del país
+    const fiduciaryData: Record<string, { city: string; region: string }> = {
+      'ES': { city: 'Madrid', region: 'Comunidad de Madrid' },
+      'MX': { city: 'Ciudad de México', region: 'Ciudad de México' },
+      'AR': { city: 'Buenos Aires', region: 'Ciudad Autónoma de Buenos Aires' },
+      'US': { city: 'New York', region: 'New York' },
+      'GB': { city: 'London', region: 'England' }
+    };
+
+    const countryData = fiduciaryData[countryCode.toUpperCase()];
+    
+    const location: GeolocationData = {
+      country: compliance.country,
+      countryCode: countryCode.toUpperCase(),
+      region: countryData?.region,
+      city: countryData?.city,
+      source: 'fiduciary',
+      timestamp: new Date()
+    };
+
+    const explanation = this.getCountrySpecificExplanation(countryCode);
+
+    return {
+      location,
+      compliance,
+      explanation
+    };
+  }
+
+  /**
+   * Obtiene explicación específica para cada país
+   */
+  private getCountrySpecificExplanation(countryCode: string): string {
+    const explanations: Record<string, string> = {
+      'ES': `España: Cumple con RGPD y LOPDGDD. Retención de datos médicos: 7 años. 
+Derechos: Consentimiento explícito, portabilidad de datos, derecho al olvido.`,
+      'MX': `México: Ley Federal de Protección de Datos Personales. Retención: 5 años.
+Derechos ARCO: Acceso, Rectificación, Cancelación, Oposición.`,
+      'AR': `Argentina: Ley de Protección de Datos Personales. Retención: 5 años.
+Registro obligatorio de bases de datos médicas.`,
+      'US': `Estados Unidos: Cumple con HIPAA y CCPA. Retención: 7 años.
+Autorización específica requerida para uso de datos médicos.`,
+      'GB': `Reino Unido: UK GDPR y DPA 2018. Retención: 7 años.
+Consentimiento granular y derecho al olvido garantizados.`
+    };
+
+    return explanations[countryCode.toUpperCase()] || 'Información de compliance no disponible para este país.';
+  }
+
+  /**
    * Verifica si la geolocalización está disponible
    */
   public isGeolocationSupported(): boolean {
@@ -223,17 +406,75 @@ export class GeolocationService {
    */
   public async checkGeolocationPermission(): Promise<'granted' | 'denied' | 'prompt'> {
     if (!this.isGeolocationSupported()) {
+      console.log('Geolocalización no soportada por el navegador');
       return 'denied';
     }
 
     try {
-      // Intentar obtener posición con timeout muy corto
-      await this.getCurrentPosition(100);
-      return 'granted';
-    } catch (error: unknown) {
-      const geolocationError = error as GeolocationPositionError;
-      if (geolocationError.code === 1) return 'denied';
-      if (geolocationError.code === 2) return 'denied';
+      // Verificar permisos usando Permissions API si está disponible
+      if ('permissions' in navigator) {
+        try {
+          const permission = await (navigator as Navigator & { permissions?: Permissions }).permissions?.query({ name: 'geolocation' as PermissionName });
+          console.log('Estado de permisos de geolocalización:', permission?.state);
+          
+          // Si los permisos están denegados, no hay nada que hacer
+          if (permission.state === 'denied') {
+            console.log('Permisos de geolocalización DENEGADOS permanentemente');
+            return 'denied';
+          }
+          
+          // Si están concedidos, verificar que realmente funcionan
+          if (permission.state === 'granted') {
+            try {
+              // Intentar obtener posición con timeout razonable
+              await this.getCurrentPosition(3000);
+              console.log('Permisos concedidos y funcionando correctamente');
+              return 'granted';
+            } catch (posError) {
+              console.log('Permisos concedidos pero error al obtener posición:', posError);
+              // Si hay error, intentar con IP como fallback
+              return 'prompt';
+            }
+          }
+          
+          // Si están en prompt, retornar prompt
+          return permission.state;
+        } catch (permError) {
+          console.log('Error al verificar permisos con Permissions API:', permError);
+          // Continuar con fallback
+        }
+      }
+
+      // Fallback: intentar obtener posición con timeout razonable
+      console.log('Usando fallback para verificar permisos...');
+      try {
+        await this.getCurrentPosition(3000);
+        console.log('Permisos funcionando correctamente (fallback)');
+        return 'granted';
+      } catch (posError) {
+        const geolocationError = posError as GeolocationPositionError;
+        console.log('Error al verificar permisos de geolocalización (fallback):', {
+          code: geolocationError.code,
+          message: geolocationError.message
+        });
+        
+        if (geolocationError.code === 1) {
+          console.log('Permisos de geolocalización DENEGADOS por el usuario');
+          return 'denied';
+        }
+        if (geolocationError.code === 2) {
+          console.log('Ubicación NO DISPONIBLE (fuera de cobertura)');
+          return 'prompt'; // Cambiar a prompt para permitir fallback por IP
+        }
+        if (geolocationError.code === 3) {
+          console.log('Timeout en geolocalización');
+          return 'prompt'; // Cambiar a prompt para permitir fallback por IP
+        }
+        
+        return 'prompt';
+      }
+    } catch (error) {
+      console.log('Error general al verificar permisos:', error);
       return 'prompt';
     }
   }
@@ -254,19 +495,33 @@ export class GeolocationService {
 
   private async reverseGeocode(lat: number, lng: number): Promise<Partial<GeolocationData>> {
     try {
+      console.log('Iniciando reverse geocoding para:', { lat, lng });
+      
       // Usar servicio gratuito de reverse geocoding
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`
       );
       const data = await response.json();
       
-      return {
+      console.log('Respuesta del servicio de geocoding:', data);
+      
+      // Verificar que data.address existe antes de acceder a sus propiedades
+      if (!data.address) {
+        console.log('Error en reverse geocoding: No se encontró información de dirección');
+        return {};
+      }
+      
+      const locationData = {
         country: data.address.country,
         countryCode: this.getCountryCode(data.address.country),
-        region: data.address.state,
-        city: data.address.city || data.address.town,
+        region: data.address.state || data.address.province || data.address.region,
+        city: data.address.city || data.address.town || data.address.village,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       };
+      
+      console.log('Datos de ubicación procesados:', locationData);
+      
+      return locationData;
     } catch (error) {
       console.log('Error en reverse geocoding:', error);
       return {};
