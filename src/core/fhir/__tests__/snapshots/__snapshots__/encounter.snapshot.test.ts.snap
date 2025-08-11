@@ -9,7 +9,7 @@ exports[`FHIR Encounter snapshot > matches expected snapshot for an ambulatory e
   },
   "id": "enc-1001",
   "meta": {
-    "lastUpdated": "2025-08-11T20:31:27.761Z",
+    "lastUpdated": "2025-08-11T20:42:02.255Z",
     "profile": [
       "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter",
     ],

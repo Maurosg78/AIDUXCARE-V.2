@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5173,
     host: true,
     watch: {
-      // Ignorar archivos que causan reinicios constantes
+      // IGNORAR COMPLETAMENTE archivos que causan reinicios
       ignored: [
         '**/BP/**',
         '**/reports/**',
@@ -20,7 +20,23 @@ export default defineConfig({
         '**/build/**',
         '**/*.log',
         '**/*.tmp',
-        '**/*.bak'
+        '**/*.bak',
+        '**/tests/**',
+        '**/__tests__/**',
+        '**/__fixtures__/**',
+        '**/__snapshots__/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/*.spec.tsx',
+        '**/tsconfig*.json',
+        '**/tailwind.config.ts',
+        '**/vite.config*.ts',
+        '**/package*.json',
+        '**/scripts/**',
+        '**/tools/**',
+        '**/coverage/**',
+        '**/.nyc_output/**'
       ]
     }
   },
@@ -28,7 +44,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     rollupOptions: {
-      external: ['BP/**', 'reports/**', 'docs/**']
+      external: ['BP/**', 'reports/**', 'docs/**', 'tests/**']
     }
   },
   resolve: {

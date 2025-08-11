@@ -15,7 +15,7 @@ const DebugPage: React.FC = () => {
     console.log(`${key}: ${value}`);
   });
 
-  const isUAT = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'aiduxcare-mvp-uat';
+  const isUAT = import.meta.env.VITE_FIREBASE_PROJECT_ID?.includes('uat') || false;
   const isPROD = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'aiduxcare-mvp-prod';
 
   return (
@@ -28,7 +28,7 @@ const DebugPage: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className={`p-4 rounded-lg ${isUAT ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500'} border-2`}>
-              <h3 className="font-semibold">UAT (aiduxcare-mvp-uat)</h3>
+              <h3 className="font-semibold">UAT ({import.meta.env.VITE_FIREBASE_PROJECT_ID})</h3>
               <p className={isUAT ? 'text-green-700' : 'text-red-700'}>
                 {isUAT ? '✅ ACTIVO' : '❌ INACTIVO'}
               </p>

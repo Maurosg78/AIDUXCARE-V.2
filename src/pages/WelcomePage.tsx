@@ -198,10 +198,11 @@ export const WelcomePage: React.FC = () => {
     try {
       console.log('=== INICIO DE REGISTRO ===');
       
-      // VERIFICACIÓN CRÍTICA: Asegurar que estamos usando UAT
-      if (import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'aiduxcare-mvp-uat') {
+      // VERIFICACIÓN CRÍTICA: Asegurar que estamos usando UAT DEV
+      const currentProject = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      if (!currentProject || !currentProject.includes('uat')) {
         console.error('❌ ERROR CRÍTICO: No estamos usando UAT!');
-        console.error('Proyecto actual:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
+        console.error('Proyecto actual:', currentProject);
         setErrors({ general: 'Error de configuración: Debe usar UAT para desarrollo' });
         return;
       }

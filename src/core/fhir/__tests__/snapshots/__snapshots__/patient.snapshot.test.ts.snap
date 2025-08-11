@@ -20,7 +20,7 @@ exports[`FHIR Patient snapshot > matches expected snapshot for a representative 
   "gender": "female",
   "id": "pt-0001",
   "meta": {
-    "lastUpdated": "2025-08-11T20:31:27.760Z",
+    "lastUpdated": "2025-08-11T20:42:02.255Z",
     "profile": [
       "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
     ],

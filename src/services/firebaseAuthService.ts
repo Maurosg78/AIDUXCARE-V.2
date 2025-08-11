@@ -156,11 +156,12 @@ export class FirebaseAuthService {
       console.log('Proyecto Firebase:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
       console.log('Auth Domain:', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
       
-      // VERIFICACIÓN CRÍTICA: Asegurar que estamos usando UAT
-      if (import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'aiduxcare-mvp-uat') {
+      // VERIFICACIÓN CRÍTICA: Asegurar que estamos usando UAT DEV
+      const currentProject = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+      if (!currentProject || !currentProject.includes('uat')) {
         console.error('❌ ERROR CRÍTICO: No estamos usando UAT!');
-        console.error('Proyecto actual:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
-        console.error('Se requiere: aiduxcare-mvp-uat');
+        console.error('Proyecto actual:', currentProject);
+        console.error('Se requiere: proyecto que contenga "uat"');
         return {
           success: false,
           message: 'Error de configuración: Debe usar UAT para desarrollo'
