@@ -1,134 +1,121 @@
 import { createBrowserRouter } from 'react-router-dom';
-import Layout from '@/core/components/Layout';
-import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
-import LoginPage from '@/pages/LoginPage';
-import AccessPage from '@/pages/AccessPage';
-import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import { OnboardingPage } from '@/pages/OnboardingPage';
-import { AuditPage } from '@/features/admin/AuditPage';
-import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
+import { WelcomePage } from '../pages/WelcomePage';
+import LoginPage from '../pages/LoginPage';
+import { CommandCenterPage } from '../features/command-center/CommandCenterPage';
+import { ProfessionalWorkflowPage } from '../pages/ProfessionalWorkflowPage';
+import { RegistrationSuccessPage } from '../pages/RegistrationSuccessPage';
+import DebugPage from '../pages/DebugPage';
+import { TestGeolocation } from '../pages/TestGeolocation';
+import { EmailVerifiedPage } from '../pages/EmailVerifiedPage';
+import { AuthGuard } from '../components/AuthGuard';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
-// Configuración de future flags para React Router v7
-const future = {
-  v7_startTransition: true,
-  v7_relativeSplatPath: true
-};
+// Layout wrapper para manejar data-section
+function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
 
-export const router = createBrowserRouter([
-  // Página principal: Acceso directo
+  useEffect(() => {
+    // Determinar la sección basada en la ruta
+    const isAuthRoute = location.pathname.startsWith('/login') || 
+                       location.pathname.startsWith('/register') || 
+                       location.pathname.startsWith('/forgot-password') ||
+                       location.pathname.startsWith('/verify') ||
+                       location.pathname.startsWith('/activate');
+    
+    const isInternalRoute = location.pathname.startsWith('/command-center') || 
+                           location.pathname.startsWith('/professional') ||
+                           location.pathname.startsWith('/patient') ||
+                           location.pathname.startsWith('/analytics');
+    
+    // Aplicar data-section al body
+    if (isAuthRoute) {
+      document.body.setAttribute('data-section', 'auth');
+    } else if (isInternalRoute) {
+      document.body.setAttribute('data-section', 'internal');
+    } else {
+      document.body.removeAttribute('data-section');
+    }
+  }, [location.pathname]);
+
+  return <>{children}</>;
+}
+
+const router = createBrowserRouter([
   {
     path: '/',
-    element: <AccessPage />,
+    element: (
+      <LayoutWrapper>
+        <LoginPage />
+      </LayoutWrapper>
+    )
   },
-  // Login
+  {
+    path: '/register',
+    element: (
+      <LayoutWrapper>
+        <WelcomePage />
+      </LayoutWrapper>
+    )
+  },
   {
     path: '/login',
-    element: <LoginPage />,
+    element: (
+      <LayoutWrapper>
+        <LoginPage />
+      </LayoutWrapper>
+    )
   },
-  // Onboarding
   {
-    path: '/onboarding',
-    element: <OnboardingPage />,
+    path: '/debug',
+    element: (
+      <LayoutWrapper>
+        <DebugPage />
+      </LayoutWrapper>
+    )
   },
-
-  // Rutas principales con layout profesional - PROTEGIDAS
   {
-    path: "/",
-    element: <Layout />,
-    children: [
-      {
-        path: "professional-workflow",
-        element: (
-          <ProtectedRoute>
-            <ProfessionalWorkflowPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "audit",
-        element: (
-          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-            <AuditPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "audit-metrics",
-        element: (
-          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-            <AuditMetricsDashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "patients",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Gestión de Pacientes</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Módulo de pacientes en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "notes",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Notas Clínicas</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Módulo de notas en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "profile",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Mi Perfil</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Configuración de perfil en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "settings",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Configuración del sistema en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-    ]
+    path: '/registration-success',
+    element: (
+      <LayoutWrapper>
+        <RegistrationSuccessPage />
+      </LayoutWrapper>
+    )
   },
-
-  // Página de error 404
   {
-    path: "*",
-    element: <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-8">Página no encontrada</p>
-        <a 
-          href="/" 
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Volver al inicio
-        </a>
-      </div>
-    </div>
+    path: '/command-center',
+    element: (
+      <LayoutWrapper>
+        <AuthGuard>
+          <CommandCenterPage />
+        </AuthGuard>
+      </LayoutWrapper>
+    )
+  },
+  {
+    path: '/professional-workflow',
+    element: (
+      <LayoutWrapper>
+        <AuthGuard>
+          <ProfessionalWorkflowPage />
+        </AuthGuard>
+      </LayoutWrapper>
+    )
+  },
+  {
+    path: '/test-geolocation',
+    element: (
+      <LayoutWrapper>
+        <AuthGuard>
+          <TestGeolocation />
+        </AuthGuard>
+      </LayoutWrapper>
+    )
+  },
+  {
+    path: '/email-verified',
+    element: <EmailVerifiedPage />
   }
-], { future }); 
+]);
+
+export default router; 

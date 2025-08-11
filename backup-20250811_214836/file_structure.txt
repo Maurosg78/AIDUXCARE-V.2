@@ -1,0 +1,872 @@
+.
+├── 0001-test-security-actualiza-test-de-cifrado-para-usar-Cr.patch
+├── aiduxcare-clean
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   ├── vite 3.svg
+│   │   └── vite.svg
+│   ├── public 2
+│   ├── README.md
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── assets
+│   │   │   └── react.svg
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── vite-env.d.ts
+│   ├── src 2
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── AIDUXCARE-STABLE
+│   ├── __mocks__
+│   │   ├── audio
+│   │   │   ├── index.ts
+│   │   │   ├── transcript_empty.ts
+│   │   │   ├── transcript_multi_speaker.ts
+│   │   │   └── transcript_with_errors.ts
+│   │   ├── contexts
+│   │   │   ├── chronicMCP.ts
+│   │   │   ├── contradictoryMCP.ts
+│   │   │   ├── emptyMCP.ts
+│   │   │   ├── partialMCP.ts
+│   │   │   └── validMCP.ts
+│   │   ├── inputs
+│   │   │   ├── fullVisit.ts
+│   │   │   ├── inconsistentVisit.ts
+│   │   │   ├── minimalVisit.ts
+│   │   │   └── missingFieldsVisit.ts
+│   │   ├── sessions
+│   │   │   ├── otherProfessionalSession.ts
+│   │   │   └── professionalSession.ts
+│   │   └── supabase
+│   │       └── authMock.ts
+│   ├── __tests__
+│   │   ├── evals
+│   │   │   ├── AudioCaptureService.eval.test.ts
+│   │   │   ├── future_evals
+│   │   │   │   ├── AgentExecutor.eval.test.ts 2.disabled
+│   │   │   │   ├── AgentExecutor.eval.test.ts.disabled
+│   │   │   │   ├── AgentSuggestionsViewer.eval.test.tsx 2.disabled
+│   │   │   │   ├── AgentSuggestionsViewer.eval.test.tsx.disabled
+│   │   │   │   ├── AudioCaptureService.eval.test.ts 2.disabled
+│   │   │   │   ├── AudioCaptureService.eval.test.ts.disabled
+│   │   │   │   ├── AuditLogger.eval.test.ts 2.disabled
+│   │   │   │   └── AuditLogger.eval.test.ts.disabled
+│   │   │   └── README.md
+│   │   └── minimal.test.ts
+│   ├── 0001-test-security-actualiza-test-de-cifrado-para-usar-Cr.patch
+│   ├── aiduxcare-clean
+│   │   ├── eslint.config.js
+│   │   ├── index.html
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   ├── vite 3.svg
+│   │   │   └── vite.svg
+│   │   ├── README.md
+│   │   ├── src
+│   │   │   ├── App.css
+│   │   │   ├── App.tsx
+│   │   │   ├── assets
+│   │   │   │   └── react.svg
+│   │   │   ├── index.css
+│   │   │   ├── main.tsx
+│   │   │   └── vite-env.d.ts
+│   │   ├── tsconfig.app.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.node.json
+│   │   └── vite.config.ts
+│   ├── AiDuxVerdad.md
+│   ├── ANALISIS_DEBILIDADES_AIDUXCARE.md
+│   ├── ANALISIS_SPRINT_TDP2_MCP_CLEANUP.md
+│   ├── AUDITORIA_3_PASOS_COMPLETADOS.md
+│   ├── AUDITORIA_ENTERPRISE_COMPLETADA.md
+│   ├── backend-output.log
+│   ├── backend-pipeline-test.ts
+│   ├── backend-test-results.log
+│   ├── certify-backend.ts
+│   ├── CLEANUP_PLAN_CAPTURE_PAGE.md
+│   ├── CLEANUP_REPORT_FINAL.md
+│   ├── cloud-functions
+│   │   ├── clinical-brain
+│   │   │   ├── agent-bridge.js
+│   │   │   ├── index.js
+│   │   │   ├── INFORME_CTO_CALIBRACION_FISIOTERAPEUTA_COMPLETADA.md
+│   │   │   ├── INFORME_CTO_CEREBRO_CLINICO_AIDUXCARE.md
+│   │   │   ├── OPTIMIZACION_COSTOS_COMPLETADA.md
+│   │   │   ├── package-lock.json
+│   │   │   ├── package.json
+│   │   │   ├── README.md
+│   │   │   ├── simulate-clinical-brain.js
+│   │   │   ├── simulate-clinical-brain.js.BACKUP
+│   │   │   ├── src
+│   │   │   │   └── services
+│   │   │   ├── test-cascade-demo.js
+│   │   │   ├── test-clinical-brain.js
+│   │   │   ├── test-clinical-cases-evaluation.js
+│   │   │   ├── test-cost-optimization.js
+│   │   │   ├── test-gemini-25.js
+│   │   │   ├── test-intelligent-selector-demo.js
+│   │   │   ├── test-optimized-final.js
+│   │   │   └── test-response-parser-debug.js
+│   │   ├── notification-service
+│   │   │   ├── index.js
+│   │   │   └── test-email.ts
+│   │   └── speech-to-text
+│   │       └── index.js
+│   ├── CODESPACES_README.md
+│   ├── COMPARACION_CEREBRO_ACTUAL_VS_EVIDENCIA_CIENTIFICA.md
+│   ├── config
+│   │   ├── jest.config.cjs
+│   │   ├── jest.setup.cjs
+│   │   ├── postcss.config.js
+│   │   ├── tsconfig.esm.json
+│   │   └── vitest.config.ts
+│   ├── CONOCIMIENTO_BASE_BANDERAS_ROJAS_FISIOTERAPIA_EVIDENCIA.md
+│   ├── CORRECCIONES_CRITICAS_COMPLETADAS.md
+│   ├── CORRECCIONES_LOOP_INFINITO_COMPLETADAS.md
+│   ├── database
+│   │   ├── RLS_POLICIES.md
+│   │   ├── SUPABASE_SETUP.md
+│   │   └── supabase.schema.sql
+│   ├── debug-lint.sh
+│   ├── DEBUGGING_METHOD_NOT_ALLOWED.md
+│   ├── DEFINITION_OF_DONE_TDD_COMPLETADO.md
+│   ├── demo-caso-traumatologia.ts
+│   ├── deployment
+│   ├── DEUDA_TECNICA_ACUMULADA.md
+│   ├── DIRECTRICES_CTO_SISTEMA_ESCUCHA_CLINICA.md
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── docs
+│   │   ├── AIDUXCARE_BLUEPRINT_OFFICIAL.md
+│   │   ├── AUDIT_CERTIFICATION_PACKAGE 2.md
+│   │   ├── AUDIT_CERTIFICATION_PACKAGE.md
+│   │   ├── CHANGELOG.md
+│   │   ├── COMPONENT_MOCK_PATTERNS.md
+│   │   ├── CONTRIBUTING.md
+│   │   ├── design-system-implementation.md
+│   │   ├── DEUDA_TECNICA_POLITICA_PRIVACIDAD.md
+│   │   ├── examples
+│   │   │   └── IdentityVisualExample.tsx
+│   │   ├── FASES_DEL_PROYECTO.md
+│   │   ├── GEMINI_PRIVACY_POLICY_PROMPT.md
+│   │   ├── GEMINI_PROMPT_DIRECTO.md
+│   │   ├── GEOLOCATION_COMPLIANCE_SYSTEM.md
+│   │   ├── GOOGLE_CLOUD_STT_PRODUCTION_GUIDE.md
+│   │   ├── hardware-upgrade-analysis.md
+│   │   ├── MCP-EVAL-README.md
+│   │   ├── MVP_ESPANA_STATUS.md
+│   │   ├── PLAN_COPILOTO_POR_LOTES_VERTEX_AI.md
+│   │   ├── PLAN_ESTABILIZACION_MVP.md
+│   │   ├── POLITICA_PRIVACIDAD_ES.md
+│   │   ├── professional-integration-complete.md
+│   │   ├── PROJECT_STRUCTURE.md
+│   │   ├── quick-start-commands.md
+│   │   ├── rag-integration-workflow.md
+│   │   ├── rag-medical-implementation.md
+│   │   ├── README_TECNICO_FIRESTORE.md
+│   │   ├── recruitment-outreach-templates.md
+│   │   ├── ROADMAP_EXPANSION_INTERNACIONAL.md
+│   │   ├── ROADMAP_MVP_SOLIDO.md
+│   │   ├── SPRINT_TDP-2_OPTIMIZACION_COMPLETADA.md
+│   │   ├── SPRINT_TDP-3_OPTIMIZACION_COMPLETADA.md
+│   │   ├── technical-pipeline-documentation.md
+│   │   ├── todo-mauricio-user-testing.md
+│   │   ├── user-testing-plan.md
+│   │   ├── user-testing-quick-guide.md
+│   │   ├── v2.9-status-report.md
+│   │   ├── VALIDACION_PRODUCCION_SPRINT_TDP-2.md
+│   │   └── visual-identity-guarantee.md
+│   ├── DOCUMENTO_APROBACION_CTO_MEJORA_BANDERAS_ROJAS.md
+│   ├── ESTADO_FINAL_CALIBRACION_COMPLETADA.md
+│   ├── FASE_1_COMPLETADA_16_JULIO_2025.md
+│   ├── FASE_5_AI_AVANZADA_COMPLETADA.md
+│   ├── firebase.json
+│   ├── firestore-debug.log
+│   ├── firestore.indexes.json
+│   ├── firestore.rules
+│   ├── forms
+│   │   └── feedback-post-session.html
+│   ├── functions
+│   │   └── src
+│   │       └── index.ts
+│   ├── GUIA_USER_TESTING_MAURICIO.md
+│   ├── HIPAA_GDPR_XAI_ENTERPRISE 2.md
+│   ├── HIPAA_GDPR_XAI_ENTERPRISE.md
+│   ├── IMPLEMENTACION_CASCADA_ANALISIS_V2_COMPLETADA.md
+│   ├── IMPLEMENTACION_CEO_16_JULIO_2025.md
+│   ├── index.html
+│   ├── INFORME_CORRECCION_ESTRATEGICA_COMPLETADO.md
+│   ├── INFORME_CTO_FASE_5_COMPLETADA.md
+│   ├── INFORME_CTO_OPTIMIZACION_BACKEND_COMPLETADA.md
+│   ├── INFORME_CTO_PIPELINE_UNIFICADO_COMPLETADO.md
+│   ├── INFORME_CTO_PUNTOS_FALLO_ARQUITECTONICO_COMPLETADO.md
+│   ├── INFORME_ESTADO_MVP.md
+│   ├── INFORME_SISTEMA_CLINICO_LOCAL_COMPLETADO.md
+│   ├── INFORME_UNIFICADO_MEJORA_BANDERAS_ROJAS_FISIOTERAPIA.md
+│   ├── LIMPIEZA_INICIAL.md
+│   ├── localhost+2-key.pem
+│   ├── localhost+2.pem
+│   ├── logs
+│   │   ├── specific-test-20250719_131245.log
+│   │   ├── specific-test-20250719_131449.log
+│   │   ├── specific-test-20250719_131605.log
+│   │   ├── warnings-build.log
+│   │   ├── warnings-eslint.log
+│   │   └── warnings-tsc.log
+│   ├── maintenance
+│   │   ├── a11y_fixes.patch
+│   │   ├── diagnose-warnings.sh
+│   │   ├── fix-audit-logger.sh
+│   │   └── set-github-secrets.sh
+│   ├── MISION_FINAL_CEREBRO_CLINICO_COMPLETADA.md
+│   ├── monitoring-server
+│   │   ├── data.json
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   └── dashboard.html
+│   │   └── server.js
+│   ├── netlify.toml
+│   ├── nginx.conf
+│   ├── npm-install-log.txt
+│   ├── OPTIMIZACIONES_FASE_2_COMPLETADAS.md
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── pglite-debug.log
+│   ├── PLAN_MVP_STT_REAL.md
+│   ├── postcss.config.cjs
+│   ├── postcss.config.js
+│   ├── production-monitoring.log
+│   ├── PROGRESO_ACTUALIZADO_16_JULIO_2025.md
+│   ├── PROMPT_OPTIMIZATION_ANALYSIS.md
+│   ├── PROPUESTA_OPERACION_DEUDA_CERO.md
+│   ├── public
+│   │   ├── _headers
+│   │   └── _redirects
+│   ├── README.md
+│   ├── RESUMEN_FINAL_FASE_5.md
+│   ├── ROADMAP_DEUDA_TECNICA_ACTUALIZADO.md
+│   ├── run-backend-test.sh
+│   ├── scripts
+│   │   ├── analyze-bundle.cjs
+│   │   ├── check-env.ts
+│   │   ├── clear-firebase-session.js
+│   │   ├── create_metrics_table.sql
+│   │   ├── create-auth-users.js
+│   │   ├── create-demo-users.js
+│   │   ├── create-user-profile.js
+│   │   ├── createClinicalCase.ts
+│   │   ├── createPatientSimplified.cjs
+│   │   ├── createSecondVisitAndrea.ts
+│   │   ├── fix-branch-protection.sh
+│   │   ├── generateAndreaMetrics.js
+│   │   ├── install-aiduxcare.sh
+│   │   ├── monitor-production.cjs
+│   │   ├── nlp-service-mock.ts
+│   │   ├── ollama-client-node.ts
+│   │   ├── restore-branch-protection.sh
+│   │   ├── run_metrics_migration.js
+│   │   ├── run-backend-blueprint-test.sh
+│   │   ├── run-specific-test.sh
+│   │   ├── run-stress-test.sh
+│   │   ├── runPatientScript.js
+│   │   ├── setup.sh
+│   │   ├── simulateCreatePatient.cjs
+│   │   ├── test-geolocation.ts
+│   │   ├── test-google-cloud-integration.cjs
+│   │   ├── test-integrated-geolocation.ts
+│   │   ├── test-professional-services.ts
+│   │   ├── test-system-quick.html
+│   │   └── verify-installation.sh
+│   ├── SECURITY_COMPLIANCE 2.md
+│   ├── SECURITY_COMPLIANCE.md
+│   ├── SOLUCION_DEFINITIVA_BASE64_BYPASS.md
+│   ├── SOLUCION_DEFINITIVA_PIPELINE_TRANSCRIPCION_COMPLETADA.md
+│   ├── SPRINT_TDP-3_OPTIMIZACION_COMPLETADA.md
+│   ├── SPRINT-1.1-PLAN.md
+│   ├── src
+│   │   ├── __tests__
+│   │   │   └── test-utils.tsx
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── assets
+│   │   │   └── logo
+│   │   │       └── aiduxcare-logo.svg
+│   │   ├── components
+│   │   │   ├── ActionBar.tsx
+│   │   │   ├── branding
+│   │   │   │   └── AiDuxCareLogo.tsx
+│   │   │   ├── CaptureWorkspace.tsx
+│   │   │   ├── CompetencySuggestionsIntegrator.tsx
+│   │   │   ├── evidence
+│   │   │   │   └── EvidencePanel.tsx
+│   │   │   ├── OrganizationNavigation.tsx
+│   │   │   ├── professional
+│   │   │   │   ├── AudioFileUpload.tsx
+│   │   │   │   ├── EnhancedAudioCapture.tsx
+│   │   │   │   ├── ProfessionalAudioCapture.tsx
+│   │   │   │   ├── ProfessionalRoleSelector.tsx
+│   │   │   │   └── VirtualAssistant.tsx
+│   │   │   ├── RealTimeAudioCapture.tsx
+│   │   │   ├── testing
+│   │   │   │   └── PromptTestingWidget.tsx
+│   │   │   ├── TranscriptionArea.tsx
+│   │   │   └── ui
+│   │   │       ├── badge.tsx
+│   │   │       └── button.tsx
+│   │   ├── config
+│   │   │   └── env.ts
+│   │   ├── core
+│   │   │   ├── agent
+│   │   │   │   ├── AgentExplainer.ts
+│   │   │   │   ├── ClinicalAgent.ts
+│   │   │   │   ├── ContextDiff.ts
+│   │   │   │   └── LLMAdapter.ts
+│   │   │   ├── ai
+│   │   │   │   ├── ModelSelector.ts
+│   │   │   │   └── PromptFactory.ts
+│   │   │   ├── audio
+│   │   │   │   └── AudioCaptureService.ts
+│   │   │   ├── audit
+│   │   │   │   ├── AuditAlertService.ts
+│   │   │   │   ├── AuditPerformanceOptimizer.ts
+│   │   │   │   ├── ClinicalAuditHook.ts
+│   │   │   │   └── FirestoreAuditLogger.ts
+│   │   │   ├── auth
+│   │   │   │   ├── firebaseAuthService.ts
+│   │   │   │   ├── supabaseClient.ts
+│   │   │   │   └── UserContext.tsx
+│   │   │   ├── components
+│   │   │   │   └── Layout.tsx
+│   │   │   ├── config
+│   │   │   │   └── env.ts
+│   │   │   ├── constants
+│   │   │   │   └── analytics.ts
+│   │   │   ├── dataSources
+│   │   │   │   ├── AuditedPatientDataSource.ts
+│   │   │   │   ├── AuditedVisitDataSource.ts
+│   │   │   │   ├── FormDataSource.ts
+│   │   │   │   ├── patientDataSourceFirestore.ts
+│   │   │   │   ├── SuggestionFeedbackDataSource.ts
+│   │   │   │   ├── visitDataSourceFirestore.singleton.ts
+│   │   │   │   └── visitDataSourceFirestore.ts
+│   │   │   ├── domain
+│   │   │   │   ├── organizationType.ts
+│   │   │   │   ├── patientType.ts
+│   │   │   │   ├── professionalType.ts
+│   │   │   │   └── visitType.ts
+│   │   │   ├── firebase
+│   │   │   │   └── firebaseClient.ts
+│   │   │   ├── hooks
+│   │   │   │   └── useOrganization.ts
+│   │   │   ├── mcp
+│   │   │   │   ├── components
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── MCPContextBuilder.ts
+│   │   │   │   ├── MCPManager.ts
+│   │   │   │   ├── RAGMedicalMCP.ts
+│   │   │   │   └── schema.ts
+│   │   │   ├── performance
+│   │   │   │   └── WebVitalsService.ts
+│   │   │   ├── security
+│   │   │   │   └── encryption.ts
+│   │   │   ├── services
+│   │   │   │   ├── AuditedDataExportService.ts
+│   │   │   │   ├── DataExportService.ts
+│   │   │   │   ├── OrganizationService.ts
+│   │   │   │   ├── PatientService.ts
+│   │   │   │   ├── ProfessionalProfileService.ts
+│   │   │   │   └── UsageAnalyticsService.ts
+│   │   │   └── types
+│   │   │       └── suggestions.ts
+│   │   ├── features
+│   │   │   ├── admin
+│   │   │   │   ├── AuditMetricsDashboard.tsx
+│   │   │   │   └── AuditPage.tsx
+│   │   │   ├── auth
+│   │   │   │   ├── LoginPage.tsx
+│   │   │   │   └── ProtectedRoute.tsx
+│   │   │   └── patient
+│   │   │       └── components
+│   │   ├── hooks
+│   │   │   └── useCompetencySuggestions.ts
+│   │   ├── index.css
+│   │   ├── lib
+│   │   │   ├── analytics.ts
+│   │   │   ├── headless-ui.tsx
+│   │   │   ├── ollama.ts
+│   │   │   └── utils.ts
+│   │   ├── main.tsx
+│   │   ├── pages
+│   │   │   ├── ClinicalInfoPage.tsx
+│   │   │   ├── ConsultationPage.tsx
+│   │   │   ├── DebugAudioPage.tsx
+│   │   │   ├── DebugCloudFunctionPage.tsx
+│   │   │   ├── HumanFigurePage.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── MFAGuidePage.tsx
+│   │   │   ├── OnboardingConfirmationPage.tsx
+│   │   │   ├── OrganizationDashboardPage.tsx
+│   │   │   ├── OrganizationTeamPage.tsx
+│   │   │   ├── PrivacyPolicyPage.tsx
+│   │   │   ├── ProfessionalOnboardingPage.tsx
+│   │   │   ├── ProfessionalWorkflowPage.tsx
+│   │   │   ├── SOAPEditorPage.tsx
+│   │   │   ├── TestFullWorkflowPage.tsx
+│   │   │   ├── VerifyEmailPage.tsx
+│   │   │   └── WelcomePage.tsx
+│   │   ├── router
+│   │   │   └── router.tsx
+│   │   ├── services
+│   │   │   ├── AudioCaptureServiceReal.ts
+│   │   │   ├── AudioFileSTTService.ts
+│   │   │   ├── AudioPipelineService.ts
+│   │   │   ├── AudioToSOAPBridge.ts
+│   │   │   ├── AuditLogger.ts
+│   │   │   ├── CompetencyGuardService.ts
+│   │   │   ├── CompetencySuggestionService.ts
+│   │   │   ├── ComplianceService.ts
+│   │   │   ├── CryptoService.ts
+│   │   │   ├── EmailVerificationService.ts
+│   │   │   ├── GeolocationService.ts
+│   │   │   ├── GoogleCloudAudioService.ts
+│   │   │   ├── KnowledgeBaseService.ts
+│   │   │   ├── MedicalTranscriptionPipelineService.ts
+│   │   │   ├── nlpServiceOllama.ts
+│   │   │   ├── OptimizedClinicalBrainService.ts
+│   │   │   ├── PersistenceService.ts
+│   │   │   ├── PhysiotherapyPipelineService.ts
+│   │   │   ├── ProfessionalCompetencyService.ts
+│   │   │   ├── ProfessionalProfileService.ts
+│   │   │   ├── ProfessionalServicesService.ts
+│   │   │   ├── RemoteMonitoringService.ts
+│   │   │   ├── VertexAIService.ts
+│   │   │   └── WebSpeechSTTService.ts
+│   │   ├── setupTests.ts
+│   │   ├── shared
+│   │   │   └── components
+│   │   │       ├── Agent
+│   │   │       ├── Audit
+│   │   │       ├── MCP
+│   │   │       └── UI
+│   │   ├── styles
+│   │   │   ├── aidux-theme 2.css
+│   │   │   └── aidux-theme.css
+│   │   ├── types
+│   │   │   ├── agent 2.ts
+│   │   │   ├── agent.ts
+│   │   │   ├── clinical.ts
+│   │   │   ├── forms 2.ts
+│   │   │   ├── forms.ts
+│   │   │   ├── nlp 2.ts
+│   │   │   ├── nlp.ts
+│   │   │   ├── professionalProfile.ts
+│   │   │   ├── suggestions 2.ts
+│   │   │   └── suggestions.ts
+│   │   ├── utils
+│   │   │   ├── checkSupabaseConnection.ts
+│   │   │   ├── supabaseConnectionTest.ts
+│   │   │   └── supabaseTestClient.ts
+│   │   ├── vite-env.d.ts
+│   │   └── vitest.d.ts
+│   ├── start-monitoring.sh
+│   ├── storage.rules
+│   ├── tailwind.config.js
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   ├── tsconfig.migration.json
+│   ├── tsconfig.node.json 
+│   ├── USER_TESTING_LOG.md
+│   ├── VALIDACION_FLUJO_COMPLETO_3_FASES_EXITOSA.md
+│   ├── VALIDACION_INTERNA_COMPLETADA.md
+│   ├── vite.config.ci.ts
+│   ├── vite.config.ts
+│   ├── vite.config.ts.timestamp-1751916167520-ac6d91304847.mjs
+│   ├── vite.config.ts.timestamp-1751916592453-c9e9f478f57b9.mjs
+│   └── vitest.config.ts
+├── backend-pipeline-test.ts
+├── BP 
+│   ├── Competencias Fisioterapeutas España y CCAA - Documentos de Google_files
+│   │   ├── 1201358865-KixCss_ltr.css
+│   │   ├── 2.html
+│   │   ├── 3776915234-docs_offline_iframe_api_bin.js
+│   │   ├── api.js
+│   │   ├── bscframe.html
+│   │   ├── building-blocks-sidebar-promo.svg
+│   │   ├── cb=gapi.loaded_0
+│   │   ├── cb=gapi.loaded_1
+│   │   ├── cb=gapi.loaded_2
+│   │   ├── cb=gapi(1).loaded_0
+│   │   ├── cb=gapi(2).loaded_0
+│   │   ├── client.js
+│   │   ├── css2
+│   │   ├── googleapis.proxy.js
+│   │   ├── iframeapi.html
+│   │   ├── lazy.min.js
+│   │   ├── m=_b,_tp
+│   │   ├── m=hfcr
+│   │   ├── m=kix_core
+│   │   ├── proxy.html
+│   │   ├── RotateCookiesPage.html
+│   │   ├── rs=AA2YrTuFIGoh6JxiC5qzW1oKnpWzme10og
+│   │   ├── rs=AA2YrTvGYOqmiGMk_fDQHBe8bqDJs4CmqA
+│   │   ├── saved_resource.html
+│   │   ├── saved_resource(1).html
+│   │   ├── saved_resource(2).html
+│   │   └── unnamed.png
+│   ├── Competencias Fisioterapeutas España y CCAA - Documentos de Google.html
+│   ├── Investigación Profunda_ Expansión Estratégica Médica - Documentos de Google_files
+│   │   ├── 1201358865-KixCss_ltr.css
+│   │   ├── 2.html
+│   │   ├── 3776915234-docs_offline_iframe_api_bin.js
+│   │   ├── api.js
+│   │   ├── bscframe.html
+│   │   ├── building-blocks-sidebar-promo.svg
+│   │   ├── cb=gapi.loaded_0
+│   │   ├── cb=gapi.loaded_1
+│   │   ├── cb=gapi.loaded_2
+│   │   ├── cb=gapi(1).loaded_0
+│   │   ├── cb=gapi(2).loaded_0
+│   │   ├── client.js
+│   │   ├── css2
+│   │   ├── googleapis.proxy.js
+│   │   ├── iframeapi.html
+│   │   ├── lazy.min.js
+│   │   ├── m=_b,_tp
+│   │   ├── m=hfcr
+│   │   ├── m=kix_core
+│   │   ├── proxy.html
+│   │   ├── RotateCookiesPage.html
+│   │   ├── rs=AA2YrTuFIGoh6JxiC5qzW1oKnpWzme10og
+│   │   ├── rs=AA2YrTvGYOqmiGMk_fDQHBe8bqDJs4CmqA
+│   │   ├── saved_resource.html
+│   │   ├── saved_resource(1).html
+│   │   ├── saved_resource(2).html
+│   │   └── unnamed.png
+│   ├── Investigación Profunda_ Expansión Estratégica Médica - Documentos de Google.html
+│   ├── Plan de Seguridad AiDuxCare en GCP - Documentos de Google_files
+│   │   ├── 1201358865-KixCss_ltr.css
+│   │   ├── 2.html
+│   │   ├── 3776915234-docs_offline_iframe_api_bin.js
+│   │   ├── api.js
+│   │   ├── bscframe.html
+│   │   ├── building-blocks-sidebar-promo.svg
+│   │   ├── cb=gapi.loaded_0
+│   │   ├── cb=gapi.loaded_1
+│   │   ├── cb=gapi.loaded_2
+│   │   ├── cb=gapi(1).loaded_0
+│   │   ├── cb=gapi(2).loaded_0
+│   │   ├── client.js
+│   │   ├── css2
+│   │   ├── googleapis.proxy.js
+│   │   ├── iframeapi.html
+│   │   ├── lazy.min.js
+│   │   ├── m=_b,_tp
+│   │   ├── m=hfcr
+│   │   ├── m=kix_core
+│   │   ├── proxy.html
+│   │   ├── RotateCookiesPage.html
+│   │   ├── rs=AA2YrTuFIGoh6JxiC5qzW1oKnpWzme10og
+│   │   ├── rs=AA2YrTvGYOqmiGMk_fDQHBe8bqDJs4CmqA
+│   │   ├── saved_resource.html
+│   │   ├── saved_resource(1).html
+│   │   ├── saved_resource(2).html
+│   │   └── unnamed.png
+│   ├── Plan de Seguridad AiDuxCare en GCP - Documentos de Google.html
+│   ├── Política de Privacidad AiDuxCare_ Borrador - Documentos de Google_files
+│   │   ├── 1201358865-KixCss_ltr.css
+│   │   ├── 2.html
+│   │   ├── 3776915234-docs_offline_iframe_api_bin.js
+│   │   ├── api.js
+│   │   ├── bscframe.html
+│   │   ├── building-blocks-sidebar-promo.svg
+│   │   ├── cb=gapi.loaded_0
+│   │   ├── cb=gapi.loaded_1
+│   │   ├── cb=gapi.loaded_2
+│   │   ├── cb=gapi(1).loaded_0
+│   │   ├── cb=gapi(2).loaded_0
+│   │   ├── client.js
+│   │   ├── css2
+│   │   ├── googleapis.proxy.js
+│   │   ├── iframeapi.html
+│   │   ├── lazy.min.js
+│   │   ├── m=_b,_tp
+│   │   ├── m=hfcr
+│   │   ├── m=kix_core
+│   │   ├── proxy.html
+│   │   ├── RotateCookiesPage.html
+│   │   ├── rs=AA2YrTuFIGoh6JxiC5qzW1oKnpWzme10og
+│   │   ├── rs=AA2YrTvGYOqmiGMk_fDQHBe8bqDJs4CmqA
+│   │   ├── saved_resource.html
+│   │   ├── saved_resource(1).html
+│   │   ├── saved_resource(2).html
+│   │   └── unnamed.png
+│   └── Política de Privacidad AiDuxCare_ Borrador - Documentos de Google.html
+├── certify-backend.ts
+├── cloud-functions
+│   └── clinical-brain
+│       ├── index.js
+│       ├── package 2.json
+│       ├── package 3.json
+│       ├── package-lock 2.json
+│       ├── package-lock.json
+│       └── package.json
+├── CODESPACES_README.md
+├── config
+│   ├── jest.config.cjs
+│   ├── jest.setup.cjs
+│   ├── postcss.config.js
+│   ├── tsconfig.esm.json
+│   └── vitest.config.ts
+├── database
+│   ├── RLS_POLICIES.md
+│   ├── SUPABASE_SETUP.md
+│   └── supabase.schema.sql
+├── debug-lint.sh
+├── demo-caso-traumatologia.ts
+├── docker-compose.yml
+├── Dockerfile
+├── docs
+│   ├── AIDUXCARE_BLUEPRINT_OFFICIAL.md
+│   ├── AUDIT_CERTIFICATION_PACKAGE.md
+│   ├── CHANGELOG.md
+│   ├── CONTRIBUTING.md
+│   ├── design-system-implementation.md
+│   ├── examples
+│   │   └── IdentityVisualExample.tsx
+│   ├── hardware-upgrade-analysis.md
+│   ├── identity-migration-plan.md
+│   ├── INFORME_CTO_SISTEMA_ACTIVACION_EMAIL.md
+│   ├── LEGAL_POLICY_AIDUXCARE.md
+│   ├── llm-free-alternatives.md
+│   ├── llm-integration-plan.md
+│   ├── MCP-EVAL-README.md
+│   ├── missing-features-analysis.md
+│   ├── PROFESOR-EVALUATION-GUIDE.md
+│   ├── professional-integration-complete.md
+│   ├── PROJECT_STRUCTURE.md
+│   ├── quick-start-commands.md
+│   ├── rag-integration-workflow.md
+│   ├── rag-medical-implementation.md
+│   ├── README_TECNICO_FIRESTORE.md
+│   ├── recruitment-outreach-templates.md
+│   ├── technical-pipeline-documentation.md
+│   ├── todo-mauricio-user-testing.md
+│   ├── user-testing-plan.md
+│   ├── user-testing-quick-guide.md
+│   ├── v2.9-status-report.md
+│   └── visual-identity-guarantee.md
+├── ENTREGA-PROFESOR.md
+├── env.example
+├── firebase-debug 2.log
+├── firebase.json
+├── firestore.rules
+├── forms
+│   └── feedback-post-session.html
+├── functions
+│   └── clinical-brain
+│       └── index.js
+├── GUIA_USER_TESTING_MAURICIO.md
+├── HIPAA_GDPR_XAI_ENTERPRISE.md
+├── IMPLEMENTACION_AUDITORIA_MEDICA_COMPLETADA.md
+├── index.html
+├── INTEGRACION_MEDICA_COMPLETADA.md
+├── MEDICAL_INTEGRATION_REPORT.md
+├── metrics
+│   └── system-metrics.json
+├── monitoring-server
+│   ├── data.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── public
+│   │   └── dashboard.html
+│   ├── public 2
+│   └── server.js
+├── nginx.conf
+├── package-lock.json
+├── package.json
+├── postcss.config.cjs
+├── postcss.config.js
+├── public
+│   ├── debug-env.html
+│   ├── favicon.ico
+│   ├── favicon.svg
+│   └── health.html
+├── quarantine
+├── README_MVP_INVESTORES.md
+├── README.md
+├── reports
+│   ├── file_structure.txt
+│   ├── ts-errors.csv
+│   └── ts-errors.json
+├── RESUMEN_EJECUTIVO_CTO.md
+├── run-backend-test.sh
+├── scripts
+│   ├── analyze-bundle.cjs
+│   ├── check-current-user.cjs
+│   ├── check-env.ts
+│   ├── check-exports.cjs
+│   ├── clean-and-restart.cjs
+│   ├── deep-verify.cjs
+│   ├── diagnose-env.cjs
+│   ├── install-aiduxcare.sh
+│   ├── setup.sh
+│   ├── switch-env.cjs
+│   ├── verify-uat.cjs
+│   └── verify-uat.js
+├── SECURITY_COMPLIANCE.md
+├── SPRINT_4.2_COMPLETADO.md
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── assets
+│   │   └── logo
+│   │       └── aiduxcare-logo.svg
+│   ├── components
+│   │   ├── AuthGuard.tsx
+│   │   ├── branding
+│   │   │   └── AiDuxCareLogo.tsx
+│   │   ├── LegalChecklist.tsx
+│   │   ├── LegalConsentStatus.tsx
+│   │   └── wizard
+│   │       ├── CountryCodeSelector.tsx
+│   │       ├── EmailRecoveryModal.tsx
+│   │       ├── GeolocationPermission.tsx
+│   │       ├── LegalComplianceModal.tsx
+│   │       ├── LocationDataStep.tsx
+│   │       ├── PersonalDataStep.tsx
+│   │       ├── PhoneInput.tsx
+│   │       └── ProfessionalDataStep.tsx
+│   ├── config
+│   │   └── env.ts
+│   ├── context
+│   │   └── ProfessionalProfileContext.tsx
+│   ├── data
+│   │   └── spanishCities.ts
+│   ├── features
+│   │   ├── analytics
+│   │   │   └── AnalyticsDashboard.tsx
+│   │   └── command-center
+│   │       ├── CommandCenterPage.tsx
+│   │       ├── components
+│   │       │   ├── AppointmentCalendar.tsx
+│   │       │   ├── AppointmentForm.tsx
+│   │       │   ├── PatientForm.tsx
+│   │       │   └── PatientSummaryCard.tsx
+│   │       └── hooks
+│   │           ├── useAppointmentSchedule.ts
+│   │           └── usePatientSearch.ts
+│   ├── hooks
+│   │   ├── useAnalytics.ts
+│   │   ├── useAuth.ts
+│   │   ├── useProcessedEntities.ts
+│   │   ├── useProfessionalProfile.ts
+│   │   ├── useSoapData.ts
+│   │   └── useTranscript.ts
+│   ├── index.css
+│   ├── lib
+│   │   ├── analytics.ts
+│   │   ├── firebase.ts
+│   │   ├── headless-ui.tsx
+│   │   ├── ollama.ts
+│   │   └── utils.ts
+│   ├── main.tsx
+│   ├── pages
+│   │   ├── AccessPage.tsx
+│   │   ├── AccountActivationPage.tsx
+│   │   ├── DebugPage.tsx
+│   │   ├── EmailVerifiedPage.tsx
+│   │   ├── ForgotPasswordPage.tsx
+│   │   ├── LegalConsentAdminPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   ├── OnboardingPage.tsx
+│   │   ├── PatientCompletePage.tsx
+│   │   ├── PatientDetailPage.tsx
+│   │   ├── ProfessionalWorkflowPage.tsx
+│   │   ├── RegistrationSuccessPage.tsx
+│   │   ├── ResumeOnboardingPage.tsx
+│   │   ├── TestGeolocation.tsx
+│   │   ├── UnverifiedUserPage.tsx
+│   │   ├── VerifyEmailPage.tsx
+│   │   └── WelcomePage.tsx
+│   ├── router
+│   │   └── router.tsx
+│   ├── services
+│   │   ├── analyticsService.ts
+│   │   ├── appointmentService.ts
+│   │   ├── clinicalDecisionsService.ts
+│   │   ├── emailActivationService.ts
+│   │   ├── emailValidationService.ts
+│   │   ├── firebaseAuthService.ts
+│   │   ├── geolocationService.ts
+│   │   ├── legalConsentService.ts
+│   │   ├── patientService.ts
+│   │   ├── SOAPGenerationService.ts
+│   │   └── TranscriptProcessor.ts
+│   ├── setupTests.ts
+│   ├── shared
+│   │   └── ui
+│   │       ├── Button.tsx
+│   │       ├── Card.tsx
+│   │       ├── index.ts
+│   │       ├── Input.tsx
+│   │       └── PageHeader.tsx
+│   ├── styles
+│   │   ├── aidux-theme.css
+│   │   └── phone-input.css
+│   ├── tests
+│   │   ├── basic.test.ts
+│   │   ├── e2e
+│   │   └── integration
+│   │       └── services.test.ts
+│   ├── tools
+│   │   ├── createTestUser.ts
+│   │   ├── diagnoseUser.ts
+│   │   └── manualClinicalTest.ts
+│   ├── types
+│   │   ├── agent.ts
+│   │   ├── clinical-analysis.ts
+│   │   ├── forms.ts
+│   │   ├── medicalSafety.ts
+│   │   ├── nlp.ts
+│   │   ├── suggestions.ts
+│   │   ├── ui.ts
+│   │   └── wizard.ts
+│   ├── vite-env.d.ts
+│   └── vitest.d.ts
+├── start-monitoring.sh
+├── tailwind.config.ts
+├── TECH_DEBT.md
+├── test-firebase-connection.js
+├── test-output.css
+├── tests
+│   └── legacy
+│       ├── auth-guards.test.tsx
+│       ├── command-center.integration.test.tsx
+│       ├── command-center.test.tsx
+│       ├── dashboard-logout.integration.test.tsx
+│       ├── email-flows.test.tsx
+│       ├── emailActivationService.test.ts
+│       ├── geolocation.integration.test.ts
+│       ├── pipeline-integration.test.tsx
+│       └── SOAPGenerationService.test.ts
+├── tsconfig.base.json
+├── tsconfig.json
+├── tsconfig.migration.json
+├── tsconfig.node.json
+├── tsconfig.node.json 
+├── tsconfig.vitest.json
+├── USER_TESTING_LOG.md
+├── vite.config.ci.ts
+├── vite.config.ts
+└── vitest.config.ts
+
+141 directories, 729 files

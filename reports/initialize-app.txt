@@ -1,0 +1,2 @@
+src/lib/firebase.ts:import { initializeApp, type FirebaseApp } from 'firebase/app';
+src/lib/firebase.ts:  app = initializeApp(firebaseConfig);

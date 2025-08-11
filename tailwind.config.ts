@@ -15,6 +15,41 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Tokens CSS mapeados
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          light: 'var(--color-secondary)',
+          dark: 'var(--color-text)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',
+          light: 'var(--color-text-secondary)',
+          dark: 'var(--color-text)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+        },
+        background: {
+          DEFAULT: 'var(--color-background)',
+          surface: 'var(--color-surface)',
+        },
+        text: {
+          DEFAULT: 'var(--color-text)',
+          secondary: 'var(--color-text-secondary)',
+        },
+        border: {
+          DEFAULT: 'var(--color-border)',
+        },
+        error: {
+          DEFAULT: 'var(--color-error)',
+        },
+        success: {
+          DEFAULT: 'var(--color-success)',
+        },
+        warning: {
+          DEFAULT: 'var(--color-warning)',
+        },
+
         // Colores estándar de Tailwind para gradientes y efectos visuales
         indigo: {
           50: '#eef2ff',
@@ -292,11 +327,40 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Work Sans', 'Lato', 'sans-serif'],
-        heading: ['Work Sans', 'Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-family-base)', 'Inter', 'Work Sans', 'Lato', 'sans-serif'],
+        heading: ['var(--font-family-base)', 'Work Sans', 'Inter', 'sans-serif'],
+        mono: ['var(--font-family-mono)', 'JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        xs: 'var(--font-size-xs)',
+        sm: 'var(--font-size-sm)',
+        base: 'var(--font-size-base)',
+        lg: 'var(--font-size-lg)',
+        xl: 'var(--font-size-xl)',
+        '2xl': 'var(--font-size-2xl)',
+        '3xl': 'var(--font-size-3xl)',
+        '4xl': 'var(--font-size-4xl)',
+      },
+      fontWeight: {
+        light: 'var(--font-weight-light)',
+        normal: 'var(--font-weight-normal)',
+        medium: 'var(--font-weight-medium)',
+        semibold: 'var(--font-weight-semibold)',
+        bold: 'var(--font-weight-bold)',
+      },
+      lineHeight: {
+        tight: 'var(--line-height-tight)',
+        normal: 'var(--line-height-normal)',
+        relaxed: 'var(--line-height-relaxed)',
       },
       spacing: {
+        xs: 'var(--spacing-xs)',
+        sm: 'var(--spacing-sm)',
+        md: 'var(--spacing-md)',
+        lg: 'var(--spacing-lg)',
+        xl: 'var(--spacing-xl)',
+        '2xl': 'var(--spacing-2xl)',
+        '3xl': 'var(--spacing-3xl)',
         '1': '0.25rem', // 4px
         '2': '0.5rem',  // 8px
         '3': '0.75rem', // 12px
@@ -312,28 +376,53 @@ export default {
         '32': '8rem',   // 128px
       },
       borderRadius: {
-        sm: '0.125rem', // 2px
-        DEFAULT: '0.25rem', // 4px
-        md: '0.375rem', // 6px
-        lg: '0.5rem',   // 8px
-        xl: '0.75rem',  // 12px
-        '2xl': '1rem',  // 16px
+        sm: 'var(--radius-sm)',
+        DEFAULT: 'var(--radius-md)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': 'var(--radius-2xl)',
+        full: 'var(--radius-full)',
         '3xl': '1.5rem',// 24px
-        full: '9999px',
       },
       boxShadow: {
-        sm: '0 1px 2px 0 rgba(44, 62, 80, 0.05)',
-        DEFAULT: '0 1.5px 4px 0 rgba(44, 62, 80, 0.08)',
-        md: '0 4px 8px 0 rgba(44, 62, 80, 0.10)',
-        lg: '0 8px 24px 0 rgba(44, 62, 80, 0.12)',
-        xl: '0 16px 48px 0 rgba(44, 62, 80, 0.14)',
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow-md)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
         '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         // Sombras específicas para elementos médicos
         clinical: '0 2px 8px 0 rgba(168, 230, 207, 0.15)',
         sidebar: '2px 0 8px 0 rgba(44, 62, 80, 0.08)',
       },
+      backgroundImage: {
+        'gradient-accent': 'var(--color-accent)',
+        'gradient-to-r': 'linear-gradient(to right, var(--tw-gradient-stops))',
+        'gradient-to-l': 'linear-gradient(to left, var(--tw-gradient-stops))',
+        'gradient-to-t': 'linear-gradient(to top, var(--tw-gradient-stops))',
+        'gradient-to-b': 'linear-gradient(to bottom, var(--tw-gradient-stops))',
+        'gradient-to-tr': 'linear-gradient(to top right, var(--tw-gradient-stops))',
+        'gradient-to-tl': 'linear-gradient(to top left, var(--tw-gradient-stops))',
+        'gradient-to-br': 'linear-gradient(to bottom right, var(--tw-gradient-stops))',
+        'gradient-to-bl': 'linear-gradient(to bottom left, var(--tw-gradient-stops))',
+      },
       animation: {
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      transitionDuration: {
+        fast: 'var(--transition-fast)',
+        normal: 'var(--transition-normal)',
+        slow: 'var(--transition-slow)',
+      },
+      zIndex: {
+        dropdown: 'var(--z-dropdown)',
+        sticky: 'var(--z-sticky)',
+        fixed: 'var(--z-fixed)',
+        'modal-backdrop': 'var(--z-modal-backdrop)',
+        modal: 'var(--z-modal)',
+        popover: 'var(--z-popover)',
+        tooltip: 'var(--z-tooltip)',
       },
     },
   },

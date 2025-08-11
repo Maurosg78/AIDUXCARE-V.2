@@ -1,78 +1,7 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AccessPage = () => {
   const navigate = useNavigate();
-
-  const users = [
-    {
-      id: 'demo',
-      email: 'demo@aiduxcare.com',
-      password: 'password123',
-      name: 'Dr. Demo Profesional',
-      role: 'PHYSICIAN',
-      color: 'bg-blue-500 hover:bg-blue-600'
-    },
-    {
-      id: 'paciente',
-      email: 'paciente@aiduxcare.com',
-      password: 'password123',
-      name: 'Paciente Demo',
-      role: 'PHYSICIAN',
-      color: 'bg-green-500 hover:bg-green-600'
-    },
-    {
-      id: 'admin',
-      email: 'admin@aiduxcare.com',
-      password: 'password123',
-      name: 'Admin Demo',
-      role: 'ADMIN',
-      color: 'bg-purple-500 hover:bg-purple-600'
-    },
-    {
-      id: 'mauro',
-      email: 'maurosg.2023@gmail.com',
-      password: 'Mauro7812#',
-      name: 'Mauricio Sobarzo',
-      role: 'OWNER',
-      color: 'bg-red-500 hover:bg-red-600'
-    }
-  ];
-
-  const handleQuickLogin = (user: typeof users[0]) => {
-    console.log('🔍 [DEBUG] handleQuickLogin llamado con usuario:', user);
-    
-    try {
-      // Aquí podrías implementar login automático
-      // Por ahora, navegamos al login con las credenciales pre-llenadas
-      console.log('🔍 [DEBUG] Navegando a /login con estado:', { 
-        prefillEmail: user.email,
-        prefillPassword: user.password 
-      });
-      
-      // Usar setTimeout para evitar problemas de navegación
-      setTimeout(() => {
-        navigate('/login', { 
-          state: { 
-            prefillEmail: user.email,
-            prefillPassword: user.password 
-          },
-          replace: false // No reemplazar la entrada en el historial
-        });
-      }, 100);
-      
-      console.log('🔍 [DEBUG] Navegación programada');
-    } catch (error) {
-      console.error('❌ [DEBUG] Error en handleQuickLogin:', error);
-    }
-  };
-
-  const handleButtonClick = (user: typeof users[0], event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    console.log('🔍 [DEBUG] Botón clickeado para usuario:', user.name);
-    handleQuickLogin(user);
-  };
 
   const handleManualLogin = () => {
     navigate('/login');
@@ -137,42 +66,20 @@ const AccessPage = () => {
           </div>
         </div>
 
-        {/* User Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {users.map((user) => (
-            <div key={user.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                  <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full mt-1">
-                    {user.role}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <button
-                    onClick={(event) => handleButtonClick(user, event)}
-                    className={`px-4 py-2 text-white rounded-lg font-medium transition-colors ${user.color}`}
-                  >
-                    Acceder
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Manual Login */}
+        {/* Login Button */}
         <div className="text-center">
           <div className="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              ¿Otro usuario?
+              Acceso al Sistema
             </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Inicia sesión con tus credenciales profesionales
+            </p>
             <button
               onClick={handleManualLogin}
-              className="w-full px-6 py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 transition-colors"
+              className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105"
             >
-              Login Manual
+              Iniciar Sesión
             </button>
           </div>
         </div>

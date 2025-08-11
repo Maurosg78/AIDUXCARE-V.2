@@ -1,11 +1,16 @@
-import React from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { router } from './router/router';
+import router from './router/router';
+import { ProfessionalProfileProvider } from './context/ProfessionalProfileContext';
+import { AuthProvider } from './context/AuthContext';
 import './App.css';
 
 function App() {
   return (
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <ProfessionalProfileProvider>
+        <RouterProvider router={router} />
+      </ProfessionalProfileProvider>
+    </AuthProvider>
   );
 }
 

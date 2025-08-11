@@ -238,6 +238,7 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 ### **📋 Roadmap Técnico**
 - **Fase 1**: ✅ Interfaz y arquitectura base (Completada)
 - **Fase 2**: 🔄 Integración con IA local (En desarrollo)
+- **🏥 Sprint FHIR**: ✅ Integración FHIR R4 (CA Core + US Core) - Completada
 - **Fase 3**: 📋 Características médicas avanzadas (Planificada)
 - **Fase 4**: 📋 Despliegue y compliance (Planificada)
 
@@ -250,6 +251,23 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 3. **Persistencia**: Configurar base de datos para sesiones
 4. **Autenticación**: Sistema de login para profesionales
 5. **Compliance**: Implementar estándares de seguridad médica
+
+## 🏥 **Integración FHIR R4 - COMPLETADA ✅**
+
+### **Módulo `src/core/fhir/`**
+- **Recursos soportados**: Patient, Encounter, Observation
+- **Perfiles**: CA Core (Canadá) y US Core (EE.UU.)
+- **Arquitectura**: Desacoplada y modular
+- **Validación**: Ligeros validadores integrados en CI/CD
+- **Documentación**: Completa en `docs/fhir-integration.md`
+
+### **Características técnicas**
+- ✅ **TypeScript estricto** sin `any` o `unknown`
+- ✅ **Tests unitarios** 100% pasando
+- ✅ **Validadores CA Core/US Core** integrados
+- ✅ **Conversión bidireccional** interno ↔ FHIR
+- ✅ **Bundles FHIR** para exportación/importación
+- ✅ **CI/CD integrado** con validación automática
 
 
 # Trigger re-run for CI/CD

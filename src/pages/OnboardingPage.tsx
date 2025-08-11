@@ -8,6 +8,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { legalConsentService } from '../services/legalConsentService';
 
 interface OnboardingStep {
   id: string;
@@ -25,6 +26,12 @@ export const OnboardingPage: React.FC = () => {
     specialty: '',
     experience: '',
     useCase: ''
+  });
+  const [legalConsent, setLegalConsent] = useState({
+    termsAccepted: false,
+    privacyAccepted: false,
+    medicalDisclaimerAccepted: false,
+    consentTimestamp: null as Date | null
   });
 
   const [steps, setSteps] = useState<OnboardingStep[]>([
@@ -50,6 +57,13 @@ export const OnboardingPage: React.FC = () => {
       completed: false
     },
     {
+      id: 'legal',
+      title: 'Términos y Condiciones',
+      description: 'Cláusula legal de uso de AiDuxCare',
+      icon: '⚖️',
+      completed: false
+    },
+    {
       id: 'demo',
       title: 'Demo Rápida',
       description: 'Prueba el sistema con un caso real',
@@ -65,7 +79,37 @@ export const OnboardingPage: React.FC = () => {
     }
   ]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Validar consentimiento legal en el paso 3
+    if (currentStep === 3) {
+      if (!legalConsent.termsAccepted || !legalConsent.privacyAccepted || !legalConsent.medicalDisclaimerAccepted) {
+        alert('Debe aceptar todos los términos y condiciones para continuar.');
+        return;
+      }
+
+      try {
+        // Guardar consentimiento usando el servicio
+        await legalConsentService.saveConsent({
+          ...legalConsent,
+          consentTimestamp: new Date(),
+          userId: userProfile.name || 'anonymous',
+          version: '1.0.0'
+        });
+
+        // Registrar timestamp del consentimiento
+        setLegalConsent(prev => ({
+          ...prev,
+          consentTimestamp: new Date()
+        }));
+
+        console.log('✅ Consentimiento legal registrado exitosamente');
+      } catch (error) {
+        console.error('❌ Error al registrar consentimiento:', error);
+        alert('Error al registrar el consentimiento. Por favor, intente nuevamente.');
+        return;
+      }
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
       setSteps((prev: OnboardingStep[]) => 
@@ -261,6 +305,184 @@ export const OnboardingPage: React.FC = () => {
       case 3:
         return (
           <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 text-center">Términos y Condiciones de Uso</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto text-center">
+              Por favor, lea atentamente los términos y condiciones de uso de AiDuxCare.
+              Al continuar con el proceso de onboarding, usted acepta estar sujeto a estos términos.
+            </p>
+            
+            <div className="bg-white p-6 rounded-lg border border-gray-200 max-w-4xl mx-auto">
+              <div className="space-y-6">
+                {/* Sección 1: Propósito y Alcance */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">1. Propósito y Alcance</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    AiDuxCare es un asistente de Inteligencia Artificial diseñado para profesionales de la salud 
+                    que desean optimizar su documentación clínica. El sistema está diseñado para:
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• Transcribir automáticamente consultas médicas</li>
+                    <li>• Generar notas clínicas estructuradas (SOAP)</li>
+                    <li>• Proporcionar sugerencias clínicas basadas en evidencia</li>
+                    <li>• Mejorar la eficiencia en la documentación médica</li>
+                  </ul>
+                </div>
+
+                {/* Sección 2: Responsabilidad Clínica */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">2. Responsabilidad Clínica</h3>
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 font-medium mb-2">⚠️ IMPORTANTE:</p>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• AiDuxCare es un asistente de IA y NO reemplaza el juicio clínico profesional</li>
+                      <li>• El profesional de la salud mantiene la responsabilidad total sobre las decisiones clínicas</li>
+                      <li>• Todas las sugerencias deben ser revisadas y validadas por el profesional</li>
+                      <li>• El sistema no garantiza la precisión absoluta de las transcripciones o sugerencias</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Sección 3: Privacidad y Seguridad */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">3. Privacidad y Seguridad de Datos</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    AiDuxCare está comprometido con la protección de datos médicos sensibles:
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• Cumplimiento con estándares HIPAA y GDPR</li>
+                    <li>• Cifrado end-to-end de todos los datos clínicos</li>
+                    <li>• Procesamiento local de audio cuando sea posible</li>
+                    <li>• No almacenamiento de datos sensibles en servidores externos</li>
+                    <li>• Auditoría completa de acceso a datos</li>
+                  </ul>
+                </div>
+
+                {/* Sección 4: Uso Aceptable */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">4. Uso Aceptable</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    El usuario se compromete a:
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• Utilizar el sistema únicamente para propósitos médicos legítimos</li>
+                    <li>• Mantener la confidencialidad de las credenciales de acceso</li>
+                    <li>• No compartir la cuenta con terceros</li>
+                    <li>• Reportar inmediatamente cualquier uso no autorizado</li>
+                    <li>• Cumplir con las regulaciones médicas locales aplicables</li>
+                  </ul>
+                </div>
+
+                {/* Sección 5: Limitaciones */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">5. Limitaciones del Servicio</h3>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• El sistema requiere conexión a internet para algunas funcionalidades</li>
+                    <li>• La calidad de transcripción depende de la calidad del audio</li>
+                    <li>• No se garantiza disponibilidad 100% del servicio</li>
+                    <li>• El sistema puede no reconocer términos médicos muy especializados</li>
+                  </ul>
+                </div>
+
+                {/* Sección 6: Terminación */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">6. Terminación del Servicio</h3>
+                  <p className="text-sm text-gray-700">
+                    AiDuxCare se reserva el derecho de suspender o terminar el acceso al servicio en caso de:
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-1 ml-4">
+                    <li>• Violación de estos términos y condiciones</li>
+                    <li>• Uso fraudulento o malicioso del sistema</li>
+                    <li>• Incumplimiento de regulaciones médicas</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 max-w-md">
+                <p className="text-sm text-blue-800 text-center mb-4">
+                  Al hacer clic en &quot;Siguiente&quot;, usted confirma que ha leído, 
+                  entendido y acepta estos términos y condiciones.
+                </p>
+                
+                {/* Checkboxes de Consentimiento Legal */}
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <input
+                      id="terms-accepted"
+                      type="checkbox"
+                      checked={legalConsent.termsAccepted}
+                      onChange={(e) => setLegalConsent(prev => ({
+                        ...prev,
+                        termsAccepted: e.target.checked
+                      }))}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      required
+                    />
+                    <label htmlFor="terms-accepted" className="text-sm text-blue-800">
+                      <strong>Acepto los Términos y Condiciones de Uso</strong><br/>
+                      <span className="text-xs text-blue-600">
+                        He leído y comprendo las condiciones de uso de AiDuxCare
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      id="privacy-accepted"
+                      type="checkbox"
+                      checked={legalConsent.privacyAccepted}
+                      onChange={(e) => setLegalConsent(prev => ({
+                        ...prev,
+                        privacyAccepted: e.target.checked
+                      }))}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      required
+                    />
+                    <label htmlFor="privacy-accepted" className="text-sm text-blue-800">
+                      <strong>Acepto la Política de Privacidad</strong><br/>
+                      <span className="text-xs text-blue-600">
+                        Autorizo el procesamiento de datos según la política de privacidad
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      id="medical-disclaimer-accepted"
+                      type="checkbox"
+                      checked={legalConsent.medicalDisclaimerAccepted}
+                      onChange={(e) => setLegalConsent(prev => ({
+                        ...prev,
+                        medicalDisclaimerAccepted: e.target.checked
+                      }))}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      required
+                    />
+                    <label htmlFor="medical-disclaimer-accepted" className="text-sm text-blue-800">
+                      <strong>Acepto el Disclaimer Médico</strong><br/>
+                      <span className="text-xs text-blue-600">
+                        Entiendo que AiDuxCare es un asistente y no reemplaza mi juicio clínico
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {legalConsent.consentTimestamp && (
+                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="text-xs text-green-700 text-center">
+                      Consentimiento registrado: {legalConsent.consentTimestamp.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900 text-center">Demo Rápida</h2>
             <p className="text-center text-gray-600">
               Prueba el sistema con un caso clínico simulado
@@ -305,7 +527,7 @@ export const OnboardingPage: React.FC = () => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="text-center space-y-6">
             <div className="text-6xl mb-4">✅</div>
@@ -420,4 +642,4 @@ export const OnboardingPage: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};
