@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LocationData, WizardStep, ValidationResult } from '../../types/wizard';
-import { GeolocationData, GeolocationService } from '../../services/geolocationService';
+import { GeolocationData, geolocationService } from '../../services/GeolocationService';
 import { SPANISH_CITIES, getCitiesByProvince } from '../../data/spanishCities';
 import { LegalChecklist, type LegalChecklistItem } from '../LegalChecklist';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
@@ -52,8 +52,8 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   
   // Función para manejar selección manual de país
   const handleManualCountrySelection = (countryCode: string) => {
-    const geolocationService = GeolocationService.getInstance();
-    const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
+    const geolocationServiceInstance = geolocationService;
+    const fiduciaryData = geolocationServiceInstance.getFiduciaryDataForCountry(countryCode);
     
     if (fiduciaryData) {
       // Llenar campos con datos fiduciarios
@@ -82,8 +82,8 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       console.log('LocationDataStep - Iniciando detección automática de ubicación...');
       
       // Usar el servicio de geolocalización que maneja fallbacks automáticamente
-      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
-      const newLocationData = await geolocationService.detectLocation();
+      const geolocationServiceInstance = (await import('../../services/GeolocationService')).geolocationService;
+      const newLocationData = await geolocationServiceInstance.detectLocation();
       
       if (newLocationData) {
         console.log('LocationDataStep - Datos de ubicación obtenidos:', newLocationData);
@@ -289,12 +289,12 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       }
       // Obtener compliance legal para mostrar los checkboxes correctos
       // if (detectedLocation.countryCode) {
-      //   // const compliance = geolocationService.getLegalCompliance(detectedLocation.countryCode);
+      //   // const compliance = GeolocationService.getLegalCompliance(detectedLocation.countryCode);
       //   // setLegalCompliance(compliance);
       // }
     } else if (data.country) {
       // Si se seleccionó país manualmente, obtener compliance
-      // const compliance = geolocationService.getLegalCompliance(data.country.toUpperCase());
+      // const compliance = GeolocationService.getLegalCompliance(data.country.toUpperCase());
       // setLegalCompliance(compliance);
     }
   }, [detectedLocation, data.country, handleFieldChangeWithContext]);
@@ -313,7 +313,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
     handleFieldChangeWithContext('country', countryCode);
     
     // Obtener compliance legal para el país seleccionado
-    // const compliance = geolocationService.getLegalCompliance(countryCode.toUpperCase());
+    // const compliance = GeolocationService.getLegalCompliance(countryCode.toUpperCase());
     // setLegalCompliance(compliance);
   };
 

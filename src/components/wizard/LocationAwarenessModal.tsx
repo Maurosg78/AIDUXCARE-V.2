@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GeolocationService } from '../../services/geolocationService';
+import { geolocationService } from '../../services/GeolocationService';
 
 interface LocationAwarenessModalProps {
   isOpen: boolean;
@@ -19,9 +19,9 @@ export const LocationAwarenessModal: React.FC<LocationAwarenessModalProps> = ({
 
   if (!isOpen) return null;
 
-  const geolocationService = GeolocationService.getInstance();
-  const availableCountries = geolocationService.getAvailableCountriesForManualSelection();
-  const importanceExplanation = geolocationService.getLocationImportanceExplanation();
+  const geolocationServiceInstance = geolocationService;
+  const availableCountries = geolocationServiceInstance.getAvailableCountriesForManualSelection();
+  const importanceExplanation = geolocationServiceInstance.getLocationImportanceExplanation();
 
   const handleCountrySelect = (countryCode: string) => {
     setSelectedCountry(countryCode);
@@ -41,7 +41,7 @@ export const LocationAwarenessModal: React.FC<LocationAwarenessModalProps> = ({
   };
 
   const selectedCountryData = selectedCountry ? 
-    geolocationService.getFiduciaryDataForCountry(selectedCountry) : null;
+    geolocationServiceInstance.getFiduciaryDataForCountry(selectedCountry) : null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LegalCompliance } from '../../services/geolocationService';
+import { LegalCompliance } from '../../services/GeolocationService';
 
 interface LegalComplianceModalProps {
   isOpen: boolean;

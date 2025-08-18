@@ -54,7 +54,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: [quality-gates, unit-tests]
+    needs: quality-gates
     
     steps:
       - name: Checkout code
@@ -77,7 +77,7 @@ jobs:
   firebase-functions:
     name: Firebase Functions Build
     runs-on: ubuntu-latest
-    needs: [quality-gates, unit-tests]
+    needs: quality-gates
     
     steps:
       - name: Checkout code
@@ -114,7 +114,7 @@ jobs:
   smoke-tests:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    needs: [quality-gates, unit-tests, firebase-functions]
+    needs: [quality-gates, firebase-functions]
     
     steps:
       - name: Checkout code
@@ -156,7 +156,7 @@ jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
-    needs: [quality-gates, unit-tests]
+    needs: quality-gates
     
     steps:
       - name: Checkout code

@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { app } from '../core/firebase/firebaseClient';
-import { geolocationService, ComplianceConfig } from '../services/GeolocationService';
+import { GeolocationService, ComplianceConfig } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
@@ -115,7 +115,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       try {
         
         // Detectar ubicación y regulaciones
-        const config = await geolocationService.getRelevantRegulations();
+        const config = await GeolocationService.getRelevantRegulations();
         setComplianceConfig(config);
         
         // Obtener servicios disponibles para la ubicación

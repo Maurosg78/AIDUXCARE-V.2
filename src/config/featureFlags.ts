@@ -7,7 +7,6 @@ interface FeatureFlags {
 // Helper para obtener variables de entorno de Vite
 const getViteEnv = (key: string): string | undefined => {
   try {
-    // @ts-expect-error - import.meta.env es específico de Vite
     return import.meta.env[key];
   } catch {
     return undefined;

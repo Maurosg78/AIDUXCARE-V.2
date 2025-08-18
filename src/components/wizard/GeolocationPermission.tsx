@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
-import { GeolocationData } from '../../services/geolocationService';
+import { GeolocationData } from '../../services/GeolocationService';
 
 interface GeolocationPermissionProps {
   isOpen: boolean;
@@ -61,8 +61,8 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
         async () => {
           try {
             // Usar el servicio de geolocalización para obtener datos completos
-            const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
-            const locationData = await geolocationService.detectLocation();
+            const GeolocationService = (await import('../../services/GeolocationService')).GeolocationService.getInstance();
+            const locationData = await GeolocationService.detectLocation();
             
             if (locationData) {
               setPermissionStatus('granted');

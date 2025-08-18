@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { geolocationService, GeolocationData } from '../services/geolocationService';
+import { GeolocationService, GeolocationData } from '../services/GeolocationService';
 
 export const TestGeolocation: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
@@ -27,7 +27,7 @@ export const TestGeolocation: React.FC = () => {
       
       // 1. Verificar soporte del navegador
       addLog('1. Verificando soporte del navegador...');
-      const isSupported = geolocationService.isGeolocationSupported();
+      const isSupported = GeolocationService.isGeolocationSupported();
       addLog(`   Navegador soporta geolocalización: ${isSupported}`);
       
       if (!isSupported) {
@@ -37,12 +37,12 @@ export const TestGeolocation: React.FC = () => {
       
       // 2. Verificar permisos
       addLog('2. Verificando permisos...');
-      const permissionStatus = await geolocationService.checkGeolocationPermission();
+      const permissionStatus = await GeolocationService.checkGeolocationPermission();
       addLog(`   Estado de permisos: ${permissionStatus}`);
       
       // 3. Intentar detección
       addLog('3. Intentando detectar ubicación...');
-      const location = await geolocationService.detectLocation();
+      const location = await GeolocationService.detectLocation();
       
       if (location) {
         addLog('   ✅ Ubicación detectada exitosamente');
@@ -60,7 +60,7 @@ export const TestGeolocation: React.FC = () => {
       // 4. Probar detección por IP
       addLog('4. Probando detección por IP...');
       try {
-        const ipLocation = await geolocationService.detectLocationByIP();
+        const ipLocation = await GeolocationService.detectLocationByIP();
         if (ipLocation) {
           addLog('   ✅ Ubicación por IP detectada');
           addLog(`   País: ${ipLocation.country}`);

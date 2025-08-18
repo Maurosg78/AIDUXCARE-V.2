@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { PersonalData } from '../../types/wizard';
 import { emailValidationService, type EmailValidationResult } from '../../services/emailValidationService';
-import { GeolocationData, GeolocationService } from '../../services/geolocationService';
+import { GeolocationData, geolocationService } from '../../services/GeolocationService';
 import { EmailRecoveryModal } from './EmailRecoveryModal';
 import { LocationAwarenessModal } from './LocationAwarenessModal';
 import { GeolocationPermissionModal } from './GeolocationPermissionModal';
@@ -67,8 +67,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
   const detectLocationAutomatically = async () => {
     try {
       // Usar el servicio de geolocalización que maneja fallbacks automáticamente
-      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
-      const locationData = await geolocationService.detectLocation();
+      const geolocationServiceInstance = (await import('../../services/GeolocationService')).geolocationService;
+      const locationData = await geolocationServiceInstance.detectLocation();
       
       if (locationData) {
         // Verificar si se necesitan resetear permisos
@@ -144,8 +144,8 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
 
   // Función para manejar selección manual de país
   const handleManualCountrySelection = (countryCode: string) => {
-    const geolocationService = GeolocationService.getInstance();
-    const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
+    const geolocationServiceInstance = geolocationService;
+    const fiduciaryData = geolocationServiceInstance.getFiduciaryDataForCountry(countryCode);
     
     if (fiduciaryData) {
       // Llenar campos con datos fiduciarios

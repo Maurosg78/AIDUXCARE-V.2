@@ -1,5 +1,5 @@
 import React from 'react';
-import { geolocationService, PhoneCountryCode } from '../../services/geolocationService';
+import { geolocationService, PhoneCountryCode } from '../../services/GeolocationService';
 
 interface CountryCodeSelectorProps {
   isOpen: boolean;
