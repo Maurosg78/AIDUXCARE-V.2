@@ -1,4 +1,3 @@
-import React from 'react';
 import { LegalCompliance } from '../../services/GeolocationService';
 
 interface LegalComplianceModalProps {

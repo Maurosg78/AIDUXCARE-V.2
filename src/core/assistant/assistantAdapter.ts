@@ -64,7 +64,7 @@ const getFirebaseFunctions = () => {
     functions.region = region;
     
     // Conectar a emuladores en desarrollo
-    if (typeof window !== 'undefined' && (window as Record<string, unknown>).import?.meta?.env?.DEV) {
+    if (typeof window !== 'undefined' && (window as any).import?.meta?.env?.DEV) {
       try {
         connectFunctionsEmulator(functions, '127.0.0.1', 5001);
         console.info(`[Assistant] Conectado a emulador Functions en puerto 5001`);
@@ -146,7 +146,7 @@ export async function runAssistantQuery(params: { input: string; ctx?: Record<st
       console.warn('[Assistant] Functions no disponibles, usando mocks');
       
       if (router.type === 'data') {
-        const mockResult = await mockDataLookup(router.dataIntent || 'age', params.ctx);
+        const mockResult = await mockDataLookup(router.dataIntent || 'age', params.ctx || {});
         return {
           ok: true,
           routeType: 'data',
@@ -172,7 +172,7 @@ export async function runAssistantQuery(params: { input: string; ctx?: Record<st
     if (router.type === 'data') {
       // Consulta solo de datos internos
       const fn = httpsCallable(functions, 'assistantDataLookup');
-      const res = await fn({ intent: router.dataIntent, params: params.ctx ?? {}, userId: uid });
+      const res = await fn({ intent: router.dataIntent, params: params.ctx || {}, userId: uid });
       const tookMs = performance.now() - started;
       const payload = res.data as { answerMarkdown?: string; data?: unknown };
       await logAction('assistant_data_query', '/assistant');
@@ -191,11 +191,11 @@ export async function runAssistantQuery(params: { input: string; ctx?: Record<st
       try {
         // Primero obtener datos
         const dataFn = httpsCallable(functions, 'assistantDataLookup');
-        const dataRes = await dataFn({ intent: router.dataIntent, params: params.ctx ?? {}, userId: uid });
+        const dataRes = await dataFn({ intent: router.dataIntent, params: params.ctx || {}, userId: uid });
         
         // Luego procesar con LLM
         const llmFn = httpsCallable(functions, 'assistantQuery');
-        const llmRes = await llmFn({ input: params.input, ctx: params.ctx, userId: uid });
+        const llmRes = await llmFn({ input: params.input, ctx: params.ctx || {}, userId: uid });
         
         const tookMs = performance.now() - started;
         const dataPayload = dataRes.data as { answerMarkdown?: string; data?: unknown };
@@ -217,7 +217,7 @@ export async function runAssistantQuery(params: { input: string; ctx?: Record<st
       } catch (error) {
         // Fallback a solo LLM si falla la consulta de datos
         const llmFn = httpsCallable(functions, 'assistantQuery');
-        const llmRes = await llmFn({ input: params.input, ctx: params.ctx, userId: uid });
+        const llmRes = await llmFn({ input: params.input, ctx: params.ctx || {}, userId: uid });
         const tookMs = performance.now() - started;
         const llmPayload = llmRes.data as { answerMarkdown?: string; entities?: unknown[] };
         
@@ -235,7 +235,7 @@ export async function runAssistantQuery(params: { input: string; ctx?: Record<st
 
     // Consulta solo de LLM
     const fn = httpsCallable(functions, 'assistantQuery');
-    const res = await fn({ input: params.input, ctx: params.ctx, userId: uid });
+    const res = await fn({ input: params.input, ctx: params.ctx || {}, userId: uid });
     const tookMs = performance.now() - started;
     const payload = res.data as { answerMarkdown?: string; entities?: unknown[] };
     await logAction('assistant_llm_query', '/assistant');

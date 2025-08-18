@@ -3,7 +3,6 @@
  * Navegación adaptativa para organizaciones basada en permisos
  */
 
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOrganization } from '../core/hooks/useOrganization';
 

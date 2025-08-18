@@ -223,21 +223,20 @@ export function createLocalTranscription(
     (async () => {
       try {
         const result = await transcribeLocal(audioBlob);
-        const audioInfo = await (sttLocalEngine as any).validateAudio(audioBlob);
+        const audioInfo = await (sttLocalEngine as any: (blob: Blob) => Promise<{ duration: number; sampleRate: number; channels: number }> }).validateAudio(audioBlob);
         
         const transcription: LocalTranscription = {
           id: crypto.randomUUID(),
-          audioBlob: result.fallback ? undefined : audioBlob,
+          audioBlob: result.fallback ? undefined : audioBlob, // Solo guardar audio si no es fallback
           text: result.text,
           confidence: result.confidence,
-          duration: audioInfo.duration,
-          sampleRate: audioInfo.sampleRate,
-          channels: audioInfo.channels,
           timestamp: new Date(),
+          userId,
+          sessionId,
           metadata: {
-            
-            
-            
+            duration: audioInfo.duration,
+            sampleRate: audioInfo.sampleRate,
+            channels: audioInfo.channels
           }
         };
         

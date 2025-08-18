@@ -1,4 +1,3 @@
-import React from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useProfessionalProfile } from '../../../context/ProfessionalProfileContext';
 

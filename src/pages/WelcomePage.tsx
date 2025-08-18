@@ -6,7 +6,6 @@
  * @author AiDuxCare Development Team
  */
 
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import aiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
 

@@ -7,7 +7,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/firebase-functions';
+import { getFunctions } from 'firebase/functions';
 
 // GUARDRAILS: NO emuladores en PROD
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';

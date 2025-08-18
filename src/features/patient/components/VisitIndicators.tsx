@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface SuggestionLog {
   visit_id: string;

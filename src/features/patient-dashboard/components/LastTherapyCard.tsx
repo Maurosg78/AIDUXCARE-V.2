@@ -1,4 +1,3 @@
-import React from 'react';
 import { Encounter } from '../../../repositories/encountersRepo';
 import { Timestamp } from 'firebase/firestore';
 

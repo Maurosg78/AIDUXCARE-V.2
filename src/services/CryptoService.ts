@@ -77,7 +77,7 @@ export class CryptoService {
   }
 
   private static generateIV(): Uint8Array {
-    return window.crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
+    return window.crypto.getRandomValues(new Uint8Array(this.IV_LENGTH) as Uint8Array);
   }
 
   private static async encryptData(data: string, key: CryptoKey): Promise<EncryptedData> {

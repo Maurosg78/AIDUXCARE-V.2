@@ -37,11 +37,11 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-123' };
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+      addDoc.mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-123', mockMedication);
 
-      expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+      expect(addDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           name: 'ibuprofeno',
@@ -64,7 +64,7 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-456' };
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+      addDoc.mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-789', mockMedication);
 
@@ -81,7 +81,7 @@ describe('MedicationService', () => {
       };
 
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockRejectedValue(new Error('Error de Firestore'));
+      addDoc.mockRejectedValue(new Error('Error de Firestore'));
 
       await expect(addMedicationToVisit('visit-error', mockMedication))
         .rejects.toThrow('Error de Firestore');

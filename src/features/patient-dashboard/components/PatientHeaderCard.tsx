@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Patient } from '../../../core/types/patient';
 import { Episode } from '../../../repositories/episodesRepo';
 

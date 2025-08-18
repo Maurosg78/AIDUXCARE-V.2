@@ -13,17 +13,6 @@ declare global {
     toHaveClass(className: string): R;
     toHaveAttribute(attr: string, value?: string): R;
   }
-  
-  // Declaraciones para Node.js en entorno de testing
-  declare const global: typeof globalThis;
-  declare const process: {
-    env: { NODE_ENV: string };
-    exit: (code: number) => never;
-  };
-declare const require: NodeRequire;
-  declare const module: { exports: unknown; main?: boolean };
-  declare const __dirname: string;
-  declare const __filename: string;
 }
 
 // Mock performance.now if not available in test environment
