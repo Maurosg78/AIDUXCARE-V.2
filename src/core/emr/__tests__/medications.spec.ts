@@ -37,7 +37,7 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-123' };
       const { addDoc } = await import('firebase/firestore');
-      addDoc.mockResolvedValue(mockDocRef);
+      (addDoc as any).mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-123', mockMedication);
 
@@ -64,7 +64,7 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-456' };
       const { addDoc } = await import('firebase/firestore');
-      addDoc.mockResolvedValue(mockDocRef);
+      (addDoc as any).mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-789', mockMedication);
 
@@ -81,7 +81,7 @@ describe('MedicationService', () => {
       };
 
       const { addDoc } = await import('firebase/firestore');
-      addDoc.mockRejectedValue(new Error('Error de Firestore'));
+      (addDoc as any).mockRejectedValue(new Error('Error de Firestore'));
 
       await expect(addMedicationToVisit('visit-error', mockMedication))
         .rejects.toThrow('Error de Firestore');

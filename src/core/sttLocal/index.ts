@@ -234,7 +234,7 @@ export function createLocalTranscription(
           sampleRate: audioInfo.sampleRate,
           channels: audioInfo.channels,
           timestamp: new Date(),
-          metadata: {
+          metadata: { duration: audioInfo.duration, sampleRate: audioInfo.sampleRate, channels: audioInfo.channels
             
             
             

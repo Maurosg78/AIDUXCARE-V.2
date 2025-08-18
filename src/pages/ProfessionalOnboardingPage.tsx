@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { app } from '../core/firebase/firebaseClient';
-import { GeolocationService, ComplianceConfig } from '../services/GeolocationService';
+import { GeolocationService, any } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
@@ -26,7 +26,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [complianceConfig, setComplianceConfig] = useState<ComplianceConfig | null>(null);
+  const [complianceConfig, setany] = useState<any | null>(null);
   const [availableServices, setAvailableServices] = useState<ServiceAvailability[]>([]);
 
   // Datos del formulario
@@ -115,8 +115,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       try {
         
         // Detectar ubicación y regulaciones
-        const config = await GeolocationService.getRelevantRegulations();
-        setComplianceConfig(config);
+        const config = await GeolocationService.getLegalCompliance();
+        setany(config);
         
         // Obtener servicios disponibles para la ubicación
         if (config.detectedLocation?.isDetected) {
@@ -133,7 +133,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       } catch (error) {
         console.error('Error detectando ubicación:', error);
         // Fallback: mostrar todas las regulaciones
-        setComplianceConfig({
+        setany({
           regulations: [],
           showAllRegulations: true,
           detectedLocation: null
