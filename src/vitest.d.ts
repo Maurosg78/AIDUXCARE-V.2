@@ -1,45 +1,51 @@
 // Declaraciones de tipos para vitest
 declare module 'vitest' {
-  export const describe: unknown;
-  export const it: unknown;
-  export const test: unknown;
-  export const expect: unknown;
-  export const beforeEach: unknown;
-  export const afterEach: unknown;
-  export const beforeAll: unknown;
-  export const afterAll: unknown;
-  export const vi: unknown;
-  export const expectTypeOf: unknown;
+  export const describe: (name: string, fn: () => void) => void;
+  export const it: (name: string, fn: () => void | Promise<void>) => void;
+  export const test: (name: string, fn: () => void | Promise<void>) => void;
+  export const expect: any;
+  export const beforeEach: (fn: () => void | Promise<void>) => void;
+  export const afterEach: (fn: () => void | Promise<void>) => void;
+  export const beforeAll: (fn: () => void | Promise<void>) => void;
+  export const afterAll: (fn: () => void | Promise<void>) => void;
+  export const vi: {
+    fn: (implementation?: any) => any;
+    mock: (module: string, factory: () => any) => void;
+    clearAllMocks: () => void;
+    resetAllMocks: () => void;
+    restoreAllMocks: () => void;
+  };
+  export const expectTypeOf: any;
 }
 
 declare module '@testing-library/react' {
-  export const render: unknown;
-  export const screen: unknown;
-  export const fireEvent: unknown;
-  export const waitFor: unknown;
-  export const within: unknown;
+  export const render: any;
+  export const screen: any;
+  export const fireEvent: any;
+  export const waitFor: any;
+  export const within: any;
 }
 
 declare module '@testing-library/jest-dom' {
-  export const toBeInTheDocument: unknown;
-  export const toHaveTextContent: unknown;
-  export const toHaveClass: unknown;
-  export const toBeVisible: unknown;
-  export const toBeDisabled: unknown;
-  export const toBeEnabled: unknown;
-  export const toHaveValue: unknown;
-  export const toBeChecked: unknown;
-  export const toHaveAttribute: unknown;
+  export const toBeInTheDocument: any;
+  export const toHaveTextContent: any;
+  export const toHaveClass: any;
+  export const toBeVisible: any;
+  export const toBeDisabled: any;
+  export const toBeEnabled: any;
+  export const toHaveValue: any;
+  export const toBeChecked: any;
+  export const toHaveAttribute: any;
 }
 
 declare module 'sinon-chai' {
-  export const expect: unknown;
-  export const assert: unknown;
-  export const should: unknown;
+  export const expect: any;
+  export const assert: any;
+  export const should: any;
 }
 
 declare module 'chai' {
-  export const expect: unknown;
-  export const assert: unknown;
-  export const should: unknown;
+  export const expect: any;
+  export const assert: any;
+  export const should: any;
 } 

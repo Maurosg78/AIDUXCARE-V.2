@@ -1,145 +1,110 @@
-import { useState, FormEvent, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FirebaseAuthService } from '../core/auth/firebaseAuthService';
-import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
+import { useAuth } from '../hooks/useAuth';
+// import { useProfessionalProfile } from '../hooks/useProfessionalProfile';
+import { emailActivationService } from '../services/emailActivationService';
 
-const authService = new FirebaseAuthService();
 
-const LoginPage = () => {
+const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  // Agregar un estado para controlar si la sesión es demo
-  const [isDemo, setIsDemo] = useState(false);
-  const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
-  const [verifyEmailLoading, setVerifyEmailLoading] = useState(false);
-  const [verifyEmailSuccess, setVerifyEmailSuccess] = useState<string | null>(null);
-  const [verifyEmailError, setVerifyEmailError] = useState<string | null>(null);
+  const { login } = useAuth();
+  
+  // Hook para perfil profesional (preparado para futuras integraciones)
+  // const { profile } = useProfessionalProfile();
 
-  // Logging para verificar que el componente se monta sin redirección
+  // Manejar mensajes de éxito desde navegación
   useEffect(() => {
-    console.log('🔍 [DEBUG] LoginPage: Componente montado en /login');
-    console.log('🔍 [DEBUG] LoginPage: Estado de autenticación actual:', {
-      hasPrefillEmail: !!location.state?.prefillEmail,
-      hasPrefillPassword: !!location.state?.prefillPassword,
-      from: location.state?.from?.pathname || '/'
-    });
-  }, [location.state]);
-
-  // Pre-llenar credenciales si vienen de la página de acceso
-  useEffect(() => {
-    if (location.state?.prefillEmail) {
-      setEmail(location.state.prefillEmail);
+    if (location.state?.message && location.state?.type === 'success') {
+      setSuccessMessage(location.state.message);
+      // Limpiar el estado de navegación para evitar mostrar el mensaje múltiples veces
+      navigate(location.pathname, { replace: true, state: {} });
     }
-    if (location.state?.prefillPassword) {
-      setPassword(location.state.prefillPassword);
-    }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
-  // Si viene de una ruta protegida, obtener la URL original
-  // const from = location.state?.from?.pathname || '/';
-
-  // ELIMINADO: useEffect que causaba redirección automática
-  // Esto permitirá que el usuario permanezca en /login sin importar el estado de autenticación
-
-  const handleLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos');
-      return;
-    }
+    setLoading(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError(null);
-      const userProfile = await authService.signIn(email, password);
-      if (userProfile) {
-        // Log de login exitoso
-        await FirestoreAuditLogger.logEvent({
-          type: 'login_success',
-          userId: userProfile.id,
-          userRole: userProfile.role || 'unknown',
-          metadata: { email },
-        });
-        
-        // SOLUCIÓN: Redirigir a una página específica en lugar de regresar a AccessPage
-        console.log('🔍 [DEBUG] Login exitoso, redirigiendo a página principal');
-        navigate('/professional-workflow', { replace: true });
+      console.log('[DEBUG] Intentando login con email:', email);
+
+      // Autenticar con Firebase usando el hook
+      await login(email, password);
+
+      // Verificar si el profesional existe y está activo
+      const professional = await emailActivationService.getProfessional(email);
+      
+      if (!professional) {
+        setError('Email no registrado. Completa el registro primero.');
+        return;
       }
-    } catch (error: unknown) {
-      const err = error as Error;
-      // Log de login fallido
-      await FirestoreAuditLogger.logEvent({
-        type: 'login_failed',
-        userId: 'anonymous',
-        userRole: 'unknown',
-        metadata: { email, error: err.message },
-      });
-      if (err.message.includes('auth/wrong-password') || err.message.includes('auth/user-not-found')) {
-        setError('Credenciales incorrectas. Por favor');
-      } else if (err.message.includes('auth/network-request-failed')) {
-        setError('Error de conexión con el servidor. Por favor, verifica tu conexión a internet.');
-      } else if (err.message === 'Email no verificado') {
-        setShowVerifyPrompt(true);
-        setError(null);
-      } else {
-        setError(err.message || 'Error al iniciar sesión');
+
+      if (!professional.isActive) {
+        setError('Tu cuenta no está activada. Revisa tu email y activa tu cuenta antes de iniciar sesión.');
+        return;
       }
-      console.error('Error al iniciar sesión:', err.message);
+
+      console.log('[DEBUG] Profesional activo encontrado:', professional.displayName);
+
+      // Actualizar último login
+      await emailActivationService.updateLastLogin(email);
+
+
+      
+      // Redirigir al centro de comando
+      navigate('/command-center');
+    } catch (err) {
+      console.error('[DEBUG] Error en login:', err);
+      setError('Error al iniciar sesión. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResendVerification = async () => {
-    setVerifyEmailLoading(true);
-    setVerifyEmailSuccess(null);
-    setVerifyEmailError(null);
-    try {
-      await authService.sendVerificationEmail(email);
-      setVerifyEmailSuccess('Correo de verificación reenviado. Revisa tu bandeja de entrada.');
-    } catch (err: unknown) {
-      setVerifyEmailError((err as Error).message || 'Error al reenviar verificación');
-    } finally {
-      setVerifyEmailLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-boneWhite px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-slateBlue">AiDuxCare</h1>
-          <h2 className="mt-6 text-2xl font-bold tracking-tight text-slateBlue">Iniciar sesión</h2>
-          <p className="mt-2 text-sm text-slateBlue/70">
-            Accede a tu cuenta para gestionar pacientes y consultas
+    <div className="min-h-screen flex items-center justify-center bg-white px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-sm space-y-12">
+        {/* Header Apple-style */}
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-light text-gray-900 tracking-tight">
+            Bienvenido a{' '}
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+              AiDuxCare
+            </span>
+          </h1>
+          <p className="text-gray-500 text-base leading-relaxed font-light">
+            Ficha médica electrónica asistida por AI.<br/>
+            Menos papeleo, más seguridad, más tiempo.
           </p>
         </div>
+
+        {/* Mensaje de éxito Apple-style */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-600 font-medium">{successMessage}</p>
+          </div>
+        )}
+
+        {/* Mensaje de error Apple-style */}
         {error && (
-          <div className="bg-softCoral/10 border-l-4 border-softCoral p-4">
-            <p className="text-softCoral">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-600 font-medium">{error}</p>
           </div>
         )}
-        {showVerifyPrompt && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-2">
-            <p className="text-yellow-800">Debes verificar tu email para acceder.</p>
-            <button type="button" className="aidux-btn-secondary mt-2" onClick={handleResendVerification} disabled={verifyEmailLoading}>
-              {verifyEmailLoading ? 'Enviando...' : 'Reenviar correo de verificación'}
-            </button>
-            {verifyEmailSuccess && <div className="text-green-700 text-xs mt-1">{verifyEmailSuccess}</div>}
-            {verifyEmailError && <div className="text-red-600 text-xs mt-1">{verifyEmailError}</div>}
-          </div>
-        )}
-        <form
-          onSubmit={handleLogin}
-          className="space-y-6"
-          data-testid="login-form"
-        >
-          <div className="space-y-4 rounded-md shadow-sm">
+
+        {/* Formulario de login Apple-style */}
+        <form onSubmit={handleLogin} className="space-y-6" data-testid="login-form">
+          <div className="space-y-5">
+            {/* Campo email Apple-style */}
             <div>
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-2">
                 Correo electrónico
               </label>
               <input
@@ -148,14 +113,16 @@ const LoginPage = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue placeholder:text-neutralGray focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
-                placeholder="Correo electrónico"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
+                placeholder="tu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
+            {/* Campo contraseña Apple-style */}
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Contraseña
               </label>
               <input
@@ -164,90 +131,54 @@ const LoginPage = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="relative block w-full rounded-md border border-neutralGray p-3 text-slateBlue placeholder:text-neutralGray focus:ring-2 focus:ring-intersectionGreen focus:border-intersectionGreen sm:text-sm"
-                placeholder="Contraseña"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
-          <div>
+
+          {/* Botón de login Apple-style */}
+          <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className={`group relative flex w-full justify-center rounded-md bg-softCoral px-3 py-3 text-sm font-semibold text-white hover:bg-intersectionGreen focus:outline-none focus:ring-2 focus:ring-intersectionGreen focus:ring-offset-2 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className="w-full py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-pink-600 hover:via-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Iniciando sesión...
+                </div>
+              ) : (
+                'Iniciar Sesión'
+              )}
             </button>
           </div>
         </form>
-        <div className="flex flex-col items-center gap-2 mt-4">
-          <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 font-medium">¿Olvidaste tu contraseña?</Link>
-          <Link to="/mfa-guide" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Configurar MFA</Link>
-        </div>
-        <div className="flex flex-col items-center mt-4">
-          <button
-            type="button"
-            className="w-full rounded-md bg-intersectionGreen px-3 py-3 text-sm font-semibold text-white hover:bg-softCoral focus:outline-none focus:ring-2 focus:ring-intersectionGreen focus:ring-offset-2 transition-colors mb-2"
-            onClick={async () => {
-              setLoading(true);
-              setError(null);
-              try {
-                // Usuario demo temporal
-                const demoEmail = 'demo-temporal@aiduxcare.com';
-                const demoPassword = 'demoTemporal2025!';
-                const userProfile = await authService.signIn(demoEmail, demoPassword);
-                if (userProfile) {
-                  await FirestoreAuditLogger.logEvent({
-                    type: 'login_success',
-                    userId: userProfile.id,
-                    userRole: userProfile.role || 'demo',
-                    metadata: { email: demoEmail, demo: true },
-                  });
-                  navigate('/professional-workflow', { replace: true, state: { demo: true } });
-                  setIsDemo(true); // Setear el estado para mostrar el banner
-                }
-              } catch (error: unknown) {
-                setError('No se pudo iniciar sesión demo. Contacta a soporte.');
-              } finally {
-                setLoading(false);
-              }
-            }}
-            disabled={loading}
-          >
-            {loading ? 'Iniciando demo...' : 'Probar demo (válido 14 días)'}
-          </button>
-          {isDemo && (
-            <div className="text-xs text-center text-slate-500 mt-2">
-              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Esta sesión demo es temporal, válida por 14 días y con permisos limitados.</span>
-            </div>
-          )}
-        </div>
-        <div className="text-center mt-6">
-          <p className="text-base text-slateBlue/90 font-semibold">
+
+        {/* Enlaces adicionales Apple-style */}
+        <div className="text-center space-y-4">
+          <p className="text-sm text-gray-500">
             ¿No tienes cuenta?{' '}
-            <Link to="/register" className="font-bold text-softCoral hover:text-intersectionGreen transition-colors underline">
+            <Link 
+              to="/register" 
+              className="font-medium text-purple-600 hover:text-purple-700 transition-colors duration-200"
+            >
               Regístrate
             </Link>
           </p>
-        </div>
-        
-        {/* Botón para limpiar sesión (solución temporal) */}
-        <div className="text-center mt-4">
-          <button
-            onClick={async () => {
-              try {
-                await authService.signOut();
-                console.log('🔍 [DEBUG] Sesión cerrada manualmente');
-                window.location.reload();
-              } catch (error) {
-                console.error('❌ Error cerrando sesión:', error);
-              }
-            }}
-            className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 border border-red-300 rounded"
+          
+          <Link 
+            to="/forgot-password" 
+            className="text-sm text-gray-400 hover:text-gray-600 transition-colors duration-200"
           >
-            🗑️ Limpiar Sesión
-          </button>
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
       </div>
     </div>

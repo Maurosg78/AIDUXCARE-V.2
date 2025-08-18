@@ -33,3 +33,12 @@ backend-*.log
 *.log.*
 
 # CI/CD Force Re-run Fri Jul 11 13:23:21 CEST 2025
+AIDUXCARE-STABLE/
+
+# ==== TEMP & BACKUPS ====
+*.bak
+*.timestamp-*
+playwright-report/
+test-results/
+emulator-data/
+.eslintrc.temp.cjs

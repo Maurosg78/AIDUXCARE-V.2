@@ -1,70 +1,58 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
 
-const VerifyEmailPage: React.FC = () => {
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export const VerifyEmailPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const [verificationSent, setVerificationSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const user = getAuth().currentUser;
+  const [error, setError] = useState<string>('');
   const navigate = useNavigate();
+  const auth = getAuth();
+  
+  const email = searchParams.get('email');
 
-  // Efecto para refrescar el usuario y detectar verificación
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined = undefined;
-    const checkVerification = async () => {
-      if (user) {
-        await user.reload();
-        setIsVerified(user.emailVerified);
-        if (user.emailVerified) {
-          setMessage('¡Email verificado! Redirigiendo...');
-          setTimeout(() => navigate('/login'), 1500);
-        }
-      }
-    };
-    interval = setInterval(checkVerification, 2000);
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [user, navigate]);
+    if (email && auth.currentUser) {
+      // Si el usuario está autenticado, enviar verificación automáticamente
+      sendVerificationEmail();
+    }
+  }, [email, auth.currentUser]);
 
-  const handleResend = async () => {
+  const sendVerificationEmail = async () => {
+    if (!auth.currentUser) {
+      setError('Usuario no autenticado');
+      return;
+    }
+
     setLoading(true);
-    setError(null);
-    setMessage(null);
     try {
-      if (user) {
-        await sendEmailVerification(user);
-        await FirestoreAuditLogger.logEvent({
-          type: 'verification_email_resent',
-          userId: user.uid,
-          userRole: 'unknown',
-          metadata: { email: user.email },
-        });
-        setMessage('Correo de verificación reenviado exitosamente. Revisa tu bandeja de entrada.');
-      } else {
-        setError('No se encontró usuario autenticado.');
-      }
-    } catch (err) {
-      setError('Error al reenviar el correo de verificación. Intenta nuevamente.');
+      await sendEmailVerification(auth.currentUser);
+      setVerificationSent(true);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (isVerified) {
+  const handleSkipVerification = () => {
+    // Para desarrollo, permitir saltar verificación
+    navigate('/command-center');
+  };
+
+  if (!email) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fdfc] px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 mt-12 border border-gray-100 text-center">
-          <h1 className="text-2xl font-bold text-[#5DA5A3] mb-4">¡Correo verificado!</h1>
-          <p className="mb-4">Tu correo ha sido verificado correctamente. Ahora puedes iniciar sesión con tu cuenta profesional.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
+          <p className="text-gray-600">Email no especificado</p>
           <button
-            onClick={() => navigate('/login')}
-            className="bg-[#5DA5A3] hover:bg-[#48918f] text-white font-semibold py-2 px-6 rounded transition-colors mt-2"
+            onClick={() => navigate('/')}
+            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
           >
-            Ir a iniciar sesión
+            Volver al inicio
           </button>
         </div>
       </div>
@@ -72,32 +60,59 @@ const VerifyEmailPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fdfc] px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 mt-12 border border-gray-100">
-        <h1 className="text-2xl font-bold text-center text-[#5DA5A3] mb-4">Verifica tu correo electrónico</h1>
-        <p className="text-center text-slate-700 mb-6">
-          Para activar tu cuenta profesional, revisa tu correo y haz clic en el enlace de verificación que te hemos enviado.<br />
-          <span className="font-semibold">No podrás acceder a la plataforma hasta completar este paso.</span>
-        </p>
-        <div className="flex flex-col items-center gap-2">
-          <button
-            onClick={handleResend}
-            disabled={loading}
-            className="aidux-btn-secondary w-full py-2 px-6 rounded font-semibold transition-colors disabled:opacity-60"
-            aria-busy={loading}
-          >
-            {loading ? 'Enviando...' : 'Reenviar correo de verificación'}
-          </button>
-          {message && <div className="text-green-700 text-sm mt-2">{message}</div>}
-          {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
-        </div>
-        <div className="mt-8 text-xs text-center text-slate-500">
-          Si no encuentras el correo, revisa tu carpeta de spam o promociones.<br />
-          ¿Problemas? Contáctanos en <a href="mailto:soporte@aiduxcare.com" className="underline">soporte@aiduxcare.com</a>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Verificar Email</h1>
+        
+        {verificationSent ? (
+          <div className="text-center">
+            <div className="text-green-500 text-6xl mb-4">✓</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Email de verificación enviado
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Hemos enviado un email de verificación a <strong>{email}</strong>
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Por favor, revise su bandeja de entrada y haga clic en el enlace de verificación.
+            </p>
+            <button
+              onClick={() => navigate('/command-center')}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+            >
+              Continuar al Command Centre
+            </button>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-gray-600 mb-6">
+              Necesitamos verificar su email <strong>{email}</strong> para continuar.
+            </p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            )}
+            
+            <button
+              onClick={sendVerificationEmail}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 mb-4"
+            >
+              {loading ? 'Enviando...' : 'Enviar Email de Verificación'}
+            </button>
+            
+            {/* Botón para desarrollo - saltar verificación */}
+            <button
+              onClick={handleSkipVerification}
+              className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+            >
+              🧪 Saltar Verificación (Solo Desarrollo)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-export default VerifyEmailPage; 

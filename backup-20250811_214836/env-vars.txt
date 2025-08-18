@@ -1,0 +1,5 @@
+VITE_FIREBASE_PROJECT_ID=aiduxcare-mvp-uat
+VITE_FIREBASE_AUTH_DOMAIN=aiduxcare-mvp-uat.firebaseapp.com
+VITE_PUBLIC_ACTION_URL=https://aiduxcare-mvp-uat.web.app
+VITE_PUBLIC_BASE_URL=https://aiduxcare-mvp-uat.web.app
+VITE_ENV_TARGET=UAT

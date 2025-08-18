@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+. "$(dirname "$0")/_/husky.sh"
+set -euo pipefail
+
+echo "🔎 pre-commit (Husky): validando calidad y smokes…"
+
+# Guardrails de nombres y Project ID
+if git diff --cached -U0 | grep -E 'assistant(Query|DataLookup)Function' -q; then
+  echo "❌ No uses sufijos *Function. Usa: assistantQuery / assistantDataLookup."
+  exit 1
+fi
+if git diff --cached -U0 | grep -E 'aiduxcare-stt-2025' -q; then
+  echo "❌ Project ID incorrecto en comandos. Usa: aiduxcare-v2-uat-dev."
+  exit 1
+fi
+
+# Calidad
+npm run -s lint
+npx tsc --noEmit
+
+# Emuladores condicionales
+check_port() { nc -z 127.0.0.1 "$1" >/dev/null 2>&1; }
+FN=$(check_port 5001 && echo "up" || echo "down")
+FS=$(check_port 8080 && echo "up" || echo "down")
+AU=$(check_port 9099 && echo "up" || echo "down")
+STRICT=${AIDUX_STRICT_SMOKE:-0}
+
+if [[ "$FN" == "up" && "$FS" == "up" && "$AU" == "up" ]]; then
+  ./tools/smoke-functions.sh
+  ./tools/smoke-ai-light.sh
+else
+  if [[ "$STRICT" == "1" ]]; then
+    echo "❌ Emuladores no están corriendo (5001/8080/9099). Inícialos o export AIDUX_STRICT_SMOKE=0."
+    exit 1
+  else
+    echo "🟡 Emuladores no detectados; omito smokes (modo rápido)."
+  fi
+fi
+
+echo "✅ pre-commit (Husky) passed"

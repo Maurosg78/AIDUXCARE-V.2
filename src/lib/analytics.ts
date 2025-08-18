@@ -14,7 +14,7 @@ interface TrackEvent {
 export const track = (eventName: string, properties?: TrackEvent): void => {
   // En desarrollo, solo logueamos los eventos
   if (import.meta.env.DEV) {
-    console.log('📊 Analytics Event:', eventName, properties);
+  console.log('Analytics event:', eventName, properties);
     return;
   }
 

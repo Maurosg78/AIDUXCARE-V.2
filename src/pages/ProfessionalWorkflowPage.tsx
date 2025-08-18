@@ -1,620 +1,513 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * 🏥 Professional Workflow Page - AiDuxCare V.2
- * Layout completamente funcional con captura de audio y asistente virtual
- */
+import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { useProfessionalProfile } from '../hooks/useProfessionalProfile';
+import { firebaseAuthService } from '../services/firebaseAuthService';
+import { useNavigate } from 'react-router-dom';
+import { useTranscript } from '../hooks/useTranscript';
+import { useProcessedEntities } from '../hooks/useProcessedEntities';
+import { useSoapData } from '../hooks/useSoapData';
+import { ClinicalDecisionsService } from '../services/clinicalDecisionsService';
+import { PageHeader, Button, Card } from '../shared/ui';
 
-import React, { useState, useRef, useEffect } from 'react';
-
-// Declaración mínima local para SpeechRecognition (solo métodos usados)
-interface LocalSpeechRecognition extends EventTarget {
-  start(): void;
-  stop(): void;
-  abort(): void;
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onerror: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onstart: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: LocalSpeechRecognition, ev: Event) => void) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: { new (): LocalSpeechRecognition };
-    webkitSpeechRecognition: { new (): LocalSpeechRecognition };
-  }
-}
-
-interface Patient {
+interface Alerta {
   id: string;
-  name: string;
-  age: number;
-  gender: string;
-  condition: string;
-  allergies: string[];
-  medications: string[];
-  clinicalHistory: string;
+  mensaje: string;
+  sugerencia: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
-interface AssistantMessage {
+interface Highlight {
   id: string;
-  query: string;
-  response: string;
-  timestamp: string;
-  isUser: boolean;
+  contenido: string;
+  selected?: boolean;
+  confidence: number;
 }
 
-export const ProfessionalWorkflowPage: React.FC = () => {
-  // Estados principales
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcription, setTranscription] = useState('');
-  const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
-  const [showPatientForm, setShowPatientForm] = useState(false);
-  
-  // Estados del asistente virtual
-  const [assistantQuery, setAssistantQuery] = useState('');
-  const [assistantHistory, setAssistantHistory] = useState<AssistantMessage[]>([]);
-  const [assistantLoading, setAssistantLoading] = useState(false);
-  const [showAssistant, setShowAssistant] = useState(false);
-  
-  // Tabs de navegación clínica
-  const tabs = [
-    { id: 'clinical', label: 'Evaluación Clínica' },
-    { id: 'soap', label: 'SOAP' },
-    { id: 'summary', label: 'Resumen' }
-  ];
-  const [activeTab, setActiveTab] = useState<string>('clinical');
+export const ProfessionalWorkflowPage = () => {
+  const { user } = useAuth();
+  const { profile, loading: profileLoading, error: profileError } = useProfessionalProfile();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState(1);
+  const [recordingTime, setRecordingTime] = useState('00:00');
+  const [alertasPersistentes, setAlertasPersistentes] = useState<Alerta[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [sessionId] = useState(`session_${Date.now()}`);
 
-  // Referencias para audio
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<LocalSpeechRecognition | null>(null);
-
-  // Función para crear nuevo paciente
-  const createNewPatient = () => {
-    const newPatient: Patient = {
-      id: `patient_${Date.now()}`,
-      name: '',
-      age: 0,
-      gender: '',
-      condition: '',
-      allergies: [],
-      medications: [],
-      clinicalHistory: ''
-    };
-    setCurrentPatient(newPatient);
-    setShowPatientForm(true);
-  };
-
-  // Función para guardar paciente
-  const savePatient = (patientData: Patient) => {
-    setCurrentPatient(patientData);
-    setShowPatientForm(false);
-    // Aquí se guardaría en Firebase
-    console.log('Paciente guardado:', patientData);
-  };
-
-  // Función para iniciar grabación de audio
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        console.log('Audio grabado:', audioBlob);
-        // Aquí se procesaría el audio
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      console.log('🎤 Grabación iniciada');
-
-      // Iniciar transcripción en tiempo real
-      startTranscription();
-    } catch (error) {
-      console.error('Error al iniciar grabación:', error);
-    }
-  };
-
-  // Función para detener grabación
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      stopTranscription();
-      console.log('⏹️ Grabación detenida');
-    }
-  };
-
-  // Función para transcripción en tiempo real
-  const startTranscription = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'es-ES';
-      
-      recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        
-        setTranscription(finalTranscript + interimTranscript);
-      };
-      
-      recognition.onerror = (event: any) => {
-        console.error('Error en transcripción:', event.error);
-      };
-      
-      recognition.start();
-      recognitionRef.current = recognition;
-    }
-  };
-
-  // Función para detener transcripción
-  const stopTranscription = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-  };
-
-  // Función para consultar al asistente virtual
-  const sendAssistantQuery = async (query: string) => {
-    if (!query.trim()) return;
-
-    setAssistantLoading(true);
-    const userMessage: AssistantMessage = {
-      id: Date.now().toString(),
-      query,
-      response: '',
-      timestamp: new Date().toLocaleTimeString(),
-      isUser: true
-    };
-
-    setAssistantHistory(prev => [...prev, userMessage]);
-
-    try {
-      // Simulación de respuesta del asistente Vertex AI
-      const response = `🤖 **Respuesta de Vertex AI (Gemini):**
-
-**Consulta:** ${query}
-
-**Análisis Clínico:**
-• Contexto detectado: ${currentPatient ? `Paciente ${currentPatient.name}` : 'Sin paciente seleccionado'}
-• Especialidad: Fisioterapia
-• Patología: ${currentPatient?.condition || 'No especificada'}
-
-**Recomendación:**
-Basado en la evidencia clínica disponible, se recomienda realizar una evaluación completa que incluya:
-1. Análisis biomecánico
-2. Tests específicos según la patología
-3. Evaluación del dolor y funcionalidad
-
-**Referencias:**
-• Clinical Practice Guidelines
-• Cochrane Database
-• Journal of Physiotherapy
-
-*Respuesta generada por Vertex AI con contexto médico especializado*`;
-
-      const assistantMessage: AssistantMessage = {
-        id: (Date.now() + 1).toString(),
-        query: '',
-        response,
-        timestamp: new Date().toLocaleTimeString(),
-        isUser: false
-      };
-
-      setAssistantHistory(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error al consultar asistente:', error);
-    } finally {
-      setAssistantLoading(false);
-    }
-  };
-
-  // Limpiar recursos al desmontar
-  useEffect(() => {
-    return () => {
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-      }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [isRecording]);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">AiDuxCare Professional</h1>
-              <p className="text-sm text-gray-600">Sistema de IA para Fisioterapia</p>
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setShowAssistant(!showAssistant)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {showAssistant ? '🔒 Ocultar Asistente' : '🤖 Asistente Virtual'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Panel Izquierdo - Información del Paciente */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">📋 Información del Paciente</h2>
-              
-              {!currentPatient ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">No hay paciente seleccionado</p>
-                  <button
-                    onClick={createNewPatient}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    ➕ Crear Nuevo Paciente
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div className="mb-4">
-                    <h3 className="font-medium text-gray-900">{currentPatient.name || 'Sin nombre'}</h3>
-                    <p className="text-sm text-gray-600">
-                      {currentPatient.age ? `${currentPatient.age} años` : 'Edad no especificada'} • {currentPatient.gender || 'No especificado'}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Condición</label>
-                      <p className="text-sm text-gray-900">{currentPatient.condition || 'No especificada'}</p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Alergias</label>
-                      <p className="text-sm text-gray-900">
-                        {currentPatient.allergies.length > 0 ? currentPatient.allergies.join(', ') : 'Sin alergias registradas'}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Medicación</label>
-                      <p className="text-sm text-gray-900">
-                        {currentPatient.medications.length > 0 ? currentPatient.medications.join(', ') : 'Sin medicación registrada'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setShowPatientForm(true)}
-                    className="mt-4 w-full bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    ✏️ Editar Paciente
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Panel Central - Captura de Audio */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">🎤 Captura de Audio</h2>
-              
-              <div className="space-y-4">
-                <div className="text-center">
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg transition-all ${
-                      isRecording 
-                        ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                  >
-                    {isRecording ? '⏹️' : '🎤'}
-                  </button>
-                  <p className="mt-2 text-sm text-gray-600">
-                    {isRecording ? 'Grabando...' : 'Iniciar Grabación'}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Transcripción en Tiempo Real
-                  </label>
-                  <div className="bg-gray-50 rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
-                    {transcription ? (
-                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{transcription}</p>
-                    ) : (
-                      <p className="text-sm text-gray-500 italic">
-                        {isRecording ? 'Escuchando...' : 'La transcripción aparecerá aquí'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setTranscription('')}
-                    className="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                  >
-                    🗑️ Limpiar
-                  </button>
-                  <button
-                    onClick={() => sendAssistantQuery(transcription)}
-                    disabled={!transcription.trim()}
-                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50"
-                  >
-                    🔬 Analizar con IA
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Panel Derecho - Asistente Virtual */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">🤖 Asistente Virtual</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Consulta al Asistente
-                  </label>
-                  <textarea
-                    value={assistantQuery}
-                    onChange={(e) => setAssistantQuery(e.target.value)}
-                    placeholder="Escribe tu consulta clínica..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                <button
-                  onClick={() => sendAssistantQuery(assistantQuery)}
-                  disabled={assistantLoading || !assistantQuery.trim()}
-                  className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-                >
-                  {assistantLoading ? '🔬 Consultando...' : '🔬 Consultar Vertex AI'}
-                </button>
-
-                <div className="max-h-[300px] overflow-y-auto">
-                  {assistantHistory.length > 0 ? (
-                    <div className="space-y-3">
-                      {assistantHistory.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`p-3 rounded-lg ${
-                            message.isUser 
-                              ? 'bg-blue-100 text-blue-900' 
-                              : 'bg-gray-100 text-gray-900'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="text-xs font-medium">
-                              {message.isUser ? '👤 Tú' : '🤖 Asistente'}
-                            </span>
-                            <span className="text-xs text-gray-500">{message.timestamp}</span>
-                          </div>
-                          <div className="text-sm whitespace-pre-wrap">
-                            {message.isUser ? message.query : message.response}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic text-center py-8">
-                      El historial de consultas aparecerá aquí
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => {
-                const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                if (currentIndex > 0) {
-                  setActiveTab(tabs[currentIndex - 1].id);
-                }
-              }}
-              disabled={activeTab === 'clinical'}
-              className="px-3 py-1 text-xs border rounded transition-colors disabled:opacity-50"
-              style={{ borderColor: '#BDC3C7', color: '#2C3E50' }}
-            >
-              Anterior
-            </button>
-            <button
-              onClick={() => {
-                const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                if (currentIndex < tabs.length - 1) {
-                  setActiveTab(tabs[currentIndex + 1].id);
-                }
-              }}
-              disabled={activeTab === 'soap'}
-              className="px-3 py-1 text-xs bg-blue-500 text-white rounded transition-colors disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal para crear/editar paciente */}
-      {showPatientForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {currentPatient?.name ? 'Editar Paciente' : 'Nuevo Paciente'}
-            </h3>
-            
-            <PatientForm
-              patient={currentPatient}
-              onSave={savePatient}
-              onCancel={() => setShowPatientForm(false)}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Componente para el formulario de paciente
-interface PatientFormProps {
-  patient: Patient | null;
-  onSave: (patient: Patient) => void;
-  onCancel: () => void;
-}
-
-const PatientForm: React.FC<PatientFormProps> = ({ patient, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<Patient>({
-    id: patient?.id || `patient_${Date.now()}`,
-    name: patient?.name || '',
-    age: patient?.age || 0,
-    gender: patient?.gender || '',
-    condition: patient?.condition || '',
-    allergies: patient?.allergies || [],
-    medications: patient?.medications || [],
-    clinicalHistory: patient?.clinicalHistory || ''
+  // Hooks del pipeline real
+  const { 
+    transcript, 
+    loading: transcriptLoading, 
+    error: transcriptError, 
+    isRecording, 
+    startRecording, 
+    stopRecording 
+  } = useTranscript({ 
+    enableDemo: import.meta.env.MODE === 'development' 
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
+  const { 
+    entities, 
+    insights, 
+    loading: entitiesLoading, 
+    error: entitiesError 
+  } = useProcessedEntities({ 
+    sessionId, 
+    transcript, 
+    autoProcess: true 
+  });
+
+  const { 
+    soap, 
+    loading: soapLoading, 
+    error: soapError 
+  } = useSoapData({ 
+    sessionId, 
+    entities, 
+    insights, 
+    userId: user?.email || undefined,
+    autoGenerate: true 
+  });
+
+  // Timer de grabación
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isRecording) {
+      let seconds = 0;
+      interval = setInterval(() => {
+        seconds++;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        setRecordingTime(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Convertir insights a alertas
+  useEffect(() => {
+    if (insights && insights.length > 0) {
+      const alertasFromInsights: Alerta[] = insights
+        .filter(insight => insight.severity === 'high' || insight.severity === 'critical')
+        .map(insight => ({
+          id: insight.id,
+          mensaje: insight.title,
+          sugerencia: insight.description,
+          severity: insight.severity
+        }));
+      setAlertasPersistentes(alertasFromInsights);
+    }
+  }, [insights]);
+
+  // Convertir entidades a highlights
+  useEffect(() => {
+    if (entities && entities.length > 0) {
+      const highlightsFromEntities: Highlight[] = entities
+        .filter(entity => entity.confidence > 0.7)
+        .map(entity => ({
+          id: entity.id,
+          contenido: entity.text,
+          confidence: entity.confidence,
+          selected: false
+        }));
+      setHighlights(highlightsFromEntities);
+    }
+  }, [entities]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
+  const confirmarAlerta = async (alertaId: string) => {
+    try {
+      const alerta = alertasPersistentes.find(a => a.id === alertaId);
+      if (alerta && user?.email) {
+        await ClinicalDecisionsService.recordClinicalDecision({
+          sessionId,
+          itemId: alertaId,
+          action: 'confirm',
+          userId: user.email,
+          itemType: 'alert',
+          itemTitle: alerta.mensaje,
+          itemDescription: alerta.sugerencia
+        });
+      }
+      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+    } catch (error) {
+      console.error('Error al confirmar alerta:', error);
+    }
+  };
+
+  const descartarAlerta = async (alertaId: string) => {
+    try {
+      const alerta = alertasPersistentes.find(a => a.id === alertaId);
+      if (alerta && user?.email) {
+        await ClinicalDecisionsService.recordClinicalDecision({
+          sessionId,
+          itemId: alertaId,
+          action: 'discard',
+          userId: user.email,
+          itemType: 'alert',
+          itemTitle: alerta.mensaje,
+          itemDescription: alerta.sugerencia
+        });
+      }
+      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+    } catch (error) {
+      console.error('Error al descartar alerta:', error);
+    }
+  };
+
+  const guardarMetrica = async (alertaId: string) => {
+    try {
+      const alerta = alertasPersistentes.find(a => a.id === alertaId);
+      if (alerta && user?.email) {
+        await ClinicalDecisionsService.recordClinicalDecision({
+          sessionId,
+          itemId: alertaId,
+          action: 'save',
+          userId: user.email,
+          itemType: 'alert',
+          itemTitle: alerta.mensaje,
+          itemDescription: alerta.sugerencia
+        });
+      }
+      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
+    } catch (error) {
+      console.error('Error al guardar métrica:', error);
+    }
+  };
+
+  const toggleHighlight = (highlightId: string) => {
+    setHighlights(prev => prev.map(h => 
+      h.id === highlightId ? { ...h, selected: !h.selected } : h
+    ));
+  };
+
+  const handleLogout = async () => {
+    try {
+      await firebaseAuthService.logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error en logout:', error);
+    }
+  };
+
+  // Eliminar duplicados en highlights
+  const uniqueHighlights = highlights.filter((highlight, index, self) =>
+    index === self.findIndex(h => h.contenido === highlight.contenido)
+  );
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-6">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+          <p className="text-text-secondary font-light">Cargando flujo profesional...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-6">
+          <div className="text-error text-xl">Error al cargar perfil</div>
+          <Button onClick={() => navigate('/command-center')}>
+            Volver al Centro de Comando
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Nombre</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          required
-        />
-      </div>
+    <div className="min-h-screen bg-background">
+      <PageHeader
+        title="Flujo Clínico Profesional"
+        subtitle={`Sesión: ${sessionId} | Profesional: ${profile?.displayName || 'N/A'}`}
+      >
+        <Button variant="outline" onClick={handleLogout}>
+          Cerrar Sesión
+        </Button>
+      </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Edad</label>
-          <input
-            type="number"
-            value={formData.age}
-            onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Género</label>
-          <select
-            value={formData.gender}
-            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* Pestañas de navegación con diseño consistente */}
+        <div className="flex space-x-2 mb-6">
+          <button 
+            onClick={() => setActiveSection(1)}
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+              activeSection === 1 
+                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+            }`}
           >
-            <option value="">Seleccionar</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="O">Otro</option>
-          </select>
+            Anamnesis Clínica
+          </button>
+          <button 
+            onClick={() => setActiveSection(2)}
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+              activeSection === 2 
+                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            Evaluación Física
+          </button>
+          <button 
+            onClick={() => setActiveSection(3)}
+            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+              activeSection === 3 
+                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            Resumen Clínico
+          </button>
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Condición</label>
-        <input
-          type="text"
-          value={formData.condition}
-          onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+        {/* Banner paciente con diseño consistente */}
+        <Card className="mb-6">
+          <h2 className="text-2xl font-light text-gray-900 mb-3 tracking-tight">
+            María{' '}
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+              González
+            </span>
+          </h2>
+          <div className="flex space-x-6 text-sm text-gray-600 mb-4 font-light">
+            <span>45 años</span>
+            <span>Dolor cervical irradiado</span>
+            <span>Última visita: 15 Ene 2025</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6 text-sm text-gray-700 font-light">
+            <div><strong className="text-gray-900">Tratamiento:</strong> Ejercicios cervicales, tecarterapia</div>
+            <div><strong className="text-gray-900">Medicamentos:</strong> Ibuprofeno 400mg cada 8h</div>
+            <div><strong className="text-gray-900">Alergias:</strong> Penicilina</div>
+            <div><strong className="text-gray-900">Alertas previas:</strong> Hipertensión controlada</div>
+          </div>
+        </Card>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Alergias</label>
-        <input
-          type="text"
-          value={formData.allergies.join(', ')}
-          onChange={(e) => setFormData({ ...formData, allergies: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          placeholder="Separadas por comas"
-        />
-      </div>
+        {/* Grabación con diseño consistente */}
+        <Card className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-text">
+                Grabación de Consulta
+              </h2>
+              <p className="text-text-secondary mt-1">
+                {isRecording ? 'Grabando...' : 'Listo para grabar'}
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-center">
+                <div className="text-2xl font-mono text-text">
+                  {recordingTime}
+                </div>
+                <div className="text-sm text-text-secondary">
+                  Duración
+                </div>
+              </div>
+              
+              <Button
+                onClick={toggleRecording}
+                variant={isRecording ? 'secondary' : 'primary'}
+                loading={transcriptLoading}
+              >
+                {isRecording ? 'Detener' : 'Iniciar'} Grabación
+              </Button>
+            </div>
+          </div>
+        </Card>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Medicación</label>
-        <input
-          type="text"
-          value={formData.medications.join(', ')}
-          onChange={(e) => setFormData({ ...formData, medications: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          placeholder="Separadas por comas"
-        />
-      </div>
+        {/* Layout principal con diseño consistente */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* IZQUIERDA - Transcripción */}
+          <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+            <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
+              Transcripción en{' '}
+              <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+                Tiempo Real
+              </span>
+            </h3>
+            <div className="min-h-[400px] bg-gray-50 p-6 rounded-xl border border-gray-200">
+              {transcriptLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                  <span className="ml-3 text-gray-600">Procesando transcripción...</span>
+                </div>
+              ) : transcriptError ? (
+                <div className="text-red-600 text-center">
+                  Error: {transcriptError}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700 whitespace-pre-wrap font-light leading-relaxed">
+                  {transcript || 'Presiona "Iniciar Grabación" para comenzar'}
+                </p>
+              )}
+            </div>
+          </Card>
+          
+          {/* DERECHA - Alertas y Highlights */}
+          <div className="space-y-6">
+            {/* Alertas Críticas */}
+            <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
+                Alertas{' '}
+                <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+                  Críticas
+                </span>
+              </h3>
+              <div className="space-y-4">
+                {entitiesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                    <span className="ml-3 text-gray-600">Analizando entidades...</span>
+                  </div>
+                ) : entitiesError ? (
+                  <div className="text-red-600 text-center py-4">
+                    Error: {entitiesError}
+                  </div>
+                ) : alertasPersistentes.length > 0 ? (
+                  alertasPersistentes.map(alerta => (
+                    <div key={alerta.id} className="border-l-4 border-red-500 bg-red-50 p-4 rounded-xl">
+                      <p className="font-medium text-red-800 text-sm">{alerta.mensaje}</p>
+                      <p className="text-red-600 text-xs mt-2 font-light">{alerta.sugerencia}</p>
+                      <div className="flex gap-3 mt-4">
+                        <Button 
+                          onClick={() => confirmarAlerta(alerta.id)}
+                          variant="success"
+                          size="sm"
+                        >
+                          ✓ Confirmar
+                        </Button>
+                        <Button 
+                          onClick={() => descartarAlerta(alerta.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          ✗ Descartar
+                        </Button>
+                        <Button 
+                          onClick={() => guardarMetrica(alerta.id)}
+                          variant="primary"
+                          size="sm"
+                        >
+                          💾 Guardar
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-center py-8">
+                    No hay alertas críticas identificadas
+                  </div>
+                )}
+              </div>
+            </Card>
+            
+            {/* Highlights Automáticos */}
+            <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
+                Highlights{' '}
+                <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+                  Automáticos
+                </span>
+              </h3>
+              <div className="space-y-3">
+                {entitiesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                    <span className="ml-3 text-gray-600">Generando highlights...</span>
+                  </div>
+                ) : entitiesError ? (
+                  <div className="text-red-600 text-center py-4">
+                    Error: {entitiesError}
+                  </div>
+                ) : uniqueHighlights.length > 0 ? (
+                  uniqueHighlights.map(highlight => (
+                    <div key={highlight.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <input 
+                        type="checkbox" 
+                        onChange={() => toggleHighlight(highlight.id)}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700 font-light">{highlight.contenido}</span>
+                      <span className="text-xs text-gray-500">({Math.round(highlight.confidence * 100)}%)</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-center py-8">
+                    No hay highlights automáticos disponibles
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Historia Clínica</label>
-        <textarea
-          value={formData.clinicalHistory}
-          onChange={(e) => setFormData({ ...formData, clinicalHistory: e.target.value })}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          rows={3}
-        />
+        {/* Resumen Clínico SOAP */}
+        {soap && (
+          <Card className="mt-6 bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+            <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
+              Resumen{' '}
+              <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
+                Clínico SOAP
+              </span>
+            </h3>
+            {soapLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                <span className="ml-3 text-gray-600">Generando resumen clínico...</span>
+              </div>
+            ) : soapError ? (
+              <div className="text-red-600 text-center py-4">
+                Error: {soapError}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Subjetivo</h4>
+                  <p className="text-sm text-gray-700 mb-4">{soap.soap.subjective.chiefComplaint}</p>
+                  
+                  <h4 className="font-medium text-gray-900 mb-2">Objetivo</h4>
+                  <p className="text-sm text-gray-700 mb-4">{soap.soap.objective.inspection}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Evaluación</h4>
+                  <p className="text-sm text-gray-700 mb-4">{soap.soap.assessment.primaryDiagnosis}</p>
+                  
+                  <h4 className="font-medium text-gray-900 mb-2">Plan</h4>
+                  <p className="text-sm text-gray-700 mb-4">{soap.soap.plan.interventions.join(', ')}</p>
+                </div>
+              </div>
+            )}
+            {soap && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">
+                    Calidad: {soap.qualityScore}/100
+                  </span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    soap.reviewRequired 
+                      ? 'bg-red-100 text-red-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {soap.reviewRequired ? 'Requiere Revisión' : 'Aprobado'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
-
-      <div className="flex space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Guardar
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }; 

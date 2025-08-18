@@ -1,0 +1,147 @@
+i  emulators: Starting emulators: auth, functions, firestore
+⚠  emulators: It seems that you are running multiple instances of the emulator suite for project aiduxcare-v2-uat-dev. This may result in unexpected behavior.
+⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, database, hosting, pubsub, storage, dataconnect
+⚠  functions: Application Default Credentials detected. Non-emulated services will access production using these credentials. Be careful!
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  functions: Watching "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions" for Cloud Functions...
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8217
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup.
+✔  functions[europe-west1-assistantQuery]: http function initialized (http://127.0.0.1:5001/aiduxcare-v2-uat-dev/europe-west1/assistantQuery).
+✔  functions[europe-west1-assistantDataLookup]: http function initialized (http://127.0.0.1:5001/aiduxcare-v2-uat-dev/europe-west1/assistantDataLookup).
+
+[90m┌─────────────────────────────────────────────────────────────┐[39m
+[90m│[39m ✔  All emulators ready! It is now safe to connect your app. [90m│[39m
+[90m│[39m i  View Emulator UI at http://127.0.0.1:4001/               [90m│[39m
+[90m└─────────────────────────────────────────────────────────────┘[39m
+
+[90m┌────────────────[39m[90m┬────────────────[39m[90m┬─────────────────────────────────┐[39m
+[90m│[39m[33m Emulator       [39m[90m│[39m[33m Host:Port      [39m[90m│[39m[33m View in Emulator UI             [39m[90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Authentication [90m│[39m 127.0.0.1:9099 [90m│[39m http://127.0.0.1:4001/auth      [90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Functions      [90m│[39m 127.0.0.1:5001 [90m│[39m http://127.0.0.1:4001/functions [90m│[39m
+[90m├────────────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Firestore      [90m│[39m 127.0.0.1:8080 [90m│[39m http://127.0.0.1:4001/firestore [90m│[39m
+[90m└────────────────[39m[90m┴────────────────[39m[90m┴─────────────────────────────────┘[39m
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+i  functions: Beginning execution of "europe-west1-assistantQuery"
+i  functions: Finished "europe-west1-assistantQuery" in 811.114125ms
+i  functions: Beginning execution of "europe-west1-assistantDataLookup"
+i  functions: Finished "europe-west1-assistantDataLookup" in 292.754834ms
+i  functions: Beginning execution of "europe-west1-assistantQuery"
+i  functions: Finished "europe-west1-assistantQuery" in 38.117459ms
+i  functions: Beginning execution of "europe-west1-assistantDataLookup"
+i  functions: Finished "europe-west1-assistantDataLookup" in 9.99525ms
+i  functions: Beginning execution of "europe-west1-assistantQuery"
+i  functions: Finished "europe-west1-assistantQuery" in 37.8615ms
+i  functions: Beginning execution of "europe-west1-assistantDataLookup"
+i  functions: Finished "europe-west1-assistantDataLookup" in 33.676792ms
+i  functions: Beginning execution of "europe-west1-assistantQuery"
+i  functions: Finished "europe-west1-assistantQuery" in 70.5845ms
+i  functions: Beginning execution of "europe-west1-assistantDataLookup"
+i  functions: Finished "europe-west1-assistantDataLookup" in 42.96225ms
+i  functions: Beginning execution of "europe-west1-assistantQuery"
+i  functions: Finished "europe-west1-assistantQuery" in 281.765166ms
+i  functions: Beginning execution of "europe-west1-assistantDataLookup"
+i  functions: Finished "europe-west1-assistantDataLookup" in 48.071875ms
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8676
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8265
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8318
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8660
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8200
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup, processLocalTranscription, getProTranscriptions.
+✔  functions[europe-west1-processLocalTranscription]: http function initialized (http://127.0.0.1:5001/aiduxcare-v2-uat-dev/europe-west1/processLocalTranscription).
+✔  functions[europe-west1-getProTranscriptions]: http function initialized (http://127.0.0.1:5001/aiduxcare-v2-uat-dev/europe-west1/getProTranscriptions).
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8339
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup, processLocalTranscription, getProTranscriptions.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+✔  functions: Using node@20 from host.
+i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly
+Serving at port 8854
+
+✔  functions: Loaded functions definitions from source: assistantQuery, assistantDataLookup, processLocalTranscription, getProTranscriptions.
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 449.94775ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 152.236042ms
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 732.988167ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 231.458ms
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 237.8345ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 58.285542ms
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 405.891959ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 94.070917ms
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 80.334625ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 35.718625ms
+⬢  functions: Failed to handle request for function europe-west1-assistantQuery
+⬢  functions: Failed to start functions in /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions: FirebaseError: Failed to load function.
+⚠  functions: Error parsing /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions/node_modules/jsonwebtoken/package.json: Unexpected end of JSON input
+⚠  Your function was killed because it raised an unhandled error.
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 325.389375ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 102.9825ms
+i  functions: Beginning execution of "europe-west1-processLocalTranscription"
+i  functions: Finished "europe-west1-processLocalTranscription" in 167.290417ms
+i  functions: Beginning execution of "europe-west1-getProTranscriptions"
+i  functions: Finished "europe-west1-getProTranscriptions" in 75.0385ms
+⚠  functions: Error parsing /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions/node_modules/jsonwebtoken/node_modules/jws/package.json: Unexpected end of JSON input
+⚠  Your function was killed because it raised an unhandled error.
+⬢  functions: Failed to handle request for function europe-west1-assistantDataLookup
+⬢  functions: Failed to start functions in /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions: FirebaseError: Failed to load function.
+⚠  functions: Error parsing /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions/node_modules/safe-buffer/package.json: Unexpected end of JSON input
+⚠  Your function was killed because it raised an unhandled error.
+⬢  functions: Failed to handle request for function europe-west1-assistantDataLookup
+⬢  functions: Failed to start functions in /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/functions: FirebaseError: Failed to load function.

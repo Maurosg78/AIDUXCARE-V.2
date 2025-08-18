@@ -174,43 +174,7 @@ npm run test:coverage
 - ✅ **Configuración CI/CD**: Pipeline de testing automatizado
 - 🔄 **Cobertura**: Expandiendo tests de componentes
 
-## 🔧 CI/CD y Configuración
-
-### **Pipeline de Integración Continua**
-El proyecto utiliza GitHub Actions para automatizar el proceso de testing y build. El workflow se ejecuta en cada push a `main` y `develop`, y en cada pull request.
-
-### **Secretos Requeridos**
-Para que el CI/CD funcione correctamente, debes configurar los siguientes secretos en GitHub:
-
-**Ubicación**: `Settings` → `Secrets and variables` → `Actions`
-
-**Secretos Obligatorios**:
-- `VITE_FIREBASE_API_KEY` - Clave API de Firebase
-- `VITE_FIREBASE_PROJECT_ID` - ID del proyecto Firebase
-- `VITE_FIREBASE_APP_ID` - ID de la aplicación Firebase
-
-### **Comportamiento del Workflow**
-- ✅ **Verificación Automática**: El workflow verifica que todos los secretos estén presentes
-- ❌ **Fallo Explícito**: Si falta algún secreto, el workflow falla con mensaje claro
-- 🔍 **Transparencia**: Los logs muestran exactamente qué secreto falta
-
-### **Pasos del Workflow**
-1. **Checkout** - Descarga del código
-2. **Verificación de Secretos** - Valida que todos los secretos estén configurados
-3. **Setup Node.js** - Configuración del entorno
-4. **Instalación** - `npm ci` para dependencias
-5. **Linting** - Verificación de calidad de código
-6. **Testing** - Ejecución de suite de tests
-7. **Build** - Compilación de producción
-
-### **Solución de Problemas**
-Si el workflow falla en "Check required Firebase secrets":
-1. Ve a `Settings` → `Secrets and variables` → `Actions`
-2. Verifica que existan los 3 secretos de Firebase
-3. Asegúrate de que los nombres coincidan exactamente
-4. Si usas variables en lugar de secretos, cambia `secrets.` por `vars.` en el workflow
-
-## �� Sistema de Design
+## 🎨 Sistema de Design
 
 ### **Paleta de Colores Oficial**
 ```css
@@ -274,6 +238,7 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 ### **📋 Roadmap Técnico**
 - **Fase 1**: ✅ Interfaz y arquitectura base (Completada)
 - **Fase 2**: 🔄 Integración con IA local (En desarrollo)
+- **🏥 Sprint FHIR**: ✅ Integración FHIR R4 (CA Core + US Core) - Completada
 - **Fase 3**: 📋 Características médicas avanzadas (Planificada)
 - **Fase 4**: 📋 Despliegue y compliance (Planificada)
 
@@ -286,6 +251,23 @@ Este proyecto fue desarrollado como parte del curso de IA Generativa y demuestra
 3. **Persistencia**: Configurar base de datos para sesiones
 4. **Autenticación**: Sistema de login para profesionales
 5. **Compliance**: Implementar estándares de seguridad médica
+
+## 🏥 **Integración FHIR R4 - COMPLETADA ✅**
+
+### **Módulo `src/core/fhir/`**
+- **Recursos soportados**: Patient, Encounter, Observation
+- **Perfiles**: CA Core (Canadá) y US Core (EE.UU.)
+- **Arquitectura**: Desacoplada y modular
+- **Validación**: Ligeros validadores integrados en CI/CD
+- **Documentación**: Completa en `docs/fhir-integration.md`
+
+### **Características técnicas**
+- ✅ **TypeScript estricto** sin `any` o `unknown`
+- ✅ **Tests unitarios** 100% pasando
+- ✅ **Validadores CA Core/US Core** integrados
+- ✅ **Conversión bidireccional** interno ↔ FHIR
+- ✅ **Bundles FHIR** para exportación/importación
+- ✅ **CI/CD integrado** con validación automática
 
 
 # Trigger re-run for CI/CD

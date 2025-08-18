@@ -16,7 +16,13 @@ export const APP_ENVIRONMENT = import.meta.env.VITE_APP_ENVIRONMENT || 'developm
 
 // Configuración de Ollama (local)
 const OLLAMA_DEFAULT_URL = 'http://localhost:11434';
-const OLLAMA_DEFAULT_MODEL = 'llama3.2:3b';
+const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b-instruct';
+
+// Configuración del AiDux Assistant
+export const AIDUX_ASSISTANT_PROVIDER = import.meta.env.VITE_AIDUX_ASSISTANT_PROVIDER || 'local';
+export const AIDUX_ASSISTANT_BASE_URL = import.meta.env.VITE_AIDUX_ASSISTANT_BASE_URL || OLLAMA_DEFAULT_URL;
+export const AIDUX_ASSISTANT_MODEL = import.meta.env.VITE_AIDUX_ASSISTANT_MODEL || OLLAMA_DEFAULT_MODEL;
+export const AIDUX_ASSISTANT_TIMEOUT = parseInt(import.meta.env.VITE_AIDUX_ASSISTANT_TIMEOUT || '10000'); // 10 segundos
 
 /**
  * Configuración completa del entorno
@@ -40,6 +46,16 @@ export const ENV_CONFIG = {
       url: OLLAMA_DEFAULT_URL,
       model: OLLAMA_DEFAULT_MODEL
     }
+  },
+
+  // AiDux Assistant
+  assistant: {
+    provider: AIDUX_ASSISTANT_PROVIDER,
+    baseUrl: AIDUX_ASSISTANT_BASE_URL,
+    model: AIDUX_ASSISTANT_MODEL,
+    timeout: AIDUX_ASSISTANT_TIMEOUT,
+    isLocal: AIDUX_ASSISTANT_PROVIDER === 'local',
+    isCloud: AIDUX_ASSISTANT_PROVIDER === 'cloud'
   },
   
   // Configuración de la aplicación
@@ -77,6 +93,12 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
   console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
+  
+  // Configuración del Assistant
+  console.log(`- AIDUX_ASSISTANT_PROVIDER: ${AIDUX_ASSISTANT_PROVIDER}`);
+  console.log(`- AIDUX_ASSISTANT_BASE_URL: ${AIDUX_ASSISTANT_BASE_URL}`);
+  console.log(`- AIDUX_ASSISTANT_MODEL: ${AIDUX_ASSISTANT_MODEL}`);
+  console.log(`- AIDUX_ASSISTANT_TIMEOUT: ${AIDUX_ASSISTANT_TIMEOUT}ms`);
   
   // Intentar validar la URL
   if (SUPABASE_URL) {

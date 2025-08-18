@@ -131,12 +131,11 @@ export const AiDuxCareLogo: React.FC<AiDuxCareLogoProps> = ({
 
   const LogoText = () => (
     <span 
-      className="aidux-logo-text"
+      className="aidux-logo-text bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
       style={{
         fontFamily: 'var(--font-family-heading)',
         fontSize,
         fontWeight: 600,
-        color: 'var(--aidux-blue-slate)',
         letterSpacing: '-0.02em'
       }}
     >

@@ -1,0 +1,13 @@
+=== ANÁLISIS DE ARCHIVOS CRÍTICOS ===
+
+1. useAuth.ts:
+-rw-r--r--@ 1 mauriciosobarzo  staff  2406 Aug 10 15:36 src/hooks/useAuth.ts
+
+2. firebase.ts:
+-rw-r--r--@ 1 mauriciosobarzo  staff  1966 Aug 10 15:36 src/lib/firebase.ts
+
+3. LoginPage.tsx:
+-rw-r--r--@ 1 mauriciosobarzo  staff  8187 Aug 10 09:41 src/pages/LoginPage.tsx
+
+4. DebugPage.tsx:
+-rw-r--r--@ 1 mauriciosobarzo  staff  3424 Aug 10 09:43 src/pages/DebugPage.tsx

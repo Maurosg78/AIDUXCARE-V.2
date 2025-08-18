@@ -1,268 +1,55 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import Layout from '@/core/components/Layout';
-import { ProfessionalWorkflowPage } from '@/pages/ProfessionalWorkflowPage';
-import LoginPage from '@/pages/LoginPage';
-import ProtectedRoute from '@/features/auth/ProtectedRoute';
-import { AuditPage } from '@/features/admin/AuditPage';
-import { AuditMetricsDashboard } from '@/features/admin/AuditMetricsDashboard';
-import OrganizationTeamPage from '../pages/OrganizationTeamPage';
-import OrganizationDashboardPage from '../pages/OrganizationDashboardPage';
-import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
-import MFAGuidePage from '../pages/MFAGuidePage';
-import ProfessionalOnboardingPage from '../pages/ProfessionalOnboardingPage';
-import ClinicalInfoPage from '../pages/ClinicalInfoPage';
-import HumanFigurePage from '../pages/HumanFigurePage';
-import SOAPEditorPage from '../pages/SOAPEditorPage';
-import WelcomePage from '../pages/WelcomePage';
-import VerifyEmailPage from '../pages/VerifyEmailPage';
+import React from 'react';
+import { createBrowserRouter, useParams } from 'react-router-dom';
+import { AuthGuard } from '../components/AuthGuard';
+import { CommandCenterPage } from '../features/command-center/CommandCenterPage';
+import { WelcomePage } from '../pages/WelcomePage';
+import LoginPage from '../pages/LoginPage';
+import { PatientListPage } from '../pages/PatientsPage';
+import { PatientDetailPage } from '../pages/PatientDetailPage';
+import { AppointmentListPage } from '../pages/AppointmentsPage';
+import { AppointmentDetailPage } from '../pages/AppointmentsPage';
+import { NotesListPage } from '../pages/NotesPage';
+import { NoteDetailPage } from '../pages/NotesPage';
 
-// Configuración de future flags para React Router v7
-const future = {
-  v7_startTransition: true,
-  v7_relativeSplatPath: true
-};
-
-export const router = createBrowserRouter([
-  // Página principal: Acceso directo
-  {
-    path: '/',
-    element: <WelcomePage />,
-  },
-  // Login
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  // Onboarding Profesional - SIN LAYOUT
-  {
-    path: '/professional-onboarding',
-    element: (
-      <ProtectedRoute>
-        <ProfessionalOnboardingPage />
-      </ProtectedRoute>
-    ),
-  },
-  // Páginas de Documentación - PÚBLICAS
-  {
-    path: '/privacy-policy',
-    element: <PrivacyPolicyPage />,
-  },
-  {
-    path: '/mfa-guide',
-    element: <MFAGuidePage />,
-  },
-  // Página de Confirmación de Onboarding - PÚBLICA
-  {
-    path: '/onboarding-confirmation',
-    element: <Navigate to="/" replace />, // Redirige a la página de bienvenida oficial
-  },
-  {
-    path: '/verify-email',
-    element: <VerifyEmailPage />,
-  },
-  {
-    path: '/register',
-    element: <Navigate to="/professional-onboarding" replace />, // Redirige al onboarding profesional oficial
-  },
-
-  // Rutas principales con layout profesional - PROTEGIDAS
-  {
-    path: "/",
-    element: <Layout />,
-    children: [
-      {
-        path: "professional-workflow",
-        element: (
-          <ProtectedRoute>
-            <ProfessionalWorkflowPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "clinical-info",
-        element: (
-          <ProtectedRoute>
-            <ClinicalInfoPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "human-figure",
-        element: (
-          <ProtectedRoute>
-            <HumanFigurePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "soap-editor",
-        element: (
-          <ProtectedRoute>
-            <SOAPEditorPage />
-          </ProtectedRoute>
-        ),
-      },
-
-      {
-        path: "audit",
-        element: (
-          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-            <AuditPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "audit-metrics",
-        element: (
-          <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-            <AuditMetricsDashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "patients",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Gestión de Pacientes</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Módulo de pacientes en desarrollo</p>
+// LayoutWrapper simple
+function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <h1 className="text-xl font-semibold text-slate-900">AiDuxCare</h1>
               </div>
             </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "notes",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Notas Clínicas</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Módulo de notas en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "profile",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Mi Perfil</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Configuración de perfil en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "settings",
-        element: (
-          <ProtectedRoute>
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración</h1>
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-600">Configuración del sistema en desarrollo</p>
-              </div>
-            </div>
-          </ProtectedRoute>
-        )
-      },
-
-      // Rutas de Organización
-      {
-        path: "organization",
-        children: [
-          {
-            path: "dashboard",
-            element: (
-              <ProtectedRoute>
-                <OrganizationDashboardPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "team",
-            element: (
-              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-                <OrganizationTeamPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "patients",
-            element: (
-              <ProtectedRoute>
-                <div className="max-w-4xl mx-auto">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Pacientes de la Organización</h1>
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-gray-600">Gestión de pacientes de la organización en desarrollo</p>
-                  </div>
-                </div>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "analytics",
-            element: (
-              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-                <div className="max-w-4xl mx-auto">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Analytics de la Organización</h1>
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-gray-600">Analytics y métricas de la organización en desarrollo</p>
-                  </div>
-                </div>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "audit",
-            element: (
-              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-                <div className="max-w-4xl mx-auto">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Auditoría de la Organización</h1>
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-gray-600">Logs de auditoría de la organización en desarrollo</p>
-                  </div>
-                </div>
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "settings",
-            element: (
-              <ProtectedRoute requiredRoles={['ADMIN', 'OWNER']}>
-                <div className="max-w-4xl mx-auto">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-6">Configuración de la Organización</h1>
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-gray-600">Configuración de la organización en desarrollo</p>
-                  </div>
-                </div>
-              </ProtectedRoute>
-            ),
-          },
-        ],
-      },
-    ]
-  },
-
-  // Página de error 404
-  {
-    path: "*",
-    element: <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-8">Página no encontrada</p>
-        <a 
-          href="/" 
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Volver al inicio
-        </a>
-      </div>
+          </div>
+        </div>
+      </nav>
+      <main className="flex-1">{children}</main>
     </div>
-  }
-], { future }); 
+  );
+}
+
+// Wrapper para NoteDetailPage que obtiene el id de los parámetros
+function NoteDetailWrapper() {
+  const { id } = useParams<{ id: string }>();
+  return <NoteDetailPage id={id || ''} />;
+}
+
+const router = createBrowserRouter([
+  { path: '/', element: <WelcomePage /> },
+  { path: '/login', element: <LoginPage /> },
+  {
+    path: '/command-center',
+    element: <AuthGuard><LayoutWrapper><CommandCenterPage /></LayoutWrapper></AuthGuard>
+  },
+  { path: '/patients', element: <AuthGuard><LayoutWrapper><PatientListPage /></LayoutWrapper></AuthGuard> },
+  { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDetailPage /></LayoutWrapper></AuthGuard> },
+  { path: '/appointments', element: <AuthGuard><LayoutWrapper><AppointmentListPage /></LayoutWrapper></AuthGuard> },
+  { path: '/appointments/:id', element: <AuthGuard><LayoutWrapper><AppointmentDetailPage /></LayoutWrapper></AuthGuard> },
+  { path: '/notes', element: <AuthGuard><LayoutWrapper><NotesListPage /></LayoutWrapper></AuthGuard> },
+  { path: '/notes/:id', element: <AuthGuard><LayoutWrapper><NoteDetailWrapper /></LayoutWrapper></AuthGuard> }
+]);
+
+export default router; 

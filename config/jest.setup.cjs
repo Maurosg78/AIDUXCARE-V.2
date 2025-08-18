@@ -2,15 +2,15 @@
 require('@testing-library/jest-dom');
 
 // Mock para fetch global
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 // Mock para localStorage
 Object.defineProperty(window, 'localStorage', {
   value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn()
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn()
   },
   writable: true
 });
@@ -18,18 +18,18 @@ Object.defineProperty(window, 'localStorage', {
 // Mock para matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
   })),
 });
 
 // Suprimir errores de consola durante las pruebas
-console.error = vi.fn();
-console.warn = vi.fn(); 
+console.error = jest.fn();
+console.warn = jest.fn(); 

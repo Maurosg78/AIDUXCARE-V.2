@@ -1,125 +1,110 @@
 /**
- * 🗺️ Servicio de Geolocalización Inteligente
- * Detecta automáticamente la ubicación del usuario para mostrar regulaciones relevantes
+ * GeolocationService - Servicio de geolocalización inteligente
+ * Combina detección automática con fallback manual para compliance legal
+ * 
+ * @version 1.0.0
+ * @author AiDuxCare Development Team
  */
 
-export interface UserLocation {
-  country: string;
-  countryCode: string;
+export interface GeolocationData {
+  country?: string;
+  countryCode?: string;
   region?: string;
+  regionCode?: string;
   city?: string;
-  ip: string;
   timezone?: string;
-  isDetected: boolean;
+  ipAddress?: string;
+  source: 'geolocation' | 'ip' | 'manual' | 'fiduciary';
+  timestamp: Date;
+  needsPermissionReset?: boolean;
+  permissionStatus?: 'granted' | 'denied' | 'prompt';
 }
 
-export interface ComplianceRegulation {
-  id: string;
-  name: string;
-  description: string;
-  countries: string[];
-  regions?: string[];
-  officialUrl: string;
-  isRequired: boolean;
+export interface LegalCompliance {
+  country: string;
+  gdpr: boolean;
+  hipaa: boolean;
+  localPrivacyLaws: string[];
+  dataRetention: number; // días
+  consentRequired: boolean;
+  specialRequirements: string[];
 }
 
-export interface ComplianceConfig {
-  regulations: ComplianceRegulation[];
-  showAllRegulations: boolean;
-  detectedLocation: UserLocation | null;
+export interface PhoneCountryCode {
+  country: string;
+  code: string;
+  flag: string;
+  format: string;
 }
-
-// Regulaciones por país/región
-const COMPLIANCE_REGULATIONS: ComplianceRegulation[] = [
-  {
-    id: 'hipaa',
-    name: 'HIPAA - Estados Unidos',
-    description: 'Health Insurance Portability and Accountability Act - Regulación federal estadounidense',
-    countries: ['US'],
-    officialUrl: 'https://www.hhs.gov/hipaa/index.html',
-    isRequired: true
-  },
-  {
-    id: 'pipeda',
-    name: 'PIPEDA - Canadá (Federal)',
-    description: 'Personal Information Protection and Electronic Documents Act - Regulación federal canadiense',
-    countries: ['CA'],
-    officialUrl: 'https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/',
-    isRequired: true
-  },
-  {
-    id: 'phipa',
-    name: 'PHIPA - Ontario, Canadá',
-    description: 'Personal Health Information Protection Act - Regulación específica de Ontario',
-    countries: ['CA'],
-    regions: ['ON'],
-    officialUrl: 'https://www.ontario.ca/laws/statute/04p03',
-    isRequired: true
-  },
-  {
-    id: 'gdpr',
-    name: 'GDPR - Unión Europea',
-    description: 'General Data Protection Regulation - Regulación europea de protección de datos',
-    countries: ['ES', 'FR', 'DE', 'IT', 'PT', 'NL', 'BE', 'AT', 'IE', 'FI', 'SE', 'DK', 'NO', 'CH'],
-    officialUrl: 'https://gdpr.eu/',
-    isRequired: true
-  },
-  {
-    id: 'lgpd',
-    name: 'LGPD - Brasil',
-    description: 'Lei Geral de Proteção de Dados - Regulación brasileña de protección de datos',
-    countries: ['BR'],
-    officialUrl: 'https://www.gov.br/cnpd/pt-br',
-    isRequired: true
-  },
-  {
-    id: 'lfpdppp',
-    name: 'LFPDPPP - México',
-    description: 'Ley Federal de Protección de Datos Personales en Posesión de Particulares',
-    countries: ['MX'],
-    officialUrl: 'https://www.inai.org.mx/',
-    isRequired: true
-  },
-  {
-    id: 'ley1581',
-    name: 'Ley 1581 - Colombia',
-    description: 'Ley de Protección de Datos Personales de Colombia',
-    countries: ['CO'],
-    officialUrl: 'https://www.sic.gov.co/',
-    isRequired: true
-  },
-  {
-    id: 'ley25326',
-    name: 'Ley 25.326 - Argentina',
-    description: 'Ley de Protección de Datos Personales de Argentina',
-    countries: ['AR'],
-    officialUrl: 'https://www.argentina.gob.ar/aaip',
-    isRequired: true
-  },
-  {
-    id: 'ley19628',
-    name: 'Ley 19.628 - Chile',
-    description: 'Ley de Protección de la Vida Privada de Chile',
-    countries: ['CL'],
-    officialUrl: 'https://www.consejotransparencia.cl/',
-    isRequired: true
-  },
-  {
-    id: 'ley29733',
-    name: 'Ley 29733 - Perú',
-    description: 'Ley de Protección de Datos Personales de Perú',
-    countries: ['PE'],
-    officialUrl: 'https://www.minjusdh.gob.pe/',
-    isRequired: true
-  }
-];
 
 export class GeolocationService {
   private static instance: GeolocationService;
-  private cachedLocation: UserLocation | null = null;
-  private detectionPromise: Promise<UserLocation> | null = null;
+  private cachedData: GeolocationData | null = null;
 
-  static getInstance(): GeolocationService {
+  // Códigos de país para teléfonos
+  private phoneCountryCodes: PhoneCountryCode[] = [
+    { country: 'España', code: '+34', flag: '🇪🇸', format: '+34 XXX XXX XXX' },
+    { country: 'México', code: '+52', flag: '🇲🇽', format: '+52 XXX XXX XXXX' },
+    { country: 'Argentina', code: '+54', flag: '🇦🇷', format: '+54 XXX XXX XXXX' },
+    { country: 'Colombia', code: '+57', flag: '🇨🇴', format: '+57 XXX XXX XXXX' },
+    { country: 'Chile', code: '+56', flag: '🇨🇱', format: '+56 X XXX XXX XXX' },
+    { country: 'Perú', code: '+51', flag: '🇵🇪', format: '+51 XXX XXX XXX' },
+    { country: 'Estados Unidos', code: '+1', flag: '🇺🇸', format: '+1 (XXX) XXX-XXXX' },
+    { country: 'Reino Unido', code: '+44', flag: '🇬🇧', format: '+44 XXXX XXXXXX' },
+    { country: 'Alemania', code: '+49', flag: '🇩🇪', format: '+49 XXX XXXXXXX' },
+    { country: 'Francia', code: '+33', flag: '🇫🇷', format: '+33 X XX XX XX XX' }
+  ];
+
+  // Compliance legal por país
+  private legalComplianceMap: Record<string, LegalCompliance> = {
+    'ES': {
+      country: 'España',
+      gdpr: true,
+      hipaa: false,
+      localPrivacyLaws: ['LOPDGDD', 'RGPD'],
+      dataRetention: 2555, // 7 años médicos
+      consentRequired: true,
+      specialRequirements: ['Consentimiento explícito', 'Derecho de portabilidad']
+    },
+    'MX': {
+      country: 'México',
+      gdpr: false,
+      hipaa: false,
+      localPrivacyLaws: ['LFPDPPP'],
+      dataRetention: 1825, // 5 años
+      consentRequired: true,
+      specialRequirements: ['Aviso de privacidad', 'Derechos ARCO']
+    },
+    'AR': {
+      country: 'Argentina',
+      gdpr: false,
+      hipaa: false,
+      localPrivacyLaws: ['LPDP'],
+      dataRetention: 1825, // 5 años
+      consentRequired: true,
+      specialRequirements: ['Registro de bases de datos', 'Derecho de acceso']
+    },
+    'US': {
+      country: 'Estados Unidos',
+      gdpr: false,
+      hipaa: true,
+      localPrivacyLaws: ['HIPAA', 'CCPA'],
+      dataRetention: 2555, // 7 años
+      consentRequired: true,
+      specialRequirements: ['Autorización específica', 'Notificación de violaciones']
+    },
+    'GB': {
+      country: 'Reino Unido',
+      gdpr: true,
+      hipaa: false,
+      localPrivacyLaws: ['UK GDPR', 'DPA 2018'],
+      dataRetention: 2555, // 7 años
+      consentRequired: true,
+      specialRequirements: ['Consentimiento granular', 'Derecho al olvido']
+    }
+  };
+
+  public static getInstance(): GeolocationService {
     if (!GeolocationService.instance) {
       GeolocationService.instance = new GeolocationService();
     }
@@ -127,216 +112,442 @@ export class GeolocationService {
   }
 
   /**
-   * Detecta la ubicación del usuario usando múltiples métodos
+   * Detecta ubicación automáticamente usando geolocalización del navegador
+   * Garantiza que siempre se capture provincia o solicita manualmente
    */
-  async detectUserLocation(): Promise<UserLocation> {
-    // Si ya tenemos una ubicación cacheada, la devolvemos
-    if (this.cachedLocation) {
-      return this.cachedLocation;
+  public async detectLocation(): Promise<GeolocationData | null> {
+    if (!navigator.geolocation) {
+      console.log('Geolocalización no soportada por el navegador');
+      return await this.detectLocationByIP();
     }
-
-    // Si ya hay una detección en progreso, esperamos
-    if (this.detectionPromise) {
-      return this.detectionPromise;
-    }
-
-    // Iniciamos nueva detección
-    this.detectionPromise = this.performLocationDetection();
-    
-    try {
-      const location = await this.detectionPromise;
-      this.cachedLocation = location;
-      return location;
-    } finally {
-      this.detectionPromise = null;
-    }
-  }
-
-  /**
-   * Realiza la detección de ubicación usando múltiples APIs
-   */
-  private async performLocationDetection(): Promise<UserLocation> {
-    const fallbackLocation: UserLocation = {
-      country: 'Unknown',
-      countryCode: 'XX',
-      ip: 'unknown',
-      isDetected: false
-    };
 
     try {
-      // Método 1: IP-API (gratuita, sin API key)
-      const location = await this.detectViaIPAPI();
-      if (location.isDetected) {
-        console.log('🌍 Ubicación detectada via IP-API:', location);
-        return location;
-      }
-
-      // Método 2: ipapi.co (gratuita, con límites)
-      const location2 = await this.detectViaIPAPICo();
-      if (location2.isDetected) {
-        console.log('🌍 Ubicación detectada via ipapi.co:', location2);
-        return location2;
-      }
-
-      // Método 3: ipinfo.io (gratuita, con límites)
-      const location3 = await this.detectViaIPInfo();
-      if (location3.isDetected) {
-        console.log('🌍 Ubicación detectada via ipinfo.io:', location3);
-        return location3;
-      }
-
-      console.warn('⚠️ No se pudo detectar la ubicación del usuario');
-      return fallbackLocation;
-
-    } catch (error) {
-      console.error('❌ Error detectando ubicación:', error);
-      return fallbackLocation;
-    }
-  }
-
-  /**
-   * Detecta ubicación usando IP-API (gratuita)
-   */
-  private async detectViaIPAPI(): Promise<UserLocation> {
-    try {
-      const response = await fetch('http://ip-api.com/json/?fields=status,message,country,countryCode,region,regionName,city,query,timezone');
-      const data = await response.json();
-
-      if (data.status === 'success') {
+      console.log('Iniciando detección de ubicación...');
+      
+      // Verificar estado actual de permisos ANTES de intentar geolocalización
+      const permissionStatus = await this.checkGeolocationPermission();
+      console.log('Estado de permisos de geolocalización:', permissionStatus);
+      
+      if (permissionStatus === 'denied') {
+        console.log('Permisos denegados: el navegador no mostrará el prompt');
+        console.log('Solución: el usuario debe resetear permisos manualmente');
+        
+        // Retornar datos especiales para indicar que se necesitan permisos
         return {
-          country: data.country,
-          countryCode: data.countryCode,
-          region: data.regionName,
-          city: data.city,
-          ip: data.query,
-          timezone: data.timezone,
-          isDetected: true
+          country: undefined,
+          countryCode: undefined,
+          region: undefined,
+          regionCode: undefined,
+          city: undefined,
+          timezone: undefined,
+          ipAddress: undefined,
+          source: 'manual',
+          timestamp: new Date(),
+          needsPermissionReset: true,
+          permissionStatus: 'denied'
         };
       }
-    } catch (error) {
-      console.warn('IP-API falló:', error);
-    }
+      
+      // Solo intentar geolocalización si los permisos no están denegados
+      if (permissionStatus === 'granted' || permissionStatus === 'prompt') {
+        console.log('✅ Permisos disponibles, intentando geolocalización...');
+        
+        try {
+          const position = await this.getCurrentPosition();
+          const { latitude, longitude } = position.coords;
+          
+          console.log('Coordenadas obtenidas:', { latitude, longitude });
+          
+          // Usar servicio de reverse geocoding
+          const locationData = await this.reverseGeocode(latitude, longitude);
+          
+          console.log('Datos de ubicación obtenidos:', locationData);
+          
+          // Verificar que se obtuvo provincia
+          if (!locationData.region && locationData.country) {
+            console.log('Provincia no detectada automáticamente, solicitando manualmente');
+            this.cachedData = {
+              ...locationData,
+              source: 'geolocation',
+              timestamp: new Date()
+            };
+            return this.cachedData;
+          }
+          
+          this.cachedData = {
+            ...locationData,
+            source: 'geolocation',
+            timestamp: new Date()
+          };
 
-    return { country: '', countryCode: '', ip: '', isDetected: false };
+          console.log('Ubicación detectada exitosamente:', this.cachedData);
+          return this.cachedData;
+        } catch (geoError) {
+          const geolocationError = geoError as GeolocationPositionError;
+          console.log('Error en geolocalización:', {
+            code: geolocationError.code,
+            message: geolocationError.message
+          });
+          
+          // Si el usuario denegó permisos, usar IP
+          if (geolocationError.code === 1) {
+            console.log('Usuario denegó permisos de geolocalización, usando IP...');
+            return await this.detectLocationByIP();
+          }
+          
+          // Para otros errores (timeout, no disponible), también usar IP
+          console.log('Error en geolocalización, usando IP como fallback...');
+          return await this.detectLocationByIP();
+        }
+      } else {
+        console.log('⚠️ Estado de permisos inesperado:', permissionStatus);
+        return await this.detectLocationByIP();
+      }
+    } catch (error) {
+      console.log('Error general en geolocalización:', error);
+      return await this.detectLocationByIP();
+    }
   }
 
   /**
-   * Detecta ubicación usando ipapi.co
+   * Detecta ubicación por IP como fallback
+   * Garantiza que siempre se capture provincia o solicita manualmente
    */
-  private async detectViaIPAPICo(): Promise<UserLocation> {
+  public async detectLocationByIP(): Promise<GeolocationData | null> {
     try {
       const response = await fetch('https://ipapi.co/json/');
       const data = await response.json();
-
-      if (data.country_code) {
-        return {
+      
+      // Verificar que se obtuvo provincia
+      if (!data.region && data.country_name) {
+        console.log('Provincia no detectada por IP, solicitando manualmente');
+        // Retornar datos incompletos para que se solicite manualmente
+        this.cachedData = {
           country: data.country_name,
           countryCode: data.country_code,
-          region: data.region,
+          region: undefined, // Provincia no detectada
+          regionCode: data.region_code,
           city: data.city,
-          ip: data.ip,
           timezone: data.timezone,
-          isDetected: true
+          ipAddress: data.ip,
+          source: 'ip',
+          timestamp: new Date()
         };
+        return this.cachedData;
       }
-    } catch (error) {
-      console.warn('ipapi.co falló:', error);
-    }
-
-    return { country: '', countryCode: '', ip: '', isDetected: false };
-  }
-
-  /**
-   * Detecta ubicación usando ipinfo.io
-   */
-  private async detectViaIPInfo(): Promise<UserLocation> {
-    try {
-      const response = await fetch('https://ipinfo.io/json');
-      const data = await response.json();
-
-      if (data.country) {
-        return {
-          country: data.country_name || data.country,
-          countryCode: data.country,
-          region: data.region,
-          city: data.city,
-          ip: data.ip,
-          timezone: data.timezone,
-          isDetected: true
-        };
-      }
-    } catch (error) {
-      console.warn('ipinfo.io falló:', error);
-    }
-
-    return { country: '', countryCode: '', ip: '', isDetected: false };
-  }
-
-  /**
-   * Obtiene las regulaciones relevantes para la ubicación del usuario
-   */
-  async getRelevantRegulations(): Promise<ComplianceConfig> {
-    const location = await this.detectUserLocation();
-    
-    if (!location.isDetected) {
-      // Si no se puede detectar, mostrar todas las regulaciones
-      return {
-        regulations: COMPLIANCE_REGULATIONS,
-        showAllRegulations: true,
-        detectedLocation: location
+      
+      this.cachedData = {
+        country: data.country_name,
+        countryCode: data.country_code,
+        region: data.region,
+        regionCode: data.region_code,
+        city: data.city,
+        timezone: data.timezone,
+        ipAddress: data.ip,
+        source: 'ip',
+        timestamp: new Date()
       };
-    }
 
-    // Filtrar regulaciones relevantes para la ubicación
-    const relevantRegulations = COMPLIANCE_REGULATIONS.filter(regulation => {
-      // Verificar si aplica al país
-      const countryMatch = regulation.countries.includes(location.countryCode);
-      
-      // Si tiene regiones específicas, verificar también
-      if (regulation.regions && location.region) {
-        return countryMatch && regulation.regions.includes(location.region);
-      }
-      
-      return countryMatch;
-    });
-
-    // Si no hay regulaciones específicas, incluir las más comunes
-    if (relevantRegulations.length === 0) {
-      const commonRegulations = COMPLIANCE_REGULATIONS.filter(r => 
-        ['gdpr', 'hipaa', 'pipeda'].includes(r.id)
-      );
-      relevantRegulations.push(...commonRegulations);
+      return this.cachedData;
+    } catch (error) {
+      console.log('Error en detección por IP:', error);
+      return null;
     }
+  }
+
+  /**
+   * Obtiene el código de país para teléfono
+   */
+  public getPhoneCountryCode(countryCode: string): PhoneCountryCode | null {
+    const country = this.phoneCountryCodes.find(c => 
+      c.country.toLowerCase().includes(countryCode.toLowerCase()) ||
+      c.code === countryCode
+    );
+    return country || null;
+  }
+
+  /**
+   * Obtiene compliance legal para un país
+   */
+  public getLegalCompliance(countryCode: string): LegalCompliance | null {
+    return this.legalComplianceMap[countryCode.toUpperCase()] || null;
+  }
+
+  /**
+   * Obtiene todos los códigos de país disponibles
+   */
+  public getAllPhoneCountryCodes(): PhoneCountryCode[] {
+    return this.phoneCountryCodes;
+  }
+
+  /**
+   * Obtiene datos de ubicación desde caché
+   */
+  public getCachedLocation(): GeolocationData | null {
+    return this.cachedData;
+  }
+
+  /**
+   * Establece ubicación manualmente
+   */
+  public setManualLocation(country: string, countryCode: string, region?: string): GeolocationData {
+    this.cachedData = {
+      country,
+      countryCode,
+      region,
+      source: 'manual',
+      timestamp: new Date()
+    };
+    return this.cachedData;
+  }
+
+  /**
+   * Obtiene explicación de por qué es importante la ubicación real
+   */
+  public getLocationImportanceExplanation(): string {
+    return `La ubicación es fundamental para:
+• Cumplir con las leyes de privacidad de tu país
+• Configurar correctamente el compliance legal (GDPR, HIPAA, etc.)
+• Establecer retención de datos médicos apropiada
+• Aplicar las regulaciones locales específicas
+• Garantizar que tu información esté protegida según tu jurisdicción`;
+  }
+
+  /**
+   * Obtiene países disponibles para selección manual con sus características
+   */
+  public getAvailableCountriesForManualSelection(): Array<{
+    code: string;
+    name: string;
+    gdpr: boolean;
+    hipaa: boolean;
+    dataRetention: number;
+    specialFeatures: string[];
+  }> {
+    return Object.entries(this.legalComplianceMap).map(([code, compliance]) => ({
+      code,
+      name: compliance.country,
+      gdpr: compliance.gdpr,
+      hipaa: compliance.hipaa,
+      dataRetention: compliance.dataRetention,
+      specialFeatures: compliance.specialRequirements
+    }));
+  }
+
+  /**
+   * Obtiene datos fiduciarios completos para un país específico
+   */
+  public getFiduciaryDataForCountry(countryCode: string): {
+    location: GeolocationData;
+    compliance: LegalCompliance;
+    explanation: string;
+  } | null {
+    const compliance = this.legalComplianceMap[countryCode.toUpperCase()];
+    if (!compliance) return null;
+
+    // Datos fiduciarios típicos del país
+    const fiduciaryData: Record<string, { city: string; region: string }> = {
+      'ES': { city: 'Madrid', region: 'Comunidad de Madrid' },
+      'MX': { city: 'Ciudad de México', region: 'Ciudad de México' },
+      'AR': { city: 'Buenos Aires', region: 'Ciudad Autónoma de Buenos Aires' },
+      'US': { city: 'New York', region: 'New York' },
+      'GB': { city: 'London', region: 'England' }
+    };
+
+    const countryData = fiduciaryData[countryCode.toUpperCase()];
+    
+    const location: GeolocationData = {
+      country: compliance.country,
+      countryCode: countryCode.toUpperCase(),
+      region: countryData?.region,
+      city: countryData?.city,
+      source: 'fiduciary',
+      timestamp: new Date()
+    };
+
+    const explanation = this.getCountrySpecificExplanation(countryCode);
 
     return {
-      regulations: relevantRegulations,
-      showAllRegulations: false,
-      detectedLocation: location
+      location,
+      compliance,
+      explanation
     };
   }
 
   /**
-   * Obtiene información específica de una regulación
+   * Obtiene explicación específica para cada país
    */
-  getRegulationInfo(regulationId: string): ComplianceRegulation | null {
-    return COMPLIANCE_REGULATIONS.find(r => r.id === regulationId) || null;
+  private getCountrySpecificExplanation(countryCode: string): string {
+    const explanations: Record<string, string> = {
+      'ES': `España: Cumple con RGPD y LOPDGDD. Retención de datos médicos: 7 años. 
+Derechos: Consentimiento explícito, portabilidad de datos, derecho al olvido.`,
+      'MX': `México: Ley Federal de Protección de Datos Personales. Retención: 5 años.
+Derechos ARCO: Acceso, Rectificación, Cancelación, Oposición.`,
+      'AR': `Argentina: Ley de Protección de Datos Personales. Retención: 5 años.
+Registro obligatorio de bases de datos médicas.`,
+      'US': `Estados Unidos: Cumple con HIPAA y CCPA. Retención: 7 años.
+Autorización específica requerida para uso de datos médicos.`,
+      'GB': `Reino Unido: UK GDPR y DPA 2018. Retención: 7 años.
+Consentimiento granular y derecho al olvido garantizados.`
+    };
+
+    return explanations[countryCode.toUpperCase()] || 'Información de compliance no disponible para este país.';
   }
 
   /**
-   * Limpia la caché de ubicación (útil para testing)
+   * Verifica si la geolocalización está disponible
    */
-  clearCache(): void {
-    this.cachedLocation = null;
-    this.detectionPromise = null;
+  public isGeolocationSupported(): boolean {
+    return 'geolocation' in navigator;
   }
 
   /**
-   * Simula una ubicación específica (útil para testing)
+   * Verifica si el usuario ha denegado permisos
    */
-  setMockLocation(location: UserLocation): void {
-    this.cachedLocation = location;
+  public async checkGeolocationPermission(): Promise<'granted' | 'denied' | 'prompt'> {
+    if (!this.isGeolocationSupported()) {
+      console.log('Geolocalización no soportada por el navegador');
+      return 'denied';
+    }
+
+    try {
+      // Verificar permisos usando Permissions API si está disponible
+      if ('permissions' in navigator) {
+        try {
+          const permission = await (navigator as Navigator & { permissions?: Permissions }).permissions?.query({ name: 'geolocation' as PermissionName });
+          console.log('Estado de permisos de geolocalización:', permission?.state);
+          
+          // Si los permisos están denegados, no hay nada que hacer
+          if (permission.state === 'denied') {
+            console.log('Permisos de geolocalización DENEGADOS permanentemente');
+            return 'denied';
+          }
+          
+          // Si están concedidos, verificar que realmente funcionan
+          if (permission.state === 'granted') {
+            try {
+              // Intentar obtener posición con timeout razonable
+              await this.getCurrentPosition(3000);
+              console.log('Permisos concedidos y funcionando correctamente');
+              return 'granted';
+            } catch (posError) {
+              console.log('Permisos concedidos pero error al obtener posición:', posError);
+              // Si hay error, intentar con IP como fallback
+              return 'prompt';
+            }
+          }
+          
+          // Si están en prompt, retornar prompt
+          return permission.state;
+        } catch (permError) {
+          console.log('Error al verificar permisos con Permissions API:', permError);
+          // Continuar con fallback
+        }
+      }
+
+      // Fallback: intentar obtener posición con timeout razonable
+      console.log('Usando fallback para verificar permisos...');
+      try {
+        await this.getCurrentPosition(3000);
+        console.log('Permisos funcionando correctamente (fallback)');
+        return 'granted';
+      } catch (posError) {
+        const geolocationError = posError as GeolocationPositionError;
+        console.log('Error al verificar permisos de geolocalización (fallback):', {
+          code: geolocationError.code,
+          message: geolocationError.message
+        });
+        
+        if (geolocationError.code === 1) {
+          console.log('Permisos de geolocalización DENEGADOS por el usuario');
+          return 'denied';
+        }
+        if (geolocationError.code === 2) {
+          console.log('Ubicación NO DISPONIBLE (fuera de cobertura)');
+          return 'prompt'; // Cambiar a prompt para permitir fallback por IP
+        }
+        if (geolocationError.code === 3) {
+          console.log('Timeout en geolocalización');
+          return 'prompt'; // Cambiar a prompt para permitir fallback por IP
+        }
+        
+        return 'prompt';
+      }
+    } catch (error) {
+      console.log('Error general al verificar permisos:', error);
+      return 'prompt';
+    }
+  }
+
+  private getCurrentPosition(timeout = 10000): Promise<GeolocationPosition> {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        {
+          enableHighAccuracy: true,
+          timeout,
+          maximumAge: 300000 // 5 minutos
+        }
+      );
+    });
+  }
+
+  private async reverseGeocode(lat: number, lng: number): Promise<Partial<GeolocationData>> {
+    try {
+      console.log('Iniciando reverse geocoding para:', { lat, lng });
+      
+      // Usar servicio gratuito de reverse geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      console.log('Respuesta del servicio de geocoding:', data);
+      
+      // Verificar que data.address existe antes de acceder a sus propiedades
+      if (!data.address) {
+        console.log('Error en reverse geocoding: No se encontró información de dirección');
+        return {};
+      }
+      
+      const locationData = {
+        country: data.address.country,
+        countryCode: this.getCountryCode(data.address.country),
+        region: data.address.state || data.address.province || data.address.region,
+        city: data.address.city || data.address.town || data.address.village,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      };
+      
+      console.log('Datos de ubicación procesados:', locationData);
+      
+      return locationData;
+    } catch (error) {
+      console.log('Error en reverse geocoding:', error);
+      return {};
+    }
+  }
+
+  private getCountryCode(countryName: string): string {
+    const countryMap: Record<string, string> = {
+      'Spain': 'ES',
+      'España': 'ES',
+      'Mexico': 'MX',
+      'México': 'MX',
+      'Argentina': 'AR',
+      'Colombia': 'CO',
+      'Chile': 'CL',
+      'Peru': 'PE',
+      'Perú': 'PE',
+      'United States': 'US',
+      'United Kingdom': 'GB',
+      'Germany': 'DE',
+      'Deutschland': 'DE',
+      'France': 'FR'
+    };
+    
+    return countryMap[countryName] || countryName.substring(0, 2).toUpperCase();
   }
 }
 
-// Exportar instancia singleton
 export const geolocationService = GeolocationService.getInstance(); 

@@ -24,6 +24,11 @@
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "error",
+    "no-restricted-syntax": [
+      "error",
+      { "selector": "Literal[value=/[\\u{1F300}-\\u{1FAFF}]/u]", "message": "No se permiten emojis en UI interna (IN)." }
+    ],
+    
     "jsx-a11y/aria-props": ["error", {
       "aria-expanded": {
         "allowExpression": true,
