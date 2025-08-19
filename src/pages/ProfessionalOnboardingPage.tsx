@@ -119,7 +119,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         setany(config);
         
         // Obtener servicios disponibles para la ubicación
-        if (false) {
+        if (false) { // eslint-disable-line no-constant-condition
           const services = professionalServicesService.getAvailableServices(
             "ES"
           );
