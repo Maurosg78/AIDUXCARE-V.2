@@ -13,3 +13,4 @@ This PR validates that only the main CI workflow runs, not multiple workflows in
 
 ## Test Change:
 
+# Validación Final: Tue Aug 19 08:47:08 CEST 2025
