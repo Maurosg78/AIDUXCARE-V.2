@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { GeolocationService, GeolocationData } from '../services/GeolocationService';
+import { geolocationService, GeolocationData } from '../services/GeolocationService';
 
 export const TestGeolocation: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);

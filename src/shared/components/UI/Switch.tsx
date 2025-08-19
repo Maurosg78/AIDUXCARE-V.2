@@ -1,4 +1,4 @@
-import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface CustomProps {
   checked: boolean;

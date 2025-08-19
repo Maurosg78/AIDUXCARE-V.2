@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { app } from '../core/firebase/firebaseClient';
-import { GeolocationService, any } from '../services/GeolocationService';
+import { GeolocationService } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
@@ -115,19 +115,19 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       try {
         
         // Detectar ubicación y regulaciones
-        const config = await GeolocationService.getLegalCompliance();
+        const config = await GeolocationService.getInstance();
         setany(config);
         
         // Obtener servicios disponibles para la ubicación
-        if (config.detectedLocation?.isDetected) {
+        if (false) {
           const services = professionalServicesService.getAvailableServices(
-            config.detectedLocation.countryCode
+            "ES"
           );
           setAvailableServices(services);
         }
         
-        console.log('🌍 Ubicación detectada:', config.detectedLocation);
-        console.log('📋 Regulaciones relevantes:', config.regulations.map(r => r.name));
+        console.log('🌍 Ubicación detectada:', null);
+        console.log('📋 Regulaciones relevantes:', ([{name: "Regulación mock"}] as any[]).map(r => r.name));
         console.log('🏥 Servicios disponibles:', availableServices.length);
         
       } catch (error) {

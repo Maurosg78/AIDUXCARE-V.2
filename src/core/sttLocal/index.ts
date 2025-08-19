@@ -216,8 +216,8 @@ export async function transcribeLocal(audioBlob: Blob): Promise<STTLocalResult> 
 // Función para crear transcripción local
 export function createLocalTranscription(
   audioBlob: Blob,
-  userId: string,
-  sessionId: string
+  // userId: string,
+  // sessionId: string
 ): Promise<LocalTranscription> {
   return new Promise((resolve, reject) => {
     (async () => {
@@ -230,11 +230,11 @@ export function createLocalTranscription(
           audioBlob: result.fallback ? undefined : audioBlob,
           text: result.text,
           confidence: result.confidence,
-          duration: audioInfo.duration,
-          sampleRate: audioInfo.sampleRate,
+          
+          
           channels: audioInfo.channels,
           timestamp: new Date(),
-          metadata: { duration: audioInfo.duration, sampleRate: audioInfo.sampleRate, channels: audioInfo.channels
+          metadata: { duration: audioInfo.duration,  channels: audioInfo.channels
             
             
             
