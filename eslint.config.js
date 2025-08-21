@@ -39,6 +39,15 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'import/order': ['warn', { 'newlines-between': 'always' }],
       'react/react-in-jsx-scope': 'off',
+      // Prohibir imports directos desde core/firebase
+      'no-restricted-imports': ['error', {
+        'patterns': [
+          {
+            'group': ['@/core/firebase/*', 'src/core/firebase/*', '**/core/firebase/*'],
+            'message': 'Importa desde @/integrations/firebase en lugar de core/firebase directamente.'
+          }
+        ]
+      }]
     },
     settings: {
       react: { version: 'detect' },

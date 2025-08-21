@@ -9,7 +9,10 @@
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] },
+    "paths": { 
+      "@/*": ["src/*"],
+      "@/integrations/firebase": ["src/integrations/firebase/stub.ts"]
+    },
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,

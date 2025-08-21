@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
-import { app } from '../core/firebase/firebaseClient';
+import { app } from '@/integrations/firebase';
 import { geolocationService, ComplianceConfig } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
@@ -102,7 +102,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           console.log('Usuario autenticado:', user.uid);
         }
       } catch (error) {
-        console.error('Error verificando perfil existente:', error);
+        console.error('Error checking existing profile:', error);
       }
     };
 

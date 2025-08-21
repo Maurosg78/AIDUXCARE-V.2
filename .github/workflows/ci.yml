@@ -17,3 +17,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test
+      # Check anti-regresión: falla si detecta import prohibido de Firebase
+      - name: "🔒 Check: No imports directos desde core/firebase"
+        run: |
+          if grep -R --line-number -E "from ['\"][^'\"]*core/firebase" src; then
+            echo "🚫 ERROR: Import directo desde core/firebase detectado. Usa '@/integrations/firebase'." >&2
+            exit 1
+          fi
+          echo "✅ OK: Sin imports directos de core/firebase"
