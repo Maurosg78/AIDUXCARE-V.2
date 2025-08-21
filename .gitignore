@@ -137,4 +137,7 @@ reports/
 metrics/
 
 # Legacy patches
-*.patch
+*.patch.quarantine/
+dist/
+node_modules/
+*.log
