@@ -1,10 +1,10 @@
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
-    setupFiles: ['vitest.setup.ts'],
+    environment: "jsdom",
+    setupFiles: ["vitest.setup.ts"],
     include: ['test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: [
       'node_modules',
@@ -20,7 +20,13 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src')
-    }
-  }
+      "@": path.resolve(__dirname, "src"),
+      "@/integrations/firebase": path.resolve(
+        __dirname,
+        process.env.AIDUX_ENABLE_FIREBASE === "1"
+          ? "src/integrations/firebase/real.ts"
+          : "src/integrations/firebase/stub.ts"
+      ),
+    },
+  },
 });

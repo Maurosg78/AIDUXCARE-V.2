@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:enterprise": "vite build --mode production",
-    "build:fast": "vite build --mode production",
-    "build:check": "tsc --noEmit",
-    "lint": "eslint .",
-    "preview": "vite preview",
+    "dev:firebase": "AIDUX_ENABLE_FIREBASE=1 vite",
+    "build": "tsc --noEmit && vite build",
+    "build:firebase": "AIDUX_ENABLE_FIREBASE=1 tsc --noEmit && AIDUX_ENABLE_FIREBASE=1 vite build",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:firebase": "AIDUX_ENABLE_FIREBASE=1 vitest run --passWithNoTests",
     "test:ui": "vitest --ui",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "vitest": {
     "environment": "jsdom",
