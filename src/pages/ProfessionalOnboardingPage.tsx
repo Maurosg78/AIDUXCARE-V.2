@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { app } from '../core/firebase/firebaseClient';
-import { GeolocationService } from '../services/GeolocationService';
+import { geolocationService, ComplianceConfig } from '../services/GeolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
@@ -26,7 +26,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [complianceConfig, setany] = useState<any | null>(null);
+  const [complianceConfig, setComplianceConfig] = useState<ComplianceConfig | null>(null);
   const [availableServices, setAvailableServices] = useState<ServiceAvailability[]>([]);
 
   // Datos del formulario
@@ -115,25 +115,25 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       try {
         
         // Detectar ubicación y regulaciones
-        const config = await GeolocationService.getInstance();
-        setany(config);
+        const config = await geolocationService.getRelevantRegulations();
+        setComplianceConfig(config);
         
         // Obtener servicios disponibles para la ubicación
-        if (false) { // eslint-disable-line no-constant-condition
+        if (config.detectedLocation?.isDetected) {
           const services = professionalServicesService.getAvailableServices(
-            "ES"
+            config.detectedLocation.countryCode
           );
           setAvailableServices(services);
         }
         
-        console.log('🌍 Ubicación detectada:', null);
-        console.log('📋 Regulaciones relevantes:', ([{name: "Regulación mock"}] as any[]).map(r => r.name));
+        console.log('🌍 Ubicación detectada:', config.detectedLocation);
+        console.log('📋 Regulaciones relevantes:', config.regulations.map(r => r.name));
         console.log('🏥 Servicios disponibles:', availableServices.length);
         
       } catch (error) {
         console.error('Error detectando ubicación:', error);
         // Fallback: mostrar todas las regulaciones
-        setany({
+        setComplianceConfig({
           regulations: [],
           showAllRegulations: true,
           detectedLocation: null

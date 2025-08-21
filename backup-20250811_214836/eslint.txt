@@ -1,8 +1,0 @@
-
-> aiduxcare-v2@0.1.0 lint
-> npm run lint:prod
-
-
-> aiduxcare-v2@0.1.0 lint:prod
-> eslint src/ --ext ts,tsx --report-unused-disable-directives --max-warnings 0
-

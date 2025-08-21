@@ -5,45 +5,38 @@
   text-align: center;
 }
 
-.container {
-  background-color: var(--aidux-bone-white);
-  padding: 2rem;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
 .card {
-  margin: 2rem 0;
-  padding: 2rem;
-  background-color: var(--aidux-pure-white);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-clinical);
-  transition: transform 0.3s ease;
+  padding: 2em;
 }
 
-.button {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.6em 1.2em;
-  background-color: var(--aidux-coral);
-  color: var(--aidux-pure-white);
-  font-weight: 500;
-  text-decoration: none;
-  border-radius: var(--border-radius-md);
-  transition: background-color 0.3s;
-  font-family: var(--font-family-primary);
+.read-the-docs {
+  color: #888;
 }
-
-.button:hover {
-  background-color: var(--aidux-coral-dark);
-}
-
-.success {
-  color: var(--aidux-intersection-green);
-  font-weight: bold;
-}
-
-.error {
-  color: var(--aidux-coral-dark);
-  font-weight: bold;
-} 

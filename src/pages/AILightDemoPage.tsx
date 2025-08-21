@@ -83,10 +83,10 @@ const AILightDemoPage: React.FC = () => {
   const processLocalTranscription = async (audioBlob: Blob) => {
     setIsProcessing(true);
     try {
-      // const userId = "demo-user";
-      // const sessionId = crypto.randomUUID();
+      const userId = 'demo-user';
+      const sessionId = crypto.randomUUID();
       
-      const localTranscription = await createLocalTranscription(audioBlob);
+      const localTranscription = await createLocalTranscription(audioBlob, userId, sessionId);
       
       addLocalTranscription(localTranscription);
       setTranscription(localTranscription.text);

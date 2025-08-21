@@ -1,0 +1,15 @@
+{
+  "id": "observation-789",
+  "patientId": "patient-123",
+  "encounterId": "encounter-456",
+  "type": "vital_signs",
+  "value": 120,
+  "unit": "mmHg",
+  "date": "2024-12-19T10:15:00Z",
+  "category": "vital-signs",
+  "code": "85354-9",
+  "codeSystem": "http://loinc.org",
+  "displayName": "Blood pressure systolic",
+  "status": "final",
+  "effectiveDate": "2024-12-19T10:15:00Z"
+}

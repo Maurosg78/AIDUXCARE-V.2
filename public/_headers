@@ -1,6 +1,0 @@
-/*
-  Content-Security-Policy: default-src 'self' https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net https://*.netlify.app; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://us-east1-aiduxcare-stt-20250706.cloudfunctions.net https://*.netlify.app wss://*.netlify.app;
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  X-XSS-Protection: 1; mode=block 
