@@ -49,10 +49,6 @@ pids
 coverage/
 *.lcov
 
-# Dependency directories
-node_modules/
-jspm_packages/
-
 # TypeScript cache
 *.tsbuildinfo
 
@@ -82,22 +78,6 @@ jspm_packages/
 .vercel/
 .vercel/output/
 
-# SECURITY: Archivos duplicados y temporales
-* 2*
-* 2/
-temp_backup/
-deployment/
-k8s/
-logs/
-maintenance/
-backup-*/
-quarantine/
-
-# SECURITY: Archivos de configuración sensibles
-firebase-debug*.log
-firestore-debug*.log
-*.log.*
-
 # Testing
 playwright-report/
 test-results/
@@ -115,6 +95,7 @@ firebase-export-*/
 # =========================
 # CRITICAL: QUARANTINE DIRS
 # =========================
+.quarantine/
 QUARANTINE*/
 QUARANTINE_*/
 AIDUXCARE-STABLE/
@@ -124,6 +105,8 @@ aiduxcare-clean/
 tools/legacy_codebase/
 tools/recovery_*/
 recovery_*/
+backup-*/
+quarantine/
 
 # Scripts and tools output
 scripts/test-system-quick.html
@@ -138,6 +121,3 @@ metrics/
 
 # Legacy patches
 *.patch.quarantine/
-dist/
-node_modules/
-*.log
