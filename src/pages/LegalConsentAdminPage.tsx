@@ -7,8 +7,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { LegalConsentStatus } from '../components/LegalConsentStatus';
 import { legalConsentService, type LegalConsent, type ConsentAuditLog } from '../services/legalConsentService';
+
+import logger from '@/shared/utils/logger';
 
 interface ConsentData {
   consent: LegalConsent | null;
@@ -34,7 +37,7 @@ export const LegalConsentAdminPage: React.FC = () => {
       const data = legalConsentService.exportConsentData();
       setConsentData(data);
     } catch (error) {
-      console.error('Error al cargar datos de consentimiento:', error);
+      logger.error('Error al cargar datos de consentimiento:', error);
     }
   };
 
@@ -51,7 +54,7 @@ export const LegalConsentAdminPage: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error al exportar datos:', error);
+      logger.error('Error al exportar datos:', error);
       alert('Error al exportar los datos');
     }
   };
@@ -64,7 +67,7 @@ export const LegalConsentAdminPage: React.FC = () => {
         loadConsentData();
         alert('Datos de consentimiento eliminados');
       } catch (error) {
-        console.error('Error al eliminar datos:', error);
+        logger.error('Error al eliminar datos:', error);
         alert('Error al eliminar los datos');
       }
     }
@@ -89,7 +92,7 @@ export const LegalConsentAdminPage: React.FC = () => {
           <LegalConsentStatus 
             showDetails={showDetails}
             onConsentChange={(hasConsent) => {
-              console.log('Estado de consentimiento cambiado:', hasConsent);
+              logger.info('Estado de consentimiento cambiado:', hasConsent);
               loadConsentData();
             }}
           />

@@ -1,5 +1,7 @@
 import { professionalCompetencyService } from './ProfessionalCompetencyService';
 
+import logger from '@/shared/utils/logger';
+
 export interface CompetencyGuardResult {
   isAllowed: boolean;
   warning?: {

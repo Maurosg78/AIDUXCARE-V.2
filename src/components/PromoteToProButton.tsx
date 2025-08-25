@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+
 import { useAiModeStore, useLocalTranscriptions, usePromoteToProOnReconnect } from '../stores/aiModeStore';
 import { LocalTranscription } from '../stores/aiModeStore';
+
+import logger from '@/shared/utils/logger';
 
 interface PromoteToProButtonProps {
   transcriptionId?: string;
@@ -41,7 +44,7 @@ export const PromoteToProButton: React.FC<PromoteToProButtonProps> = ({
   useEffect(() => {
     if (promoteToProOnReconnect && targetTranscription && navigator.onLine) {
       const handleOnline = () => {
-        console.log('Promote to Pro: Conexión restaurada, iniciando promoción automática...');
+        logger.info('Promote to Pro: Conexión restaurada, iniciando promoción automática...');
         handlePromoteToPro();
       };
 
@@ -85,10 +88,10 @@ export const PromoteToProButton: React.FC<PromoteToProButtonProps> = ({
         onPromote(result);
       }
 
-      console.log('Promote to Pro: Transcripción promocionada exitosamente');
+      logger.info('Promote to Pro: Transcripción promocionada exitosamente');
 
     } catch (error) {
-      console.error('Promote to Pro: Error en promoción:', error);
+      logger.error('Promote to Pro: Error en promoción:', error);
       setError(error instanceof Error ? error.message : 'Error desconocido en promoción');
     } finally {
       setIsPromoting(false);

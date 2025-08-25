@@ -1,5 +1,7 @@
 import { MCPContext, MCPContextSchema } from './schema';
 
+import logger from '@/shared/utils/logger';
+
 /**
  * Tipo para los datos de memoria utilizados internamente
  */

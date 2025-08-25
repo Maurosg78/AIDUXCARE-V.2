@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+
 import { aiModeStore, LocalTranscription } from '../stores/aiModeStore.simple';
 
 const AILightDemoPageSimple: React.FC = () => {

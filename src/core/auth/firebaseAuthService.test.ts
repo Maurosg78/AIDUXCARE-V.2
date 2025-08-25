@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { FirebaseAuthService } from './firebaseAuthService';
 
 // Interfaces locales para mocks y usuarios

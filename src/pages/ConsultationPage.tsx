@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+
 import { TranscriptionArea } from '../components/TranscriptionArea';
 import { ActionBar } from '../components/ActionBar';
 import { AudioPipelineService } from '../services/AudioPipelineService';

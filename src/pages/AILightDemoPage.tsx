@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+
 import { useAiModeStore, useOfflineMode, useAiLightLocalSTT, usePromoteToProOnReconnect } from '../stores/aiModeStore';
 import { createLocalTranscription } from '../core/sttLocal';
 import PromoteToProButton from '../components/PromoteToProButton';
+
+import logger from '@/shared/utils/logger';
 
 const AILightDemoPage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -91,7 +94,7 @@ const AILightDemoPage: React.FC = () => {
       addLocalTranscription(localTranscription);
       setTranscription(localTranscription.text);
       
-      console.log('Transcripción local creada:', localTranscription);
+      logger.info('Transcripción local creada:', localTranscription);
       
     } catch (error) {
       setError('Error en transcripción local: ' + (error instanceof Error ? error.message : 'Error desconocido'));
@@ -104,13 +107,13 @@ const AILightDemoPage: React.FC = () => {
   const simulateOffline = () => {
     setFlag('offlineMode', true);
     // En un entorno real, aquí se desconectaría la red
-    console.log('Modo offline simulado activado');
+    logger.info('Modo offline simulado activado');
   };
 
   // Función para simular reconexión
   const simulateOnline = () => {
     setFlag('offlineMode', false);
-    console.log('Modo online simulado activado');
+    logger.info('Modo online simulado activado');
   };
 
   return (

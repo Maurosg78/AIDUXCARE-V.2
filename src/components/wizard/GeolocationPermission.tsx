@@ -1,6 +1,10 @@
+import React from "react";
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
-import { GeolocationData } from '../../services/GeolocationService';
+
+import { GeolocationData } from '../../services/geolocationService';
+
+import logger from '@/shared/utils/logger';
 
 interface GeolocationPermissionProps {
   isOpen: boolean;
@@ -20,9 +24,9 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
 
   // Debug: Log cuando cambie isOpen
   useEffect(() => {
-    console.log('GeolocationPermission - isOpen cambió a:', isOpen);
+    logger.info('GeolocationPermission - isOpen cambió a:', isOpen);
     if (isOpen) {
-      console.log('GeolocationPermission - Activando geolocalización automáticamente');
+      logger.info('GeolocationPermission - Activando geolocalización automáticamente');
       requestGeolocationPermission();
     }
   }, [isOpen]);
@@ -52,7 +56,7 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
             return;
           }
         } catch (error) {
-          console.log('No se pudo verificar el estado de permisos:', error);
+          logger.info('No se pudo verificar el estado de permisos:', error);
         }
       }
 
@@ -61,8 +65,8 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
         async () => {
           try {
             // Usar el servicio de geolocalización para obtener datos completos
-            const GeolocationService = (await import('../../services/GeolocationService')).GeolocationService.getInstance();
-            const locationData = await GeolocationService.detectLocation();
+            const geolocationService = (await import('../../services/geolocationService')).geolocationService;
+            const locationData = await geolocationService.detectLocation();
             
             if (locationData) {
               setPermissionStatus('granted');
@@ -73,13 +77,13 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
               setErrorMessage('No se pudo obtener la información de ubicación completa');
             }
           } catch (error) {
-            console.error('Error al obtener datos de ubicación:', error);
+            logger.error('Error al obtener datos de ubicación:', error);
             setPermissionStatus('error');
             setErrorMessage('Error al procesar la información de ubicación');
           }
         },
         (error) => {
-          console.error('Error de geolocalización:', error);
+          logger.error('Error de geolocalización:', error);
           
           switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -106,7 +110,7 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
         }
       );
     } catch (error) {
-      console.error('Error al solicitar permisos:', error);
+      logger.error('Error al solicitar permisos:', error);
       setPermissionStatus('error');
       setErrorMessage('Error al solicitar permisos de geolocalización');
     }

@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * 🤖 AiDuxCare - Cliente Ollama
  * Integración local LLM gratuita para procesamiento médico
@@ -49,7 +50,7 @@ export class OllamaClient {
         signal: AbortSignal.timeout(5000)
       });
       return response.ok;
-    } catch (error) {
+    } catch (_error) {
       console.warn('Ollama no disponible:', error);
       return false;
     }
@@ -63,7 +64,7 @@ export class OllamaClient {
       const response = await fetch(`${this.baseUrl}/api/tags`);
       const data: { models?: Array<{ name: string }> } = await response.json();
       return data.models?.map((m) => m.name) || [];
-    } catch (error) {
+    } catch (_error) {
       console.error('Error listing models:', error);
       return [];
     }
@@ -115,7 +116,7 @@ export class OllamaClient {
         duration,
         model: data.model
       };
-    } catch (error) {
+    } catch (_error) {
       console.error('Error en generateCompletion:', error);
       throw new Error(`Falló la generación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
@@ -183,7 +184,7 @@ export class OllamaClient {
 
       const data = await response.json();
       return data.embedding || [];
-    } catch (error) {
+    } catch (_error) {
       console.warn('Embeddings no soportados en este modelo');
       return [];
     }
@@ -215,7 +216,7 @@ export class OllamaClient {
         };
       }
       return null;
-    } catch (error) {
+    } catch (_error) {
       console.error('Error getting model info:', error);
       return null;
     }
@@ -253,7 +254,7 @@ export class OllamaClient {
         model: this.model,
         latency_ms: latency
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         status: 'unhealthy',
         model: this.model,

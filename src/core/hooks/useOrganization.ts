@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+
 import { OrganizationService } from '../services/OrganizationService';
 import { 
   Organization, 
@@ -15,6 +16,8 @@ import {
   isOwnerOrAdmin,
   isIndependentProfessional
 } from '../domain/organizationType';
+
+import logger from '@/shared/utils/logger';
 
 interface UseOrganizationReturn {
   // Estado de la organización

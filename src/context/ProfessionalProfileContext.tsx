@@ -8,7 +8,10 @@ import {
   serverTimestamp,
   Timestamp 
 } from 'firebase/firestore';
+
 import { useAuth } from './AuthContext';
+
+import logger from '@/shared/utils/logger';
 
 export interface ProfessionalProfile {
   uid: string;
@@ -132,7 +135,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Error desconocido al cargar perfil');
       setError(error);
-      console.error('Error cargando perfil profesional:', error);
+      logger.error('Error cargando perfil profesional:', error);
     } finally {
       setLoading(false);
     }
@@ -183,7 +186,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
         lastSeenAt: serverTimestamp()
       });
     } catch (err) {
-      console.warn('Error en heartbeat:', err);
+      logger.warn('Error en heartbeat:', err);
     }
   };
 

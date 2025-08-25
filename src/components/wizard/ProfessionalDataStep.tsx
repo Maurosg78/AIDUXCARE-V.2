@@ -8,8 +8,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { ProfessionalData, professionalTitles } from '../../types/wizard';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+
+import logger from '@/shared/utils/logger';
 
 interface ProfessionalDataStepProps {
   data: ProfessionalData;
@@ -30,7 +33,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   const handleFieldChangeWithContext = (field: string, value: string) => {
     // Solo logear cambios importantes, no cada letra
     if (field === 'professionalTitle' || field === 'specialty' || field === 'licenseNumber') {
-      console.log(`ProfessionalDataStep - Campo cambiado: ${field} = ${value}`);
+      logger.info(`ProfessionalDataStep - Campo cambiado: ${field} = ${value}`);
     }
     
     // Mapear campos del wizard a campos del contexto
@@ -246,9 +249,9 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
             >
               <option value="">Selecciona tu título</option>
-              {professionalTitles.map((title) => (
-                <option key={title.value} value={title.value}>
-                  {title.label}
+              {professionalTitles.map((title: string) => (
+                <option key={title} value={title}>
+                  {title}
                 </option>
               ))}
             </select>

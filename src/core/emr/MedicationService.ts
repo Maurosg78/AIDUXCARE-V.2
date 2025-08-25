@@ -1,4 +1,5 @@
 import { addDoc, collection, getFirestore, serverTimestamp } from 'firebase/firestore';
+
 import { MedicationEntity } from '../assistant/entities';
 
 export async function addMedicationToVisit(encounterId: string, med: MedicationEntity): Promise<string> {

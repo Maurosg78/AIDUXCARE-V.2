@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * EmailValidationService - Validación temprana de email
  * Verifica si el email ya existe y ofrece opciones de recuperación

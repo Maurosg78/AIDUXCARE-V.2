@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import { AudioCaptureServiceReal, CaptureSession, CaptureStatus } from '../services/AudioCaptureServiceReal';
 import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
 import { WebSpeechSTTService } from '../services/WebSpeechSTTService';
@@ -32,7 +33,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   
   const audioCaptureRef = useRef<AudioCaptureServiceReal | null>(null);
-  const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statsIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Inicializar servicio de captura
   useEffect(() => {

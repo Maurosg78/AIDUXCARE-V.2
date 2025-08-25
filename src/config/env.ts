@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * Variables de entorno para AiDuxCare V.2
  * Centraliza todas las configuraciones del sistema
@@ -105,7 +106,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     try {
       new URL(SUPABASE_URL);
       console.log('- URL format: VALID ✅');
-    } catch (e) {
+    } catch (_e) {
       console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
     }
   }

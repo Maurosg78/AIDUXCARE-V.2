@@ -15,6 +15,7 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
+
 import { db } from '../firebase/firebaseClient';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 import { 
@@ -25,6 +26,8 @@ import {
   needsFollowUp
 } from '../domain/patientType';
 import { encryptMetadata, decryptMetadata } from '../security/encryption';
+
+import logger from '@/shared/utils/logger';
 
 export class PatientService {
   private static collectionName = 'patients';

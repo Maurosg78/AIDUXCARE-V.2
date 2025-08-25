@@ -8,7 +8,10 @@
 
 import { collection, doc, setDoc, getDocs, query, where, updateDoc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from 'firebase/auth';
+
 import { db, auth } from '../lib/firebase';
+
+import logger from '@/shared/utils/logger';
 
 export interface ProfessionalRegistration {
   id: string;

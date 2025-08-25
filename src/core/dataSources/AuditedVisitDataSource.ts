@@ -1,6 +1,7 @@
 import { Visit } from '../domain/visitType';
-import { visitDataSourceFirestore } from './visitDataSourceFirestore.singleton';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
+
+import { visitDataSourceFirestore } from './visitDataSourceFirestore.singleton';
 
 /**
  * Wrapper de auditoría para VisitDataSource

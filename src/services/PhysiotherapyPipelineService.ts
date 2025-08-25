@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * 🏥 Physiotherapy Pipeline Service - AiDuxCare V.2
  * Pipeline completo de procesamiento de consultas fisioterapéuticas

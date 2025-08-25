@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * @fileoverview Utilidad para limpiar datos de prueba del localStorage
  * @version 1.0.0

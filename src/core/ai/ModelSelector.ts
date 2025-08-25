@@ -1,3 +1,6 @@
+import { CaseComplexity, MedicalSpecialty } from './PromptFactory';
+
+import logger from '@/shared/utils/logger';
 /**
  * 🧠 AiDuxCare - ModelSelector
  * Selector inteligente de modelos Gemini para optimización de costos
@@ -5,7 +8,6 @@
  * 10% casos críticos → Gemini-Pro (máxima precisión)
  */
 
-import { CaseComplexity, MedicalSpecialty } from './PromptFactory';
 
 export interface ModelSelection {
   model: 'gemini-1.5-flash' | 'gemini-1.5-pro';

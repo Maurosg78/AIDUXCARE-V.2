@@ -5,7 +5,10 @@
  */
 
 import { TranscriptionSegment, TranscriptionConfidence } from '../core/audio/AudioCaptureService';
+
 import { WebSpeechSTTService } from './WebSpeechSTTService';
+
+import logger from '@/shared/utils/logger';
 
 export interface AudioFileSTTOptions {
   language?: 'es' | 'en';

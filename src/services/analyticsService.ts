@@ -5,7 +5,10 @@
  */
 
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit, doc, setDoc, DocumentData } from 'firebase/firestore';
+
 import { db } from '../lib/firebase';
+
+import logger from '@/shared/utils/logger';
 
 // Tipos de métricas disponibles
 export type MetricType = 

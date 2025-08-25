@@ -11,7 +11,7 @@ export type AppointmentCreateData = {
 };
 
 export async function createAppointment(input: AppointmentCreateData): Promise<string> {
-  const { db } = await import('../lib/firebase'); // Instancia blindada
+  const db = getFirestore();
   const payload = {
     clinicianUid: input.clinicianUid,
     patientId: input.patientId,

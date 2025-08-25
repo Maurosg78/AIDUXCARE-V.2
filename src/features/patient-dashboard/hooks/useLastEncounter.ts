@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
 import { encountersRepo, Encounter } from '../../../repositories/encountersRepo';
 import { AsyncState } from '../../command-center/hooks/useUserProfile';
+
+import logger from '@/shared/utils/logger';
 
 export function useLastEncounter(patientId: string): AsyncState<Encounter> {
   const [state, setState] = useState<AsyncState<Encounter>>({

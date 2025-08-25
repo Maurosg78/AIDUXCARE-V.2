@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+
 import Button from '../ui/button';
 
 interface AudioFileUploadProps {
@@ -78,7 +79,7 @@ export const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
         duration,
         validationStatus: 'valid'
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         ...fileInfo,
         validationStatus: 'invalid',

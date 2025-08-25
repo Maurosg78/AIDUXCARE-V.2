@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
 import { episodesRepo, Episode } from '../../../repositories/episodesRepo';
 import { AsyncState } from '../../command-center/hooks/useUserProfile';
+
+import logger from '@/shared/utils/logger';
 
 export function useActiveEpisode(patientId: string): AsyncState<Episode> {
   const [state, setState] = useState<AsyncState<Episode>>({

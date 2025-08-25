@@ -1,10 +1,12 @@
+import ProfessionalProfileService from './ProfessionalProfileService';
+
+import logger from '@/shared/utils/logger';
 /**
  * 🧠 Optimized Clinical Brain Service - AiDuxCare V.2
  * Cerebro Clínico optimizado para resolver cuellos de botella
  * Implementación del Blueprint Oficial
  */
 
-import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface ClinicalAnalysisRequest {
   transcription: string;

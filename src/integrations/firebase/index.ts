@@ -1,2 +1,2 @@
-// Entrada canónica para la app.
-export * from "./stub"; // por defecto apunta al stub
+export { isFirebaseEnabled, getAuthBridge } from "./firebase";
+export type { FirebaseAuth } from "./firebase";

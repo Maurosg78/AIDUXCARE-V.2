@@ -1,5 +1,7 @@
 import { LocalTranscription } from '../../stores/aiModeStore';
 
+import logger from '@/shared/utils/logger';
+
 export interface STTLocalConfig {
   model: 'whisper-tiny' | 'vosk-small' | 'fallback';
   enableSIMD: boolean;
@@ -37,7 +39,7 @@ const DEFAULT_CONFIG: STTLocalConfig = {
 export function detectSTTCapabilities(): STTLocalCapabilities {
   const wasmSupported = typeof WebAssembly !== 'undefined';
   const simdSupported = wasmSupported && WebAssembly.validate(new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]));
-  const webGPUSupported = typeof (navigator as any).gpu !== 'undefined';
+  const webGPUSupported = 'gpu' in navigator;
   
   const modelsAvailable = wasmSupported ? ['whisper-tiny', 'vosk-small'] : ['fallback'];
   
@@ -52,6 +54,10 @@ export function detectSTTCapabilities(): STTLocalCapabilities {
 
 // Clase principal de STT Local
 export class STTLocalEngine {
+  public async getAudioInfo(blob: Blob): Promise<{ duration: number; sampleRate: number; channels: number }> {
+    // llama al método privado existente
+    return (this as any).validateAudio(blob);
+  }
   private config: STTLocalConfig;
   private capabilities: STTLocalCapabilities;
   private isInitialized: boolean = false;
@@ -144,11 +150,11 @@ export class STTLocalEngine {
       
       audio.onloadedmetadata = () => {
         URL.revokeObjectURL(url);
-        resolve({
+        return {
           duration: audio.duration,
           sampleRate: 44100, // Valor por defecto
           channels: 1 // Mono por defecto
-        });
+        };
       };
       
       audio.onerror = () => {
@@ -214,36 +220,28 @@ export async function transcribeLocal(audioBlob: Blob): Promise<STTLocalResult> 
 }
 
 // Función para crear transcripción local
-export function createLocalTranscription(
+export async function createLocalTranscription(
   audioBlob: Blob,
-  // userId: string,
-  // sessionId: string
+  userId: string,
+  sessionId: string
 ): Promise<LocalTranscription> {
-  return new Promise((resolve, reject) => {
-    (async () => {
-      try {
-        const result = await transcribeLocal(audioBlob);
-        const audioInfo = await (sttLocalEngine as any).validateAudio(audioBlob);
-        
-        const transcription: LocalTranscription = {
-          id: crypto.randomUUID(),
-          audioBlob: result.fallback ? undefined : audioBlob,
-          text: result.text,
-          confidence: result.confidence,
-          timestamp: new Date(),
-          userId: 'local-user',
-          sessionId: 'local-session',
-          metadata: { 
-            duration: audioInfo.duration, 
-            sampleRate: audioInfo.sampleRate || 44100,
-            channels: audioInfo.channels
-          }
-        };
-        
-        resolve(transcription);
-      } catch (error) {
-        reject(error);
-      }
-    })();
-  });
+  const audioInfo = await sttLocalEngine.getAudioInfo(audioBlob);
+  const result = await transcribeLocal(audioBlob);
+
+  const transcription: LocalTranscription = {
+    id: crypto.randomUUID(),
+    audioBlob: result.fallback ? undefined : audioBlob,
+    text: result.text,
+    confidence: result.confidence,
+    timestamp: new Date(),
+    userId,
+    sessionId,
+    metadata: {
+      duration: audioInfo.duration,
+      sampleRate: audioInfo.sampleRate,
+      channels: audioInfo.channels,
+    },
+  };
+
+  return transcription;
 }

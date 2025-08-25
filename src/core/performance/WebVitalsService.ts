@@ -1,5 +1,7 @@
 import { onCLS, onINP, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
 
+import logger from '@/shared/utils/logger';
+
 /**
  * Interfaz para métricas de performance
  */

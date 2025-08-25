@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 
 
 export interface EmailVerificationData {
@@ -16,7 +17,7 @@ export interface WelcomeEmailData {
 }
 
 class EmailVerificationService {
-  private readonly BASE_URL = (process.env as Record<string, unknown>).REACT_APP_API_URL || 'http://localhost:3001';
+  private readonly BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   /**
    * Envía email de bienvenida con link de verificación

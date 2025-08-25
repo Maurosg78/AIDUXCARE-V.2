@@ -7,6 +7,8 @@ import { ollamaClient } from '../lib/ollama';
 import { ClinicalEntity, SOAPNotes, ProcessingMetrics } from '../types/nlp';
 import { RAGMedicalMCP } from '../core/mcp/RAGMedicalMCP';
 
+import logger from '@/shared/utils/logger';
+
 export class NLPServiceOllama {
   
   /**

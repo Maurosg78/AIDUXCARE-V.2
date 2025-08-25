@@ -7,7 +7,9 @@
  */
 
 import { useCallback } from 'react';
+
 import { analyticsService, type SystemEvent } from '../services/analyticsService';
+
 import { useAuth } from './useAuth';
 
 export interface TrackingOptions {

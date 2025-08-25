@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 export interface ProfessionalCompetency {
   id: string;
   name: string;

@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { WeeklyAgenda } from '../features/appointments/components/WeeklyAgenda';
 
 interface AppointmentsPageProps {

@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+
 import { ollamaClient } from '../../lib/ollama';
+
+import logger from '@/shared/utils/logger';
 
 interface Message {
   id: string;
@@ -100,7 +103,7 @@ ${userMessage}
 
       setMessages(prev => prev.filter(msg => !msg.isLoading).concat(assistantMessage));
     } catch (error) {
-      console.error('Error al generar respuesta:', error);
+      logger.error('Error al generar respuesta:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 2).toString(),

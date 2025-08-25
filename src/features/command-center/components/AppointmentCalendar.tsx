@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { Appointment } from '../hooks/useAppointmentSchedule';
 
 interface AppointmentCalendarProps {

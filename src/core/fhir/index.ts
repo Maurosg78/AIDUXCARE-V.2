@@ -22,27 +22,25 @@ import {
   type InternalEncounter,
   type InternalObservation
 } from './adapters/internalToFhir';
-
 import {
   convertFhirToPatient,
   convertFhirToEncounter,
   convertFhirToObservation
 } from './adapters/fhirToInternal';
-
 import {
   validateCaCorePatient,
   validateCaCoreEncounter,
   validateCaCoreObservation
 } from './validators/caCoreValidator';
-
 import {
   validateUsCorePatient,
   validateUsCoreEncounter,
   validateUsCoreObservation
 } from './validators/usCoreValidator';
-
 import { createFhirBundle } from './utils/bundleUtils';
 import type { FhirPatient, FhirEncounter, FhirObservation } from './types';
+
+import logger from '@/shared/utils/logger';
 
 // Export public types from the public types directory
 export type * from './types/public';

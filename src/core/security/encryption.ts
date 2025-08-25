@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * Servicio de cifrado para datos sensibles
  * Implementa cifrado AES-256-GCM para cumplir con HIPAA/GDPR

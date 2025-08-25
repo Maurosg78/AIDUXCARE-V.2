@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { getAuth } from 'firebase/auth';
+
 import { patientsRepo, PatientCreateData } from '../../../repositories/patientsRepo';
 import { DX_TOP, COMORBIDITIES, ALLERGIES, toOptions } from '../../../core/clinical/taxonomies';
 import { TokenInput } from '../../../shared/ui/TokenInput';
 import { MultiSelectCombobox } from '../../../shared/ui/MultiSelectCombobox';
 import { logAction } from '../../../analytics/events';
+
+import logger from '@/shared/utils/logger';
 
 
 interface CreatePatientModalProps {
@@ -95,7 +98,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         setFormData({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', chiefComplaint: '', hypotheses: [], comorbidities: [], allergies: [] });
       }, 2000);
     } catch (error) {
-      console.error('Error creando paciente:', error);
+      logger.error('Error creando paciente:', error);
       // Aquí se podría mostrar un toast de error
     } finally {
       setIsSubmitting(false);

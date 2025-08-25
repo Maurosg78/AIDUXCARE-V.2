@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * 🧠 AiDuxCare - Vertex AI Service
  * Servicio principal de IA para procesamiento médico usando Google Vertex AI

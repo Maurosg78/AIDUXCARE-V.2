@@ -1,10 +1,13 @@
+import React from 'react';
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+
 import { AiDuxCareLogo } from '../../components/branding/AiDuxCareLogo';
 import { ProfessionalRoleSelector, ProfessionalRole } from '../../components/professional/ProfessionalRoleSelector';
-
 import { EnhancedAudioCapture } from '../../components/professional/EnhancedAudioCapture';
 import OrganizationNavigation from '../../components/OrganizationNavigation';
+
+import logger from '@/shared/utils/logger';
 
 const Layout = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -34,7 +37,7 @@ const Layout = () => {
   const handleRoleChange = (role: ProfessionalRole) => {
     setSelectedRole(role);
     // Aquí se puede agregar lógica adicional cuando cambie el rol
-    console.log('Rol profesional cambiado a:', role);
+    logger.info('Rol profesional cambiado a:', role);
   };
 
   const handleToolChange = (toolId: string) => {
@@ -63,11 +66,11 @@ const Layout = () => {
         return (
           <EnhancedAudioCapture
             onTranscriptionComplete={(segments) => {
-              console.log('Transcripción completada:', segments);
+              logger.info('Transcripción completada:', segments);
               // Aquí se puede integrar con el sistema de notas o historial
             }}
             onTranscriptionUpdate={(segments) => {
-              console.log('Transcripción actualizada:', segments);
+              logger.info('Transcripción actualizada:', segments);
             }}
             className="h-full"
           />

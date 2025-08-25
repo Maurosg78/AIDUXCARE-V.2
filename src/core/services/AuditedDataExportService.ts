@@ -2,6 +2,8 @@ import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 import { auditedPatientDataSource } from '../dataSources/AuditedPatientDataSource';
 import { auditedVisitDataSource } from '../dataSources/AuditedVisitDataSource';
 
+import logger from '@/shared/utils/logger';
+
 /**
  * Tipos de exportación disponibles
  */

@@ -1,5 +1,7 @@
-import { Encounter } from '../../../repositories/encountersRepo';
+import React from 'react';
 import { Timestamp } from 'firebase/firestore';
+
+import { Encounter } from '../../../repositories/encountersRepo';
 
 interface LastTherapyCardProps {
   encounter: Encounter;

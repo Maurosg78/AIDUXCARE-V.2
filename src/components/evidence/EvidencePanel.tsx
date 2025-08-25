@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+
 import { RAGQueryResult, CitationReference } from '@/core/mcp/RAGMedicalMCP';
 
 interface EvidencePanelProps {

@@ -17,7 +17,10 @@ import {
   User as FirebaseUser,
   ActionCodeSettings
 } from 'firebase/auth';
+
 import { auth } from '../lib/firebase';
+
+import logger from '@/shared/utils/logger';
 
 export interface AuthResult {
   success: boolean;

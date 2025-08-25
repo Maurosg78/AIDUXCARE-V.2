@@ -6,9 +6,12 @@
  * Reemplaza completamente Supabase Auth para migración total
  */
 
-import { app, db } from '../firebase/firebaseClient';
 import { getAuth, Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User as FirebaseUser, UserCredential, AuthError } from 'firebase/auth';
 import { Firestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+
+import { app, db } from '../firebase/firebaseClient';
+
+import logger from '@/shared/utils/logger';
 
 // Eliminar inicialización directa:
 // const app: FirebaseApp = initializeApp(firebaseConfig);
@@ -99,7 +102,7 @@ export class FirebaseAuthService {
       });
 
       return userProfile;
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Firebase Auth: Error al iniciar sesión', error);
       throw this.handleAuthError(error as AuthError);
     }
@@ -145,7 +148,7 @@ export class FirebaseAuthService {
       });
 
       return userProfile;
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Firebase Auth: Error al registrar usuario', error);
       throw this.handleAuthError(error as AuthError);
     }
@@ -185,7 +188,7 @@ export class FirebaseAuthService {
       }
       
       console.log('✅ Firebase Auth: Sesión cerrada exitosamente');
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Firebase Auth: Error al cerrar sesión', error);
       
       // Registrar evento de logout fallido
@@ -221,7 +224,7 @@ export class FirebaseAuthService {
                 loading: false,
                 error: null
               });
-            } catch (error) {
+            } catch (_error) {
               resolve({
                 user: null,
                 loading: false,
@@ -263,7 +266,7 @@ export class FirebaseAuthService {
               loading: false,
               error: null
             });
-          } catch (error) {
+          } catch (_error) {
             callback({
               user: null,
               loading: false,

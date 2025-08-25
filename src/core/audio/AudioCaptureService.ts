@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * Tipo para el actor en la transcripción
  */

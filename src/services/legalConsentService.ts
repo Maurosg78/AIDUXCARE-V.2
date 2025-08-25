@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * Legal Consent Service - AiDuxCare V.2
  * Servicio para manejo seguro del consentimiento legal

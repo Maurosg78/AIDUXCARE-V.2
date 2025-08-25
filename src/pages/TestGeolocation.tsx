@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+
 import { geolocationService, GeolocationData } from '../services/geolocationService';
 
 export const TestGeolocation: React.FC = () => {
@@ -67,7 +68,7 @@ export const TestGeolocation: React.FC = () => {
           addLog(`   Código de país: ${ipLocation.countryCode}`);
           addLog(`   Región: ${ipLocation.region}`);
           addLog(`   Ciudad: ${ipLocation.city}`);
-          addLog(`   IP: ${ipLocation.ipAddress}`);
+          addLog(`   IP: ${''}`);
         } else {
           addLog('   ❌ No se pudo detectar ubicación por IP');
         }

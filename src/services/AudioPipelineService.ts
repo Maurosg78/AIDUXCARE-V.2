@@ -1,9 +1,11 @@
+import { GoogleCloudAudioService } from './GoogleCloudAudioService';
+
+import logger from '@/shared/utils/logger';
 /**
  * AudioPipelineService - Servicio único de audio para AiDuxCare V.2
  * Pipeline profesional: MediaRecorder → Google Cloud Speech-to-Text → Análisis Clínico
  */
 
-import { GoogleCloudAudioService } from './GoogleCloudAudioService';
 
 interface TranscriptionResult {
   text: string;

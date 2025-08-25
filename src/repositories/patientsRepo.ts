@@ -1,4 +1,5 @@
 import { 
+  getFirestore, 
   collection, 
   doc, 
   getDoc, 
@@ -11,8 +12,10 @@ import {
   serverTimestamp,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '../lib/firebase'; // Usar instancia blindada
+
 import { Patient } from '../core/types/patient';
+
+import logger from '@/shared/utils/logger';
 
 // Extender el tipo Patient del core para incluir id y timestamps de Firestore
 export interface PatientWithId extends Patient {
@@ -30,7 +33,7 @@ export interface PatientCreateData extends Omit<Patient, 'id' | 'createdAt' | 'p
 }
 
 class PatientsRepository {
-  private db = db; // Usar instancia blindada importada
+  private db = getFirestore();
   private collectionName = 'patients';
 
   async getPatientById(id: string): Promise<PatientWithId | null> {

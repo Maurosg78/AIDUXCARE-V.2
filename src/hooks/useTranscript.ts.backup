@@ -1,0 +1,90 @@
+/**
+ * @fileoverview useTranscript Hook - Real-time Transcription Management
+ * @version 1.0.0 Enterprise
+ * @author AiDuxCare Development Team
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+
+export interface TranscriptState {
+  transcript: string;
+  loading: boolean;
+  error: string | null;
+  isRecording: boolean;
+}
+
+export interface UseTranscriptOptions {
+  sessionId?: string;
+  enableDemo?: boolean;
+}
+
+/**
+ * Hook for managing real-time transcription
+ * In production, this would connect to Web Speech API or audio capture service
+ * In demo mode, it provides simulated transcription for testing
+ */
+export const useTranscript = ({ enableDemo = false }: UseTranscriptOptions): TranscriptState & {
+  startRecording: () => void;
+  stopRecording: () => void;
+  clearTranscript: () => void;
+} => {
+  const [transcript, setTranscript] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+
+  // Demo transcript for testing when APP_DEMO is enabled
+  const demoTranscript = `El paciente refiere dolor cervical irradiado hacia el brazo derecho, con parestesias en los dedos índice y medio. El dolor se agrava con movimientos de flexión cervical y rotación hacia la derecha. No refiere traumatismo previo. El dolor comenzó hace 3 semanas de forma progresiva.`;
+
+  const startRecording = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setIsRecording(true);
+    
+    // Simulate recording start
+    setTimeout(() => {
+      setLoading(false);
+      if (enableDemo) {
+        // In demo mode, immediately show demo transcript
+        setTranscript(demoTranscript);
+      } else {
+        // In production, this would initialize Web Speech API
+        setTranscript('Iniciando grabación...');
+      }
+    }, 1000);
+  }, [enableDemo, demoTranscript]);
+
+  const stopRecording = useCallback(() => {
+    setIsRecording(false);
+    setLoading(false);
+    
+    if (!transcript || transcript === 'Iniciando grabación...') {
+      setError('No se pudo capturar transcripción. Intente nuevamente.');
+    }
+  }, [transcript]);
+
+  const clearTranscript = useCallback(() => {
+    setTranscript('');
+    setError(null);
+    setIsRecording(false);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setIsRecording(false);
+    };
+  }, []);
+
+  return {
+    transcript,
+    loading,
+    error,
+    isRecording,
+    startRecording,
+    stopRecording,
+    clearTranscript
+  };
+};
+
+export default useTranscript;

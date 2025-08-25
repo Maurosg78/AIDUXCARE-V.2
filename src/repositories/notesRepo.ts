@@ -9,7 +9,7 @@ export type ClinicalNote = {
 };
 
 export async function fetchPendingNotes(clinicianUid: string, patientId?: string): Promise<ClinicalNote[]> {
-  const { db } = await import('../lib/firebase'); // Usar instancia blindada
+  const db = getFirestore();
   const col = collection(db, 'notes');
   const base = [
     where('clinicianUid', '==', clinicianUid),

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { ClinicalEntity } from '../types/nlp';
 import { ClinicalInsight, SOAPGenerationResult } from '../types/clinical-analysis';
 import { SOAPGenerationService } from '../services/SOAPGenerationService';

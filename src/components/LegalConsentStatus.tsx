@@ -7,7 +7,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { legalConsentService, type LegalConsent } from '../services/legalConsentService';
+
+import logger from '@/shared/utils/logger';
 
 interface LegalConsentStatusProps {
   showDetails?: boolean;
@@ -32,7 +35,7 @@ export const LegalConsentStatus: React.FC<LegalConsentStatusProps> = ({
         setHasValidConsent(isValid);
         onConsentChange?.(isValid);
       } catch (error) {
-        console.error('Error al verificar consentimiento:', error);
+        logger.error('Error al verificar consentimiento:', error);
         setHasValidConsent(false);
         onConsentChange?.(false);
       } finally {
@@ -53,7 +56,7 @@ export const LegalConsentStatus: React.FC<LegalConsentStatusProps> = ({
       onConsentChange?.(false);
       alert('Consentimiento revocado exitosamente');
     } catch (error) {
-      console.error('Error al revocar consentimiento:', error);
+      logger.error('Error al revocar consentimiento:', error);
       alert('Error al revocar el consentimiento');
     }
   };
@@ -147,7 +150,7 @@ export const LegalConsentStatus: React.FC<LegalConsentStatusProps> = ({
             <button
               onClick={() => {
                 const report = legalConsentService.generateConsentReport();
-  console.log('Reporte de consentimiento:', report);
+  logger.info('Reporte de consentimiento:', report);
                 alert('Reporte generado. Revisa la consola para más detalles.');
               }}
               className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"

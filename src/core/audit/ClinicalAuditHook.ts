@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
-import { FirestoreAuditLogger } from './FirestoreAuditLogger';
+
 import { useUser } from '../auth/UserContext';
+
+import { FirestoreAuditLogger } from './FirestoreAuditLogger';
 
 /**
  * Hook personalizado para auditoría clínica

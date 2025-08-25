@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+
 import { firebaseAuthService } from '../services/firebaseAuthService';
+
+import logger from '@/shared/utils/logger';
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -25,7 +28,7 @@ export const ForgotPasswordPage: React.FC = () => {
       }
     } catch (error) {
       setError('Error al procesar la solicitud. Inténtalo de nuevo.');
-      console.error('Error en recuperación de contraseña:', error);
+      logger.error('Error en recuperación de contraseña:', error);
     } finally {
       setLoading(false);
     }

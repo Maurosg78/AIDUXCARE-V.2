@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { AuditLogViewer } from '../../shared/components/Audit/AuditLogViewer';
 import { useUser } from '../../core/auth/UserContext';
 

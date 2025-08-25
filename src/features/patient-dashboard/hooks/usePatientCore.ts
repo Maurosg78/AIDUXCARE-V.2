@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
 import { patientsRepo } from '../../../repositories/patientsRepo';
 import type { Patient } from '../../../core/types/patient';
 import { AsyncState } from '../../command-center/hooks/useUserProfile';
+
+import logger from '@/shared/utils/logger';
 
 export function usePatientCore(patientId: string): AsyncState<Patient> {
   const [state, setState] = useState<AsyncState<Patient>>({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useUser } from '../../core/auth/UserContext';
 import { AuditPerformanceOptimizer } from '../../core/audit/AuditPerformanceOptimizer';
 

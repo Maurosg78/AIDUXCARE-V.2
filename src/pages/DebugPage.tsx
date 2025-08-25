@@ -1,5 +1,7 @@
 import React from 'react';
 
+import logger from '@/shared/utils/logger';
+
 const DebugPage: React.FC = () => {
   const envVars = {
     'VITE_FIREBASE_PROJECT_ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -10,9 +12,9 @@ const DebugPage: React.FC = () => {
     'VITE_FIREBASE_APP_ID': import.meta.env.VITE_FIREBASE_APP_ID,
   };
 
-  console.log('=== DIAGNÓSTICO DE VARIABLES DE ENTORNO ===');
+  logger.info('=== DIAGNÓSTICO DE VARIABLES DE ENTORNO ===');
   Object.entries(envVars).forEach(([key, value]) => {
-    console.log(`${key}: ${value}`);
+    logger.info(`${key}: ${value}`);
   });
 
   const isUAT = import.meta.env.VITE_FIREBASE_PROJECT_ID?.includes('uat') || false;

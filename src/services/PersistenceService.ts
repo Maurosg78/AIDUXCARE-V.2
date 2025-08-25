@@ -1,26 +1,12 @@
+import logger from '@/shared/utils/logger';
 /**
  * Servicio de Persistencia para AiDuxCare V.2
  * Implementación profesional usando Firestore
  */
 
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  Timestamp,
-  setDoc, 
-  getDoc, 
-  deleteDoc, 
-  QueryDocumentSnapshot, 
-  DocumentData 
-} from 'firebase/firestore';
+import CryptoService from './CryptoService';
+
 import { getAuth } from 'firebase/auth';
-import { app, db } from '@/integrations/firebase';
-import { CryptoService } from './CryptoService';
 
 type SOAPData = {
   subjective: string;
@@ -36,6 +22,9 @@ type EncryptedData = {
   encryptedData: string;
   salt?: string;
 };
+import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+
+import { app, db } from '@/integrations/firebase';
 
 export interface SavedNote {
   id: string;
@@ -132,45 +121,43 @@ export class PersistenceService {
   }
 
   /**
-   * Genera un ID único para la nota
+   * Obtiene notas por paciente
    */
-  private static generateNoteId(): string {
-    return `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Obtiene estadísticas de las notas del usuario
-   */
-  static async getNotesStats(): Promise<{
-    totalNotes: number;
-    oldestNote: string | null;
-    newestNote: string | null;
-  }> {
+  static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
       const userId = this.getCurrentUserId();
       const notesRef = collection(db, this.COLLECTION_NAME, userId, 'notes');
-      const snapshot = await getDocs(notesRef);
+      const q = query(notesRef, where('patientId', '==', patientId));
+      const snapshot = await getDocs(q);
       
-      const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
-      const sortedByDate = notes.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      
-      return {
-        totalNotes: notes.length,
-        oldestNote: sortedByDate.length > 0 ? sortedByDate[0].createdAt : null,
-        newestNote: sortedByDate.length > 0 ? sortedByDate[sortedByDate.length - 1].createdAt : null
-      };
+      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
     } catch (error) {
-      console.error('Error obteniendo estadísticas de notas:', error);
-      return {
-        totalNotes: 0,
-        oldestNote: null,
-        newestNote: null
-      };
+      console.error('Error obteniendo notas por paciente:', error);
+      return [];
     }
   }
 
   /**
-   * Elimina una nota específica
+   * Verifica y descifra una nota
+   */
+  static async verifyAndDecryptNote(noteId: string): Promise<SOAPData | null> {
+    try {
+      const note = await this.getNoteById(noteId);
+      if (!note) {
+        return null;
+      }
+
+      // Descifrar los datos
+      const decryptedData = await CryptoService.decryptMedicalData(note.encryptedData);
+      return decryptedData as unknown as SOAPData;
+    } catch (error) {
+      console.error('Error verificando/descifrando nota:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Elimina una nota por ID
    */
   static async deleteNote(noteId: string): Promise<boolean> {
     try {
@@ -178,7 +165,7 @@ export class PersistenceService {
       const noteRef = doc(db, this.COLLECTION_NAME, userId, 'notes', noteId);
       await deleteDoc(noteRef);
       
-      console.log(`✅ Nota eliminada con ID: ${noteId}`);
+      console.log(`🗑️ Nota eliminada: ${noteId}`);
       return true;
     } catch (error) {
       console.error('Error eliminando nota:', error);
@@ -187,26 +174,40 @@ export class PersistenceService {
   }
 
   /**
-   * Busca notas por texto
+   * Obtiene estadísticas de notas guardadas
    */
-  static async searchNotes(searchTerm: string): Promise<SavedNote[]> {
-    try {
-      const userId = this.getCurrentUserId();
-      const notesRef = collection(db, this.COLLECTION_NAME, userId, 'notes');
-      const snapshot = await getDocs(notesRef);
-      
-      const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
-      
-      // Búsqueda simple en texto (se puede mejorar con índices de Firestore)
-      return notes.filter(note => 
-        note.soapData.subjective.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.soapData.objective.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.soapData.assessment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.soapData.plan.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    } catch (error) {
-      console.error('Error buscando notas:', error);
-      return [];
-    }
+  static async getStats(): Promise<{
+    totalNotes: number;
+    totalPatients: number;
+    totalSessions: number;
+    oldestNote: string | null;
+    newestNote: string | null;
+  }> {
+    const notes = await this.getAllNotes();
+    const patients = new Set(notes.map(n => n.patientId));
+    const sessions = new Set(notes.map(n => n.sessionId));
+    
+    const sortedByDate = notes.sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    return {
+      totalNotes: notes.length,
+      totalPatients: patients.size,
+      totalSessions: sessions.size,
+      oldestNote: sortedByDate.length > 0 ? sortedByDate[0].createdAt : null,
+      newestNote: sortedByDate.length > 0 ? sortedByDate[sortedByDate.length - 1].createdAt : null
+    };
   }
-} 
+
+  /**
+   * Genera un ID único para la nota
+   */
+  private static generateNoteId(): string {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `note_${timestamp}_${random}`;
+  }
+}
+
+export default PersistenceService; 

@@ -5,7 +5,10 @@
  */
 
 import { doc, setDoc, updateDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+
 import { db } from '../lib/firebase';
+
+import logger from '@/shared/utils/logger';
 
 export interface ClinicalDecision {
   sessionId: string;

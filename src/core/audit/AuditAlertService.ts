@@ -1,5 +1,7 @@
 import { FirestoreAuditLogger, AuditEvent } from './FirestoreAuditLogger';
 
+import logger from '@/shared/utils/logger';
+
 /**
  * Tipos de alertas disponibles
  */

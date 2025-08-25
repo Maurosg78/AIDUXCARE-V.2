@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import logger from '@/shared/utils/logger';
+
 interface AnalysisResult {
   phase: string;
   result: {
@@ -134,7 +136,7 @@ export default function TestFullWorkflowPage() {
       setCurrentPhase('Flujo completo finalizado');
       
     } catch (error) {
-      console.error('Error en el flujo completo:', error);
+      logger.error('Error en el flujo completo:', error);
       setResults(prev => [...prev, {
         phase: 'Error',
         result: { error: error instanceof Error ? error.message : 'Error desconocido' },

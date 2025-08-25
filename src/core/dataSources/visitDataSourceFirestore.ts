@@ -1,6 +1,9 @@
-import { db } from '../firebase/firebaseClient';
 import { collection, doc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, query, where, addDoc } from 'firebase/firestore';
+
+import { db } from '../firebase/firebaseClient';
 import { Visit, VisitSchema } from '../domain/visitType';
+
+import logger from '@/shared/utils/logger';
 
 export class VisitDataSourceFirestore {
   private db: Firestore;
@@ -28,7 +31,7 @@ export class VisitDataSourceFirestore {
           created_at: data.created_at?.toString() || '',
           updated_at: data.updated_at?.toString() || ''
         }));
-      } catch (e) {
+      } catch (_e) {
         console.error(`Validation error for visit ${docSnap.id}:`, e);
       }
     });
@@ -50,7 +53,7 @@ export class VisitDataSourceFirestore {
         created_at: data.created_at?.toString() || '',
         updated_at: data.updated_at?.toString() || ''
       });
-    } catch (e) {
+    } catch (_e) {
       // Manejo de error estándar
       return null;
     }

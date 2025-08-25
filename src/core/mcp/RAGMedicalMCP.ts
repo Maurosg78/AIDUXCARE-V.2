@@ -1,3 +1,6 @@
+import { MCPMemoryBlock } from './schema';
+
+import logger from '@/shared/utils/logger';
 /**
  * 
  * 🧬 AiDuxCare - RAG Medical MCP
@@ -5,7 +8,6 @@
  * para fuentes de conocimiento médico (PubMed, guidelines, evidence-based protocols)
  */
 
-import { MCPMemoryBlock } from './schema';
 
 // === INTERFACES RAG MÉDICO ===
 

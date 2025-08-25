@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase/firestore';
 
 // Helper para obtener variable de entorno compatible con Vite y Node
 function getEnv(key: string): string | undefined {
-  if (typeof import.meta !== 'undefined' && import.meta.env && key in (import.meta.env as Record<string, unknown>)) {
+  if (typeof import.meta !== 'undefined' && import.meta.env && key in import.meta.env) {
     return import.meta.env[key];
   }
   if (typeof process !== 'undefined' && process.env && key in process.env) {
@@ -23,6 +23,5 @@ const firebaseConfig = {
 
 // Inicializar solo si no existe
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-
 export const app = firebaseApp;
-export const db = getFirestore(firebaseApp);
+export const db = getFirestore(firebaseApp); 

@@ -1,3 +1,4 @@
+import React from 'react';
 
 interface AiDuxCareLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';

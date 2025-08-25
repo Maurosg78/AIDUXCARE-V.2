@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+
 import { useAuth } from '../../hooks/useAuth';
 import { Card } from '../../shared/ui';
 import { FloatingAssistant } from '../../components/FloatingAssistant';
-import { CreatePatientModal } from './components/CreatePatientModal';
+
 // import { useUserProfile } from './hooks/useUserProfile';
-import { usePendingNotesCount } from './hooks/usePendingNotesCount';
-import { Greeting } from './components/Greeting';
 import { logAction } from '../../analytics/events';
 import NewAppointmentModal from '../appointments/NewAppointmentModal';
 import PendingNotesModal from '../notes/PendingNotesModal';
 import { AuditWidget } from '../../components/AuditWidget';
+
+import { Greeting } from './components/Greeting';
+import { usePendingNotesCount } from './hooks/usePendingNotesCount';
+import { CreatePatientModal } from './components/CreatePatientModal';
+
+import logger from '@/shared/utils/logger';
 
 export const CommandCenterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -64,7 +69,7 @@ export const CommandCenterPage: React.FC = () => {
                   await logout();
                   navigate('/login');
                 } catch (error) {
-                  console.error('Error al cerrar sesión:', error);
+                  logger.error('Error al cerrar sesión:', error);
                   // Fallback: navegación directa
                   navigate('/login');
                 }

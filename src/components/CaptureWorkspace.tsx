@@ -1,3 +1,4 @@
+import React from 'react';
 
 interface CaptureWorkspaceProps {
   children: React.ReactNode;

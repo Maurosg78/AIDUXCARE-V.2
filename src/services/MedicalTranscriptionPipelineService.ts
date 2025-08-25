@@ -7,6 +7,8 @@
 import OptimizedClinicalBrainService, { ClinicalAnalysisRequest, ClinicalAnalysisResponse } from './OptimizedClinicalBrainService';
 import ProfessionalProfileService from './ProfessionalProfileService';
 
+import logger from '@/shared/utils/logger';
+
 export interface TranscriptionSegment {
   id: string;
   speaker: 'paciente' | 'terapeuta';

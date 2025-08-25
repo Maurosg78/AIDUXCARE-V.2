@@ -14,6 +14,8 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 
+import logger from '@/shared/utils/logger';
+
 export interface Encounter {
   id: string;
   patientId: string;
@@ -76,10 +78,8 @@ export interface EncounterCreateData {
   patientResponse?: Encounter['patientResponse'];
 }
 
-import { db } from '../lib/firebase'; // Instancia blindada
-
 class EncountersRepository {
-  private db = db;
+  private db = getFirestore();
   private collectionName = 'encounters';
 
   async getEncounterById(id: string): Promise<Encounter | null> {

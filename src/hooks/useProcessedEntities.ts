@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+
 import { ClinicalEntity } from '../types/nlp';
 import { ClinicalInsight } from '../types/clinical-analysis';
 import { TranscriptProcessor } from '../services/TranscriptProcessor';

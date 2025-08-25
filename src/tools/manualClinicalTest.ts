@@ -8,6 +8,8 @@ import { SOAPGenerationService } from '../services/SOAPGenerationService';
 import { ClinicalEntity } from '../types/nlp';
 import { ClinicalInsight, SOAPGenerationResult } from '../types/clinical-analysis';
 
+import logger from '@/shared/utils/logger';
+
 // Transcripción real del paciente Óscar
 const TRANSCRIPT_OSCAR = `
 Oscar seguí nuevo paciente, abro micrófono: Oscar por favor para que me comentes y me cuentes qué te trae por estos lados, cuál es tu mayor molestia, cuál es tu mayor valor, por favor. Espolón calcáneo bilaterales a los dos lados, si tiene un informe. Has tenido que modificar la marcha tanto por el dolor en tus piernas pero dijo el médico le dijo el 4 L5, que el dolor local o se irradia, se va por el glúteo, por la pierna y es más hacia acá esta zona, a veces en esa zona, esto que si siempre... ¿En qué trabajas? De hostelería, estás de pie durante mucho rato y cargando peso. A lo de calcáneo, nuevos otra vez estuviste ahí y ahora un poquito... pero ¿qué es lo que más te molesta y te duele en este minuto que vamos a priorizar? La zona lumbar es lo que más. Igual vamos a ver lo de los pies, ningún problema, pero quiero priorizar lo que más te esté molestando a ti en este minuto. ¿Es más hacia tu derecha o más hacia tu izquierda o es muy central? Es justo en la zona central. ¿Y actividades normales como aprovecharte los zapatos o recoger cosas del suelo te genera mucho dolor y te quedas así como trabado? ¿No tienes algún uniforme que pueda...? Ganemos algo. Voy a dejar esto por acá. Acuéstate.
@@ -206,27 +208,27 @@ class TranscriptProcessor {
  */
 async function processOscarTranscript(): Promise<void> {
   try {
-    console.log('Iniciando análisis de transcripción clínica de Óscar...\n');
+    logger.info('Iniciando análisis de transcripción clínica de Óscar...\n');
 
     // 1. Extraer entidades clínicas del texto
-    console.log('Extrayendo entidades clínicas...');
+    logger.info('Extrayendo entidades clínicas...');
     const entities = TranscriptProcessor.extractClinicalEntities(TRANSCRIPT_OSCAR);
-    console.log(`Extraídas ${entities.length} entidades clínicas\n`);
+    logger.info(`Extraídas ${entities.length} entidades clínicas\n`);
 
     // 2. Generar insights clínicos
-    console.log('Generando insights clínicos...');
+    logger.info('Generando insights clínicos...');
     const insights = TranscriptProcessor.generateClinicalInsights(entities);
-    console.log(`Generados ${insights.length} insights clínicos\n`);
+    logger.info(`Generados ${insights.length} insights clínicos\n`);
 
     // 3. Generar SOAP estructurado
-    console.log('Generando estructura SOAP...');
+    logger.info('Generando estructura SOAP...');
     const soapResult: SOAPGenerationResult = await SOAPGenerationService.generateSOAP(
       entities,
       insights,
       'therapist_test',
       'oscar_session_001'
     );
-    console.log('SOAP generado exitosamente\n');
+    logger.info('SOAP generado exitosamente\n');
 
     // 4. Preparar resultado final
     const finalResult = {
@@ -258,23 +260,23 @@ async function processOscarTranscript(): Promise<void> {
     };
 
     // 5. Mostrar resultado en consola
-    console.log('RESULTADO FINAL DEL ANÁLISIS CLÍNICO:');
-    console.log('=====================================\n');
-    console.log(JSON.stringify(finalResult, null, 2));
+    logger.info('RESULTADO FINAL DEL ANÁLISIS CLÍNICO:');
+    logger.info('=====================================\n');
+    logger.info(JSON.stringify(finalResult, null, 2));
 
-    console.log('\nRESUMEN DE ANÁLISIS:');
-    console.log('======================');
-    console.log(`Paciente: ${finalResult.patient}`);
-    console.log(`Calidad SOAP: ${finalResult.metadata.qualityScore}/100`);
-    console.log(`Revisión requerida: ${finalResult.metadata.reviewRequired ? 'SÍ' : 'NO'}`);
-    console.log(`Flags de compliance: ${finalResult.metadata.complianceFlags.join(', ')}`);
-    console.log(`Tiempo procesamiento: ${Math.round(finalResult.metadata.processingTime)}ms`);
-    console.log(`Entidades extraídas: ${finalResult.entities_extracted}`);
-    console.log(`Insights generados: ${finalResult.insights_generated}`);
-    console.log(`Hallazgos críticos: ${finalResult.metadata.criticalFindings}`);
+    logger.info('\nRESUMEN DE ANÁLISIS:');
+    logger.info('======================');
+    logger.info(`Paciente: ${finalResult.patient}`);
+    logger.info(`Calidad SOAP: ${finalResult.metadata.qualityScore}/100`);
+    logger.info(`Revisión requerida: ${finalResult.metadata.reviewRequired ? 'SÍ' : 'NO'}`);
+    logger.info(`Flags de compliance: ${finalResult.metadata.complianceFlags.join(', ')}`);
+    logger.info(`Tiempo procesamiento: ${Math.round(finalResult.metadata.processingTime)}ms`);
+    logger.info(`Entidades extraídas: ${finalResult.entities_extracted}`);
+    logger.info(`Insights generados: ${finalResult.insights_generated}`);
+    logger.info(`Hallazgos críticos: ${finalResult.metadata.criticalFindings}`);
 
   } catch (error) {
-    console.error('Error en el procesamiento:', error);
+    logger.error('Error en el procesamiento:', error);
     // No usar process.exit en entorno de testing
   }
 }

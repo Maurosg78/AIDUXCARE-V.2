@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import logger from '@/shared/utils/logger';
+
 interface PainPoint {
   id: string;
   x: number;
@@ -160,7 +162,7 @@ export const HumanFigurePage: React.FC = () => {
       plan: 'Plan de tratamiento personalizado'
     };
 
-    console.log('Generando SOAP:', soapData);
+    logger.info('Generando SOAP:', soapData);
     // Aquí se enviaría al sistema SOAP
   };
 

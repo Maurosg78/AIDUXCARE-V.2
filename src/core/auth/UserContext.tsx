@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { FirebaseAuthService, UserProfile, AuthSession } from './firebaseAuthService';
+
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
+
+import { FirebaseAuthService, UserProfile, AuthSession } from './firebaseAuthService';
+
+import logger from '@/shared/utils/logger';
 
 interface UserContextType {
   user: UserProfile | null;
@@ -56,7 +60,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     // return () => unsubscribe();
     
     // SOLUCIÓN TEMPORAL: Solo cargar usuario inicial
-    console.log('🔍 [DEBUG] UserContext: Listener de autenticación deshabilitado temporalmente');
+    logger.info('🔍 [DEBUG] UserContext: Listener de autenticación deshabilitado temporalmente');
   }, [loadUser, authService]);
 
   const logout = async () => {

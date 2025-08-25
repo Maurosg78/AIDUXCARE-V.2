@@ -8,7 +8,10 @@ import {
   sendPasswordResetEmail,
   AuthError 
 } from 'firebase/auth';
+
 import { auth } from '../lib/firebase';
+
+import logger from '@/shared/utils/logger';
 
 export interface RegisterData {
   email: string;
@@ -61,12 +64,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
       
-      console.log('Login exitoso:', userCredential.user.email);
+      logger.info('Login exitoso:', userCredential.user.email);
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      console.error('Error en login:', authError);
+      logger.error('Error en login:', authError);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -81,12 +84,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await signOut(auth);
       setUser(null);
       
-      console.log('Logout exitoso');
+      logger.info('Logout exitoso');
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      console.error('Error en logout:', authError);
+      logger.error('Error en logout:', authError);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -101,12 +104,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       setUser(userCredential.user);
       
-      console.log('Registro exitoso:', userCredential.user.email);
+      logger.info('Registro exitoso:', userCredential.user.email);
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      console.error('Error en registro:', authError);
+      logger.error('Error en registro:', authError);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -120,12 +123,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       await sendPasswordResetEmail(auth, email);
       
-      console.log('Email de recuperación enviado a:', email);
+      logger.info('Email de recuperación enviado a:', email);
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      console.error('Error en recuperación de contraseña:', authError);
+      logger.error('Error en recuperación de contraseña:', authError);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -143,14 +146,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
         
         if (currentUser) {
-          console.log('Usuario autenticado:', currentUser.email);
+          logger.info('Usuario autenticado:', currentUser.email);
         } else {
-          console.log('Usuario no autenticado');
+          logger.info('Usuario no autenticado');
         }
       },
       async (error) => {
         // Handler robusto para errores de refresh token (403/securetoken)
-        console.warn('Auth state change error:', error);
+        logger.warn('Auth state change error:', error);
         
         const authError = error as { code?: string; message?: string };
         if (authError.code === 'auth/network-request-failed' || 
@@ -163,7 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await signOut(auth);
             setUser(null);
           } catch (signOutError) {
-            console.warn('Error al limpiar estado:', signOutError);
+            logger.warn('Error al limpiar estado:', signOutError);
           }
         }
         

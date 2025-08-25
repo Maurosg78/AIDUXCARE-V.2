@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * 🏥 Professional Profile Service - AiDuxCare V.2
  * Sistema de perfiles profesionales con compliance por país

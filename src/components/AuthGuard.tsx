@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../hooks/useAuth';
 import { emailActivationService } from '../services/emailActivationService';
+
+import logger from '@/shared/utils/logger';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -29,7 +32,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
           const professional = await emailActivationService.getProfessional(user.email);
           setEmailVerified(professional?.emailVerified || false);
         } catch (error) {
-          console.error('Error checking email verification:', error);
+          logger.error('Error checking email verification:', error);
           setEmailVerified(false);
         } finally {
           setCheckingEmail(false);
@@ -53,13 +56,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
   }
 
-  // MODO DESARROLLO: Permitir acceso sin usuario
+  // Si no hay usuario autenticado, redirigir al login
   if (!user) {
-    // En desarrollo, crear un usuario mock para bypassing
-    if (import.meta.env.DEV) {
-      console.log('🛠️ DEV MODE: AuthGuard bypass - acceso sin autenticación');
-      return <>{children}</>;
-    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

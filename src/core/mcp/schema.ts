@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { VisitSchema } from '../domain/visitType';
 
 /**
@@ -19,7 +20,7 @@ export const MCPMemoryBlockSchema = z.object({
         try {
           // Verificar si es un formato ISO válido
           return !isNaN(new Date(val).getTime());
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       },
@@ -52,7 +53,7 @@ const MemoryItemSchema = z.object({
       (val: string) => {
         try {
           return !isNaN(new Date(val).getTime());
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       },
@@ -65,7 +66,7 @@ const MemoryItemSchema = z.object({
       (val: string) => {
         try {
           return !isNaN(new Date(val).getTime());
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       },

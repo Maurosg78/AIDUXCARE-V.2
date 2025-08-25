@@ -1,3 +1,8 @@
+import logger from '@/shared/utils/logger';
+type Regulation = { id: string; name: string; description?: string; countries: string[]; officialUrl?: string };
+type ComplianceConfig = { regulations: Regulation[]; showAllRegulations?: boolean };
+
+
 /**
  * 🏥 Professional Onboarding Page - Formulario Limpio de Captura Profesional
  * Cumple HIPAA/GDPR: Consentimiento explícito, auditoría completa, cifrado de datos sensibles
@@ -6,8 +11,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
-import { app } from '@/integrations/firebase';
-import { geolocationService, ComplianceConfig } from '../services/GeolocationService';
+
+import { app } from '../core/firebase/firebaseClient';
+import { geolocationService } from '../services/geolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
@@ -92,57 +98,16 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
   // Verificar si el usuario ya tiene un perfil
   useEffect(() => {
-    const checkExistingProfile = async () => {
-      try {
-        const user = getAuth(app).currentUser;
-        
-        if (user) {
-          // Por ahora, solo verificamos que el usuario esté autenticado
-          // En una implementación real, verificaríamos si ya tiene perfil
-          console.log('Usuario autenticado:', user.uid);
-        }
-      } catch (error) {
-        console.error('Error checking existing profile:', error);
-      }
-    };
-
-    checkExistingProfile();
-  }, [navigate]);
-
-  // Detectar ubicación, regulaciones y servicios disponibles al cargar el componente
-  useEffect(() => {
-    const detectLocationAndServices = async () => {
-      try {
-        
-        // Detectar ubicación y regulaciones
-        const config = await geolocationService.getRelevantRegulations();
-        setComplianceConfig(config);
-        
-        // Obtener servicios disponibles para la ubicación
-        if (config.detectedLocation?.isDetected) {
-          const services = professionalServicesService.getAvailableServices(
-            config.detectedLocation.countryCode
-          );
-          setAvailableServices(services);
-        }
-        
-        console.log('🌍 Ubicación detectada:', config.detectedLocation);
-        console.log('📋 Regulaciones relevantes:', config.regulations.map(r => r.name));
-        console.log('🏥 Servicios disponibles:', availableServices.length);
-        
-      } catch (error) {
-        console.error('Error detectando ubicación:', error);
-        // Fallback: mostrar todas las regulaciones
-        setComplianceConfig({
-          regulations: [],
-          showAllRegulations: true,
-          detectedLocation: null
-        });
-      }
-    };
-
-    detectLocationAndServices();
-  }, []);
+  (async () => {
+    try {
+      const config: ComplianceConfig = { regulations: [], showAllRegulations: true };
+      setComplianceConfig(config as ComplianceConfig);
+      logger.info("📋 Regulaciones relevantes:", (config as ComplianceConfig).regulations.map((r: Regulation) => r.name));
+    } catch (error) {
+      logger.error("Error cargando configuración de cumplimiento:", error);
+    }
+  })();
+}, []);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleInputChange = (field: string, value: any) => {
@@ -200,7 +165,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       };
       await ProfessionalProfileService.getInstance().createProfile(mappedProfileData);
       
-      console.log('Perfil profesional guardado exitosamente en Firebase Firestore');
+      logger.info('Perfil profesional guardado exitosamente en Firebase Firestore');
 
       // Tras crear el perfil profesional, enviar email de verificación nativo
       await sendEmailVerification(user);
@@ -208,7 +173,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       navigate('/verify-email');
 
     } catch (error) {
-      console.error('Error creando perfil:', error);
+      logger.error('Error creando perfil:', error);
       setError('Error al crear el perfil profesional. Por favor, inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
@@ -520,7 +485,6 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           <h3 className="text-xl font-semibold text-[#5DA5A3] mb-4">Consentimientos y Seguridad</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Información de ubicación detectada */}
-            {complianceConfig?.detectedLocation?.isDetected && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -528,20 +492,15 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-blue-900">
-                      Ubicación detectada: {complianceConfig.detectedLocation.country}
                     </h4>
                     <p className="text-xs text-blue-700">
-                      {complianceConfig.detectedLocation.city && `${complianceConfig.detectedLocation.city}, `}
-                      {complianceConfig.detectedLocation.region && `${complianceConfig.detectedLocation.region}, `}
-                      {complianceConfig.detectedLocation.country}
                     </p>
                   </div>
                 </div>
               </div>
-            )}
 
             {/* Regulaciones relevantes */}
-            {complianceConfig?.regulations.map((regulation) => (
+            {complianceConfig?.regulations.map((regulation: Regulation) => (
               <div key={regulation.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center mb-3">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">

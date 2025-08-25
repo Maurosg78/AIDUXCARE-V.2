@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+
 import { useAuth } from '../hooks/useAuth';
+
+import logger from '@/shared/utils/logger';
 
 interface AuditLogEntry {
   id: string;
@@ -80,7 +83,7 @@ export const AuditWidget: React.FC<AuditWidgetProps> = ({ isVisible, onClose }) 
 
       setLogs(logsData);
     } catch (error) {
-      console.error('Error fetching audit logs:', error);
+      logger.error('Error fetching audit logs:', error);
     } finally {
       setLoading(false);
     }

@@ -4,8 +4,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useOrganization } from '../core/hooks/useOrganization';
 import { Link } from 'react-router-dom';
+
+import { useOrganization } from '../core/hooks/useOrganization';
 
 interface DashboardMetric {
   name: string;

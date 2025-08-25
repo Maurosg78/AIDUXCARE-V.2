@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import { useAuth } from '../../context/AuthContext';
 import { fetchPendingNotes } from '../../repositories/notesRepo';
 import { usePatientQuickSearch } from '../../hooks/usePatientQuickSearch';
 import { logAction } from '../../analytics/events';
-import { Link } from 'react-router-dom';
 
 type Props = { open: boolean; onClose: () => void };
 

@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 // Store simplificado para AI Light + Offline Mode
 // Versión sin dependencias externas para testing
 

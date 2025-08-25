@@ -1,6 +1,9 @@
-import { db } from '../firebase/firebaseClient';
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+
+import { db } from '../firebase/firebaseClient';
 import { Patient, PatientSchema } from '../domain/patientType';
+
+import logger from '@/shared/utils/logger';
 
 const patientsCollection = collection(db, 'patients');
 

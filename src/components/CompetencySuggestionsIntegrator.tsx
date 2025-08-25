@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from 'react';
+
 import { useCompetencySuggestions, UseCompetencySuggestionsConfig } from '../hooks/useCompetencySuggestions';
 import { CompetencySuggestion } from '../services/CompetencySuggestionService';
+
+import logger from '@/shared/utils/logger';
 
 interface CompetencySuggestionsIntegratorProps {
   config: UseCompetencySuggestionsConfig;
@@ -85,7 +88,7 @@ export const CompetencySuggestionsIntegrator: React.FC<CompetencySuggestionsInte
   // Log silencioso para auditoría
   useEffect(() => {
     if (suggestions.length > 0) {
-      console.log('🔒 CompetencySuggestionsIntegrator:', {
+      logger.info('🔒 CompetencySuggestionsIntegrator:', {
         totalSuggestions: suggestions.length,
         region: config.region,
         geolocationSpecific: statistics.geolocationSpecific,

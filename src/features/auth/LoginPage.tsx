@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isFirebaseEnabled, getFirebaseClient } from '@/integrations/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
+
+import logger from '@/shared/utils/logger';
+import { app } from '@/integrations/firebase';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,23 +14,13 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!isFirebaseEnabled) {
-      setError('Firebase está deshabilitado en este build. Usando modo demo.');
-      // Simular login exitoso para demo
-      setTimeout(() => navigate('/'), 1000);
-      return;
-    }
-
     try {
-      // Solo se ejecuta si Firebase está habilitado
-      const firebaseClient = await getFirebaseClient();
-      // Aquí iría la lógica real de Firebase
-      console.log('Firebase habilitado:', firebaseClient);
+      const auth = getAuth(app);
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (err) {
       setError('Error de autenticación. Por favor verifica tus credenciales.');
-      console.error('Error de login:', err);
+      logger.error('Error de login:', err);
     }
   };
 
@@ -37,11 +31,6 @@ const LoginPage: React.FC = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             AiDuxCare Login
           </h2>
-          {!isFirebaseEnabled && (
-            <p className="mt-2 text-center text-sm text-gray-600">
-              🔒 Modo demo - Firebase deshabilitado
-            </p>
-          )}
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="rounded-md shadow-sm -space-y-px">
@@ -90,7 +79,7 @@ const LoginPage: React.FC = () => {
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isFirebaseEnabled ? 'Iniciar Sesión' : 'Demo - Entrar'}
+              Iniciar Sesión
             </button>
           </div>
         </form>

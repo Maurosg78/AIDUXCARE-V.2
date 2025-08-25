@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 export async function logAction(action: string, path: string, data?: unknown): Promise<void> {
   try {
     // Log básico para desarrollo

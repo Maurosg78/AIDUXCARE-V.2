@@ -1,4 +1,6 @@
+import React from 'react';
 import { Timestamp } from 'firebase/firestore';
+
 import { useProfessionalProfile } from '../../../context/ProfessionalProfileContext';
 
 interface GreetingProps {
@@ -29,7 +31,7 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
         hour: '2-digit',
         minute: '2-digit'
       }).format(date);
-    } catch (error) {
+    } catch (_error) {
       return 'Reciente';
     }
   };

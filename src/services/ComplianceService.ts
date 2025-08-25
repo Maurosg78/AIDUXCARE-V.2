@@ -1,10 +1,12 @@
+import ProfessionalProfileService from './ProfessionalProfileService';
+
+import logger from '@/shared/utils/logger';
 /**
  * ⚖️ Compliance Service - AiDuxCare V.2
  * Sistema de compliance automático para HIPAA/GDPR y normativas por país
  * Implementación del Blueprint Oficial
  */
 
-import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface ComplianceRule {
   id: string;

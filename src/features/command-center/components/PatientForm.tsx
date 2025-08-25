@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+
 import PatientService from '../../../services/patientService';
 import { AnalyticsService } from '../../../services/analyticsService';
+
+import logger from '@/shared/utils/logger';
 
 export interface PatientFormData {
   // Datos Personales Básicos - Nombres Separados
@@ -240,7 +243,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       onPatientCreated(patientId);
       onClose();
     } catch (error) {
-      console.error('Error creando paciente:', error);
+      logger.error('Error creando paciente:', error);
       setErrors({ submit: 'Error al crear paciente. Inténtalo de nuevo.' });
     } finally {
       setLoading(false);

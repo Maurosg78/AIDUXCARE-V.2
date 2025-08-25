@@ -1,5 +1,8 @@
-import { WebSpeechSTTService, RealtimeTranscriptionOptions } from './WebSpeechSTTService';
 import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
+
+import { WebSpeechSTTService, RealtimeTranscriptionOptions } from './WebSpeechSTTService';
+
+import logger from '@/shared/utils/logger';
 
 export interface AudioCaptureOptions {
   language?: 'es' | 'en';

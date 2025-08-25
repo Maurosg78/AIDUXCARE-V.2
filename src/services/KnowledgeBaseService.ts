@@ -1,10 +1,12 @@
+import ProfessionalProfileService from './ProfessionalProfileService';
+
+import logger from '@/shared/utils/logger';
 /**
  * 📚 Knowledge Base Service - AiDuxCare V.2
  * Base de conocimiento especializada para fisioterapia
  * Implementación del Blueprint Oficial
  */
 
-import ProfessionalProfileService from './ProfessionalProfileService';
 
 export interface MedicalKnowledge {
   id: string;

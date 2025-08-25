@@ -4,7 +4,10 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+
 import Button from '../ui/button';
+
+import logger from '@/shared/utils/logger';
 
 interface ProfessionalAudioCaptureProps {
   onRecordingComplete: (audioBlob: Blob) => void;
@@ -23,7 +26,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Solicita permisos de micrófono
@@ -34,7 +37,7 @@ export const ProfessionalAudioCapture: React.FC<ProfessionalAudioCaptureProps> =
       setAudioPermission('granted');
       return stream;
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      logger.error('Error accessing microphone:', error);
       setAudioPermission('denied');
       return null;
     }

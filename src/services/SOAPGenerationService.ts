@@ -13,6 +13,8 @@ import {
   ClinicalComment
 } from '../types/clinical-analysis';
 
+import logger from '@/shared/utils/logger';
+
 // Security and monitoring imports (enterprise requirements)
 // Note: These services would be imported when they exist
 // import { SecurityService } from './SecurityService';

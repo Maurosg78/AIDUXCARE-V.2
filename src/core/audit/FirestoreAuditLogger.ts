@@ -1,6 +1,9 @@
 import { collection, addDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+
 import { db } from '../firebase/firebaseClient';
 import { encryptMetadata, decryptMetadata, isEncrypted } from '../security/encryption';
+
+import logger from '@/shared/utils/logger';
 
 /**
  * Interfaz de un evento de auditoría clínica

@@ -8,7 +8,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+
 import { emailActivationService, type ActivationResult, type ProfessionalRegistration } from '../services/emailActivationService';
+
+import logger from '@/shared/utils/logger';
 
 export const AccountActivationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -46,7 +49,7 @@ export const AccountActivationPage: React.FC = () => {
           setMessage(result.message);
         }
       } catch (error) {
-        console.error('Error en activación:', error);
+        logger.error('Error en activación:', error);
         setActivationStatus('error');
         setMessage('Error interno del sistema. Contacta soporte técnico.');
       }

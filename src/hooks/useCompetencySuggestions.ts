@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import { AgentSuggestion } from '../types/agent';
 import { competencySuggestionService, CompetencySuggestion, CompetencySuggestionContext } from '../services/CompetencySuggestionService';
 

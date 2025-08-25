@@ -4,10 +4,12 @@
  * @author AiDuxCare Development Team
  */
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+
+import logger from '@/shared/utils/logger';
 
 // GUARDRAILS: NO emuladores en PROD
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
@@ -32,12 +34,21 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
   throw new Error(' CONFIGURACIÓN: VITE_FIREBASE_API_KEY y VITE_FIREBASE_PROJECT_ID son obligatorios');
 }
 
-// BLINDAJE: Inicialización idempotente (evita app/no-app)
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const functions = getFunctions(app, 'europe-west1');
+
+// Inicialización condicional de Functions
+let functions;
+try {
+  functions = getFunctions(app, 'europe-west1');
+} catch (error) {
+  console.warn('⚠️ Firebase Functions no disponible:', error);
+  functions = null;
+}
+
+export { functions };
 
 // PROD: Configurar persistencia local
 setPersistence(auth, browserLocalPersistence);

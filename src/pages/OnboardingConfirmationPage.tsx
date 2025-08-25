@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
+
+import logger from '@/shared/utils/logger';
 
 const OnboardingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +33,7 @@ const OnboardingConfirmationPage: React.FC = () => {
   const handleEmailVerification = async (verificationToken: string) => {
     try {
       // Aquí iría la lógica de verificación con el backend
-      console.log('Verificando email con token:', verificationToken);
+      logger.info('Verificando email con token:', verificationToken);
       
       // Simulación de verificación exitosa
       setTimeout(() => {
@@ -43,7 +46,7 @@ const OnboardingConfirmationPage: React.FC = () => {
         });
       }, 2000);
     } catch (error) {
-      console.error('Error verificando email:', error);
+      logger.error('Error verificando email:', error);
     }
   };
 
@@ -51,7 +54,7 @@ const OnboardingConfirmationPage: React.FC = () => {
     setIsResending(true);
     try {
       // Aquí iría la lógica para reenviar el email
-      console.log('Reenviando email de verificación a:', email);
+      logger.info('Reenviando email de verificación a:', email);
       
       // Simulación de reenvío
       setTimeout(() => {
@@ -59,7 +62,7 @@ const OnboardingConfirmationPage: React.FC = () => {
         alert('Email de verificación reenviado exitosamente.');
       }, 2000);
     } catch (error) {
-      console.error('Error reenviando email:', error);
+      logger.error('Error reenviando email:', error);
       setIsResending(false);
     }
   };

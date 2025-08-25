@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 export interface ClinicalAnalysisRequest {
   transcription: string;
   specialty: 'physiotherapy' | 'psychology' | 'general_medicine';
@@ -230,7 +231,7 @@ export class GoogleCloudAudioService {
 
       return result;
 
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Error crítico comunicándose con el Cerebro Clínico:', error);
       console.error('🔍 DEBUG ERROR TYPE:', {
         errorType: typeof error,
@@ -289,7 +290,7 @@ export class GoogleCloudAudioService {
         isFinal: true,
         confidence: 0.95
       };
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Error al procesar audio con Google Cloud');
     }
   }
@@ -381,7 +382,7 @@ export class GoogleCloudAudioService {
           message: `⚠️ Cerebro Clínico no disponible (${response.status})`
         };
       }
-    } catch (error) {
+    } catch (_error) {
       return {
         available: false,
         message: `❌ Error verificando estado del Cerebro Clínico: ${error instanceof Error ? error.message : 'Error desconocido'}`

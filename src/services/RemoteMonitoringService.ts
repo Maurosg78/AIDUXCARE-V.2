@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 /**
  * 🔍 AiDuxCare - Remote Monitoring Service
  * Servicio de monitoreo remoto que envía datos de la interfaz a supervisión externa
@@ -83,7 +84,7 @@ class RemoteMonitoringService {
   private maxReconnectAttempts = 5;
   private reconnectInterval = 5000; // 5 segundos
   private eventQueue: RemoteMonitoringEvent[] = [];
-  private statusInterval: NodeJS.Timeout | null = null;
+  private statusInterval: ReturnType<typeof setTimeout> | null = null;
   private endpoint: string;
 
   constructor() {

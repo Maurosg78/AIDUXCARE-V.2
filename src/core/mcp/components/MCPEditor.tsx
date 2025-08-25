@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+
 import { MCPContext } from '../schema';
+
+import logger from '@/shared/utils/logger';
 
 interface MCPEditorProps {
   initialContext: MCPContext;
@@ -20,7 +23,7 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
       await onSave(context);
       setIsEditing(false);
     } catch (error) {
-      console.error('Error al guardar:', error);
+      logger.error('Error al guardar:', error);
     }
   };
 
@@ -31,7 +34,7 @@ const MCPEditor: React.FC<MCPEditorProps> = ({
       const updatedContext = JSON.parse(e.target.value);
       setContext(updatedContext);
     } catch (error) {
-      console.error('Error al parsear JSON:', error);
+      logger.error('Error al parsear JSON:', error);
     }
   };
 

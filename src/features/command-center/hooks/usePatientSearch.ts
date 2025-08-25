@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+
 import PatientService from '../../../services/patientService';
 
 export interface Patient {

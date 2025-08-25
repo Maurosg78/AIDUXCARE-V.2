@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import logger from '@/shared/utils/logger';
+
 interface SOAPNote {
   id: string;
   patientId: string;
@@ -54,14 +56,14 @@ export const SOAPEditorPage: React.FC<SOAPEditorPageProps> = ({
   const saveSOAPNote = async () => {
     try {
       // Aquí se guardaría en Firestore
-      console.log('Guardando SOAP:', soapNote);
+      logger.info('Guardando SOAP:', soapNote);
       
       // Simular guardado
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('SOAP guardado exitosamente');
+      logger.info('SOAP guardado exitosamente');
     } catch (error) {
-      console.error('Error al guardar SOAP:', error);
+      logger.error('Error al guardar SOAP:', error);
     }
   };
 
@@ -69,7 +71,7 @@ export const SOAPEditorPage: React.FC<SOAPEditorPageProps> = ({
     setIsGeneratingPDF(true);
     try {
       // Aquí se generaría el PDF oficial
-      console.log('Generando PDF oficial...');
+      logger.info('Generando PDF oficial...');
       
       // Simular generación de PDF
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -77,13 +79,13 @@ export const SOAPEditorPage: React.FC<SOAPEditorPageProps> = ({
       // Actualizar estado a final
       setSoapNote({ ...soapNote, status: 'final' });
       
-      console.log('PDF generado y enviado a ficha del paciente');
+      logger.info('PDF generado y enviado a ficha del paciente');
       
       // Aquí se enviaría a la ficha del paciente
       // await sendToPatientRecord(soapNote);
       
     } catch (error) {
-      console.error('Error al generar PDF:', error);
+      logger.error('Error al generar PDF:', error);
     } finally {
       setIsGeneratingPDF(false);
     }

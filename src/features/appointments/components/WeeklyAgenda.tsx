@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../hooks/useAuth';
+
+import logger from '@/shared/utils/logger';
 
 interface Appointment {
   id: string;
@@ -73,7 +76,7 @@ export const WeeklyAgenda: React.FC = () => {
 
         setAppointments(appointmentsData);
       } catch (error) {
-        console.error('Error cargando citas:', error);
+        logger.error('Error cargando citas:', error);
       } finally {
         setLoading(false);
       }

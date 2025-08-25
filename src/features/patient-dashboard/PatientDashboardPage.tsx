@@ -1,7 +1,10 @@
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
+import ClinicalAssistantPanel from "../../shared/components/Assistant/ClinicalAssistantPanel";
+
 import { PatientHeaderCard } from './components/PatientHeaderCard';
 import { LastTherapyCard } from './components/LastTherapyCard';
-import { ClinicalAssistantPanel } from '../../shared/components/Assistant/ClinicalAssistantPanel';
 import { usePatientCore } from './hooks/usePatientCore';
 import { useActiveEpisode } from './hooks/useActiveEpisode';
 import { useLastEncounter } from './hooks/useLastEncounter';

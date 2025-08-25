@@ -1,19 +1,7 @@
-/**
- * @fileoverview useTranscript Hook - Real-time Transcription Management
- * @version 1.0.0 Enterprise
- * @author AiDuxCare Development Team
- */
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { isFeatureEnabled } from '../config/featureFlags';
-
-// Tipos para Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+import { useRef } from "react";
+import type { TranscriptionSegment } from "../core/audio/AudioCaptureService";
+import { WebSpeechSTTService } from "../services/WebSpeechSTTService";
+import { useState, useEffect, useCallback } from 'react';
 
 export interface TranscriptState {
   transcript: string;
@@ -27,11 +15,6 @@ export interface UseTranscriptOptions {
   enableDemo?: boolean;
 }
 
-/**
- * Hook for managing real-time transcription
- * In production, this would connect to Web Speech API or audio capture service
- * In demo mode, it provides simulated transcription for testing
- */
 export const useTranscript = ({ enableDemo = false }: UseTranscriptOptions): TranscriptState & {
   startRecording: () => void;
   stopRecording: () => void;
@@ -41,109 +24,141 @@ export const useTranscript = ({ enableDemo = false }: UseTranscriptOptions): Tra
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  
-  // Refs para Web Speech API
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [sttService] = useState(() => new WebSpeechSTTService());
+  // --- Rolling window (8s window, 2s overlap)
+  const WINDOW_MS = 8000;
+  const OVERLAP_MS = 2000;
+  const chunkBufferRef = useRef<TranscriptionSegment[]>([]);
+  const windowStartRef = useRef<number | null>(null);
 
-  // Demo transcript for testing when APP_DEMO is enabled
+  // Demo transcript for testing
   const demoTranscript = `El paciente refiere dolor cervical irradiado hacia el brazo derecho, con parestesias en los dedos índice y medio. El dolor se agrava con movimientos de flexión cervical y rotación hacia la derecha. No refiere traumatismo previo. El dolor comenzó hace 3 semanas de forma progresiva.`;
 
   const startRecording = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setIsRecording(true);
     
-    try {
-      // Si audio está deshabilitado o en modo demo, usar demo
-      if (!isFeatureEnabled('audioCapture') || enableDemo) {
-        setTimeout(() => {
-          setLoading(false);
-          setIsRecording(true);
-          setTranscript(demoTranscript);
-        }, 1000);
-        return;
-      }
-
-      // Verificar soporte de Web Speech API
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        throw new Error('Web Speech API no soportada en este navegador');
-      }
-
-      // Solicitar permisos de micrófono
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: true, 
-          noiseSuppression: true,
-          autoGainControl: true 
-        } 
-      });
-      streamRef.current = stream;
-
-      // Configurar reconocimiento de voz
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'es-ES';
-      
-      recognition.onstart = () => {
+    if (enableDemo) {
+      // Demo mode
+      setTimeout(() => {
         setLoading(false);
-        setIsRecording(true);
-        console.log('🎤 Grabación iniciada');
-      };
+        setTranscript(demoTranscript);
+      }, 1000);
+    } else {
+      // Real audio capture
+      try {
+        await sttService.startRealtimeTranscription({
+          onResult: (segment) => {
+console.log("Segment received:", segment);
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          currentTranscript += result[0].transcript;
-        }
-        setTranscript(prev => prev + ' ' + currentTranscript);
-      };
+            // --- Push al buffer de ventana
+            try {
+              const tsMs = Date.parse(segment.timestamp);
+              if (!Number.isFinite(tsMs)) {
+                // Fallback por si algún navegador no trae ISO válido
+                const now = Date.now();
+                (segment as any)._tsMs = now;
+              } else {
+                (segment as any)._tsMs = tsMs;
+              }
+              chunkBufferRef.current.push(segment as any);
+              if (windowStartRef.current == null) {
+                windowStartRef.current = (segment as any)._tsMs as number;
+              }
+              const windowEnd = (windowStartRef.current as number) + WINDOW_MS;
+              const nowMs = (segment as any)._tsMs as number;
 
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Error en reconocimiento:', event.error);
-        setError(`Error de transcripción: ${event.error}`);
-        setIsRecording(false);
+              // Cerrar ventana si ya superamos el fin
+              if (nowMs >= windowEnd) {
+                const start = windowStartRef.current as number;
+                const end = windowEnd;
+                const inWindow = chunkBufferRef.current.filter(s => {
+                  const ms = (s as any)._tsMs as number;
+                  return ms >= start && ms < end;
+                });
+                const chunkText = inWindow.map(s => s.content).join(" ").trim();
+
+                console.log("[Chunk 8s]", { id: `chunk_${start}_${end}`, len: chunkText.length, segs: inWindow.length, window: `${start}-${end}` });
+
+                // Solo procesar si hay contenido significativo (>10 chars, >2 palabras)
+                if (chunkText.length < 10 || chunkText.split(/\s+/).length < 2) {
+                  console.log("[Chunk 8s][skip] Contenido insuficiente:", chunkText.length, "chars");
+                  const nextStart = end - OVERLAP_MS;
+                  chunkBufferRef.current = chunkBufferRef.current.filter(s => ((s as any)._tsMs as number) >= nextStart);
+                  windowStartRef.current = nextStart;
+                  return;
+                }
+                // Solo procesar si hay contenido significativo (>10 chars, >2 palabras)
+                if (chunkText.length < 10 || chunkText.split(/\s+/).length < 2) {
+                  console.log("[Chunk 8s][skip] Contenido insuficiente:", chunkText.length, "chars");
+                  const nextStart = end - OVERLAP_MS;
+                  chunkBufferRef.current = chunkBufferRef.current.filter(s => ((s as any)._tsMs as number) >= nextStart);
+                  windowStartRef.current = nextStart;
+                  return;
+                }
+                // Solape: conservar últimos 2s
+                const nextStart = end - OVERLAP_MS;
+                chunkBufferRef.current = chunkBufferRef.current.filter(s => ((s as any)._tsMs as number) >= nextStart);
+                windowStartRef.current = nextStart;
+              }
+            } catch (e) {
+              console.warn("[Chunking] error en ventana:", e);
+            }
+
+            // UI: seguimos actualizando el texto
+            setTranscript(prev => (prev ? prev + "\n" : "") + (segment.content || ""));
+            setLoading(false);
+          },
+          onError: (error) => {
+            setError(error);
+            setLoading(false);
+            setIsRecording(false);
+          },
+          onStart: () => {
+            console.log("🎤 Audio capture started");
+            setLoading(false);
+          }
+        });
+      } catch (err) {
+        setError('Error iniciando grabación: ' + String(err));
         setLoading(false);
-      };
-
-      recognition.onend = () => {
         setIsRecording(false);
-        console.log('🎤 Grabación finalizada');
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-
-    } catch (error) {
-      console.error('Error iniciando grabación:', error);
-      setError(error instanceof Error ? error.message : 'Error iniciando grabación');
-      setLoading(false);
-      setIsRecording(false);
+      }
     }
-  }, [enableDemo, demoTranscript]);
+  }, [enableDemo, demoTranscript, sttService]);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     setIsRecording(false);
     setLoading(false);
     
-    // Detener reconocimiento de voz
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
+    if (!enableDemo) {
+      await sttService.stopTranscription();
+      // --- Flush de último chunk pendiente (si hay buffer)
+      try {
+        const buf = chunkBufferRef.current;
+        const start = windowStartRef.current;
+        if (buf && buf.length > 0 && start != null) {
+          const lastTs = (buf[buf.length - 1] as any)._tsMs as number || Date.now();
+          const inWindow = buf; /* remanente actual */
+          const chunkText = inWindow.map((s:any) => s.content).join(" ").trim();
+          console.log("[Chunk 8s][flush]", { id: `chunk_${start}_${lastTs}`, len: chunkText.length, segs: inWindow.length, window: `${start}-${lastTs}` });
+          // Solo flush si hay contenido médico significativo
+          if (chunkText.length < 10 || chunkText.split(/\s+/).length < 2) {
+            console.log("[Chunk 8s][flush][skip] Contenido insuficiente");
+            return;
+          }        }
+      } catch (e) {
+        console.warn("[Chunking] flush error:", e);
+      } finally {
+        chunkBufferRef.current = [];
+        windowStartRef.current = null;
+      }    }
     
-    // Detener stream de audio
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (!transcript || transcript === 'Iniciando grabación...') {
+    if (!transcript) {
       setError('No se pudo capturar transcripción. Intente nuevamente.');
     }
-  }, [transcript]);
+  }, [transcript, enableDemo, sttService]);
 
   const clearTranscript = useCallback(() => {
     setTranscript('');

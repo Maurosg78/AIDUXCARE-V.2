@@ -14,6 +14,8 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 
+import logger from '@/shared/utils/logger';
+
 export interface Episode {
   id: string;
   patientId: string;
@@ -59,10 +61,8 @@ export interface EpisodeCreateData {
   goals?: Episode['goals'];
 }
 
-import { db } from '../lib/firebase'; // Instancia blindada
-
 class EpisodesRepository {
-  private db = db;
+  private db = getFirestore();
   private collectionName = 'episodes';
 
   async getEpisodeById(id: string): Promise<Episode | null> {

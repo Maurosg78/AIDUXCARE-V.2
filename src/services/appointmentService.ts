@@ -1,6 +1,10 @@
 import { collection, doc, setDoc, getDocs, query, where, orderBy, serverTimestamp, DocumentData } from 'firebase/firestore';
+
 import { db } from '../lib/firebase';
+
 import PatientService from './patientService';
+
+import logger from '@/shared/utils/logger';
 
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
 

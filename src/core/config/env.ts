@@ -1,3 +1,4 @@
+import logger from '@/shared/utils/logger';
 // src/core/config/env.ts
 
 // Carga URL y KEY de Supabase desde variables de entorno de Vite

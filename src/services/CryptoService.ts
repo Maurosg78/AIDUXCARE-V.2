@@ -77,7 +77,7 @@ export class CryptoService {
   }
 
   private static generateIV(): Uint8Array {
-    return window.crypto.getRandomValues(new Uint8Array(this.IV_LENGTH) as Uint8Array);
+    return window.crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
   }
 
   private static async encryptData(data: string, key: CryptoKey): Promise<EncryptedData> {
@@ -88,7 +88,7 @@ export class CryptoService {
       const encryptedContent = await window.crypto.subtle.encrypt(
         {
           name: this.ALGORITHM,
-          iv: iv,
+          iv: iv instanceof Uint8Array ? new Uint8Array(iv).buffer : (iv as ArrayBuffer),
           tagLength: this.TAG_LENGTH
         },
         key,
@@ -112,7 +112,7 @@ export class CryptoService {
       const decryptedContent = await window.crypto.subtle.decrypt(
         {
           name: this.ALGORITHM,
-          iv: iv,
+          iv,
           tagLength: this.TAG_LENGTH
         },
         key,
@@ -214,7 +214,7 @@ export class CryptoService {
     return crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
-        salt: salt as BufferSource,
+        salt: salt instanceof Uint8Array ? new Uint8Array(salt).buffer : salt,
         iterations: 100000, // 100k iteraciones para seguridad
         hash: 'SHA-256'
       },

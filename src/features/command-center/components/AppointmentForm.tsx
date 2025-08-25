@@ -1,7 +1,10 @@
  import React, { useState, useEffect } from 'react';
+
 import { appointmentService } from '../../../services/appointmentService';
 import PatientService from '../../../services/patientService';
 import { Patient } from '../hooks/usePatientSearch';
+
+import logger from '@/shared/utils/logger';
 
 interface AppointmentFormProps {
   onClose: () => void;
@@ -40,7 +43,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
         const allPatients = await PatientService.getAllPatients();
         setPatients(allPatients);
       } catch (err) {
-        console.error('Error cargando pacientes:', err);
+        logger.error('Error cargando pacientes:', err);
       }
     };
     loadPatients();

@@ -9,8 +9,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+
 import { auth, db } from '../lib/firebase';
 import { ProfessionalProfile } from '../context/ProfessionalProfileContext';
+
+import logger from '@/shared/utils/logger';
 
 export interface ProfessionalProfileState {
   profile: ProfessionalProfile | null;

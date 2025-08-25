@@ -121,3 +121,10 @@ metrics/
 
 # Legacy patches
 *.patch.quarantine/
+# nunca versionar dependencias ni backups
+node_modules/
+node_modules.__old__/
+backup/
+QUARANTINE_*/
+backup-*/*
+*.tsbuildinfo

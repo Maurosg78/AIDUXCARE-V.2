@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+
 import { useUser } from '../../core/auth/UserContext';
+
+import logger from '@/shared/utils/logger';
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -56,7 +59,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthorized) {
     // Para desarrollo, permitimos cualquier ruta para facilitar pruebas
     if (import.meta.env.DEV) {
-      console.warn('DEV MODE: Permitiendo acceso aunque no está autorizado');
+      logger.warn('DEV MODE: Permitiendo acceso aunque no está autorizado');
       return <>{children}</>;
     }
     

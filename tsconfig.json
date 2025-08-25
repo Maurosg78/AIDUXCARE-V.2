@@ -1,34 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM"],
-    "jsx": "react-jsx",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
-    "paths": { 
-      "@/*": ["src/*"],
-      "@/integrations/firebase": ["src/integrations/firebase/stub.ts"]
-    },
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "files": [
-    "src/App.tsx",
-    "src/main.tsx",
-    "src/router.tsx",
-    "src/features/welcome/WelcomePage.tsx",
-    "src/features/auth/LoginPage.tsx",
-    "src/pages/NotFound.tsx",
-    "src/shared/components/Logo.tsx"
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "AIDUXCARE-STABLE",
+    "tests/legacy",
+    "src/tests",
+    "src/core/fhir",
+    "src/_deprecated/**",
+    "src/z_trash/**"
   ]
 }

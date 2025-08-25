@@ -1,9 +1,11 @@
+import { GoogleCloudAudioService, ClinicalAnalysisRequest } from './GoogleCloudAudioService';
+
+import logger from '@/shared/utils/logger';
 /**
  * AudioToSOAPBridge - Puente entre audio y formato SOAP
  * Convierte transcripciones de audio en datos estructurados SOAP
  */
 
-import { GoogleCloudAudioService, ClinicalAnalysisRequest } from './GoogleCloudAudioService';
 
 interface SOAPData {
   subjective: string;

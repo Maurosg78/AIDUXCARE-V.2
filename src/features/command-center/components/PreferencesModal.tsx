@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import logger from '@/shared/utils/logger';
+
 interface PreferencesModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +29,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onCl
         const parsed = JSON.parse(savedPrefs);
         setPreferences(prev => ({ ...prev, ...parsed }));
       } catch (error) {
-        console.error('Error cargando preferencias:', error);
+        logger.error('Error cargando preferencias:', error);
       }
     }
   }, []);
@@ -54,7 +56,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onCl
       
       onClose();
     } catch (error) {
-      console.error('Error guardando preferencias:', error);
+      logger.error('Error guardando preferencias:', error);
     } finally {
       setIsSaving(false);
     }

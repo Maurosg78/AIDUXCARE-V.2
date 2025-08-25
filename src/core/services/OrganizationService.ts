@@ -15,6 +15,7 @@ import {
   where, 
   orderBy
 } from 'firebase/firestore';
+
 import { db } from '../firebase/firebaseClient';
 import { 
   Organization, 
@@ -23,6 +24,8 @@ import {
   ORGANIZATION_ROLES 
 } from '../domain/organizationType';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
+
+import logger from '@/shared/utils/logger';
 
 export class OrganizationService {
   constructor() {}

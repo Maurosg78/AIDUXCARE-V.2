@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
+import logger from '@/shared/utils/logger';
+
 export type AsyncState<T> = { 
   data?: T; 
   loading: boolean; 

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
 import { analyticsService, type DashboardMetrics } from '../../services/analyticsService';
+
+import logger from '@/shared/utils/logger';
 
 export const AnalyticsDashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -19,7 +22,7 @@ export const AnalyticsDashboard: React.FC = () => {
       const dashboardMetrics = await analyticsService.getDashboardMetrics(dateRange);
       setMetrics(dashboardMetrics);
     } catch (error) {
-      console.error('Error cargando métricas:', error);
+      logger.error('Error cargando métricas:', error);
     } finally {
       setLoading(false);
     }
@@ -288,7 +291,7 @@ export const AnalyticsDashboard: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error exportando datos:', error);
+      logger.error('Error exportando datos:', error);
       alert('Error al exportar datos');
     }
   };

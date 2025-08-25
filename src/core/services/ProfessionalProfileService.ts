@@ -13,6 +13,7 @@ import {
   where, 
   getDocs
 } from 'firebase/firestore';
+
 import { db } from '../firebase/firebaseClient';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 import { 
@@ -22,6 +23,8 @@ import {
   validateProfessionalProfile 
 } from '../domain/professionalType';
 import { encryptMetadata, decryptMetadata } from '../security/encryption';
+
+import logger from '@/shared/utils/logger';
 
 export class ProfessionalProfileService {
   private static collectionName = 'professional_profiles';

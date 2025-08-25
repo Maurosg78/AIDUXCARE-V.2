@@ -4,9 +4,12 @@
  */
 
 import React, { useState } from 'react';
+
 import { useOrganization } from '../core/hooks/useOrganization';
 import { OrganizationMember } from '../core/domain/organizationType';
 import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
+
+import logger from '@/shared/utils/logger';
 
 interface InvitationModalProps {
   isOpen: boolean;
@@ -165,7 +168,7 @@ const OrganizationTeamPage: React.FC = () => {
         metadata: { organizationId: organization?.id, invitedEmail: email, role }
       });
     } catch (error) {
-      console.error('Error inviting member:', error);
+      logger.error('Error inviting member:', error);
     } finally {
       setIsInviting(false);
     }
@@ -188,7 +191,7 @@ const OrganizationTeamPage: React.FC = () => {
         metadata: { organizationId: organization?.id, removedUserId: selectedMember.id, removedEmail: selectedMember.professionalInfo.email }
       });
     } catch (error) {
-      console.error('Error removing member:', error);
+      logger.error('Error removing member:', error);
     } finally {
       setIsRemoving(false);
     }

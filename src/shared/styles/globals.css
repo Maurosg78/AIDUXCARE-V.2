@@ -1,54 +1,26 @@
 /* Fuente profesional */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Estilos base */
+/* Tailwind CSS - FORZAR HMR */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset básico */
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  margin: 0;
-  padding: 0;
   line-height: 1.5;
-  background-color: #f9fafb;
+  background-color: #ffffff;
   color: #111827;
 }
 
-/* Estilos para WelcomePage */
-.min-h-screen { min-height: 100vh; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.text-center { text-align: center; }
-.p-8 { padding: 2rem; }
-.space-y-6 > * + * { margin-top: 1.5rem; }
-.max-w-3xl { max-width: 48rem; }
-.gap-2 { gap: 0.5rem; }
-.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
-.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
-.font-bold { font-weight: 700; }
-.text-neutral-400 { color: #a3a3a3; }
-.grid { display: grid; }
-.gap-3 { gap: 0.75rem; }
-.justify-center { justify-content: center; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-.rounded-xl { border-radius: 0.75rem; }
-.border { border-width: 1px; border-style: solid; border-color: #d1d5db; }
-.bg-white { background-color: #ffffff; }
-.text-black { color: #000000; }
-
-/* Estilos para Logo */
-.font-bold { font-weight: 700; }
-
-/* Estilos para botones */
-button, a {
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-
-button:hover, a:hover {
-  opacity: 0.9;
+/* FORZAR GRADIENTES - DEBUG */
+.debug-gradient {
+  background: linear-gradient(to right, #c026d3, #7c3aed, #3b82f6);
 }

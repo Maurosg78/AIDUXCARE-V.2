@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
+
 import { auth } from '../lib/firebase';
 import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
+
+import logger from '@/shared/utils/logger';
 
 export const ResumeOnboardingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -38,7 +41,7 @@ export const ResumeOnboardingPage: React.FC = () => {
           setError('Link inválido o expirado');
         }
       } catch (err) {
-        console.error('Error procesando link de re-engagement:', err);
+        logger.error('Error procesando link de re-engagement:', err);
         setError('Error al procesar el link. Intenta nuevamente.');
       } finally {
         setLoading(false);

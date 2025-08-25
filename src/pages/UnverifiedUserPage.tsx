@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+
 import { emailActivationService } from '../services/emailActivationService';
+
+import logger from '@/shared/utils/logger';
 
 export const UnverifiedUserPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +28,7 @@ export const UnverifiedUserPage: React.FC = () => {
       }
     } catch (error) {
       setError('Error al reenviar verificación');
-      console.error('Error reenviando verificación:', error);
+      logger.error('Error reenviando verificación:', error);
     } finally {
       setIsResending(false);
     }

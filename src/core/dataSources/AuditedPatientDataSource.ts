@@ -1,6 +1,7 @@
 import { Patient, calculateAge } from '../domain/patientType';
-import { patientDataSourceFirestore } from './patientDataSourceFirestore';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
+
+import { patientDataSourceFirestore } from './patientDataSourceFirestore';
 
 /**
  * Wrapper de auditoría para PatientDataSource

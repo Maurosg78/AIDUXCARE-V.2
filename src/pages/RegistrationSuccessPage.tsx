@@ -1,6 +1,8 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 
+import logger from '@/shared/utils/logger';
+
 export const RegistrationSuccessPage: React.FC = () => {
   const location = useLocation();
 
@@ -10,12 +12,12 @@ export const RegistrationSuccessPage: React.FC = () => {
   const handleResendVerification = async () => {
     try {
       // Aquí iría la lógica para reenviar verificación
-      console.log('Reenviando verificación a:', email);
+      logger.info('Reenviando verificación a:', email);
       
       // Simular envío exitoso
       alert('Email de verificación reenviado. Revisa tu bandeja de entrada.');
     } catch (err) {
-      console.error('Error reenviando verificación:', err);
+      logger.error('Error reenviando verificación:', err);
       alert('Error al reenviar el email de verificación');
     }
   };

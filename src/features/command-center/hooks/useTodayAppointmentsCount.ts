@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, query, where, getCountFromServer, Timestamp, getDocs } from 'firebase/firestore';
+
 import { AsyncState } from './useUserProfile';
+
+import logger from '@/shared/utils/logger';
 
 export function useTodayAppointmentsCount(uid?: string): AsyncState<number> {
   const [state, setState] = useState<AsyncState<number>>({
