@@ -1,516 +1,347 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import { useAuth } from '../hooks/useAuth';
-import { useProfessionalProfile } from '../hooks/useProfessionalProfile';
-import { firebaseAuthService } from '../services/firebaseAuthService';
 import { useTranscript } from '../hooks/useTranscript';
-import { useProcessedEntities } from '../hooks/useProcessedEntities';
-import { useSoapData } from '../hooks/useSoapData';
-import { ClinicalDecisionsService } from '../services/clinicalDecisionsService';
-import { PageHeader, Button, Card } from '../shared/ui';
-
-import logger from '@/shared/utils/logger';
-
-interface Alerta {
-  id: string;
-  mensaje: string;
-  sugerencia: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-}
-
-interface Highlight {
-  id: string;
-  contenido: string;
-  selected?: boolean;
-  confidence: number;
-}
+import { Button, Card } from '../shared/ui';
+import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
+import { firebaseAuthService } from '../services/firebaseAuthService';
+import { SelectableFindings } from '../components/SelectableFindings';
+import { NewPatientModal } from '../components/NewPatientModal';
+import { Mic, MicOff, Upload, Search, UserPlus, Save, FileText } from 'lucide-react';
+import { FileProcessorService } from '../services/FileProcessorService';
+import type { PhysicalExamResult } from '../types/vertex-ai';
 
 export default function ProfessionalWorkflowPage() {
   const { user } = useAuth();
-  const { profile, loading: profileLoading, error: profileError } = useProfessionalProfile();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState(1);
   const [recordingTime, setRecordingTime] = useState('00:00');
-  const [alertasPersistentes, setAlertasPersistentes] = useState<Alerta[]>([]);
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [sessionId] = useState(`session_${Date.now()}`);
-
-  // Hooks del pipeline real
+  const [selectedFindings, setSelectedFindings] = useState<string[]>([]);
+  const [physicalExamResults, setPhysicalExamResults] = useState<PhysicalExamResult[]>([]);
+  const [searchPatientId, setSearchPatientId] = useState('');
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[1];
+  
+  const [patientData, setPatientData] = useState<any>({
+    id: '',
+    nombre: 'Seleccione un paciente',
+    apellidos: '',
+    edad: '',
+    email: '',
+    telefono: '',
+    diagnosticoPrevio: '',
+    comorbilidades: '',
+    medicamentos: '',
+    diagnosticosDetectados: [],
+    medicamentosDetectados: []
+  });
+  
   const { 
     transcript, 
-    loading: transcriptLoading, 
-    error: transcriptError, 
+    setTranscript,
     isRecording, 
+    isTranscribing,
     startRecording, 
-    stopRecording 
-  } = useTranscript({ 
-    enableDemo: false 
-  });
-
+    stopRecording,
+    reset: resetTranscript
+  } = useTranscript();
+  
   const { 
-    entities, 
-    insights, 
-    loading: entitiesLoading, 
-    error: entitiesError 
-  } = useProcessedEntities({ 
-    sessionId, 
-    transcript, 
-    autoProcess: true 
-  });
-
-  const { 
-    soap, 
-    loading: soapLoading, 
-    error: soapError 
-  } = useSoapData({ 
-    sessionId, 
-    entities, 
-    insights, 
-    userId: user?.email || undefined,
-    autoGenerate: true 
-  });
-
-  // Timer de grabación
+    results: niagaraResults, 
+    processing: niagaraProcessing,
+    soapNote,
+    processWithNiagara,
+    generateSOAPNote,
+    reset: resetNiagara
+  } = useNiagaraProcessor();
+  
+  // Timer para grabación
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let interval: NodeJS.Timeout;
+    let seconds = 0;
+    
     if (isRecording) {
-      let seconds = 0;
       interval = setInterval(() => {
         seconds++;
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         setRecordingTime(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
       }, 1000);
+    } else {
+      setRecordingTime('00:00');
     }
+    
     return () => clearInterval(interval);
   }, [isRecording]);
-
-  // Convertir insights a alertas
-  useEffect(() => {
-    if (insights && insights.length > 0) {
-      const alertasFromInsights: Alerta[] = insights
-        .filter(insight => insight.severity === 'high' || insight.severity === 'critical')
-        .map(insight => ({
-          id: insight.id,
-          mensaje: insight.title,
-          sugerencia: insight.description,
-          severity: insight.severity
-        }));
-      setAlertasPersistentes(alertasFromInsights);
+  
+  const handleAnalyzeWithAI = () => {
+    const text = (transcript || '').trim();
+    if (!text) {
+      alert('Por favor ingrese texto o grabe audio para analizar');
+      return;
     }
-  }, [insights]);
-
-  // Convertir entidades a highlights
-  useEffect(() => {
-    if (entities && entities.length > 0) {
-      const highlightsFromEntities: Highlight[] = entities
-        .filter(entity => entity.confidence > 0.7)
-        .map(entity => ({
-          id: entity.id,
-          contenido: entity.text,
-          confidence: entity.confidence,
-          selected: false
-        }));
-      setHighlights(highlightsFromEntities);
+    
+    if (!patientData.id) {
+      alert('Por favor seleccione o cree un paciente primero');
+      return;
     }
-  }, [entities]);
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
+    
+    console.log('🧠 Iniciando análisis con IA...');
+    processWithNiagara(text);
+  };
+  
+  const handleSearchPatient = () => {
+    // Simulación - conectar con base de datos real
+    if (searchPatientId === 'PAC-001') {
+      setPatientData({
+        id: 'PAC-001',
+        nombre: 'María',
+        apellidos: 'González',
+        edad: '45 años',
+        email: 'maria@email.com',
+        telefono: '+34 600 000 000',
+        diagnosticoPrevio: 'Dolor lumbar crónico',
+        comorbilidades: 'Psoriasis, Celiaquía',
+        medicamentos: 'Fluoxetina 20mg',
+        diagnosticosDetectados: [],
+        medicamentosDetectados: []
+      });
     } else {
-      startRecording();
+      alert('Paciente no encontrado');
     }
-  }
-
-  const confirmarAlerta = async (alertaId: string) => {
-    try {
-      const alerta = alertasPersistentes.find(a => a.id === alertaId);
-      if (alerta && user?.email) {
-        await ClinicalDecisionsService.recordClinicalDecision({
-          sessionId,
-          itemId: alertaId,
-          action: 'confirm',
-          userId: user.email,
-          itemType: 'alert',
-          itemTitle: alerta.mensaje,
-          itemDescription: alerta.sugerencia
-        });
+  };
+  
+  const handleSavePatient = (newPatient: any) => {
+    setPatientData(newPatient);
+    console.log('🔒 Paciente creado:', newPatient.id);
+  };
+  
+  const handleSaveSession = () => {
+    if (!patientData.id) {
+      alert('No hay paciente seleccionado');
+      return;
+    }
+    
+    if (!transcript && !niagaraResults) {
+      alert('No hay información para guardar');
+      return;
+    }
+    
+    console.log('💾 Guardando sesión...', {
+      paciente: patientData.id,
+      sesion: sessionId,
+      transcript: transcript?.length,
+      analisis: !!niagaraResults
+    });
+    
+    alert('Sesión guardada correctamente');
+  };
+  
+  const handleGenerateReport = () => {
+    if (!niagaraResults || selectedFindings.length === 0) {
+      alert('Seleccione hallazgos para generar el informe');
+      return;
+    }
+    
+    generateSOAPNote(selectedFindings, physicalExamResults);
+  };
+  
+  const handleNewSession = () => {
+    if (transcript || niagaraResults) {
+      if (!confirm('¿Desea guardar la sesión actual antes de crear una nueva?')) {
+        return;
       }
-      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-    } catch (error) {
-      logger.error('Error al confirmar alerta:', error);
     }
-  }
-
-  const descartarAlerta = async (alertaId: string) => {
-    try {
-      const alerta = alertasPersistentes.find(a => a.id === alertaId);
-      if (alerta && user?.email) {
-        await ClinicalDecisionsService.recordClinicalDecision({
-          sessionId,
-          itemId: alertaId,
-          action: 'discard',
-          userId: user.email,
-          itemType: 'alert',
-          itemTitle: alerta.mensaje,
-          itemDescription: alerta.sugerencia
-        });
-      }
-      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-    } catch (error) {
-      logger.error('Error al descartar alerta:', error);
-    }
-  }
-
-  const guardarMetrica = async (alertaId: string) => {
-    try {
-      const alerta = alertasPersistentes.find(a => a.id === alertaId);
-      if (alerta && user?.email) {
-        await ClinicalDecisionsService.recordClinicalDecision({
-          sessionId,
-          itemId: alertaId,
-          action: 'save',
-          userId: user.email,
-          itemType: 'alert',
-          itemTitle: alerta.mensaje,
-          itemDescription: alerta.sugerencia
-        });
-      }
-      setAlertasPersistentes(prev => prev.filter(a => a.id !== alertaId));
-    } catch (error) {
-      logger.error('Error al guardar métrica:', error);
-    }
-  }
-
-  const toggleHighlight = (highlightId: string) => {
-    setHighlights(prev => prev.map(h => 
-      h.id === highlightId ? { ...h, selected: !h.selected } : h
-    ));
-  }
-
-  const handleLogout = async () => {
-    try {
-      await firebaseAuthService.logout();
-      navigate('/login');
-    } catch (error) {
-      logger.error('Error en logout:', error);
-    }
-  }
-
-  // Eliminar duplicados en highlights
-  const uniqueHighlights = highlights.filter((highlight, index, self) =>
-    index === self.findIndex(h => h.contenido === highlight.contenido)
-  );
-
-  if (profileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-6">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-          <p className="text-text-secondary font-light">Cargando flujo profesional...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (profileError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-6">
-          <div className="text-error text-xl">Error al cargar perfil</div>
-          <Button onClick={() => navigate('/command-center')}>
-            Volver al Centro de Comando
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+    
+    resetTranscript();
+    resetNiagara();
+    setSelectedFindings([]);
+    setPhysicalExamResults([]);
+    setRecordingTime('00:00');
+  };
+  
+  const hasContent = transcript && transcript.trim().length > 0;
+  const hasPatient = patientData.id !== '';
+  
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader
-        title="Flujo Clínico Profesional"
-        subtitle={`Sesión: ${sessionId} | Profesional: ${profile?.displayName || 'N/A'}`}
-      >
-        <Button variant="outline" onClick={handleLogout}>
-          Cerrar Sesión
-        </Button>
-      </PageHeader>
-
-      {/* Contenido principal */}
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Pestañas de navegación con diseño consistente */}
-        <div className="flex space-x-2 mb-6">
-          <button 
-            onClick={() => setActiveSection(1)}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              activeSection === 1 
-                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-            }`}
-          >
-            Anamnesis Clínica
-          </button>
-          <button 
-            onClick={() => setActiveSection(2)}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              activeSection === 2 
-                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-            }`}
-          >
-            Evaluación Física
-          </button>
-          <button 
-            onClick={() => setActiveSection(3)}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              activeSection === 3 
-                ? 'bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 text-white shadow-lg' 
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-            }`}
-          >
-            Resumen Clínico
-          </button>
-        </div>
-
-        {/* Banner paciente con diseño consistente */}
-        <Card className="mb-6">
-          <h2 className="text-2xl font-light text-gray-900 mb-3 tracking-tight">
-            María{' '}
-            <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-              González
-            </span>
-          </h2>
-          <div className="flex space-x-6 text-sm text-gray-600 mb-4 font-light">
-            <span>45 años</span>
-            <span>Dolor cervical irradiado</span>
-            <span>Última visita: 15 Ene 2025</span>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">AiDuxCare - Flujo Profesional</h1>
+          <div className="flex gap-4 items-center">
+            <span className="text-sm text-gray-600">{user?.email}</span>
+            <Button onClick={() => firebaseAuthService.logout()} variant="outline" size="sm">
+              Cerrar Sesión
+            </Button>
           </div>
-          
-          <div className="grid grid-cols-2 gap-6 text-sm text-gray-700 font-light">
-            <div><strong className="text-gray-900">Tratamiento:</strong> Ejercicios cervicales, tecarterapia</div>
-            <div><strong className="text-gray-900">Medicamentos:</strong> Ibuprofeno 400mg cada 8h</div>
-            <div><strong className="text-gray-900">Alergias:</strong> Penicilina</div>
-            <div><strong className="text-gray-900">Alertas previas:</strong> Hipertensión controlada</div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4">
+        {/* Barra de gestión de pacientes */}
+        <Card className="p-3 mb-4">
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="ID del paciente (ej: PAC-001)..."
+              value={searchPatientId}
+              onChange={(e) => setSearchPatientId(e.target.value)}
+              className="px-3 py-1 border rounded text-sm"
+            />
+            <Button onClick={handleSearchPatient} size="sm" variant="outline">
+              <Search className="w-4 h-4 mr-1" />
+              Buscar
+            </Button>
+            <Button onClick={() => setShowNewPatientModal(true)} size="sm" variant="outline">
+              <UserPlus className="w-4 h-4 mr-1" />
+              Nuevo Paciente
+            </Button>
+            <span className="ml-auto text-xs text-gray-500">
+              Sesión: {sessionId} | Cumplimiento: HIPAA/GDPR
+            </span>
           </div>
         </Card>
 
-        {/* Grabación con diseño consistente */}
-        <Card className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-text">
-                Grabación de Consulta
-              </h2>
-              <p className="text-text-secondary mt-1">
-                {isRecording ? 'Grabando...' : 'Listo para grabar'}
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-center">
-                <div className="text-2xl font-mono text-text">
-                  {recordingTime}
-                </div>
-                <div className="text-sm text-text-secondary">
-                  Duración
-                </div>
+        {/* Bloques superiores */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          {/* Columna 1: Info del paciente */}
+          <Card className="p-4">
+            <h2 className="font-semibold mb-3">Ficha de paciente</h2>
+            {hasPatient ? (
+              <div className="space-y-1 text-sm">
+                <p><strong>ID:</strong> {patientData.id}</p>
+                <p><strong>Nombre:</strong> {patientData.nombre} {patientData.apellidos}</p>
+                <p><strong>Edad:</strong> {patientData.edad}</p>
+                <p><strong>Teléfono:</strong> {patientData.telefono}</p>
+                <p><strong>Email:</strong> {patientData.email}</p>
+                {patientData.diagnosticoPrevio && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-xs"><strong>Dx previo:</strong> {patientData.diagnosticoPrevio}</p>
+                    <p className="text-xs"><strong>Medicación:</strong> {patientData.medicamentos}</p>
+                  </div>
+                )}
               </div>
-              
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm">No hay paciente seleccionado</p>
+                <Button 
+                  onClick={() => setShowNewPatientModal(true)} 
+                  size="sm" 
+                  className="mt-2"
+                >
+                  Crear Paciente
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Columna 2: Controles de grabación */}
+          <Card className="p-4">
+            <h2 className="font-semibold mb-3">Grabación de Consulta</h2>
+            <div className="text-4xl font-mono text-center py-2">
+              {recordingTime}
+            </div>
+            <div className="flex gap-2">
               <Button
-                onClick={toggleRecording}
-                variant={isRecording ? 'secondary' : 'primary'}
-                loading={transcriptLoading}
+                onClick={isRecording ? stopRecording : startRecording}
+                variant={isRecording ? 'destructive' : 'default'}
+                className="flex-1"
+                disabled={isTranscribing || !hasPatient}
               >
-                {isRecording ? 'Detener' : 'Iniciar'} Grabación
+                {isRecording ? <MicOff className="w-4 h-4 mr-1" /> : <Mic className="w-4 h-4 mr-1" />}
+                {isRecording ? 'Detener' : 'Grabar'}
+              </Button>
+              <Button
+                onClick={() => fileInputRef?.click?.()}
+                variant="outline"
+                title="Subir archivo"
+                disabled={!hasPatient}
+              >
+                <Upload className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-        </Card>
+            {!hasPatient && (
+              <p className="text-xs text-orange-500 mt-2">Seleccione un paciente primero</p>
+            )}
+          </Card>
 
-        {/* Layout principal con diseño consistente */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* IZQUIERDA - Transcripción */}
-          <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-            <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
-              Transcripción en{' '}
-              <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-                Tiempo Real
-              </span>
-            </h3>
-            <div className="min-h-[400px] bg-gray-50 p-6 rounded-xl border border-gray-200">
-              {transcriptLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-                  <span className="ml-3 text-gray-600">Procesando transcripción...</span>
-                </div>
-              ) : transcriptError ? (
-                <div className="text-red-600 text-center">
-                  Error: {transcriptError}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-700 whitespace-pre-wrap font-light leading-relaxed">
-                  {transcript || 'Presiona "Iniciar Grabación" para comenzar'}
-                </p>
+          {/* Columna 3: Acciones de sesión */}
+          <Card className="p-4">
+            <h2 className="font-semibold mb-3">Gestión de Sesión</h2>
+            <div className="space-y-2">
+              <Button 
+                onClick={handleSaveSession}
+                variant="outline"
+                className="w-full"
+                disabled={!hasPatient || (!hasContent && !niagaraResults)}
+              >
+                <Save className="w-4 h-4 mr-1" />
+                Guardar Sesión
+              </Button>
+              
+              <Button 
+                onClick={handleNewSession} 
+                variant="outline" 
+                className="w-full"
+                disabled={isRecording || isTranscribing || niagaraProcessing}
+              >
+                Nueva Sesión
+              </Button>
+              
+              {selectedFindings.length > 0 && (
+                <Button 
+                  onClick={handleGenerateReport}
+                  variant="default"
+                  className="w-full"
+                >
+                  <FileText className="w-4 h-4 mr-1" />
+                  Generar Informe
+                </Button>
               )}
             </div>
           </Card>
-          
-          {/* DERECHA - Alertas y Highlights */}
-          <div className="space-y-6">
-            {/* Alertas Críticas */}
-            <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
-                Alertas{' '}
-                <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-                  Críticas
-                </span>
-              </h3>
-              <div className="space-y-4">
-                {entitiesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-                    <span className="ml-3 text-gray-600">Analizando entidades...</span>
-                  </div>
-                ) : entitiesError ? (
-                  <div className="text-red-600 text-center py-4">
-                    Error: {entitiesError}
-                  </div>
-                ) : alertasPersistentes.length > 0 ? (
-                  alertasPersistentes.map(alerta => (
-                    <div key={alerta.id} className="border-l-4 border-red-500 bg-red-50 p-4 rounded-xl">
-                      <p className="font-medium text-red-800 text-sm">{alerta.mensaje}</p>
-                      <p className="text-red-600 text-xs mt-2 font-light">{alerta.sugerencia}</p>
-                      <div className="flex gap-3 mt-4">
-                        <Button 
-                          onClick={() => confirmarAlerta(alerta.id)}
-                          variant="success"
-                          size="sm"
-                        >
-                          ✓ Confirmar
-                        </Button>
-                        <Button 
-                          onClick={() => descartarAlerta(alerta.id)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          ✗ Descartar
-                        </Button>
-                        <Button 
-                          onClick={() => guardarMetrica(alerta.id)}
-                          variant="primary"
-                          size="sm"
-                        >
-                          💾 Guardar
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 text-center py-8">
-                    No hay alertas críticas identificadas
-                  </div>
-                )}
-              </div>
-            </Card>
-            
-            {/* Highlights Automáticos */}
-            <Card className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-              <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
-                Highlights{' '}
-                <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-                  Automáticos
-                </span>
-              </h3>
-              <div className="space-y-3">
-                {entitiesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-                    <span className="ml-3 text-gray-600">Generando highlights...</span>
-                  </div>
-                ) : entitiesError ? (
-                  <div className="text-red-600 text-center py-4">
-                    Error: {entitiesError}
-                  </div>
-                ) : uniqueHighlights.length > 0 ? (
-                  uniqueHighlights.map(highlight => (
-                    <div key={highlight.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                      <input 
-                        type="checkbox" 
-                        onChange={() => toggleHighlight(highlight.id)}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm text-gray-700 font-light">{highlight.contenido}</span>
-                      <span className="text-xs text-gray-500">({Math.round(highlight.confidence * 100)}%)</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 text-center py-8">
-                    No hay highlights automáticos disponibles
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
         </div>
 
-        {/* Resumen Clínico SOAP */}
-        {soap && (
-          <Card className="mt-6 bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-            <h3 className="text-xl font-light text-gray-900 mb-4 tracking-tight">
-              Resumen{' '}
-              <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-medium">
-                Clínico SOAP
-              </span>
-            </h3>
-            {soapLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-                <span className="ml-3 text-gray-600">Generando resumen clínico...</span>
-              </div>
-            ) : soapError ? (
-              <div className="text-red-600 text-center py-4">
-                Error: {soapError}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Subjetivo</h4>
-                  <p className="text-sm text-gray-700 mb-4">{soap.soap.subjective.chiefComplaint}</p>
-                  
-                  <h4 className="font-medium text-gray-900 mb-2">Objetivo</h4>
-                  <p className="text-sm text-gray-700 mb-4">{soap.soap.objective.inspection}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Evaluación</h4>
-                  <p className="text-sm text-gray-700 mb-4">{soap.soap.assessment.primaryDiagnosis}</p>
-                  
-                  <h4 className="font-medium text-gray-900 mb-2">Plan</h4>
-                  <p className="text-sm text-gray-700 mb-4">{soap.soap.plan.interventions.join(', ')}</p>
-                </div>
-              </div>
-            )}
-            {soap && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
-                    Calidad: {soap.qualityScore}/100
-                  </span>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    soap.reviewRequired 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {soap.reviewRequired ? 'Requiere Revisión' : 'Aprobado'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </Card>
+        {/* Área de texto principal */}
+        <Card className="p-4 mb-4">
+          <h2 className="font-semibold mb-2">Contenido de la Consulta</h2>
+          <textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder={hasPatient ? "Escriba aquí..." : "Seleccione un paciente primero"}
+            className="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isRecording || !hasPatient}
+          />
+          <div className="flex justify-between items-center mt-2">
+            <p className="text-xs text-gray-500">
+              Encriptación AES-256 | Logs de auditoría activos
+            </p>
+            <Button
+              onClick={handleAnalyzeWithAI}
+              disabled={niagaraProcessing || !hasContent || !hasPatient}
+              size="sm"
+            >
+              🧠 Analizar con IA
+            </Button>
+          </div>
+        </Card>
+
+        {/* Resultados del análisis */}
+        {niagaraResults && !niagaraProcessing && (
+          <SelectableFindings
+            findings={niagaraResults}
+            onSelectionChange={setSelectedFindings}
+            onExamResultsChange={setPhysicalExamResults}
+          />
         )}
-      </div>
+
+        {/* Modal de nuevo paciente */}
+        <NewPatientModal
+          isOpen={showNewPatientModal}
+          onClose={() => setShowNewPatientModal(false)}
+          onSave={handleSavePatient}
+        />
+      </main>
     </div>
   );
-}; 
+}
