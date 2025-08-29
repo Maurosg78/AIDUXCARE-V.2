@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LocationData, WizardStep, ValidationResult } from '../../types/wizard';
-import { GeolocationData, GeolocationService } from '../../services/GeolocationService';
+import { GeolocationData, geolocationService } from '../../services/geolocationService';
 import { SPANISH_CITIES, getCitiesByProvince } from '../../data/spanishCities';
 import { LegalChecklist, type LegalChecklistItem } from '../LegalChecklist';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
@@ -52,7 +52,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   
   // Función para manejar selección manual de país
   const handleManualCountrySelection = (countryCode: string) => {
-    const geolocationService = GeolocationService.getInstance();
+    const geolocationService = geolocationService.getInstance();
     const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
     
     if (fiduciaryData) {
@@ -82,7 +82,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
       console.log('LocationDataStep - Iniciando detección automática de ubicación...');
       
       // Usar el servicio de geolocalización que maneja fallbacks automáticamente
-      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+      const geolocationService = (await import('../../services/geolocationService')).geolocationService.getInstance();
       const newLocationData = await geolocationService.detectLocation();
       
       if (newLocationData) {

@@ -61,7 +61,7 @@ export const GeolocationPermission: React.FC<GeolocationPermissionProps> = ({
         async () => {
           try {
             // Usar el servicio de geolocalización para obtener datos completos
-            const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+            const geolocationService = (await import('../../services/geolocationService')).geolocationService.getInstance();
             const locationData = await geolocationService.detectLocation();
             
             if (locationData) {

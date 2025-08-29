@@ -51,7 +51,7 @@ export class OllamaClient {
       });
       return response.ok;
     } catch (_error) {
-      console.warn('Ollama no disponible:', error);
+      console.warn('Ollama no disponible:', _error);
       return false;
     }
   }
@@ -65,7 +65,7 @@ export class OllamaClient {
       const data: { models?: Array<{ name: string }> } = await response.json();
       return data.models?.map((m) => m.name) || [];
     } catch (_error) {
-      console.error('Error listing models:', error);
+      console.error('Error listing models:', _error);
       return [];
     }
   }
@@ -104,7 +104,7 @@ export class OllamaClient {
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Ollama API _error: ${response.status} ${response.statusText}`);
       }
 
       const data: OllamaStreamResponse = await response.json();
@@ -117,8 +117,8 @@ export class OllamaClient {
         model: data.model
       };
     } catch (_error) {
-      console.error('Error en generateCompletion:', error);
-      throw new Error(`Falló la generación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      console.error('Error en generateCompletion:', _error);
+      throw new Error(`Falló la generación: ${_error instanceof Error ? _error.message : 'Error desconocido'}`);
     }
   }
 
@@ -217,7 +217,7 @@ export class OllamaClient {
       }
       return null;
     } catch (_error) {
-      console.error('Error getting model info:', error);
+      console.error('Error getting model info:', _error);
       return null;
     }
   }
@@ -230,7 +230,7 @@ export class OllamaClient {
     model: string;
     version?: string;
     latency_ms?: number;
-    error?: string;
+    _error?: string;
   }> {
     try {
       const startTime = Date.now();
@@ -241,7 +241,7 @@ export class OllamaClient {
         return {
           status: 'unhealthy',
           model: this.model,
-          error: 'Ollama server not responding'
+          _error: 'Ollama server not responding'
         };
       }
 
@@ -258,7 +258,7 @@ export class OllamaClient {
       return {
         status: 'unhealthy',
         model: this.model,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        _error: _error instanceof Error ? _error.message : 'Unknown _error'
       };
     }
   }

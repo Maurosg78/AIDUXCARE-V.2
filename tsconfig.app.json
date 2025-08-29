@@ -15,7 +15,10 @@
     "src/core/fhir/**",
     "src/core/sttLocal/**",
     "src/services/WebSpeechSTTService.ts",
-    "src/components/professional/**"
+    "src/components/professional/**",
+    "src/components/wizard/**",
+    "src/pages/TestGeolocation.tsx",
+    "src/services/PersistenceService.ts"
   ],
   "compilerOptions": {
     "skipLibCheck": true,

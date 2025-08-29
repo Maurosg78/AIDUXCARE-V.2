@@ -1,3 +1,4 @@
+import { getFunctions } from "firebase/functions";
 import logger from '@/shared/utils/logger';
 // import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 // import { getAuth } from 'firebase/auth';

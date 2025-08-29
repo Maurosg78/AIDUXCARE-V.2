@@ -1,5 +1,5 @@
 /**
- * GeolocationService - Servicio de geolocalización inteligente
+ * geolocationService - Servicio de geolocalización inteligente
  * Combina detección automática con fallback manual para compliance legal
  * 
  * @version 1.0.0
@@ -37,8 +37,8 @@ export interface PhoneCountryCode {
   format: string;
 }
 
-export class GeolocationService {
-  private static instance: GeolocationService;
+class GeolocationServiceImpl {
+  private static instance: GeolocationServiceImpl;
   private cachedData: GeolocationData | null = null;
 
   // Códigos de país para teléfonos
@@ -104,11 +104,11 @@ export class GeolocationService {
     }
   };
 
-  public static getInstance(): GeolocationService {
-    if (!GeolocationService.instance) {
-      GeolocationService.instance = new GeolocationService();
+  public static getInstance(): GeolocationServiceImpl {
+    if (!GeolocationServiceImpl.instance) {
+      GeolocationServiceImpl.instance = new GeolocationServiceImpl();
     }
-    return GeolocationService.instance;
+    return GeolocationServiceImpl.instance;
   }
 
   /**
@@ -550,4 +550,4 @@ Consentimiento granular y derecho al olvido garantizados.`
   }
 }
 
-export const geolocationService = GeolocationService.getInstance(); 
+export const geolocationService = GeolocationServiceImpl.getInstance();

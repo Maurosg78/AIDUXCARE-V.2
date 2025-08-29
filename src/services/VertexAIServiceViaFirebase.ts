@@ -51,7 +51,7 @@ ANTECEDENTES MÉDICOS:
 - Historia clínica previa del paciente
 - Tratamientos anteriores
 
-MEDICACIÓN ACTUAL:
+MEDICACIÓN ACTUAL (buscar TODOS: pregabalina, paracetamol, fluoxetina, tramadol, etc con dosis):
 - Medicamentos en uso actual
 
 ADVERTENCIAS Y PRECAUCIONES:
@@ -85,7 +85,7 @@ SÍNTOMAS Y HALLAZGOS ACTUALES:
 ANTECEDENTES MÉDICOS:
 - [Historia médica pasada]
 
-MEDICACIÓN ACTUAL:
+MEDICACIÓN ACTUAL (buscar TODOS: pregabalina, paracetamol, fluoxetina, tramadol, etc con dosis):
 - [Medicamentos actuales]
 
 ADVERTENCIAS Y PRECAUCIONES:

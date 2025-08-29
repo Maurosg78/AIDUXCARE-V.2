@@ -4,7 +4,6 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 
 import logger from '@/shared/utils/logger';
-import { app } from '@/integrations/firebase';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +14,7 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const auth = getAuth(app);
+      const auth = getAuth();
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (err) {

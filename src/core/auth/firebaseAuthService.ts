@@ -103,8 +103,8 @@ export class FirebaseAuthService {
 
       return userProfile;
     } catch (_error) {
-      console.error('❌ Firebase Auth: Error al iniciar sesión', error);
-      throw this.handleAuthError(error as AuthError);
+      console.error('❌ Firebase Auth: Error al iniciar sesión', _error);
+      throw this.handleAuthError(_error as AuthError);
     }
   }
 
@@ -149,8 +149,8 @@ export class FirebaseAuthService {
 
       return userProfile;
     } catch (_error) {
-      console.error('❌ Firebase Auth: Error al registrar usuario', error);
-      throw this.handleAuthError(error as AuthError);
+      console.error('❌ Firebase Auth: Error al registrar usuario', _error);
+      throw this.handleAuthError(_error as AuthError);
     }
   }
 
@@ -189,7 +189,7 @@ export class FirebaseAuthService {
       
       console.log('✅ Firebase Auth: Sesión cerrada exitosamente');
     } catch (_error) {
-      console.error('❌ Firebase Auth: Error al cerrar sesión', error);
+      console.error('❌ Firebase Auth: Error al cerrar sesión', _error);
       
       // Registrar evento de logout fallido
       try {
@@ -198,13 +198,13 @@ export class FirebaseAuthService {
           type: 'logout_failed',
           userId: 'unknown',
           userRole: 'unknown',
-          metadata: { error: (error as Error).message },
+          metadata: { error: (_error instanceof Error ? _error.message : String(_error)) },
         });
       } catch (auditError) {
         console.error('Error registrando logout fallido:', auditError);
       }
       
-      throw this.handleAuthError(error as AuthError);
+      throw this.handleAuthError(_error as AuthError);
     }
   }
 

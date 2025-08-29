@@ -32,7 +32,7 @@ export class VisitDataSourceFirestore {
           updated_at: data.updated_at?.toString() || ''
         }));
       } catch (_e) {
-        console.error(`Validation error for visit ${docSnap.id}:`, e);
+        console.error(`Validation error for visit `);
       }
     });
     return visits;

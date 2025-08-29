@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { PersonalData } from '../../types/wizard';
 import { emailValidationService, type EmailValidationResult } from '../../services/emailValidationService';
-import { GeolocationData, GeolocationService } from '../../services/GeolocationService';
+import { GeolocationData, geolocationService } from '../../services/geolocationService';
 import { EmailRecoveryModal } from './EmailRecoveryModal';
 import { LocationAwarenessModal } from './LocationAwarenessModal';
 import { GeolocationPermissionModal } from './GeolocationPermissionModal';
@@ -67,7 +67,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
   const detectLocationAutomatically = async () => {
     try {
       // Usar el servicio de geolocalización que maneja fallbacks automáticamente
-      const geolocationService = (await import('../../services/geolocationService')).GeolocationService.getInstance();
+      const geolocationService = (await import('../../services/geolocationService')).geolocationService.getInstance();
       const locationData = await geolocationService.detectLocation();
       
       if (locationData) {
@@ -144,7 +144,7 @@ export const PersonalDataStep: React.FC<PersonalDataStepProps> = ({
 
   // Función para manejar selección manual de país
   const handleManualCountrySelection = (countryCode: string) => {
-    const geolocationService = GeolocationService.getInstance();
+    const geolocationService = geolocationService.getInstance();
     const fiduciaryData = geolocationService.getFiduciaryDataForCountry(countryCode);
     
     if (fiduciaryData) {

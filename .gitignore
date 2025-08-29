@@ -128,3 +128,4 @@ backup/
 QUARANTINE_*/
 backup-*/*
 *.tsbuildinfo
+vertex-sa-key.json
