@@ -41,9 +41,9 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
   </div>
 </div>
 
-// Contenido condicional según tab activo
+{/* Contenido condicional según tab activo */}
 {activeTab === 'analysis' && (
-  // Todo el contenido actual va aquí
+  <div className="p-4 text-center text-sm text-gray-500">Análisis en preparación</div>
 )}
 
 {activeTab === 'evaluation' && (
@@ -57,7 +57,7 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
   <div className="text-center py-8">
     <h2 className="text-xl font-semibold mb-4">Informe SOAP</h2>
     {soapNote ? (
-      // Mostrar SOAP generado
+      <pre className="text-left whitespace-pre-wrap">{soapNote}</pre>
     ) : (
       <p>Complete la evaluación física primero</p>
     )}

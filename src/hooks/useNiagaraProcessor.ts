@@ -1,104 +1,73 @@
-import { useState, useCallback } from 'react';
-import { VertexAIServiceViaFirebase } from '../services/VertexAIServiceViaFirebase';
-import type { ClinicalAnalysisResponse, SOAPNote, PhysicalExamResult } from '../types/vertex-ai';
+import { useState } from 'react';
+import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
+import { cleanVertexResponse } from '../utils/cleanVertexResponse';
 
-interface UseNiagaraProcessorReturn {
-  processWithNiagara: (transcript: string) => Promise<void>;
-  generateSOAPNote: (selectedEntityIds: string[], physicalExamResults: PhysicalExamResult[]) => Promise<void>;
-  processing: boolean;
-  results: ClinicalAnalysisResponse | null;
-  soapNote: SOAPNote | null;
-  error: string | null;
-  reset: () => void;
-}
+export const useNiagaraProcessor = () => {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [niagaraResults, setNiagaraResults] = useState<any>(null);
 
-export const useNiagaraProcessor = (): UseNiagaraProcessorReturn => {
-  const [processing, setProcessing] = useState<boolean>(false);
-  const [results, setResults] = useState<ClinicalAnalysisResponse | null>(null);
-  const [soapNote, setSoapNote] = useState<SOAPNote | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  
-  const processWithNiagara = useCallback(async (transcript: string): Promise<void> => {
-    if (!transcript || transcript.length < 50) {
-      setError('Transcripción muy corta o vacía');
-      return;
-    }
-    
-    setProcessing(true);
-    setError(null);
-    setSoapNote(null);
-    console.log('🧠 Procesando con Vertex AI...');
-    
+  const processText = async (text: string) => {
+    if (!text?.trim()) return null;
+
+    setIsAnalyzing(true);
     try {
-      const data: ClinicalAnalysisResponse = await VertexAIServiceViaFirebase.processTranscript(transcript);
-      console.log('✅ Vertex AI procesó:', data);
-      setResults(data);
+      const response = await VertexAIServiceViaFirebase.processWithNiagara(text);
+      console.log('Respuesta RAW de Vertex:', response);
       
-      // Alertar si hay banderas rojas críticas
-      if (data.redFlags && data.redFlags.length > 0) {
-        const urgentFlags = data.redFlags.filter(flag => flag.urgency === 'urgent');
-        if (urgentFlags.length > 0) {
-          console.warn('🚨 BANDERAS ROJAS URGENTES DETECTADAS:', urgentFlags);
-        }
+      const cleanedResponse = cleanVertexResponse(response);
+      console.log('Respuesta LIMPIA:', cleanedResponse);
+      
+      // CRITICAL: Si no hay entidades, es un fallo grave
+      if (!cleanedResponse.entities || cleanedResponse.entities.length === 0) {
+        console.error('❌ VERTEX AI FALLÓ - Devolvió 0 entidades para un caso complejo');
+        
+        // En lugar de usar un parser local, devolver un error claro
+        const errorResponse = {
+          entities: [{
+            id: 'error-1',
+            text: 'Error: El sistema no pudo procesar esta transcripción',
+            type: 'error',
+            clinicalRelevance: 'critical'
+          }],
+          redFlags: [{
+            pattern: 'Procesamiento fallido',
+            action: 'Revisar manualmente la transcripción y contactar soporte técnico'
+          }],
+          yellowFlags: ['Sistema requiere revisión manual'],
+          physicalTests: ['Evaluación completa manual requerida'],
+          rawResponse: JSON.stringify({
+            error: 'Vertex AI returned empty response',
+            transcript_length: text.length,
+            timestamp: new Date().toISOString()
+          })
+        };
+        
+        setNiagaraResults(errorResponse);
+        return errorResponse;
       }
-    } catch (err) {
-      const errorMessage: string = err instanceof Error ? err.message : 'Error procesando transcripción';
-      console.error('❌ Error Vertex AI:', errorMessage);
-      setError(errorMessage);
-    } finally {
-      setProcessing(false);
-    }
-  }, []);
-  
-  const generateSOAPNote = useCallback(async (
-    selectedEntityIds: string[], 
-    physicalExamResults: PhysicalExamResult[]
-  ): Promise<void> => {
-    if (!results) {
-      setError('No hay resultados de análisis previo');
-      return;
-    }
-    
-    if (selectedEntityIds.length === 0) {
-      setError('Debe seleccionar al menos un hallazgo');
-      return;
-    }
-    
-    setProcessing(true);
-    setError(null);
-    console.log('📝 Generando nota SOAP...');
-    
-    try {
-      const soap: SOAPNote = await VertexAIServiceViaFirebase.generateSOAP(
-        results,
-        selectedEntityIds,
-        physicalExamResults
+      
+      const cleanedEntities = cleanedResponse.entities.filter(e => 
+        e && e.text && e.text !== 'undefined'
       );
-      console.log('✅ SOAP generado:', soap);
-      setSoapNote(soap);
-    } catch (err) {
-      const errorMessage: string = err instanceof Error ? err.message : 'Error generando SOAP';
-      console.error('❌ Error generando SOAP:', errorMessage);
-      setError(errorMessage);
+      console.log('Entidades después de limpieza:', cleanedEntities);
+      
+      cleanedResponse.entities = cleanedEntities;
+      setNiagaraResults(cleanedResponse);
+      return cleanedResponse;
+      
+    } catch (error) {
+      console.error('Error procesando con Niagara:', error);
+      return null;
     } finally {
-      setProcessing(false);
+      setIsAnalyzing(false);
     }
-  }, [results]);
-  
-  const reset = useCallback((): void => {
-    setResults(null);
-    setSoapNote(null);
-    setError(null);
-    setProcessing(false);
-  }, []);
-  
-  return { 
-    processWithNiagara, 
-    generateSOAPNote,
-    processing, 
-    results, 
-    soapNote,
-    error,
-    reset
+  };
+
+  return {
+    processText,
+    generateSOAPNote: async () => null,
+    niagaraResults,
+    soapNote: null,
+    isProcessing: isAnalyzing
   };
 };

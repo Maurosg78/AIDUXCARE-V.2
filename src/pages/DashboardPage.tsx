@@ -1,41 +1,97 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Card } from '../shared/ui/Card';
+import { Button } from '../shared/ui/Button';
+import { 
+  FileText, 
+  ChevronRight,
+  Stethoscope,
+  TestTube,
+  Settings
+} from 'lucide-react';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>🎉 ¡Bienvenido al Dashboard de AiDuxCare!</h1>
-      <p>Login exitoso para: mauricio@aiduxcare.com</p>
-      
-      <div style={{ marginTop: '2rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-        <div style={{ padding: '1.5rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '2px solid #E2E8F0' }}>
-          <h2>🎤 Pipeline Audio → SOAP</h2>
-          <p>Workflow completo de grabación, transcripción y generación SOAP</p>
-          <Link to="/professional-workflow">
-            <button style={{ padding: '1rem 2rem', fontSize: '1.1rem', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', marginTop: '1rem' }}>
-              ▶️ Professional Workflow
-            </button>
-          </Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">AiDuxCare Professional</h1>
+              <p className="text-sm text-gray-500">Sistema de Documentación Clínica</p>
+            </div>
+            <div className="text-sm text-gray-600">
+              mauricio@aiduxcare.com
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div style={{ padding: '1.5rem', backgroundColor: '#FEF2F2', borderRadius: '12px', border: '2px solid #FCA5A5' }}>
-          <h2>🔧 Debug Audio</h2>
-          <p>Página de debugging para el pipeline de audio</p>
-          <Link to="/debug-audio">
-            <button style={{ padding: '1rem 2rem', fontSize: '1.1rem', backgroundColor: '#DC2626', color: 'white', border: 'none', borderRadius: '8px', marginTop: '1rem' }}>
-              🔍 Debug Audio
-            </button>
-          </Link>
-        </div>
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-6">Flujos de Trabajo</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Flujo Principal */}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200" 
+                onClick={() => navigate('/professional-workflow')}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Stethoscope className="w-6 h-6 text-blue-600" />
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Flujo Profesional
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Workflow completo: anamnesis, evaluación física y generación SOAP
+            </p>
+            <Button variant="primary" size="sm" className="w-full">
+              Iniciar
+            </Button>
+          </Card>
 
-        <div style={{ padding: '1.5rem', backgroundColor: '#F0FDF4', borderRadius: '12px', border: '2px solid #BBF7D0' }}>
-          <h2>🧪 Test Workflow</h2>
-          <p>Testing completo del workflow</p>
-          <Link to="/test-workflow">
-            <button style={{ padding: '1rem 2rem', fontSize: '1.1rem', backgroundColor: '#16A34A', color: 'white', border: 'none', borderRadius: '8px', marginTop: '1rem' }}>
-              🧪 Test Full Workflow
-            </button>
-          </Link>
+          {/* Debug */}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Settings className="w-6 h-6 text-gray-600" />
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Debug Audio
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Herramientas de desarrollo
+            </p>
+            <Button variant="outline" size="sm" className="w-full" disabled>
+              Solo desarrollo
+            </Button>
+          </Card>
+
+          {/* Test */}
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer opacity-50">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <TestTube className="w-6 h-6 text-gray-600" />
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Test Workflow
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Pruebas del sistema
+            </p>
+            <Button variant="outline" size="sm" className="w-full" disabled>
+              Solo desarrollo
+            </Button>
+          </Card>
         </div>
       </div>
     </div>

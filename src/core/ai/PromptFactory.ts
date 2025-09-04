@@ -1,154 +1,36 @@
-// src/core/ai/PromptFactory.ts
-import type { ClinicalAnalysisResponse, PhysicalExamResult } from '../../types/vertex-ai';
+export const buildClinicalPrompt = ({
+  contextoPaciente,
+  instrucciones,
+  transcript
+}: {
+  contextoPaciente: string;
+  instrucciones: string;
+  transcript: string;
+}): string => `
+Eres un asistente clínico de fisioterapia. Devuelve SIEMPRE JSON estricto con este esquema:
 
-export class PromptFactory {
-  static createClinicalAnalysisPrompt(transcript: string): string {
-    return `Eres un asistente clínico para fisioterapeutas en Ontario, Canadá, siguiendo estándares del College of Physiotherapists of Ontario (CPO).
+{
+  "motivo_consulta": string,
+  "hallazgos_relevantes": string[],
+  "diagnosticos_probables": string[],
+  "red_flags": string[],
+  "evaluaciones_fisicas_sugeridas": string[],
+  "plan_tratamiento_sugerido": string[],
+  "riesgo_legal": "bajo" | "medio" | "alto"
+}
 
-CONTEXTO MÉDICO:
-Usa tu conocimiento actualizado sobre el sistema de banderas en fisioterapia musculoesquelética:
+Reglas:
+- No inventes datos ausentes.
+- Si un campo no aplica, usa "" o [].
+- Prioriza seguridad y red flags.
+- La salida debe ser SOLO el JSON, sin texto adicional.
 
-RED FLAGS (Banderas Rojas) - Según literatura médica actual (Finucane et al., 2020; Greenhalgh & Selfe, 2006):
-- Indicadores de patología seria que requiere derivación médica inmediata
-- Incluyen: posible cáncer/metástasis, síndrome de cauda equina, fractura, infección sistémica, aneurisma aórtico
-- Signos: pérdida de peso inexplicable, fiebre, dolor nocturno severo, déficit neurológico progresivo, historia oncológica
+[Contexto paciente]
+${contextoPaciente}
 
-YELLOW FLAGS (Banderas Amarillas) - Según modelo biopsicosocial (Kendall et al., 1997; Nicholas et al., 2011):
-- Factores psicosociales que influyen en el pronóstico
-- Incluyen: kinesiofobia, catastrofización, depresión, ansiedad, creencias inadecuadas sobre el dolor
-- Factores laborales y sociales que afectan la recuperación
+[Instrucciones]
+${instrucciones}
 
-ORANGE FLAGS - Factores psiquiátricos
-BLUE FLAGS - Factores laborales  
-BLACK FLAGS - Factores del sistema/compensación
-
-TRANSCRIPCIÓN DE LA CONSULTA:
+[Transcripción]
 ${transcript}
-
-INSTRUCCIONES:
-1. Extrae TODAS las entidades clínicas mencionadas sin filtrar
-2. Identifica banderas según el sistema de colores médico estándar
-3. Sugiere tests físicos basados en guías clínicas actuales (sensibilidad/especificidad según literatura)
-4. Incluye medidas validadas apropiadas según la condición
-
-IMPORTANTE: 
-- Usa tu conocimiento médico actualizado para identificar banderas
-- NO inventes datos - si no conoces sensibilidad/especificidad exacta, indícalo
-- Extrae TODO lo mencionado, el fisioterapeuta decidirá qué usar
-
-Responde en JSON con esta estructura exacta:
-{
-  "entities": [
-    {
-      "id": "string",
-      "text": "texto exacto o parafraseado de lo mencionado",
-      "type": "symptom|condition|medication|history|other",
-      "clinicalRelevance": "critical|high|medium|low"
-    }
-  ],
-  "redFlags": [
-    {
-      "pattern": "descripción del indicador según literatura médica",
-      "action": "acción recomendada según guías clínicas",
-      "urgency": "urgent|high|medium",
-      "reference": "fuente o guía clínica si la conoces"
-    }
-  ],
-  "yellowFlags": ["factores psicosociales identificados"],
-  "otherFlags": {
-    "orange": ["factores psiquiátricos si aplica"],
-    "blue": ["factores laborales si aplica"],
-    "black": ["factores del sistema si aplica"]
-  },
-  "physicalTests": [
-    {
-      "name": "nombre del test",
-      "rationale": "indicación según presentación clínica",
-      "sensitivity": número o null si no conoces el dato exacto,
-      "specificity": número o null si no conoces el dato exacto,
-      "reference": "fuente del dato si la conoces"
-    }
-  ],
-  "standardizedMeasures": ["escalas validadas apropiadas para la condición"],
-  "additionalNotes": "observaciones clínicas relevantes"
-}`;
-  }
-
-  static createSOAPFromAnalysis(
-    analysis: ClinicalAnalysisResponse,
-    selectedEntityIds: string[],
-    physicalExamResults: PhysicalExamResult[]
-  ): string {
-    const selectedEntities = analysis.entities.filter(e => selectedEntityIds.includes(e.id));
-    
-    return `Genera una nota SOAP de fisioterapia siguiendo estándares del CPO y mejores prácticas clínicas actuales.
-
-CONTEXTO:
-- Fisioterapeuta en Ontario, Canadá
-- Documentación debe cumplir estándares médico-legales
-- Usar terminología médica apropiada y precisa
-
-HALLAZGOS SELECCIONADOS POR EL FISIOTERAPEUTA:
-${JSON.stringify(selectedEntities, null, 2)}
-
-BANDERAS IDENTIFICADAS:
-- Rojas: ${JSON.stringify(analysis.redFlags, null, 2)}
-- Amarillas: ${JSON.stringify(analysis.yellowFlags, null, 2)}
-${analysis.otherFlags ? `- Otras: ${JSON.stringify(analysis.otherFlags, null, 2)}` : ''}
-
-RESULTADOS DE EXAMEN FÍSICO:
-${JSON.stringify(physicalExamResults, null, 2)}
-
-MEDIDAS ESTANDARIZADAS SUGERIDAS:
-${JSON.stringify(analysis.standardizedMeasures, null, 2)}
-
-Genera una nota SOAP profesional en JSON:
-{
-  "subjective": "Historia del paciente y síntomas reportados",
-  "objective": "Hallazgos medibles del examen físico, tests realizados, observaciones clínicas",
-  "assessment": "Impresión clínica basada en razonamiento clínico, diagnóstico fisioterapéutico según CIF",
-  "plan": "Intervenciones específicas, frecuencia, duración, objetivos SMART, educación al paciente",
-  "additionalNotes": "Precauciones, contraindicaciones, necesidad de derivación",
-  "followUp": "Plan de seguimiento y criterios de reevaluación",
-  "precautions": "Precauciones específicas basadas en banderas identificadas",
-  "referrals": "Derivaciones necesarias basadas en red flags"
-}
-
-CRITERIOS DE CALIDAD:
-- Si hay red flags identificadas, documentar plan de derivación inmediata en 'referrals'
-- Objetivos deben ser específicos, medibles, alcanzables, relevantes y con tiempo definido
-- Plan debe incluir consentimiento informado si es evaluación inicial
-- Documentar según principios de práctica basada en evidencia
-- Incluir códigos CIF (Clasificación Internacional del Funcionamiento) cuando sea apropiado`;
-  }
-}
-
-// Agregar al final del archivo
-export enum CaseComplexity {
-  SIMPLE = 'simple',
-  MODERATE = 'moderate', 
-  COMPLEX = 'complex'
-}
-
-export enum MedicalSpecialty {
-  GENERAL = 'general',
-  CARDIOLOGY = 'cardiology',
-  NEUROLOGY = 'neurology',
-  ORTHOPEDICS = 'orthopedics',
-  PHYSIOTHERAPY = 'physiotherapy'
-}
-export enum CaseComplexity {
-  SIMPLE = 'simple',
-  MODERATE = 'moderate', 
-  COMPLEX = 'complex',
-  CRITICAL = 'critical'  // Agregar este
-}
-
-export enum MedicalSpecialty {
-  GENERAL = 'general',
-  CARDIOLOGY = 'cardiology',
-  NEUROLOGY = 'neurology',
-  ORTHOPEDICS = 'orthopedics',
-  PHYSIOTHERAPY = 'physiotherapy',
-  FISIOTERAPIA = 'fisioterapia'  // Agregar este
-}
+`.trim();

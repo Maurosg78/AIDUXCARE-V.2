@@ -1,4 +1,5 @@
-import logger from '@/shared/utils/logger';
+import { Analytics } from "./services/analytics-service";
+Analytics.enable();import logger from '@/shared/utils/logger';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

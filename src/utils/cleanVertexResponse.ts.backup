@@ -1,0 +1,117 @@
+export function cleanVertexResponse(response: any) {
+  if (!response) return null;
+  
+  // Limpiar entidades
+  if (response.entities && Array.isArray(response.entities)) {
+    response.entities = response.entities.filter(entity => {
+      if (!entity.text || 
+          entity.text === 'undefined' || 
+          entity.text === '� undefined' ||
+          entity.text.toLowerCase().includes('undefined') ||
+          entity.text.toLowerCase().includes('ninguna reportada') ||
+          entity.text.toLowerCase().includes('no se detectaron')) {
+        return false;
+      }
+      
+      entity.text = entity.text
+        .replace(/[⚠️🏥💊📋🚨🔍⚡📝]/g, '')
+        .replace('RED FLAG:', '')
+        .trim();
+      
+      return true;
+    });
+  }
+  
+  // Limpiar red flags
+  if (response.redFlags && Array.isArray(response.redFlags)) {
+    response.redFlags = response.redFlags.filter(flag => {
+      if (!flag.pattern || 
+          flag.pattern === 'undefined' ||
+          flag.pattern.toLowerCase() === 'ninguna' ||
+          flag.pattern.toLowerCase().includes('no se detectaron') ||
+          flag.pattern.toLowerCase().includes('undefined')) {
+        return false;
+      }
+      return true;
+    });
+    
+    if (response.redFlags.length === 0) {
+      response.redFlags = [];
+    }
+  }
+  
+  // Limpiar yellow flags
+  if (response.yellowFlags && Array.isArray(response.yellowFlags)) {
+    response.yellowFlags = response.yellowFlags.filter(flag => 
+      flag && flag !== 'undefined' && flag !== 'No se detectaron'
+    );
+  }
+
+  // Procesar tests físicos
+  if (response.evaluaciones_fisicas_sugeridas && Array.isArray(response.evaluaciones_fisicas_sugeridas)) {
+    response.physicalTests = response.evaluaciones_fisicas_sugeridas.filter(test => 
+      test && test !== "undefined" && test !== "No se detectaron"
+    );
+  } else {
+    // SI NO VIENEN TESTS, AGREGAR TESTS POR DEFECTO BASADOS EN LOS SÍNTOMAS
+    console.log('⚠️ No se recibieron evaluaciones físicas de Vertex AI, agregando tests por defecto');
+    
+    const defaultTests = [];
+    
+    // Buscar síntomas en las entidades para sugerir tests apropiados
+    const symptoms = response.entities?.filter(e => e.type === 'symptom') || [];
+    const hasNeckPain = symptoms.some(s => s.text?.toLowerCase().includes('cuello') || s.text?.toLowerCase().includes('cervical'));
+    const hasNeurological = symptoms.some(s => 
+      s.text?.toLowerCase().includes('mareo') || 
+      s.text?.toLowerCase().includes('parestesia') ||
+      s.text?.toLowerCase().includes('brazo') ||
+      s.text?.toLowerCase().includes('pierna')
+    );
+    const hasMemory = symptoms.some(s => s.text?.toLowerCase().includes('memoria') || s.text?.toLowerCase().includes('concentración'));
+    
+    // Agregar tests basados en síntomas detectados
+    if (hasNeckPain) {
+      defaultTests.push(
+        'Test de Spurling para radiculopatía cervical',
+        'Test de compresión de Jackson',
+        'Test de distracción cervical',
+        'Evaluación de rango de movimiento cervical',
+        'Palpación de puntos gatillo cervicales'
+      );
+    }
+    
+    if (hasNeurological) {
+      defaultTests.push(
+        'Evaluación de reflejos (C5-C7, L2-S1)',
+        'Test de sensibilidad (dermatomas)',
+        'Prueba de fuerza muscular (miotomos)',
+        'Test de tensión neural (ULTT)',
+        'Prueba de Romberg',
+        'Evaluación de la marcha',
+        'Test de coordinación dedo-nariz'
+      );
+    }
+    
+    if (hasMemory) {
+      defaultTests.push(
+        'Mini-Mental State Examination (MMSE)',
+        'Test de Montreal Cognitive Assessment (MoCA)'
+      );
+    }
+    
+    // Si no hay síntomas específicos, agregar evaluación general
+    if (defaultTests.length === 0) {
+      defaultTests.push(
+        'Evaluación postural completa',
+        'Evaluación de rango de movimiento general',
+        'Pruebas de fuerza muscular',
+        'Evaluación de la marcha y equilibrio',
+        'Palpación general'
+      );
+    }
+    
+    response.physicalTests = defaultTests;
+  }
+  
+  return response;
+}

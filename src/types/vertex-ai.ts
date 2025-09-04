@@ -88,3 +88,6 @@ export interface VertexAIResponse {
 }
 
 export type ModelType = 'flash' | 'pro';
+
+// Agregar el tipo 'test' que falta
+export type EntityType = 'condition' | 'symptom' | 'medication' | 'history' | 'test' | 'other';
