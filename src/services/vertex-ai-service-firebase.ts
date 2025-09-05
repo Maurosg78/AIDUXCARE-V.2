@@ -16,3 +16,16 @@ export async function analyzeWithVertexProxy(payload: {
   }
   return r.json();
 }
+
+export class VertexAIServiceViaFirebase {
+  static async processWithNiagara(text: string) {
+    if (!text || !text.trim()) return null;
+    return analyzeWithVertexProxy({
+      action: 'analyze',
+      transcript: text,
+      traceId: 'ui-niagara'
+    });
+  }
+}
+
+console.log("[OK] vertex-ai-service-firebase.ts integrated");

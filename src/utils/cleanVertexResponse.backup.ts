@@ -92,8 +92,7 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     
     const protocolTests = selectTestsByProtocol(context);
     if (protocolTests.length > 0) {
-// FIX: Deshabilitado - sobrescribía tests específicos de Vertex
-//       console.log('[Normalizer] Applied protocol tests:', protocolTests);
+      console.log('[Normalizer] Applied protocol tests:', protocolTests);
       evalsSafe = protocolTests;
     }
   }

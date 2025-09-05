@@ -103,3 +103,5 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
     return res.status(500).json({ ok: false, error: 'vertex_invoke_failed', message: err?.message || 'Unknown error' });
   }
 });
+
+console.log("[OK] functions/index.js: vertexAIProxy@v1 ready");

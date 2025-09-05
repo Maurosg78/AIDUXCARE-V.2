@@ -6,7 +6,7 @@ import { PatientHeader } from "./PatientHeader";
 import { LoadingOverlay } from "./LoadingOverlay";
 import ValidationMetrics from "./ValidationMetrics";
 import { useSession } from '../context/SessionContext';
-import { useNiagaraProcessorV2 } from "../hooks/useNiagaraProcessor-v2";
+import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useAutoSelection } from "../hooks/useAutoSelection";
 
 interface WorkflowAnalysisTabProps {
@@ -63,7 +63,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     metrics, 
     isProcessing, 
     error 
-  } = useNiagaraProcessorV2();
+  } = useNiagaraProcessor();
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(

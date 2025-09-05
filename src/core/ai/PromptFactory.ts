@@ -34,3 +34,5 @@ ${instrucciones}
 [Transcripción]
 ${transcript}
 `.trim();
+
+console.log("[OK] PromptFactory.ts integrated");
