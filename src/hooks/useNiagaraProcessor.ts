@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
-import { cleanVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
+import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
 
 export const useNiagaraProcessor = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(null);
   const [soapNote, setSoapNote] = useState<string | null>(null);
-
+  
   const processText = async (text: string) => {
     if (!text?.trim()) return null;
     setIsAnalyzing(true);
     try {
       const response = await VertexAIServiceViaFirebase.processWithNiagara(text);
-      const cleaned = cleanVertexResponse(response);
+      console.log("Response from Vertex:", response);
+      console.log("Response text:", response?.text);
+      const cleaned = normalizeVertexResponse(response);
+      console.log("Cleaned response:", cleaned);
       setNiagaraResults(cleaned);
       return cleaned;
     } catch (error) {
@@ -22,21 +25,19 @@ export const useNiagaraProcessor = () => {
       setIsAnalyzing(false);
     }
   };
-
+  
   const generateSOAPNote = async () => {
     if (!niagaraResults) return null;
     const s = niagaraResults;
-
-    const S = `S: ${s.motivo_consulta || 'N/A'}`;
-    const O = `O: Evaluaciones sugeridas: ${s.evaluaciones_fisicas_sugeridas.join('; ') || 'N/A'}`;
-    const A = `A: Diagnósticos probables: ${s.diagnosticos_probables.join('; ') || 'N/A'}`;
-    const P = `P: Plan sugerido: ${s.plan_tratamiento_sugerido.join('; ') || 'N/A'}`;
-
-    const note = [S, O, A, P].join('\n');
-    setSoapNote(note);
-    return note;
+    const soap = `SOAP Note
+S: ${s.motivo_consulta || 'N/A'}
+O: Hallazgos: ${s.hallazgos_relevantes?.join(', ') || 'N/A'}
+A: ${s.diagnosticos_probables?.join(', ') || 'N/A'}
+P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
+    setSoapNote(soap);
+    return soap;
   };
-
+  
   return {
     processText,
     generateSOAPNote,

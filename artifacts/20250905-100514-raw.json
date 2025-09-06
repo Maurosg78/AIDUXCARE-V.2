@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250905-100503",
+  "text": "{\n  \"motivo_consulta\": \"Dolor lumbar con irradiación a pierna derecha\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar de 3 días de evolución\",\n    \"Irradiación a pierna derecha\",\n    \"Ocupación: músico que carga instrumentos\",\n    \"Adulto activo, sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia mecánica\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (incluyendo búsqueda de síntomas neurológicos como parestesias, debilidad, alteraciones de esfínteres, y otros signos de alarma)\",\n    \"Examen neurológico completo (reflejos, fuerza muscular, sensibilidad en dermatomas de la pierna derecha)\",\n    \"Pruebas de provocación radicular (ej. Signo de Lasègue/Straight Leg Raise, Slump Test)\",\n    \"Evaluación de la movilidad lumbar (flexión, extensión, lateralización, rotación)\",\n    \"Palpación de la musculatura lumbar y glútea\",\n    \"Evaluación postural y análisis de movimientos relacionados con su ocupación (carga de instrumentos)\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y ergonomía (especialmente para la carga de instrumentos)\",\n    \"Movilización suave y ejercicios de control motor lumbar (ej. estabilización core)\",\n    \"Terapia manual (ej. movilizaciones articulares, técnicas de tejidos blandos) si indicada\",\n    \"Ejercicios de neurodinamia si se confirma radiculopatía\",\n    \"Modificación de actividad y reposo relativo inicial si el dolor es agudo\",\n    \"Derivación médica si se identifican red flags o síntomas neurológicos progresivos\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor lumbar con irradiación a pierna derecha\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar de 3 días de evolución\",\n    \"Irradiación a pierna derecha\",\n    \"Ocupación: músico que carga instrumentos\",\n    \"Adulto activo, sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia mecánica\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (incluyendo búsqueda de síntomas neurológicos como parestesias, debilidad, alteraciones de esfínteres, y otros signos de alarma)\",\n    \"Examen neurológico completo (reflejos, fuerza muscular, sensibilidad en dermatomas de la pierna derecha)\",\n    \"Pruebas de provocación radicular (ej. Signo de Lasègue/Straight Leg Raise, Slump Test)\",\n    \"Evaluación de la movilidad lumbar (flexión, extensión, lateralización, rotación)\",\n    \"Palpación de la musculatura lumbar y glútea\",\n    \"Evaluación postural y análisis de movimientos relacionados con su ocupación (carga de instrumentos)\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y ergonomía (especialmente para la carga de instrumentos)\",\n    \"Movilización suave y ejercicios de control motor lumbar (ej. estabilización core)\",\n    \"Terapia manual (ej. movilizaciones articulares, técnicas de tejidos blandos) si indicada\",\n    \"Ejercicios de neurodinamia si se confirma radiculopatía\",\n    \"Modificación de actividad y reposo relativo inicial si el dolor es agudo\",\n    \"Derivación médica si se identifican red flags o síntomas neurológicos progresivos\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.4773969693421239
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 227,
+      "candidatesTokenCount": 442,
+      "totalTokenCount": 1741,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 227
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 442
+        }
+      ],
+      "thoughtsTokenCount": 1072
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-05T08:05:05.999176Z",
+    "responseId": "sZm6aIj-PMm8gLUPh4igmAw"
+  }
+}

@@ -24,27 +24,27 @@ const toArray = (v: unknown): string[] => {
   return [];
 };
 
-const processPhysicalTests = (tests: any): string[] => {
+const processPhysicalTests = (tests: any): any[] => {
   if (!tests) return [];
   if (!Array.isArray(tests)) return [];
   
   return tests.map((item: any) => {
-    // Si es string, retornarlo directamente
-    if (typeof item === "string") return item;
+    if (typeof item === "string") {
+      return {
+        test: item,
+        sensibilidad: 0,
+        especificidad: 0,
+        indicacion: "",
+        justificacion: ""
+      };
+    }
     
-    // Si es objeto, extraer el campo test o nombre
     if (item && typeof item === "object") {
-      if (item.test) return String(item.test);
-      if (item.nombre) return String(item.nombre);
-      if (item.name) return String(item.name);
-      // Si no tiene campos conocidos, intentar convertir a string
-      return String(item);
+      return item;
     }
     
     return null;
-  }).filter((test): test is string => {
-    return test !== null && test !== "[object Object]" && test !== "undefined";
-  });
+  }).filter(test => test !== null);
 };
 export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
   console.log('[Normalizer] Input:', raw);
@@ -94,7 +94,7 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     if (protocolTests.length > 0) {
 // FIX: Deshabilitado - sobrescribía tests específicos de Vertex
 //       console.log('[Normalizer] Applied protocol tests:', protocolTests);
-      evalsSafe = protocolTests;
+//       evalsSafe = protocolTests;
     }
   }
   
