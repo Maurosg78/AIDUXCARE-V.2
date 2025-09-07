@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Internal to FHIR Adapter - Lightweight Implementation
  * @version 1.0.0

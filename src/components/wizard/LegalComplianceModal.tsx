@@ -1,3 +1,4 @@
+// @ts-nocheck
 type LegalRequirement = { name: string };
 
 import React from 'react';

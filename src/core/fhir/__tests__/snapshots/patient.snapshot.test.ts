@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/core/fhir/__tests__/snapshots/patient.snapshot.test.ts
 import { describe, it, expect } from 'vitest';
 

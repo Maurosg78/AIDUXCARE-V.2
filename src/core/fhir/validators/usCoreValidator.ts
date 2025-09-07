@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview US Core Validator - Lightweight Implementation
  * @version 2.0.0

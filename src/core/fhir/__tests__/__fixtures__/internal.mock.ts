@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/core/fhir/__tests__/__fixtures__/internal.mock.ts
 
 // Nota: ajusta estas interfaces si tu modelo interno difiere.

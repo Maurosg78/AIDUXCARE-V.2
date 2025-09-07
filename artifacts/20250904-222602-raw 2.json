@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-222555",
+  "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo de 3 días de evolución, con irradiación a pierna derecha y hormigueo.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente de 45 años\",\n    \"Dolor lumbar agudo (3 días de evolución)\",\n    \"Irradiación del dolor a pierna derecha\",\n    \"Hormigueo en pierna derecha\",\n    \"Adulto activo sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia aguda con componente neuropático\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [\n    \"Síntomas neurológicos (hormigueo, irradiación a pierna)\"\n  ],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Examen neurológico completo (evaluación de reflejos, fuerza muscular, sensibilidad en dermatomas)\",\n    \"Pruebas de tensión neural (ej. Lasègue, Bragard)\",\n    \"Evaluación de la movilidad lumbar activa y pasiva\",\n    \"Palpación de la musculatura lumbar y glútea\",\n    \"Evaluación de la marcha y postura\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre el manejo del dolor, posturas y actividad física\",\n    \"Movilización temprana y gradual dentro de los límites de dolor\",\n    \"Técnicas de neurodinamia (si la evaluación lo indica)\",\n    \"Ejercicios de estabilización lumbar y fortalecimiento del core (progresivo, una vez disminuido el dolor agudo)\",\n    \"Terapia manual para alivio sintomático y mejora de la movilidad\",\n    \"Agentes físicos (calor/frío, TENS) para manejo del dolor agudo\",\n    \"Derivación médica para valoración si los síntomas neurológicos empeoran o aparecen nuevos signos de alarma (ej. debilidad muscular progresiva, incontinencia)\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo de 3 días de evolución, con irradiación a pierna derecha y hormigueo.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente de 45 años\",\n    \"Dolor lumbar agudo (3 días de evolución)\",\n    \"Irradiación del dolor a pierna derecha\",\n    \"Hormigueo en pierna derecha\",\n    \"Adulto activo sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia aguda con componente neuropático\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [\n    \"Síntomas neurológicos (hormigueo, irradiación a pierna)\"\n  ],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Examen neurológico completo (evaluación de reflejos, fuerza muscular, sensibilidad en dermatomas)\",\n    \"Pruebas de tensión neural (ej. Lasègue, Bragard)\",\n    \"Evaluación de la movilidad lumbar activa y pasiva\",\n    \"Palpación de la musculatura lumbar y glútea\",\n    \"Evaluación de la marcha y postura\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre el manejo del dolor, posturas y actividad física\",\n    \"Movilización temprana y gradual dentro de los límites de dolor\",\n    \"Técnicas de neurodinamia (si la evaluación lo indica)\",\n    \"Ejercicios de estabilización lumbar y fortalecimiento del core (progresivo, una vez disminuido el dolor agudo)\",\n    \"Terapia manual para alivio sintomático y mejora de la movilidad\",\n    \"Agentes físicos (calor/frío, TENS) para manejo del dolor agudo\",\n    \"Derivación médica para valoración si los síntomas neurológicos empeoran o aparecen nuevos signos de alarma (ej. debilidad muscular progresiva, incontinencia)\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.390677923730256
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 232,
+      "candidatesTokenCount": 459,
+      "totalTokenCount": 1516,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 232
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 459
+        }
+      ],
+      "thoughtsTokenCount": 825
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T20:25:55.847390Z",
+    "responseId": "0_W5aJ7cM92s1dkP6_2d-QE"
+  }
+}

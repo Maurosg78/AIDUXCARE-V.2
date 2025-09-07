@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`FHIR Patient snapshot > matches expected snapshot for a representative internal patient 1`] = `

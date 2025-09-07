@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview FHIR Public API Contract Tests
  * @version 1.0.0

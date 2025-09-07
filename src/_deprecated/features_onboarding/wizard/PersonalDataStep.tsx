@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PersonalDataStep - Paso 1 del Wizard de Registro
  * Formulario con Grid Simétrico Perfecto

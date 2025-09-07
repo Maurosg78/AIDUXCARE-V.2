@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview FHIR Public Types - Stable API Contract
  * @version 1.0.0

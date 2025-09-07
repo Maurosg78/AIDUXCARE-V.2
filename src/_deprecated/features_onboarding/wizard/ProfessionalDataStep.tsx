@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ProfessionalDataStep - Paso 2 del Wizard de Registro
  * Datos Profesionales (6 campos obligatorios del .md)

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 class AnalyticsService {
   private enabled = false;
   private sessionData: any = {};

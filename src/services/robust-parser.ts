@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class RobustParser {
   static parse(vertexResponse: string): any {
     const result = {

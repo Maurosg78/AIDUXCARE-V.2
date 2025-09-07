@@ -1,0 +1,286 @@
+import { useState, useEffect } from 'react';
+import { Download } from "lucide-react";import { useAuth } from '../hooks/useAuth';
+import { useTranscript } from '../hooks/useTranscript';
+import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
+import { Card, Button } from '../shared/ui';
+import { NewPatientModal } from '../components/NewPatientModal';
+import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
+import type { PhysicalExamResult } from '../types/vertex-ai';
+
+interface PatientData {
+import { SOAPGenerator } from "../services/soap-generator";  id: string;
+  nombre: string;
+  apellidos: string;
+  fechaNacimiento: string;
+  edad: string;
+  email: string;
+  telefono: string;
+  direccion: string;
+  ciudad: string;
+  codigoPostal: string;
+  medicoDerivador: string;
+  institucionDerivadora: string;
+  diagnosticoPrevio: string;
+  comorbilidades: string;
+  medicamentos: string;
+  alergias: string;
+  consentimientoFirmado: boolean;
+  fechaRegistro: string;
+  ultimaModificacion: string;
+  modificadoPor: string;
+}
+
+export default function ProfessionalWorkflowPage() {
+  const { user } = useAuth();
+  const { transcript, isRecording, startRecording, stopRecording, setTranscript } = useTranscript();
+  const { processWithNiagara, results: niagaraResults, generateSOAPNote, soapNote } = useNiagaraProcessor();,
+  
+  const [selectedPatient, setSelectedPatient] = useState<PatientData>({ 
+    id: "PAC-TEST-001", 
+    nombre: "María", 
+    apellidos: "González", 
+    fechaNacimiento: "1980-01-01", 
+    edad: "44 años", 
+    email: "maria@test.com", 
+    telefono: "555-0123", 
+    direccion: "Calle Test 123", 
+    ciudad: "Valencia", 
+    codigoPostal: "46001", 
+    medicoDerivador: "Dr. Test", 
+    institucionDerivadora: "Hospital Test", 
+    diagnosticoPrevio: "Lumbalgia", 
+    comorbilidades: "Ninguna", 
+    medicamentos: "Pregabalina 75mg", 
+    alergias: "Ninguna", 
+    consentimientoFirmado: true, 
+    fechaRegistro: new Date().toISOString(), 
+    ultimaModificacion: new Date().toISOString(), 
+    modificadoPor: "Sistema" 
+  });  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [sessionId] = useState(`session_${Date.now()}`);
+  const [selectedFindings, setSelectedFindings] = useState<string[]>([]);
+  const [physicalExamResults, setPhysicalExamResults] = useState<PhysicalExamResult[]>([]);
+  const [generatedSoapNote, setSoapNote] = useState<any>(null);  const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
+  const [physicalTestsToPerform, setPhysicalTestsToPerform] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [recordingTime, setRecordingTime] = useState('00:00');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    let interval: any;
+    if (isRecording) {
+      const startTime = Date.now();
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        setRecordingTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }, 1000);
+    } else {
+      setRecordingTime('00:00');
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const handleSearch = () => {
+    console.log('Buscando paciente:', searchTerm);
+  };
+
+  const handleNewPatient = () => {
+    setIsNewPatientModalOpen(true);
+  };
+
+  const handlePatientCreated = (patient: any) => {
+    console.log('🔒 Paciente creado:', patient.id);
+    setSelectedPatient(patient);
+    setIsNewPatientModalOpen(false);
+  };
+
+  const handleGenerateSOAP = async () => {
+    try {
+      const soapData = SOAPGenerator.generateFromData(
+        niagaraResults?.entities || [],
+        physicalExamResults,
+        selectedPatient
+      );
+      setSoapNote(soapData);
+      
+      // También enviar a Vertex para enriquecer si está disponible
+      generateSOAPNote(
+        selectedFindings,
+        physicalExamResults
+      );    } catch (error) {
+      console.error("Error generando SOAP:", error);
+    }
+  };
+  const handleAnalyzeWithAI = async () => {
+    console.log('🧠 Iniciando análisis con IA...');
+    setIsAnalyzing(true);
+    await processWithNiagara(transcript);
+    setIsAnalyzing(false);
+  };
+
+
+  const handleDownloadReport = () => {
+    console.log('📥 Descargando informe...');
+  };
+
+  const handleExamResultsChange = (results: any[]) => {
+    setPhysicalExamResults(results);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-2xl font-bold text-gray-900">AiDuxCare - Flujo Profesional</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">{user?.email || 'Usuario no autenticado'}</span>
+              <Button variant="outline" size="sm">Cerrar Sesión</Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="bg-gray-100 border-b py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="ID del paciente (ej: PAC-123456)"
+                className="px-3 py-1.5 border rounded-md"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button onClick={handleSearch} variant="outline" size="sm">
+                🔍 Buscar
+              </Button>
+              <Button onClick={handleNewPatient} variant="default" size="sm">
+                👤 Nuevo Paciente
+              </Button>
+            </div>
+            <div className="text-xs text-gray-500">
+              Sesión: {sessionId} | Cumplimiento: HIPAA/GDPR
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4">
+          <nav className="flex space-x-4">
+            <button 
+              onClick={() => setActiveTab('analysis')}
+              className={`py-3 px-4 border-b-2 font-medium text-sm ${
+                activeTab === 'analysis' 
+                  ? 'border-blue-500 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              1. Análisis Inicial
+            </button>
+            <button 
+              onClick={() => setActiveTab('evaluation')}
+              disabled={!niagaraResults}
+              className={`py-3 px-4 border-b-2 font-medium text-sm ${
+                activeTab === 'evaluation' 
+                  ? 'border-blue-500 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              } ${!niagaraResults ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              2. Evaluación Física
+            </button>
+            <button 
+              onClick={() => setActiveTab('soap')}
+              disabled={!soapNote}
+              className={`py-3 px-4 border-b-2 font-medium text-sm ${
+                activeTab === 'soap' 
+                  ? 'border-blue-500 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              } ${!soapNote ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              3. Informe SOAP
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeTab === 'analysis' && (
+          <WorkflowAnalysisTab
+            selectedPatient={selectedPatient}
+            transcript={transcript}
+            setTranscript={setTranscript}
+            isRecording={isRecording}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            recordingTime={recordingTime}
+            isAnalyzing={isAnalyzing}
+            false={false}
+            onAnalyze={handleAnalyzeWithAI}
+            niagaraResults={niagaraResults}
+            selectedFindings={selectedFindings}
+            setSelectedFindings={setSelectedFindings}
+            onGenerateSOAP={handleGenerateSOAP}
+            onContinueToEvaluation={() => {
+              const tests = niagaraResults?.entities
+                .filter((e: any) => selectedFindings.includes(e.id) && e.text.startsWith("📋"))
+                .map((e: any) => e.text) || [];
+              setPhysicalTestsToPerform(tests);
+              setActiveTab("evaluation");
+            }}
+            handleExamResultsChange={handleExamResultsChange}
+          />
+        )}
+        {activeTab === 'evaluation' && (
+          <PhysicalEvaluationTab 
+            suggestedTests={physicalTestsToPerform}
+            onComplete={(results) => {
+              setPhysicalExamResults(results);
+              handleGenerateSOAP();
+            }}          />
+        )}
+
+        {activeTab === 'soap' && soapNote && (
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Informe SOAP Generado</h2>
+              <Button onClick={handleDownloadReport} variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-blue-600">Subjetivo</h3>
+                <p className="mt-1">{soapNote.subjective}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-600">Objetivo</h3>
+                <p className="mt-1">{soapNote.objective}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-600">Evaluación</h3>
+                <p className="mt-1">{soapNote.assessment}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-600">Plan</h3>
+                <p className="mt-1">{soapNote.plan}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </main>
+
+      <NewPatientModal
+        isOpen={isNewPatientModalOpen}
+        onClose={() => setIsNewPatientModalOpen(false)}
+        onSave={handlePatientCreated}
+      />
+    </div>
+  );
+}
+import { WorkflowAnalysisTab } from "../components/WorkflowAnalysisTab";

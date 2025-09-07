@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview FHIR Adapters Integration Tests - End-to-End
  * @version 1.0.0

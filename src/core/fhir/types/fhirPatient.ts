@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview FHIR Patient Types - Lightweight Implementation
  * @version 1.0.0

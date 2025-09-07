@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+msg_file="$1"
+
+if ! grep -qi "ROADMAP_READ" "$msg_file"; then
+  echo "❌ Falta confirmación: agrega 'Signed-off-by: ROADMAP_READ'"
+  exit 1
+fi
+
+if ! grep -qi "COMPLIANCE_CHECKED" "$msg_file"; then
+  echo "❌ Falta confirmación: agrega 'COMPLIANCE_CHECKED'"
+  exit 1
+fi
+
+echo "✅ commit-msg OK"

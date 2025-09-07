@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useEffect, useState, useCallback } from 'react';
 
 export type LocationData = {

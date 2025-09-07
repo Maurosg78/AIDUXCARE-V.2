@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-212415",
+  "text": "{\n  \"motivo_consulta\": \"Dolor lumbar intenso con fiebre, pérdida de peso, antecedente oncológico y síntomas neurológicos bilaterales con disfunción de esfínteres.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar intenso (2 semanas)\",\n    \"Dolor nocturno que despierta\",\n    \"Fiebre (38.5°C)\",\n    \"Pérdida de peso no intencionada (6 kg en 1 mes)\",\n    \"Antecedente de cáncer de próstata tratado\",\n    \"Adormecimiento bilateral en piernas\",\n    \"Debilidad en piernas\",\n    \"Dificultad para controlar la orina\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Síndrome de Cauda Equina\",\n    \"Compresión medular por metástasis\",\n    \"Infección espinal (espondilodiscitis)\"\n  ],\n  \"red_flags\": [\n    \"Dolor lumbar nocturno\",\n    \"Fiebre\",\n    \"Pérdida de peso inexplicable\",\n    \"Antecedente de cáncer\",\n    \"Déficit neurológico bilateral (adormecimiento, debilidad)\",\n    \"Disfunción de esfínteres (urinaria)\"\n  ],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Examen neurológico completo de miembros inferiores (fuerza, sensibilidad, reflejos)\",\n    \"Evaluación de la marcha y equilibrio\",\n    \"Evaluación de la función de esfínteres (si es apropiado y dentro del alcance profesional)\",\n    \"Palpación y percusión de la columna lumbar\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Referencia médica urgente a servicio de emergencias o especialista (neurocirugía/traumatología)\",\n    \"No realizar movilizaciones o manipulaciones de la columna lumbar hasta descartar patología grave\",\n    \"Monitoreo continuo de síntomas neurológicos y signos vitales\"\n  ],\n  \"riesgo_legal\": \"alto\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor lumbar intenso con fiebre, pérdida de peso, antecedente oncológico y síntomas neurológicos bilaterales con disfunción de esfínteres.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar intenso (2 semanas)\",\n    \"Dolor nocturno que despierta\",\n    \"Fiebre (38.5°C)\",\n    \"Pérdida de peso no intencionada (6 kg en 1 mes)\",\n    \"Antecedente de cáncer de próstata tratado\",\n    \"Adormecimiento bilateral en piernas\",\n    \"Debilidad en piernas\",\n    \"Dificultad para controlar la orina\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Síndrome de Cauda Equina\",\n    \"Compresión medular por metástasis\",\n    \"Infección espinal (espondilodiscitis)\"\n  ],\n  \"red_flags\": [\n    \"Dolor lumbar nocturno\",\n    \"Fiebre\",\n    \"Pérdida de peso inexplicable\",\n    \"Antecedente de cáncer\",\n    \"Déficit neurológico bilateral (adormecimiento, debilidad)\",\n    \"Disfunción de esfínteres (urinaria)\"\n  ],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Examen neurológico completo de miembros inferiores (fuerza, sensibilidad, reflejos)\",\n    \"Evaluación de la marcha y equilibrio\",\n    \"Evaluación de la función de esfínteres (si es apropiado y dentro del alcance profesional)\",\n    \"Palpación y percusión de la columna lumbar\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Referencia médica urgente a servicio de emergencias o especialista (neurocirugía/traumatología)\",\n    \"No realizar movilizaciones o manipulaciones de la columna lumbar hasta descartar patología grave\",\n    \"Monitoreo continuo de síntomas neurológicos y signos vitales\"\n  ],\n  \"riesgo_legal\": \"alto\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.6085271154131208
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 284,
+      "candidatesTokenCount": 448,
+      "totalTokenCount": 2375,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 284
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 448
+        }
+      ],
+      "thoughtsTokenCount": 1643
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T19:24:17.246505Z",
+    "responseId": "Yee5aOmFD8WqgLUPp5nskA4"
+  }
+}

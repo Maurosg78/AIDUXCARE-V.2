@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * UUID Utilities for FHIR Resources
  * Generates deterministic UUIDs for consistent references

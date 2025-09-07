@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-203543",
+  "text": "{\n  \"motivo_consulta\": \"Dolor en el cuello desde hace tres semanas, empeoró ayer al levantar una caja, con hormigueo leve hacia el brazo derecho y adormecimiento ocasional del pulgar. El dolor aumenta al mirar hacia arriba y al girar a la derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor cervical de tres semanas de evolución, agudizado ayer tras levantar una caja.\",\n    \"Hormigueo leve en brazo derecho.\",\n    \"Adormecimiento ocasional del pulgar derecho.\",\n    \"No pérdida de fuerza.\",\n    \"Niega traumatismo, fiebre, pérdida de peso, cáncer previo, dolor nocturno que despierte, disfagia o incoordinación.\",\n    \"Uso ocasional de ibuprofeno con alivio parcial.\",\n    \"Trabajo de oficina (ordenador) 8 horas/día.\",\n    \"Estrés reciente.\",\n    \"Dolor exacerbado con extensión cervical y rotación derecha.\",\n    \"Preocupación por la práctica deportiva (pádel).\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Cervicalgia mecánica aguda/subaguda.\",\n    \"Radiculopatía cervical leve (posiblemente C6) por compresión o irritación nerviosa.\",\n    \"Síndrome facetario cervical.\",\n    \"Contractura muscular cervical y/o trapecio superior.\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (historia del dolor, factores agravantes/atenuantes, antecedentes).\",\n    \"Examen postural y observación de la columna cervical y dorsal alta.\",\n    \"Palpación de la musculatura cervical, trapecio superior y paravertebral.\",\n    \"Evaluación del rango de movimiento cervical activo y pasivo (flexión, extensión, rotaciones, inclinaciones).\",\n    \"Pruebas de provocación radicular (Test de Spurling, Test de distracción cervical).\",\n    \"Evaluación neurológica: dermatomas (especialmente C6 para el pulgar), miotomas (fuerza muscular) y reflejos osteotendinosos (bicipital, tricipital).\",\n    \"Evaluación de la movilidad de la cintura escapular y escápula.\",\n    \"Evaluación de la articulación temporomandibular (ATM) si hay síntomas asociados.\",\n    \"Evaluación ergonómica del puesto de trabajo (si es posible).\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre la condición, manejo del dolor y estrategias de autocuidado.\",\n    \"Modificación de actividades: evitar movimientos que exacerben el dolor (extensión cervical, levantar objetos pesados).\",\n    \"Recomendaciones ergonómicas para el puesto de trabajo (altura de pantalla, silla, pausas activas).\",\n    \"Terapia manual: movilizaciones articulares cervicales, técnicas de liberación miofascial para la musculatura cervical y trapecio.\",\n    \"Ejercicios terapéuticos: movilidad cervical suave y progresiva, fortalecimiento de la musculatura cervical profunda y estabilizadores escapulares.\",\n    \"Manejo del estrés y técnicas de relajación.\",\n    \"Recomendaciones para la práctica de pádel (posiblemente posponer o adaptar inicialmente).\",\n    \"Aplicación de termoterapia o crioterapia local según preferencia del paciente.\",\n    \"Reevaluación periódica y progresión del tratamiento.\"\n  ],\n  \"riesgo_legal\": \"bajo\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor en el cuello desde hace tres semanas, empeoró ayer al levantar una caja, con hormigueo leve hacia el brazo derecho y adormecimiento ocasional del pulgar. El dolor aumenta al mirar hacia arriba y al girar a la derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor cervical de tres semanas de evolución, agudizado ayer tras levantar una caja.\",\n    \"Hormigueo leve en brazo derecho.\",\n    \"Adormecimiento ocasional del pulgar derecho.\",\n    \"No pérdida de fuerza.\",\n    \"Niega traumatismo, fiebre, pérdida de peso, cáncer previo, dolor nocturno que despierte, disfagia o incoordinación.\",\n    \"Uso ocasional de ibuprofeno con alivio parcial.\",\n    \"Trabajo de oficina (ordenador) 8 horas/día.\",\n    \"Estrés reciente.\",\n    \"Dolor exacerbado con extensión cervical y rotación derecha.\",\n    \"Preocupación por la práctica deportiva (pádel).\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Cervicalgia mecánica aguda/subaguda.\",\n    \"Radiculopatía cervical leve (posiblemente C6) por compresión o irritación nerviosa.\",\n    \"Síndrome facetario cervical.\",\n    \"Contractura muscular cervical y/o trapecio superior.\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (historia del dolor, factores agravantes/atenuantes, antecedentes).\",\n    \"Examen postural y observación de la columna cervical y dorsal alta.\",\n    \"Palpación de la musculatura cervical, trapecio superior y paravertebral.\",\n    \"Evaluación del rango de movimiento cervical activo y pasivo (flexión, extensión, rotaciones, inclinaciones).\",\n    \"Pruebas de provocación radicular (Test de Spurling, Test de distracción cervical).\",\n    \"Evaluación neurológica: dermatomas (especialmente C6 para el pulgar), miotomas (fuerza muscular) y reflejos osteotendinosos (bicipital, tricipital).\",\n    \"Evaluación de la movilidad de la cintura escapular y escápula.\",\n    \"Evaluación de la articulación temporomandibular (ATM) si hay síntomas asociados.\",\n    \"Evaluación ergonómica del puesto de trabajo (si es posible).\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre la condición, manejo del dolor y estrategias de autocuidado.\",\n    \"Modificación de actividades: evitar movimientos que exacerben el dolor (extensión cervical, levantar objetos pesados).\",\n    \"Recomendaciones ergonómicas para el puesto de trabajo (altura de pantalla, silla, pausas activas).\",\n    \"Terapia manual: movilizaciones articulares cervicales, técnicas de liberación miofascial para la musculatura cervical y trapecio.\",\n    \"Ejercicios terapéuticos: movilidad cervical suave y progresiva, fortalecimiento de la musculatura cervical profunda y estabilizadores escapulares.\",\n    \"Manejo del estrés y técnicas de relajación.\",\n    \"Recomendaciones para la práctica de pádel (posiblemente posponer o adaptar inicialmente).\",\n    \"Aplicación de termoterapia o crioterapia local según preferencia del paciente.\",\n    \"Reevaluación periódica y progresión del tratamiento.\"\n  ],\n  \"riesgo_legal\": \"bajo\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.3910427220155835
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 333,
+      "candidatesTokenCount": 753,
+      "totalTokenCount": 2220,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 333
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 753
+        }
+      ],
+      "thoughtsTokenCount": 1134
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T18:35:44.223102Z",
+    "responseId": "ANy5aP7ODZ6wgLUP3qPX0AI"
+  }
+}

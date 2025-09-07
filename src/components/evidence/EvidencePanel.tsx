@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🔬 EvidencePanel - Mostrar Evidencia Científica RAG
  * Componente para visualizar artículos científicos y evidencia

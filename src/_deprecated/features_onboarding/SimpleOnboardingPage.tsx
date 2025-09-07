@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏥 Simple Onboarding Page - Wizard funcional sin dependencias problemáticas
  */

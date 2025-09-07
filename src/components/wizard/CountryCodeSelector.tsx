@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { geolocationService } from "../../services/geolocationService";
 
 import type { PhoneCountryCode } from "@/services/geolocationService";

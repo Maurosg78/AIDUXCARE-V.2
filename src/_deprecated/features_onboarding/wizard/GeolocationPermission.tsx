@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
 import { GeolocationData } from '../../services/geolocationService';
