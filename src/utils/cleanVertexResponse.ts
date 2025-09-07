@@ -121,7 +121,6 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     medicacion_actual: toArray(parsed?.medicacion_actual),
     antecedentes_medicos: toArray(parsed?.antecedentes_medicos),
     // Campo legacy para compatibilidad
-    hallazgos_relevantes: toArray(parsed?.hallazgos_relevantes || parsed?.hallazgos_clinicos),
     diagnosticos_probables: toArray(parsed?.diagnosticos_probables),
     red_flags: toArray(parsed?.red_flags),
     yellow_flags: toArray(parsed?.yellow_flags),
