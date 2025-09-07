@@ -6,7 +6,7 @@ export type RiesgoLegal = 'bajo' | 'medio' | 'alto';
 export interface ClinicalAnalysis {
   motivo_consulta: string;
   hallazgos_clinicos?: string[];  // Nuevo campo
-    hallazgos_relevantes: raw?.hallazgos_relevantes || raw?.hallazgos_clinicos || [],  hallazgos_relevantes?: string[]; // Mantener por compatibilidad
+  hallazgos_relevantes?: string[];
   contexto_ocupacional?: string[]; // Nuevo campo
   contexto_psicosocial?: string[]; // Nuevo campo
   medicacion_actual?: string[];    // Nuevo campo
@@ -81,7 +81,7 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     return {
       motivo_consulta: '',
       hallazgos_clinicos: [],
-    hallazgos_relevantes: raw?.hallazgos_relevantes || raw?.hallazgos_clinicos || [],      hallazgos_relevantes: [],
+  hallazgos_relevantes: [],
       diagnosticos_probables: [],
       red_flags: [],
       yellow_flags: [],
