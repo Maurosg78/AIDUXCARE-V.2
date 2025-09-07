@@ -247,7 +247,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <EditableCheckbox
               key={`physical-${i}`}
               id={`physical-${i}`}
-              text={`${i + 1}. ${typeof test === 'string' ? test : (test.name || test.test || 'Test físico')}${(test.sensitivity || test.sensibilidad) ? ` (S: ${Math.round((test.sensitivity || test.sensibilidad) * 100)}%, E: ${Math.round((test.specificity || test.especificidad || 0) * 100)}%)` : ''}`}
+              text={`${i + 1}. ${typeof test === 'string' ? test : (test.name || test.test || 'Test físico')}`}
               checked={selectedIds.includes(`physical-${i}`)}
               onToggle={handleToggle}
               onTextChange={handleTextChange}

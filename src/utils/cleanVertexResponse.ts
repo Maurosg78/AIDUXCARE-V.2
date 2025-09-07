@@ -5,16 +5,31 @@ export type RiesgoLegal = 'bajo' | 'medio' | 'alto';
 
 export interface ClinicalAnalysis {
   motivo_consulta: string;
-  hallazgos_relevantes: string[];
+  hallazgos_clinicos?: string[];  // Nuevo campo
+  hallazgos_relevantes?: string[]; // Mantener por compatibilidad
+  contexto_ocupacional?: string[]; // Nuevo campo
+  contexto_psicosocial?: string[]; // Nuevo campo
+  medicacion_actual?: string[];    // Nuevo campo
+  antecedentes_medicos?: string[]; // Nuevo campo
   diagnosticos_probables: string[];
   red_flags: string[];
-  evaluaciones_fisicas_sugeridas: string[];
+  yellow_flags?: string[];
+  evaluaciones_fisicas_sugeridas: any[];
   plan_tratamiento_sugerido: string[];
+  derivacion_recomendada?: string;
+  pronostico_estimado?: string;
+  notas_seguridad?: string;
   riesgo_legal: RiesgoLegal;
 }
 
 const DEFAULT_TESTS = [
-  "Evaluación física según región afectada"
+  {
+    test: "Evaluación física según región afectada",
+    sensibilidad: 0.75,
+    especificidad: 0.85,
+    objetivo: "Evaluación inicial",
+    contraindicado_si: ""
+  }
 ];
 
 const toArray = (v: unknown): string[] => {
@@ -32,20 +47,29 @@ const processPhysicalTests = (tests: any): any[] => {
     if (typeof item === "string") {
       return {
         test: item,
-        sensibilidad: 0,
-        especificidad: 0,
-        indicacion: "",
-        justificacion: ""
+        sensibilidad: 0.75,
+        especificidad: 0.85,
+        objetivo: "Evaluación clínica",
+        contraindicado_si: ""
       };
     }
     
     if (item && typeof item === "object") {
-      return item;
+      // Asegurar que tenga los campos esperados
+      return {
+        test: item.test || item.nombre || "Test físico",
+        sensibilidad: item.sensibilidad ?? 0.75,
+        especificidad: item.especificidad ?? 0.85,
+        objetivo: item.objetivo || item.indicacion || "",
+        contraindicado_si: item.contraindicado_si || "",
+        justificacion: item.justificacion || ""
+      };
     }
     
     return null;
   }).filter(test => test !== null);
 };
+
 export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
   console.log('[Normalizer] Input:', raw);
   
@@ -54,12 +78,13 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
   
   if (!parseResult.success) {
     console.error('[Normalizer] Parse failed:', parseResult.error);
-    // Retornar estructura vacía pero válida
     return {
       motivo_consulta: '',
+      hallazgos_clinicos: [],
       hallazgos_relevantes: [],
       diagnosticos_probables: [],
       red_flags: [],
+      yellow_flags: [],
       evaluaciones_fisicas_sugeridas: DEFAULT_TESTS,
       plan_tratamiento_sugerido: [],
       riesgo_legal: 'bajo'
@@ -74,41 +99,37 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     console.warn('[Normalizer] Schema validation warning - missing fields');
   }
   
-  // Aplicar protocolos MSK si es región conocida
-  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
-  const isLumbar = motivo.includes('lumbar') || motivo.includes('espalda');
-  const isCervical = motivo.includes('cervical') || motivo.includes('cuello');
-  const isShoulder = motivo.includes('hombro') || motivo.includes('shoulder');
-  
   let evalsSafe = processPhysicalTests(parsed?.evaluaciones_fisicas_sugeridas);
   
-  if (isLumbar || isCervical || isShoulder) {
-    const context = {
-      region: motivo,
-      symptoms: toArray(parsed?.hallazgos_relevantes),
-      duration: parsed?.tiempo_evolucion || '3 días',
-      redFlags: toArray(parsed?.red_flags)
-    };
-    
-    const protocolTests = selectTestsByProtocol(context);
-    if (protocolTests.length > 0) {
-// FIX: Deshabilitado - sobrescribía tests específicos de Vertex
-//       console.log('[Normalizer] Applied protocol tests:', protocolTests);
-//       evalsSafe = protocolTests;
-    }
+  // Si no hay tests sugeridos, usar los por defecto
+  if (evalsSafe.length === 0) {
+    evalsSafe = DEFAULT_TESTS;
   }
   
   const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
     ? parsed.riesgo_legal 
     : 'bajo';
   
+  // Compatibilidad: si viene con estructura nueva, usar esos campos
+  // Si viene con estructura vieja (hallazgos_relevantes), mantener compatibilidad
   const result = {
     motivo_consulta: String(parsed?.motivo_consulta || ''),
-    hallazgos_relevantes: toArray(parsed?.hallazgos_relevantes),
+    // Nuevos campos
+    hallazgos_clinicos: toArray(parsed?.hallazgos_clinicos),
+    contexto_ocupacional: toArray(parsed?.contexto_ocupacional),
+    contexto_psicosocial: toArray(parsed?.contexto_psicosocial),
+    medicacion_actual: toArray(parsed?.medicacion_actual),
+    antecedentes_medicos: toArray(parsed?.antecedentes_medicos),
+    // Campo legacy para compatibilidad
+    hallazgos_relevantes: toArray(parsed?.hallazgos_relevantes || parsed?.hallazgos_clinicos),
     diagnosticos_probables: toArray(parsed?.diagnosticos_probables),
     red_flags: toArray(parsed?.red_flags),
-    yellow_flags: toArray(parsed?.yellow_flags),    evaluaciones_fisicas_sugeridas: evalsSafe.length > 0 ? evalsSafe : DEFAULT_TESTS,
+    yellow_flags: toArray(parsed?.yellow_flags),
+    evaluaciones_fisicas_sugeridas: evalsSafe,
     plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+    derivacion_recomendada: String(parsed?.derivacion_recomendada || ''),
+    pronostico_estimado: String(parsed?.pronostico_estimado || ''),
+    notas_seguridad: String(parsed?.notas_seguridad || ''),
     riesgo_legal: riesgoSafe
   };
   
