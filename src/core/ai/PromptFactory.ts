@@ -70,3 +70,12 @@ ${params.instrucciones}
 ${params.transcript}`.trim();
   }
 };
+
+// Agregar esta función
+export const addLanguageInstruction = (prompt: string): string => {
+  const lang = localStorage.getItem('preferredLanguage') || 'es';
+  const instruction = lang === 'en' 
+    ? 'IMPORTANT: Respond ENTIRELY in English. ' 
+    : 'IMPORTANTE: Responde COMPLETAMENTE en español. ';
+  return instruction + prompt;
+};

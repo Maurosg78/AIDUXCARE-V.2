@@ -1,4 +1,3 @@
-import { t } from "../utils/translations";
 import React, { useEffect, useState } from 'react';
 import { Mic, MicOff, Brain, AlertCircle, User, Calendar, FileText } from 'lucide-react';
 import { ClinicalAnalysisResults } from './ClinicalAnalysisResults';

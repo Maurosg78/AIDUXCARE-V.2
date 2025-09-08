@@ -1,3 +1,4 @@
+import { t } from "../utils/translations";
 import React, { useMemo } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
 import { EditableCheckbox } from './EditableCheckbox';
@@ -102,7 +103,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <h3 className="font-semibold text-gray-800">Alertas Médico-Legales</h3>
+            <h3 className="font-semibold text-gray-800">{t("Alertas Médico-Legales")}</h3>
           </div>
           <div className="flex gap-2">
             <button 
@@ -159,7 +160,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-800">Hallazgos Clínicos</h3>
+            <h3 className="font-semibold text-gray-800">{t("Hallazgos Clínicos")}</h3>
           </div>
           <div className="flex gap-2">
             <button 
