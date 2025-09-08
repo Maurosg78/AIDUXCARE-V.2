@@ -7,7 +7,6 @@ import { LanguageSelector } from "./components/LanguageSelector";
 
 function App() {
   return (
-    <div key={lang}>
     <AuthProvider>
       <SessionProvider>
         <LanguageSelector />
