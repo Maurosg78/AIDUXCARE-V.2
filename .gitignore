@@ -140,3 +140,8 @@ vertex-sa-key.json
 **/* 2.tsx
 **/*.backup.ts
 **/*.backup.tsx
+
+# ignore seed deps
+**/node_modules/
+/tools/seed/node_modules/
+vertex-sa-key.json
