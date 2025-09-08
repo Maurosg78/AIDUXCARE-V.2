@@ -1,42 +1,70 @@
-import { useState, useEffect } from 'react';
-import { useSession } from '../context/SessionContext';
+import { create } from 'zustand';
 
-export const useSharedWorkflowState = () => {
-  const { sessionData, updateSessionData } = useSession();
+interface SharedWorkflowState {
+  patient: any;
+  analysisResults: any;
+  selectedFindings: string[];
+  unselectedFindings: string[];
+  modifiedFindings: Record<string, any>;
+  physicalExamResults: any[];
+  suggestedTests: string[];
+  performedTests: string[];
+  skippedTests: string[];
+  soapNote: string | null;
   
-  // Estado compartido entre tabs
-  const [sharedState, setSharedState] = useState({
-    patient: null,
-    analysisResults: null,
-    selectedTests: [],
-    physicalExamResults: [],
-    soapNote: null
-  });
+  setPatient: (patient: any) => void;
+  setAnalysisResults: (results: any) => void;
+  updateSelectedFindings: (findings: string[]) => void;
+  updatePhysicalExamResults: (results: any[]) => void;
+  setSoapNote: (note: string) => void;
+  trackModifiedFinding: (id: string, modification: any) => void;
+  trackSkippedTest: (testName: string) => void;
+}
 
-  // Tab 1 -> Tab 2: Pasar tests seleccionados
-  const passTestsToEvaluation = (tests: any[]) => {
-    updateSessionData('tab2', { suggestedTests: tests });
-    setSharedState(prev => ({ ...prev, selectedTests: tests }));
-    console.log(`Pasando ${tests.length} tests a evaluación`);
-  };
-
-  // Tab 2 -> Tab 3: Pasar resultados de evaluación
-  const passResultsToSOAP = (results: any[]) => {
-    updateSessionData('tab2', { completedTests: results });
-    setSharedState(prev => ({ ...prev, physicalExamResults: results }));
-  };
-
-  // Tab 3: Guardar SOAP final
-  const saveSOAPNote = (soap: any) => {
-    updateSessionData('tab3', { soapNote: soap });
-    setSharedState(prev => ({ ...prev, soapNote: soap }));
-  };
-
-  return {
-    sharedState,
-    passTestsToEvaluation,
-    passResultsToSOAP,
-    saveSOAPNote,
-    sessionData
-  };
-};
+export const useSharedWorkflowState = create<SharedWorkflowState>((set) => ({
+  patient: null,
+  analysisResults: null,
+  selectedFindings: [],
+  unselectedFindings: [],
+  modifiedFindings: {},
+  physicalExamResults: [],
+  suggestedTests: [],
+  performedTests: [],
+  skippedTests: [],
+  soapNote: null,
+  
+  setPatient: (patient) => set({ patient }),
+  
+  setAnalysisResults: (results) => set({ 
+    analysisResults: results,
+    suggestedTests: results?.pruebas_recomendadas || []
+  }),
+  
+  updateSelectedFindings: (findings) => set((state) => ({
+    selectedFindings: findings,
+    unselectedFindings: state.analysisResults?.hallazgos_clinicos
+      ?.filter((h: any) => !findings.includes(h.id))
+      ?.map((h: any) => h.id) || []
+  })),
+  
+  updatePhysicalExamResults: (results) => set((state) => ({
+    physicalExamResults: results,
+    performedTests: results.map(r => r.testName),
+    skippedTests: state.suggestedTests.filter(
+      test => !results.find(r => r.testName === test)
+    )
+  })),
+  
+  setSoapNote: (note) => set({ soapNote: note }),
+  
+  trackModifiedFinding: (id, modification) => set((state) => ({
+    modifiedFindings: {
+      ...state.modifiedFindings,
+      [id]: modification
+    }
+  })),
+  
+  trackSkippedTest: (testName) => set((state) => ({
+    skippedTests: [...state.skippedTests, testName]
+  }))
+}));
