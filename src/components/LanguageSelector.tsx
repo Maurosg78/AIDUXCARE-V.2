@@ -5,10 +5,9 @@ export const LanguageSelector: React.FC = () => {
   const lang = getLanguage();
   return (
     <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-      <span style={{ fontSize:12, opacity:0.7 }}>{t('language.select','Language')}</span>
       <button
         type="button"
-        onClick={() => setLanguage('en')}
+        onClick={() => setLanguage('en', { reload: false })}
         aria-pressed={lang === 'en'}
         title="English"
         style={{
@@ -18,7 +17,7 @@ export const LanguageSelector: React.FC = () => {
       >🇨🇦 EN</button>
       <button
         type="button"
-        onClick={() => setLanguage('es')}
+        onClick={() => setLanguage('es', { reload: false })}
         aria-pressed={lang === 'es'}
         title="Español (España)"
         style={{

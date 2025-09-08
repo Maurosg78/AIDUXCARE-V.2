@@ -53,7 +53,7 @@ export function getLanguage(): Language {
   return nav.startsWith('es') ? 'es' : 'en';
 }
 
-export function setLanguage(lang: Language, { reload = true } = {}) {
+export function setLanguage(lang: Language, { reload = false } = {}) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEY, lang);
   window.dispatchEvent(new CustomEvent('language-change', { detail: lang }));
@@ -80,10 +80,10 @@ async function autoDetectOnce() {
       const data: any = await res.json();
       const country = String(data.country || data.country_code || '').toUpperCase();
       if (SPANISH_COUNTRIES.has(country)) {
-        setLanguage('es'); // recarga automática
+        setLanguage('es', { reload: false }); // recarga automática
         return;
       } else {
-        setLanguage('en'); // recarga automática
+        setLanguage('en', { reload: false }); // recarga automática
         return;
       }
     }
@@ -92,7 +92,7 @@ async function autoDetectOnce() {
   }
   // Fallback navegador
   const nav = (navigator.language || 'en').toLowerCase();
-  setLanguage(nav.startsWith('es') ? 'es' : 'en');
+  setLanguage(nav.startsWith('es') ? 'es' : 'en', { reload: false });
 }
 
 // Ejecuta autodetección al importar el módulo SOLO si no hay preferencia previa
