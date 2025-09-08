@@ -134,3 +134,9 @@ vertex-sa-key.json
 **/node_modules/
 /tools/seed/node_modules/
 vertex-sa-key.json
+
+# ignore accidental copies
+**/* 2.ts
+**/* 2.tsx
+**/*.backup.ts
+**/*.backup.tsx
