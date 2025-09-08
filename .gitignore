@@ -129,3 +129,7 @@ QUARANTINE_*/
 backup-*/*
 *.tsbuildinfo
 vertex-sa-key.json
+
+# editor/backup noise
+src/*backup*.*
+src/.*.ts*
