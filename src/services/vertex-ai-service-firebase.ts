@@ -1,4 +1,19 @@
 import { PromptFactory } from "../core/ai/PromptFactory-v3";
+const __getPreferredLanguage = (): 'en'|'es' => {
+  try {
+    const saved = localStorage.getItem('preferredLanguage');
+    if (saved === 'en' || saved === 'es') return saved;
+  } catch {}
+  const nav = (typeof navigator !== 'undefined' ? navigator.language : 'en').toLowerCase();
+  return nav.startsWith('es') ? 'es' : 'en';
+};
+const withLanguagePrefix = (body: string) => {
+  const lang = __getPreferredLanguage();
+  const prefix = lang === 'en'
+    ? 'RESPOND IN ENGLISH. KEEP A CLEAR, PROFESSIONAL TONE.'
+    : 'RESPONDE EN ESPAÑOL (ESPAÑA). TONO CLARO Y PROFESIONAL.';
+  return `${prefix}\n${body}`;
+};
 
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';

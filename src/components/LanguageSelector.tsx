@@ -1,34 +1,33 @@
 import React from 'react';
+import { getLanguage, setLanguage, t } from '@/utils/translations';
 
 export const LanguageSelector: React.FC = () => {
-  const [language, setLanguage] = React.useState(
-    localStorage.getItem('preferredLanguage') || 'es'
-  );
-
-  const handleChange = (lang: string) => {
-    localStorage.setItem('preferredLanguage', lang);
-    setLanguage(lang);
-    window.location.reload();
-  };
-
+  const lang = getLanguage();
   return (
-    <div className="absolute top-4 right-4 z-50 flex gap-1">
+    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+      <span style={{ fontSize:12, opacity:0.7 }}>{t('language.select','Language')}</span>
       <button
-        onClick={() => handleChange('en')}
-        className={`px-2 py-1 text-sm rounded ${
-          language === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-        }`}
-      >
-        🇨🇦 EN
-      </button>
+        type="button"
+        onClick={() => setLanguage('en')}
+        aria-pressed={lang === 'en'}
+        title="English"
+        style={{
+          border: lang === 'en' ? '2px solid #444' : '1px solid #ccc',
+          borderRadius: 8, padding: '4px 8px', background: 'white', cursor: 'pointer'
+        }}
+      >🇨🇦 EN</button>
       <button
-        onClick={() => handleChange('es')}
-        className={`px-2 py-1 text-sm rounded ${
-          language === 'es' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-        }`}
-      >
-        🇪🇸 ES
-      </button>
+        type="button"
+        onClick={() => setLanguage('es')}
+        aria-pressed={lang === 'es'}
+        title="Español (España)"
+        style={{
+          border: lang === 'es' ? '2px solid #444' : '1px solid #ccc',
+          borderRadius: 8, padding: '4px 8px', background: 'white', cursor: 'pointer'
+        }}
+      >🇪🇸 ES</button>
     </div>
   );
 };
+
+export default LanguageSelector;
