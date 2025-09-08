@@ -47,3 +47,9 @@ export class VertexAIServiceViaFirebase {
 }
 
 console.log("[OK] vertex-ai-service-firebase.ts integrated with PromptFactory");
+
+export const getLanguagePrompt = (language: 'en' | 'es' = 'en') => {
+  return language === 'en' 
+    ? "Respond in ENGLISH. " 
+    : "Responde en ESPAÑOL. ";
+};
