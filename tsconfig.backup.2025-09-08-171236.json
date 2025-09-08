@@ -8,7 +8,7 @@
       "DOM.Iterable"
     ],
     "jsx": "react-jsx",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -22,18 +22,10 @@
       "@/*": [
         "src/*"
       ]
-    },
-    "noImplicitAny": false,
-    "useUnknownInCatchVariables": false,
-    "types": [
-      "vitest/globals",
-      "node"
-    ]
+    }
   },
   "include": [
-    "src",
-    "vitest.d.ts",
-    "src/@types/**/*"
+    "src"
   ],
   "references": [
     {
@@ -44,18 +36,6 @@
     "**/*.backup.*",
     "src/*backup*.ts*",
     "src/.*.ts",
-    "src/.*.tsx",
-    "node_modules",
-    "dist",
-    "**/*.test.*",
-    "**/*.spec.*",
-    "**/__tests__/**",
-    "**/snapshots/**",
-    "src/pages/**",
-    "src/components/**",
-    "src/router/**",
-    "src/**/*.backup.*",
-    "src/*backup*.*",
-    "src/services/vertex-ai-service-update.ts"
+    "src/.*.tsx"
   ]
 }

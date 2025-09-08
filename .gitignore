@@ -133,3 +133,7 @@ vertex-sa-key.json
 # editor/backup noise
 src/*backup*.*
 src/.*.ts*
+
+# editor/backup noise
+src/*backup*.*
+src/.*.ts*
