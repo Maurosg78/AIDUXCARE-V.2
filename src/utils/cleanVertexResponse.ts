@@ -122,8 +122,8 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
     antecedentes_medicos: toArray(parsed?.antecedentes_medicos),
     // Campo legacy para compatibilidad
     diagnosticos_probables: toArray(parsed?.diagnosticos_probables),
-    red_flags: cleanFlags(toArray(parsed?.red_flags)),
-    yellow_flags: cleanFlags(toArray(parsed?.yellow_flags)),
+    red_flags: toArray(parsed?.red_flags),
+    yellow_flags: toArray(parsed?.yellow_flags),
     evaluaciones_fisicas_sugeridas: evalsSafe,
     plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
     derivacion_recomendada: String(parsed?.derivacion_recomendada || ''),
@@ -137,12 +137,3 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
 }
 
 export default normalizeVertexResponse;
-
-// Función helper para limpiar arrays de flags
-function cleanFlags(flags: any[]): string[] {
-  if (!Array.isArray(flags)) return [];
-  return flags.filter(f => 
-    typeof f === 'string' && 
-    !f.toLowerCase().includes('ninguna identificada')
-  );
-}

@@ -1,0 +1,40 @@
+[1mdiff --git a/src/core/ai/PromptFactory-v3.ts b/src/core/ai/PromptFactory-v3.ts[m
+[1mindex f42e5186..4920a21f 100644[m
+[1m--- a/src/core/ai/PromptFactory-v3.ts[m
+[1m+++ b/src/core/ai/PromptFactory-v3.ts[m
+[36m@@ -30,7 +30,6 @@[m [mJSON REQUERIDO:[m
+   "red_flags": [],[m
+   "yellow_flags": [],[m
+   "evaluaciones_fisicas_sugeridas": [[m
+[31m-    "Proporcionar MÍNIMO 3 tests específicos con S/E reales",[m
+     {[m
+       "test": "nombre del test",[m
+       "sensibilidad": 0.00,[m
+[1mdiff --git a/src/utils/cleanVertexResponse.ts b/src/utils/cleanVertexResponse.ts[m
+[1mindex ef8bfb49..bde5bbe7 100644[m
+[1m--- a/src/utils/cleanVertexResponse.ts[m
+[1m+++ b/src/utils/cleanVertexResponse.ts[m
+[36m@@ -122,8 +122,8 @@[m [mexport function normalizeVertexResponse(raw: any): ClinicalAnalysis {[m
+     antecedentes_medicos: toArray(parsed?.antecedentes_medicos),[m
+     // Campo legacy para compatibilidad[m
+     diagnosticos_probables: toArray(parsed?.diagnosticos_probables),[m
+[31m-    red_flags: cleanFlags(toArray(parsed?.red_flags)),[m
+[31m-    yellow_flags: cleanFlags(toArray(parsed?.yellow_flags)),[m
+[32m+[m[32m    red_flags: toArray(parsed?.red_flags),[m
+[32m+[m[32m    yellow_flags: toArray(parsed?.yellow_flags),[m
+     evaluaciones_fisicas_sugeridas: evalsSafe,[m
+     plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),[m
+     derivacion_recomendada: String(parsed?.derivacion_recomendada || ''),[m
+[36m@@ -137,12 +137,3 @@[m [mexport function normalizeVertexResponse(raw: any): ClinicalAnalysis {[m
+ }[m
+ [m
+ export default normalizeVertexResponse;[m
+[31m-[m
+[31m-// Función helper para limpiar arrays de flags[m
+[31m-function cleanFlags(flags: any[]): string[] {[m
+[31m-  if (!Array.isArray(flags)) return [];[m
+[31m-  return flags.filter(f => [m
+[31m-    typeof f === 'string' && [m
+[31m-    !f.toLowerCase().includes('ninguna identificada')[m
+[31m-  );[m
+[31m-}[m

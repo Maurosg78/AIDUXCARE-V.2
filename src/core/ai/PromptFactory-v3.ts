@@ -30,7 +30,6 @@ JSON REQUERIDO:
   "red_flags": [],
   "yellow_flags": [],
   "evaluaciones_fisicas_sugeridas": [
-    "Proporcionar MÍNIMO 3 tests específicos con S/E reales",
     {
       "test": "nombre del test",
       "sensibilidad": 0.00,
