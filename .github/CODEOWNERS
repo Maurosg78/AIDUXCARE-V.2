@@ -1,0 +1,18 @@
+# AiduxCare Clinical Intelligence - Code Ownership
+# Mauricio Sobarzo as technical lead
+
+# Core AI & Prompts
+/prompt-registry/**                @mauriciosobarzo
+/src/services/vertex-ai-**         @mauriciosobarzo
+/src/core/ai/**                    @mauriciosobarzo
+
+# Clinical Features
+/src/components/SOAPFlow/**        @mauriciosobarzo
+/src/components/PatientHistory/**  @mauriciosobarzo
+
+# Infrastructure & Security
+/firebase/**                        @mauriciosobarzo
+/.env*                             @mauriciosobarzo
+/config/**                         @mauriciosobarzo
+
+*                                  @mauriciosobarzo

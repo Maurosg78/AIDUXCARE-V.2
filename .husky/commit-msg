@@ -14,3 +14,4 @@ if ! grep -qi "COMPLIANCE_CHECKED" "$msg_file"; then
 fi
 
 echo "✅ commit-msg OK"
+npx --no -- commitlint --edit ${1}

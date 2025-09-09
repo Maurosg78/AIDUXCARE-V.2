@@ -21,3 +21,4 @@ fi
 npm run -s build || { echo "❌ Build de producción falló"; exit 1; }
 
 echo "✅ pre-push OK"
+npm run test:ci

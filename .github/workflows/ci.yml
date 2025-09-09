@@ -1,22 +1,37 @@
-name: CI
+name: AiduxCare CI
+
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, staging, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, staging]
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci --prefer-offline --no-audit --no-fund
-      # TEMPORARILY DISABLED FOR DEMO
-      # - run: npm run typecheck
-      - run: npm run build
-      # - run: npm run test
-      - name: "Build successful for demo"
-        run: echo "✅ Build passed - System ready for demo"
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+    
+    - name: Lint
+      run: npm run lint
+      continue-on-error: true
+    
+    - name: TypeScript check
+      run: npm run typecheck
+    
+    - name: Run tests
+      run: npm run test -- --run
+      continue-on-error: true
+    
+    - name: Build
+      run: npm run build

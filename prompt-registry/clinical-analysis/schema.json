@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "motivo_consulta",
+    "diagnosticos_probables",
+    "red_flags",
+    "evaluaciones_fisicas_sugeridas",
+    "plan_tratamiento"
+  ],
+  "properties": {
+    "motivo_consulta": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200
+    },
+    "diagnosticos_probables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["nombre", "probabilidad", "justificacion"],
+        "properties": {
+          "nombre": {"type": "string"},
+          "probabilidad": {"enum": ["alta", "media", "baja"]},
+          "justificacion": {"type": "string"}
+        }
+      }
+    },
+    "red_flags": {
+      "type": "array"
+    },
+    "evaluaciones_fisicas_sugeridas": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["test", "sensibilidad", "especificidad"],
+        "properties": {
+          "test": {"type": "string"},
+          "sensibilidad": {"type": "number", "minimum": 0, "maximum": 1},
+          "especificidad": {"type": "number", "minimum": 0, "maximum": 1},
+          "tecnica": {"type": "string"},
+          "interpretacion": {"type": "string"}
+        }
+      }
+    },
+    "plan_tratamiento": {
+      "type": "object",
+      "required": ["inmediato", "corto_plazo", "seguimiento"]
+    }
+  }
+}
