@@ -1,0 +1,169 @@
+import { useState, useCallback } from 'react';
+import { PromptFactory } from '../core/ai/PromptFactory-v3';
+import normalizeVertexResponse from '../utils/cleanVertexResponse';
+import { logger } from '../core/monitoring/logger';
+import { callVertexAI } from '../services/vertex-ai-service-firebase';
+import { sanityCheck } from '../utils/clinicalValidators';
+
+export interface ClinicalAnalysis {
+  motivo_consulta: string;
+  hallazgos_clinicos: string[];
+  hallazgos_relevantes: string[];
+  contexto_ocupacional: string[];
+  contexto_psicosocial: string[];
+  medicacion_actual: string[];
+  antecedentes_medicos: string[];
+  diagnosticos_probables: string[];
+  diagnosticos_diferenciales: string[];
+  red_flags: any[];
+  yellow_flags: string[];
+  evaluaciones_fisicas_sugeridas: any[];
+  plan_tratamiento: {
+    inmediato: string[];
+    corto_plazo: string[];
+    largo_plazo: string[];
+    seguimiento: string;
+  };
+  recomendaciones: string[];
+  educacion_paciente: string[];
+  success: boolean;
+  timestamp: string;
+  _warnings?: string[];
+}
+
+export function useNiagaraProcessor() {
+  const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const processText = useCallback(async (transcript: string): Promise<ClinicalAnalysis | null> => {
+    if (!transcript?.trim()) {
+      setError('No hay texto para procesar');
+      return null;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    
+    const traceId = `clinical-${Date.now()}`;
+    console.log('[Niagara] Iniciando procesamiento:', { traceId, length: transcript.length });
+    
+    try {
+      // Crear prompt con factory
+      const prompt = PromptFactory.create({
+        transcript,
+        specialty: 'fisioterapia',
+        region: 'es'
+      });
+      
+      console.log('[Niagara] Prompt creado, llamando a Vertex AI...');
+      
+      // Llamar a Vertex con contrato estándar
+      const { text, vertexRaw, model, location } = await callVertexAI(prompt);
+      
+      console.log('[Niagara] Response text:', text?.slice(0, 240));
+      
+      // Normalizar respuesta - pasar objeto con .text
+      const normalized = normalizeVertexResponse({
+        text,
+        vertexRaw,
+        model,
+        location
+      });
+      
+      // Validar con sanityCheck
+      const issues = sanityCheck(normalized, transcript);
+      if (issues.length > 0) {
+        console.warn('[VALIDACIÓN CLÍNICA] ⚠️ Inconsistencias detectadas:', issues);
+        console.warn('[VALIDACIÓN] Esto sugiere que el modelo no está procesando correctamente el transcript');
+        // Añadir warnings al resultado
+        normalized._warnings = issues;
+      }
+      
+      // Asegurar estructura válida
+      const finalResult: ClinicalAnalysis = {
+        ...normalized,
+        success: true,
+        timestamp: normalized.timestamp || new Date().toISOString()
+      };
+      
+      console.log('[Niagara] Procesamiento exitoso:', {
+        hasContent: !!finalResult.motivo_consulta,
+        testsCount: finalResult.evaluaciones_fisicas_sugeridas?.length,
+        warnings: finalResult._warnings?.length || 0
+      });
+      
+      logger?.info('niagara.process.success', { traceId, model });
+      
+      setNiagaraResults(finalResult);
+      setIsProcessing(false);
+      
+      return finalResult;
+      
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('[Niagara] Error:', errorMsg);
+      
+      logger?.error('niagara.process.error', err as Error, { traceId });
+      
+      setError(errorMsg);
+      setIsProcessing(false);
+      
+      // Devolver estructura vacía pero válida
+      const emptyResult: ClinicalAnalysis = normalizeVertexResponse({ text: '{}' });
+      setNiagaraResults(emptyResult);
+      
+      return emptyResult;
+    }
+  }, []);
+
+  const generateSOAPNote = useCallback(async (): Promise<string | null> => {
+    if (!niagaraResults) {
+      setError('No hay resultados de análisis para generar SOAP');
+      return null;
+    }
+
+    try {
+      const soap = `NOTA SOAP - ${new Date().toLocaleDateString('es-ES')}
+
+S (SUBJETIVO):
+${niagaraResults.motivo_consulta}
+
+Hallazgos relevantes:
+${niagaraResults.hallazgos_relevantes.map(h => `• ${h}`).join('\n')}
+
+O (OBJETIVO):
+Evaluaciones sugeridas:
+${niagaraResults.evaluaciones_fisicas_sugeridas.map(e => 
+  `• ${e.test} (S: ${e.sensibilidad}, E: ${e.especificidad})`
+).join('\n')}
+
+A (ANÁLISIS):
+Diagnósticos probables:
+${niagaraResults.diagnosticos_probables.map(d => `• ${d}`).join('\n')}
+
+P (PLAN):
+Inmediato:
+${niagaraResults.plan_tratamiento.inmediato.map(p => `• ${p}`).join('\n')}
+
+Seguimiento: ${niagaraResults.plan_tratamiento.seguimiento}`;
+
+      return soap;
+    } catch (err) {
+      console.error('[Niagara] Error generando SOAP:', err);
+      setError('Error al generar nota SOAP');
+      return null;
+    }
+  }, [niagaraResults]);
+
+  return {
+    processText,
+    generateSOAPNote,
+    niagaraResults,
+    soapNote: null,
+    isProcessing,
+    error
+  };
+}
+
+export default useNiagaraProcessor;

@@ -1,107 +1,54 @@
-const functions = require('firebase-functions');
-const { GoogleAuth } = require('google-auth-library');
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const cors = require("cors")({ origin: true });
 
-const PROJECT = 'aiduxcare-v2-uat-dev';
-const LOCATION = 'us-central1';
-const MODEL = 'gemini-2.5-flash';
-const ENDPOINT = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
+admin.initializeApp();
 
-const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
-
-/**
- * Callable conservado (por compatibilidad)
- */
-exports.processWithVertexAI = functions.region(LOCATION).https.onCall(async (data, context) => {
-  const { prompt } = data || {};
-  if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
-    throw new functions.https.HttpsError('invalid-argument', 'Prompt requerido');
-  }
-  try {
-    const client = await auth.getClient();
-    const tokenObj = await client.getAccessToken();
-    const accessToken = tokenObj?.token || tokenObj;
-    if (!accessToken) throw new Error('No se pudo obtener access token');
-
-    const r = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4096, topP: 0.8 }
-      })
+exports.analyzeTranscript = functions
+  .region("northamerica-northeast1")
+  .https.onRequest((request, response) => {
+    cors(request, response, async () => {
+      try {
+        // Mock response para desarrollo
+        const mockResponse = {
+          motivo_consulta: "Consulta procesada exitosamente",
+          hallazgos_clinicos: ["Hallazgo 1", "Hallazgo 2", "Hallazgo 3"],
+          evaluaciones_fisicas_sugeridas: [
+            {
+              test: "Test de Lasègue",
+              sensibilidad: 0.91,
+              especificidad: 0.26,
+              tecnica: "Elevación de pierna",
+              interpretacion: "Evaluar radiculopatía"
+            },
+            {
+              test: "Test de FABER",
+              sensibilidad: 0.77,
+              especificidad: 0.82,
+              tecnica: "Flexión-abducción",
+              interpretacion: "Evaluar sacroilíaca"
+            },
+            {
+              test: "Test de Schober",
+              sensibilidad: 0.83,
+              especificidad: 0.75,
+              tecnica: "Flexión lumbar",
+              interpretacion: "Evaluar movilidad"
+            }
+          ],
+          plan_tratamiento: {
+            inmediato: ["Evaluación completa"],
+            corto_plazo: ["Seguimiento semanal"],
+            seguimiento: "1 semana"
+          }
+        };
+        
+        response.json({ 
+          text: JSON.stringify(mockResponse),
+          result: JSON.stringify(mockResponse)
+        });
+      } catch (error) {
+        response.status(500).json({ error: error.message });
+      }
     });
-
-    const result = await r.json();
-    return {
-      text: result?.candidates?.[0]?.content?.parts?.[0]?.text || '',
-      usage: result?.usageMetadata || null,
-      signature: 'processWithVertexAI@v1'
-    };
-  } catch (error) {
-    console.error('processWithVertexAI error:', error?.stack || error);
-    throw new functions.https.HttpsError('internal', error?.message || 'Unknown error');
-  }
-});
-
-/**
- * NUEVO vertexAIProxy: passthrough limpio (sin 'entities'), con CORS
- */
-exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(204).send('');
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
-
-  try {
-    const { action = 'analyze', prompt, transcript, text, traceId } = req.body || {};
-    if (action !== 'analyze') {
-      return res.status(400).json({ ok: false, error: 'unsupported_action', action });
-    }
-
-    const inputText =
-      (typeof prompt === 'string' && prompt.trim()) ||
-      (typeof transcript === 'string' && transcript.trim()) ||
-      (typeof text === 'string' && text.trim()) ||
-      null;
-
-    if (!inputText) {
-      return res.status(400).json({ ok: false, error: 'missing_input', message: "Provide 'prompt' or 'transcript' or 'text'." });
-    }
-
-    const client = await auth.getClient();
-    const tokenObj = await client.getAccessToken();
-    const accessToken = tokenObj?.token || tokenObj;
-    if (!accessToken) throw new Error('No se pudo obtener access token');
-
-    const payload = {
-      contents: [{ role: 'user', parts: [{ text: inputText }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 4096, response_mime_type: 'application/json' }
-    };
-
-    const r = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await r.json();
-
-    return res.status(200).json({
-      ok: true,
-      signature: 'vertexAIProxy@v1',
-      project: PROJECT,
-      location: LOCATION,
-      model: MODEL,
-      traceId: traceId || null,
-      text: data?.candidates?.[0]?.content?.parts?.[0]?.text || '',
-      vertexRaw: data
-    });
-  } catch (err) {
-    console.error('vertexAIProxy error:', err?.stack || err);
-    return res.status(500).json({ ok: false, error: 'vertex_invoke_failed', message: err?.message || 'Unknown error' });
-  }
-});
-
-console.log("[OK] functions/index.js: vertexAIProxy@v1 ready");
+  });

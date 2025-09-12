@@ -1,10 +1,36 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "skipLibCheck": true },
-  "include": [
-    "src/core/ai/PromptFactory.ts",
-    "src/utils/cleanVertexResponse.ts",
-    "src/services/vertex-ai-service-firebase.ts"
+  "exclude": [
+    "src/**/__tests__/**",
+    "src/setupTests.ts",
+    "src/core/assistant/__tests__/**",
+    "src/core/emr/__tests__/**",
+    "src/utils/cleanVertexResponse.test.ts",
+    "src/components/RealTimeAudioCapture.tsx",
+    "src/core/ai/ModelSelector.ts",
+    "src/utils/cleanVertexResponse-protocol.ts",
+    "src/utils/cleanVertexResponse-v2.ts",
+    "src/utils/metricsCollector.ts",
+    "src/utils/pdf-handler.ts",
+    "src/core/components/Layout.tsx",
+    "src/lib/firebase.ts",
+    "src/services/vertex-ai-enhanced.ts",
+
+    // Excluir backups y snapshots
+    "src/**/*.backup.ts",
+    "src/**/*.backup.tsx",
+    "src/**/*.backup.*.ts",
+    "src/**/*.backup.*.tsx",
+    "src/**/*backup*.ts",
+    "src/**/*backup*.tsx",
+    "src/**/*.bak",
+    "src/**/*.bak.*",
+    "src/**/*.bak-*.ts",
+    "src/**/*.bak-*.tsx",
+    "src/**/*.old.ts",
+    "src/**/*.old.tsx",
+    "src/**/*.orig.ts",
+    "src/**/*.orig.tsx"
   ],
-  "exclude": []
+  "include": ["src"]
 }

@@ -377,7 +377,7 @@ export class OrganizationService {
 
       const rolePermissions = ORGANIZATION_ROLES[member.role]?.permissions || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return rolePermissions.includes(requiredPermission as any);
+      return (rolePermissions as readonly string[]).includes(String(requiredPermission));
     } catch (error) {
       console.error('Error checking permission:', error);
       return false;

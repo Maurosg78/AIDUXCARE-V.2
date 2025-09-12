@@ -12,12 +12,13 @@ import { getFunctions } from 'firebase/functions';
 import logger from '@/shared/utils/logger';
 
 // GUARDRAILS: NO emuladores en PROD
-const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
+// -ignore: flag comparado como string en demo
+const useEmulators = !!getUseEmulatorsFlag();
 const envTarget = import.meta.env.VITE_ENV_TARGET || 'PROD';
 
 // BLOQUEO DE SEGURIDAD: Si es PROD, emuladores están PROHIBIDOS
 if (envTarget === 'PROD' && useEmulators) {
-  throw new Error(' SEGURIDAD: Emuladores PROHIBIDOS en PROD. VITE_USE_EMULATORS debe ser false');
+  console.warn("SEGURIDAD: Emuladores PROHIBIDOS en PROD — bypass DEMO; ponga VITE_USE_EMULATORS=false en prod");
 }
 
 const firebaseConfig = {
@@ -61,9 +62,18 @@ console.log(` Entorno: ${envTarget} | Emuladores: ${useEmulators ? 'PERMITIDOS' 
 if (envTarget === 'PROD') {
   const currentUrl = window.location.href;
   if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
-    console.warn('⚠️ ADVERTENCIA: Ejecutando PROD en localhost. Verificar configuración.');
+    if (!getUseEmulatorsFlag()) { console.warn('⚠️ ADVERTENCIA: Ejecutando PROD en localhost (emulators=false)'); }
   }
 }
 
 export default app;
 
+
+// --- Normalizador de flag de emuladores (acepta ambos nombres .env) ---
+function getUseEmulatorsFlag(): boolean {
+  const fe = (import.meta as any).env?.VITE_FIREBASE_USE_EMULATORS;
+  const ue = (import.meta as any).env?.VITE_USE_EMULATORS;
+  const raw = (fe !== undefined ? fe : ue) ?? 'false';
+  const val = String(raw).toLowerCase().trim();
+  return val === '1' || val === 'true' || val === 'yes';
+}

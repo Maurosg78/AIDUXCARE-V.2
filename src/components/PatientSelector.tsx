@@ -1,52 +1,38 @@
 import React from 'react';
-import { PatientData } from '../types/patient';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getTranslation } from '../i18n/translations';
 
 interface PatientSelectorProps {
-  onPatientSelect: (patient: PatientData | null) => void;
-  selectedPatient: PatientData | null;
+  patients: any[];
+  selectedPatient: any;
+  onSelectPatient: (patient: any) => void;
 }
 
-export const PatientSelector: React.FC<PatientSelectorProps> = ({ 
-  onPatientSelect, 
-  selectedPatient 
+export const PatientSelector: React.FC<PatientSelectorProps> = ({
+  patients,
+  selectedPatient,
+  onSelectPatient
 }) => {
-  // Pacientes de demo
-  const demoPatients: PatientData[] = [
-    {
-      id: '1',
-      nombre: 'Juan',
-      apellidos: 'Pérez García',
-      fechaNacimiento: '1980-05-15',
-      numeroHistoria: 'HC-001'
-    },
-    {
-      id: '2',
-      nombre: 'María',
-      apellidos: 'López Martínez',
-      fechaNacimiento: '1975-08-22',
-      numeroHistoria: 'HC-002'
-    }
-  ];
-
+  const { language } = useLanguage();
+  const t = getTranslation(language).workflow.patient;
+  
   return (
-    <div className="mb-6 p-4 bg-white rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-3">Seleccionar Paciente</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {demoPatients.map(patient => (
+    <div>
+      <h3 className="text-lg font-medium mb-3">{t.select}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {patients.map(patient => (
           <button
             key={patient.id}
-            onClick={() => onPatientSelect(patient)}
-            className={`p-4 border rounded-lg text-left transition-colors ${
+            onClick={() => onSelectPatient(patient)}
+            className={`p-4 border-2 rounded-lg transition-all ${
               selectedPatient?.id === patient.id
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-300'
+                : 'border-gray-300 hover:border-gray-400'
             }`}
           >
-            <div className="font-medium">
-              {patient.nombre} {patient.apellidos}
-            </div>
+            <div className="font-medium">{patient.name}</div>
             <div className="text-sm text-gray-600">
-              HC: {patient.numeroHistoria}
+              {t.recordNumber}: {patient.recordNumber}
             </div>
           </button>
         ))}

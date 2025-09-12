@@ -1,98 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Upload, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { PatientSelector } from './PatientSelector';
+import { TranscriptionInput } from './TranscriptionInput';
 import { ClinicalAnalysisResults } from './ClinicalAnalysisResults';
-import { TranscriptionArea } from './TranscriptionArea';
+import { Mic, Upload, Camera } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getTranslation } from '../i18n/translations';
 
 interface WorkflowAnalysisTabProps {
+  patients: any[];
   selectedPatient: any;
+  onSelectPatient: (patient: any) => void;
   transcript: string;
   setTranscript: (text: string) => void;
   isRecording: boolean;
-  startRecording: () => Promise<void>;
-  stopRecording: () => void;
-  onAnalyze: () => Promise<void>;
-  niagaraResults: any;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
+  onAnalyze: () => void;
   isProcessing: boolean;
+  analysisResults: any;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
-  physicalExamResults: any[];
-  handleExamResultsChange: (results: any[]) => void;
-  onContinue?: () => void;
 }
 
 export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
+  patients,
   selectedPatient,
+  onSelectPatient,
   transcript,
   setTranscript,
   isRecording,
-  startRecording,
-  stopRecording,
+  onStartRecording,
+  onStopRecording,
   onAnalyze,
-  niagaraResults,
   isProcessing,
+  analysisResults,
   selectedIds,
   onSelectionChange,
-  physicalExamResults,
-  handleExamResultsChange,
-  onContinue
 }) => {
-  const [recordingTime, setRecordingTime] = useState('00:00');
-
-  const handleAnalyzeClick = async () => {
-    console.log('Analizando con IA...', { transcript, selectedPatient });
-    if (transcript && selectedPatient) {
-      await onAnalyze();
-    } else {
-      alert('Por favor, ingrese una transcripción antes de analizar');
+  const { language } = useLanguage();
+  
+  // Textos traducidos para los botones
+  const buttonTexts = {
+    es: {
+      record: 'Grabar Audio',
+      stop: 'Detener',
+      upload: 'Subir Archivo',
+      photo: 'Tomar Foto'
+    },
+    en: {
+      record: 'Record Audio',
+      stop: 'Stop',
+      upload: 'Upload File',
+      photo: 'Take Photo'
     }
   };
-
-  const handleRecordToggle = async () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      await startRecording();
-    }
-  };
+  
+  const t = buttonTexts[language];
 
   return (
     <div className="space-y-6">
-      <div className="border rounded-lg p-4">
-        <h3 className="font-semibold mb-4">Contenido de la Consulta</h3>
-        <TranscriptionArea
+      {/* Patient Selector */}
+      <PatientSelector
+        patients={patients}
+        selectedPatient={selectedPatient}
+        onSelectPatient={onSelectPatient}
+      />
+
+      {/* Transcription Input */}
+      <div>
+        <TranscriptionInput
           transcript={transcript}
           setTranscript={setTranscript}
-          isRecording={isRecording}
-          startRecording={handleRecordToggle}
-          stopRecording={stopRecording}
-          recordingTime={recordingTime}
-          isTranscribing={false}
-          onAnalyze={handleAnalyzeClick}
-          isAnalyzing={isProcessing}
         />
+        
+        {/* Recording Controls - UN SOLO SET DE BOTONES */}
+        <div className="flex gap-3 mt-4">
+          <button
+            onClick={isRecording ? onStopRecording : onStartRecording}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              isRecording 
+                ? 'bg-red-500 text-white hover:bg-red-600' 
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
+          >
+            <Mic className="w-4 h-4" />
+            {isRecording ? t.stop : t.record}
+          </button>
+          
+          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <Upload className="w-4 h-4" />
+            {t.upload}
+          </button>
+          
+          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <Camera className="w-4 h-4" />
+            {t.photo}
+          </button>
+        </div>
       </div>
 
-      {niagaraResults && (
-        <div className="border rounded-lg p-4">
-          <h3 className="font-semibold mb-4">Resultados del Análisis</h3>
-          <ClinicalAnalysisResults
-            results={niagaraResults}
-            onSelectionChange={onSelectionChange}
-            selectedIds={selectedIds}
-            onExamResultsChange={handleExamResultsChange}
-          />
-          
-          {onContinue && selectedIds.length > 0 && (
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={onContinue}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Continuar a Evaluación Física →
-              </button>
-            </div>
-          )}
-        </div>
+      {/* Analysis Results */}
+      {analysisResults && (
+        <ClinicalAnalysisResults
+          analysisData={analysisResults}
+          selectedIds={selectedIds}
+          onSelectionChange={onSelectionChange}
+        />
       )}
     </div>
   );

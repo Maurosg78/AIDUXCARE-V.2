@@ -1,0 +1,33 @@
+// NO MOCK - Sistema real únicamente
+export async function callVertexAI(prompt: string): Promise<{ text: string; vertexRaw?: any }> {
+  const useMock = import.meta.env.VITE_USE_MOCK_AI === 'true';
+  if (useMock) throw new Error('Mock disabled for production - configure real AI');
+
+  // Por ahora usar Firebase Functions hasta configurar proxy
+  const endpoint = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/analyzeTranscript';
+  
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, timestamp: Date.now() })
+    }).then(r => r.json());
+
+    // Normalización defensiva
+    const text =
+      (typeof res?.text === 'string' && res.text) ||
+      (typeof res?.result === 'string' && res.result) ||
+      res?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      '';
+
+    if (!text) throw new Error('VertexStd: empty text from AI service');
+
+    console.log('[Vertex REAL] model=%s location=%s len=%d', res?.model || 'gemini', res?.location || 'ca', text.length);
+    return { text, vertexRaw: res };
+  } catch (error) {
+    console.error('[Vertex] Error real:', error);
+    throw new Error('AI service unavailable - NO MOCK ALLOWED');
+  }
+}
+
+export default callVertexAI;

@@ -1,50 +1,52 @@
-import { useState } from 'react';
-import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
-import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
+import { useState, useCallback } from 'react';
+import { callVertexAI } from '../services/vertex-ai-service-firebase';
+import { PromptVersions } from '../core/prompts/PromptVersions';
+import { ClinicalEvaluationMatrix } from '../core/prompts/EvaluationMatrix';
+import { PromptTracker } from '../core/prompts/PromptTracker';
+import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
+import { ResponseValidator } from '../utils/responseValidator';
 
 export const useNiagaraProcessor = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(null);
-  const [soapNote, setSoapNote] = useState<string | null>(null);
-  
-  const processText = async (text: string) => {
-    if (!text?.trim()) return null;
-    setIsAnalyzing(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
+
+  const processTranscript = useCallback(async (transcript: string) => {
+    if (!transcript.trim()) return null;
+    
+    setIsProcessing(true);
     try {
-      const response = await VertexAIServiceViaFirebase.processWithNiagara(text);
-      console.log("Response from Vertex:", response);
-      console.log("Response text:", response?.text);
-      const cleaned = normalizeVertexResponse(response);
-      console.log("Cleaned response:", cleaned);
-      setNiagaraResults(cleaned);
-      return cleaned;
+      const prompt = PromptVersions.getPrompt('v3_structured', transcript, 'en');
+      const rawResponse = await callVertexAI(prompt);
+      const normalizedResponse = normalizeVertexResponse(rawResponse);
+      
+      // Validar y limpiar la respuesta
+      const cleanedResponse = ResponseValidator.validateAndClean(normalizedResponse);
+      
+      const evaluation = ClinicalEvaluationMatrix.evaluate(cleanedResponse, transcript);
+      setEvaluationScore(evaluation.score);
+      
+      PromptTracker.saveAnalysis({
+        timestamp: Date.now(),
+        transcript: transcript.substring(0, 200),
+        response: cleanedResponse,
+        score: evaluation.score,
+        version: 'v3_structured'
+      });
+      
+      console.log(`✅ Análisis completado - Score: ${evaluation.score}/100`);
+      
+      return cleanedResponse;
     } catch (error) {
-      console.error('Error procesando con Niagara:', error);
+      console.error('[ERROR]:', error);
       return null;
     } finally {
-      setIsAnalyzing(false);
+      setIsProcessing(false);
     }
-  };
-  
-  const generateSOAPNote = async () => {
-    if (!niagaraResults) return null;
-    const s = niagaraResults;
-    const soap = `SOAP Note
-S: ${s.motivo_consulta || 'N/A'}
-O: Hallazgos: ${s.hallazgos_relevantes?.join(', ') || 'N/A'}
-A: ${s.diagnosticos_probables?.join(', ') || 'N/A'}
-P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
-    setSoapNote(soap);
-    return soap;
-  };
-  
+  }, []);
+
   return {
-    processText,
-    generateSOAPNote,
-    niagaraResults,
-    soapNote,
-    isProcessing: isAnalyzing
+    processTranscript,
+    isProcessing,
+    evaluationScore
   };
 };
-
-console.log("[OK] useNiagaraProcessor.ts integrated");

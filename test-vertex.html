@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Vertex AI</title>
+</head>
+<body>
+    <h1>Test Vertex AI Proxy</h1>
+    <button onclick="testVertex()">Test con Prompt Clínico</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testVertex() {
+            const prompt = `Eres un asistente clínico especializado. Analiza el siguiente caso:
+            
+            Paciente de 45 años con dolor lumbar de 3 semanas de evolución. 
+            Dolor que empeora al estar sentado. 
+            Trabaja en oficina 8 horas al día.
+            
+            Genera un análisis en formato JSON con los siguientes campos:
+            - motivo_consulta
+            - hallazgos_clinicos (array)
+            - diagnosticos_probables (array)
+            - plan_tratamiento (objeto con: inmediato, corto_plazo, largo_plazo, seguimiento)
+            
+            Responde SOLO con el JSON, sin texto adicional.`;
+            
+            try {
+                const response = await fetch('https://us-central1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                
+                // Parsear el texto para ver si es JSON válido
+                try {
+                    const parsed = JSON.parse(data.text);
+                    console.log('Parsed successfully:', parsed);
+                } catch (e) {
+                    console.error('Failed to parse text as JSON:', e);
+                }
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

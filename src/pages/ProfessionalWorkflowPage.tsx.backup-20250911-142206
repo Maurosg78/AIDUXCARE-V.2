@@ -1,0 +1,140 @@
+import React, { useState } from 'react';
+import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
+import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
+import { SOAPReportTab } from '../components/SOAPReportTab';
+import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
+import { useTranscription } from '../hooks/useTranscription';
+import { useLanguage } from '../contexts/LanguageContext';
+
+const ProfessionalWorkflowPage: React.FC = () => {
+  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState<'analysis' | 'physical' | 'soap'>('analysis');
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [transcript, setTranscript] = useState('');
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [soapNote, setSoapNote] = useState<any>(null);
+  
+  const { processTranscript, isProcessing, evaluationScore } = useNiagaraProcessor();
+  const { startRecording, stopRecording, isRecording } = useTranscription(setTranscript);
+
+  const mockPatients = [
+    { id: '1', name: 'Juan Pérez García', recordNumber: '1' },
+    { id: '2', name: 'María López Martínez', recordNumber: '2' }
+  ];
+
+  const texts = {
+    en: {
+      title: 'Clinical Workflow',
+      analysis: 'Analysis',
+      physical: 'Physical Evaluation (Optional)',
+      soap: 'SOAP'
+    },
+    es: {
+      title: 'Flujo de Trabajo Clínico',
+      analysis: 'Análisis',
+      physical: 'Evaluación Física (Opcional)',
+      soap: 'SOAP'
+    }
+  };
+  
+  const t = texts[language];
+
+  const handleAnalyze = async () => {
+    const results = await processTranscript(transcript);
+    if (results) {
+      setAnalysisResults(results);
+    }
+  };
+
+  const handleGenerateSOAP = () => {
+    setSoapNote({
+      subjective: 'Patient reports...',
+      objective: 'Physical examination reveals...',
+      assessment: 'Clinical impression...',
+      plan: 'Treatment plan...'
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-8">{t.title}</h1>
+        
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b">
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'analysis'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span className="mr-2">1.</span>
+            {t.analysis}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('physical')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'physical'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span className="mr-2">2.</span>
+            {t.physical}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('soap')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'soap'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span className="mr-2">3.</span>
+            {t.soap}
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          {activeTab === 'analysis' && (
+            <WorkflowAnalysisTab
+              patients={mockPatients}
+              selectedPatient={selectedPatient}
+              onSelectPatient={setSelectedPatient}
+              transcript={transcript}
+              setTranscript={setTranscript}
+              isRecording={isRecording}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
+              onAnalyze={handleAnalyze}
+              isProcessing={isProcessing}
+              analysisResults={analysisResults}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+            />
+          )}
+          
+          {activeTab === 'physical' && (
+            <PhysicalEvaluationTab />
+          )}
+          
+          {activeTab === 'soap' && (
+            <SOAPReportTab
+              onGenerateSOAP={handleGenerateSOAP}
+              soapNote={soapNote}
+              isGenerating={isProcessing}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfessionalWorkflowPage;

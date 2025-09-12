@@ -1,0 +1,81 @@
+import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
+import React from 'react';
+import { AnalysisResults } from './analysis/AnalysisResults';
+import { Spinner } from "../shared/ui/Spinner";
+
+interface WorkflowAnalysisTabProps {
+  selectedPatient: any;
+  transcript: string;
+  setTranscript: (text: string) => void;
+  isRecording: boolean;
+  startRecording: () => Promise<void>;
+  stopRecording: () => void;
+  onAnalyze: () => Promise<void>;
+  niagaraResults: any;
+  isProcessing: boolean;
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+  physicalExamResults: any[];
+  handleExamResultsChange: (results: any[]) => void;
+  onContinue?: () => void;
+}
+
+export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
+  transcript,
+  setTranscript,
+  isRecording,
+  startRecording,
+  stopRecording,
+  onAnalyze,
+  niagaraResults,
+  isProcessing,
+  onContinue
+}) => {
+  const handleAnalyze = async () => {
+    if (!transcript?.trim() || isProcessing) return;
+    await onAnalyze();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="border rounded-lg p-4">
+        <h3 className="font-semibold mb-4">Contenido de la Consulta</h3>
+        <textarea
+          value={transcript}
+          onChange={(e) => setTranscript(e.target.value)}
+          className="w-full h-32 p-3 border rounded-lg"
+          placeholder="Escriba o grabe la consulta..."
+        />
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`px-4 py-2 rounded ${isRecording ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}`}
+          >
+            {isRecording ? 'Detener' : 'Grabar'}
+          </button>
+          <button
+            onClick={handleAnalyze}
+            disabled={!transcript.trim() || isProcessing}
+            className="px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50"
+          >
+            Analizar
+          </button>
+        </div>
+      </div>
+
+      {isProcessing && (
+        {isProcessing && <Spinner text="Analizando transcripción clínica..." size="md" />}
+      )}
+      
+      {!isProcessing && niagaraResults && (
+        <AnalysisResults
+          results={niagaraResults}
+          onSelectFindings={() => {}}
+          selectedFindings={[]}
+        />
+      )}
+    </div>
+  );
+};
+
+export default WorkflowAnalysisTab;

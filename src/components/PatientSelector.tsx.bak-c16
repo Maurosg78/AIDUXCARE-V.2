@@ -1,0 +1,56 @@
+import React from 'react';
+import { PatientData } from '../types/patient';
+
+interface PatientSelectorProps {
+  onPatientSelect: (patient: PatientData | null) => void;
+  selectedPatient: PatientData | null;
+}
+
+export const PatientSelector: React.FC<PatientSelectorProps> = ({ 
+  onPatientSelect, 
+  selectedPatient 
+}) => {
+  // Pacientes de demo
+  const demoPatients: PatientData[] = [
+    {
+      id: '1',
+      nombre: 'Juan',
+      apellidos: 'Pérez García',
+      fechaNacimiento: '1980-05-15',
+      numeroHistoria: 'HC-001'
+    },
+    {
+      id: '2',
+      nombre: 'María',
+      apellidos: 'López Martínez',
+      fechaNacimiento: '1975-08-22',
+      numeroHistoria: 'HC-002'
+    }
+  ];
+
+  return (
+    <div className="mb-6 p-4 bg-white rounded-lg shadow">
+      <h3 className="text-lg font-semibold mb-3">Seleccionar Paciente</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {demoPatients.map(patient => (
+          <button
+            key={patient.id}
+            onClick={() => onPatientSelect(patient)}
+            className={`p-4 border rounded-lg text-left transition-colors ${
+              selectedPatient?.id === patient.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-blue-300'
+            }`}
+          >
+            <div className="font-medium">
+              {patient.nombre} {patient.apellidos}
+            </div>
+            <div className="text-sm text-gray-600">
+              HC: {patient.numeroHistoria}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};

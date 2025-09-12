@@ -35,7 +35,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
 // Wrapper para NoteDetailPage que obtiene el id de los parámetros
 function NoteDetailWrapper() {
   const { id } = useParams<{ id: string }>();
-  return <NoteDetailPage id={id || ''} />;
+  return <NoteDetailPage />;
 }
 
 const router = createBrowserRouter([

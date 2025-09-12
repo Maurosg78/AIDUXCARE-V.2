@@ -1,168 +1,199 @@
 import React, { useState, useEffect } from 'react';
-import { PatientData } from '../types/patient';
-import { PatientSelector } from '../components/PatientSelector';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
 import { SOAPReportTab } from '../components/SOAPReportTab';
-import { useRecording } from '../hooks/useRecording';
-import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
-import { useSharedWorkflowState } from '../hooks/useSharedWorkflowState';
+import { useControlledReasoning } from '../hooks/useControlledReasoning';
+import { useTranscription } from '../hooks/useTranscription';
+import { useLanguage } from '../contexts/LanguageContext';
+import { CreditDisplay } from '../components/CreditDisplay';
+import { AnalysisButtons } from '../components/AnalysisButtons';
+import { CreditSystem } from '../core/credits/CreditSystem';
+import { FloatingCreditsCounter } from '../components/FloatingCreditsCounter';
+import { getTranslation } from '../i18n/translations';
 
 const ProfessionalWorkflowPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
-  const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState<'analysis' | 'physical' | 'soap'>('analysis');
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [transcript, setTranscript] = useState('');
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [soapNote, setSoapNote] = useState<any>(null);
+  const [shouldSuggestPro, setShouldSuggestPro] = useState(false);
+  const [credits, setCredits] = useState(150);
   
-  const {
-    transcript,
-    isRecording,
-    startRecording,
-    stopRecording,
-    setTranscript
-  } = useRecording();
+  const { analyzeWithControlledReasoning, isProcessing, reasoningQuality } = useControlledReasoning();
+  const { startRecording, stopRecording, isRecording } = useTranscription(setTranscript);
+  
+  const consumeCredits = (amount: number) => {
+    if (credits >= amount) {
+      setCredits(prev => prev - amount);
+      console.log(`💳 Consumiendo ${amount} créditos. Restantes: ${credits - amount}`);
+      return true;
+    }
+    return false;
+  };
+  
+  const addCredits = (pack: string) => {
+    console.log(`💳 Agregando créditos: ${pack}`);
+  };
 
-  const {
-    processText,
-    generateSOAPNote,
-    niagaraResults,
-    soapNote,
-    isProcessing
-  } = useNiagaraProcessor();
+  const mockPatients = [
+    { id: '1', name: 'Juan Pérez García', recordNumber: '1' },
+    { id: '2', name: 'María López Martínez', recordNumber: '2' }
+  ];
 
-  const {
-    setPatient,
-    setAnalysisResults,
-    updateSelectedFindings,
-    updatePhysicalExamResults,
-    setSoapNote,
-    selectedFindings,
-    physicalExamResults
-  } = useSharedWorkflowState();
+  const t = getTranslation(language).workflow;
 
   useEffect(() => {
-    if (selectedPatient) {
-      setPatient(selectedPatient);
+    if (analysisResults) {
+      const suggestPro = CreditSystem.shouldSuggestPro(analysisResults);
+      setShouldSuggestPro(suggestPro);
     }
-  }, [selectedPatient, setPatient]);
+  }, [analysisResults]);
 
-  useEffect(() => {
-    if (niagaraResults) {
-      setAnalysisResults(niagaraResults);
+  const handleAnalyzeNormal = async () => {
+    if (!consumeCredits(1)) {
+      alert(t.analysis.insufficientCredits);
+      return;
     }
-  }, [niagaraResults, setAnalysisResults]);
-
-  useEffect(() => {
-    if (soapNote) {
-      setSoapNote(soapNote);
-    }
-  }, [soapNote, setSoapNote]);
-
-  const handleAnalyze = async () => {
-    if (transcript && selectedPatient) {
-      await processText(transcript);
+    
+    console.log('🔍 Análisis Normal (-1 crédito)');
+    const result = await analyzeWithControlledReasoning(transcript);
+    
+    if (result && result.analysis) {
+      setAnalysisResults({
+        redFlags: result.analysis.redFlags || [],
+        entities: result.analysis.entities || [],
+        yellowFlags: result.analysis.yellowFlags || [],
+        physicalTests: result.analysis.physicalTests || []
+      });
     }
   };
 
-  const handleGenerateSOAP = async () => {
-    await generateSOAPNote();
+  const handleAnalyzePro = async () => {
+    if (!consumeCredits(3)) {
+      alert(t.analysis.insufficientCredits);
+      return;
+    }
+    
+    console.log('✨ Análisis PRO (-3 créditos)');
+    const result = await analyzeWithControlledReasoning(transcript);
+    
+    if (result && result.analysis) {
+      setAnalysisResults({
+        redFlags: result.analysis.redFlags || [],
+        entities: result.analysis.entities || [],
+        yellowFlags: result.analysis.yellowFlags || [],
+        physicalTests: result.analysis.physicalTests || []
+      });
+    }
   };
 
-  const handleSelectionChange = (selectedIds: string[]) => {
-    updateSelectedFindings(selectedIds);
+  const handleGenerateSOAP = () => {
+    setSoapNote({
+      subjective: 'Patient reports...',
+      objective: 'Physical examination reveals...',
+      assessment: 'Clinical impression...',
+      plan: 'Treatment plan...'
+    });
   };
-
-  const handleExamResultsChange = (results: any[]) => {
-    updatePhysicalExamResults(results);
-  };
-
-  const canNavigateToEvaluation = niagaraResults && selectedFindings.length > 0;
-  const canNavigateToSOAP = physicalExamResults.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6">Flujo de Trabajo Clínico</h1>
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="mb-8">
+          <div className="flex justify-between items-start mb-4">
+            <h1 className="text-3xl font-bold">{t.title}</h1>
+            <div className="flex items-center gap-4">
+              {/* Removido CreditDisplay del header */}
+            </div>
+          </div>
+        </div>
         
-        <PatientSelector 
-          onPatientSelect={setSelectedPatient}
-          selectedPatient={selectedPatient}
-        />
+        <div className="flex gap-4 mb-8 border-b">
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'analysis'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.tabs.analysis}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('physical')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'physical'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.tabs.physical}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('soap')}
+            className={`pb-3 px-1 font-medium transition-colors ${
+              activeTab === 'soap'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.tabs.soap}
+          </button>
+        </div>
 
-        {selectedPatient && (
-          <>
-            <div className="flex space-x-4 mb-6 border-b">
-              <button
-                onClick={() => setActiveTab('analysis')}
-                className={`pb-2 px-4 ${
-                  activeTab === 'analysis'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                1. Análisis
-              </button>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          {activeTab === 'analysis' && (
+            <>
+              <WorkflowAnalysisTab
+                patients={mockPatients}
+                selectedPatient={selectedPatient}
+                onSelectPatient={setSelectedPatient}
+                transcript={transcript}
+                setTranscript={setTranscript}
+                isRecording={isRecording}
+                onStartRecording={startRecording}
+                onStopRecording={stopRecording}
+                onAnalyze={() => {}}
+                isProcessing={isProcessing}
+                analysisResults={analysisResults}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+              />
               
-              <button
-                onClick={() => canNavigateToEvaluation && setActiveTab('evaluation')}
-                disabled={!canNavigateToEvaluation}
-                className={`pb-2 px-4 ${
-                  activeTab === 'evaluation'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600'
-                } ${!canNavigateToEvaluation ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                2. Evaluación Física
-              </button>
-              
-              <button
-                onClick={() => canNavigateToSOAP && setActiveTab('soap')}
-                disabled={!canNavigateToSOAP}
-                className={`pb-2 px-4 ${
-                  activeTab === 'soap'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600'
-                } ${!canNavigateToSOAP ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                3. SOAP
-              </button>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              {activeTab === 'analysis' && (
-                <WorkflowAnalysisTab
-                  selectedPatient={selectedPatient}
-                  transcript={transcript}
-                  setTranscript={setTranscript}
-                  isRecording={isRecording}
-                  startRecording={startRecording}
-                  stopRecording={stopRecording}
-                  onAnalyze={handleAnalyze}
-                  niagaraResults={niagaraResults}
+              <div className="mt-6 pt-6 border-t">
+                <AnalysisButtons
+                  onAnalyzeNormal={handleAnalyzeNormal}
+                  onAnalyzePro={handleAnalyzePro}
                   isProcessing={isProcessing}
-                  selectedIds={selectedFindings}
-                  onSelectionChange={handleSelectionChange}
-                  physicalExamResults={physicalExamResults}
-                  handleExamResultsChange={handleExamResultsChange}
-                  onContinue={() => setActiveTab('evaluation')}
+                  suggestPro={shouldSuggestPro}
+                  credits={credits}
+                  disabled={!transcript || transcript.length < 10}
                 />
-              )}
-
-              {activeTab === 'evaluation' && (
-                <PhysicalEvaluationTab
-                  onComplete={() => setActiveTab('soap')}
-                />
-              )}
-
-              {activeTab === 'soap' && (
-                <SOAPReportTab
-                  onGenerateSOAP={handleGenerateSOAP}
-                  soapNote={soapNote}
-                  isGenerating={isProcessing}
-                />
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            </>
+          )}
+          
+          {activeTab === 'physical' && (
+            <PhysicalEvaluationTab />
+          )}
+          
+          {activeTab === 'soap' && (
+            <SOAPReportTab
+              onGenerateSOAP={handleGenerateSOAP}
+              soapNote={soapNote}
+              isGenerating={isProcessing}
+            />
+          )}
+        </div>
       </div>
+      
+      {/* Contador flotante de créditos */}
+      <FloatingCreditsCounter current={credits} total={150} />
     </div>
   );
 };

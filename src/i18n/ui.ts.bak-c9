@@ -1,0 +1,69 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+const dict = {
+  es: {
+    findings: 'Hallazgos Clínicos',
+    relevant_findings: 'Hallazgos Relevantes',
+    diagnoses: 'Diagnósticos Probables',
+    differential: 'Diagnósticos Diferenciales',
+    plan: 'Plan y Cierre del Día',
+    plan_short: 'Plan',
+    immediate_plan: 'Plan Inmediato',
+    short_term: 'Corto Plazo',
+    long_term: 'Largo Plazo',
+    follow_up: 'Seguimiento',
+    analysis: 'Análisis',
+    soap: 'SOAP',
+    language: 'Idioma',
+    recommendations: 'Recomendaciones',
+    medications: 'Medicación Actual',
+    tests: 'Evaluaciones Sugeridas',
+    red_flags: 'Banderas Rojas'
+  },
+  en: {
+    findings: 'Clinical Findings',
+    relevant_findings: 'Relevant Findings',
+    diagnoses: 'Probable Diagnoses',
+    differential: 'Differential Diagnoses',
+    plan: 'Plan & Day Wrap-up',
+    plan_short: 'Plan',
+    immediate_plan: 'Immediate Plan',
+    short_term: 'Short Term',
+    long_term: 'Long Term',
+    follow_up: 'Follow-up',
+    analysis: 'Analysis',
+    soap: 'SOAP',
+    language: 'Language',
+    recommendations: 'Recommendations',
+    medications: 'Current Medications',
+    tests: 'Suggested Tests',
+    red_flags: 'Red Flags'
+  }
+} as const;
+
+type Locale = keyof typeof dict;
+type TranslationKey = keyof typeof dict['es'];
+
+export function useLocale() {
+  const [locale, setLocaleState] = useState<Locale>('es');
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('aidux_locale') as Locale | null;
+    if (saved && (saved === 'es' || saved === 'en')) {
+      setLocaleState(saved);
+    }
+  }, []);
+  
+  const setLocale = useCallback((l: Locale) => {
+    setLocaleState(l);
+    localStorage.setItem('aidux_locale', l);
+  }, []);
+  
+  const t = useCallback((key: TranslationKey): string => {
+    return dict[locale][key] ?? String(key);
+  }, [locale]);
+  
+  return { t, locale, setLocale };
+}
+
+export type { Locale, TranslationKey };

@@ -3,54 +3,50 @@ export const PromptFactory = {
     contextoPaciente: string;
     instrucciones: string;
     transcript: string;
+    especialidad?: string;
   }) => {
-    return `Eres un asistente clínico. Analiza la transcripción y EXTRAE TODA la información relevante.
+    const especialidad = params.especialidad || 'musculoesquelético';
+    
+    return `Eres un asistente clínico especializado en fisioterapia ${especialidad}. Analiza la transcripción clínica.
 
-IMPORTANTE: Todos los campos son obligatorios. Si no hay información explícita, deduce del contexto.
+CONTEXTO: Diálogo sin identificación de hablantes. Infiere por contenido.
 
-Devuelve JSON con TODOS estos campos llenos:
+INSTRUCCIONES:
+- Proporciona las mejores evaluaciones según evidencia científica actual
+- Sugiere intervenciones basadas en la evidencia más reciente
+- Prioriza por relevancia clínica y efectividad demostrada
+- Mantén concisión: máximo 15 palabras por ítem
 
+JSON REQUERIDO:
 {
-  "motivo_consulta": "Descripción clara del problema principal del paciente",
-  "hallazgos_relevantes": [
-    "Cada hallazgo clínico importante",
-    "Ocupación y actividades relevantes", 
-    "Factores agravantes/aliviantes",
-    "Antecedentes mencionados"
-  ],
-  "diagnosticos_probables": [
-    "Diagnóstico más probable basado en la evidencia",
-    "Diagnósticos diferenciales a considerar"
-  ],
-  "red_flags": [
-    "Solo si hay signos de alarma reales"
-  ],
+  "motivo_consulta": "Descripción precisa en <20 palabras",
+  "hallazgos_clinicos": [],
+  "contexto_ocupacional": [],
+  "contexto_psicosocial": [],
+  "medicacion_actual": [],
+  "antecedentes_medicos": [],
+  "hallazgos_relevantes": [],
+  "diagnosticos_probables": [],
+  "red_flags": [],
+  "yellow_flags": [],
   "evaluaciones_fisicas_sugeridas": [
     {
-      "test": "Nombre del test específico para la región afectada",
+      "test": "nombre del test",
       "sensibilidad": 0.00,
       "especificidad": 0.00,
-      "score": 0.00,
-      "indicacion": "Qué patología evalúa",
-      "justificacion": "Por qué este test para este caso"
+      "objetivo": "qué evalúa",
+      "contraindicado_si": "",
+      "justificacion": ""
     }
   ],
-  "plan_tratamiento_sugerido": [
-    "Intervención terapéutica específica",
-    "Educación al paciente",
-    "Modificaciones de actividad",
-    "Plan de seguimiento"
-  ],
+  "plan_tratamiento_sugerido": [],
+  "derivacion_recomendada": "",
+  "pronostico_estimado": "",
+  "notas_seguridad": "",
   "riesgo_legal": "bajo"
 }
 
-REGLAS CRÍTICAS:
-1. NINGÚN campo puede estar vacío
-2. Usa la información MÁS RECIENTE si hay correcciones
-3. Los tests deben ser específicos para la región afectada
-4. Si el paciente dice "NO es lumbar, es interescapular", usa tests para región torácica
-
-[Transcripción]
+TRANSCRIPCIÓN:
 ${params.transcript}`;
   }
 };

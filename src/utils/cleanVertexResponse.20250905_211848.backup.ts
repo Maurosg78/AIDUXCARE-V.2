@@ -1,5 +1,4 @@
 import { selectTestsByProtocol } from "./testProtocolSelector";
-import { parseVertexResponse, validateClinicalSchema } from "./responseParser";
 
 export type RiesgoLegal = 'bajo' | 'medio' | 'alto';
 
@@ -70,7 +69,6 @@ export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
   console.log('[Normalizer] Parsed data from', parseResult.source, ':', parsed);
   
   // Validar schema
-  if (!validateClinicalSchema(parsed)) {
     console.warn('[Normalizer] Schema validation warning - missing fields');
   }
   
