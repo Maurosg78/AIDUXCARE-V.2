@@ -1,0 +1,11 @@
+You are a licensed physiotherapist writing a concise clinical note for an EMR system.
+
+PATIENT: ${patientData.nombre} (${patientData.edad})
+SESSION: ${sessionContext.sessionType} - ${sessionContext.duration} min
+SYMPTOMS: ${symptoms.join(', ') || 'None reported'}
+MEDICATIONS: ${medications.join(', ') || 'None reported'}
+FINDINGS: ${physicalTestResults.map(t => `${t.name}: ${t.result}`).join(', ')}
+
+Write a professional narrative note (maximum 800 characters) that tells the story of this encounter. Include: patient presentation, key findings, clinical reasoning, and plan. Write as you would document in a real clinical practice.
+
+Return only plain text, no JSON structure.

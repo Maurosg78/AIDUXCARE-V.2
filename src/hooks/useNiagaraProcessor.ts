@@ -1,50 +1,61 @@
-import { useState } from 'react';
-import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
-import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
+import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
+import { callVertexAI } from '../services/vertex-ai-service-firebase';
+import { mapVertexToSpanish } from '../utils/vertexFieldMapper';
+
+let _loggedOnce = false;
 
 export const useNiagaraProcessor = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(null);
-  const [soapNote, setSoapNote] = useState<string | null>(null);
-  
   const processText = async (text: string) => {
-    if (!text?.trim()) return null;
-    setIsAnalyzing(true);
     try {
-      const response = await VertexAIServiceViaFirebase.processWithNiagara(text);
-      console.log("Response from Vertex:", response);
-      console.log("Response text:", response?.text);
-      const cleaned = normalizeVertexResponse(response);
-      console.log("Cleaned response:", cleaned);
-      setNiagaraResults(cleaned);
+      if (!_loggedOnce) {
+        console.debug('[OK] useNiagaraProcessor.ts integrated');
+        _loggedOnce = true;
+      }
+      
+      console.log('Processing text with Vertex AI...');
+      const response = await callVertexAI(text);
+      
+      console.log('Raw Vertex response:', response);
+      
+      // Extraer y debug los datos
+      let vertexData = response.text;
+      if (typeof vertexData === 'string') {
+        try {
+          vertexData = JSON.parse(vertexData);
+        } catch (e) {
+          console.log('Text is not JSON, using as is');
+        }
+      }
+      
+      // DEBUG COMPLETO: Ver TODOS los campos y valores
+      console.log('🔍 VERTEX DATA FULL STRUCTURE:');
+      console.log('Keys:', Object.keys(vertexData || {}));
+      console.log('Full data:', JSON.stringify(vertexData, null, 2));
+      
+      // Específicamente buscar medicación
+      console.log('📊 MEDICATION SEARCH:');
+      console.log('current_medications:', vertexData?.current_medications);
+      console.log('medications:', vertexData?.medications);
+      console.log('medicacion_actual:', vertexData?.medicacion_actual);
+      
+      // Mapear campos de inglés a español
+      const mappedData = mapVertexToSpanish(vertexData);
+      console.log('Mapped data:', mappedData);
+      
+      // Crear estructura esperada
+      const structuredResponse = {
+        text: JSON.stringify(mappedData)
+      };
+      
+      const cleaned = normalizeVertexResponse(structuredResponse, text);
+      console.log('Final cleaned response:', cleaned);
+      
       return cleaned;
     } catch (error) {
-      console.error('Error procesando con Niagara:', error);
-      return null;
-    } finally {
-      setIsAnalyzing(false);
+      console.error('Error processing text:', error);
+      throw error;
     }
   };
   
-  const generateSOAPNote = async () => {
-    if (!niagaraResults) return null;
-    const s = niagaraResults;
-    const soap = `SOAP Note
-S: ${s.motivo_consulta || 'N/A'}
-O: Hallazgos: ${s.hallazgos_relevantes?.join(', ') || 'N/A'}
-A: ${s.diagnosticos_probables?.join(', ') || 'N/A'}
-P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
-    setSoapNote(soap);
-    return soap;
-  };
-  
-  return {
-    processText,
-    generateSOAPNote,
-    niagaraResults,
-    soapNote,
-    isProcessing: isAnalyzing
-  };
+  return { processText };
 };
-
-console.log("[OK] useNiagaraProcessor.ts integrated");

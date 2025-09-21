@@ -1,18 +1,17 @@
 import React from 'react';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { SessionProvider } from './context/SessionContext';
 import AppRouter from './router';
-import { LanguageSelector } from "./components/LanguageSelector";
 
-function App() {
+export default function App() {
   return (
-    <AuthProvider>
-      <SessionProvider>
-        <LanguageSelector />
-        <AppRouter />
-      </SessionProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <SessionProvider>
+          <AppRouter />
+        </SessionProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
-
-export default App;

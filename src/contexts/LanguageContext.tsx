@@ -1,26 +1,32 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getLanguage, setLanguage, type Language } from '@/utils/translations';
+import React, { createContext, useContext, useState } from 'react';
 
-type Ctx = { lang: Language; setLang: (l: Language) => void; };
-const LanguageContext = createContext<Ctx | null>(null);
+interface LanguageContextType {
+  language: 'en' | 'es';
+  setLanguage: (lang: 'en' | 'es') => void;
+  t: any;
+}
 
-export const LanguageProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [lang, setLangState] = useState<Language>(getLanguage());
-  useEffect(() => {
-    const onChange = (e: Event) => {
-      const detail = (e as CustomEvent).detail as Language;
-      if (detail === 'en' || detail === 'es') setLangState(detail);
-    };
-    window.addEventListener('language-change', onChange as EventListener);
-    return () => window.removeEventListener('language-change', onChange as EventListener);
-  }, []);
-  const setLang = (l: Language) => setLanguage(l);
-  return <LanguageContext.Provider value={{ lang, setLang }}>{children}</LanguageContext.Provider>;
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<'en' | 'es'>('es');
+  
+  const t = {
+    workflow: 'Flujo de Trabajo Clínico',
+    analysis: 'Análisis Inicial', 
+    physicalEval: 'Evaluación Física',
+    soap: 'Informe SOAP'
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
 };
 
 export const useLanguage = () => {
-  const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within <LanguageProvider/>');
-  return ctx;
+  const context = useContext(LanguageContext);
+  if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
+  return context;
 };
-export default LanguageContext;

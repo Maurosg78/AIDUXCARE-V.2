@@ -1,0 +1,16 @@
+export async function callVertexAI(input: string | any): Promise<any> {
+  const prompt = typeof input === 'string' ? input : input.prompt || input;
+  
+  // Log para debug
+  console.log('[Vertex] Processing prompt:', prompt.substring(0, 100) + '...');
+  
+  const response = await fetch('/api/vertexAIProxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  
+  if (!response.ok) throw new Error(`Vertex API error: ${response.status}`);
+  
+  return response.json();
+}

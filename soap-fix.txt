@@ -1,0 +1,12 @@
+  static async generateWithVertex(request: SOAPGenerationRequest): Promise<EditableSOAPNote> {
+    const prompt = this.buildSOAPPrompt(request);
+    
+    try {
+      const response = await callVertexAI(prompt);
+      console.log("[SOAP] Raw response to parse:", response);
+      return this.parseVertexResponse(response, request);
+    } catch (error) {
+      console.error('[SOAP Generator] Vertex AI error:', error);
+      return this.generateFallbackSOAP(request);
+    }
+  }

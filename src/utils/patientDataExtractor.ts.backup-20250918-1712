@@ -1,0 +1,75 @@
+/**
+ * Patient Data Extraction Utilities
+ * Extracts structured patient information from clinical transcripts
+ */
+
+export interface ExtractedPatientData {
+  nombre: string;
+  edad: string;
+  sessionType: 'initial' | 'follow-up';
+  sessionNumber?: string;
+  id: string; // Generate from name for consistency
+}
+
+export function extractPatientFromTranscript(transcript: string): ExtractedPatientData | null {
+  try {
+    // Extract patient name - look for "Patient: Name" or standalone names
+    const nameMatches = [
+      transcript.match(/Patient:\s*([^,\n]+(?:\s+[^,\n]+)*)/i),
+      transcript.match(/^([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/m)
+    ];
+    
+    const nameMatch = nameMatches.find(match => match !== null);
+    
+    // Extract age
+    const ageMatch = transcript.match(/(\d+)\s*years?\s*old/i);
+    
+    // Detect session type and number
+    const sessionTypeMatch = transcript.match(/session\s+(\d+)(?:\/\d+)?/i);
+    const followUpMatch = transcript.match(/follow[- ]?up/i);
+    
+    if (!nameMatch || !ageMatch) {
+      console.warn('[PatientExtractor] Could not extract required patient data from transcript');
+      return null;
+    }
+    
+    const patientName = nameMatch[1].trim();
+    const age = ageMatch[1];
+    
+    // Determine session type
+    const sessionType: 'initial' | 'follow-up' = 
+      sessionTypeMatch || followUpMatch ? 'follow-up' : 'initial';
+    
+    const sessionNumber = sessionTypeMatch ? sessionTypeMatch[1] : undefined;
+    
+    // Generate consistent ID from name
+    const id = patientName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    
+    return {
+      nombre: patientName,
+      edad: `${age} years`,
+      sessionType,
+      sessionNumber,
+      id
+    };
+    
+  } catch (error) {
+    console.error('[PatientExtractor] Error extracting patient data:', error);
+    return null;
+  }
+}
+
+/**
+ * Converts extracted patient data to PatientData format
+ */
+export function toPatientData(extracted: ExtractedPatientData): any {
+  return {
+    id: extracted.id,
+    nombre: extracted.nombre,
+    apellidos: '', // Not available from transcript
+    fechaNacimiento: '', // Not available from transcript  
+    edad: extracted.edad,
+    telefono: '', // Not available from transcript
+    email: '' // Not available from transcript
+  };
+}

@@ -47,7 +47,13 @@ function tryRepairJSON(jsonString: string): string {
       .replace(/](\s*")/g, '],$1')
       .replace(/(true|false)(\s*")/g, '$1,$2')
       .replace(/"score":\s*([\d.]+)(\s*\n\s*")/g, '"score": $1,$2');
+
+    // Eliminar comas finales antes de cerrar llaves o corchetes
+    fixed = fixed.replace(/,\s*}/g, "}");
+    fixed = fixed.replace(/,\s*]/g, "]");
     
+    // Eliminar comas múltiples consecutivas
+    fixed = fixed.replace(/,{2,}/g, ",");    
     return fixed;
   }
 }

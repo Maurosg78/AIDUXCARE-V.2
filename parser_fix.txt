@@ -1,0 +1,6 @@
+    // Eliminar comas finales antes de cerrar llaves o corchetes
+    fixed = fixed.replace(/,\s*}/g, '}');
+    fixed = fixed.replace(/,\s*]/g, ']');
+    
+    // Eliminar comas múltiples consecutivas
+    fixed = fixed.replace(/,{2,}/g, ',');

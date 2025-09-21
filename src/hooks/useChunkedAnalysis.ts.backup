@@ -1,0 +1,43 @@
+import { useState } from 'react';
+
+export const useChunkedAnalysis = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentMessage, setCurrentMessage] = useState('');
+
+  const analyzeWithChunking = async (transcript: string, withChunking: boolean = false) => {
+    setIsProcessing(true);
+    setProgress(0);
+    setCurrentMessage('Starting analysis...');
+
+    try {
+      // Simulate processing
+      setProgress(50);
+      setCurrentMessage('Analyzing content...');
+      
+      // Placeholder analysis result
+      const analysis = {
+        summary: 'Analysis completed',
+        findings: [],
+        recommendations: []
+      };
+
+      setProgress(100);
+      setCurrentMessage('Analysis complete');
+      
+      return { analysis };
+    } catch (error) {
+      console.error('Analysis error:', error);
+      return null;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return {
+    analyzeWithChunking,
+    isProcessing,
+    progress,
+    currentMessage
+  };
+};
