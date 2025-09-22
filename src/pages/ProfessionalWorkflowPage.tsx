@@ -41,7 +41,7 @@ const ProfessionalWorkflowPage = () => {
   
   const consumeCredits = (amount: number): boolean => {
     if (credits >= amount) {
-      console.log(`💳 Consumiendo ${amount} créditos. Restantes: ${credits - amount}`);
+      console.log(`💳 Using ${amount} créditos. Remaining: ${credits - amount}`);
       setCredits(prev => prev - amount);
       return true;
     }
@@ -154,7 +154,7 @@ const ProfessionalWorkflowPage = () => {
               <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-900">{t.workflow}</h1>
                 <div className="text-sm text-gray-500">
-                  {credits} créditos disponibles
+                  {credits} credits available
                 </div>
               </div>
               

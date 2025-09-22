@@ -1,0 +1,84 @@
+
+/** Test/CI guard + feature flag */
+const IS_TEST = !!(typeof process !== 'undefined' && (
+  process.env.VITEST === 'true' ||
+  process.env.VITEST === '1' ||
+  process.env.NODE_ENV === 'test' ||
+  process.env.CI === 'true'
+)) || (typeof import.meta !== 'undefined' && (import.meta).vitest === true);
+
+const ENABLE_FIREBASE = !!(typeof process !== 'undefined' && (
+  process.env.ENABLE_FIREBASE === '1' || process.env.ENABLE_FIREBASE === 'true'
+));
+
+export const isFirebaseEnabled: boolean = (!IS_TEST && ENABLE_FIREBASE);
+
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+
+import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
+
+import logger from '@/shared/utils/logger';
+
+// GUARDRAILS: NO emuladores en PROD
+const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
+const envTarget = import.meta.env.VITE_ENV_TARGET || 'PROD';
+
+// BLOQUEO DE SEGURIDAD: Si es PROD, emuladores están PROHIBIDOS
+if (envTarget === 'PROD' && useEmulators) {
+  throw new Error(' SEGURIDAD: Emuladores PROHIBIDOS en PROD. VITE_USE_EMULATORS debe ser false');
+}
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+// Validación de configuración
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  throw new Error(' CONFIGURACIÓN: VITE_FIREBASE_API_KEY y VITE_FIREBASE_PROJECT_ID son obligatorios');
+}
+
+const app = isFirebaseEnabled
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
+  : ({} as any);
+
+export const auth = isFirebaseEnabled ? getAuth(app) : ({} as any);
+export const db = isFirebaseEnabled ? getFirestore(app) : ({} as any);
+
+// Inicialización condicional de Functions
+let functions;
+try {
+  functions = getFunctions(app, 'europe-west1');
+} catch (error) {
+  if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) console.warn('⚠️ Firebase Functions no disponible:', error);
+  functions = null;
+}
+
+export { functions };
+
+// PROD: Configurar persistencia local
+setPersistence(auth, browserLocalPersistence);
+
+// Log de conexión con guardrails
+if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) console.log(` Firebase conectado a ${useEmulators ? 'EMULADORES' : 'PROD'}: ${firebaseConfig.projectId}`);
+if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) console.log(` Entorno: ${envTarget} | Emuladores: ${useEmulators ? 'PERMITIDOS' : 'BLOQUEADOS'}`);
+
+// BLOQUEO FINAL: Si es PROD, verificar que no hay conexiones a localhost
+if (envTarget === 'PROD') {
+  const currentUrl = window.location.href;
+  if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+    if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) if(!IS_TEST) console.warn('⚠️ ADVERTENCIA: Ejecutando PROD en localhost. Verificar configuración.');
+  }
+}
+
+export default app;
+
+
+
+export const functions = isFirebaseEnabled ? getFunctions(app) : ({} as any);

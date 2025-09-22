@@ -1,79 +1,64 @@
 /**
- * Schema-Constrained Clinical Analysis Prompt
- * Version: 2.0.0 - Con validación FHIR R4
+ * Expert Physiotherapist Clinical Assessment
+ * Canadian Scope of Practice - Professional Autonomy
  */
 
-import ClinicalSchemaValidator from '../schemas/clinical-note-schema';
-
 export const generateSchemaConstrainedPrompt = (transcript: string): string => {
-  const schemaRequirements = ClinicalSchemaValidator.getSchemaForPrompt();
-  
   return `
-You are a clinical documentation expert. Analyze this physiotherapy consultation and generate a JSON response that MUST comply with our regulatory schema.
+You are an experienced physiotherapist in Canada reviewing a clinical case.
+Apply your professional judgment within Canadian physiotherapy scope of practice.
 
-${schemaRequirements}
+SCOPE REMINDERS:
+- You assess functional impairments and plan PT interventions
+- You identify red flags requiring medical/specialist referral
+- You cannot diagnose medical conditions or prescribe medications
+- You document what patients report about their medications
 
-TRANSCRIPT TO ANALYZE:
+CLINICAL CASE:
 ${transcript}
 
-CRITICAL INSTRUCTIONS:
-1. ALL mandatory fields must be present or the note will be rejected
-2. Include priority and autoSelect fields for each item
-3. Red flags detection is MANDATORY - if none found, return empty array
-4. Use the exact JSON structure below
+Please provide your professional assessment in this JSON format:
 
-REQUIRED JSON STRUCTURE:
 {
-  "required": {
-    "patientId": "extracted or 'pending'",
-    "practitionerId": "extracted or 'pending'",
-    "sessionTimestamp": "${new Date().toISOString()}",
-    "sessionType": "initial|followup|discharge",
-    "chiefComplaint": "main reason for visit",
-    "redFlagsAssessed": true,
-    "redFlagsDetected": ["list of red flags or empty array"],
-    "contraindicationsChecked": true,
-    "planDocumented": true,
-    "planDetails": "treatment plan",
-    "followUpScheduled": true/false
-  },
-  "validations": {
-    "painScale": {
-      "required": true/false,
-      "value": 0-10 or null,
-      "location": "where pain is located"
-    },
-    "medicationVerification": {
-      "medicationsListed": ["medications mentioned"],
-      "contraindicationsChecked": ["contraindications checked"],
-      "unprescribedDetected": true/false
-    }
-  },
-  "entities": [
-    {
-      "id": "e1",
-      "text": "entity text",
-      "type": "symptom|medication|condition|finding",
-      "priority": "critical|high|medium|low",
-      "autoSelect": true/false
-    }
+  "chief_complaint": "functional/movement complaint as you assess it",
+  
+  "physical_findings": [
+    "relevant objective findings from your PT perspective"
   ],
-  "physicalTests": [
-    {
-      "name": "test name",
-      "rationale": "why relevant",
-      "priority": "high|medium|low",
-      "autoSelect": true/false
-    }
+  
+  "medications": [
+    {"name": "medication name", "reason": "indication per patient"}
   ],
-  "metadata": {
-    "schemaVersion": "1.0.0",
-    "modelUsed": "vertex-ai",
-    "completenessScore": 0-100
-  }
+  
+  "social_context": [
+    "biopsychosocial factors affecting function and ADLs"
+  ],
+  
+  "red_flags": [
+    "findings requiring urgent referral with your rationale"
+  ],
+  
+  "yellow_flags": [
+    "psychosocial barriers to recovery"
+  ],
+  
+  "suggested_tests": [
+    {"test": "evidence-based PT assessment", "reason": "clinical justification", "sensitivity": 0-1, "specificity": 0-1}
+  ]
 }
 
-Remember: Missing mandatory fields = rejected note = regulatory violation`;
+REQUIREMENTS:
+- Identify ALL red flags with priority (urgent psychiatric, ER, medical)
+- Suggest MINIMUM 3 evidence-based PT assessments appropriate for findings
+- Include relevant biopsychosocial context for treatment planning
+- Normalize medication names when possible
+- Stay within PT scope but use your clinical judgment freely
+
+IMPORTANT: Keep responses concise. Limit to essential information only.
+Maximum 10 items per array field. Be brief and clinical.
+
+Your assessment:
+`;
 };
 
-export const PROMPT_VERSION = "2.0.0-schema";
+export const PROMPT_VERSION = "6.0.0-expert-autonomy";

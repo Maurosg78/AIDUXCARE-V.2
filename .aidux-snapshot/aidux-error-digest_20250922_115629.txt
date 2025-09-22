@@ -1,0 +1,182 @@
+]633;E;{    echo "=== AIDUXCARE \xffffffffffffffe2\xffffffffffffff80\xffffffffffffffa2 ERROR DIGEST ==="\x3b   echo "Fecha: $(date -Is)"\x3b   echo\x3b   grep -RInE "ERROR|Error|TS[0-9]{3}|TypeError|ReferenceError|build failed|fail" .aidux-snapshot/logs_*/*.log | sed 's/^/LOG: /' | head -n 400\x3b } > "$ERR";719eb2df-6b73-4634-b19a-5655fa3b7449]633;C=== AIDUXCARE • ERROR DIGEST ===
+Fecha: 
+
+LOG: .aidux-snapshot/logs_115035/lint.log:1134:  186:48   error    'GeolocationPositionError' is not defined  no-undef
+LOG: .aidux-snapshot/logs_115035/lint.log:1151:  455:46   error    'GeolocationPositionError' is not defined  no-undef
+LOG: .aidux-snapshot/logs_115035/lint.log:1416:  156:16  error    'parseError' is defined but never used    @typescript-eslint/no-unused-vars
+LOG: .aidux-snapshot/logs_115035/test.log:17: [33m❯[39m test/firebase.alias.test.ts [2m ([22m[2m1 test[22m [2m|[22m [31m1 failed[39m[2m)[22m[90m 3[2mms[22m[39m
+LOG: .aidux-snapshot/logs_115035/test.log:24:[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+LOG: .aidux-snapshot/logs_115035/test.log:42:[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (5)[39m
+LOG: .aidux-snapshot/logs_115035/test.log:43:[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (5)[39m
+LOG: .aidux-snapshot/logs_115035/typecheck.log:1:src/__tests__/auth-flow.integration.test.tsx(5,8): error TS2613: Module '"/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/WelcomePage"' has no default export. Did you mean to use 'import { WelcomePage } from "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/WelcomePage"' instead?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:2:src/__tests__/auth-flow.integration.test.tsx(7,8): error TS2613: Module '"/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/VerifyEmailPage"' has no default export. Did you mean to use 'import { VerifyEmailPage } from "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/VerifyEmailPage"' instead?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:3:src/__tests__/auth-flow.integration.test.tsx(26,46): error TS7006: Parameter '_auth' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:4:src/__tests__/auth-flow.integration.test.tsx(26,53): error TS7006: Parameter 'email' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:5:src/__tests__/auth-flow.integration.test.tsx(39,50): error TS7006: Parameter '_auth' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:6:src/__tests__/auth-flow.integration.test.tsx(39,57): error TS7006: Parameter 'email' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:7:src/__tests__/auth-flow.integration.test.tsx(86,51): error TS7006: Parameter 'content' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:8:src/__tests__/auth-flow.integration.test.tsx(96,8): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:9:src/__tests__/auth-flow.integration.test.tsx(121,44): error TS7006: Parameter 'content' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:10:src/__tests__/auth-flow.integration.test.tsx(132,47): error TS7006: Parameter 'content' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:11:src/__tests__/auth-flow.integration.test.tsx(149,44): error TS7006: Parameter 'content' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:12:src/components/ClinicalAnalysisResults.tsx(40,43): error TS7006: Parameter '_' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:13:src/components/ClinicalAnalysisResults.tsx(40,46): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:14:src/components/ClinicalAnalysisResults.tsx(41,41): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:15:src/components/ClinicalAnalysisResults.tsx(42,20): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:16:src/components/ClinicalAnalysisResults.tsx(47,52): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:17:src/components/ClinicalAnalysisResults.tsx(51,42): error TS7006: Parameter '_' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:18:src/components/ClinicalAnalysisResults.tsx(51,45): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:19:src/components/ClinicalAnalysisResults.tsx(55,56): error TS7006: Parameter '_' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:20:src/components/ClinicalAnalysisResults.tsx(55,59): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:21:src/components/ClinicalAnalysisResults.tsx(70,41): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:22:src/components/ClinicalAnalysisResults.tsx(76,41): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:23:src/components/ClinicalAnalysisResults.tsx(94,55): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:24:src/components/ClinicalAnalysisResults.tsx(125,30): error TS7006: Parameter 'med' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:25:src/components/ClinicalAnalysisResults.tsx(137,41): error TS7006: Parameter 'flag' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:26:src/components/ClinicalAnalysisResults.tsx(137,47): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:27:src/components/ClinicalAnalysisResults.tsx(185,47): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:28:src/components/ClinicalAnalysisResults.tsx(185,79): error TS7006: Parameter 'entity' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:29:src/components/ClinicalAnalysisResults.tsx(207,47): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:30:src/components/ClinicalAnalysisResults.tsx(208,23): error TS7006: Parameter 'entity' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:31:src/components/ClinicalAnalysisResults.tsx(247,31): error TS7006: Parameter 'test' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:32:src/components/ClinicalAnalysisResults.tsx(247,37): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:33:src/components/ClinicalAnalysisResults.tsx(291,44): error TS7006: Parameter 'flag' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:34:src/components/ClinicalAnalysisResults.tsx(291,50): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:35:src/components/GenericClinicalDisplay.tsx(4,42): error TS7031: Binding element 'data' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:36:src/components/GenericClinicalDisplay.tsx(9,37): error TS7006: Parameter 'r' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:37:src/components/GenericClinicalDisplay.tsx(10,39): error TS7006: Parameter 'c' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:38:src/components/GenericClinicalDisplay.tsx(14,37): error TS7006: Parameter 'r' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:39:src/components/GenericClinicalDisplay.tsx(15,39): error TS7006: Parameter 'c' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:40:src/components/LegalAlertsDisplay.tsx(4,38): error TS7031: Binding element 'issues' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:41:src/components/LegalAlertsDisplay.tsx(17,22): error TS7006: Parameter 'issue' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:42:src/components/LegalAlertsDisplay.tsx(17,29): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:43:src/components/MicrophoneTest.tsx(42,29): error TS18046: 'error' is of type 'unknown'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:44:src/components/MicrophoneTest.tsx(93,49): error TS18046: 'error' is of type 'unknown'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:45:src/components/PatientHeader.tsx(34,17): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:46:src/components/PatientHeader.tsx(35,14): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:47:src/components/PatientHeader.tsx(38,17): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:48:src/components/PatientHeader.tsx(39,14): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:49:src/components/PatientHeader.tsx(64,9): error TS2339: Property 'toLowerCase' does not exist on type 'never'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:50:src/components/PatientHeader.tsx(65,9): error TS2339: Property 'toLowerCase' does not exist on type 'never'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:51:src/components/PatientHeader.tsx(66,9): error TS2339: Property 'toLowerCase' does not exist on type 'never'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:52:src/components/PatientHeader.tsx(70,63): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:53:src/components/PatientHeader.tsx(158,37): error TS7006: Parameter 'condition' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:54:src/components/PatientInfoHeader.tsx(20,17): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:55:src/components/PatientInfoHeader.tsx(21,14): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:56:src/components/PatientInfoHeader.tsx(24,23): error TS7006: Parameter 'med' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:57:src/components/PatientInfoHeader.tsx(61,41): error TS7006: Parameter 'surgery' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:58:src/components/PatientInfoHeader.tsx(61,50): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:59:src/components/PatientInfoHeader.tsx(64,42): error TS7006: Parameter 'condition' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:60:src/components/PatientInfoHeader.tsx(64,53): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:61:src/components/PatientInfoHeader.tsx(77,43): error TS7006: Parameter 'med' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:62:src/components/PatientInfoHeader.tsx(77,48): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:63:src/components/RealTimeAudioCapture.tsx(3,72): error TS2307: Cannot find module '../services/AudioCaptureServiceReal' or its corresponding type declarations.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:64:src/components/RealTimeAudioCapture.tsx(5,37): error TS2307: Cannot find module '../services/WebSpeechSTTService' or its corresponding type declarations.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:65:src/components/RealTimeAudioCapture.tsx(42,31): error TS7006: Parameter 'segment' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:66:src/components/RealTimeAudioCapture.tsx(54,17): error TS7006: Parameter 'error' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:67:src/components/RealTimeAudioCapture.tsx(58,24): error TS7006: Parameter 'status' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:68:src/components/RealTimeAudioCapture.tsx(120,25): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:69:src/components/SegregatedAlerts.tsx(37,44): error TS7006: Parameter 'alert' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:70:src/components/SegregatedAlerts.tsx(37,51): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:71:src/components/SOAPReportTab.tsx(50,53): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:72:src/components/SOAPReportTab.tsx(52,30): error TS7006: Parameter 's' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:73:src/components/SOAPReportTab.tsx(59,44): error TS7006: Parameter 'f' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:74:src/components/SOAPReportTab.tsx(89,41): error TS7006: Parameter 'rf' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:75:src/components/WorkflowAnalysisTab-i18n.tsx(32,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ en: { medicalLegalAlerts: string; clinicalFindings: string; currentSymptoms: string; currentMedication: string; proposedPhysicalEvaluation: string; psychosocialFactors: string; addItem: string; selectAll: string; clear: string; noneIdentified: string; }; es: { ...; }; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:77:src/components/WorkflowAnalysisTab-i18n.tsx(32,39): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ medicalLegalAlerts: string; clinicalFindings: string; currentSymptoms: string; currentMedication: string; proposedPhysicalEvaluation: string; psychosocialFactors: string; addItem: string; selectAll: string; clear: string; noneIdentified: string; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:79:src/components/WorkflowAnalysisTab.tsx(61,5): error TS2339: Property 'processTranscript' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:80:src/components/WorkflowAnalysisTab.tsx(62,5): error TS2339: Property 'results' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:81:src/components/WorkflowAnalysisTab.tsx(63,5): error TS2339: Property 'validation' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:82:src/components/WorkflowAnalysisTab.tsx(64,5): error TS2339: Property 'metrics' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:83:src/components/WorkflowAnalysisTab.tsx(65,5): error TS2339: Property 'isProcessing' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:84:src/components/WorkflowAnalysisTab.tsx(66,5): error TS2339: Property 'error' does not exist on type '{ processText: (text: string) => Promise<ClinicalAnalysis>; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:85:src/components/WorkflowAnalysisTab.tsx(159,78): error TS7006: Parameter 'test' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:86:src/components/WorkflowAnalysisTab.tsx(172,15): error TS7006: Parameter 'h' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:87:src/components/WorkflowAnalysisTab.tsx(172,18): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:88:src/components/WorkflowAnalysisTab.tsx(179,15): error TS7006: Parameter 'h' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:89:src/components/WorkflowAnalysisTab.tsx(179,18): error TS7006: Parameter 'i' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:90:src/components/WorkflowAnalysisTab.tsx(212,10): error TS2741: Property 'isAnalyzing' is missing in type '{ transcript: string; setTranscript: (text: string) => void; isRecording: boolean; startRecording: () => void; stopRecording: () => void; recordingTime: string; isTranscribing: boolean; onAnalyze: () => void; }' but required in type 'TranscriptionAreaProps'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:91:src/context/SessionContext.tsx(58,20): error TS2345: Argument of type '(prev: { patientId: null; tab1: { transcript: string; analysisResults: null; selectedItems: never[]; }; tab2: { suggestedTests: never[]; completedTests: never[]; }; tab3: { soapNote: null; }; metadata: { startTime: string; lastSaved: null; lastModified: null; }; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ patientId: null; tab1: { transcript: string; analysisResults: null; selectedItems: never[]; }; tab2: { suggestedTests: never[]; completedTests: never[]; }; tab3: { soapNote: null; }; metadata: { startTime: string; lastSaved: null; lastModified: null; }; }>'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:96:src/context/SessionContext.tsx(60,19): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ patientId: null; tab1: { transcript: string; analysisResults: null; selectedItems: never[]; }; tab2: { suggestedTests: never[]; completedTests: never[]; }; tab3: { soapNote: null; }; metadata: { startTime: string; lastSaved: null; lastModified: null; }; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:98:src/core/ai/ModelSelector.ts(1,10): error TS2305: Module '"./PromptFactory"' has no exported member 'CaseComplexity'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:99:src/core/ai/ModelSelector.ts(1,26): error TS2305: Module '"./PromptFactory"' has no exported member 'MedicalSpecialty'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:100:src/core/ai/ModelSelector.ts(128,24): error TS7053: Element implicitly has an 'any' type because expression of type 'MedicalSpecialty' can't be used to index type '{ fisioterapia: string[]; psicologia: string[]; medicina_general: string[]; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:101:src/core/ai/ModelSelector.ts(129,47): error TS7006: Parameter 'indicator' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:102:src/core/ai/ModelSelector.ts(174,22): error TS7053: Element implicitly has an 'any' type because expression of type 'MedicalSpecialty' can't be used to index type '{ fisioterapia: RegExp[]; psicologia: RegExp[]; medicina_general: RegExp[]; }'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:103:src/core/ai/ModelSelector.ts(177,22): error TS7006: Parameter 'pattern' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:104:src/core/assistant/__tests__/assistantAdapter.spec.ts(3,10): error TS2305: Module '"../assistantAdapter"' has no exported member 'routeQuery'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:105:src/core/assistant/__tests__/assistantAdapter.spec.ts(3,22): error TS2305: Module '"../assistantAdapter"' has no exported member 'runAssistantQuery'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:106:src/core/components/Layout.tsx(7,38): error TS2307: Cannot find module '../../components/professional/EnhancedAudioCapture' or its corresponding type declarations.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:107:src/core/components/Layout.tsx(68,39): error TS7006: Parameter 'segments' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:108:src/core/components/Layout.tsx(72,37): error TS7006: Parameter 'segments' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:109:src/core/emr/__tests__/medications.spec.ts(40,10): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:110:src/core/emr/__tests__/medications.spec.ts(44,17): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:111:src/core/emr/__tests__/medications.spec.ts(67,10): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:112:src/core/emr/__tests__/medications.spec.ts(71,17): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:113:src/core/emr/__tests__/medications.spec.ts(90,10): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:114:src/core/emr/__tests__/medications.spec.ts(176,10): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:115:src/core/emr/__tests__/medications.spec.ts(187,17): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:116:src/core/emr/__tests__/medications.spec.ts(188,17): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:117:src/core/emr/__tests__/medications.spec.ts(210,10): error TS2551: Property 'mocked' does not exist on type '{ fn: (implementation?: any) => any; mock: (module: string, factory: () => any) => void; clearAllMocks: () => void; resetAllMocks: () => void; restoreAllMocks: () => void; }'. Did you mean 'mock'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:118:src/core/fhir/index.ts(141,64): error TS2339: Property 'resourceType' does not exist on type 'never'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:119:src/core/fhir/index.ts(166,27): error TS2352: Conversion of type 'FhirPatient | FhirEncounter | FhirObservation' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:122:src/evals/unified-eval-system.ts(68,54): error TS7006: Parameter 'rf' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:123:src/evals/unified-eval-system.ts(78,50): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:124:src/evals/unified-eval-system.ts(82,46): error TS7006: Parameter 'e' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:125:src/hooks/useNiagaraProcessor.ts(53,67): error TS2554: Expected 1 arguments, but got 2.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:126:src/hooks/useProcessedEntities.ts(52,53): error TS2339: Property 'extractClinicalEntities' does not exist on type 'typeof TranscriptProcessor'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:127:src/hooks/useProcessedEntities.ts(55,53): error TS2339: Property 'generateClinicalInsights' does not exist on type 'typeof TranscriptProcessor'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:128:src/pages/ProfessionalWorkflowPage.tsx(137,71): error TS2345: Argument of type '{ analysisResults: any; physicalTestResults: any[]; patientData: any; selectedItems: string[]; sessionContext: { duration: number; location: string; sessionType: "initial" | "follow-up"; }; }' is not assignable to parameter of type 'SOAPGenerationRequest'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:132:src/pages/ProfessionalWorkflowPage.tsx(201,19): error TS2322: Type '{ patients: { id: string; nombre: string; apellidos: string; fechaNacimiento: string; edad: string; telefono: string; email: string; }[]; selectedPatient: PatientData | null; onSelectPatient: Dispatch<...>; ... 12 more ...; onNavigateToEvaluation: () => void; }' is not assignable to type 'IntrinsicAttributes & WorkflowAnalysisTabProps'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:134:src/pages/ProfessionalWorkflowPage.tsx(221,40): error TS2322: Type '{ onComplete: () => void; }' is not assignable to type 'IntrinsicAttributes & PhysicalEvaluationTabProps'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:136:src/pages/ProfessionalWorkflowPage.tsx(237,22): error TS2739: Type '{ soapNote: any; }' is missing the following properties from type 'SOAPDisplayProps': patientData, onDownloadPDF
+LOG: .aidux-snapshot/logs_115035/typecheck.log:137:src/router/router.tsx(38,26): error TS2322: Type '{ id: string; }' is not assignable to type 'IntrinsicAttributes'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:139:src/services/clinical-orchestration-service.ts(64,46): error TS18046: 'error' is of type 'unknown'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:140:src/services/soap-generator-professional.backup.ts(20,49): error TS2554: Expected 1 arguments, but got 2.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:141:src/services/soap-generator-professional.backup.ts(123,50): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:142:src/services/soap-generator-professional.backup.ts(123,88): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:143:src/services/soap-generator-professional.backup.ts(123,123): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:144:src/services/soap-generator-professional.backup.ts(123,136): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:145:src/services/soap-generator-professional.backup.ts(123,163): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:146:src/services/soap-generator-professional.backup.ts(123,180): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:147:src/services/soap-generator-professional.backup.ts(125,11): error TS2451: Cannot redeclare block-scoped variable 'sessionId'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:148:src/services/soap-generator-professional.backup.ts(125,28): error TS2339: Property 'generateSessionId' does not exist on type 'typeof ProfessionalSOAPGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:149:src/services/soap-generator-professional.backup.ts(125,58): error TS2451: Cannot redeclare block-scoped variable 'sessionId'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:150:src/services/soap-generator-professional.backup.ts(125,75): error TS2339: Property 'generateSessionId' does not exist on type 'typeof ProfessionalSOAPGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:151:src/services/soap-generator-professional.backup.ts(240,11): error TS2451: Cannot redeclare block-scoped variable 'sessionId'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:152:src/services/soap-generator-professional.backup.ts(240,28): error TS2339: Property 'generateSessionId' does not exist on type 'typeof ProfessionalSOAPGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:153:src/services/soap-generator-professional.backup.ts(240,58): error TS2451: Cannot redeclare block-scoped variable 'sessionId'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:154:src/services/soap-generator-professional.backup.ts(240,75): error TS2339: Property 'generateSessionId' does not exist on type 'typeof ProfessionalSOAPGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:155:src/services/vertex-ai-service-update.ts(22,47): error TS2304: Cannot find name 'promptFactory'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:156:src/services/vertex-ai-service-update.ts(22,87): error TS2304: Cannot find name 'transcript'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:157:src/setupTests.ts(18,3): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:158:src/setupTests.ts(18,17): error TS2451: Cannot redeclare block-scoped variable 'global'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:159:src/setupTests.ts(19,3): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:160:src/setupTests.ts(19,17): error TS2451: Cannot redeclare block-scoped variable 'process'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:161:src/setupTests.ts(23,1): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:162:src/setupTests.ts(23,15): error TS2451: Cannot redeclare block-scoped variable 'require'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:163:src/setupTests.ts(24,3): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:164:src/setupTests.ts(24,17): error TS2451: Cannot redeclare block-scoped variable 'module'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:165:src/setupTests.ts(25,3): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:166:src/setupTests.ts(25,17): error TS2451: Cannot redeclare block-scoped variable '__dirname'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:167:src/setupTests.ts(26,3): error TS1038: A 'declare' modifier cannot be used in an already ambient context.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:168:src/setupTests.ts(26,17): error TS2451: Cannot redeclare block-scoped variable '__filename'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:169:src/utils/cleanVertexResponse-protocol.ts(12,30): error TS2304: Cannot find name 'detectRegionFromText'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:170:src/utils/cleanVertexResponse-protocol.ts(24,8): error TS2304: Cannot find name 'normalized'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:171:src/utils/cleanVertexResponse.test.ts(2,10): error TS2614: Module '"./cleanVertexResponse"' has no exported member 'cleanVertexResponse'. Did you mean to use 'import cleanVertexResponse from "./cleanVertexResponse"' instead?
+LOG: .aidux-snapshot/logs_115035/typecheck.log:172:src/utils/metricsCollector.ts(13,9): error TS7006: Parameter 't' implicitly has an 'any' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:173:src/utils/metricsCollector.ts(29,27): error TS2339: Property 'getAverageWordCount' does not exist on type 'typeof AiduxMetrics'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:174:src/utils/pdf-handler.ts(5,36): error TS2339: Property 'generateSOAPReport' does not exist on type 'typeof PDFGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:175:src/utils/pdf-handler.ts(11,18): error TS2339: Property 'download' does not exist on type 'typeof PDFGenerator'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:176:src/utils/vertexFieldMapper.backup.ts(16,9): error TS7034: Variable 'redFlags' implicitly has type 'any[]' in some locations where its type cannot be determined.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:177:src/utils/vertexFieldMapper.backup.ts(25,9): error TS7034: Variable 'findings' implicitly has type 'any[]' in some locations where its type cannot be determined.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:178:src/utils/vertexFieldMapper.backup.ts(33,25): error TS7005: Variable 'findings' implicitly has an 'any[]' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:179:src/utils/vertexFieldMapper.backup.ts(36,16): error TS7005: Variable 'redFlags' implicitly has an 'any[]' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:180:src/utils/vertexFieldMapper.ts(37,5): error TS2322: Type 'string[]' is not assignable to type 'never[]'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:182:src/utils/vertexFieldMapper.ts(38,5): error TS2322: Type 'string[]' is not assignable to type 'never[]'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:184:src/utils/vertexFieldMapper.ts(39,5): error TS2322: Type 'string[]' is not assignable to type 'never[]'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:186:src/utils/vertexFieldMapper.ts(40,5): error TS2322: Type 'any[]' is not assignable to type 'never[]'.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:188:src/utils/vertexFieldMapper.ts(51,9): error TS7034: Variable 'meds' implicitly has type 'any[]' in some locations where its type cannot be determined.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:189:src/utils/vertexFieldMapper.ts(68,10): error TS7005: Variable 'meds' implicitly has an 'any[]' type.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:190:src/utils/vertexFieldMapper.ts(86,9): error TS7034: Variable 'flags' implicitly has type 'any[]' in some locations where its type cannot be determined.
+LOG: .aidux-snapshot/logs_115035/typecheck.log:191:src/utils/vertexFieldMapper.ts(96,10): error TS7005: Variable 'flags' implicitly has an 'any[]' type.

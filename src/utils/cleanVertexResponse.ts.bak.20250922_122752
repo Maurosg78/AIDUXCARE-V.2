@@ -1,0 +1,152 @@
+// Minimal, sin archivos nuevos: normaliza respuesta Vertex a contrato español existente.
+// - Convierte red_flags objeto → string legible (evita [object Object])
+// - Acepta claves en inglés (chief_complaint, medications, suggested_tests...)
+// - Normaliza medicación y evaluaciones físicas a lo que ya pinta la UI.
+
+type EngMed = { name: string; reason?: string }
+type EngRF = { finding: string; rationale?: string; priority?: string }
+type EngTest = { test: string; reason?: string; sensitivity?: number; specificity?: number }
+
+function isObj(x: unknown): x is Record<string, any> { return !!x && typeof x === "object" }
+
+function arrStr(x: any): string[] { return Array.isArray(x) ? x.filter((v)=>typeof v==="string") : [] }
+
+function pNorm(p?: string): "ER"|"Urgente"|"Diferida" {
+  const s=(p||"").toLowerCase()
+  if(s.includes("er")) return "ER"
+  if(s.includes("urgent")||s.includes("inmediata")) return "Urgente"
+  if(s.includes("defer")||s.includes("diferid")) return "Diferida"
+  return "Urgente"
+}
+
+export default function cleanVertexResponse(input: any) {
+  // Si viene como { text: "<json>" }
+  if (isObj(input) && typeof input.text === "string") {
+    try { input = JSON.parse(input.text) } catch { /* sigue */ }
+  }
+
+  // Si ya está en español, solo normalizamos formatos
+  if (isObj(input) && (
+      "motivo_consulta" in input || "hallazgos_clinicos" in input || "evaluaciones_fisicas_sugeridas" in input
+  )) {
+    const src = input as Record<string, any>
+
+    // red_flags a strings
+    const red = Array.isArray(src.red_flags) ? src.red_flags.map((x:any)=>{
+      if (typeof x === "string") return x
+      if (isObj(x)) {
+        const pr = pNorm(x.prioridad)
+        const h  = x.hallazgo || "Hallazgo relevante"
+        const j  = x.justificacion ?  : ""
+        const d  = x.derivacion ?  : ""
+        return 
+      }
+      return String(x)
+    }) : []
+
+    // medicación a strings
+    const meds = Array.isArray(src.medicacion_actual) ? src.medicacion_actual.map((m:any)=>{
+      if (typeof m === "string") return m
+      const n = (m?.nombre||m?.name||"").trim()
+      const r = (m?.motivo||m?.reason||"").trim()
+      return r ?  : n
+    }).filter(Boolean) : []
+
+    // tests: asegurar campos y nulls numéricos
+    const testsSrc = Array.isArray(src.evaluaciones_fisicas_sugeridas) ? src.evaluaciones_fisicas_sugeridas : []
+    const tests = testsSrc.map((t:any)=>({
+      test: t?.test ?? "",
+      sensibilidad: typeof t?.sensibilidad==="number" ? t.sensibilidad : (typeof t?.sensitivity==="number"? t.sensitivity : null),
+      especificidad: typeof t?.especificidad==="number" ? t.especificidad : (typeof t?.specificity==="number"? t.specificity : null),
+      objetivo: t?.objetivo ?? t?.reason ?? "",
+      contraindicado_si: t?.contraindicado_si ?? "",
+      justificacion: t?.justificacion ?? t?.reason ?? ""
+    }))
+
+    return {
+      motivo_consulta: String(src.motivo_consulta||""),
+      hallazgos_clinicos: arrStr(src.hallazgos_clinicos),
+      hallazgos_relevantes: arrStr(src.hallazgos_relevantes),
+      contexto_ocupacional: arrStr(src.contexto_ocupacional),
+      contexto_psicosocial: arrStr(src.contexto_psicosocial),
+      medicacion_actual: meds,
+      antecedentes_medicos: arrStr(src.antecedentes_medicos),
+      diagnosticos_probables: arrStr(src.diagnosticos_probables),
+      red_flags: red,
+      yellow_flags: arrStr(src.yellow_flags),
+      evaluaciones_fisicas_sugeridas: tests,
+      plan_tratamiento_sugerido: arrStr(src.plan_tratamiento_sugerido),
+      derivacion_recomendada: String(src.derivacion_recomendada||""),
+      pronostico_estimado: String(src.pronostico_estimado||""),
+      notas_seguridad: String(src.notas_seguridad||""),
+      riesgo_legal: (["bajo","medio","alto"].includes(String(src.riesgo_legal))) ? src.riesgo_legal : "bajo"
+    }
+  }
+
+  // Caso inglés (como el de tus logs)
+  if (isObj(input)) {
+    const medsIn = Array.isArray(input.medications) ? (input.medications as EngMed[]) : []
+    const rfIn   = Array.isArray(input.red_flags) ? input.red_flags as Array<string|EngRF> : []
+    const tstIn  = Array.isArray(input.suggested_tests) ? (input.suggested_tests as EngTest[]) : []
+
+    const meds = medsIn.map(m=>{
+      const n=(m?.name||"").trim(), r=(m?.reason||"").trim()
+      return r ?  : n
+    }).filter(Boolean)
+
+    const red = rfIn.map(r=>{
+      if (typeof r === "string") return 
+      const pr=pNorm(r.priority), h=r.finding||"Hallazgo relevante", j=r.rationale?:""
+      const d = pr==="ER" ? " (Derivación: ER)" : pr==="Urgente" ? " (Derivación: Médico de Familia/Urgencias)" : " (Derivación: Diferida)"
+      return 
+    })
+
+    const tests = tstIn.map(t=>({
+      test: t.test,
+      sensibilidad: typeof t.sensitivity==="number"? t.sensitivity : null,
+      especificidad: typeof t.specificity==="number"? t.specificity : null,
+      objetivo: t.reason || "",
+      contraindicado_si: "",
+      justificacion: t.reason || ""
+    }))
+
+    return {
+      motivo_consulta: String(input.chief_complaint||""),
+      hallazgos_clinicos: arrStr(input.physical_findings),
+      hallazgos_relevantes: [],
+      contexto_ocupacional: [],
+      contexto_psicosocial: arrStr(input.social_context),
+      medicacion_actual: meds,
+      antecedentes_medicos: [],
+      diagnosticos_probables: [],
+      red_flags: red,
+      yellow_flags: arrStr(input.yellow_flags),
+      evaluaciones_fisicas_sugeridas: tests,
+      plan_tratamiento_sugerido: [],
+      derivacion_recomendada: "",
+      pronostico_estimado: "",
+      notas_seguridad: "",
+      riesgo_legal: "bajo"
+    }
+  }
+
+  // Fallback seguro: estructura vacía para no romper UI
+  return {
+    motivo_consulta: "",
+    hallazgos_clinicos: [],
+    hallazgos_relevantes: [],
+    contexto_ocupacional: [],
+    contexto_psicosocial: [],
+    medicacion_actual: [],
+    antecedentes_medicos: [],
+    diagnosticos_probables: [],
+    red_flags: [],
+    yellow_flags: [],
+    evaluaciones_fisicas_sugeridas: [],
+    plan_tratamiento_sugerido: [],
+    derivacion_recomendada: "",
+    pronostico_estimado: "",
+    notas_seguridad: "",
+    riesgo_legal: "bajo"
+  }
+}

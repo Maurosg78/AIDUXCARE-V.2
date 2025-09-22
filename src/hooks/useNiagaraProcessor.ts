@@ -1,6 +1,7 @@
 import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
 import { callVertexAI } from '../services/vertex-ai-service-firebase';
 import { mapVertexToSpanish } from '../utils/vertexFieldMapper';
+import { generateSchemaConstrainedPrompt } from '../orchestration/prompts/schema-constrained-prompt';
 
 let _loggedOnce = false;
 
@@ -13,17 +14,49 @@ export const useNiagaraProcessor = () => {
       }
       
       console.log('Processing text with Vertex AI...');
-      const response = await callVertexAI(text);
+      // USAR EL PROMPT ESTRUCTURADO
+      const structuredPrompt = generateSchemaConstrainedPrompt(text);
+      const response = await callVertexAI(structuredPrompt);
       
-      console.log('Raw Vertex response:', response);
+            console.log('Raw Vertex response:', response);
       
-      // Extraer y debug los datos
-      let vertexData = response.text;
+      // Extract data from response
+      let vertexData = response;
+      
+      // Handle nested text field
+      if (response && response.text) {
+        vertexData = response.text;
+      }
+      
+      // Try to parse JSON if it's a string
       if (typeof vertexData === 'string') {
-        try {
-          vertexData = JSON.parse(vertexData);
-        } catch (e) {
-          console.log('Text is not JSON, using as is');
+        // Check if it looks like JSON
+        if (vertexData.trim().startsWith('{')) {
+          try {
+            // Try to fix truncated JSON
+            let jsonStr = vertexData;
+            
+            // If truncated, try to close it
+            if (!jsonStr.trim().endsWith('}')) {
+              console.warn('JSON appears truncated, attempting to fix...');
+              // Count open braces and close them
+              const openBraces = (jsonStr.match(/{/g) || []).length;
+              const closeBraces = (jsonStr.match(/}/g) || []).length;
+              const openBrackets = (jsonStr.match(/\[/g) || []).length;
+              const closeBrackets = (jsonStr.match(/\]/g) || []).length;
+              
+              // Add missing brackets and braces
+              jsonStr += '"]'.repeat(Math.max(0, openBrackets - closeBrackets));
+              jsonStr += '}'.repeat(Math.max(0, openBraces - closeBraces));
+            }
+            
+            vertexData = JSON.parse(jsonStr);
+            console.log('Successfully parsed JSON');
+          } catch (e) {
+            console.error('Failed to parse JSON:', e);
+            // If can't parse, return empty structure
+            return normalizeVertexResponse({});
+          }
         }
       }
       

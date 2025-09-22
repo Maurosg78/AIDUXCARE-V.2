@@ -262,7 +262,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
                 onClick={clearSelection}
                 className="text-xs text-gray-600 hover:text-gray-800 underline"
               >
-                Limpiar
+                Clear
               </button>
             </div>
           </div>

@@ -9,7 +9,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<'en' | 'es'>('es');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
   
   const t = {
     workflow: 'Flujo de Trabajo Clínico',

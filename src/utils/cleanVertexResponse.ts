@@ -1,139 +1,129 @@
-import { selectTestsByProtocol } from "./testProtocolSelector";
-import { parseVertexResponse, validateClinicalSchema } from "./responseParser";
+// Clean Vertex response normalizer for Niagara demo
+// Handles both Spanish and English field names
 
-export type RiesgoLegal = 'bajo' | 'medio' | 'alto';
+type MedInput = { name?: string; reason?: string; nombre?: string; motivo?: string }
+type RedFlagInput = { finding?: string; rationale?: string; priority?: string; hallazgo?: string; justificacion?: string; prioridad?: string }
+type TestInput = { test?: string; reason?: string; sensitivity?: number; specificity?: number }
 
-export interface ClinicalAnalysis {
-  motivo_consulta: string;
-  hallazgos_clinicos?: string[];  // Nuevo campo
-  hallazgos_relevantes?: string[];
-  contexto_ocupacional?: string[]; // Nuevo campo
-  contexto_psicosocial?: string[]; // Nuevo campo
-  medicacion_actual?: string[];    // Nuevo campo
-  antecedentes_medicos?: string[]; // Nuevo campo
-  diagnosticos_probables: string[];
-  red_flags: string[];
-  yellow_flags?: string[];
-  evaluaciones_fisicas_sugeridas: any[];
-  plan_tratamiento_sugerido: string[];
-  derivacion_recomendada?: string;
-  pronostico_estimado?: string;
-  notas_seguridad?: string;
-  riesgo_legal: RiesgoLegal;
+function mapPriority(p?: string): string {
+  const s = (p || "").toLowerCase()
+  if (s.includes("er")) return "ER"
+  if (s.includes("urgent")) return "Urgent"
+  return "Medical"
 }
 
-const DEFAULT_TESTS = [
-  {
-    test: "Evaluación física según región afectada",
-    sensibilidad: 0.75,
-    especificidad: 0.85,
-    objetivo: "Evaluación inicial",
-    contraindicado_si: ""
-  }
-];
-
-const toArray = (v: unknown): string[] => {
-  if (!v) return [];
-  if (Array.isArray(v)) return v.map(String);
-  if (typeof v === 'string') return [v];
-  return [];
-};
-
-const processPhysicalTests = (tests: any): any[] => {
-  if (!tests) return [];
-  if (!Array.isArray(tests)) return [];
+function formatRedFlag(input: any): string {
+  let text = "";
   
-  return tests.map((item: any) => {
-    if (typeof item === "string") {
-      return {
-        test: item,
-        sensibilidad: 0.75,
-        especificidad: 0.85,
-        objetivo: "Evaluación clínica",
-        contraindicado_si: ""
-      };
-    }
+  if (typeof input === "string") {
+    text = input;
+  } else if (input && typeof input === "object") {
+    const priority = mapPriority(input.priority || input.prioridad);
+    const finding = input.finding || input.hallazgo || "";
+    const rationale = input.rationale || input.justificacion || "";
     
-    if (item && typeof item === "object") {
-      // Asegurar que tenga los campos esperados
-      return {
-        test: item.test || item.nombre || "Test físico",
-        sensibilidad: item.sensibilidad ?? 0.75,
-        especificidad: item.especificidad ?? 0.85,
-        objetivo: item.objetivo || item.indicacion || "",
-        contraindicado_si: item.contraindicado_si || "",
-        justificacion: item.justificacion || ""
-      };
-    }
-    
-    return null;
-  }).filter(test => test !== null);
-};
+    // Build the flag text
+    text = finding;
+    if (rationale) text += ` - ${rationale}`;
+    if (priority) text = `[${priority}] ${text}`;
+  }
+  
+  // Clean and limit to essential info
+  text = text.replace(/^⚠️\s*/, "").trim();
+  const words = text.split(/\s+/).slice(0, 15);
+  return `⚠️ ${words.join(" ")}`;
+}
 
-export function normalizeVertexResponse(raw: any): ClinicalAnalysis {
-  console.log('[Normalizer] Input:', raw);
-  
-  // Usar el parser robusto
-  const parseResult = parseVertexResponse(raw);
-  
-  if (!parseResult.success) {
-    console.error('[Normalizer] Parse failed:', parseResult.error);
-    return {
-      motivo_consulta: '',
-      hallazgos_clinicos: [],
-  hallazgos_relevantes: [],
-      diagnosticos_probables: [],
-      red_flags: [],
-      yellow_flags: [],
-      evaluaciones_fisicas_sugeridas: DEFAULT_TESTS,
-      plan_tratamiento_sugerido: [],
-      riesgo_legal: 'bajo'
-    };
-  }
-  
-  const parsed = parseResult.data;
-  console.log('[Normalizer] Parsed data from', parseResult.source, ':', parsed);
-  
-  // Validar schema
-  if (!validateClinicalSchema(parsed)) {
-    console.warn('[Normalizer] Schema validation warning - missing fields');
-  }
-  
-  let evalsSafe = processPhysicalTests(parsed?.evaluaciones_fisicas_sugeridas);
-  
-  // Si no hay tests sugeridos, usar los por defecto
-  if (evalsSafe.length === 0) {
-    evalsSafe = DEFAULT_TESTS;
-  }
-  
-  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
-    ? parsed.riesgo_legal 
-    : 'bajo';
-  
-  // Compatibilidad: si viene con estructura nueva, usar esos campos
-  // Si viene con estructura vieja (hallazgos_relevantes), mantener compatibilidad
-  const result = {
-    motivo_consulta: String(parsed?.motivo_consulta || ''),
-    // Nuevos campos
-    hallazgos_clinicos: toArray(parsed?.hallazgos_clinicos),
-    hallazgos_relevantes: raw?.hallazgos_relevantes || raw?.hallazgos_clinicos || [],    contexto_ocupacional: toArray(parsed?.contexto_ocupacional),
-    contexto_psicosocial: toArray(parsed?.contexto_psicosocial),
-    medicacion_actual: toArray(parsed?.medicacion_actual),
-    antecedentes_medicos: toArray(parsed?.antecedentes_medicos),
-    // Campo legacy para compatibilidad
-    diagnosticos_probables: toArray(parsed?.diagnosticos_probables),
-    red_flags: toArray(parsed?.red_flags),
-    yellow_flags: toArray(parsed?.yellow_flags),
-    evaluaciones_fisicas_sugeridas: evalsSafe,
-    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
-    derivacion_recomendada: String(parsed?.derivacion_recomendada || ''),
-    pronostico_estimado: String(parsed?.pronostico_estimado || ''),
-    notas_seguridad: String(parsed?.notas_seguridad || ''),
-    riesgo_legal: riesgoSafe
+export function normalizeVertexResponse(input: any): any {
+  // Default safe structure
+  const empty = {
+    motivo_consulta: "",
+    hallazgos_clinicos: [],
+    hallazgos_relevantes: [],
+    contexto_ocupacional: [],
+    contexto_psicosocial: [],
+    medicacion_actual: [],
+    antecedentes_medicos: [],
+    diagnosticos_probables: [],
+    red_flags: [],
+    yellow_flags: [],
+    evaluaciones_fisicas_sugeridas: [],
+    plan_tratamiento_sugerido: [],
+    derivacion_recomendada: "",
+    pronostico_estimado: "",
+    notas_seguridad: "",
+    riesgo_legal: "bajo"
   };
-  
-  console.log('[Normalizer] Final result:', result);
-  return result;
-}
 
-export default normalizeVertexResponse;
+  try {
+    // Parse if wrapped as {text: "json"}
+    if (input && typeof input.text === "string") {
+      try {
+        input = JSON.parse(input.text);
+      } catch {
+        // If not JSON, use as is
+      }
+    }
+
+    if (!input || typeof input !== "object") return empty;
+
+    // Case 1: Already has Spanish field names
+    if (input.motivo_consulta !== undefined || input.hallazgos_clinicos !== undefined) {
+      return {
+        ...empty,
+        ...input,
+        red_flags: Array.isArray(input.red_flags) 
+          ? input.red_flags.map(formatRedFlag)
+          : [],
+        medicacion_actual: Array.isArray(input.medicacion_actual)
+          ? input.medicacion_actual.map((m: any) => {
+              if (typeof m === "string") return m;
+              const name = m.nombre || m.name || "";
+              const reason = m.motivo || m.reason || "";
+              return reason ? `${name} - ${reason}` : name;
+            })
+          : []
+      };
+    }
+
+    // Case 2: English field names from Vertex
+    const meds = Array.isArray(input.medications) 
+      ? input.medications.map((m: any) => {
+          if (typeof m === "string") return m;
+          const name = m.name || "";
+          const reason = m.reason || "";
+          return reason ? `${name} - ${reason}` : name;
+        })
+      : [];
+
+    const redFlags = Array.isArray(input.red_flags)
+      ? input.red_flags.map(formatRedFlag)
+      : [];
+
+    const tests = Array.isArray(input.suggested_tests)
+      ? input.suggested_tests.map((t: any) => ({
+          test: typeof t === "string" ? t : (t.test || ""),
+          sensibilidad: typeof t === "object" && t.sensitivity ? t.sensitivity : 0.85,
+          especificidad: typeof t === "object" && t.specificity ? t.specificity : 0.85,
+          objetivo: typeof t === "object" ? (t.reason || "") : "",
+          contraindicado_si: "",
+          justificacion: ""
+        }))
+      : [];
+
+    return {
+      ...empty,
+      motivo_consulta: input.chief_complaint || "",
+      hallazgos_clinicos: Array.isArray(input.physical_findings) ? input.physical_findings : [],
+      contexto_psicosocial: Array.isArray(input.social_context) ? input.social_context : [],
+      medicacion_actual: meds,
+      red_flags: redFlags,
+      yellow_flags: Array.isArray(input.yellow_flags) ? input.yellow_flags : [],
+      evaluaciones_fisicas_sugeridas: tests
+    };
+
+  } catch (error) {
+    console.error("[cleanVertexResponse] Error:", error);
+    return empty;
+  }
+}

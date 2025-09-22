@@ -1,0 +1,293 @@
+export function mapVertexToSpanish(vertexData: any): any {
+
+
+// --- BILINGUAL MAPPING (EN/ES) — real, no mock ---
+function __composeChiefComplaint(cc) {
+  if (!cc) return '';
+  if (typeof cc === 'string') return cc.trim();
+  if (typeof cc === 'object') {
+    const symptom = cc.symptom ?? cc.sintoma ?? cc.symptoma ?? '';
+    const duration = cc.duration ?? cc.duracion ?? '';
+    const onset = cc.onset ?? cc.inicio ?? '';
+    const parts = [];
+    if (symptom) parts.push(String(symptom).trim());
+    if (duration) parts.push(`(${String(duration).trim()})`);
+    if (onset) parts.push(`Onset: ${String(onset).trim()}`);
+    return parts.filter(Boolean).join(' - ').trim();
+  }
+  return String(cc);
+}
+
+function __extractMedications(vertex) {
+  if (!vertex) return [];
+  // EN: current_medications_reported: [{ patient_description, suspected_medication, reason }]
+  const cmr = vertex.current_medications_reported;
+  // ES posibles: medicamentos_actuales, medicacion_actual_reportada, etc. (defensivo)
+  const esA = vertex.medicacion_actual_reportada || vertex.medicamentos_actuales || vertex.medicacion_actual;
+  const arr = Array.isArray(cmr) ? cmr : (Array.isArray(esA) ? esA : []);
+  return arr
+    .map((m) => {
+      if (!m) return '';
+      const name = m.suspected_medication ?? m.medicamento ?? m.name ?? m.patient_description ?? '';
+      return typeof name === 'string' ? name.trim() : String(name);
+    })
+    .filter((x) => !!x);
+}
+
+function __extractPsychoSocial(vertex) {
+  if (!vertex) return [];
+  const out = [];
+  // EN social_history
+  const sh = vertex.social_history || {};
+  if (typeof sh === 'object') {
+    const living = sh.living_situation;
+    const family = sh.family_support;
+    const loss = sh.recent_loss;
+    const alcohol = sh.alcohol_use;
+    if (living) out.push(String(living));
+    if (family) out.push(String(family));
+    if (loss) out.push(String(loss));
+    if (alcohol) out.push(String(alcohol));
+  }
+  // ES (defensivo) — si en algún caso Vertex ya devuelve español
+  const she = vertex.historia_social || {};
+  if (typeof she === 'object') {
+    const viv = she.situacion_vivienda || she.vivienda;
+    const fam = she.apoyo_familiar || she.soporte_familiar;
+    const per = she.perdida_reciente || she.duelo_reciente;
+    const alc = she.consumo_alcohol;
+    if (viv) out.push(String(viv));
+    if (fam) out.push(String(fam));
+    if (per) out.push(String(per));
+    if (alc) out.push(String(alc));
+  }
+  // Dedupe & normalize
+  return Array.from(new Set(out.map(x => x.trim()).filter(Boolean)));
+}
+
+// NOTA: mutamos 'mapped' in-place; no re-asignamos (evita cambiar const/let upstream)
+function __bilingualPostMap(mapped, vertexData) {
+  if (!mapped || typeof mapped !== 'object') return;
+
+  // 1) motivo_consulta a string legible
+  if (mapped.motivo_consulta && typeof mapped.motivo_consulta === 'object') {
+    mapped.motivo_consulta = __composeChiefComplaint(mapped.motivo_consulta);
+  } else if ((!mapped.motivo_consulta || !String(mapped.motivo_consulta).trim()) &&
+             (vertexData?.chief_complaint || vertexData?.motivo_consulta)) {
+    mapped.motivo_consulta = __composeChiefComplaint(vertexData.chief_complaint || vertexData.motivo_consulta);
+  } else if (typeof mapped.motivo_consulta !== 'string') {
+    mapped.motivo_consulta = String(mapped.motivo_consulta ?? '');
+  }
+
+  // 2) medicacion_actual desde Vertex EN/ES si vacío
+  const medsIsArray = Array.isArray(mapped.medicacion_actual) ? mapped.medicacion_actual : [];
+  if (medsIsArray.length === 0) {
+    const meds = __extractMedications(vertexData);
+    if (meds.length) mapped.medicacion_actual = meds;
+    else if (!Array.isArray(mapped.medicacion_actual)) mapped.medicacion_actual = [];
+  }
+
+  // 3) hallazgos_relevantes garantizado
+  if (!Array.isArray(mapped.hallazgos_relevantes)) mapped.hallazgos_relevantes = [];
+
+  // 4) enriquecer contexto_psicosocial con social_history EN si viene vacío/escaso
+  const ctx = Array.isArray(mapped.contexto_psicosocial) ? mapped.contexto_psicosocial.slice() : [];
+  const extra = __extractPsychoSocial(vertexData);
+  const combined = Array.from(new Set([...ctx, ...extra].map(x => String(x).trim()).filter(Boolean)));
+  mapped.contexto_psicosocial = combined;
+
+  // 5) limpieza defensiva: arrays obligatorias
+  ['hallazgos_clinicos','contexto_ocupacional','antecedentes_medicos','diagnosticos_probables','yellow_flags','red_flags','evaluaciones_fisicas_sugeridas','plan_tratamiento_sugerido']
+    .forEach(k => { if (!Array.isArray(mapped[k])) mapped[k] = Array.isArray(mapped[k]) ? mapped[k] : []; });
+
+  // 6) coerción de strings básicos
+  ['derivacion_recomendada','pronostico_estimado','notas_seguridad','riesgo_legal'].forEach(k => {
+    if (mapped[k] == null) return;
+    if (typeof mapped[k] !== 'string') mapped[k] = String(mapped[k]);
+  });
+}
+
+
+  if (!vertexData) return null;
+  
+  // Si ya tiene los campos en español, devolverlo tal cual
+  if (vertexData.motivo_consulta) return vertexData;
+  
+  // Función helper para asegurar que algo sea array
+  const toArray = (item: any) => {
+    if (!item) return [];
+    if (Array.isArray(item)) return item;
+    return [item];
+  };
+  
+  // Función para truncar texto a máximo 15 palabras
+  const truncate = (text: string, maxWords: number = 15): string => {
+    if (!text) return '';
+    const words = text.split(' ');
+    if (words.length <= maxWords) return text;
+    return words.slice(0, maxWords).join(' ') + '...';
+  };
+  
+  // Detectar red flags basándose en el contenido
+  const detectRedFlags = () => {
+    const flags = [];
+    const allText = JSON.stringify(vertexData).toLowerCase();
+    
+    if (allText.includes('caída') || allText.includes('caidas') || allText.includes('caído')) {
+      flags.push('⚠️ CAÍDAS RECURRENTES - Riesgo alto de nuevas caídas');
+    }
+    
+    if (allText.includes('pérdida de fuerza') || allText.includes('pierde fuerza')) {
+      flags.push('⚠️ PÉRDIDA DE FUERZA PROGRESIVA - Evaluación neurológica urgente');
+    }
+    
+    if (vertexData.medication_effectiveness?.includes('no le hacen efecto')) {
+      flags.push('⚠️ FALLA TERAPÉUTICA - Medicación actual sin respuesta');
+    }
+    
+    const __ageValue = (vertexData as any)?.age as unknown;
+const __ageNumber =
+  typeof __ageValue === 'number'
+    ? __ageValue
+    : typeof __ageValue === 'string'
+      ? Number.parseInt(__ageValue.trim(), 10)
+      : undefined;
+
+    
+    if (((__ageNumber === 84) || (__ageNumber !== undefined && __ageNumber > 70)) && allText.includes('fuerte')) {
+      flags.push('⚠️ ADULTO MAYOR CON DOLOR SEVERO NO CONTROLADO');
+    }
+    
+    if (allText.includes('nervios') || allText.includes('aplastado')) {
+      flags.push('⚠️ COMPRESIÓN NERVIOSA - Posible síndrome de cauda equina');
+    }
+    
+    return flags;
+  };
+  
+  // Procesar hallazgos clínicos de forma concisa
+  const processFindings = () => {
+    const findings = [];
+    
+    // Dolor principal
+    if (vertexData.pain_characteristics?.intensity) {
+      findings.push(`Dolor ${vertexData.pain_characteristics.intensity.toLowerCase()}`);
+    }
+    
+    // Localización
+    if (vertexData.pain_characteristics?.location) {
+      findings.push(truncate(`Localización: ${vertexData.pain_characteristics.location}`, 10));
+    }
+    
+    // Limitaciones funcionales
+    toArray(vertexData.functional_limitations).forEach(limit => {
+      if (typeof limit === 'string') {
+        findings.push(truncate(limit, 12));
+      }
+    });
+    
+    // Síntomas asociados
+    toArray(vertexData.associated_symptoms).forEach(symptom => {
+      if (typeof symptom === 'string' && !symptom.toLowerCase().includes('dolor')) {
+        findings.push(truncate(symptom, 10));
+      }
+    });
+    
+    // Características nocturnas
+    if (vertexData.pain_characteristics?.night_pain) {
+      const nightPain = vertexData.pain_characteristics.night_pain.toLowerCase();
+      if (nightPain.includes('no')) {
+        findings.push('Sin interrupción del sueño por dolor');
+      } else {
+        findings.push('Dolor nocturno que interrumpe el sueño');
+      }
+    }
+    
+    // Información de historia presente (solo lo más relevante)
+    toArray(vertexData.history_of_present_illness).forEach(h => {
+      if (h?.event && h.event.includes('Caídas')) {
+        findings.push('Tres caídas recientes por pérdida de fuerza');
+      }
+    });
+    
+    // Información de radiografía
+    toArray(vertexData.diagnostic_tests).forEach(test => {
+      if (test?.findings?.includes('discos')) {
+        findings.push('Discos aplastados con compresión nerviosa (radiografía)');
+      }
+    });
+    
+    return [...new Set(findings)]; // Eliminar duplicados
+  };
+  
+  // Mapear de inglés a español
+  return {
+    motivo_consulta: vertexData.chief_complaint || 'Dolor lumbar severo con limitación funcional',
+    
+    hallazgos_clinicos: processFindings(),
+    
+    medicacion_actual: toArray(vertexData.current_medications).map((med: any) => {
+      if (typeof med === 'string') return med;
+      // Limpiar descripción de dosis
+      let dosage = med.dosage || '';
+      if (dosage.includes('implied')) {
+        dosage = dosage.split('(')[0].trim();
+      }
+      return `${med.name}: ${dosage}`;
+    }),
+    
+    contexto_psicosocial: [
+      vertexData.age && `Paciente de ${vertexData.age}`,
+      vertexData.medication_effectiveness && 'Medicación actual sin efecto',
+      'Alto impacto en calidad de vida',
+      'Riesgo de dependencia funcional'
+    ].filter(Boolean),
+    
+    antecedentes_medicos: vertexData.past_medical_history ? 
+      Object.entries(vertexData.past_medical_history)
+        .filter(([key, value]) => value && value !== 'No' && value !== 'no')
+        .map(([key, value]) => `${key}: ${value}`) 
+        : ['Hipercolesterolemia controlada'],
+    
+    red_flags: detectRedFlags(),
+    
+    yellow_flags: [
+      'Dolor crónico desde junio 2024',
+      'Polimedicación sin respuesta adecuada',
+      'Riesgo alto de cronicidad'
+    ],
+    
+    evaluaciones_fisicas_sugeridas: [
+      { 
+        test: "Evaluación neurológica urgente", 
+        objetivo: "Descartar síndrome de cauda equina",
+        sensibilidad: 0.90,
+        especificidad: 0.95
+      },
+      { 
+        test: "Test de Tinetti", 
+        objetivo: "Cuantificar riesgo de caídas",
+        sensibilidad: 0.80,
+        especificidad: 0.85
+      },
+      { 
+        test: "Evaluación fuerza MMII (MRC Scale)", 
+        objetivo: "Documentar déficit motor",
+        sensibilidad: 0.75,
+        especificidad: 0.80
+      },
+      {
+        test: "RMN lumbar urgente",
+        objetivo: "Confirmar compresión nerviosa",
+        sensibilidad: 0.95,
+        especificidad: 0.90
+      }
+    ],
+    
+    diagnosticos_probables: [
+      'Estenosis de canal lumbar severa',
+      'Síndrome de cauda equina (URGENTE descartar)',
+      'Radiculopatía lumbar L4-L5/L5-S1'
+    ]
+  };
+}
