@@ -98,25 +98,25 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   return (
     <div className="flex flex-col gap-4">
       
-      {/* FILA 1: Alertas Médico-Legales */}
+      {/* FILA 1: Medical-Legal Alerts */}
       <div className="bg-red-50 rounded-lg p-4 border border-red-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <h3 className="font-semibold text-gray-800">{t("Alertas Médico-Legales")}</h3>
+            <h3 className="font-semibold text-gray-800">{t("Medical-Legal Alerts")}</h3>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => handleSelectAll('alerts')}
               className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
             >
-              Todo
+              All
             </button>
             <button 
               onClick={() => handleSelectNone('alerts')}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
             >
-              Limpiar
+              Clear
             </button>
           </div>
         </div>
@@ -155,32 +155,32 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
       </div>
 
-      {/* FILA 2: Hallazgos Clínicos */}
+      {/* FILA 2: Clinical Findings */}
       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-800">{t("Hallazgos Clínicos")}</h3>
+            <h3 className="font-semibold text-gray-800">{t("Clinical Findings")}</h3>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => handleSelectAll('clinical')}
               className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
             >
-              Todo
+              All
             </button>
             <button 
               onClick={() => handleSelectNone('clinical')}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
             >
-              Limpiar
+              Clear
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <h4 className="font-medium text-sm text-gray-700 mb-2">SÍNTOMAS ACTUALES</h4>
+            <h4 className="font-medium text-sm text-gray-700 mb-2">CURRENT SYMPTOMS</h4>
             <div className="space-y-1">
               {editedResults.entities?.filter(e => e.type === 'symptom').map((entity) => (
                 <EditableCheckbox
@@ -202,7 +202,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
 
           <div>
-            <h4 className="font-medium text-sm text-gray-700 mb-2">MEDICACIÓN ACTUAL</h4>
+            <h4 className="font-medium text-sm text-gray-700 mb-2">CURRENT MEDICATIONS</h4>
             <div className="space-y-1">
               {editedResults.entities?.filter(e => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
                 .map((entity) => (
@@ -215,6 +215,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                     onTextChange={handleTextChange}
                   />
               ))}
+          <AddCustomItemButton onAdd={(text) => addCustomItem('general', text)} />
+
             </div>
           </div>
         </div>
@@ -225,20 +227,20 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-gray-800">Evaluación Física Propuesta</h3>
+            <h3 className="font-semibold text-gray-800">Proposed Physical Tests</h3>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => handleSelectAll('physical')}
               className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
             >
-              Todo
+              All
             </button>
             <button 
               onClick={() => handleSelectNone('physical')}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
             >
-              Limpiar
+              Clear
             </button>
           </div>
         </div>
@@ -248,7 +250,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <EditableCheckbox
               key={`physical-${i}`}
               id={`physical-${i}`}
-              text={`${i + 1}. ${typeof test === 'string' ? test : (test.name || test.test || 'Test físico')}${(test.sensitivity || test.sensibilidad) ? ` (S: ${Math.round((test.sensitivity || test.sensibilidad) * 100)}%, E: ${Math.round((test.specificity || test.especificidad || 0) * 100)}%)` : ''}`}
+              text={`${i + 1}. ${typeof test === 'string' ? test : (test.name || test.test || 'Test físico')}${(test.sensitivity || test.sensitivity) ? ` (S: ${Math.round((test.sensitivity || test.sensitivity) * 100)}%, E: ${Math.round((test.specificity || test.specificity || 0) * 100)}%)` : ''}`}
               checked={selectedIds.includes(`physical-${i}`)}
               onToggle={handleToggle}
               onTextChange={handleTextChange}
@@ -269,20 +271,20 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-600" />
-            <h3 className="font-semibold text-gray-800">Factores Psicosociales y Contexto Humano</h3>
+            <h3 className="font-semibold text-gray-800">Psychosocial Factors</h3>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => handleSelectAll('psychosocial')}
               className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
             >
-              Todo
+              All
             </button>
             <button 
               onClick={() => handleSelectNone('psychosocial')}
               className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
             >
-              Limpiar
+              Clear
             </button>
           </div>
         </div>
@@ -305,6 +307,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             onAdd={(text) => addCustomItem('yellowFlags', text)}
             placeholder="Agregar factor psicosocial..."
           />
+          <AddCustomItemButton onAdd={(text) => addCustomItem('general', text)} />
+
         </div>
       </div>
     </div>

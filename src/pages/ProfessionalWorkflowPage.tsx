@@ -214,11 +214,15 @@ const ProfessionalWorkflowPage = () => {
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
                   onNavigateToEvaluation={() => setActiveTab("evaluation")}
-                />
+                
+          onTabChange={(tab) => setActiveTab(tab as any)}
+        />
               )}
               
               {activeTab === 'evaluation' && (
-                <PhysicalEvaluationTab onComplete={() => setActiveTab("soap")} />
+                <PhysicalEvaluationTab
+                  suggestedTests={analysisResults?.evaluaciones_fisicas_sugeridas || []}
+                  onComplete={() => setActiveTab("soap")} />
               )}
               
               {activeTab === 'soap' && (

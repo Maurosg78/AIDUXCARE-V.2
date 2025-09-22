@@ -11,6 +11,7 @@ import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useAutoSelection } from "../hooks/useAutoSelection";
 
 interface WorkflowAnalysisTabProps {
+  onTabChange?: (tab: number) => void;
   selectedPatient: any;
   transcript: string;
   setTranscript: (text: string) => void;
@@ -47,7 +48,8 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   onGenerateSOAP,
   onContinueToEvaluation,
   physicalExamResults,
-  handleExamResultsChange
+  handleExamResultsChange,
+  onTabChange
 }) => {
   // Estados del contexto de sesión
   const { 
@@ -160,8 +162,8 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
       if (typeof test === 'string') return test;
       return {
         name: test.test || test.nombre || 'Test físico',
-        sensitivity: test.sensibilidad,
-        specificity: test.especificidad,
+        sensitivity: test.sensitivity,
+        specificity: test.specificity,
         indication: test.indicacion,
         justification: test.justificacion
       };
@@ -243,20 +245,20 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         {(niagaraResults || results) && selectedIds.length > 0 && (
           <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
             <span className="text-sm text-blue-700">
-              Elementos seleccionados: <strong>{selectedIds.length}</strong>
+              Items selected: <strong>{selectedIds.length}</strong>
             </span>
             <div className="flex gap-2">
               <button
                 onClick={selectQuickValidation}
                 className="text-xs text-blue-600 hover:text-blue-800 underline"
               >
-                Selección rápida
+                Quick select
               </button>
               <button
                 onClick={selectCriticalOnly}
                 className="text-xs text-red-600 hover:text-red-800 underline"
               >
-                Solo críticos
+                Critical only
               </button>
               <button
                 onClick={clearSelection}
@@ -267,7 +269,18 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
             </div>
           </div>
         )}
+      
+      {/* Botón para proceder a evaluación física */}
+      <div className="flex justify-end mt-6 border-t pt-4">
+        <button
+          onClick={() => onTabChange?.('evaluation')}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          Proceed to Physical Evaluation
+          <span>→</span>
+        </button>
       </div>
+</div>
     </>
   );
 };
