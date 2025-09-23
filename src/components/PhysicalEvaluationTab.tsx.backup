@@ -483,11 +483,11 @@ const PhysicalEvaluationTab: React.FC<PhysicalEvaluationTabProps> = ({
       <div className="flex justify-end pt-6 border-t">
         <button
           onClick={() => {/* Navigate to SOAP tab */}}
-          disabled={!selectedTests || !selectedTests || selectedTests.length === 0}
+          disabled={selectedTests.length === 0}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
         >
           Complete Evaluation 
-          <span className="text-sm">({selectedTests?.length || 0} selected)</span>
+          <span className="text-sm">({selectedTests.length} selected)</span>
         </button>
       </div>
     </div>

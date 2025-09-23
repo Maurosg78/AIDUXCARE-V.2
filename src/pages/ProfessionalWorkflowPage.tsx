@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from "../contexts/LanguageContext";
-import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
+import PhysicalEvaluationTab from '../components/PhysicalEvaluationTab';
 import { SOAPDisplay } from '../components/SOAPDisplay';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
 import { ProfessionalSOAPGenerator } from "../services/soap-generator-professional";
@@ -32,7 +32,7 @@ const ProfessionalWorkflowPage = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [soapNote, setSoapNote] = useState<any>(null);
   const [soapLoading, setSoapLoading] = useState(false);
-  const [shouldSuggestPro, setShouldSuggestPro] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);  const [shouldSuggestPro, setShouldSuggestPro] = useState(false);
   const [credits, setCredits] = useState(150);
   
   const { analyzeWithChunking, isProcessing, progress, currentMessage } = useChunkedAnalysis();
@@ -71,7 +71,7 @@ const ProfessionalWorkflowPage = () => {
   };
 
   const handleAnalyze = async () => {
-    const textLength = transcript.length;
+    setAnalysisLoading(true);    const textLength = transcript.length;
     const estimatedCredits = textLength > 5000 ? 2 : 1;
     
     if (!consumeCredits(estimatedCredits)) {
@@ -86,7 +86,7 @@ const ProfessionalWorkflowPage = () => {
       (window as any).__lastAnalysisResult = result;
       setAnalysisResults(result.analysis);
       setSharedAnalysisResults(result.analysis);
-    }
+    setAnalysisLoading(false);    }
   };
 
   const handleStartRecording = async () => {
@@ -207,7 +207,7 @@ const ProfessionalWorkflowPage = () => {
                   onStartRecording={handleStartRecording}
                   onStopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
-                  isProcessing={isProcessing}
+                  isAnalyzing={analysisLoading}                  isProcessing={isProcessing}
                   niagaraResults={analysisResults}
                   progress={progress}
                   currentMessage={currentMessage}
@@ -219,12 +219,12 @@ const ProfessionalWorkflowPage = () => {
         />
               )}
               
-              {activeTab === 'evaluation' && (
-                <PhysicalEvaluationTab
-                  suggestedTests={analysisResults?.evaluaciones_fisicas_sugeridas || []}
-                  onComplete={() => setActiveTab("soap")} />
-              )}
-              
+              {activeTab === 'evaluation' && (<PhysicalEvaluationTab
+  selectedTests={[]}
+  suggestedTests={analysisResults?.evaluaciones_fisicas_sugeridas || []}
+  onTestSelection={() => {}}
+  onComplete={() => setActiveTab("soap")} />
+              )}              
               {activeTab === 'soap' && (
                 <div>
                   {soapLoading ? (

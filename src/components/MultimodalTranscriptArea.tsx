@@ -84,7 +84,7 @@ export const MultimodalTranscriptArea: React.FC<MultimodalTranscriptAreaProps> =
           ) : (
             <>
               <Mic className="w-4 h-4 mr-1" />
-              Grabar
+              Record
             </>
           )}
         </Button>
@@ -114,7 +114,7 @@ export const MultimodalTranscriptArea: React.FC<MultimodalTranscriptAreaProps> =
           onPaste={handlePaste}
           placeholder="Opciones:
 - Escribir directamente aquí
-- Grabar audio con el botón 'Grabar'
+- Record audio con el botón 'Record'
 - Arrastrar archivos aquí
 - Pegar imágenes con Ctrl+V
 
@@ -131,7 +131,7 @@ Después presione 'Analizar con IA' →"
         
         {isProcessing && (
           <div className="absolute top-1 right-1 text-xs bg-yellow-100 px-2 py-1 rounded">
-            Procesando...
+            Processing...
           </div>
         )}
       </div>

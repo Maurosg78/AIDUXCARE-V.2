@@ -38,8 +38,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       case 'alerts':
         const alertIds: string[] = [];
         editedResults?.redFlags?.forEach((_, i) => alertIds.push(`red-${i}`));
-        editedResults?.entities?.filter(e => e.type === 'medication')
-          .forEach(e => e.id && alertIds.push(e.id));
         idsToSelect = alertIds;
         break;
         
@@ -150,7 +148,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="mt-3">
           <AddCustomItemButton
             onAdd={(text) => addCustomItem('redFlags', text)}
-            placeholder="Agregar alerta médico-legal..."
+            placeholder="Add medical-legal alert..."
           />
         </div>
       </div>
@@ -196,7 +194,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <div className="mt-2">
               <AddCustomItemButton
                 onAdd={(text) => addCustomItem('symptoms', text)}
-                placeholder="Agregar síntoma..."
+                placeholder="Add symptom..."
               />
             </div>
           </div>
@@ -261,7 +259,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="mt-3">
           <AddCustomItemButton
             onAdd={(text) => addCustomItem('physical', text)}
-            placeholder="Agregar test físico personalizado..."
+            placeholder="Add custom physical test..."
           />
         </div>
       </div>
@@ -305,9 +303,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         <div className="mt-3">
           <AddCustomItemButton
             onAdd={(text) => addCustomItem('yellowFlags', text)}
-            placeholder="Agregar factor psicosocial..."
+            placeholder="Add psychosocial factor..."
           />
-          <AddCustomItemButton onAdd={(text) => addCustomItem('general', text)} />
 
         </div>
       </div>

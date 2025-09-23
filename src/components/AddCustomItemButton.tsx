@@ -8,7 +8,7 @@ interface AddCustomItemButtonProps {
 
 export const AddCustomItemButton: React.FC<AddCustomItemButtonProps> = ({
   onAdd,
-  placeholder = "Agregar item personalizado..."
+  placeholder = "Add Custom Item..."
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newText, setNewText] = useState('');
@@ -33,7 +33,7 @@ export const AddCustomItemButton: React.FC<AddCustomItemButtonProps> = ({
         className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
       >
         <Plus className="h-3 w-3" />
-        Agregar item
+        Add Item
       </button>
     );
   }
@@ -56,7 +56,7 @@ export const AddCustomItemButton: React.FC<AddCustomItemButtonProps> = ({
         onClick={handleAdd}
         className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
       >
-        Agregar
+        Add
       </button>
       <button
         onClick={handleCancel}

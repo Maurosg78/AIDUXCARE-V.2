@@ -100,7 +100,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({
             size="sm"
             className="mt-2 w-full text-xs"
           >
-            Agregar a ficha
+            Add to Chart
           </Button>
         </div>
       )}

@@ -35,8 +35,8 @@ Please provide your professional assessment in this JSON format:
   ],
   
   "red_flags": [
-    "findings requiring urgent referral with your rationale"
-  ],
+    "RED FLAG: [specific finding] - [urgency level]"
+    // Keep concise: "URGENT: [symptom]" or "EMERGENCY: [symptom]" - max 6 words  ],
   
   "yellow_flags": [
     "psychosocial barriers to recovery"
@@ -55,7 +55,7 @@ REQUIREMENTS:
 - Stay within PT scope but use your clinical judgment freely
 
 IMPORTANT: Keep responses concise. Limit to essential information only.
-Maximum 10 items per array field. Be brief and clinical.
+RED FLAG EXAMPLES: "URGENT: Neurological deficit", "EMERGENCY: Suspected fracture"Maximum 10 items per array field. Be brief and clinical.
 
 Your assessment:
 `;

@@ -12,10 +12,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [language, setLanguage] = useState<'en' | 'es'>('en');
   
   const t = {
-    workflow: 'Flujo de Trabajo Clínico',
-    analysis: 'Análisis Inicial', 
-    physicalEval: 'Evaluación Física',
-    soap: 'Informe SOAP'
+    workflow: 'Clinical Workflow',
+    analysis: 'Initial Analysis', 
+    physicalEval: 'Physical Evaluation',
+    soap: 'SOAP Report'
   };
 
   return (

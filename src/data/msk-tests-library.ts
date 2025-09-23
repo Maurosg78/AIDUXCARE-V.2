@@ -1,13 +1,13 @@
 export interface MSKTest {
   id: string;
   name: string;
-  category: 'mobility' | 'strength' | 'balance' | 'flexibility' | 'special';
+  category: 'mobility' | 'strength' | 'balance' | 'flexibility' | 'special' | 'neurological' | 'orthopedic';
   normalRange: {
     min?: number;
     max?: number;
     unit: string;
     description: string;
-  };
+  }
   instructions: string;
 }
 
@@ -84,7 +84,7 @@ export const MSK_TESTS_LIBRARY: MSKTest[] = [
     },
     instructions: 'Stand on one leg, eyes open'
   },
-  // ROM
+  // FLEXIBILITY
   {
     id: 'shoulder-flex',
     name: 'Shoulder Flexion ROM',
@@ -133,5 +133,47 @@ export const MSK_TESTS_LIBRARY: MSKTest[] = [
       description: '70-90° normal'
     },
     instructions: 'Passive SLR to symptoms'
+  },
+  {
+    id: 'orthostatic-vitals',
+    name: 'Orthostatic Blood Pressure Measurement',
+    category: 'special',
+    normalRange: {
+      description: '<20 mmHg drop systolic, <10 mmHg diastolic',
+      unit: 'mmHg'
+    },
+    instructions: 'Blood pressure supine, sitting, standing (1 and 3 min)'
+  },
+  {
+    id: 'hip-rom-strength',
+    name: 'Hip Range of Motion and Strength Assessment',
+    category: 'special',
+    normalRange: {
+      description: 'ROM: 110-120° flexion, Strength: 4+/5 all planes',
+      unit: 'degrees/grade'
+    },
+    instructions: 'Assess hip flexion, extension, abduction, adduction ROM and strength'
+  },
+  // NEUROLOGICAL TESTS - ADDED FOR AI SUGGESTIONS
+  {
+    id: "neurological-screen",
+    name: "Neurological Screen (Dermatomes, Myotomes, Reflexes)",
+    category: "neurological",
+    normalRange: {
+      description: "Normal sensation, 4+/5 strength, normal reflexes",
+      unit: "clinical assessment"
+    },
+    instructions: "Test dermatomes, myotomes, and deep tendon reflexes"
+  },
+  // ORTHOPEDIC TESTS - ADDED FOR AI SUGGESTIONS
+  {
+    id: "lumbar-repeated-movement",
+    name: "Lumbar Repeated Movement Assessment",
+    category: "orthopedic",
+    normalRange: {
+      description: "Centralization of symptoms, increased ROM",
+      unit: "clinical response"
+    },
+    instructions: "Repeated flexion/extension movements to assess mechanical response"
   }
 ];

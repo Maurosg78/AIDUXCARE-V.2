@@ -12,7 +12,7 @@ export function ActionBar({ isRecording, onAction }: ActionBarProps) {
         className={`record-button ${isRecording ? 'recording' : ''}`}
         onClick={onAction}
       >
-        {isRecording ? 'Detener' : 'Grabar'}
+        {isRecording ? 'Stop' : 'Record'}
       </button>
     </div>
   );
