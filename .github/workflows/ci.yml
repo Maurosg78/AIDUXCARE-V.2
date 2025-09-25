@@ -29,8 +29,10 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install deps
-        run: npm ci
+      - name: Install deps (compat mode)
+        run: npm ci --legacy-peer-deps
 
       - name: Build
+        env:
+          CI: 'true'
         run: npm run -s build
