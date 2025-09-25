@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": [
+    "src/pages/ProfessionalWorkflowPage.tsx",
+    "src/components/WorkflowAnalysisTab.tsx",
+    "src/components/WorkflowAnalysisTab-i18n.tsx",
+    "src/components/SOAPDisplay.tsx",
+    "src/components/PatientInfoHeader.tsx",
+    "src/context/SessionContext.tsx",
+    "src/hooks/useNiagaraProcessor.ts",
+    "src/services/soap-generator-professional.ts",
+    "src/utils/**.ts",
+    "src/types/**.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/_archive/**",
+    "src/**/backup/**",
+    "src/**/__tests__/**",
+    "src/core/**",
+    "src/evals/**",
+    "src/utils/**.backup.ts",
+    "src/services/**.backup.ts",
+    "test/**"
+  ]
+}
