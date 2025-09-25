@@ -1,22 +1,36 @@
 name: CI
+
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'CODEOWNERS'
+      - '**/*.md'
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'CODEOWNERS'
+      - '**/*.md'
+
 jobs:
-  build:
+  build-and-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
-      - run: npm ci --prefer-offline --no-audit --no-fund
-      # TEMPORARILY DISABLED FOR DEMO
-      # - run: npm run typecheck
-      - run: npm run build
-      # - run: npm run test
-      - name: "Build successful for demo"
-        run: echo "✅ Build passed - System ready for demo"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run -s build
