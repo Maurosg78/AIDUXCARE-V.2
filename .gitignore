@@ -1,131 +1,31 @@
-# Dependencies
+# Node
 node_modules/
-.pnp
-.pnp.js
-
-# Production
 dist/
-build/
-.vite/
+.npm/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env*
-
-# System files
-.DS_Store
-Thumbs.db
-
-# IDE/Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Logs
+# Logs & OS
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-firebase-debug.log
-firestore-debug.log
-backend-*.log
-backend-output.log
-backend-test-results.log
-npm-install-log.txt
+.DS_Store
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Playwright cache
+**/.cache/ms-playwright/
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# Build artifacts / temp
+artifacts/
+aidux-*.sh
+.temp_legacy_ui/
+.aidux-snapshot/
+*.recovered.*
+*.recovered.tsx
+* 2
+* 3
+* 4
+* 2.*
+* 3.*
+* 4.*
 
-# TypeScript cache
-*.tsbuildinfo
+# Git
+!.gitignore
 
-# Optional npm cache directory
-.npm
-
-# ESLint cache
-.eslintcache
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Serverless directories
-.serverless/
-
-# Local Vercel folder
-.vercel/
-.vercel/output/
-
-# Testing
-playwright-report/
-test-results/
-emulator-data/
-
-# Firebase
-firebase-export-*/
-
-# Temporary files
-*.bak
-*.tmp
-*.temp
-*.timestamp-*
-
-# =========================
-# CRITICAL: QUARANTINE DIRS
-# =========================
-.quarantine/
-QUARANTINE*/
-QUARANTINE_*/
-AIDUXCARE-STABLE/
-AIDUXCARE-TEMP/
-AIDUXCARE-V.2-TEMP/
-aiduxcare-clean/
-tools/legacy_codebase/
-tools/recovery_*/
-recovery_*/
-backup-*/
-quarantine/
-
-# Scripts and tools output
-scripts/test-system-quick.html
-public/debug-env.html
-public/health.html
-forms/feedback-post-session.html
-monitoring-server/
-
-# Reports and metrics
-reports/
-metrics/
-
-# Legacy patches
-*.patch.quarantine/
-# nunca versionar dependencias ni backups
-node_modules/
-node_modules.__old__/
-backup/
-QUARANTINE_*/
-backup-*/*
-*.tsbuildinfo
-vertex-sa-key.json
+# Python legacy (kept tracked if inside repo)
+/tests/_legacy_python/*

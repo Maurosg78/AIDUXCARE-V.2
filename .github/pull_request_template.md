@@ -1,16 +1,14 @@
-## Resumen
+## Summary
+<!-- Short description (English only). Link related issues. -->
 
-_Explica brevemente el cambio y su propósito._
+## Checklist
+- [ ] I read the Handbook and linked the relevant sections.
+- [ ] Changes follow `CONTRIBUTING.md` (English, conventional commits, branching).
+- [ ] I added/updated docs if behavior changed.
+- [ ] CI passes or is docs-only.
 
-## Checklist de validación
-- [ ] DoR cumplido para el track correspondiente
-- [ ] Lint / Typecheck sin errores ni warnings
-- [ ] Tests agregados/actualizados (≥80% cobertura en rutas afectadas)
-- [ ] Compliance checklist revisado
-- [ ] Documentación técnica actualizada (si aplica)
+## Links to SSoT (deep-links)
+<!-- e.g., docs/processes/DOR_DOD_DEFINITIONS.md#definition-of-done -->
 
-## Screenshots / Evidencia
-_Agrega capturas, logs o resultados de pruebas relevantes._
-
-## Notas adicionales
-_Cualquier consideración para reviewers o despliegue._
+## Screenshots / Notes
+<!-- Optional -->
