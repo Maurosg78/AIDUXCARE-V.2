@@ -116,7 +116,7 @@
     "@babel/core": "^7.28.3",
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.27.1",
-    "@babel/traverse": "^7.28.3",
+    "@babel/traverse": "^7.28.4",
     "@babel/types": "^7.27.1",
     "@firebase/rules-unit-testing": "^5.0.0",
     "@playwright/test": "^1.54.2",
