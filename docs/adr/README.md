@@ -12,3 +12,8 @@ Lightweight records of consequential decisions. One file per decision.
 <!-- Example:
 - ADR-0001: Enable TypeScript strict mode — 2025-09-25 (status: Accepted)
 -->
+
+## Pre-push (bypass para cambios meta)
+- Si el cambio incluye **solo** archivos dentro de `docs/adr/**` o el `.gitignore`,
+  el hook **pre-push** omite TypeScript y ESLint.
+- Para cualquier cambio de **código de app**, el pre-push ejecuta TS/Lint y bloquea si fallan.
