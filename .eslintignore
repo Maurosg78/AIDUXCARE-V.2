@@ -27,3 +27,7 @@ node_modules.rescue.*/
 # SO / editor
 .DS_Store
 Thumbs.db
+
+# --- legacy & scripts (temporal) ---
+src/_deprecated/
+scripts/
