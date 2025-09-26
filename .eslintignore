@@ -38,3 +38,6 @@ src/**/__mocks__/
 src/**/*.test.ts
 src/**/*.test.tsx
 src/components/
+
+# --- declaration files ---
+**/*.d.ts
