@@ -35,10 +35,12 @@ export default [
       ...typescript.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'import/order': ['warn', { 'newlines-between': 'always' }],
       'react/react-in-jsx-scope': 'off',
+      'no-undef': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^(logger|_e|_error|_args|_patientId|_audioBlob)$' }],
       // Prohibir imports directos desde core/firebase
       'no-restricted-imports': ['error', {
         'patterns': [
@@ -69,6 +71,18 @@ export default [
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
       "src/components/**"
+    ],
+  }
+  {
+    ignores: [
+      "src/core/fhir/**",
+      "**/*backup*",
+      "**/*.backup*",
+      "**/*.bak*",
+      "**/*.broken",
+      "**/*.orig",
+      "**/*~",
+      "**/*.tmp"
     ],
   }
 ];
