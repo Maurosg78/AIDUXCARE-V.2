@@ -56,4 +56,19 @@ export default [
   {
     ignores: ['dist/**', 'node_modules/**', '.quarantine/**', 'legacy/**', 'QUARANTINE_*/**'],
   },
+  {
+    ignores: [
+      ".rescue_untracked/**",
+      "playwright-report/**",
+      "test-results/**",
+      "**/*.d.ts",
+      "src/_deprecated/**",
+      "scripts/**",
+      "src/**/__tests__/**",
+      "src/**/__mocks__/**",
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "src/components/**"
+    ],
+  }
 ];
