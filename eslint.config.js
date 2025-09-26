@@ -15,9 +15,7 @@ export default [
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: 'module',
-        ecmaFeatures: {
-          jsx: true,
-        },
+        ecmaFeatures: { jsx: true },
       },
       globals: {
         ...globals.browser,
@@ -27,62 +25,54 @@ export default [
     },
     plugins: {
       '@typescript-eslint': typescript,
-      'react': react,
+      react,
       'react-hooks': reactHooks,
-      'import': importPlugin,
+      import: importPlugin,
     },
     rules: {
       ...typescript.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
+      'no-undef': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^(logger|_e|_error|_args|_patientId|_audioBlob)$' }
+      ],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'import/order': ['warn', { 'newlines-between': 'always' }],
       'react/react-in-jsx-scope': 'off',
-      'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^(logger|_e|_error|_args|_patientId|_audioBlob)$' }],
-      // Prohibir imports directos desde core/firebase
       'no-restricted-imports': ['error', {
-        'patterns': [
+        patterns: [
           {
-            'group': ['@/core/firebase/*', 'src/core/firebase/*', '**/core/firebase/*'],
-            'message': 'Importa desde @/integrations/firebase en lugar de core/firebase directamente.'
+            group: ['@/core/firebase/*', 'src/core/firebase/*', '**/core/firebase/*'],
+            message: 'Importa desde @/integrations/firebase en lugar de core/firebase directamente.'
           }
         ]
       }]
     },
-    settings: {
-      react: { version: 'detect' },
-    },
-  },
-  {
-    ignores: ['dist/**', 'node_modules/**', '.quarantine/**', 'legacy/**', 'QUARANTINE_*/**'],
+    settings: { react: { version: 'detect' } },
   },
   {
     ignores: [
-      ".rescue_untracked/**",
-      "playwright-report/**",
-      "test-results/**",
-      "**/*.d.ts",
-      "src/_deprecated/**",
-      "scripts/**",
-      "src/**/__tests__/**",
-      "src/**/__mocks__/**",
-      "src/**/*.test.ts",
-      "src/**/*.test.tsx",
-      "src/components/**"
+      'dist/**',
+      'node_modules/**',
+      '.quarantine/**',
+      'legacy/**',
+      'QUARANTINE_*/**',
+      '.rescue_untracked/**',
+      'playwright-report/**',
+      'test-results/**',
+      '**/*.d.ts',
+      'src/_deprecated/**',
+      'scripts/**',
+      'src/**/__tests__/**',
+      'src/**/__mocks__/**',
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'src/components/**',
+      'src/core/fhir/**',
+      '**/*backup*', '**/*.backup*', '**/*.bak*', '**/*.broken', '**/*.orig', '**/*~', '**/*.tmp'
     ],
-  }
-  {
-    ignores: [
-      "src/core/fhir/**",
-      "**/*backup*",
-      "**/*.backup*",
-      "**/*.bak*",
-      "**/*.broken",
-      "**/*.orig",
-      "**/*~",
-      "**/*.tmp"
-    ],
-  }
+  },
 ];
