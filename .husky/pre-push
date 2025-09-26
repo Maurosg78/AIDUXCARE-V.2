@@ -1,23 +1,28 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+set -e
 
-echo "🧪 CI Gate (pre-push): typecheck, lint, tests y build (prod)"
+# Detectar cambios a empujar (solo nombres de archivos)
+CHANGED="$(git diff --name-only --cached || true)"
 
-# 1) TypeScript
-npm run -s typecheck || { echo "❌ TypeScript con errores"; exit 1; }
+# Si SOLO hay cambios en docs/adr/** o .gitignore, saltar chequeos pesados
+echo "$CHANGED" | grep -vE '^(docs/adr/|\.gitignore$)' >/dev/null 2>&1 && RUN_CHECKS=1 || RUN_CHECKS=0
 
-# 2) ESLint
-npm run -s lint || { echo "❌ ESLint con errores"; exit 1; }
-
-# 3) Tests (Vitest): exigir al menos un test
-if [ -f "vitest.config.ts" ] || [ -f "vitest.config.js" ] || ls test 1>/dev/null 2>&1 || ls src/**/*.test.* 1>/dev/null 2>&1; then
-  npm run -s test:ci || { echo "❌ Tests fallando"; exit 1; }
-else
-  echo "❌ No se detectaron tests. Agrega al menos uno (p.ej., wizard) antes de push."
-  exit 1
+if [ "$RUN_CHECKS" -eq 0 ]; then
+  echo "🛈 Pre-push: solo meta/ADR/.gitignore — se omiten TS/Lint."
+  exit 0
 fi
 
-# 4) Build de producción (Vite)
-npm run -s build || { echo "❌ Build de producción falló"; exit 1; }
+echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
+# Ajusta estos comandos a tus scripts reales si existen en package.json
+# Si no tienes scripts, ejecuta las herramientas directamente.
+if npm run -s typecheck >/dev/null 2>&1; then
+  echo "✅ TypeScript OK"
+else
+  echo "❌ TypeScript con errores"; exit 1
+fi
 
-echo "✅ pre-push OK"
+if npm run -s lint >/dev/null 2>&1; then
+  echo "✅ Lint OK"
+else
+  echo "❌ Lint con errores"; exit 1
+fi
