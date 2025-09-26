@@ -1,26 +1,29 @@
-# ruido que no queremos contar ahora
-_deprecated/**
-z_trash/**
-src/**/__tests__/**
-src/**/tests/**
-src/core/fhir/**/__tests__/**
-src/core/fhir/**/snapshots/**
-
-# generados/caches
-.eslintcache
-dist/
-build/
 # --- noise / backups / duplicates ---
-**/* [0-9].ts
-**/* [0-9].tsx
-**/* [0-9].js
-**/* [0-9].cjs
-**/* [0-9].mjs
-**/* backup*
+
+# Duplicados con sufijo numérico tipo "Componente 2.tsx"
+**/*\ [0-9].ts
+**/*\ [0-9].tsx
+**/*\ [0-9].js
+**/*\ [0-9].cjs
+**/*\ [0-9].mjs
+
+# Backups / copias
+**/*backup*
 **/*.backup*
 **/*.bak*
 **/*.broken
+**/*.orig
+**/*~
+**/*.tmp
+
+# Reportes de testing/playwright
 playwright-report/
 test-results/
+
+# Carpeta de rescate temporal que generaste
 node_modules.rescue.*/
 .rescue_untracked/
+
+# SO / editor
+.DS_Store
+Thumbs.db
