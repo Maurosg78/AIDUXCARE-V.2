@@ -31,3 +31,9 @@ Thumbs.db
 # --- legacy & scripts (temporal) ---
 src/_deprecated/
 scripts/
+
+# --- tests & mocks (temporal) ---
+src/**/__tests__/
+src/**/__mocks__/
+src/**/*.test.ts
+src/**/*.test.tsx
