@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
 
 # Permitir saltar typecheck con variable de entorno
