@@ -15,7 +15,7 @@
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
     "lint": "eslint .",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix --fix-type layout,suggestion",
-    "typecheck": "echo '⏭️ typecheck saltado temporalmente'",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run --passWithNoTests",

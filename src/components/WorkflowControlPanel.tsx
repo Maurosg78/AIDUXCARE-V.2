@@ -1,5 +1,6 @@
-import { Card, Button } from '../shared/ui';
 import { Mic, MicOff, Upload, FileText, Brain } from 'lucide-react';
+
+import { Card, Button } from '../shared/ui';
 
 interface ControlPanelProps {
   recordingTime: string;

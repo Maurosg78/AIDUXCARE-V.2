@@ -2,9 +2,9 @@ import type { SOAPNote } from '../types/vertex-ai';
 
 export class SOAPGenerator {
   static generateFromData(
-    analysisResults: any,
-    physicalEvalResults: any,
-    patientData: any
+    analysisResults: unknown,
+    physicalEvalResults: unknown,
+    patientData: unknown
   ): SOAPNote {
     // SUBJETIVO: Síntomas y hallazgos del análisis inicial
     const subjective = this.buildSubjective(analysisResults, patientData);
@@ -21,32 +21,32 @@ export class SOAPGenerator {
     return { subjective, objective, assessment, plan };
   }
   
-  private static buildSubjective(analysis: any, patient: any): string {
+  private static buildSubjective(analysis: unknown, patient: unknown): string {
     const parts = [];
     
     // Datos del paciente
     parts.push(`Paciente de ${patient.edad} con diagnóstico de ${patient.diagnosticoPrevio}.`);
     
     // Síntomas principales del análisis
-    const symptoms = analysis?.filter((item: any) => 
+    const symptoms = analysis?.filter((item: unknown) => 
       item.text.includes('🔍') || item.type === 'symptom'
     );
     if (symptoms?.length > 0) {
-      parts.push(`Refiere: ${symptoms.map((s: any) => s.text.replace('🔍', '')).join(', ')}.`);
+      parts.push(`Refiere: ${symptoms.map((s: unknown) => s.text.replace('🔍', '')).join(', ')}.`);
     }
     
     // Medicación actual
-    const meds = analysis?.filter((item: any) => 
+    const meds = analysis?.filter((item: unknown) => 
       item.text.includes('💊') || item.type === 'medication'
     );
     if (meds?.length > 0) {
-      parts.push(`Medicación actual: ${meds.map((m: any) => m.text.replace('💊', '')).join(', ')}.`);
+      parts.push(`Medicación actual: ${meds.map((m: unknown) => m.text.replace('💊', '')).join(', ')}.`);
     }
     
     return parts.join(' ') || 'Paciente acude a consulta de fisioterapia.';
   }
   
-  private static buildObjective(physicalResults: any): string {
+  private static buildObjective(physicalResults: unknown): string {
     if (!physicalResults || physicalResults.length === 0) {
       return 'Pendiente evaluación física completa.';
     }
@@ -55,14 +55,14 @@ export class SOAPGenerator {
     
     // Agrupar por tipo de dato
     const byType = {
-      pain: [] as any[],
-      strength: [] as any[],
-      range: [] as any[],
-      tests: [] as any[],
-      other: [] as any[]
+      pain: [] as unknown[],
+      strength: [] as unknown[],
+      range: [] as unknown[],
+      tests: [] as unknown[],
+      other: [] as unknown[]
     };
     
-    physicalResults.forEach((result: any) => {
+    physicalResults.forEach((result: unknown) => {
       if (result.pain) byType.pain.push(result);
       else if (result.strength) byType.strength.push(result);
       else if (result.degrees) byType.range.push(result);
@@ -111,11 +111,11 @@ export class SOAPGenerator {
     return parts.join(' ');
   }
   
-  private static buildAssessment(analysis: any, physical: any): string {
+  private static buildAssessment(analysis: unknown, physical: unknown): string {
     const findings = [];
     
     // Condiciones identificadas
-    const conditions = analysis?.filter((item: any) => 
+    const conditions = analysis?.filter((item: unknown) => 
       item.type === 'condition' || item.text.includes('🔍')
     );
     if (conditions?.length > 0) {
@@ -123,7 +123,7 @@ export class SOAPGenerator {
     }
     
     // Interpretación de hallazgos físicos
-    const hasLimitation = physical?.some((p: any) => 
+    const hasLimitation = physical?.some((p: unknown) => 
       p.result === 'positivo' || p.pain > 5 || p.strength?.includes('3/5')
     );
     
@@ -134,11 +134,11 @@ export class SOAPGenerator {
     return findings.join(' ') || 'Evaluación en proceso.';
   }
   
-  private static buildPlan(analysis: any, physical: any): string {
+  private static buildPlan(analysis: unknown, physical: unknown): string {
     const recommendations = [];
     
     // Basado en tests sugeridos
-    const suggestedTests = analysis?.filter((item: any) => 
+    const suggestedTests = analysis?.filter((item: unknown) => 
       item.text.includes('📋')
     );
     
@@ -147,19 +147,19 @@ export class SOAPGenerator {
     }
     
     // Basado en hallazgos
-    const hasPain = physical?.some((p: any) => p.pain > 3);
+    const hasPain = physical?.some((p: unknown) => p.pain > 3);
     if (hasPain) {
       recommendations.push('Técnicas de analgesia y control del dolor.');
     }
     
-    const hasWeakness = physical?.some((p: any) => 
+    const hasWeakness = physical?.some((p: unknown) => 
       p.strength && parseInt(p.strength) < 4
     );
     if (hasWeakness) {
       recommendations.push('Fortalecimiento muscular progresivo.');
     }
     
-    const hasRangeLimit = physical?.some((p: any) => 
+    const hasRangeLimit = physical?.some((p: unknown) => 
       p.degrees && parseInt(p.degrees) < 90
     );
     if (hasRangeLimit) {

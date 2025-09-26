@@ -8,14 +8,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { PersonalData } from '../../types/wizard';
 import { emailValidationService, type EmailValidationResult } from '../../services/emailValidationService';
 import { GeolocationData, geolocationService } from '../../services/geolocationService';
+import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+
 import { EmailRecoveryModal } from './EmailRecoveryModal';
 import { LocationAwarenessModal } from './LocationAwarenessModal';
 import { GeolocationPermissionModal } from './GeolocationPermissionModal';
 import { PhoneInput } from './PhoneInput';
-import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
 import '../../styles/form.css';
 
 interface PersonalDataStepProps {

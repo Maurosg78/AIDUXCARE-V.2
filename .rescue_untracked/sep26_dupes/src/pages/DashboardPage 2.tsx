@@ -1,7 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '../shared/ui/Card';
-import { Button } from '../shared/ui/Button';
 import { 
   FileText, 
   ChevronRight,
@@ -9,6 +7,9 @@ import {
   TestTube,
   Settings
 } from 'lucide-react';
+
+import { Card } from '../shared/ui/Card';
+import { Button } from '../shared/ui/Button';
 
 export default function DashboardPage() {
   const navigate = useNavigate();

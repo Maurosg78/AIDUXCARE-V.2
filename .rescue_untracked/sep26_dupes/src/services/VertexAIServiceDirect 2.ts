@@ -1,9 +1,10 @@
-import { callVertexAI } from './VertexAIServiceViaFirebase';
 import type { 
  ClinicalAnalysisResponse, 
  SOAPNote, 
  PhysicalExamResult,
 } from '../types/vertex-ai';
+
+import { callVertexAI } from './VertexAIServiceViaFirebase';
 
 export class VertexAIServiceDirect {
  private static lastTranscript: string = '';
