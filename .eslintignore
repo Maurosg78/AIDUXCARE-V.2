@@ -37,3 +37,4 @@ src/**/__tests__/
 src/**/__mocks__/
 src/**/*.test.ts
 src/**/*.test.tsx
+src/components/
