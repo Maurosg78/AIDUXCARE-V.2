@@ -10,3 +10,17 @@ src/core/fhir/**/snapshots/**
 .eslintcache
 dist/
 build/
+# --- noise / backups / duplicates ---
+**/* [0-9].ts
+**/* [0-9].tsx
+**/* [0-9].js
+**/* [0-9].cjs
+**/* [0-9].mjs
+**/* backup*
+**/*.backup*
+**/*.bak*
+**/*.broken
+playwright-report/
+test-results/
+node_modules.rescue.*/
+.rescue_untracked/
