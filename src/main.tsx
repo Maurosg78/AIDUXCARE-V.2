@@ -1,4 +1,5 @@
 import { Analytics } from "./services/analytics-service";
+
 Analytics.enable();import logger from '@/shared/utils/logger';
 
 import { StrictMode } from 'react';

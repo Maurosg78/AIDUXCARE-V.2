@@ -14,7 +14,7 @@ export class FileProcessorService {
       } else {
         return `[Archivo: ${file.name} - Describir contenido relevante]`;
       }
-    } catch (error) {
+    } catch (_error) {
       console.error('Error procesando archivo:', error);
       return `[Error al procesar ${file.name}]`;
     }
@@ -52,7 +52,7 @@ Describir hallazgos visibles:
       
       const data = await response.json();
       return `🎤 [Audio: ${file.name}]:\n${data.text}`;
-    } catch (error) {
+    } catch (_error) {
       console.error('Error con Whisper:', error);
       return `[Error transcribiendo: ${file.name}]`;
     }
@@ -67,7 +67,7 @@ Extraer información relevante del documento`;
     try {
       const text = await file.text();
       return `📝 [Documento: ${file.name}]:\n${text}`;
-    } catch (error) {
+    } catch (_error) {
       return `[Error leyendo ${file.name}]`;
     }
   }

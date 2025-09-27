@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { ProfessionalData, professionalTitles } from '../../types/wizard';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
 

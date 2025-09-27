@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🧪 CI Gate (pre-push): typecheck, lint, tests y build (prod)"
 

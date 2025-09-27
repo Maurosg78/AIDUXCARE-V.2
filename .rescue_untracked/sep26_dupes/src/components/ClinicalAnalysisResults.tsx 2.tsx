@@ -1,6 +1,7 @@
 import React from 'react';
-import { EditableCheckbox } from "./EditableCheckbox";
 import { Heart, Activity, Brain, AlertCircle } from 'lucide-react';
+
+import { EditableCheckbox } from "./EditableCheckbox";
 
 interface ClinicalAnalysisResultsProps {
   results: any;

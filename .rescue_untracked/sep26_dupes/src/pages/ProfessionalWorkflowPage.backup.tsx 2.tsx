@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Mic, MicOff, Upload, Search, UserPlus, Save, FileText } from 'lucide-react';
+
 import { useAuth } from '../hooks/useAuth';
 import { useTranscript } from '../hooks/useTranscript';
 import { Button, Card } from '../shared/ui';
@@ -7,7 +9,6 @@ import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { firebaseAuthService } from '../services/firebaseAuthService';
 import { SelectableFindings } from '../components/SelectableFindings';
 import { NewPatientModal } from '../components/NewPatientModal';
-import { Mic, MicOff, Upload, Search, UserPlus, Save, FileText } from 'lucide-react';
 import { FileProcessorService } from '../services/FileProcessorService';
 import type { PhysicalExamResult } from '../types/vertex-ai';
 

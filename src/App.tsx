@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { AuthProvider } from './context/AuthContext';
 import { SessionProvider } from './context/SessionContext';
 import AppRouter from './router';
