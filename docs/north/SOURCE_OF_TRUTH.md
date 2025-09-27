@@ -1,3 +1,5 @@
+version: 0.0.1
+
 # Aidux North — Source of Truth (SoT) v1.0.0
 
 ## Qué es
@@ -24,3 +26,12 @@ Estos archivos son la autoridad vigente:
 
 ## Historial
 - Semilla v1.0.0 creada desde PR #113.
+
+## Market & Language Policy (EN-CA primary)
+- **Primary market:** Canada (CA). All features and priorities target Canada first.
+- **Default language:** **English (en-CA)** for UI, copy, code comments, PRs and docs.
+- **Pilots:** Spain allowed **only as pilot**. No change to default language. Any Spanish asset must be optional and feature-flagged.
+- **Locales:** If locales exist, **/locales/en-CA** is required. No Spanish as default.
+- **Compliance focus:** PIPEDA + provincial privacy regimes; accessibility WCAG 2.1 AA; healthcare content in English.
+- **Units/format:** Metric, ISO 8601 dates, `en-CA` locale formatting.
+
