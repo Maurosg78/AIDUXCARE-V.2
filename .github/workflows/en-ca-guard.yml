@@ -1,0 +1,22 @@
+name: EN-CA & Canada Market Guard
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR metadata (Market/Language)
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY:  ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          # Busca en título + body (case-insensitive), usando regex portable
+          if ! printf '%s\n%s\n' "$TITLE" "$BODY" | grep -qiE 'market:[[:space:]]*CA'; then
+            echo "::error::PR missing Market: CA"; exit 1
+          fi
+          if ! printf '%s\n%s\n' "$TITLE" "$BODY" | grep -qiE 'language:[[:space:]]*en-CA'; then
+            echo "::error::PR missing Language: en-CA"; exit 1
+          fi
+          echo "OK"
