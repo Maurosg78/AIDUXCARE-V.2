@@ -1,0 +1,22 @@
+name: CI / build
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: 'pnpm'
+      - name: Enable Corepack & pin pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@8.15.4 --activate
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+      - name: Build
+        run: pnpm -s build
