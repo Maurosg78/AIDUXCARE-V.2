@@ -1,0 +1,16 @@
+name: CI / build
+on:
+  push:
+    branches-ignore: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "green ✅"
