@@ -9,3 +9,6 @@ dist/
 .env*
 google-cloud-credentials.json
 *.json
+
+# SoT redirects
+!docs/north/redirects.json
