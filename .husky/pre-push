@@ -53,7 +53,7 @@ fi
 # LINT
 if [[ "$AIDUX_SKIP_LINT" != "1" ]]; then
   if have_script lint; then
-    run_script lint
+    run_script lint:chunk
   else
     echo "ℹ️  No hay script 'lint' → lo salto"
   fi

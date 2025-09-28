@@ -6,7 +6,7 @@ files=$(git ls-files 'src/**/*.{ts,tsx,js,jsx}' 'apps/**/*.{ts,tsx,js,jsx}' 'pac
 if [[ -z "$files" ]]; then
   files=$(git ls-files '*.{ts,tsx,js,jsx}' 2>/dev/null)
 fi
-echo "$files" | awk 'NF' | xargs -n 100 pnpm exec eslint \
+echo "$files" | awk 'NF' | xargs -n 60 -P 1 pnpm exec eslint \
   --cache --cache-location .eslintcache \
   --ignore-pattern 'node_modules.rescue.*' \
   --no-error-on-unmatched-pattern \
