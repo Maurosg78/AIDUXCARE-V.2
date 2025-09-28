@@ -17,12 +17,12 @@ shopt -s nullglob
 bad=0
 for f in docs/north/**/*.md docs/north/*.md; do
   awk '
-    NR==1 && $0=="---" {in=1; next}
-    in==1 && $0~/^Market:\s*CA$/ {m=1; next}
-    in==1 && $0~/^Language:\s*en-CA$/ {l=1; next}
-    in==1 && $0=="---" {in=0; next}
-    (!in && $0 ~ /^#\s+/) {h1=1; exit}
-    END { if(!(m && l && h1 && in==0)) exit 1 }
+    NR==1 && $0=="---" {fm=1; next}
+    fm==1 && $0~/^Market:\s*CA$/ {m=1; next}
+    fm==1 && $0~/^Language:\s*en-CA$/ {l=1; next}
+    fm==1 && $0=="---" {fm=0; next}
+    (!fm && $0 ~ /^#\s+/) {h1=1; exit}
+    END { if(!(m && l && h1 && fm==0)) exit 1 }
   ' "$f" || { echo "Invalid header: $f"; bad=1; }
 done
 [[ $bad -eq 0 ]] || exit 1
