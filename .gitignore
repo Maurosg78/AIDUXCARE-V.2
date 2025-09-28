@@ -46,3 +46,4 @@ bin/
 
 
 !bin/ci-install.sh
+stats.html
