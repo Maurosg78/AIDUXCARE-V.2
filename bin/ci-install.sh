@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "::notice::ci-install.sh START (auto-detect pm)"
 set -euo pipefail
 export HUSKY=0
 export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
