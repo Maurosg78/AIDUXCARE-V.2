@@ -9,7 +9,8 @@
     "postbuild": "cp public/_redirects dist/_redirects && cp public/_headers dist/_headers",
     "lint": "eslint src/ --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest --config config/vitest.config.ts"
+    "test": "vitest --config config/vitest.config.ts",
+    "preflight:north": "bash scripts/north-guard-preflight.sh"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
