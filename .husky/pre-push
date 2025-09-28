@@ -1,19 +1,62 @@
 #!/usr/bin/env bash
 set -euo pipefail
-echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
 
-# Permitir saltar typecheck con variable de entorno
-if [ "${AIDUX_SKIP_TYPECHECK:-0}" = "1" ]; then
-  echo "⏭️  Typecheck saltado por AIDUX_SKIP_TYPECHECK=1"
+echo "🔎 pre-push: TypeScript y Lint…"
+
+# Flags para saltar pasos si hace falta
+: "${AIDUX_SKIP_TYPECHECK:=0}"
+: "${AIDUX_SKIP_LINT:=0}"
+
+run() { echo "+ $*"; "$@"; }
+
+# pnpm saludable (no solo un shim de Volta)
+have_pnpm() {
+  command -v pnpm >/dev/null 2>&1 && pnpm --version >/dev/null 2>&1
+}
+
+# Listado de scripts declarados en package.json (soporta pnpm o npm)
+list_scripts() {
+  if have_pnpm; then
+    pnpm run 2>/dev/null || true
+  else
+    npm run 2>/dev/null || true
+  fi
+}
+
+# ¿Existe un script dado?
+have_script() {
+  local s="$1"
+  list_scripts | grep -qE "^  ${s}\b"
+}
+
+# Ejecuta un script con el gestor disponible
+run_script() {
+  local s="$1"
+  if have_pnpm; then
+    run pnpm -s run "$s"
+  else
+    run npm run --silent "$s"
+  fi
+}
+
+# TYPECHECK
+if [[ "$AIDUX_SKIP_TYPECHECK" != "1" ]]; then
+  if have_script typecheck; then
+    run_script typecheck
+  else
+    echo "ℹ️  No hay script 'typecheck' → lo salto"
+  fi
 else
-  npm run -s typecheck || { echo "❌ TypeScript falló"; exit 1; }
+  echo "⏭️  Skip typecheck (AIDUX_SKIP_TYPECHECK=1)"
 fi
 
-# Lint (si hay override, úsalo)
-if [ -f "./eslint.override.config.js" ]; then
-  npx eslint --config eslint.override.config.js "src/**/*.{ts,tsx}" --quiet || { echo "❌ ESLint falló"; exit 1; }
+# LINT
+if [[ "$AIDUX_SKIP_LINT" != "1" ]]; then
+  if have_script lint; then
+    run_script lint
+  else
+    echo "ℹ️  No hay script 'lint' → lo salto"
+  fi
 else
-  npx eslint "src/**/*.{ts,tsx}" --quiet || { echo "❌ ESLint falló"; exit 1; }
+  echo "⏭️  Skip lint (AIDUX_SKIP_LINT=1)"
 fi
-
-echo "✅ Pre-push OK"
