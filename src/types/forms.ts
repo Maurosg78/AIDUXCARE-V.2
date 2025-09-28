@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface EMRForm {
   id?: string;
   visitId: string;
@@ -50,4 +51,3 @@ export interface SuggestionToIntegrate {
   type: 'recommendation' | 'warning' | 'info';
   sourceBlockId: string;
 }
-

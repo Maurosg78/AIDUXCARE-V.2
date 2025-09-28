@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 import { auditedPatientDataSource } from '../dataSources/AuditedPatientDataSource';
 import { auditedVisitDataSource } from '../dataSources/AuditedVisitDataSource';

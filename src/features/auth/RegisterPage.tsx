@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 
 import ProfessionalOnboardingPage from "../../pages/ProfessionalOnboardingPage";

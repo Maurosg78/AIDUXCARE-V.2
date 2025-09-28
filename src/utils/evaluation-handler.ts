@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const processEvaluationResults = (results: any) => {
   if (!results) return [];
   

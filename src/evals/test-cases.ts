@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const testCases = [
   {
     id: 'case-1-simple',

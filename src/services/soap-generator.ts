@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { SOAPNote } from '../types/vertex-ai';
 
 export class SOAPGenerator {

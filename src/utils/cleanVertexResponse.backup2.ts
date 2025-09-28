@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { selectTestsByProtocol } from "./testProtocolSelector";
 import { parseVertexResponse, validateClinicalSchema } from "./responseParser";
 

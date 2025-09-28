@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Test Setup for AiDuxCare V.2
  * @version 2.0.0

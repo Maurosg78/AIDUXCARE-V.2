@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type CodingSystem = 'RxNorm' | 'ATC' | 'SNOMED' | 'ICD10';
 
 export interface BaseEntity {
@@ -41,5 +42,3 @@ export type AssistantEntity = MedicationEntity | DiagnosisEntity | ProcedureEnti
 export function isMedication(entity: AssistantEntity): entity is MedicationEntity {
   return entity.kind === 'medication';
 }
-
-

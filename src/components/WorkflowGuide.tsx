@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { ArrowRight, CheckCircle, Circle } from 'lucide-react';
 

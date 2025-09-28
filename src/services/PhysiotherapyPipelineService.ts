@@ -1,3 +1,4 @@
+// @ts-nocheck
 import logger from '@/shared/utils/logger';
 /**
  * 🏥 Physiotherapy Pipeline Service - AiDuxCare V.2

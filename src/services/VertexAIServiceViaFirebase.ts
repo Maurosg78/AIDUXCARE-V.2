@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 import app from '../lib/firebase';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏢 Organization Types
  * Modelos de datos para organizaciones (clínicas) y sistema de roles

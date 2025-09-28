@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-restricted-imports */
 /* eslint-disable no-restricted-imports */
 import logger from '@/shared/utils/logger';

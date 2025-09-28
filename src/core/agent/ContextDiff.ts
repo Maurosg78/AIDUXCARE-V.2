@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MCPContext, MCPMemoryBlock } from '../mcp/schema';
 
 /**

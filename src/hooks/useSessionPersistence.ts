@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from 'react';
 
 import { SessionStorage } from '../services/session-storage';

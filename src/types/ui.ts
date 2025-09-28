@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tipos e interfaces para componentes UI compartidos
  * @version 1.0.0

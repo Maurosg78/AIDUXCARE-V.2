@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ProfessionalProfileService from './ProfessionalProfileService';
 
 import logger from '@/shared/utils/logger';

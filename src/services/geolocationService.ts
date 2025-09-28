@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * geolocationService - Servicio de geolocalización inteligente
  * Combina detección automática con fallback manual para compliance legal

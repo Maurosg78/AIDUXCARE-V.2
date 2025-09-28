@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface Warning {
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   title: string;

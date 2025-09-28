@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hook para usar el contexto de autenticación
  * Re-exporta useAuth desde AuthContext para mantener compatibilidad

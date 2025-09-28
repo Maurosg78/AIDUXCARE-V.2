@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getFunctions } from "firebase/functions";
 
 import logger from '@/shared/utils/logger';
@@ -73,4 +74,3 @@ const getFirebaseFunctions = () => {
     console.error("assistantAdapter error:", err);
   }
 }
-

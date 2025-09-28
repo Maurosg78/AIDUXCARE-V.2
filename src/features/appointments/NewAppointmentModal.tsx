@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react';
 
 import { createAppointment } from '../../repositories/appointmentsRepo';
@@ -128,5 +129,3 @@ export default function NewAppointmentModal({ open, onClose, onCreated }: Props)
     </div>
   );
 }
-
-

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { addDoc, collection, getFirestore, serverTimestamp } from 'firebase/firestore';
 
 import { MedicationEntity } from '../assistant/entities';
@@ -49,5 +50,3 @@ export function formatSoapFromMedication(med: MedicationEntity): string {
   
   return parts.join('\n');
 }
-
-

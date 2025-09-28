@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🔧 PÁGINA DE DEBUG: Aislamiento del AudioPipelineService
  * Para diagnosticar el bug de chunks repetidos

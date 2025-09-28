@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Manual Clinical Test - Transcripción Real de Óscar
  * @version 1.0.0

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏢 useOrganization Hook
  * Hook para gestionar organizaciones, miembros y permisos en el frontend

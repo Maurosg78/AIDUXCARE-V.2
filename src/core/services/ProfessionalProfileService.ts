@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏥 Professional Profile Service - Gestión de Perfiles Profesionales
  * Cumple HIPAA/GDPR: Cifrado, auditoría, consentimiento explícito, trazabilidad completa

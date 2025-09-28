@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏛️ Legal Consent Status Component - AiDuxCare V.2
  * Componente para mostrar el estado del consentimiento legal

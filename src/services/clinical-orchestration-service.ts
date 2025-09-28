@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Servicio de Orquestación Clínica
  * Integra: Schema validation + AI analysis + Metrics

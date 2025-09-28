@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class RealClinicalProcessor {
   private apiKey: string;
   

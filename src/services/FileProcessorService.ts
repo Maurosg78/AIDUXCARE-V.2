@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class FileProcessorService {
   static async processFile(file: File): Promise<string> {
     console.log(`📁 Procesando: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);

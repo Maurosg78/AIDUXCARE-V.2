@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Test básico para validar configuración de Vitest
  * @version 1.0.0

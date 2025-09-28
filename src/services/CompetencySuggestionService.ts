@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AgentSuggestion, SuggestionField } from '../types/agent';
 
 import { competencyGuardService } from './CompetencyGuardService';

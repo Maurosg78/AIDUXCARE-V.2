@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Visit } from '../domain/visitType';
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 

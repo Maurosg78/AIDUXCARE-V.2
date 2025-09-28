@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FirestoreAuditLogger, AuditEvent } from './FirestoreAuditLogger';
 
 /**

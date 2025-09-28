@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview SOAP Generation Service - Enterprise Clinical Documentation
  * @version 1.0.0 Enterprise

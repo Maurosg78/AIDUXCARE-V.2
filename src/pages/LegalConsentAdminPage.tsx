@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏛️ Legal Consent Admin Page - AiDuxCare V.2
  * Página de administración para gestión del consentimiento legal

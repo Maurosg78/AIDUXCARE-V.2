@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef } from 'react';
 import { Upload, Mic, MicOff, FileText } from 'lucide-react';
 

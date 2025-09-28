@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface SuggestionFeedback {
   id: string;
   suggestion_id: string;

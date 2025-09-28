@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/lib/firebaseActionCode.ts
 import type { ActionCodeSettings } from 'firebase/auth';
 

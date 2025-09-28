@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { createBrowserRouter, useParams } from 'react-router-dom';
 

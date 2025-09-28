@@ -10,3 +10,9 @@ Para cerrar v1:
 1) Quitar `eslint.override.config.js`.
 2) Restaurar `typecheck` estricto (`tsc --noEmit`).
 3) Publicar SoT v1.1+ con cambios y fecha.
+
+### Language & Market Limits
+- Scope is **Canada-first**, **English (en-CA)** only by default.
+- Spain pilots: must remain English; any Spanish materials are optional and flagged. No Spanish as default anywhere.
+- PRs must declare **Market: CA** y **Language: en-CA** (ver guardianes).
+

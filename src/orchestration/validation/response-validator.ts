@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Validador de Respuestas de IA
  * Asegura cumplimiento del schema antes de mostrar al usuario

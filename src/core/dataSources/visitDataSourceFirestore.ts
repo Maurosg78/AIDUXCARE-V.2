@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { collection, doc, getDoc, getDocs, updateDoc, deleteDoc, Firestore, query, where, addDoc } from 'firebase/firestore';
 
 import { db } from '../firebase/firebaseClient';

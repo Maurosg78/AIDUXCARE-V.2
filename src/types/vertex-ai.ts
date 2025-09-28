@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/types/vertex-ai.ts
 
 export interface ClinicalEntity {

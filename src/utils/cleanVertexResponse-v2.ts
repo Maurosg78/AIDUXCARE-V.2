@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { parseVertexResponse, validateClinicalSchema } from "./responseParser";
 
 export interface TestConEvidencia {

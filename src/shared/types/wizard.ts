@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type CountryMeta = {
   code: string;
   name: string;

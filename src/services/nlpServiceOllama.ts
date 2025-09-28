@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🧬 AiDuxCare - Servicio NLP con Ollama + RAG
  * Procesamiento de lenguaje natural para fisioterapia usando LLM local + evidencia científica

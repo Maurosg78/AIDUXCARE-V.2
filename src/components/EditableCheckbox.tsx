@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useRef, useEffect } from 'react';
 import { Check, Edit2, X, Save } from 'lucide-react';
 

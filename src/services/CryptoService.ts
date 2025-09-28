@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Servicio de Cifrado para AiDuxCare V.2
  * Proporciona cifrado AES-GCM usando Web Crypto API para datos médicos

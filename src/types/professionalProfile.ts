@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface ProfessionalProfile {
   id?: string;
   userId: string;

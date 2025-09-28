@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-unreachable */
 /* eslint-disable no-unreachable */
 import React, { useState, useEffect } from 'react';

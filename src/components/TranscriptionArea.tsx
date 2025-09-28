@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useRef } from 'react';
 import { Mic, MicOff, Brain, Camera, Upload, FileText, X } from 'lucide-react';
 

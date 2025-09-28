@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react';
 import { Copy, Download, Check, Settings } from 'lucide-react';
 

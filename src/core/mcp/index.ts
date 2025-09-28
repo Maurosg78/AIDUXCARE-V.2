@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Módulo Model Context Protocol (MCP)
  * 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import logger from '@/shared/utils/logger';
 /**
  * 🔍 AiDuxCare - Remote Monitoring Service

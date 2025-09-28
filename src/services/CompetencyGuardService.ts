@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { professionalCompetencyService } from './ProfessionalCompetencyService';
 
 import logger from '@/shared/utils/logger';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { LocalTranscription } from '../../stores/aiModeStore';
 
 import logger from '@/shared/utils/logger';

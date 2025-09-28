@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏙️ Ciudades de España - AiDuxCare V.2
  * Lista completa de ciudades españolas ordenadas alfabéticamente

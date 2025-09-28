@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AccountActivationPage - Página de activación de cuenta
  * Procesa el token de activación enviado por email

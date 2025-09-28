@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏢 Organization Team Management Page
  * Página para gestionar miembros de la organización

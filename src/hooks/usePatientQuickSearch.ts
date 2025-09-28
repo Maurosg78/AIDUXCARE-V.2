@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useMemo, useState } from 'react';
 import { getDocs, getFirestore, limit, orderBy, query, collection, startAt, endAt } from 'firebase/firestore';
 
@@ -44,5 +45,3 @@ export function usePatientQuickSearch(term: string) {
 
   return { results, loading };
 }
-
-

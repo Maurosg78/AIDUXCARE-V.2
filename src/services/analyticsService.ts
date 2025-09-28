@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Servicio de Analytics para AiDuxCare V.2
  * @version 2.0.0

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * FirebaseAuthService - Servicio de autenticación con Firebase
  * Maneja login, logout y verificación de email

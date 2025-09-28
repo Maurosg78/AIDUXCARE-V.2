@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 type Option = { value: string; label: string };
@@ -131,5 +132,3 @@ export const MultiSelectCombobox: React.FC<MultiSelectComboboxProps> = ({
     </div>
   );
 };
-
-

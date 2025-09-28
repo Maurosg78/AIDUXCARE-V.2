@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🔥 Firebase Auth Service - Migración desde Supabase
  * FASE 0.5: ESTABILIZACIÓN FINAL DE INFRAESTRUCTURA

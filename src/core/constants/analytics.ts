@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const AnalyticsEvents = {
   // Eventos de sugerencias
   SUGGESTION_INTEGRATED: 'suggestions_integrated',

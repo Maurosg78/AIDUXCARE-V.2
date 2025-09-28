@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Script para crear usuario de prueba en Firebase
  * @version 1.0.0

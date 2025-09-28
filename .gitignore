@@ -39,3 +39,7 @@ aidux-*.sh
 *.snap
 playwright-report/
 test-results/
+
+node_modules.rescue.*
+pr_body.txt
+bin/

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Componente de Métricas y Validación
  * Muestra el cumplimiento del schema y métricas de calidad

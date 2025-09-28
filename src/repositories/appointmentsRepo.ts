@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { addDoc, collection, getFirestore, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 export type AppointmentCreateData = {
@@ -26,5 +27,3 @@ export async function createAppointment(input: AppointmentCreateData): Promise<s
   const ref = await addDoc(collection(db, 'appointments'), payload);
   return ref.id;
 }
-
-

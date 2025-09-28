@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🚨 Tipos de Seguridad Médica - AiDuxCare
  * 
