@@ -13,9 +13,9 @@
     "build:ci": "npm run check:env && tsc && vite build --config vite.config.ci.ts",
     "build:migration": "npm run check:env && tsc --project tsconfig.migration.json && vite build",
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix --fix-type layout,suggestion",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run --passWithNoTests",
@@ -85,7 +85,8 @@
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
     "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
     "lint:relaxed": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --quiet",
-    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20"
+    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20",
+    "typecheck:full": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -168,6 +169,8 @@
     "vitest": "^1.6.1",
     "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
-    "zod": "^4.0.5"
-  }
+    "zod": "^4.0.5",
+    "globals": "^15.10.0"
+  },
+  "packageManager": "pnpm@8.15.4"
 }
