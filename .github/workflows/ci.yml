@@ -33,7 +33,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
           HUSKY: '0'
-        run: bash .github/scripts/ci-install.sh
+        run: bash bin/ci-install.sh
 
       - name: Build
         env:
