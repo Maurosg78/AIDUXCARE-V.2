@@ -1,6 +1,8 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
+
 import app from '../lib/firebase';
 import type { ClinicalAnalysisResponse, SOAPNote, PhysicalExamResult } from '../types/vertex-ai';
+
 import { parseVertexResponse } from './vertexResponseParser';
 
 const functions = getFunctions(app);

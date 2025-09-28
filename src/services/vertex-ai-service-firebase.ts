@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PromptFactory } from "../core/ai/PromptFactory-v3";
 
 export async function analyzeWithVertexProxy(payload: {

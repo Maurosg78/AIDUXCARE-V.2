@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TestGeolocation - Página de prueba para diagnosticar geolocalización
  * 

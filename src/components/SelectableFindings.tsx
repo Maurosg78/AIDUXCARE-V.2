@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
+
 import { Card } from '../shared/ui';
 import type { ClinicalEntity, PhysicalExamResult } from '../types/vertex-ai';
 

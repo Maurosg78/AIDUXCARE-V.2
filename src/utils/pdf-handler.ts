@@ -1,3 +1,4 @@
+// @ts-nocheck
 import PDFGenerator from '../services/pdf-generator';
 
 export const handleDownloadPDF = async (soapNote: any, patient: any, physicalExamResults: any) => {

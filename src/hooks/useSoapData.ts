@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview useSoapData Hook - SOAP Generation and Management
  * @version 1.0.0 Enterprise

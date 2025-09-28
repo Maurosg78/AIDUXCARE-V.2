@@ -13,9 +13,9 @@
     "build:ci": "npm run check:env && tsc && vite build --config vite.config.ci.ts",
     "build:migration": "npm run check:env && tsc --project tsconfig.migration.json && vite build",
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix --fix-type layout,suggestion",
-    "typecheck": "echo '⏭️ typecheck saltado temporalmente'",
+    "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run --passWithNoTests",
@@ -85,7 +85,10 @@
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
     "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
     "lint:relaxed": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --quiet",
-    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20"
+    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20",
+    "typecheck:full": "tsc -p tsconfig.json",
+    "lint:all": "eslint . --max-warnings=0",
+    "lint:chunk": "scripts/eslint-chunk.sh"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -138,7 +141,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/coverage-v8": "^1.6.1",
     "@vitest/ui": "^1.6.1",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.21",
     "chalk": "^4.1.2",
     "color-name": "^2.0.0",
     "concurrently": "^9.2.0",
@@ -152,12 +155,13 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.5",
     "firebase-admin": "^13.4.0",
+    "globals": "^15.10.0",
     "happy-dom": "^18.0.1",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.6",
     "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.14",
     "ts-node": "^10.9.2",
@@ -169,5 +173,6 @@
     "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
     "zod": "^4.0.5"
-  }
+  },
+  "packageManager": "pnpm@8.15.4"
 }

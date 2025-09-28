@@ -8,11 +8,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { LocationData, WizardStep, ValidationResult } from '../../types/wizard';
 import { GeolocationData, geolocationService } from '../../services/geolocationService';
 import { SPANISH_CITIES, getCitiesByProvince } from '../../data/spanishCities';
 import { LegalChecklist, type LegalChecklistItem } from '../LegalChecklist';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+
 import { LocationAwarenessModal } from './LocationAwarenessModal';
 
 interface LocationDataStepProps {

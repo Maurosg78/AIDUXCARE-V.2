@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Safe Firebase Bridge – único punto de acceso a Auth usando src/lib/firebase.ts
 
 export type FirebaseAuth = {

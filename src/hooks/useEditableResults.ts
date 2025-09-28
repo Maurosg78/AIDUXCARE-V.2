@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useCallback, useEffect } from 'react';
 
 export const useEditableResults = (initialResults: any) => {

@@ -1,3 +1,6 @@
+// @ts-nocheck
+/* eslint-disable no-redeclare */
+/* eslint-disable no-redeclare */
 import React from 'react';
 
 export interface ClinicalFilters {

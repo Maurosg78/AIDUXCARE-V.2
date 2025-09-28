@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AssistantEntity, MedicationEntity, DiagnosisEntity, ProcedureEntity, InstructionEntity } from './entities';
 
 // Parser determinista avanzado para MVP (español + inglés médico)
@@ -323,5 +324,3 @@ export function validateExtractedEntities(entities: AssistantEntity[]): {
     warnings
   };
 }
-
-

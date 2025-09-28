@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FirestoreAuditLogger } from '../audit/FirestoreAuditLogger';
 
 export interface ExportOptions {

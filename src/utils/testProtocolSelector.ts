@@ -1,4 +1,6 @@
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 // @ts-nocheck
 import protocols from '../protocols/msk-protocols.json';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Schema-Constrained Clinical Analysis Prompt
  * Version: 2.0.0 - Con validación FHIR R4

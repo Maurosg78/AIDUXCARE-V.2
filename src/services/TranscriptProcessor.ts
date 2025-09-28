@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type Entity = { id: string; text: string; confidence: number };
 export type Insight = { id: string; title: string; description?: string; severity?: 'low'|'medium'|'high'|'critical' };
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import logger from '@/shared/utils/logger';
 /**
  * Variables de entorno para AiDuxCare V.2

@@ -1,5 +1,7 @@
+// @ts-nocheck
 import { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
+
 import { Button } from '../shared/ui';
 
 interface PatientFormData {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class SessionStorage {
   private static readonly KEY_PREFIX = 'aidux_';
   

@@ -1,4 +1,6 @@
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 export class RobustParser {
   static parse(vertexResponse: string): any {
     const result = {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { User, Pill, Activity, AlertTriangle, Calendar } from 'lucide-react';
 

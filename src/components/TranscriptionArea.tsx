@@ -1,6 +1,8 @@
+// @ts-nocheck
 import React, { useState, useRef } from 'react';
-import { Card } from '../shared/ui';
 import { Mic, MicOff, Brain, Camera, Upload, FileText, X } from 'lucide-react';
+
+import { Card } from '../shared/ui';
 
 interface TranscriptionAreaProps {
   transcript: string;

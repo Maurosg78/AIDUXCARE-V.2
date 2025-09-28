@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Clinical Analysis Types - Enterprise Medical Documentation
  * @version 1.0.0

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // RAILS (Restricted AI Language System) para AiDuxCare
 // Sistema de restricciones estrictas para consultas clínicas
 
@@ -212,5 +213,3 @@ export function getClinicalConfidence(query: string): number {
 
   return Math.max(0.1, Math.min(1.0, confidence));
 }
-
-

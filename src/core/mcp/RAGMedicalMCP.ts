@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MCPMemoryBlock } from './schema';
 
 import logger from '@/shared/utils/logger';

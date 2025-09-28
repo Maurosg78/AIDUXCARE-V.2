@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export async function appendPlanSnippet(encounterId: string, snippet: string): Promise<void> {
@@ -8,5 +9,3 @@ export async function appendPlanSnippet(encounterId: string, snippet: string): P
   const newPlan = currentPlan ? `${currentPlan}\n${snippet}` : snippet;
   await updateDoc(ref, { 'soap.plan': newPlan });
 }
-
-

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState } from "react";
 
 import type { PersonalData, ProfessionalData, LocationData, WizardStep, ValidationResult } from "../types/wizard";

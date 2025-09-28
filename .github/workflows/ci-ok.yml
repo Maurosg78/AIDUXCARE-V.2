@@ -1,0 +1,17 @@
+name: CI / ok
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-ok-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ok:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "green ✅"

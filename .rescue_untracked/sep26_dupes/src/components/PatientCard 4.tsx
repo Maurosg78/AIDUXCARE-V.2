@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Card, Button } from '../shared/ui';
 import { AlertCircle, Pill, User } from 'lucide-react';
+
+import { Card, Button } from '../shared/ui';
 
 interface PatientCardProps {
   patient: any;

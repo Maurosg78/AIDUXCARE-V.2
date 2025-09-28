@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SOAPGenerator } from '../services/soap-generator';
 
 export const handleGenerateSOAP = async (

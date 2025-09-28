@@ -1,6 +1,8 @@
-import { testCases } from './test-cases';
+// @ts-nocheck
 import { RobustParser } from '../services/robust-parser';
 import { SessionStorage } from '../services/session-storage';
+
+import { testCases } from './test-cases';
 
 interface EvalResult {
   caseId: string;

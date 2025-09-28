@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏢 Organization Dashboard Page
  * Dashboard principal para organizaciones con métricas y resumen

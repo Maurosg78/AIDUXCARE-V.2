@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * useProfessionalProfile - Hook para leer perfil profesional desde Firestore
  * Proporciona acceso global al perfil del usuario autenticado

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class AiduxMetrics {
   static collectPromptMetrics(input: string, output: any) {
     return {

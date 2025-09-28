@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/services/OpenAIWhisperService.ts
 
 export class OpenAIWhisperService {

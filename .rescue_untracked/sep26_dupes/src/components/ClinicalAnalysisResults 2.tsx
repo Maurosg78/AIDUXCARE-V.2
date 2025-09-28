@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
+
+import { useEditableResults } from '../hooks/useEditableResults';
+
 import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
-import { useEditableResults } from '../hooks/useEditableResults';
 
 interface ClinicalAnalysisResultsProps {
   results: any;

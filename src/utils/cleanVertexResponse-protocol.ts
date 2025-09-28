@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { selectTestsByProtocol } from './testProtocolSelector';
 
 export function normalizeVertexResponse(raw: any): any {

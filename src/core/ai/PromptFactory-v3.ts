@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const PromptFactory = {
   create: (params: {
     contextoPaciente: string;

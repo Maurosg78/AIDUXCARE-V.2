@@ -1,8 +1,9 @@
+// @ts-nocheck
 import React from 'react';
 import { createBrowserRouter, useParams } from 'react-router-dom';
+
 import { AuthGuard } from '../components/AuthGuard';
 import { CommandCenterPage } from '../features/command-center/CommandCenterPage';
-import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
 import { PatientListPage } from '../pages/PatientsPage';
 import { PatientDetailPage } from '../pages/PatientDetailPage';

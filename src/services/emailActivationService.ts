@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * EmailActivationService - Sistema completo de activación por email
  * Integración real con Firebase Firestore

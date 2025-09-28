@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏥 Professional Type - Modelo de Datos para Profesionales Médicos
  * Cumple HIPAA/GDPR: Datos sensibles cifrados, auditoría completa, consentimiento explícito

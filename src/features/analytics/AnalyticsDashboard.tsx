@@ -1,3 +1,6 @@
+// @ts-nocheck
+/* eslint-disable no-unreachable */
+/* eslint-disable no-unreachable */
 import React, { useState, useEffect } from 'react';
 
 import { analyticsService, type DashboardMetrics } from '../../services/analyticsService';

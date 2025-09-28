@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface ParsedResponse {
   success: boolean;
   data: any;

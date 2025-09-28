@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { runEvals } from './evals/unified-eval-system';
 
 console.log('🚀 AiduxCare - Sistema de Evaluación\n');

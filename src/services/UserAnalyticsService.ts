@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';

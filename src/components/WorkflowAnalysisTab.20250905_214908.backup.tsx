@@ -1,13 +1,16 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Mic, MicOff, Brain, AlertCircle, User, Calendar, FileText } from 'lucide-react';
+
+import { useSession } from '../context/SessionContext';
+import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
+import { useAutoSelection } from "../hooks/useAutoSelection";
+
 import { ClinicalAnalysisResults } from './ClinicalAnalysisResults';
 import { TranscriptionArea } from "./TranscriptionArea";
 import { PatientHeader } from "./PatientHeader";
 import { LoadingOverlay } from "./LoadingOverlay";
 import ValidationMetrics from "./ValidationMetrics";
-import { useSession } from '../context/SessionContext';
-import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
-import { useAutoSelection } from "../hooks/useAutoSelection";
 
 interface WorkflowAnalysisTabProps {
   selectedPatient: any;

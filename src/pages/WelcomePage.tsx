@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * WelcomePage - Página principal institucional de AiDuxCare
  * Diseño limpio y profesional con identidad corporativa

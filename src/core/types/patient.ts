@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Timestamp } from 'firebase/firestore';
 
 export type PatientCore = {

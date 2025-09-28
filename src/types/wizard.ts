@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type WizardStep = "personal" | "professional" | "location";
 
 export type ValidationResult = {

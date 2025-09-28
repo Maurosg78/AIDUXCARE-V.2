@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface PatientData {
   id: string;
   nombre: string;

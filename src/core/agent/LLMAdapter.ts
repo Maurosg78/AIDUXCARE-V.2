@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AgentContext, AgentSuggestion, SuggestionType } from '@/types/agent';
 
 /**

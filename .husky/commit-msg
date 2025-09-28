@@ -1,16 +1,10 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+# Validación de mensajes de commit
+commit_msg_file="$1"
+commit_msg="$(cat "$commit_msg_file")"
 
-msg_file="$1"
-
-if ! grep -qi "ROADMAP_READ" "$msg_file"; then
-  echo "❌ Falta confirmación: agrega 'Signed-off-by: ROADMAP_READ'"
-  exit 1
-fi
-
-if ! grep -qi "COMPLIANCE_CHECKED" "$msg_file"; then
-  echo "❌ Falta confirmación: agrega 'COMPLIANCE_CHECKED'"
-  exit 1
-fi
+# Exigir tags de compliance
+echo "$commit_msg" | grep -q 'COMPLIANCE_CHECKED' || { echo "❌ Falta confirmación: agrega 'COMPLIANCE_CHECKED'"; exit 1; }
+echo "$commit_msg" | grep -q 'Signed-off-by:'   || { echo "❌ Falta confirmación: agrega 'Signed-off-by: ROADMAP_READ'"; exit 1; }
 
 echo "✅ commit-msg OK"

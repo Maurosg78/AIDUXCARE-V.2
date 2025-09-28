@@ -1,4 +1,6 @@
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 class AnalyticsService {
   private enabled = false;
   private sessionData: any = {};

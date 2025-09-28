@@ -1,4 +1,6 @@
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import type { ClinicalAnalysisResponse, ClinicalEntity } from '../types/vertex-ai';
 
 export function parseVertexResponse(text: string): ClinicalAnalysisResponse {

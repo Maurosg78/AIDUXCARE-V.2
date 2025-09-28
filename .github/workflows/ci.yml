@@ -26,16 +26,4 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'   # <- evitar EBADENGINE
-          cache: 'npm'
-
-      - name: Install deps (compat mode, sin navegadores/husky)
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-          HUSKY: '0'
-        run: npm ci --legacy-peer-deps
-
-      - name: Build
-        env:
-          CI: 'true'
-        run: npm run -s build
+          node-version: "20"

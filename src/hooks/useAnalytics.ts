@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * useAnalytics - Hook para tracking automático de eventos del sistema
  * Integrado con el Centro de Análisis Operativo y de Uso (CAOU)

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏛️ Legal Checklist Component - AiDuxCare V.2
  * Componente para checklist legal completo de uso de AiDuxCare

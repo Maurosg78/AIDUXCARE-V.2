@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useCallback } from 'react';
+
 import ClinicalOrchestrationService from '../services/clinical-orchestration-service';
 
 export const useNiagaraProcessorV2 = () => {

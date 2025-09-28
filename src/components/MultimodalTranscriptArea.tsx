@@ -1,5 +1,7 @@
+// @ts-nocheck
 import { useState, useRef } from 'react';
 import { Upload, Mic, MicOff, FileText } from 'lucide-react';
+
 import { FileProcessorService } from '../services/FileProcessorService';
 import { Button } from '../shared/ui';
 

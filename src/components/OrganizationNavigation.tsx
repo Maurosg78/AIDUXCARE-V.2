@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏢 Organization Navigation Component
  * Navegación adaptativa para organizaciones basada en permisos

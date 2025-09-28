@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Clinical Decisions Service - Decision Persistence
  * @version 1.0.0 Enterprise

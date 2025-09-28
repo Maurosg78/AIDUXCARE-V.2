@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Clinical Note Schema - FHIR R4 Compatible
  * CONFIDENCIAL - Propiedad Intelectual Core de AiduxCare

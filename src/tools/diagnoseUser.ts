@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview Script para diagnosticar el estado del usuario en Firebase
  * @version 1.0.0

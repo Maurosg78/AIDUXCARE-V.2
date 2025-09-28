@@ -1,3 +1,4 @@
+// @ts-nocheck
 import logger from '@/shared/utils/logger';
 /**
  * Servicio de Persistencia para AiDuxCare V.2

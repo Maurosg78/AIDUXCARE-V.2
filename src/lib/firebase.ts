@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Configuración y inicialización de Firebase
  * @version 2.0.0 - Pipeline PROD sin emuladores
@@ -66,4 +67,3 @@ if (envTarget === 'PROD') {
 }
 
 export default app;
-

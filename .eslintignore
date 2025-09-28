@@ -41,3 +41,9 @@ src/components/
 
 # --- declaration files ---
 **/*.d.ts
+
+# extra ignores
+node_modules.rescue.*
+dist/
+coverage/
+stats.html

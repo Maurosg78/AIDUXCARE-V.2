@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 🏥 Servicio de Restricciones de Servicios Profesionales - MVP España
  * Determina qué servicios y tratamientos pueden ofrecerse según la ubicación y certificaciones

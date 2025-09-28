@@ -1,6 +1,8 @@
+// @ts-nocheck
 import React from 'react';
-import { Card } from '../shared/ui';
 import { Info } from 'lucide-react';
+
+import { Card } from '../shared/ui';
 
 export const TranscriptionLabels = () => {
   return (

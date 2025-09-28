@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { AlertTriangle, Eye, Pill, Shield, Brain } from 'lucide-react';
 

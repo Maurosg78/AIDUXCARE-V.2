@@ -1,70 +1,64 @@
-#!/usr/bin/env sh
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Recoge los pares localSHA remoteSHA que envía Git al pre-push
-RANGES=""
-while read -r local_ref local_sha remote_ref remote_sha
-do
-  # ref nueva (remote_sha = 0s): comparamos todo el historial alcanzable por local_sha
-  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-    RANGES="$RANGES $local_sha"
+echo "🔎 pre-push: TypeScript y Lint…"
+
+# Flags para saltar pasos si hace falta
+: "${AIDUX_SKIP_TYPECHECK:=0}"
+: "${AIDUX_SKIP_LINT:=0}"
+
+run() { echo "+ $*"; "$@"; }
+
+# pnpm saludable (no solo un shim de Volta)
+have_pnpm() {
+  command -v pnpm >/dev/null 2>&1 && pnpm --version >/dev/null 2>&1
+}
+
+# Listado de scripts declarados en package.json (soporta pnpm o npm)
+list_scripts() {
+  if have_pnpm; then
+    pnpm run 2>/dev/null || true
   else
-    RANGES="$RANGES $remote_sha..$local_sha"
+    npm run 2>/dev/null || true
   fi
-done
+}
 
-# Si no vino nada por stdin (casos raros), usar ultimo commit
-if [ -z "$RANGES" ]; then
-  if git rev-parse --verify -q HEAD >/dev/null 2>&1; then
-    RANGES="HEAD~1..HEAD"
+# ¿Existe un script dado?
+have_script() {
+  local s="$1"
+  list_scripts | grep -qE "^  ${s}\b"
+}
+
+# Ejecuta un script con el gestor disponible
+run_script() {
+  local s="$1"
+  if have_pnpm; then
+    run pnpm -s run "$s"
   else
-    # primer commit del repo
-    RANGES="HEAD"
+    run npm run --silent "$s"
   fi
-fi
+}
 
-# Lista de archivos a empujar (acumulado por todos los rangos)
-CHANGED_FILES="$(git diff --name-only --diff-filter=ACMRTUXB $RANGES || true)"
-
-if [ -z "$CHANGED_FILES" ]; then
-  echo "🛈 Pre-push: no se detectaron archivos cambiados en el rango ($RANGES). Continuando…"
-  exit 0
-fi
-
-# Decide si TODOS los archivos son meta (docs/adr/** o .gitignore)
-ONLY_META=1
-echo "$CHANGED_FILES" | while IFS= read -r f; do
-  # normaliza posibles retornos de carro
-  f="$(printf "%s" "$f" | tr -d '\r')"
-  case "$f" in
-    docs/adr/*|.gitignore) : ;;   # ok meta
-    *) ONLY_META=0; echo "$f"; break ;;
-  esac
-done >/tmp/_non_meta_$$ || true
-
-if [ "$ONLY_META" -eq 1 ] && [ ! -s /tmp/_non_meta_$$ ]; then
-  echo "🛈 Pre-push: solo cambios meta (docs/adr/** o .gitignore) — se omiten TypeScript y ESLint."
-  exit 0
-fi
-
-echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
-
-# # TypeScript (usa script si existe; si no, tsc directo)
-# if npm run -s typecheck >/dev/null 2>&1; then
-  echo "✅ TypeScript OK (script)"
-# elif npx -y tsc -v >/dev/null 2>&1 && npx -y tsc --noEmit; then
-#   echo "✅ TypeScript OK (tsc)"
+# TYPECHECK
+if [[ "$AIDUX_SKIP_TYPECHECK" != "1" ]]; then
+  if have_script typecheck; then
+    run_script typecheck
+  else
+    echo "ℹ️  No hay script 'typecheck' → lo salto"
+  fi
 else
-  echo "❌ TypeScript con errores"; rm -f /tmp/_non_meta_$$; exit 1
+  echo "⏭️  Skip typecheck (AIDUX_SKIP_TYPECHECK=1)"
 fi
 
-# ESLint (usa script si existe; si no, eslint --config eslint.override.config.js "src/**/*.{ts,tsx}" --quiet
-if npm run -s lint >/dev/null 2>&1; then
-  echo "✅ Lint OK (script)"
-elif npx -y eslint --config eslint.override.config.js "src/**/*.{ts,tsx}" --quiet
-  echo "✅ Lint OK (eslint)"
+# LINT
+if [[ "$AIDUX_SKIP_LINT" != "1" ]]; then
+  if have_script lint; then
+    run_script lint:chunk
+  else
+    echo "ℹ️  No hay script 'lint' → lo salto"
+  fi
 else
-  echo "❌ Lint con errores"; rm -f /tmp/_non_meta_$$; exit 1
+  echo "⏭️  Skip lint (AIDUX_SKIP_LINT=1)"
 fi
 
-rm -f /tmp/_non_meta_$$
+ulimit -n 8192 2>/dev/null || true

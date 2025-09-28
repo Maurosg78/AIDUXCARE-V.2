@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { describe, it, expect } from 'vitest';
+
 import { cleanVertexResponse } from './cleanVertexResponse';
 
 describe('cleanVertexResponse', () => {

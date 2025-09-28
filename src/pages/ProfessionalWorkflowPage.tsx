@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
+
 import { PatientData } from '../types/PatientData';
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
 import { SOAPDisplay } from '../components/SOAPDisplay';

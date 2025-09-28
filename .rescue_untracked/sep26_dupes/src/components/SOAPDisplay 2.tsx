@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Card, Button } from '../shared/ui';
 import { Copy, Download, Check, Settings } from 'lucide-react';
+
+import { Card, Button } from '../shared/ui';
 
 interface SOAPDisplayProps {
   soapNote: any;

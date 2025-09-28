@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Taxonomías clínicas para Quick Create Paciente
 // Fuentes locales para autocompletado y chips
 

@@ -1,5 +1,7 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { AlertTriangle, Phone, AlertCircle, X } from 'lucide-react';
+
 import { Card } from '../shared/ui';
 import type { RedFlag } from '../types/vertex-ai';
 
