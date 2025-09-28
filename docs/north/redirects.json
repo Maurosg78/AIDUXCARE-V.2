@@ -1,0 +1,4 @@
+[
+  { "from": "/README_AIDUX_NORTH",   "to": "/docs/north/threads/README" },
+  { "from": "/README_AIDUX_NORTH.md","to": "/docs/north/threads/README.md" }
+]

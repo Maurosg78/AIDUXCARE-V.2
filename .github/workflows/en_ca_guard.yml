@@ -1,16 +1,104 @@
 name: EN-CA & Canada Market Guard
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+
 jobs:
   guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # 1) Enforce PR metadata in title+body
       - name: Enforce PR metadata (Market/Language)
         shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY:  ${{ github.event.pull_request.body }}
         run: |
-          title="${{ github.event.pull_request.title }}"
-          body="${{ github.event.pull_request.body }}"
-          echo "$title"$n"$body" | grep -qi "market:\s*CA" || { echo "::error ::PR missing Market:
+          set -euo pipefail
+          printf -v PR_META %s"\n"%s "$PR_TITLE" "$PR_BODY"
+
+          echo "::group::PR metadata"
+          printf '%s\n' "$PR_META"
+          echo "::endgroup::"
+
+          if ! grep -qiE '^Market:\s*CA\b' <<<"$PR_META"; then
+            echo "::error title=Missing Market::Add \"Market: CA\" to the PR body."
+            exit 1
+          fi
+          if ! grep -qiE '^Language:\s*en-CA\b' <<<"$PR_META"; then
+            echo "::error title=Missing Language::Add \"Language: en-CA\" to the PR body."
+            exit 1
+          fi
+
+      # 2) Header rules — minimal YAML front matter in docs/north/**/*.md
+      - name: Header rules - bucolic-marshmallow-92c5fb
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(docs/north/**/*.md docs/north/*.md)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error title=No SoT pages::Add at least one .md under docs/north/."
+            exit 1
+          fi
+          bad=0
+          for f in "${files[@]}"; do
+            # Debe empezar con front matter mínimo y luego un H1
+            if ! awk '
+              NR==1 && $0=="---" {in=1; next}
+              in==1 && $0~/^Market:\s*CA$/ {m=1; next}
+              in==1 && $0~/^Language:\s*en-CA$/ {l=1; next}
+              in==1 && $0=="---" {in=0; next}
+              (!in && $0 ~ /^#\s+/) {h1=1; exit}
+              END { if(!(m && l && h1 && in==0)) exit 1 }
+            ' "$f"; then
+              echo "::error file=$f,title=Invalid SoT header::Expected YAML front matter with 'Market: CA' and 'Language: en-CA', then a H1."
+              bad=1
+            fi
+          done
+          [ "$bad" -eq 0 ]
+
+      # 3) Pages changed — allow docs/north/** plus CI files
+      - name: Pages changed - bucolic-marshmallow-92c5fb
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::Changed files"
+          git fetch -u origin "${{ github.base_ref }}:${{ github.base_ref }}" >/dev/null 2>&1 || true
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          git diff --name-only "$base" "$head" | tee /tmp/changed.txt
+          echo "::endgroup::"
+
+          bad=0
+          while IFS= read -r p; do
+            case "$p" in
+              docs/north/*) ;;                         # permitido
+              .github/workflows/en_ca_guard.yml) ;;    # permitido (estamos corrigiendo el guard)
+              *) echo "::error file=$p,title=Forbidden path::Only docs/north/** and this guard workflow may change."; bad=1 ;;
+            esac
+          done < /tmp/changed.txt
+          [ "$bad" -eq 0 ]
+
+      # 4) Redirect rules — require docs/north/_redirects with specific lines
+      - name: Redirect rules - bucolic-marshmallow-92c5fb
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f docs/north/_redirects ]; then
+            echo "::error title=Missing redirects::Provide docs/north/_redirects."
+            exit 1
+          fi
+          need1='/README_AIDUX_NORTH /docs/north/threads/README'
+          need2='/README_AIDUX_NORTH.md /docs/north/threads/README.md'
+          if ! grep -Fxq "$need1" docs/north/_redirects; then
+            echo "::error title=Missing redirect::$need1"
+            exit 1
+          fi
+          if ! grep -Fxq "$need2" docs/north/_redirects; then
+            echo "::error title=Missing redirect::$need2"
+            exit 1
+          fi
