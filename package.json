@@ -10,7 +10,8 @@
     "lint": "eslint src/ --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest --config config/vitest.config.ts",
-    "preflight:north": "bash scripts/north-guard-preflight.sh"
+    "preflight:north": "node scripts/north-guard-preflight.mjs",
+    "north:new-thread": "tsx bin/north/new-thread.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
