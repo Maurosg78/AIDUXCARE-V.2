@@ -60,3 +60,5 @@ if [[ "$AIDUX_SKIP_LINT" != "1" ]]; then
 else
   echo "⏭️  Skip lint (AIDUX_SKIP_LINT=1)"
 fi
+
+ulimit -n 8192 2>/dev/null || true
