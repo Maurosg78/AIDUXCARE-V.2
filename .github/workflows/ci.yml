@@ -1,10 +1,9 @@
 name: CI
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
-
+    branches: [main, develop]
 jobs:
   compliance:
     name: CPO Compliance
@@ -20,10 +19,9 @@ jobs:
           version: 9
       - run: pnpm -s i
       - name: CPO Compliance Check
-        run: |
+        run: |-
           echo "Running CPO compliance tests..."
-          pnpm test test/ci/compliance/cpo/CpoCompliance.spec.ts --run --reporter=dot
-
+          pnpm exec vitest test/ci/compliance/cpo/CpoCompliance.spec.ts --run --reporter=dot --config config/vitest.config.ts
   build:
     name: Build & Test
     runs-on: ubuntu-latest
