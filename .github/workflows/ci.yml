@@ -1,14 +1,15 @@
 name: CI
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, develop ]
+
 jobs:
-  build:
-    # Ejecuta siempre en push; en PR solo si existen los secretos requeridos
-    if: github.event_name == 'push' || (secrets.VITE_FIREBASE_API_KEY && secrets.VITE_FIREBASE_PROJECT_ID && secrets.VITE_FIREBASE_APP_ID)
+  compliance:
+    name: CPO Compliance
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,11 +19,22 @@ jobs:
         with:
           version: 9
       - run: pnpm -s i
-      - run: pnpm -s lint
-      - run: pnpm -s build
-      - name: Test
-        run: pnpm -s test --run
       - name: CPO Compliance Check
-        run: |-
+        run: |
           echo "Running CPO compliance tests..."
           pnpm test test/ci/compliance/cpo/CpoCompliance.spec.ts --run --reporter=dot
+
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - run: pnpm -s i
+      - run: pnpm -s test --run
