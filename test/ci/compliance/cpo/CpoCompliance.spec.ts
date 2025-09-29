@@ -68,6 +68,7 @@ describe('CPO Compliance (Ontario) — SoT enforcement (Market: CA, Language: en
   it('English is the default locale (en or en-CA)', () => {
     const files = walk(path.join(ROOT, 'src'));
     const goodRes = [
+  /(?:export\s+)?(?:const\s+)?DEFAULT_LOCALE\s*=\s*['\"]en(?:-CA)?['\"]/i,
       /defaultLocale\s*:\s*['"]en(?:-CA)?['"]/i,
       /lng\s*:\s*['"]en(?:-CA)?['"]/i,
       /DEFAULT_LOCALE\s*=\s*['"]en(?:-CA)?['"]/i,
