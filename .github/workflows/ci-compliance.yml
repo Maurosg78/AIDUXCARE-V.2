@@ -1,0 +1,34 @@
+name: cpo-compliance
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+jobs:
+  run-compliance-evals:
+    name: Run CPO Compliance EVALs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: true
+
+      - name: Verify repo locale & SoT (marker lines)
+        run: |
+          echo "Market: CA"
+          echo "Language: en-CA"
+
+      - name: Run compliance tests (Vitest)
+        run: pnpm -s test:compliance
