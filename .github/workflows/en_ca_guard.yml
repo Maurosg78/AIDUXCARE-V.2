@@ -2,15 +2,17 @@ name: EN-CA & Canada Market Guard
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+
 jobs:
   guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Enforce PR metadata (Market/Language)
-        shell: bash
-        run: |
-          title="${{ github.event.pull_request.title }}"
-          body="${{ github.event.pull_request.body }}"
-          echo "$title"$n"$body" | grep -qi "market:\s*CA" || { echo "::error ::PR missing Market:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Preflight North (Node)
+        run: pnpm -s preflight:north
