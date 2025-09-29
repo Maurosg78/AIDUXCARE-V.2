@@ -1,10 +1,9 @@
 name: CI
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
-
+    branches: [main, develop]
 jobs:
   build:
     # Ejecuta siempre en push; en PR solo si existen los secretos requeridos
@@ -21,3 +20,9 @@ jobs:
       - run: pnpm -s i
       - run: pnpm -s lint
       - run: pnpm -s build
+      - name: Test
+        run: pnpm -s test --run
+      - name: CPO Compliance Check
+        run: |-
+          echo "Running CPO compliance tests..."
+          pnpm test test/ci/compliance/cpo/CpoCompliance.spec.ts --run --reporter=dot
