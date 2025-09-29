@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest --config config/vitest.config.ts",
     "preflight:north": "node scripts/north-guard-preflight.mjs",
-    "north:new-thread": "tsx bin/north/new-thread.ts"
+    "north:new-thread": "tsx bin/north/new-thread.ts",
+    "test:ci": "vitest --run --reporter=dot --exclude src/__tests__/**/*.integration.*",
+    "test:compliance": "vitest run tests/ci/compliance/**/*.spec.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
