@@ -1,3 +1,9 @@
+---
+Market: CA
+Language: en-CA
+Document: SoT
+---
+
 # Aidux North — Source of Truth (en-CA)
 
 **Market:** CA  

@@ -1,3 +1,9 @@
+---
+Market: CA
+Language: en-CA
+Document: SoT
+---
+
 # Aidux North — Limits & Non-Goals (en-CA)
 
 - No production defaults outside **Market: CA** and **Language: en-CA**.

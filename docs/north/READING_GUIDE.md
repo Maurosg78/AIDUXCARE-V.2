@@ -1,3 +1,9 @@
+---
+Market: CA
+Language: en-CA
+Document: SoT
+---
+
 # Aidux North — Reading Guide (en-CA)
 Start here. This guide explains how to use our Source of Truth (SoT).
 
