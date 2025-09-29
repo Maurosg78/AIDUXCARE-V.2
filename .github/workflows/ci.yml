@@ -21,7 +21,14 @@ jobs:
       - name: CPO Compliance Check
         run: |-
           echo "Running CPO compliance tests..."
-          pnpm exec vitest test/ci/compliance/cpo/CpoCompliance.spec.ts --run --reporter=dot --config config/vitest.config.ts
+          if [ -f config/vitest.config.ts ]; then
+            CONF="--config config/vitest.config.ts"
+          elif [ -f vitest.config.ts ]; then
+            CONF="--config vitest.config.ts"
+          else
+            CONF=""
+          fi
+          pnpm exec vitest run test/ci/compliance/cpo/CpoCompliance.spec.ts --reporter=dot $CONF
   build:
     name: Build & Test
     runs-on: ubuntu-latest
