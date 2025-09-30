@@ -80,7 +80,7 @@ export const useNiagaraProcessor = () => {
         text: JSON.stringify(mappedData)
       };
       
-      const cleaned = normalizeVertexResponse(structuredResponse, text);
+      const cleaned = normalizeVertexResponse(structuredResponse as any);
       console.log('Final cleaned response:', cleaned);
       
       return cleaned;

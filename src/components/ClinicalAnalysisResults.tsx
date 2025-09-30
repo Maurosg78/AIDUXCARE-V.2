@@ -37,22 +37,22 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     switch(section) {
       case 'alerts':
         const alertIds: string[] = [];
-        editedResults?.redFlags?.forEach((_, i) => alertIds.push(`red-${i}`));
-        editedResults?.entities?.filter(e => e.type === 'medication')
-          .forEach(e => e.id && alertIds.push(e.id));
+        editedResults?.redFlags?.forEach((_: unknown, i: number) => alertIds.push(`red-${i}`));
+        editedResults?.entities?.filter((e: any) => e.type === 'medication')
+          .forEach((e: any) => e.id && alertIds.push(e.id));
         idsToSelect = alertIds;
         break;
         
       case 'clinical':
-        idsToSelect = editedResults?.entities?.map(e => e.id).filter(Boolean) || [];
+        idsToSelect = editedResults?.entities?.map((e: any) => e.id).filter(Boolean) || [];
         break;
         
       case 'physical':
-        idsToSelect = physicalTests.map((_, i) => `physical-${i}`);
+        idsToSelect = physicalTests.map((_: unknown, i: number) => `physical-${i}`);
         break;
         
       case 'psychosocial':
-        idsToSelect = editedResults?.yellowFlags?.map((_, i) => `yellow-${i}`) || [];
+        idsToSelect = editedResults?.yellowFlags?.map((_: unknown, i: number) => `yellow-${i}`) || [];
         break;
     }
     
@@ -67,13 +67,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       case 'alerts':
         idsToRemove = selectedIds.filter(id => 
           id.startsWith('red-') || 
-          editedResults?.entities?.find(e => e.id === id && e.type === 'medication')
+          editedResults?.entities?.find((e: any) => e.id === id && e.type === 'medication')
         );
         break;
         
       case 'clinical':
         idsToRemove = selectedIds.filter(id => 
-          editedResults?.entities?.find(e => e.id === id)
+          editedResults?.entities?.find((e: any) => e.id === id)
         );
         break;
         
@@ -91,7 +91,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   if (!editedResults) return null;
 
-  const criticalMeds = editedResults.entities?.filter(e => 
+  const criticalMeds = editedResults.entities?.filter((e: any) => 
     e.type === 'medication' && e.text?.toLowerCase().includes('sin prescri')
   ) || [];
 
@@ -122,7 +122,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {criticalMeds.map((med) => (
+          {criticalMeds.map((med: any) => (
             <EditableCheckbox
               key={med.id}
               id={med.id}
@@ -134,7 +134,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             />
           ))}
           
-          {editedResults.redFlags?.map((flag, i) => (
+          {editedResults.redFlags?.map((flag: any, i: number) => (
             <EditableCheckbox
               key={`red-${i}`}
               id={`red-${i}`}
@@ -182,7 +182,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           <div>
             <h4 className="font-medium text-sm text-gray-700 mb-2">SÍNTOMAS ACTUALES</h4>
             <div className="space-y-1">
-              {editedResults.entities?.filter(e => e.type === 'symptom').map((entity) => (
+              {editedResults.entities?.filter((e: any) => e.type === 'symptom').map((entity: any) => (
                 <EditableCheckbox
                   key={entity.id}
                   id={entity.id}
@@ -204,8 +204,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           <div>
             <h4 className="font-medium text-sm text-gray-700 mb-2">MEDICACIÓN ACTUAL</h4>
             <div className="space-y-1">
-              {editedResults.entities?.filter(e => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
-                .map((entity) => (
+              {editedResults.entities?.filter((e: any) => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
+                .map((entity: any) => (
                   <EditableCheckbox
                     key={entity.id}
                     id={entity.id}
@@ -244,7 +244,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {physicalTests.map((test, i) => (
+          {physicalTests.map((test: any, i: number) => (
             <EditableCheckbox
               key={`physical-${i}`}
               id={`physical-${i}`}
@@ -288,7 +288,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {editedResults.yellowFlags?.map((flag, i) => (
+          {editedResults.yellowFlags?.map((flag: any, i: number) => (
             <EditableCheckbox
               key={`yellow-${i}`}
               id={`yellow-${i}`}

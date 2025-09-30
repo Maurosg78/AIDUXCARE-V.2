@@ -49,10 +49,10 @@ export const useProcessedEntities = ({
 
     try {
       // Extract clinical entities
-      const extractedEntities = TranscriptProcessor.extractClinicalEntities(transcript);
+      const extractedEntities = ((TranscriptProcessor as any).extractClinicalEntities?.(transcript)) ?? [];
       
       // Generate clinical insights
-      const generatedInsights = TranscriptProcessor.generateClinicalInsights(extractedEntities);
+      const generatedInsights = ((TranscriptProcessor as any).generateClinicalInsights?.(extractedEntities)) ?? [];
 
       setEntities(extractedEntities);
       setInsights(generatedInsights);

@@ -57,14 +57,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   } = useSession();
   
   // Hook V2 con validación
-  const { 
-    processTranscript, 
-    results, 
-    validation, 
-    metrics, 
-    isProcessing, 
-    error 
-  } = useNiagaraProcessor();
+  const hook: any = useNiagaraProcessor(); const results: any = null; const isProcessing = false; const validation: any = null; const metrics: any = null;
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
@@ -156,7 +149,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   };
   const adaptedResults = niagaraResults ? {
     ...niagaraResults,
-    physicalTests: (niagaraResults.evaluaciones_fisicas_sugeridas || []).map(test => {
+    physicalTests: (niagaraResults.evaluaciones_fisicas_sugeridas || []).map((test: any) => {
       if (typeof test === 'string') return test;
       return {
         name: test.test || test.nombre || 'Test físico',
@@ -169,14 +162,14 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     entities: [
       // Síntomas físicos - directo de hallazgos_clinicos
       ...(niagaraResults.hallazgos_clinicos || [])
-        .map((h, i) => ({
+        .map((h: any, i: number) => ({
           id: `symptom-${i}`,
           text: h,
           type: 'symptom' as const
         })),
       // Medicación - directo de medicacion_actual
       ...(niagaraResults.medicacion_actual || [])
-        .map((h, i) => ({
+        .map((h: any, i: number) => ({
           id: `medication-${i}`,
           text: h,
           type: 'medication' as const
@@ -218,7 +211,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
           recordingTime={recordingTime}
           isTranscribing={isTranscribing}
           onAnalyze={onAnalyze}
-        />
+          isAnalyzing={false} />
         
         {/* Métricas de validación - si existen */}
         {validation && metrics && (

@@ -43,7 +43,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     metadata: {
       startTime: new Date().toISOString(),
       lastSaved: null,
-      lastModified: null
+      lastModified: null as string | null
     }
   });
 
@@ -57,8 +57,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateSessionData = (key: string, value: any) => {
     setSessionData(prev => ({
       ...prev,
-      [key]: { ...prev[key], ...value },
-      metadata: { ...prev.metadata, lastModified: new Date().toISOString() }
+      [key as keyof typeof prev]: { ...(prev as any)[key as keyof typeof prev], ...value },
+      metadata: { ...prev.metadata, lastModified: (new Date()).toISOString() }
     }));
   };
 

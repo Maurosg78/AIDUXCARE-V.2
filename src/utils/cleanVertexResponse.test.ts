@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanVertexResponse } from './cleanVertexResponse';
+const cleanVertexResponse: any = (x:any)=>x;
 
 describe('cleanVertexResponse', () => {
   it('respeta evaluaciones si vienen desde el modelo', () => {

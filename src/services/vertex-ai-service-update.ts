@@ -19,4 +19,4 @@ const getLanguageInstruction = () => {
 };
 
 // En la función processClinicalTranscript, modificar:
-const fullPrompt = getLanguageInstruction() + promptFactory.getClinicalAnalysisPrompt(transcript);
+const fullPrompt = getLanguageInstruction();

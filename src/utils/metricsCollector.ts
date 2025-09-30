@@ -10,7 +10,7 @@ export class AiduxMetrics {
       symptomsSeparation: output.hallazgos_clinicos?.length > 0,
       yellowFlagsDetected: output.yellow_flags?.length > 0,
       testsWithMetrics: output.evaluaciones_fisicas_sugeridas?.filter(
-        t => t.sensibilidad && t.especificidad
+        (t: any) => t.sensibilidad && t.especificidad
       ).length,
       
       // Métricas únicas de AiduxCare
@@ -26,7 +26,7 @@ export class AiduxMetrics {
   
   static calculateConcision(output: any): number {
     // Algoritmo propietario para medir concisión
-    const avgWords = this.getAverageWordCount(output);
+    const avgWords = String(output).split(/s+/).filter((t: any) => t.sensibilidad && t.especificidad).length;
     return avgWords <= 15 ? 100 : Math.max(0, 100 - (avgWords - 15) * 5);
   }
   

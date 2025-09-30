@@ -1,0 +1,1407 @@
+
+ RUN  v1.6.1 /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2
+
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar PII correctamente
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar fechas correctamente
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar pasaportes españoles
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar NIEs
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas fuera del dominio médico
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas de marketing
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe aceptar consultas médicas válidas
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe aceptar consultas de fisioterapia
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas demasiado genéricas
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe manejar contexto de paciente correctamente
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe validar consultas médicas válidas
+   → validateClinicalQuery is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe rechazar consultas no médicas
+   → validateClinicalQuery is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe rechazar consultas genéricas
+   → validateClinicalQuery is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe validar consultas con PII sanitizada
+   → validateClinicalQuery is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar alta confianza para consultas técnicas
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar alta confianza para consultas de fisioterapia
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar confianza media para consultas generales
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe reducir confianza para consultas genéricas
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe incrementar confianza por palabras clave técnicas
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe manejar consultas mixtas correctamente
+   → getClinicalConfidence is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > Integración RAILS > debe procesar consulta completa correctamente
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/rails.spec.ts > RAILS System > Integración RAILS > debe rechazar consulta no médica completamente
+   → sanitizeForLLM is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer medicamentos correctamente
+   → expected [ 'Paciente', 'toma', …(10) ] to have a length of 1 but got 12
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer múltiples medicamentos
+   → expected [ 'Tratamiento', 'paracetamol', …(8) ] to have a length of 2 but got 10
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer diagnósticos de dolor musculoesquelético
+   → expected [ 'Paciente', 'presenta', …(6) ] to have a length of 2 but got 8
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer diagnósticos neurológicos
+   → expected [ 'Paciente', 'con', 'hernia', …(7) ] to have a length of 2 but got 10
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer procedimientos de evaluación
+   → expected [ 'Se', 'realiz', 'test', 'de', …(8) ] to have a length of 2 but got 12
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer técnicas de fisioterapia
+   → expected [ 'Se', 'aplic', 'terapia', …(5) ] to have a length of 2 but got 8
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer instrucciones de ejercicios
+   → expected [ 'Hacer', 'ejercicios', 'de', …(5) ] to have a length of 1 but got 8
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer precauciones
+   → expected [ 'Evitar', 'movimientos', …(7) ] to have a length of 2 but got 9
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe manejar texto sin entidades médicas
+   → expected [ 'El', 'paciente', 'lleg', 'a', …(6) ] to have a length of +0 but got 10
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer entidades mixtas correctamente
+   → expected false to be true // Object.is equality
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe validar entidades correctas
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe filtrar entidades de baja confianza
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe detectar medicamentos sin nombre
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe detectar diagnósticos sin etiqueta
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe calcular calidad promedio correctamente
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe manejar lista vacía
+   → validateExtractedEntities is not a function
+ × src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > Integración completa > debe procesar consulta clínica completa
+   → validateExtractedEntities is not a function
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCorePatient > should validate a compliant CA Core Patient
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCorePatient > should detect missing required fields for CA Core
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCorePatient > should validate Canadian Health Information Number (HIN)
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCorePatient > should warn about missing address information
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCorePatient > should validate address country format
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreEncounter > should validate a compliant CA Core Encounter
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreEncounter > should detect missing required fields for CA Core Encounter
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreEncounter > should validate encounter status values
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreEncounter > should validate subject reference format
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreObservation > should validate a compliant CA Core Observation
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreObservation > should detect missing required fields for CA Core Observation
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreObservation > should validate observation status values
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreObservation > should validate observation value structure
+ ✓ src/core/fhir/__tests__/validators.test.ts > CA Core Validator > validateCaCoreBundle > should validate a complete CA Core compliant bundle
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCorePatient > should validate a compliant US Core Patient
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCorePatient > should detect missing required fields for US Core
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCorePatient > should validate US address format
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCoreEncounter > should validate a compliant US Core Encounter
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCoreObservation > should validate a compliant US Core Observation
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCoreObservation > should validate vital signs observations with LOINC coding
+ ✓ src/core/fhir/__tests__/validators.test.ts > US Core Validator > validateUsCoreBundle > should validate a complete US Core compliant bundle
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > createFhirBundle > should create a basic FHIR bundle
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > createFhirBundle > should create bundle with custom options
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > createFhirBundle > should generate unique bundle IDs
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > createClinicalDataBundle > should create clinical data bundle
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > extractBundleResources > should extract resources by type
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > validateFhirBundle > should validate valid bundle
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > validateFhirBundle > should detect invalid bundle structure
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > validateFhirBundle > should validate bundle entries
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > bundleToClinicalData > should convert valid bundle to clinical data
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > bundleToClinicalData > should return null for incomplete bundle
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > exportFhirBundle > should export bundle as JSON string
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR Bundle Utils > exportFhirBundle > should respect export options
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirJson > should validate valid FHIR JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirJson > should detect invalid JSON syntax
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirJson > should validate expected resource type
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirJson > should detect resource type mismatch
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirJson > should validate required fields
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > parseFhirResource > should parse valid Patient resource
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > parseFhirResource > should handle parsing errors
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > parseFhirResource > should handle type mismatch
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirProfile > should validate CA Core profile
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirProfile > should validate US Core profile
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > validateFhirProfile > should handle invalid JSON in profile validation
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > createValidationError > should create validation error with all fields
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > formatValidationErrors > should format single error
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > formatValidationErrors > should format multiple errors
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > formatValidationErrors > should handle empty errors array
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > isFhirJson > should return true for valid FHIR JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > isFhirJson > should return false for invalid JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > isFhirJson > should return false for non-FHIR JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > getFhirResourceType > should extract resource type from valid JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > getFhirResourceType > should return null for invalid JSON
+ ✓ src/core/fhir/tests/utils.test.ts > FHIR JSON Utils > getFhirResourceType > should handle JSON without resourceType
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertPatientToFhir > should convert internal patient to FHIR Patient
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertPatientToFhir > should include CA Core profile when specified
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertPatientToFhir > should include US Core profile when specified
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertEncounterToFhir > should convert internal encounter to FHIR Encounter
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertEncounterToFhir > should map encounter types correctly
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertObservationToFhir > should convert internal observation to FHIR Observation
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertObservationToFhir > should handle text observations correctly
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertObservationToFhir > should categorize vital signs correctly
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Internal to FHIR Conversion > convertClinicalAnalysisToFhir > should convert clinical analysis result to FHIR bundle
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > convertFhirToPatient > should convert FHIR Patient to internal patient
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > convertFhirToEncounter > should convert FHIR Encounter to internal encounter
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > convertFhirToObservation > should convert FHIR Observation to internal observation
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > convertFhirToObservation > should handle text observations correctly
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > convertFhirToClinicalData > should convert FHIR bundle to internal clinical data
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > validateFhirResource > should validate valid FHIR resources
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > validateFhirResource > should detect invalid resource types
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - FHIR to Internal Conversion > validateFhirResource > should detect missing required fields
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Round-trip Tests > should convert Patient internal → FHIR → internal without data loss
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Round-trip Tests > should convert Encounter internal → FHIR → internal without data loss
+ ✓ src/core/fhir/__tests__/adapters.test.ts > FHIR Adapters - Round-trip Tests > should convert Observation internal → FHIR → internal without data loss
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirResource > should have required base properties
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirResource > should support optional meta property
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirPatient > should have correct resourceType
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirPatient > should support all optional patient fields
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirEncounter > should have correct resourceType and required fields
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirEncounter > should support all encounter status values
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirObservation > should have correct resourceType and required fields
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirObservation > should support valueQuantity for numeric observations
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > FhirObservation > should support valueString for text observations
+ ✓ src/core/fhir/__tests__/fhirTypes.test.ts > FHIR Types - Basic Structure > VitalSignsObservation > should extend FhirObservation with vital signs specific fields
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe agregar medicamento a la visita correctamente
+   → addMedicationToVisit is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe manejar medicamentos sin campos opcionales
+   → addMedicationToVisit is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe manejar errores de Firestore
+   → addMedicationToVisit is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe formatear medicamento completo correctamente
+   → formatSoapFromMedication is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe formatear medicamento básico correctamente
+   → formatSoapFromMedication is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe incluir instrucciones de administración
+   → formatSoapFromMedication is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe manejar medicamentos con instrucciones personalizadas
+   → formatSoapFromMedication is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > Integración completa > debe agregar medicamento y generar SOAP correctamente
+   → addMedicationToVisit is not a function
+ × src/core/emr/__tests__/medications.spec.ts > MedicationService > Integración completa > debe manejar flujo completo con errores
+   → addMedicationToVisit is not a function
+ ✓ src/tests/basic.test.ts > Configuración Básica > debe ejecutar tests correctamente
+ ✓ src/tests/basic.test.ts > Configuración Básica > debe manejar operaciones matemáticas
+ ✓ src/tests/basic.test.ts > Configuración Básica > debe manejar strings
+ ✓ src/tests/basic.test.ts > Configuración TypeScript > debe tener tipos correctos
+ ✓ src/tests/basic.test.ts > Configuración TypeScript > debe manejar arrays tipados
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de edad correctamente
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de resonancia correctamente
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de citas correctamente
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de notas pendientes correctamente
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas mixtas (datos + conocimiento)
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de conocimiento clínico
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe asignar confianza baja para consultas genéricas
+   → routeQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas de datos correctamente
+   → runAssistantQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas LLM correctamente
+   → runAssistantQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas mixtas correctamente
+   → runAssistantQuery is not a function
+ × src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar errores correctamente
+   → runAssistantQuery is not a function
+stderr | src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > registro exitoso muestra mensaje de verificación
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+Error verificando estado del usuario: Error: [vitest] No "onAuthStateChanged" export is defined on the "firebase/auth" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError (file:///Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.17_@vitest+ui@1.6.1_happy-dom@18.0.1_jsdom@26.1.0/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19)
+    at Object.get (file:///Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.17_@vitest+ui@1.6.1_happy-dom@18.0.1_jsdom@26.1.0/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22)
+    at /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/auth/firebaseAuthService.ts:235:27
+    at new Promise (<anonymous>)
+    at FirebaseAuthService.getCurrentSession (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/core/auth/firebaseAuthService.ts:234:12)
+    at checkUserStatus (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/WelcomePage.tsx:37:41)
+    at /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/WelcomePage.tsx:29:5
+    at commitHookEffectListMount (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:24930:9) {
+  codeFrame: 'vi.mock("firebase/auth", async (importOriginal) => {\n' +
+    '  const actual = await importOriginal()\n' +
+    '  return {\n' +
+    '    ...actual,\n' +
+    '    // your mocked methods\n' +
+    '  }\n' +
+    '})'
+}
+Warning: An update to WelcomePage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at WelcomePage (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/WelcomePage.tsx:12:42)
+    at RenderedRoute (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router@6.30.1_react@18.3.1/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at RenderErrorBoundary (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router@6.30.1_react@18.3.1/node_modules/react-router/dist/umd/react-router.development.js:486:7)
+    at DataRoutes (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router-dom@6.30.1_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-router-dom/dist/umd/react-router-dom.development.js:684:7)
+    at Router (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router@6.30.1_react@18.3.1/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at RouterProvider (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router-dom@6.30.1_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-router-dom/dist/umd/react-router-dom.development.js:455:7)
+
+stdout | src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario no verificado es bloqueado en login
+🔍 [DEBUG] LoginPage: Componente montado en /login
+🔍 [DEBUG] LoginPage: Estado de autenticación actual: { hasPrefillEmail: false, hasPrefillPassword: false, from: '/' }
+🔥 Firebase Auth: Iniciando sesión... { email: 'test@aiduxcare.com' }
+✅ Firebase Auth: Sesión iniciada exitosamente { userId: undefined, role: 'PHYSICIAN' }
+
+ × src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > registro exitoso muestra mensaje de verificación
+   → Unable to find an element with the placeholder text of: /correo electrónico/i
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"text-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"[39m
+        [36m/>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-gray-600"[39m
+        [36m>[39m
+          [0mVerificando tu perfil profesional...[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+stderr | src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario no verificado es bloqueado en login
+No routes matched location "/professional-workflow" 
+Error handled by React Router default ErrorBoundary: ErrorResponseImpl {
+  status: 404,
+  statusText: 'Not Found',
+  internal: true,
+  data: 'Error: No route matches URL "/professional-workflow"',
+  error: Error: No route matches URL "/professional-workflow"
+      at getInternalRouterError (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/router.ts:5550:5)
+      at handleNavigational404 (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/router.ts:3143:17)
+      at startNavigation (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/router.ts:1561:47)
+      at Object.navigate (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/@remix-run+router@1.23.0/node_modules/@remix-run/router/router.ts:1441:18)
+      at /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/react-router@6.30.1_react@18.3.1/node_modules/react-router/lib/hooks.tsx:1106:16
+      at handleLogin (/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/src/pages/LoginPage.tsx:63:9)
+}
+
+stdout | src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario no verificado es bloqueado en login
+🔍 [DEBUG] Login exitoso, redirigiendo a página principal
+
+ ✓ src/utils/cleanVertexResponse.test.ts > cleanVertexResponse > respeta evaluaciones si vienen desde el modelo
+ ✓ src/utils/cleanVertexResponse.test.ts > cleanVertexResponse > usa fallback si faltan evaluaciones
+ ✓ test/sanity.test.ts > sanity > works
+ ✓ test/WelcomePage.test.tsx > test básico de WelcomePage
+ ✓ test/Router.smoke.test.tsx > test básico de Router
+ × src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario no verificado es bloqueado en login 1086ms
+   → expected null not to be null
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<h2>[39m
+        [0mUnexpected Application Error![0m
+      [36m</h2>[39m
+      [36m<h3[39m
+        [33mstyle[39m=[32m"font-style: italic;"[39m
+      [36m>[39m
+        [0m404 Not Found[0m
+      [36m</h3>[39m
+      [36m<p>[39m
+        [0m💿 Hey developer 👋[0m
+      [36m</p>[39m
+      [36m<p>[39m
+        [0mYou can provide a way better UX than this when your app throws errors by providing your own [0m
+        [36m<code[39m
+          [33mstyle[39m=[32m"padding: 2px 4px; background-color: rgba(200, 200, 200, 0.5);"[39m
+        [36m>[39m
+          [0mErrorBoundary[0m
+        [36m</code>[39m
+        [0m or[0m
+        [0m [0m
+        [36m<code[39m
+          [33mstyle[39m=[32m"padding: 2px 4px; background-color: rgba(200, 200, 200, 0.5);"[39m
+        [36m>[39m
+          [0merrorElement[0m
+        [36m</code>[39m
+        [0m prop on your route.[0m
+      [36m</p>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ × src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > reenviar verificación en VerifyEmailPage muestra feedback
+   → Unable to find an accessible element with the role "button" and name `/reenviar/i`
+
+Here are the accessible roles:
+
+  heading:
+
+  Name "Error":
+  [36m<h1[39m
+    [33mclass[39m=[32m"text-2xl font-bold text-gray-900 mb-4"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-gray-600"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Volver al inicio":
+  [36m<button[39m
+    [33mclass[39m=[32m"mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-screen bg-gray-50 flex items-center justify-center"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"max-w-md w-full bg-white rounded-lg shadow-md p-6"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"text-2xl font-bold text-gray-900 mb-4"[39m
+        [36m>[39m
+          [0mError[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-gray-600"[39m
+        [36m>[39m
+          [0mEmail no especificado[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"[39m
+        [36m>[39m
+          [0mVolver al inicio[0m
+        [36m</button>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+stdout | src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario verificado puede acceder tras login
+🔍 [DEBUG] LoginPage: Componente montado en /login
+🔍 [DEBUG] LoginPage: Estado de autenticación actual: { hasPrefillEmail: false, hasPrefillPassword: false, from: '/' }
+🔥 Firebase Auth: Iniciando sesión... { email: 'test@aiduxcare.com' }
+✅ Firebase Auth: Sesión iniciada exitosamente { userId: undefined, role: 'PHYSICIAN' }
+
+ ✓ src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario verificado puede acceder tras login
+stdout | src/__tests__/auth-flow.integration.test.tsx
+🔍 [DEBUG] Login exitoso, redirigiendo a página principal
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/core/fhir/__tests__/adapters.integration.test.ts [ src/core/fhir/__tests__/adapters.integration.test.ts ]
+ FAIL  src/core/fhir/__tests__/contracts.public-api.test.ts [ src/core/fhir/__tests__/contracts.public-api.test.ts ]
+Error: Failed to resolve import "./adapters" from "src/core/fhir/index.ts". Does the file exist?
+ ❯ TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41
+ ❯ TransformPluginContext.error node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16
+ ❯ normalizeUrl node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64306:23
+ ❯ async file:/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64438:39
+ ❯ TransformPluginContext.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64365:7
+ ❯ PluginContainer.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18
+ ❯ loadAndTransform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/67]⎯
+
+ FAIL  src/core/fhir/__tests__/snapshots/encounter.snapshot.test.ts [ src/core/fhir/__tests__/snapshots/encounter.snapshot.test.ts ]
+Error: Failed to resolve import "../../../../../tests/utils/fhirTestUtils" from "src/core/fhir/__tests__/snapshots/encounter.snapshot.test.ts". Does the file exist?
+ ❯ TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41
+ ❯ TransformPluginContext.error node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16
+ ❯ normalizeUrl node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64306:23
+ ❯ async file:/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64438:39
+ ❯ TransformPluginContext.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64365:7
+ ❯ PluginContainer.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18
+ ❯ loadAndTransform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/67]⎯
+
+ FAIL  src/core/fhir/__tests__/snapshots/patient.snapshot.test.ts [ src/core/fhir/__tests__/snapshots/patient.snapshot.test.ts ]
+Error: Failed to resolve import "../../../../../tests/utils/fhirTestUtils" from "src/core/fhir/__tests__/snapshots/patient.snapshot.test.ts". Does the file exist?
+ ❯ TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41
+ ❯ TransformPluginContext.error node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16
+ ❯ normalizeUrl node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64306:23
+ ❯ async file:/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64438:39
+ ❯ TransformPluginContext.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64365:7
+ ❯ PluginContainer.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18
+ ❯ loadAndTransform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/67]⎯
+
+ FAIL  test/firebase.alias.test.ts [ test/firebase.alias.test.ts ]
+Error: Failed to resolve import "@/integrations/firebase" from "test/firebase.alias.test.ts". Does the file exist?
+ ❯ TransformPluginContext._formatError node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49258:41
+ ❯ TransformPluginContext.error node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49253:16
+ ❯ normalizeUrl node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64306:23
+ ❯ async file:/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2/node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64438:39
+ ❯ TransformPluginContext.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:64365:7
+ ❯ PluginContainer.transform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:49099:18
+ ❯ loadAndTransform node_modules/.pnpm/vite@5.4.20_@types+node@20.19.17/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:51977:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/67]⎯
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 62 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > registro exitoso muestra mensaje de verificación
+TestingLibraryElementError: Unable to find an element with the placeholder text of: /correo electrónico/i
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"text-center"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"[39m
+        [36m/>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-gray-600"[39m
+        [36m>[39m
+          [0mVerificando tu perfil profesional...[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:109:15
+ ❯ src/__tests__/auth-flow.integration.test.tsx:75:32
+     73|     renderWithRouter(<WelcomePage />);
+     74|     // Usar getAllByPlaceholderText para seleccionar el input de regis…
+     75|     const emailInputs = screen.getAllByPlaceholderText(/correo electró…
+       |                                ^
+     76|     const passwordInputs = screen.getAllByPlaceholderText(/contraseña/…
+     77|     const nameInput = screen.getByPlaceholderText(/nombre/i);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/67]⎯
+
+ FAIL  src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > usuario no verificado es bloqueado en login
+AssertionError: expected null not to be null
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<h2>[39m
+        [0mUnexpected Application Error![0m
+      [36m</h2>[39m
+      [36m<h3[39m
+        [33mstyle[39m=[32m"font-style: italic;"[39m
+      [36m>[39m
+        [0m404 Not Found[0m
+      [36m</h3>[39m
+      [36m<p>[39m
+        [0m💿 Hey developer 👋[0m
+      [36m</p>[39m
+      [36m<p>[39m
+        [0mYou can provide a way better UX than this when your app throws errors by providing your own [0m
+        [36m<code[39m
+          [33mstyle[39m=[32m"padding: 2px 4px; background-color: rgba(200, 200, 200, 0.5);"[39m
+        [36m>[39m
+          [0mErrorBoundary[0m
+        [36m</code>[39m
+        [0m or[0m
+        [0m [0m
+        [36m<code[39m
+          [33mstyle[39m=[32m"padding: 2px 4px; background-color: rgba(200, 200, 200, 0.5);"[39m
+        [36m>[39m
+          [0merrorElement[0m
+        [36m</code>[39m
+        [0m prop on your route.[0m
+      [36m</p>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ src/__tests__/auth-flow.integration.test.tsx:124:28
+    122|         /email no verificado/i.test(content)
+    123|       );
+    124|       expect(errorMsg).not.toBeNull();
+       |                            ^
+    125|     });
+    126|   });
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/67]⎯
+
+ FAIL  src/__tests__/auth-flow.integration.test.tsx > Flujo de autenticación y verificación (UI/UX) > reenviar verificación en VerifyEmailPage muestra feedback
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/reenviar/i`
+
+Here are the accessible roles:
+
+  heading:
+
+  Name "Error":
+  [36m<h1[39m
+    [33mclass[39m=[32m"text-2xl font-bold text-gray-900 mb-4"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-gray-600"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Volver al inicio":
+  [36m<button[39m
+    [33mclass[39m=[32m"mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-screen bg-gray-50 flex items-center justify-center"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"max-w-md w-full bg-white rounded-lg shadow-md p-6"[39m
+      [36m>[39m
+        [36m<h1[39m
+          [33mclass[39m=[32m"text-2xl font-bold text-gray-900 mb-4"[39m
+        [36m>[39m
+          [0mError[0m
+        [36m</h1>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-gray-600"[39m
+        [36m>[39m
+          [0mEmail no especificado[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mclass[39m=[32m"mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"[39m
+        [36m>[39m
+          [0mVolver al inicio[0m
+        [36m</button>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/__tests__/auth-flow.integration.test.tsx:130:28
+    128|   it('reenviar verificación en VerifyEmailPage muestra feedback', asyn…
+    129|     renderWithRouter(<VerifyEmailPage />);
+    130|     fireEvent.click(screen.getByRole('button', { name: /reenviar/i }));
+       |                            ^
+    131|     await waitFor(() => {
+    132|       const feedbackMsg = screen.queryByText((content) =>
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de edad correctamente
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:32:22
+     30|   describe('routeQuery', () => {
+     31|     it('debe detectar consultas de edad correctamente', () => {
+     32|       const result = routeQuery('¿Cuál es la edad del paciente?');
+       |                      ^
+     33|       
+     34|       expect(result.type).toBe('data');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de resonancia correctamente
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:40:22
+     38| 
+     39|     it('debe detectar consultas de resonancia correctamente', () => {
+     40|       const result = routeQuery('¿Qué dice la última resonancia?');
+       |                      ^
+     41|       
+     42|       expect(result.type).toBe('data');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de citas correctamente
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:48:22
+     46| 
+     47|     it('debe detectar consultas de citas correctamente', () => {
+     48|       const result = routeQuery('¿Qué citas tengo hoy?');
+       |                      ^
+     49|       
+     50|       expect(result.type).toBe('data');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de notas pendientes correctamente
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:56:22
+     54| 
+     55|     it('debe detectar consultas de notas pendientes correctamente', ()…
+     56|       const result = routeQuery('¿Cuántas notas pendientes tengo?');
+       |                      ^
+     57|       
+     58|       expect(result.type).toBe('data');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas mixtas (datos + conocimiento)
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:64:22
+     62| 
+     63|     it('debe detectar consultas mixtas (datos + conocimiento)', () => {
+     64|       const result = routeQuery('¿Cuál es la edad del paciente y qué e…
+       |                      ^
+     65|       
+     66|       expect(result.type).toBe('both');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe detectar consultas de conocimiento clínico
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:71:22
+     69| 
+     70|     it('debe detectar consultas de conocimiento clínico', () => {
+     71|       const result = routeQuery('¿Qué ejercicios son buenos para el do…
+       |                      ^
+     72|       
+     73|       expect(result.type).toBe('llm');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > routeQuery > debe asignar confianza baja para consultas genéricas
+TypeError: routeQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:78:22
+     76| 
+     77|     it('debe asignar confianza baja para consultas genéricas', () => {
+     78|       const result = routeQuery('¿Cómo estás?');
+       |                      ^
+     79|       
+     80|       expect(result.type).toBe('data');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas de datos correctamente
+TypeError: runAssistantQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:94:28
+     92|       });
+     93| 
+     94|       const result = await runAssistantQuery({
+       |                            ^
+     95|         input: '¿Cuál es la edad del paciente?',
+     96|         ctx: { patientId: 'patient-123' }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas LLM correctamente
+TypeError: runAssistantQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:114:28
+    112|       });
+    113| 
+    114|       const result = await runAssistantQuery({
+       |                            ^
+    115|         input: '¿Qué ejercicios para el dolor lumbar?'
+    116|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar consultas mixtas correctamente
+TypeError: runAssistantQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:142:28
+    140|         });
+    141| 
+    142|       const result = await runAssistantQuery({
+       |                            ^
+    143|         input: '¿Cuál es la edad del paciente y qué ejercicios recomie…
+    144|         ctx: { patientId: 'patient-123' }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/67]⎯
+
+ FAIL  src/core/assistant/__tests__/assistantAdapter.spec.ts > AssistantAdapter > runAssistantQuery > debe manejar errores correctamente
+TypeError: runAssistantQuery is not a function
+ ❯ src/core/assistant/__tests__/assistantAdapter.spec.ts:157:28
+    155|       mockHttpsCallable.mockRejectedValue(new Error('Error de red'));
+    156| 
+    157|       const result = await runAssistantQuery({
+       |                            ^
+    158|         input: '¿Cuál es la edad del paciente?'
+    159|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer medicamentos correctamente
+AssertionError: expected [ 'Paciente', 'toma', …(10) ] to have a length of 1 but got 12
+
+- Expected
++ Received
+
+- 1
++ 12
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:12:24
+     10|       const entities = extractEntities(input);
+     11|       
+     12|       expect(entities).toHaveLength(1);
+       |                        ^
+     13|       expect(entities[0].kind).toBe('medication');
+     14|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer múltiples medicamentos
+AssertionError: expected [ 'Tratamiento', 'paracetamol', …(8) ] to have a length of 2 but got 10
+
+- Expected
++ Received
+
+- 2
++ 10
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:27:24
+     25|       const entities = extractEntities(input);
+     26|       
+     27|       expect(entities).toHaveLength(2);
+       |                        ^
+     28|       expect(entities.every(e => e.kind === 'medication')).toBe(true);
+     29|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer diagnósticos de dolor musculoesquelético
+AssertionError: expected [ 'Paciente', 'presenta', …(6) ] to have a length of 2 but got 8
+
+- Expected
++ Received
+
+- 2
++ 8
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:43:24
+     41|       const entities = extractEntities(input);
+     42|       
+     43|       expect(entities).toHaveLength(2);
+       |                        ^
+     44|       expect(entities.every(e => e.kind === 'diagnosis')).toBe(true);
+     45|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer diagnósticos neurológicos
+AssertionError: expected [ 'Paciente', 'con', 'hernia', …(7) ] to have a length of 2 but got 10
+
+- Expected
++ Received
+
+- 2
++ 10
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:58:24
+     56|       const entities = extractEntities(input);
+     57|       
+     58|       expect(entities).toHaveLength(2);
+       |                        ^
+     59|       expect(entities.every(e => e.kind === 'diagnosis')).toBe(true);
+     60|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer procedimientos de evaluación
+AssertionError: expected [ 'Se', 'realiz', 'test', 'de', …(8) ] to have a length of 2 but got 12
+
+- Expected
++ Received
+
+- 2
++ 12
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:72:24
+     70|       const entities = extractEntities(input);
+     71|       
+     72|       expect(entities).toHaveLength(2);
+       |                        ^
+     73|       expect(entities.every(e => e.kind === 'procedure')).toBe(true);
+     74|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer técnicas de fisioterapia
+AssertionError: expected [ 'Se', 'aplic', 'terapia', …(5) ] to have a length of 2 but got 8
+
+- Expected
++ Received
+
+- 2
++ 8
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:87:24
+     85|       const entities = extractEntities(input);
+     86|       
+     87|       expect(entities).toHaveLength(2);
+       |                        ^
+     88|       expect(entities.every(e => e.kind === 'procedure')).toBe(true);
+     89|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer instrucciones de ejercicios
+AssertionError: expected [ 'Hacer', 'ejercicios', 'de', …(5) ] to have a length of 1 but got 8
+
+- Expected
++ Received
+
+- 1
++ 8
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:101:24
+     99|       const entities = extractEntities(input);
+    100|       
+    101|       expect(entities).toHaveLength(1);
+       |                        ^
+    102|       expect(entities[0].kind).toBe('instruction');
+    103|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer precauciones
+AssertionError: expected [ 'Evitar', 'movimientos', …(7) ] to have a length of 2 but got 9
+
+- Expected
++ Received
+
+- 2
++ 9
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:113:24
+    111|       const entities = extractEntities(input);
+    112|       
+    113|       expect(entities).toHaveLength(2);
+       |                        ^
+    114|       expect(entities.every(e => e.kind === 'instruction')).toBe(true);
+    115|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe manejar texto sin entidades médicas
+AssertionError: expected [ 'El', 'paciente', 'lleg', 'a', …(6) ] to have a length of +0 but got 10
+
+- Expected
++ Received
+
+- 0
++ 10
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:127:24
+    125|       const entities = extractEntities(input);
+    126|       
+    127|       expect(entities).toHaveLength(0);
+       |                        ^
+    128|     });
+    129| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > extractEntities > debe extraer entidades mixtas correctamente
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:140:28
+    138|       const hasProcedure = entities.some(e => e.kind === 'procedure');
+    139|       
+    140|       expect(hasDiagnosis).toBe(true);
+       |                            ^
+    141|       expect(hasMedication).toBe(true);
+    142|       expect(hasProcedure).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe validar entidades correctas
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:158:22
+    156|       ];
+    157|       
+    158|       const result = validateExtractedEntities(entities);
+       |                      ^
+    159|       
+    160|       expect(result.validEntities).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe filtrar entidades de baja confianza
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:181:22
+    179|       ];
+    180|       
+    181|       const result = validateExtractedEntities(entities);
+       |                      ^
+    182|       
+    183|       expect(result.validEntities).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe detectar medicamentos sin nombre
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:202:22
+    200|       ];
+    201|       
+    202|       const result = validateExtractedEntities(entities);
+       |                      ^
+    203|       
+    204|       expect(result.validEntities).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe detectar diagnósticos sin etiqueta
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:219:22
+    217|       ];
+    218|       
+    219|       const result = validateExtractedEntities(entities);
+       |                      ^
+    220|       
+    221|       expect(result.validEntities).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe calcular calidad promedio correctamente
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:248:22
+    246|       ];
+    247|       
+    248|       const result = validateExtractedEntities(entities);
+       |                      ^
+    249|       
+    250|       expect(result.validEntities).toHaveLength(3);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > validateExtractedEntities > debe manejar lista vacía
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:255:22
+    253| 
+    254|     it('debe manejar lista vacía', () => {
+    255|       const result = validateExtractedEntities([]);
+       |                      ^
+    256|       
+    257|       expect(result.validEntities).toHaveLength(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/67]⎯
+
+ FAIL  src/core/assistant/__tests__/extractEntities.spec.ts > ExtractEntities System > Integración completa > debe procesar consulta clínica completa
+TypeError: validateExtractedEntities is not a function
+ ❯ src/core/assistant/__tests__/extractEntities.spec.ts:270:26
+    268|       
+    269|       const entities = extractEntities(input);
+    270|       const validation = validateExtractedEntities(entities);
+       |                          ^
+    271|       
+    272|       expect(entities.length).toBeGreaterThan(3);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar PII correctamente
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:9:22
+      7|     it('debe sanitizar PII correctamente', () => {
+      8|       const input = 'Paciente con DNI 12345678A y teléfono 612345678, …
+      9|       const result = sanitizeForLLM(input);
+       |                      ^
+     10|       
+     11|       expect(result).toBe('Paciente con DNI [DNI] y teléfono [TELÉFONO…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar fechas correctamente
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:16:22
+     14|     it('debe sanitizar fechas correctamente', () => {
+     15|       const input = 'Consulta del 15/12/2024 y 20-01-2025';
+     16|       const result = sanitizeForLLM(input);
+       |                      ^
+     17|       
+     18|       expect(result).toBe('Consulta del [FECHA] y [FECHA]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar pasaportes españoles
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:23:22
+     21|     it('debe sanitizar pasaportes españoles', () => {
+     22|       const input = 'Paciente con pasaporte ES12345678A';
+     23|       const result = sanitizeForLLM(input);
+       |                      ^
+     24|       
+     25|       expect(result).toBe('Paciente con pasaporte [PASAPORTE]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe sanitizar NIEs
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:30:22
+     28|     it('debe sanitizar NIEs', () => {
+     29|       const input = 'Paciente con NIE X1234567A';
+     30|       const result = sanitizeForLLM(input);
+       |                      ^
+     31|       
+     32|       expect(result).toBe('Paciente con NIE [NIE]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas fuera del dominio médico
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:37:22
+     35|     it('debe rechazar consultas fuera del dominio médico', () => {
+     36|       const input = '¿Cuánto cuesta la consulta? Necesito factura';
+     37|       const result = sanitizeForLLM(input);
+       |                      ^
+     38|       
+     39|       expect(result).toBe('NO_ANSWER: Consulta fuera del dominio médic…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas de marketing
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:44:22
+     42|     it('debe rechazar consultas de marketing', () => {
+     43|       const input = '¿Pueden hacer publicidad de sus servicios?';
+     44|       const result = sanitizeForLLM(input);
+       |                      ^
+     45|       
+     46|       expect(result).toBe('NO_ANSWER: Consulta fuera del dominio médic…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe aceptar consultas médicas válidas
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:51:22
+     49|     it('debe aceptar consultas médicas válidas', () => {
+     50|       const input = '¿Qué ejercicios son buenos para el dolor lumbar?';
+     51|       const result = sanitizeForLLM(input);
+       |                      ^
+     52|       
+     53|       expect(result).toBe('¿Qué ejercicios son buenos para el dolor lu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe aceptar consultas de fisioterapia
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:58:22
+     56|     it('debe aceptar consultas de fisioterapia', () => {
+     57|       const input = '¿Cuál es la técnica correcta para la terapia manu…
+     58|       const result = sanitizeForLLM(input);
+       |                      ^
+     59|       
+     60|       expect(result).toBe('¿Cuál es la técnica correcta para la terapi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe rechazar consultas demasiado genéricas
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:65:22
+     63|     it('debe rechazar consultas demasiado genéricas', () => {
+     64|       const input = 'Hola';
+     65|       const result = sanitizeForLLM(input);
+       |                      ^
+     66|       
+     67|       expect(result).toBe('NO_ANSWER: Consulta demasiado genérica. Por…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > sanitizeForLLM > debe manejar contexto de paciente correctamente
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:72:22
+     70|     it('debe manejar contexto de paciente correctamente', () => {
+     71|       const input = 'Este paciente tiene dolor en la rodilla';
+     72|       const result = sanitizeForLLM(input, { patientId: 'patient-123' …
+       |                      ^
+     73|       
+     74|       expect(result).toBe('[PACIENTE] tiene dolor en la rodilla');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe validar consultas médicas válidas
+TypeError: validateClinicalQuery is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:81:22
+     79|     it('debe validar consultas médicas válidas', () => {
+     80|       const input = '¿Qué ejercicios para rehabilitación de hombro?';
+     81|       const result = validateClinicalQuery(input);
+       |                      ^
+     82|       
+     83|       expect(result.isValid).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe rechazar consultas no médicas
+TypeError: validateClinicalQuery is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:89:22
+     87|     it('debe rechazar consultas no médicas', () => {
+     88|       const input = '¿Cuál es el precio de la consulta?';
+     89|       const result = validateClinicalQuery(input);
+       |                      ^
+     90|       
+     91|       expect(result.isValid).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe rechazar consultas genéricas
+TypeError: validateClinicalQuery is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:97:22
+     95|     it('debe rechazar consultas genéricas', () => {
+     96|       const input = 'Hola, ¿cómo estás?';
+     97|       const result = validateClinicalQuery(input);
+       |                      ^
+     98|       
+     99|       expect(result.isValid).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > validateClinicalQuery > debe validar consultas con PII sanitizada
+TypeError: validateClinicalQuery is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:105:22
+    103|     it('debe validar consultas con PII sanitizada', () => {
+    104|       const input = 'Paciente con DNI 12345678A tiene dolor lumbar';
+    105|       const result = validateClinicalQuery(input);
+       |                      ^
+    106|       
+    107|       expect(result.isValid).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar alta confianza para consultas técnicas
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:115:26
+    113|     it('debe asignar alta confianza para consultas técnicas', () => {
+    114|       const input = '¿Cuál es la técnica de manipulación vertebral par…
+    115|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    116|       
+    117|       expect(confidence).toBeGreaterThan(0.8);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar alta confianza para consultas de fisioterapia
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:122:26
+    120|     it('debe asignar alta confianza para consultas de fisioterapia', (…
+    121|       const input = '¿Qué ejercicios de estabilización lumbar son reco…
+    122|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    123|       
+    124|       expect(confidence).toBeGreaterThan(0.8);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe asignar confianza media para consultas generales
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:129:26
+    127|     it('debe asignar confianza media para consultas generales', () => {
+    128|       const input = '¿Qué es el dolor lumbar?';
+    129|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    130|       
+    131|       expect(confidence).toBeGreaterThan(0.5);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe reducir confianza para consultas genéricas
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:137:26
+    135|     it('debe reducir confianza para consultas genéricas', () => {
+    136|       const input = '¿Qué me recomiendas?';
+    137|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    138|       
+    139|       expect(confidence).toBeLessThan(0.6);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe incrementar confianza por palabras clave técnicas
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:144:26
+    142|     it('debe incrementar confianza por palabras clave técnicas', () =>…
+    143|       const input = '¿Cuál es el protocolo de rehabilitación post-ACL …
+    144|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    145|       
+    146|       expect(confidence).toBeGreaterThan(0.9);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > getClinicalConfidence > debe manejar consultas mixtas correctamente
+TypeError: getClinicalConfidence is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:151:26
+    149|     it('debe manejar consultas mixtas correctamente', () => {
+    150|       const input = '¿Cuál es la edad del paciente y qué ejercicios de…
+    151|       const confidence = getClinicalConfidence(input);
+       |                          ^
+    152|       
+    153|       expect(confidence).toBeGreaterThan(0.6);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > Integración RAILS > debe procesar consulta completa correctamente
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:163:25
+    161|       
+    162|       // 1. Sanitización
+    163|       const sanitized = sanitizeForLLM(input);
+       |                         ^
+    164|       expect(sanitized).toBe('Paciente con DNI [DNI] tiene dolor lumba…
+    165|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/67]⎯
+
+ FAIL  src/core/assistant/__tests__/rails.spec.ts > RAILS System > Integración RAILS > debe rechazar consulta no médica completamente
+TypeError: sanitizeForLLM is not a function
+ ❯ src/core/assistant/__tests__/rails.spec.ts:179:25
+    177|       
+    178|       // 1. Sanitización
+    179|       const sanitized = sanitizeForLLM(input);
+       |                         ^
+    180|       expect(sanitized).toBe('NO_ANSWER: Consulta fuera del dominio mé…
+    181|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe agregar medicamento a la visita correctamente
+TypeError: addMedicationToVisit is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:42:28
+     40|       vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+     41| 
+     42|       const result = await addMedicationToVisit('visit-123', mockMedic…
+       |                            ^
+     43| 
+     44|       expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe manejar medicamentos sin campos opcionales
+TypeError: addMedicationToVisit is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:69:28
+     67|       vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+     68| 
+     69|       const result = await addMedicationToVisit('visit-789', mockMedic…
+       |                            ^
+     70| 
+     71|       expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > addMedicationToVisit > debe manejar errores de Firestore
+TypeError: addMedicationToVisit is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:92:20
+     90|       vi.mocked(addDoc).mockRejectedValue(new Error('Error de Firestor…
+     91| 
+     92|       await expect(addMedicationToVisit('visit-error', mockMedication))
+       |                    ^
+     93|         .rejects.toThrow('Error de Firestore');
+     94|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe formatear medicamento completo correctamente
+TypeError: formatSoapFromMedication is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:108:22
+    106|       };
+    107| 
+    108|       const result = formatSoapFromMedication(mockMedication);
+       |                      ^
+    109| 
+    110|       expect(result).toContain('**Medicación:** ibuprofeno');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe formatear medicamento básico correctamente
+TypeError: formatSoapFromMedication is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:123:22
+    121|       };
+    122| 
+    123|       const result = formatSoapFromMedication(mockMedication);
+       |                      ^
+    124| 
+    125|       expect(result).toContain('**Medicación:** paracetamol');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe incluir instrucciones de administración
+TypeError: formatSoapFromMedication is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:142:22
+    140|       };
+    141| 
+    142|       const result = formatSoapFromMedication(mockMedication);
+       |                      ^
+    143| 
+    144|       expect(result).toContain('**Instrucciones:** Administrar con ali…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > formatSoapFromMedication > debe manejar medicamentos con instrucciones personalizadas
+TypeError: formatSoapFromMedication is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:157:22
+    155|       };
+    156| 
+    157|       const result = formatSoapFromMedication(mockMedication);
+       |                      ^
+    158| 
+    159|       expect(result).toContain('**Instrucciones:** Solo en caso de dol…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > Integración completa > debe agregar medicamento y generar SOAP correctamente
+TypeError: addMedicationToVisit is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:178:34
+    176|       vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+    177| 
+    178|       const medicationId = await addMedicationToVisit('visit-integrati…
+       |                                  ^
+    179|       expect(medicationId).toBe('med-789');
+    180| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/67]⎯
+
+ FAIL  src/core/emr/__tests__/medications.spec.ts > MedicationService > Integración completa > debe manejar flujo completo con errores
+TypeError: addMedicationToVisit is not a function
+ ❯ src/core/emr/__tests__/medications.spec.ts:212:20
+    210|       vi.mocked(addDoc).mockRejectedValue(new Error('Error de Firestor…
+    211| 
+    212|       await expect(addMedicationToVisit('visit-error', mockMedication))
+       |                    ^
+    213|         .rejects.toThrow('Error de Firestore');
+    214| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/67]⎯
+
+ Test Files  10 failed | 9 passed | 1 skipped (20)
+      Tests  62 failed | 95 passed | 1 skipped (158)
+   Start at  12:00:19
+   Duration  3.51s (transform 871ms, setup 323ms, collect 1.24s, tests 1.29s, environment 9.38s, prepare 2.66s)
+

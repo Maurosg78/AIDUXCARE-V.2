@@ -37,11 +37,11 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-123' };
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+      (addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function }).mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-123', mockMedication);
 
-      expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+      expect((addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function })).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           name: 'ibuprofeno',
@@ -64,11 +64,11 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-456' };
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+      (addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function }).mockResolvedValue(mockDocRef);
 
       const result = await addMedicationToVisit('visit-789', mockMedication);
 
-      expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+      expect((addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function })).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           name: 'paracetamol',
@@ -87,7 +87,7 @@ describe('MedicationService', () => {
       };
 
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockRejectedValue(new Error('Error de Firestore'));
+      (addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function }).mockRejectedValue(new Error('Error de Firestore'));
 
       await expect(addMedicationToVisit('visit-error', mockMedication))
         .rejects.toThrow('Error de Firestore');
@@ -173,7 +173,7 @@ describe('MedicationService', () => {
 
       const mockDocRef = { id: 'med-789' };
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockResolvedValue(mockDocRef);
+      (addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function }).mockResolvedValue(mockDocRef);
 
       const medicationId = await addMedicationToVisit('visit-integration', mockMedication);
       expect(medicationId).toBe('med-789');
@@ -184,8 +184,8 @@ describe('MedicationService', () => {
       expect(soapSnippet).toContain('**Frecuencia:** cada 6 horas');
       expect(soapSnippet).toContain('**Duración:** 3 días');
 
-      expect(vi.mocked(addDoc)).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+      expect((addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function })).toHaveBeenCalledTimes(1);
+      expect((addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function })).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           name: 'ketorolaco',
@@ -207,7 +207,7 @@ describe('MedicationService', () => {
       };
 
       const { addDoc } = await import('firebase/firestore');
-      vi.mocked(addDoc).mockRejectedValue(new Error('Error de Firestore'));
+      (addDoc as unknown as { mockResolvedValue: Function; mockRejectedValue: Function; mockImplementation: Function }).mockRejectedValue(new Error('Error de Firestore'));
 
       await expect(addMedicationToVisit('visit-error', mockMedication))
         .rejects.toThrow('Error de Firestore');

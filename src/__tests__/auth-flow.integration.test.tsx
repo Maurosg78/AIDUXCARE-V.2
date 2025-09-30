@@ -2,9 +2,9 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 
-import WelcomePage from '../pages/WelcomePage';
+import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
-import VerifyEmailPage from '../pages/VerifyEmailPage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 
 import { renderWithRouter } from './test-utils';
 
@@ -23,7 +23,7 @@ vi.mock('firebase/auth', () => {
         sendEmailVerification: mockSendEmailVerification,
       },
     }),
-    signInWithEmailAndPassword: vi.fn(async (_auth, email) => {
+    signInWithEmailAndPassword: vi.fn(async (_auth: unknown, email: string) => {
       if (email === 'test@aiduxcare.com') {
         return {
           user: {
@@ -36,7 +36,7 @@ vi.mock('firebase/auth', () => {
       }
       throw new Error('Credenciales inválidas');
     }),
-    createUserWithEmailAndPassword: vi.fn(async (_auth, email) => {
+    createUserWithEmailAndPassword: vi.fn(async (_auth: unknown, email: string) => {
       mockEmailVerified = false;
       return {
         user: {
@@ -83,7 +83,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
     fireEvent.click(registerButton);
     await waitFor(() => {
       // Usar matcher flexible
-      const verificationMsg = screen.queryByText((content) =>
+      const verificationMsg = screen.queryByText((content: string) =>
         /correo de verificación/i.test(content)
       );
       expect(verificationMsg).not.toBeNull();
@@ -93,7 +93,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
   it('usuario no verificado es bloqueado en login', async () => {
     // Mock getDoc para simular usuario no verificado
     const { getDoc } = await import('firebase/firestore');
-    vi.mocked(getDoc).mockImplementation(async () => ({
+    ((getDoc as unknown as { mockImplementation: Function })).mockImplementation(async () => ({
       id: 'mocked-user-id',
       exists: () => true,
       data: () => ({
@@ -118,7 +118,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
     fireEvent.change(passwordInput, { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }));
     await waitFor(() => {
-      const errorMsg = screen.queryByText((content) =>
+      const errorMsg = screen.queryByText((content: string) =>
         /email no verificado/i.test(content)
       );
       expect(errorMsg).not.toBeNull();
@@ -129,7 +129,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
     renderWithRouter(<VerifyEmailPage />);
     fireEvent.click(screen.getByRole('button', { name: /reenviar/i }));
     await waitFor(() => {
-      const feedbackMsg = screen.queryByText((content) =>
+      const feedbackMsg = screen.queryByText((content: string) =>
         /correo de verificación reenviado/i.test(content)
       );
       expect(feedbackMsg).not.toBeNull();
@@ -146,7 +146,7 @@ describe('Flujo de autenticación y verificación (UI/UX)', () => {
     fireEvent.change(passwordInput, { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }));
     await waitFor(() => {
-      const errorMsg = screen.queryByText((content) =>
+      const errorMsg = screen.queryByText((content: string) =>
         /email no verificado/i.test(content)
       );
       expect(errorMsg).toBeNull();

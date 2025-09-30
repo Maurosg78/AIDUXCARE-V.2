@@ -17,11 +17,11 @@ export const PatientInfoHeader: React.FC<PatientInfoHeaderProps> = ({
     // Actualizar medicación si hay cambios
     if (analysisResults?.entities) {
       const newMeds = analysisResults.entities
-        .filter(e => e.type === 'medication')
-        .map(e => e.text);
+        .filter((e: { type?: string; text?: string }) => e.type === 'medication')
+        .map((e: { text?: string }) => e.text);
       
       // Comparar y actualizar solo si es diferente
-      newMeds.forEach(med => {
+      newMeds.forEach((med: string) => {
         if (!merged.medications?.includes(med)) {
           merged.medications = [...(merged.medications || []), med];
         }
@@ -58,10 +58,10 @@ export const PatientInfoHeader: React.FC<PatientInfoHeaderProps> = ({
             Historial Médico
           </h3>
           <ul className="space-y-1 text-gray-600">
-            {mergedData.surgeries?.map((surgery, idx) => (
+            {mergedData.surgeries?.map((surgery: string, idx: number) => (
               <li key={idx}>• {surgery}</li>
             ))}
-            {mergedData.conditions?.map((condition, idx) => (
+            {mergedData.conditions?.map((condition: string, idx: number) => (
               <li key={idx}>• {condition}</li>
             ))}
           </ul>
@@ -74,7 +74,7 @@ export const PatientInfoHeader: React.FC<PatientInfoHeaderProps> = ({
             Medicación Actual
           </h3>
           <ul className="space-y-1 text-gray-600">
-            {mergedData.medications?.map((med, idx) => (
+            {mergedData.medications?.map((med: string, idx: number) => (
               <li key={idx}>• {med}</li>
             ))}
           </ul>

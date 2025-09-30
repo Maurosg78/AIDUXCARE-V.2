@@ -1,0 +1,10 @@
+==== RESUMEN DE FALLOS ====
+
+
+==== CONTEO RÁPIDO ====
+Failed to resolve import:        0
+TestingLibraryElementError:        0
+Element type is invalid:        0
+No routes matched location:        0
+is not a function:        0
+No "onAuthStateChanged" export:        0

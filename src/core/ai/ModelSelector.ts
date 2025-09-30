@@ -1,4 +1,4 @@
-import { CaseComplexity, MedicalSpecialty } from './PromptFactory';
+type MedicalSpecialty = 'fisioterapia'|'psicologia'|'medicina_general'; type CaseComplexity = 'critical'|'moderate'|'simple'|'low'|'medium'|'high';
 
 import logger from '@/shared/utils/logger';
 /**

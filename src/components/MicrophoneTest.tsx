@@ -39,7 +39,7 @@ export const MicrophoneTest: React.FC = () => {
       checkAudio();
       
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`❌ Error: ${(error instanceof Error ? error.message : String(error))}`);
       console.error('Microphone test failed:', error);
     }
   };
@@ -90,7 +90,7 @@ export const MicrophoneTest: React.FC = () => {
       recognition.start();
       
     } catch (error) {
-      setStatus(`❌ Speech Recognition failed: ${error.message}`);
+      setStatus(`❌ Speech Recognition failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
   };
 

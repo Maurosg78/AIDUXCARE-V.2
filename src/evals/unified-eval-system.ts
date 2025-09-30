@@ -65,7 +65,7 @@ export class UnifiedEvalSystem {
       sintomas_principales: testCase.expected.symptoms,
       condiciones_medicas: testCase.expected.conditions,
       medicamentos: testCase.expected.medications,
-      banderas_rojas: testCase.expected.redFlags.map(rf => ({
+      banderas_rojas: testCase.expected.redFlags.map((rf: any) => ({
         tipo: rf,
         accion: 'Derivación urgente',
         urgencia: 'inmediata'
@@ -75,11 +75,11 @@ export class UnifiedEvalSystem {
   }
   
   private validateResults(expected: any, actual: any): boolean {
-    const symptomsFound = actual.entities.filter(e => e.type === 'symptom');
+    const symptomsFound = actual.entities.filter((e: any) => e.type === 'symptom');
     const symptomsMatch = symptomsFound.length === expected.symptoms.length;
     const redFlagsMatch = actual.redFlags.length === expected.redFlags.length;
     const yellowFlagsMatch = actual.yellowFlags.length === expected.yellowFlags.length;
-    const medsFound = actual.entities.filter(e => e.type === 'medication');
+    const medsFound = actual.entities.filter((e: any) => e.type === 'medication');
     const medsMatch = medsFound.length === expected.medications.length;
     
     return symptomsMatch && redFlagsMatch && yellowFlagsMatch && medsMatch;

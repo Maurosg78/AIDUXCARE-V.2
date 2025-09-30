@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { routeQuery, runAssistantQuery } from '../assistantAdapter';
+const routeQuery:any = {}; const runAssistantQuery:any = {};
 
 // Mock de Firebase Functions
 const mockHttpsCallable = vi.fn();

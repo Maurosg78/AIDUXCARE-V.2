@@ -31,12 +31,12 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
       const entities = analysisResults.entities;
       
       const meds = entities
-        .filter(e => e.type === 'medication')
-        .map(e => e.text);
+        .filter((e: { type?: string; text?: string }) => e.type === 'medication')
+        .map((e: { text?: string }) => e.text);
       
       const conds = entities
-        .filter(e => e.type === 'condition')
-        .map(e => e.text);
+        .filter((e: { type?: string; text?: string }) => e.type === 'condition')
+        .map((e: { text?: string }) => e.text);
 
       setPatientInfo(prev => ({
         ...prev,
@@ -61,13 +61,13 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
   // Detectar medicación crítica
   const criticalMeds = patientInfo.medications.filter(med => 
-    med.toLowerCase().includes('sin receta') || 
-    med.toLowerCase().includes('no prescrit') ||
-    med.toLowerCase().includes('ketamina')
+    String(med).toLowerCase().includes('sin receta') || 
+    String(med).toLowerCase().includes('no prescrit') ||
+    String(med).toLowerCase().includes('ketamina')
   );
 
   // Obtener IDs de condiciones del análisis actual
-  const conditionEntities = analysisResults?.entities?.filter(e => e.type === 'condition') || [];
+  const conditionEntities = analysisResults?.entities?.filter((e: { type?: string; text?: string }) => e.type === 'condition') || [];
 
   return (
     <div className="bg-gradient-to-r from-blue-50 via-white to-purple-50 border border-gray-200 rounded-lg shadow-sm p-5 mb-6">
@@ -155,12 +155,12 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
             </h3>
           </div>
           <div className="bg-purple-50 rounded-lg p-3 space-y-1">
-            {conditionEntities.map((condition) => (
-              <label key={condition.id} className="flex items-start gap-2 cursor-pointer hover:bg-purple-100 p-1 rounded">
+            {conditionEntities.map((condition: { text?: string }) => (
+              <label key={(condition as any).id as string} className="flex items-start gap-2 cursor-pointer hover:bg-purple-100 p-1 rounded">
                 <input
                   type="checkbox"
-                  checked={selectedIds.includes(condition.id)}
-                  onChange={() => handleToggle(condition.id)}
+                  checked={selectedIds.includes((condition as any).id as string)}
+                  onChange={() => handleToggle((condition as any).id as string)}
                   className="mt-0.5"
                 />
                 <span className="text-sm text-gray-700">{condition.text}</span>

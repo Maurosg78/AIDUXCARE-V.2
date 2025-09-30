@@ -34,7 +34,7 @@ export const SegregatedAlerts: React.FC<SegregatedAlertsProps> = ({
               </h3>
             </div>
             <div className="space-y-3">
-              {medicalAlerts.criticas.map((alert, idx) => (
+              {medicalAlerts.criticas.map((alert: any, idx: number) => (
                 <div key={idx} className="bg-white p-3 rounded-lg border border-red-300">
                   <p className="font-semibold text-red-900">{alert.hallazgo}</p>
                   <p className="text-sm text-red-700 mt-1">

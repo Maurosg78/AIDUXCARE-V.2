@@ -1,18 +1,20 @@
 import React from 'react';
 import { AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
-export const GenericClinicalDisplay = ({ data }) => {
+type Risk = { severity?: string };
+type GcdProps = { data: { risk_indicators?: Risk[]; compliance_issues?: Risk[] } };
+export const GenericClinicalDisplay = ({ data }: GcdProps) => {
   if (!data) return null;
   
   // Agrupar por severidad, no por tipo
   const criticalItems = [
-    ...data.risk_indicators?.filter(r => r.severity === 'critical') || [],
-    ...data.compliance_issues?.filter(c => c.severity === 'critical') || []
+    ...data.risk_indicators?.filter((r: Risk) => r.severity === 'critical') || [],
+    ...data.compliance_issues?.filter((c: Risk) => c.severity === 'critical') || []
   ];
   
   const highItems = [
-    ...data.risk_indicators?.filter(r => r.severity === 'high') || [],
-    ...data.compliance_issues?.filter(c => c.severity === 'high') || []
+    ...data.risk_indicators?.filter((r: Risk) => r.severity === 'high') || [],
+    ...data.compliance_issues?.filter((c: Risk) => c.severity === 'high') || []
   ];
   
   // Renderizar adaptivamente según lo que se encuentra
@@ -27,10 +29,10 @@ export const GenericClinicalDisplay = ({ data }) => {
           </div>
           {criticalItems.map((item, idx) => (
             <div key={idx} className="mb-2 p-2 bg-white rounded">
-              <p className="text-sm">{item.description || item.issue}</p>
-              {item.recommended_action && (
+              <p className="text-sm">{(item as any).description || (item as any).issue}</p>
+              {(item as any).recommended_action && (
                 <p className="text-xs text-red-700 mt-1">
-                  Acción: {item.recommended_action}
+                  Acción: {(item as any).recommended_action}
                 </p>
               )}
             </div>

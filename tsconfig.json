@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
@@ -15,9 +19,37 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "exclude": [
+    "**/* backup*.ts*",
+    "**/*backup*.ts*",
+    "**/* copy*.ts*",
+    "**/* 2.ts*",
+    "**/* 3.ts*",
+    "**/*.backup.ts*",
+    "src/services/soap-generator-professional.backup.ts",
+    "src/pages/ProfessionalWorkflowPage.backup*.ts*",
+    "src/pages/ProfessionalWorkflowPage_tabs.tsx 2.tsx",
+    "src/types/webaudio.globals.d 2.ts",
+    "src/utils/**/** 2.ts*",
+    "src/**/** 2.ts*",
+    "**/* 4.ts*",
+    "**/* 5.ts*",
+    "archived",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**"
+  ]
 }

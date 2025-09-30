@@ -138,7 +138,7 @@ export function fromFhir(resource: FhirPatient | FhirEncounter | FhirObservation
       case 'Observation':
         return convertFhirToObservation(resource as FhirObservation);
       default:
-        throw new Error(`Unsupported resource type: ${resource.resourceType}`);
+        const r:any = resource as unknown as Record<string, unknown>; throw new Error(`Unsupported resource type: ${(r && (r as any).resourceType) || "unknown"}`);
     }
   }
   
@@ -163,7 +163,7 @@ export function validate(resource: FhirPatient | FhirEncounter | FhirObservation
   }
   
   try {
-    const resourceType = (resource as Record<string, unknown>).resourceType as string;
+    const resourceType = ((resource as unknown) as Record<string, unknown>).resourceType as string;
     
     if (profile === 'CA_CORE') {
       if (resourceType === 'Patient') {

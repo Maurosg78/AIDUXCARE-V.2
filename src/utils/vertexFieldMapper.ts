@@ -1,3 +1,10 @@
+type SafeStructure = {
+  medicacion_actual: string[];
+  contexto_psicosocial: string[];
+  red_flags: string[];
+  evaluaciones_fisicas_sugeridas: any[];
+};
+
 export function mapVertexToSpanish(vertexData: any): any {
   // ALWAYS return valid structure
   const safeStructure = getEmptyStructure();
@@ -34,10 +41,10 @@ export function mapVertexToSpanish(vertexData: any): any {
       vertexData.hallazgos || 
       [];
     
-    safeStructure.medicacion_actual = extractMedications(vertexData);
-    safeStructure.contexto_psicosocial = extractSocialContext(vertexData);
-    safeStructure.red_flags = extractRedFlags(vertexData);
-    safeStructure.evaluaciones_fisicas_sugeridas = extractTests(vertexData);
+    (safeStructure as unknown as { medicacion_actual: string[] }).medicacion_actual = ((extractMedications(vertexData) as unknown as string[]) as unknown as string[]);
+    (safeStructure as unknown as { contexto_psicosocial: string[] }).contexto_psicosocial = ((extractSocialContext(vertexData) as unknown as string[]) as unknown as string[]);
+    (safeStructure as unknown as { red_flags: string[] }).red_flags = ((extractRedFlags(vertexData) as unknown as string[]) as unknown as string[]);
+    (safeStructure as unknown as { evaluaciones_fisicas_sugeridas: any[] }).evaluaciones_fisicas_sugeridas = ((extractTests(vertexData) as unknown as any[]) as unknown as any[]);
     
     return safeStructure;
     
@@ -48,7 +55,7 @@ export function mapVertexToSpanish(vertexData: any): any {
 }
 
 function extractMedications(data: any): string[] {
-  const meds = [];
+  const meds: string[] = [];
   // Try multiple field names
   const fields = ['medications', 'medication', 'medicacion', 'drugs', 'current_medications'];
   
@@ -83,7 +90,7 @@ function extractSocialContext(data: any): string[] {
 }
 
 function extractRedFlags(data: any): string[] {
-  const flags = [];
+  const flags: string[] = [];
   const fields = ['red_flags', 'redFlags', 'alerts', 'warnings', 'critical'];
   
   for (const field of fields) {

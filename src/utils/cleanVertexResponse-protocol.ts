@@ -1,3 +1,14 @@
+type Region = 'lumbar'|'cervical'|'thoracic'|'other';
+const detectRegionFromText = (text?: string): Region => {
+  if (!text) return 'other';
+  const s = text.toLowerCase();
+  if (s.includes('lumbar')) return 'lumbar';
+  if (s.includes('cervical')) return 'cervical';
+  if (s.includes('torác') || s.includes('thorac')) return 'thoracic';
+  return 'other';
+};
+const normalized: Record<string, unknown> = {};
+ 
 import { selectTestsByProtocol } from './testProtocolSelector';
 
 export function normalizeVertexResponse(raw: any): any {

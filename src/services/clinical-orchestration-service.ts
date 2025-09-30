@@ -61,7 +61,7 @@ export class ClinicalOrchestrationService {
       // Retornar estructura mínima válida para no romper UI
       return {
         data: this.getEmptyValidResponse(),
-        validation: { valid: false, errors: [error.message] },
+        validation: { valid: false, errors: [(error instanceof Error ? error.message : String(error))] },
         metrics: { processingTime: performance.now() - startTime, success: false }
       };
     }

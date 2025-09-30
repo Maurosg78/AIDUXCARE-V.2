@@ -47,16 +47,16 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     
     // Síntomas principales
     if (analysisData?.entities) {
-      const symptoms = analysisData.entities.filter(e => e.type === 'symptom');
+      const symptoms = analysisData.entities.filter((e: any) => e.type === 'symptom');
       if (symptoms.length > 0) {
-        text += symptoms.map(s => `- ${s.text}`).join('\n');
+        text += symptoms.map((s: any) => `- ${s.text}`).join('\n');
       }
     }
     
     // Factores psicosociales
     if (analysisData?.yellowFlags?.length > 0) {
       text += '\n\nFACTORES CONTEXTUALES:\n';
-      text += analysisData.yellowFlags.map(f => `- ${f}`).join('\n');
+      text += analysisData.yellowFlags.map((f: any) => `- ${f}`).join('\n');
     }
     
     return text;
@@ -86,7 +86,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     // Red flags
     if (analysisData?.redFlags?.length > 0) {
       text += '\nALERTAS CRÍTICAS:\n';
-      text += analysisData.redFlags.map(rf => `- ${rf.pattern}: ${rf.action}`).join('\n');
+      text += analysisData.redFlags.map((rf: any) => `- ${rf.pattern}: ${rf.action}`).join('\n');
     }
     
     // Diagnóstico funcional

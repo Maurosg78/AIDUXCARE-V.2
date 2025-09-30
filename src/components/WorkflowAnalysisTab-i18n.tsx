@@ -1,5 +1,19 @@
-// Al inicio del archivo, agregar las traducciones
-const translations = {
+type LangKey = "en" | "es";
+type TransDict = {
+  medicalLegalAlerts: string;
+  clinicalFindings: string;
+  currentSymptoms: string;
+  currentMedication: string;
+  proposedPhysicalEvaluation: string;
+  psychosocialFactors: string;
+  addItem: string;
+  selectAll: string;
+  clear: string;
+  noneIdentified: string;
+  [k: string]: string; // permite futuras claves sin romper tipos
+};
+
+const translations: Record<LangKey, TransDict> = {
   en: {
     medicalLegalAlerts: "Medical-Legal Alerts",
     clinicalFindings: "Clinical Findings",
@@ -10,7 +24,7 @@ const translations = {
     addItem: "Add item",
     selectAll: "Select All",
     clear: "Clear",
-    noneIdentified: "None identified in the transcript"
+    noneIdentified: "None identified in the transcript",
   },
   es: {
     medicalLegalAlerts: "Alertas Médico-Legales",
@@ -22,12 +36,15 @@ const translations = {
     addItem: "Agregar ítem",
     selectAll: "Todo",
     clear: "Limpiar",
-    noneIdentified: "Ninguna identificada en la transcripción"
-  }
+    noneIdentified: "Ninguna identificada en la transcripción",
+  },
 };
 
-// Función para obtener traducciones
-const t = (key: string) => {
-  const lang = localStorage.getItem('preferredLanguage') || 'es';
-  return translations[lang]?.[key] || translations.es[key];
+export type Lang = keyof typeof translations;
+export type TransKey = keyof typeof translations["es"];
+
+export const t = (key: TransKey, lang: Lang = "es"): string => {
+  const dict = translations as Record<Lang, Record<TransKey, string>>;
+  const l = dict[lang] ?? dict.es;
+  return l[key] ?? dict.es[key];
 };

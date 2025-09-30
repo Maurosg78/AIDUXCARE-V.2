@@ -1,7 +1,18 @@
 import React from 'react';
 import { Shield, AlertTriangle, XCircle } from 'lucide-react';
 
-export const LegalAlertsDisplay = ({ issues }) => {
+type IssueUI = {
+  title?: string;
+  severity?: string;
+  type?: string;
+  text?: string;
+  description?: string;
+  consequence?: string;
+};
+
+interface LPropsItem { title?: string; severity?: string; type?: string; text?: string; description?: string; consequence?: string }
+interface LProps { issues: LPropsItem[] }
+export const LegalAlertsDisplay = ({ issues }: LProps) => {
   if (!issues || issues.length === 0) return null;
   
   return (
@@ -14,23 +25,23 @@ export const LegalAlertsDisplay = ({ issues }) => {
       </div>
       
       <div className="space-y-3">
-        {issues.map((issue, idx) => (
+        {issues.map((issue: { title?: string; severity?: string }, idx: number) => (
           <div key={idx} className="bg-white border border-orange-400 rounded-lg p-3">
             <div className="flex items-start justify-between mb-2">
               <span className="inline-block px-2 py-1 bg-orange-700 text-white text-xs font-bold rounded">
-                {issue.type}
+                {(issue as any).type}
               </span>
               <XCircle className="w-5 h-5 text-orange-600" />
             </div>
             
-            <p className="font-semibold text-orange-900">{issue.text}</p>
-            <p className="text-sm text-gray-700 mt-1">{issue.description}</p>
+            <p className="font-semibold text-orange-900">{(issue as any).text}</p>
+            <p className="text-sm text-gray-700 mt-1">{(issue as any).description}</p>
             
             <div className="mt-2 p-2 bg-red-50 border border-red-300 rounded">
               <p className="text-xs font-semibold text-red-900">
                 CONSECUENCIA LEGAL:
               </p>
-              <p className="text-xs text-red-800">{issue.consequence}</p>
+              <p className="text-xs text-red-800">{(issue as any).consequence}</p>
             </div>
           </div>
         ))}
