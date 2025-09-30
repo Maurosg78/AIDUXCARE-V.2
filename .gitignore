@@ -143,3 +143,9 @@ node_modules.rescue.*
 * broken*
 * current*
 archived/
+# archivos con sufijos numerados accidentales
+* [0-9].ts
+* [0-9].tsx
+* [0-9].json
+* [0-9].css
+* [0-9].md
