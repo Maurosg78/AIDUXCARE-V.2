@@ -1,47 +1,68 @@
-import { renderMarkdown } from "@/core/notes/SOAPRenderer";
-// Si MetricsService existe, lo usamos de forma opcional (try/catch)
-let maybeMetrics: any = null;
-try {
-  // Ajusta la ruta si difiere en tu repo:
-  // existe en src/core/metrics/MetricsService.ts según el contexto del sprint
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  maybeMetrics = require("@/core/metrics/MetricsService");
-} catch {}
+/**
+ * notePersistence.ts
+ * Market: CA | Language: en-CA
+ * Purpose: Persist clinical notes and emit metrics with strict typing and no lint violations.
+ */
 
-type PersistArgs = {
-  visitId?: string; // opcional por ahora
+import { track } from "@/core/metrics/MetricsService";
+
+export type NoteFormat = "plain" | "markdown" | "cpo";
+
+export interface NotePayload {
   patientId: string;
-  clinicianId: string;
-  soapNote: any;
-};
+  authorId: string;
+  content: string;
+  encounterId?: string;
+  format: NoteFormat;
+  createdAt?: string; // ISO string
+}
 
-export async function persistNoteWithMetrics(args: PersistArgs): Promise<{ noteId: string }> {
-  const noteMarkdown = renderMarkdown(args.soapNote);
-  const note = {
-    patientId: args.patientId,
-    clinicianId: args.clinicianId,
-    content: noteMarkdown,
-    createdAt: new Date().toISOString(),
+export interface PersistOptions {
+  source: "ui" | "voice" | "import";
+  dryRun?: boolean;
+}
+
+export type PersistResult =
+  | { ok: true; noteId: string }
+  | { ok: false; error: string };
+
+function normalizeNote(note: NotePayload): NotePayload {
+  // Minimal non-empty logic to satisfy linter
+  return {
+    ...note,
+    content: note.content.trim(),
+    createdAt: note.createdAt ?? new Date().toISOString(),
   };
+}
 
-  // Mock DB (localStorage): usa visitId o un id random
-  const noteId = `note_${Date.now()}`;
-  const key = `aiduxcare:notes`;
-  const all = JSON.parse(localStorage.getItem(key) || "[]");
-  all.push({ id: noteId, ...note });
-  localStorage.setItem(key, JSON.stringify(all));
-
-  // Métricas (best effort)
+export async function persistNoteWithMetrics(
+  note: NotePayload,
+  options: PersistOptions = { source: "ui" }
+): Promise<PersistResult> {
+  const normalized = normalizeNote(note);
   try {
-    if (maybeMetrics?.MetricsService) {
-      const metrics = new maybeMetrics.MetricsService();
-      const visitId = args.visitId ?? noteId;
-      await metrics.recordComplianceResult(visitId, "cpo_ontario", true, "All CPO rules satisfied");
-      await metrics.recordTimeSaved(visitId, 15);
-    }
-  } catch {
-    // no-op si no está listo el backend de métricas
-  }
+    const res = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        note: normalized,
+        source: options.source,
+        dryRun: Boolean(options.dryRun),
+      }),
+    });
 
-  return { noteId };
+    if (!res.ok) {
+      const errorMsg = `persistNoteWithMetrics failed with status ${res.status}`;
+      await track("notes.persist_failed", { status: res.status, source: options.source });
+      return { ok: false, error: errorMsg };
+    }
+
+    const json: { id: string } = await res.json();
+    await track("notes.persist_succeeded", { source: options.source });
+    return { ok: true, noteId: json.id };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    await track("notes.persist_exception", { source: options.source, message });
+    return { ok: false, error: message };
+  }
 }
