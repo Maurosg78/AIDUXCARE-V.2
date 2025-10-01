@@ -15,7 +15,7 @@ fi
 # 1) TypeScript
 npm run -s typecheck || { echo "❌ TypeScript con errores"; exit 1; }
 
-# 2) ESLint SOLO en archivos cambiados del app
+# 2) ESLint SOLO en archivos cambiados del app (robusto para lista vacía)
 CHANGED="$(git diff --name-only --diff-filter=ACMRT "$BASE"...HEAD \
   | grep -E '\.(ts|tsx|js|jsx)$' \
   | grep -v -E '^(scripts|cloud-functions|archived|src/_deprecated|docs)/' || true)"
@@ -24,7 +24,11 @@ if [ -z "$CHANGED" ]; then
   echo "ℹ️ No hay archivos de app cambiados para lint. Saltando ESLint."
 else
   echo "🔎 ESLint (changed files):"
-  echo "$CHANGED" | xargs npx eslint || { echo "❌ ESLint con errores"; exit 1; }
+  echo "$CHANGED"
+  # NUL-safe; no falla por patrones no coincidentes ni por warnings
+  printf '%s\0' $CHANGED | xargs -0 -n 50 npx eslint --config eslint.config.js --no-error-on-unmatched-pattern || { 
+    echo "❌ ESLint con errores"; exit 1; 
+  }
 fi
 
 # 3) Tests
