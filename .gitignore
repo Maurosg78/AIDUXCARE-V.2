@@ -39,3 +39,15 @@ aidux-*.sh
 *.snap
 playwright-report/
 test-results/
+# Coverage reports
+coverage/
+
+# Environment files (CRITICAL)
+.env*.local
+!.env.example
+
+# Temp files
+*.timestamp-*.mjs
+npm-install-log.txt
+forms/
+scripts/test-system-quick.html
