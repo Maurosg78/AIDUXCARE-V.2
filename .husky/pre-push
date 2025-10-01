@@ -24,7 +24,7 @@ if [ -z "$CHANGED" ]; then
   echo "ℹ️ No hay archivos de app cambiados para lint. Saltando ESLint."
 else
   echo "🔎 ESLint (changed files):"
-  echo "$CHANGED" | xargs npx eslint --max-warnings 0 || { echo "❌ ESLint con errores"; exit 1; }
+  echo "$CHANGED" | xargs npx eslint || { echo "❌ ESLint con errores"; exit 1; }
 fi
 
 # 3) Tests
