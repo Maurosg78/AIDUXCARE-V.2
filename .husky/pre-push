@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🧪 CI Gate (pre-push): typecheck, lint (changed files), tests, build"
+echo "🧪 CI Gate (pre-push): typecheck, lint (staged), tests, build"
 
-# Base branch para el diff
+# Base branch para mensajes informativos si hiciera falta
 if git rev-parse --verify origin/develop >/dev/null 2>&1; then
   BASE="origin/develop"
 elif git rev-parse --verify origin/main >/dev/null 2>&1; then
@@ -15,23 +15,28 @@ fi
 # 1) TypeScript
 npm run -s typecheck || { echo "❌ TypeScript con errores"; exit 1; }
 
-# 2) ESLint SOLO en archivos cambiados del app (robusto para lista vacía)
-CHANGED="$(git diff --name-only --diff-filter=ACMRT "$BASE"...HEAD \
-  | grep -E '\.(ts|tsx|js|jsx)$' \
-  | grep -v -E '^(scripts|cloud-functions|archived|src/_deprecated|docs)/' || true)"
-
-if [ -z "$CHANGED" ]; then
-  echo "ℹ️ No hay archivos de app cambiados para lint. Saltando ESLint."
+# 2) ESLint SOLO si no pides saltarlo explícitamente
+if [ "${SKIP_LINT:-0}" = "1" ]; then
+  echo "⚠️  SKIP_LINT=1 → saltando ESLint en pre-push (solo este push)."
 else
-  echo "🔎 ESLint (changed files):"
-  echo "$CHANGED"
-  # NUL-safe; no falla por patrones no coincidentes ni por warnings
-  printf '%s\0' $CHANGED | xargs -0 -n 50 npx eslint --config eslint.config.js --no-error-on-unmatched-pattern || { 
-    echo "❌ ESLint con errores"; exit 1; 
-  }
+  # Lint **solo** los archivos STAGED que van en este push
+  STAGED="$(git diff --cached --name-only --diff-filter=ACMRT \
+    | grep -E '\.(ts|tsx|js|jsx)$' \
+    | grep -v -E '^(scripts|cloud-functions|archived|src/_deprecated|docs)/' || true)"
+
+  if [ -z "$STAGED" ]; then
+    echo "ℹ️ No hay archivos de app staged para lint. Saltando ESLint."
+  else
+    echo "🔎 ESLint (staged files):"
+    echo "$STAGED"
+    # NUL-safe; no peta por patrones que no matcheen; no bloquea por warnings
+    printf '%s\0' $STAGED | xargs -0 -n 50 npx eslint --config eslint.config.js --no-error-on-unmatched-pattern || {
+      echo "❌ ESLint con errores"; exit 1;
+    }
+  fi
 fi
 
-# 3) Tests
+# 3) Tests (si existen)
 if [ -f "vitest.config.ts" ] || [ -f "vitest.config.js" ] || ls test 1>/dev/null 2>&1 || ls src/**/*.test.* 1>/dev/null 2>&1; then
   npm run -s test:ci || { echo "❌ Tests fallando"; exit 1; }
 else
