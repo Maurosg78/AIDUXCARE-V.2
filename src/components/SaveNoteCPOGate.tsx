@@ -1,3 +1,4 @@
+import { persistNoteWithMetrics } from "@/services/notePersistence";
 import React, { useState } from 'react';
 import { runCpoRules } from '@/core/compliance/cpo';
 import { assertCpoCompliance } from '@/core/compliance/cpo';
@@ -9,7 +10,6 @@ type Props = {
   currentUser: { id: string };
   onCompliant?: () => Promise<void> | void; // T4: persistNote hook
 };
-
 export default function SaveNoteCPOGate({
   currentSOAPNote,
   currentPatient,
@@ -19,7 +19,7 @@ export default function SaveNoteCPOGate({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   async function handleSaveNote() {
     const noteMarkdown = renderMarkdown(currentSOAPNote);
     const context = {
@@ -28,11 +28,10 @@ export default function SaveNoteCPOGate({
       noteMarkdown,
       createdAtISO: new Date().toISOString(),
     };
-
     try {
       setIsSaving(true);
       await assertCpoCompliance(context);
-      if (onCompliant) await onCompliant();
+      if (onCompliant) await onCompliant(); else { await persistNoteWithMetrics({ visitId: (context as any).visitId, patientId: context.patientId, clinicianId: context.clinicianId, soapNote: currentSOAPNote }); setShowSuccessBanner(true); }
     } catch {
       const result = runCpoRules(context);
       setValidationErrors(result.failures ?? ['Unknown CPO validation error']);
@@ -41,7 +40,6 @@ export default function SaveNoteCPOGate({
       setIsSaving(false);
     }
   }
-
   return (
     <>
       <button
@@ -51,7 +49,6 @@ export default function SaveNoteCPOGate({
       >
         {isSaving ? 'Saving…' : 'Save Note'}
       </button>
-
       {showErrorModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
