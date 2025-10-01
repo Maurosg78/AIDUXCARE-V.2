@@ -83,7 +83,8 @@
     "test:ci": "vitest run --reporter=dot --coverage --passWithNoTests=false",
     "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
-    "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache"
+    "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
+    "lint:app": "eslint \".\" \"src/**/*.{ts,tsx,js,jsx}\" \"test/**/*.{ts,tsx,js,jsx}\" --ignore-pattern \"scripts/**\" --ignore-pattern \"cloud-functions/**\" --ignore-pattern \"archived/**\" --ignore-pattern \"src/_deprecated/**\" --ignore-pattern \"docs/**\""
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -160,6 +161,7 @@
     "postcss": "^8.4.47",
     "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.14",
+    "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.1",
     "typescript": "^5.9.2",

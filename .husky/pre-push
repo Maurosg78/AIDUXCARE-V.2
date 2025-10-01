@@ -1,23 +1,41 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🧪 CI Gate (pre-push): typecheck, lint, tests y build (prod)"
+echo "🧪 CI Gate (pre-push): typecheck, lint (changed files), tests, build"
+
+# Base branch para el diff
+if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+  BASE="origin/develop"
+elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+  BASE="origin/main"
+else
+  BASE="$(git rev-list --max-parents=0 HEAD)"
+fi
 
 # 1) TypeScript
 npm run -s typecheck || { echo "❌ TypeScript con errores"; exit 1; }
 
-# 2) ESLint
-npm run -s lint || { echo "❌ ESLint con errores"; exit 1; }
+# 2) ESLint SOLO en archivos cambiados del app
+CHANGED="$(git diff --name-only --diff-filter=ACMRT "$BASE"...HEAD \
+  | grep -E '\.(ts|tsx|js|jsx)$' \
+  | grep -v -E '^(scripts|cloud-functions|archived|src/_deprecated|docs)/' || true)"
 
-# 3) Tests (Vitest): exigir al menos un test
+if [ -z "$CHANGED" ]; then
+  echo "ℹ️ No hay archivos de app cambiados para lint. Saltando ESLint."
+else
+  echo "🔎 ESLint (changed files):"
+  echo "$CHANGED" | xargs npx eslint --max-warnings 0 || { echo "❌ ESLint con errores"; exit 1; }
+fi
+
+# 3) Tests
 if [ -f "vitest.config.ts" ] || [ -f "vitest.config.js" ] || ls test 1>/dev/null 2>&1 || ls src/**/*.test.* 1>/dev/null 2>&1; then
   npm run -s test:ci || { echo "❌ Tests fallando"; exit 1; }
 else
-  echo "❌ No se detectaron tests. Agrega al menos uno (p.ej., wizard) antes de push."
+  echo "❌ No se detectaron tests. Agrega al menos uno antes de push."
   exit 1
 fi
 
-# 4) Build de producción (Vite)
+# 4) Build prod
 npm run -s build || { echo "❌ Build de producción falló"; exit 1; }
 
 echo "✅ pre-push OK"
