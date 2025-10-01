@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+set -e
 
 echo "🧪 CI Gate (pre-push): typecheck, lint (staged), tests, build"
 
