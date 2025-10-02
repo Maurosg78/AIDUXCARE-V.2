@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /notes/{noteId} {
+      // Leer: solo autenticados (y típicamente el dueño; se puede endurecer más adelante)
+      allow read: if request.auth != null;
+
+      // Crear: dueño + status inicial válido
+      allow create: if request.auth != null
+        && request.resource.data.clinicianUid == request.auth.uid
+        && (request.resource.data.status in ['draft', 'submitted']);
+
+      // Actualizar: dueño + no editar firmadas + transición válida.
+      allow update: if request.auth != null
+        && resource.data.clinicianUid == request.auth.uid
+        && resource.data.status != 'signed'
+        && (
+          // Si NO firma en este update, cualquier cambio permitido (menos borrar)
+          (request.resource.data.status != 'signed')
+          ||
+          // Si firma en este update, SOAP no puede cambiar
+          (
+            request.resource.data.status == 'signed'
+            && request.resource.data.subjective == resource.data.subjective
+            && request.resource.data.objective  == resource.data.objective
+            && request.resource.data.assessment == resource.data.assessment
+            && request.resource.data.plan       == resource.data.plan
+          )
+        );
+
+      // Nunca borrar
+      allow delete: if false;
+    }
+
+    // Por defecto, bloquear todo lo demás
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

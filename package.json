@@ -85,7 +85,10 @@
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
     "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
     "lint:relaxed": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --quiet",
-    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20"
+    "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20",
+    "test:persistence": "vitest --run test/persistence/notesRepo.spec.ts",
+    "rules:deploy": "firebase deploy --only firestore:rules",
+    "indexes:deploy": "firebase firestore:indexes:create firestore.indexes.json || firebase deploy --only firestore:indexes"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -128,7 +131,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^20.19.13",
+    "@types/node": "^20.19.18",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "@types/uuid": "^10.0.0",
