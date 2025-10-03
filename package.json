@@ -80,7 +80,7 @@
     "clean:all": "npm run clean && rm -rf node_modules package-lock.json && npm install",
     "test:unit:fast": "vitest run --passWithNoTests --exclude \"tests/e2e/**\"",
     "compliance:check": "echo '1) Roadmap:' && test -f docs/ROADMAP_UNICA_FUENTE_DE_VERDAD.md && echo OK || (echo FALTA && exit 1); echo '2) Checklist PR:' && test -f docs/blueprints/SECURITY_COMPLIANCE_CHECKLIST.md && echo OK || (echo FALTA && exit 1); echo '3) Imports prohibidos:' && ! grep -R '@/_deprecated\\|@/z_trash' src --include='*.ts' --include='*.tsx' 2>/dev/null && echo OK || (echo ENCONTRADOS && exit 1)",
-    "test:ci": "vitest run --reporter=dot --coverage --passWithNoTests=false",
+    "test:ci": "VITE_FEATURE_PROGRESS_NOTES=1 AIDUX_ENABLE_FIREBASE=0 AIDUX_USE_EMULATORS=1 firebase emulators:exec --only \"firestore,auth\" --project demo-notesrepo \"pnpm vitest run --reporter=verbose --reporter=junit --outputFile junit.xml\"",
     "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
     "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
@@ -88,7 +88,8 @@
     "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20",
     "test:persistence": "vitest --run test/persistence/notesRepo.spec.ts",
     "rules:deploy": "firebase deploy --only firestore:rules",
-    "indexes:deploy": "firebase firestore:indexes:create firestore.indexes.json || firebase deploy --only firestore:indexes"
+    "indexes:deploy": "firebase firestore:indexes:create firestore.indexes.json || firebase deploy --only firestore:indexes",
+    "pretest:ci": "node --no-warnings scripts/kill-ports.cjs || true"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -127,7 +128,7 @@
     "@playwright/test": "^1.54.2",
     "@storybook/react": "^8.6.14",
     "@storybook/types": "^8.6.14",
-    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/jest-dom": "^6.9.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jsdom": "^21.1.7",
