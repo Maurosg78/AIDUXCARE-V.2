@@ -153,7 +153,7 @@ export class PhysiotherapyPipelineService {
     warnings: ClinicalWarning[],
     testResults: Array<Record<string, unknown>>
   ): Promise<SOAPDocument> {
-    console.log('📝 Generando documento SOAP...');
+    console.log('📝 Generando documento clínico...');
     
     const subjective = this.generateSubjective(highlights);
     const objective = this.generateObjective(highlights, testResults);

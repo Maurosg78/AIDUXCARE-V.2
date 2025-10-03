@@ -80,7 +80,7 @@ export class PersistenceService {
       const noteRef = doc(db, this.COLLECTION_NAME, userId, 'notes', noteId);
       await setDoc(noteRef, savedNote);
       
-      console.log(`✅ Nota SOAP guardada con ID: ${noteId}`);
+      console.log(`✅ Nota guardada con ID: ${noteId}`);
       return noteId;
     } catch (error) {
       console.error('Error guardando nota SOAP:', error);
