@@ -1,3 +1,10 @@
+import { getApp, getApps, initializeApp } from "firebase/app";
+function ensureApp() {
+  if (!getApps().length) {
+    initializeApp({ projectId: process.env.FB_PROJECT_ID || "demo-notesrepo" });
+  }
+  return getApp();
+}
 import {
   collection, doc, getDoc, getDocs, query, where, orderBy, limit,
   serverTimestamp, updateDoc, addDoc, Timestamp
@@ -39,7 +46,7 @@ export const createNote = async (
   if (!['draft','submitted'].includes(payload.status)) {
     throw new Error(NoteError.INVALID_STATUS);
   }
-  const db = getFirestore();
+  const db = getFirestore(ensureApp());
   const ref = await addDoc(collection(db, 'notes'), toFirestore(payload));
   const snap = await getDoc(ref);
   return fromFirestore(snap);
@@ -47,7 +54,7 @@ export const createNote = async (
 
 /** Obtiene por id */
 export const getNoteById = async (id: string): Promise<ClinicalNote> => {
-  const db = getFirestore();
+  const db = getFirestore(ensureApp());
   const ref = doc(db, 'notes', id);
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error(NoteError.NOT_FOUND);
@@ -56,7 +63,7 @@ export const getNoteById = async (id: string): Promise<ClinicalNote> => {
 
 /** Última nota firmada/submitted de un paciente */
 export const getLastNoteByPatient = async (patientId: string): Promise<ClinicalNote | null> => {
-  const db = getFirestore();
+  const db = getFirestore(ensureApp());
   const q = query(
     collection(db, 'notes'),
     where('patientId', '==', patientId),
@@ -71,7 +78,7 @@ export const getLastNoteByPatient = async (patientId: string): Promise<ClinicalN
 
 /** Últimas N notas firmadas/submitted de un paciente */
 export const getLastNotes = async (patientId: string, n: number): Promise<ClinicalNote[]> => {
-  const db = getFirestore();
+  const db = getFirestore(ensureApp());
   const q = query(
     collection(db, 'notes'),
     where('patientId', '==', patientId),
@@ -94,7 +101,7 @@ export const updateNote = async (
     'status'|'subjective'|'objective'|'assessment'|'plan'|'signedHash'|'visitId'
   >>
 ): Promise<ClinicalNote> => {
-  const db = getFirestore();
+  const db = getFirestore(ensureApp());
   const ref = doc(db, 'notes', id);
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error(NoteError.NOT_FOUND);
