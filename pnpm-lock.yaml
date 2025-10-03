@@ -103,7 +103,7 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(firebase@12.3.0)
       '@playwright/test':
-        specifier: ^1.54.2
+        specifier: ^1.55.1
         version: 1.55.1
       '@storybook/react':
         specifier: ^8.6.14
