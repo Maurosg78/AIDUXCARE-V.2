@@ -1,5 +1,3 @@
 {
-  "projects": {
-    "default": "aiduxcare-v2-uat-dev"
-  }
+  "projects": { "default": "demo-notesrepo" }
 }

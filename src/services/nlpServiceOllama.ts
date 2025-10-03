@@ -122,7 +122,7 @@ Responde SOLO en formato JSON:
     let ragContext = '';
     if (useRAG && entities.length > 0) {
       try {
-        console.log('🔍 Enriqueciendo SOAP con evidencia científica...');
+        console.log('🔍 Enriqueciendo la nota con evidencia científica...');
         
         // Usar solo las 2 entidades más relevantes para evitar prompts muy largos
         const keyEntities = entities
@@ -195,7 +195,7 @@ Genera SOAP en formato JSON:
             confidence_score: this.calculateSOAPConfidence(soapData)
           };
 
-          console.log(`✅ Nota SOAP original generada en ${Date.now() - (Date.now() - (Date.now() - Date.now()))}ms${useRAG ? ' (con evidencia)' : ''}`);
+          console.log(`✅ Nota original generada en ${Date.now() - (Date.now() - (Date.now() - Date.now()))}ms${useRAG ? ' (con evidencia)' : ''}`);
           return soapNotes;
           
         } catch (parseError) {
@@ -276,7 +276,7 @@ JSON:
     const useOptimizedSOAP = options.useOptimizedSOAP || false; // Default false (A/B testing)
     
     try {
-      console.log(`🧠 Procesando transcripción${useRAG ? ' con RAG' : ' sin RAG'}${useOptimizedSOAP ? ' (SOAP Optimizado v2)' : ''}...`);
+      console.log(`🧠 Procesando transcripción${useRAG ? ' con RAG' : ' sin RAG'}${useOptimizedSOAP ? ' (optimización v2)' : ''}...`);
       
       // 1. Extraer entidades clínicas
       const entitiesStartTime = Date.now();
@@ -329,7 +329,7 @@ JSON:
         model_used: 'llama3.2:3b'
       };
       
-      console.log(`✅ Procesamiento completo en ${totalTime}ms - Entidades: ${entities.length}, SOAP: ${soapNotes.confidence_score?.toFixed(2)}, RAG: ${ragResult?.citations.length || 0} citas`);
+      console.log(`✅ Procesamiento completo en ${totalTime}ms - Entidades: ${entities.length}, nota: ${soapNotes.confidence_score?.toFixed(2)}, RAG: ${ragResult?.citations.length || 0} citas`);
       
       return {
         entities,

@@ -51,3 +51,4 @@ coverage/
 npm-install-log.txt
 forms/
 scripts/test-system-quick.html
+junit.xml

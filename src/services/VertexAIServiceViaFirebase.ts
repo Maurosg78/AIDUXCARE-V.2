@@ -112,8 +112,8 @@ EVALUACIÓN FÍSICA PROPUESTA:
     physicalExamResults: PhysicalExamResult[]
   ): Promise<SOAPNote> {
     try {
-      console.log('📝 Generando nota SOAP...');
-      const prompt = `Genera una nota SOAP con los siguientes hallazgos: ${JSON.stringify({selectedEntityIds, physicalExamResults})}`;
+      console.log('📝 Generando nota clínica...');
+      const prompt = `Genera una nota clínica con los siguientes hallazgos: ${JSON.stringify({selectedEntityIds, physicalExamResults})}`;
       const response = await callVertexAI(prompt);
       
       const soapNote: SOAPNote = {

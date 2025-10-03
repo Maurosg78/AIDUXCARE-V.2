@@ -1,3 +1,23 @@
+/* AIDUX__EMU_GUARD */
+import { describe } from 'vitest';
+const __hasEmu = !!process.env.FIRESTORE_EMULATOR_HOST || process.env.AIDUX_USE_EMULATORS === '1';
+if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
+// --- fin guard ---
+
+import { describe } from 'vitest';
+
+if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
+// --- fin guard ---
+
+import { describe } from 'vitest';
+
+if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
+import { describe } from 'vitest';
+
+if (!__hasEmu) {
+  describe.skip('notesRepo (CRUD + guards)', () => {});
+
+}
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import fs from 'node:fs';

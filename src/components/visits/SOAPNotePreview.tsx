@@ -1,120 +1,65 @@
-import React, { useMemo } from 'react';
-import { buildSOAPFromAnalysis, transcriptToChecklist } from '../../core/notes/transcriptToSOAP';
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useCurrentPatient } from '@/context/CurrentPatientContext';
+import NotesErrorBoundary from '@/components/notes/NotesErrorBoundary';
+import SaveNoteButton from '@/components/notes/SaveNoteButton';
+import { isProgressNotesEnabled } from '@/flags';
+import type { ReactNode } from 'react';
 
-type PreviewState = 'pending' | 'empty' | 'ready';
-
-interface AnalysisResults {
-  entities?: unknown[]; // shape opaque to the viewer; checklist builder owns structure
-}
-
-interface SOAPNotePreviewProps {
-  transcript?: string; // received by contract, not used for mapping (per CTO guardrails)
-  analysisResults?: AnalysisResults | null;
-  className?: string;
-}
-
-const MAX_ITEMS_PER_SECTION = 20;
-
-/**
- * Preview component states:
- * - pending:    no analysisResults
- * - empty:      analysisResults present but no structurable checklist
- * - ready:      content available to render S/O/A/P
- */
-export const SOAPNotePreview: React.FC<SOAPNotePreviewProps> = ({
-  transcript, // eslint-disable-line @typescript-eslint/no-unused-vars
-  analysisResults,
-  className = '',
-}) => {
-  const { state, soap } = useMemo(() => {
-    if (!analysisResults) {
-      return { state: 'pending' as PreviewState, soap: null as unknown };
-    }
-    const checklist = transcriptToChecklist(analysisResults as Record<string, unknown>);
-    if (!Array.isArray(checklist) || checklist.length === 0) {
-      return { state: 'empty' as PreviewState, soap: null as unknown };
-    }
-    const note = buildSOAPFromAnalysis(analysisResults as Record<string, unknown>) as {
-      sections: {
-        subjective?: string[];
-        objective?: string[];
-        assessment?: string[];
-        plan?: string[];
-      };
-    };
-    return { state: 'ready' as PreviewState, soap: note };
-  }, [analysisResults]);
-
-  if (state === 'pending') {
-    return (
-      <div
-        role="region"
-        aria-label="SOAP Note Preview"
-        aria-live="polite"
-        className={`rounded-md border border-slate-200 bg-white p-4 text-slate-700 ${className}`}
-      >
-        <div className="text-sm">⏳ Analyzing...</div>
-      </div>
-    );
-  }
-
-  if (state === 'empty') {
-    return (
-      <div
-        role="region"
-        aria-label="SOAP Note Preview"
-        aria-live="polite"
-        className={`rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900 ${className}`}
-      >
-        <div className="text-sm">No clinically structurable information</div>
-      </div>
-    );
-  }
-
-  // state === 'ready'
-  const sections = soap && (soap as any).sections ? (soap as any).sections : {};
-  return (
-    <div
-      role="region"
-      aria-label="SOAP Note Preview"
-      aria-live="polite"
-      className={`rounded-md border border-slate-200 bg-white p-4 ${className}`}
-    >
-      <h3 className="text-sm font-semibold text-slate-800 mb-2">SOAP preview</h3>
-
-      <Section title="S - Subjective" items={toStringArray(sections.subjective)} />
-      <Section title="O - Objective" items={toStringArray(sections.objective)} />
-      <Section title="A - Assessment" items={toStringArray(sections.assessment)} />
-      <Section title="P - Plan" items={toStringArray(sections.plan)} />
-    </div>
-  );
+type Props = {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  patientId?: string;
+  visitId?: string;
+  /** si el contenedor ya conoce el usuario, lo pasa aquí */
+  clinicianUid?: string;
+  /** slot opcional para cabecera u otros elementos */
+  header?: ReactNode;
 };
 
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
-}
+export default function SOAPNotePreview(props: Props) {
+  const { currentPatient, currentVisit } = useCurrentPatient();
+  const { patientId: paramPid } = useParams<{ patientId: string }>();
 
-const Section: React.FC<{ title: string; items: string[] }> = ({ title, items }) => {
-  const shown = items.slice(0, MAX_ITEMS_PER_SECTION);
-  const remaining = items.length - shown.length;
+  const patientId = props.patientId ?? paramPid ?? currentPatient?.id ?? '';
+  const visitId = props.visitId ?? currentVisit?.id ?? '';
+  const clinicianUid = props.clinicianUid ?? '';
 
   return (
-    <div className="mb-3">
-      <div className="text-xs font-semibold text-slate-600 mb-1">{title}</div>
-      {shown.length > 0 ? (
-        <ul className="list-disc pl-5 space-y-1 text-sm text-slate-700">
-          {shown.map((t, idx) => (
-            <li key={`${title}-${idx}`}>{t}</li>
-          ))}
-          {remaining > 0 && (
-            <li className="text-xs text-slate-400 italic">+{remaining} more items...</li>
-          )}
-        </ul>
-      ) : (
-        <div className="text-xs text-slate-400 italic">—</div>
-      )}
-    </div>
-  );
-};
+    <NotesErrorBoundary>
+      <section>
+        {props.header ?? null}
+        <div>
+          <h3>Subjective</h3>
+          <p>{props.subjective}</p>
+        </div>
+        <div>
+          <h3>Objective</h3>
+          <p>{props.objective}</p>
+        </div>
+        <div>
+          <h3>Assessment</h3>
+          <p>{props.assessment}</p>
+        </div>
+        <div>
+          <h3>Plan</h3>
+          <p>{props.plan}</p>
+        </div>
 
-export default SOAPNotePreview;
+        {isProgressNotesEnabled() && (
+          <SaveNoteButton
+            subjective={props.subjective}
+            objective={props.objective}
+            assessment={props.assessment}
+            plan={props.plan}
+            patientId={patientId}
+            visitId={visitId}
+            clinicianUid={clinicianUid}
+          />
+        )}
+      </section>
+    </NotesErrorBoundary>
+  );
+}
