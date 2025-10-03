@@ -1,6 +1,10 @@
 name: Guardrail - No SOAP logs
 
 on:
+  pull_request:
+  push:
+    branches: [ main ]
+
 permissions:
   contents: read
   checks: write
