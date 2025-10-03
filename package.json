@@ -89,7 +89,9 @@
     "test:persistence": "vitest --run test/persistence/notesRepo.spec.ts",
     "rules:deploy": "firebase deploy --only firestore:rules",
     "indexes:deploy": "firebase firestore:indexes:create firestore.indexes.json || firebase deploy --only firestore:indexes",
-    "pretest:ci": "node --no-warnings scripts/kill-ports.cjs || true"
+    "pretest:ci": "node --no-warnings scripts/kill-ports.cjs || true",
+    "check:no-soap-logs": "scripts/check-no-soap-logs.sh",
+    "pretest": "pnpm run check:no-soap-logs"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
