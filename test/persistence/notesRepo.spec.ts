@@ -1,154 +1,154 @@
-/* AIDUX__EMU_GUARD */
-import { describe } from 'vitest';
-const __hasEmu = !!process.env.FIRESTORE_EMULATOR_HOST || process.env.AIDUX_USE_EMULATORS === '1';
-if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
-// --- fin guard ---
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { initializeApp, deleteApp, FirebaseApp } from "firebase/app";
+import {
+  getFirestore,
+  connectFirestoreEmulator,
+  collection,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
+  doc,
+  Timestamp,
+} from "firebase/firestore";
 
-import { describe } from 'vitest';
+import {
+  NotesRepo,
+} from "../../src/repositories/notesRepo";
+import { NoteError } from "../../src/types/notes";
 
-if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
-// --- fin guard ---
+let app: FirebaseApp;
+let repo: NotesRepo;
 
-import { describe } from 'vitest';
+const HOST = process.env.FIRESTORE_EMULATOR_HOST?.split(":")[0] ?? "127.0.0.1";
+const PORT = Number(process.env.FIRESTORE_EMULATOR_HOST?.split(":")[1] ?? 8080);
 
-if (!__hasEmu) { describe.skip('notesRepo (CRUD + guards)', () => {}); }
-import { describe } from 'vitest';
+beforeAll(async () => {
+  app = initializeApp({ projectId: `notes-test-${Date.now()}` });
+  const db = getFirestore(app);
+  connectFirestoreEmulator(db, HOST, PORT);
+  repo = new NotesRepo(db);
+});
 
-if (!__hasEmu) {
-  describe.skip('notesRepo (CRUD + guards)', () => {});
+afterAll(async () => {
+  await deleteApp(app);
+});
 
-}
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import fs from 'node:fs';
+beforeEach(async () => {
+  // limpia coleccion 'notes' del paciente de prueba
+  const db = getFirestore(app);
+  const snap = await getDocs(query(collection(db, "notes"), where("patientId", "==", "P-1")));
+  await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "notes", d.id))));
+});
 
-// SDK app + emuladores (mismo app que usa el repo)
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator, setDoc, doc } from 'firebase/firestore';
-import { getAuth, connectAuthEmulator, signInAnonymously } from 'firebase/auth';
-
-import { createNote, getNoteById, getLastNoteByPatient, getLastNotes, updateNote } from '@/repositories/notesRepo';
-import { NoteError } from '@/types/notes';
-
-let testEnv: RulesTestEnvironment;
-let CLIN_UID = 'clinician-test';
-
-describe('notesRepo (CRUD + guards)', () => {
-  beforeAll(async () => {
-    const rules = fs.readFileSync('firestore.rules', 'utf8');
-
-    // Carga reglas en el emulador
-    testEnv = await initializeTestEnvironment({
-      projectId: 'demo-notesrepo',
-      firestore: { rules, host: '127.0.0.1', port: 8080 },
+describe("notesRepo", () => {
+  it("✅ Crear nota → se guarda con status draft", async () => {
+    const id = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s",
+      objective: "o",
+      assessment: "a",
+      plan: "p",
     });
+    expect(id).toBeTruthy();
 
-    // Inicializa la app por defecto (usada por el repo)
-    if (!getApps().length) {
-      initializeApp({ projectId: 'demo-notesrepo', apiKey: 'fake-api-key', authDomain: 'demo-notesrepo.firebaseapp.com' });
+    const note = await repo.getNoteById(id);
+    expect(note?.status).toBe("draft");
+    expect(note?.patientId).toBe("P-1");
+    expect(note?.createdAt).toBeInstanceOf(Timestamp);
+  });
+
+  it("✅ Actualizar nota → permitido si draft/submitted", async () => {
+    const id = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s",
+      objective: "o",
+      assessment: "a",
+      plan: "p",
+    });
+    await repo.updateNote(id, { status: "submitted" });
+    const n = await repo.getNoteById(id);
+    expect(n?.status).toBe("submitted");
+  });
+
+  it("✅ Firmar nota → status pasa a signed y hash calculado", async () => {
+    const id = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s",
+      objective: "o",
+      assessment: "a",
+      plan: "p",
+    });
+    await repo.updateNote(id, { status: "submitted" });
+    await repo.signNote(id);
+
+    const n = await repo.getNoteById(id);
+    expect(n?.status).toBe("signed");
+    expect(n?.signedHash).toBeDefined();
+    expect(n?.signedHash?.length).toBe(64); // sha-256 hex
+  });
+
+  it("✅ Editar nota firmada → lanza ERR_NOTE_IMMUTABLE", async () => {
+    const id = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s",
+      objective: "o",
+      assessment: "a",
+      plan: "p",
+    });
+    await repo.updateNote(id, { status: "submitted" });
+    await repo.signNote(id);
+
+    await expect(repo.updateNote(id, { plan: "new" })).rejects.toThrowError(NoteError.IMMUTABLE);
+  });
+
+  it("✅ getLastNoteByPatient retorna la más reciente (submitted/signed)", async () => {
+    const first = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s1",
+      objective: "o1",
+      assessment: "a1",
+      plan: "p1",
+    });
+    await repo.updateNote(first, { status: "submitted" });
+
+    const second = await repo.createNote({
+      patientId: "P-1",
+      clinicianUid: "U-1",
+      subjective: "s2",
+      objective: "o2",
+      assessment: "a2",
+      plan: "p2",
+    });
+    // queda en draft
+
+    const last = await repo.getLastNoteByPatient("P-1");
+    expect(last?.id).toBe(first); // submitted gana sobre draft más nuevo
+  });
+
+  it("✅ getLastNotes retorna en orden correcto", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const id = await repo.createNote({
+        patientId: "P-1",
+        clinicianUid: "U-1",
+        subjective: "s" + i,
+        objective: "o" + i,
+        assessment: "a" + i,
+        plan: "p" + i,
+      });
+      ids.push(id);
     }
-
-    // Conecta emuladores
-    const db = getFirestore();
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-
-    const auth = getAuth();
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-
-    // Autenticación anónima para poblar request.auth
-    await signInAnonymously(auth);
-    CLIN_UID = auth.currentUser?.uid || CLIN_UID;
-  });
-
-  afterAll(async () => {
-    await testEnv.cleanup();
-  });
-
-  it('create/get works (draft)', async () => {
-    const note = await createNote({
-      id: '', // ignorado por create
-      patientId: 'p1',
-      visitId: 'v1',
-      clinicianUid: CLIN_UID,
-      status: 'draft',
-      subjective: 's',
-      objective: 'o',
-      assessment: 'a',
-      plan: 'p',
-    });
-    expect(note.id).toBeTruthy();
-
-    const fetched = await getNoteById(note.id);
-    expect(fetched.patientId).toBe('p1');
-    expect(fetched.status).toBe('draft');
-    expect(fetched.clinicianUid).toBe(CLIN_UID);
-  });
-
-  it('getLastNote(s) honors index pattern', async () => {
-    const now = Date.now();
-    const db = getFirestore();
-
-    await setDoc(doc(db, 'notes', 'n1'), {
-      patientId: 'p2',
-      clinicianUid: CLIN_UID,
-      status: 'submitted',
-      subjective: 's1', objective: 'o1', assessment: 'a1', plan: 'p1',
-      createdAt: new Date(now - 1000), updatedAt: new Date(now - 1000),
-    });
-
-    await setDoc(doc(db, 'notes', 'n2'), {
-      patientId: 'p2',
-      clinicianUid: CLIN_UID,
-      status: 'submitted',
-      subjective: 's2', objective: 'o2', assessment: 'a2', plan: 'p2',
-      createdAt: new Date(now), updatedAt: new Date(now),
-    });
-
-    const last = await getLastNoteByPatient('p2');
-    expect(last?.subjective).toBe('s2');
-
-    const many = await getLastNotes('p2', 2);
-    expect(many.length).toBe(2);
-    expect(many[0].subjective).toBe('s2');
-    expect(many[1].subjective).toBe('s1');
-  });
-
-  it('update to signed cannot modify SOAP in same op', async () => {
-    const note = await createNote({
-      id: '',
-      patientId: 'p3',
-      clinicianUid: CLIN_UID,
-      status: 'submitted',
-      subjective: 's',
-      objective: 'o',
-      assessment: 'a',
-      plan: 'p',
-    });
-
-    await expect(
-      updateNote(note.id, { status: 'signed', subjective: 'changed' })
-    ).rejects.toThrow(NoteError.IMMUTABLE);
-
-    const signed = await updateNote(note.id, { status: 'signed', signedHash: '0xabc' });
-    expect(signed.status).toBe('signed');
-  });
-
-  it('signed notes are immutable afterwards', async () => {
-    const note = await createNote({
-      id: '',
-      patientId: 'p4',
-      clinicianUid: CLIN_UID,
-      status: 'submitted',
-      subjective: 's',
-      objective: 'o',
-      assessment: 'a',
-      plan: 'p',
-    });
-
-    await updateNote(note.id, { status: 'signed', signedHash: '0xdead' });
-
-    await expect(
-      updateNote(note.id, { objective: 'new' })
-    ).rejects.toThrow(NoteError.IMMUTABLE);
+    const notes = await repo.getLastNotes("P-1", 3);
+    expect(notes.map(n => n.id)).toHaveLength(3);
+    // creado más reciente primero
+    expect(ids).toHaveLength(3);
+    // ids: [0,1,2]; orden esperado desc -> [2,1,0]
+    expect(notes.map(n => n.id)).toEqual([ids[2], ids[1], ids[0]]);
   });
 });
