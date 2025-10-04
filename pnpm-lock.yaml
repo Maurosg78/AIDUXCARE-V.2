@@ -94,7 +94,7 @@ importers:
         specifier: ^7.27.1
         version: 7.27.1(@babel/core@7.28.4)
       '@babel/traverse':
-        specifier: ^7.28.3
+        specifier: ^7.28.4
         version: 7.28.4
       '@babel/types':
         specifier: ^7.27.1
