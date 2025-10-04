@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { getApp } from 'firebase/app';
 import { initializeApp, deleteApp, FirebaseApp } from "firebase/app";
 import {
   getFirestore,
@@ -24,14 +25,14 @@ const HOST = process.env.FIRESTORE_EMULATOR_HOST?.split(":")[0] ?? "127.0.0.1";
 const PORT = Number(process.env.FIRESTORE_EMULATOR_HOST?.split(":")[1] ?? 8080);
 
 beforeAll(async () => {
-  app = initializeApp({ projectId: `notes-test-${Date.now()}` });
+  try { app = getApp(); } catch { app = initializeApp({ projectId: `notes-test-${Date.now()}` }); }
   const db = getFirestore(app);
   connectFirestoreEmulator(db, HOST, PORT);
   repo = new NotesRepo(db);
 });
 
 afterAll(async () => {
-  await deleteApp(app);
+  if (app) await deleteApp(app);
 });
 
 beforeEach(async () => {
