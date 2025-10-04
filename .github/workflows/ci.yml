@@ -16,7 +16,13 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
       - run: pnpm install --frozen-lockfile=false
+      - name: Install firebase-tools (global)
+        run: npm i -g firebase-tools@13
       - name: Run tests (Firestore+Auth emulators)
         env:
           FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
