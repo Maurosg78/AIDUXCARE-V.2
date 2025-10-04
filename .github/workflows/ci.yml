@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: [object Object]-firebase-emulators-[object Object]
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json', 'firestore.rules') }}
           restore-keys: |
             ${{ runner.os }}-firebase-emulators-
       - name: Run tests (Firestore+Auth emulators)
@@ -37,8 +37,8 @@ jobs:
         run: pnpm test:ci
 
       - name: Save Firebase emulator cache
-        if: steps.firebase_cache.outputs['cache-hit'] != 'true'
+        if: steps.firebase_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json') }}
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json', 'firestore.rules') }}
