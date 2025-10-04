@@ -83,7 +83,7 @@ export class PersistenceService {
       console.log(`✅ Nota guardada con ID: ${noteId}`);
       return noteId;
     } catch (error) {
-      console.error('Error guardando nota SOAP:', error);
+      clinical note:', error);
       throw new Error('Error al guardar la nota en la base de datos');
     }
   }

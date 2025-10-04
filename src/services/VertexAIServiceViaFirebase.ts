@@ -125,7 +125,7 @@ EVALUACIÓN FÍSICA PROPUESTA:
       
       return soapNote;
     } catch (error) {
-      console.error('Error en generateSOAP:', error);
+      clinical note:', error);
       throw error;
     }
   }

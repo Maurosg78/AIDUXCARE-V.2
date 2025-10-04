@@ -20,7 +20,7 @@ export const handleGenerateSOAP = async (
     
     return soapData;
   } catch (error) {
-    console.error("Error generando SOAP:", error);
+    clinical note:", error);
     return null;
   }
 };

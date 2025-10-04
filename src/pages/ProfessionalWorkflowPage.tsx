@@ -95,7 +95,7 @@ const ProfessionalWorkflowPage = () => {
         generateSOAPNote(selectedFindings, physicalExamResults);
       }
     } catch (error) {
-      console.error("Error generando SOAP:", error);
+      clinical note:", error);
     }
   };
 

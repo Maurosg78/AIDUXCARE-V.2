@@ -134,7 +134,7 @@ export class VertexAIService {
         version: '2.0'
       };
     } catch (error) {
-      console.error('Error generating SOAP document:', error);
+      clinical note document:', error);
       throw new Error(`Failed to generate SOAP: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
