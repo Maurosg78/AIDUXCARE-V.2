@@ -123,7 +123,7 @@
 
 ### Fase 1: Configuración TypeScript (Prioridad Alta) ✅ COMPLETADO
 - ✅ Corregir configuración de tipos globales para Vitest
-- ✅ Asegurar que `vitest/globals` y `@testing-library/jest-dom` funcionen correctamente
+- ✅ Asegurar que `vitest/globals` y `@testing-library/jest-dom/vitest` funcionen correctamente
 - ✅ Validar que `vi`, `expect`, `it`, `describe` tengan tipos correctos
 
 ### Fase 2: Refactorización de Servicios (Prioridad Media) ✅ COMPLETADO
