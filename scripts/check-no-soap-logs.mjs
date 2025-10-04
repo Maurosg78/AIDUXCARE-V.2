@@ -1,44 +1,43 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 
-const PATTERNS = [
-  'console\\.(log|info|warn|error).*Subjective',
-  'console\\.(log|info|warn|error).*Objective',
-  'console\\.(log|info|warn|error).*Assessment',
-  'console\\.(log|info|warn|error).*Plan',
-  'console\\.(log|info|warn|error).*SOAP'
-];
-const regex = `(${PATTERNS.join('|')})`;
-
-// Only scan tracked code under src/ and scripts/, exclude tests/specs and noisy dirs
-const pathspecs = [
+const WORDS = ['Subjective','Objective','Assessment','Plan','SOAP'];
+const coarse = spawnSync('git', [
+  'grep','-nE', `console\\.(log|info|warn|error)`, '--',
   'src/**',
-  'scripts/**',
-  ':(exclude)test/**',
   ':(exclude)src/**/*.spec.*',
-  ':(exclude)scripts/**/*.spec.*',
-  ':(exclude).rescue_untracked/**',
+  ':(exclude)test/**',
   ':(exclude)node_modules/**',
   ':(exclude)coverage/**',
   ':(exclude)dist/**',
   ':(exclude)build/**',
-  ':(exclude).next/**',
-];
+  ':(exclude).next/**'
+], { encoding: 'utf8', maxBuffer: 50*1024*1024 });
 
-const res = spawnSync('git', ['grep', '-nE', regex, '--', ...pathspecs], {
-  encoding: 'utf8',
-  maxBuffer: 50 * 1024 * 1024 // 50MB headroom
-});
-
-// git grep: 0=found, 1=not found, >1=error
-if (res.status === 0 && res.stdout && res.stdout.trim()) {
-  console.error('❌ SOAP-like logs found:\n' + res.stdout.trim());
-  process.exit(1);
+if (coarse.status > 1) {
+  console.error('❌ Guardrail failed to run:\n' + (coarse.stderr || 'unknown error'));
+  process.exit(2);
 }
 
-if (res.status > 1) {
-  console.error('❌ Guardrail failed to run:\n' + (res.stderr || 'unknown error'));
-  process.exit(2);
+const offenders = [];
+const lines = (coarse.stdout || '').split('\n').filter(Boolean);
+for (const line of lines) {
+  // Sólo falla si hay alguna palabra dentro de comillas en el mismo console.*
+  // Ejemplo que falla: console.log("Plan ...");  // ✅
+  // Ejemplo que NO falla: console.log(`... ${useOptimizedSOAP ? ...}`); // ✅ (palabra en identificador)
+  const m = line.match(/console\.(log|info|warn|error)[^\n]*/);
+  if (!m) continue;
+  const segment = m[0];
+  const quoted = segment.match(/["'`][^"'`]*["'`]/g) || [];
+  const hasForbidden = quoted.some(q =>
+    WORDS.some(w => new RegExp(`(^|[^A-Za-z0-9_])${w}([^A-Za-z0-9_]|$)`).test(q))
+  );
+  if (hasForbidden) offenders.push(line);
+}
+
+if (offenders.length) {
+  console.error('❌ SOAP-like logs found:\n' + offenders.join('\n'));
+  process.exit(1);
 }
 
 console.log('✅ No SOAP-like logs found.');

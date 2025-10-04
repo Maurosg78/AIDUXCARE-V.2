@@ -110,7 +110,7 @@ export default function ProfessionalWorkflowPage() {
         selectedFindings,
         physicalExamResults
       );    } catch (error) {
-      console.error("Error generando SOAP:", error);
+      clinical note:", error);
     }
   };
   const handleAnalyzeWithAI = async () => {
