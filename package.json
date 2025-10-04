@@ -75,7 +75,7 @@
     "smoke:prod": "node scripts/identitytoolkit-smoke.cjs PROD | tee reports/smoke-prod.txt",
     "check:uat": "export $(grep -v \"^#\" .env.local | xargs) && node scripts/identitytoolkit-smoke.cjs UAT",
     "check:prod": "export VITE_FIREBASE_API_KEY=\"<NUEVA_KEY_PROD>\" && node scripts/identitytoolkit-smoke.cjs PROD",
-    "postinstall": "playwright install",
+    "postinstall": "node scripts/postinstall.mjs",
     "clean": "rimraf node_modules/.vite",
     "clean:all": "npm run clean && rm -rf node_modules package-lock.json && npm install",
     "test:unit:fast": "vitest run --passWithNoTests --exclude \"tests/e2e/**\"",
@@ -130,6 +130,7 @@
     "@playwright/test": "^1.54.2",
     "@storybook/react": "^8.6.14",
     "@storybook/types": "^8.6.14",
+    "@testing-library/jest-dom": "^6.9.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jsdom": "^21.1.7",
@@ -173,7 +174,6 @@
     "vitest": "^1.6.1",
     "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
-    "zod": "^4.0.5",
-    "@testing-library/jest-dom": "^6.9.0"
+    "zod": "^3.25.76"
   }
 }

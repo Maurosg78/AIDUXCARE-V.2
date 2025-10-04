@@ -20,7 +20,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - run: pnpm install --frozen-lockfile=false
+      - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true pnpm install --frozen-lockfile=false
       - name: Install firebase-tools (global)
         run: npm i -g firebase-tools@13
       - name: Run tests (Firestore+Auth emulators)
