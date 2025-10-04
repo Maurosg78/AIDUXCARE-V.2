@@ -30,7 +30,7 @@ jobs:
           path: ~/.cache/firebase/emulators
           key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json', 'firestore.rules') }}
           restore-keys: |
-            ${{ runner.os }}-firebase-emulators-
+      ${{ runner.os }}-firebase-emulators-
       - name: Run tests (Firestore+Auth emulators)
         env:
           FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
