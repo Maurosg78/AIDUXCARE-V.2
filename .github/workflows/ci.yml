@@ -36,8 +36,10 @@ jobs:
           FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
         run: pnpm test:ci
 
-      - name: Save Firebase emulator cache
+      - name: Save Firebase emulator cache  if: steps.firebase_cache.outputs.cache-hit != 'true'
+
         if: steps.firebase_cache.outputs.cache-hit != 'true'
+  continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/firebase/emulators
