@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json') }}
+          key: [object Object]-firebase-emulators-[object Object]
           restore-keys: |
             ${{ runner.os }}-firebase-emulators-
       - name: Run tests (Firestore+Auth emulators)
