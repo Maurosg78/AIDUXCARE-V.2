@@ -94,7 +94,6 @@ export class NotesRepo {
     const payload: Omit<ClinicalNote, "id"> = {
       ...data,
       status,
-      signedHash: undefined,
       createdAt: serverTimestamp() as unknown as Timestamp,
       updatedAt: serverTimestamp() as unknown as Timestamp,
     } as unknown as Omit<ClinicalNote, "id">;
@@ -189,7 +188,6 @@ export class NotesRepo {
       const toHash = stableStringifyForHash({
         ...cur,
         status: "signed",
-        signedHash: undefined, // excluir campo destino
         id,
       });
 
