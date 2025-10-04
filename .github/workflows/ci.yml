@@ -23,7 +23,22 @@ jobs:
       - run: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true pnpm install --frozen-lockfile=false
       - name: Install firebase-tools (global)
         run: npm i -g firebase-tools@13
+      - name: Restore Firebase emulator cache
+        id: firebase_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json') }}
+          restore-keys: |
+            ${{ runner.os }}-firebase-emulators-
       - name: Run tests (Firestore+Auth emulators)
         env:
           FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
         run: pnpm test:ci
+
+      - name: Save Firebase emulator cache
+        if: steps.firebase_cache.outputs['cache-hit'] != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('firebase.json') }}
