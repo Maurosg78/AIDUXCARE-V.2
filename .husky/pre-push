@@ -1,70 +1,15 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 set -e
-
-# Recoge los pares localSHA remoteSHA que envía Git al pre-push
-RANGES=""
-while read -r local_ref local_sha remote_ref remote_sha
-do
-  # ref nueva (remote_sha = 0s): comparamos todo el historial alcanzable por local_sha
-  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
-    RANGES="$RANGES $local_sha"
-  else
-    RANGES="$RANGES $remote_sha..$local_sha"
-  fi
-done
-
-# Si no vino nada por stdin (casos raros), usar ultimo commit
-if [ -z "$RANGES" ]; then
-  if git rev-parse --verify -q HEAD >/dev/null 2>&1; then
-    RANGES="HEAD~1..HEAD"
-  else
-    # primer commit del repo
-    RANGES="HEAD"
-  fi
-fi
-
-# Lista de archivos a empujar (acumulado por todos los rangos)
-CHANGED_FILES="$(git diff --name-only --diff-filter=ACMRTUXB $RANGES || true)"
-
-if [ -z "$CHANGED_FILES" ]; then
-  echo "🛈 Pre-push: no se detectaron archivos cambiados en el rango ($RANGES). Continuando…"
-  exit 0
-fi
-
-# Decide si TODOS los archivos son meta (docs/adr/** o .gitignore)
-ONLY_META=1
-echo "$CHANGED_FILES" | while IFS= read -r f; do
-  # normaliza posibles retornos de carro
-  f="$(printf "%s" "$f" | tr -d '\r')"
-  case "$f" in
-    docs/adr/*|.gitignore) : ;;   # ok meta
-    *) ONLY_META=0; echo "$f"; break ;;
-  esac
-done >/tmp/_non_meta_$$ || true
-
-if [ "$ONLY_META" -eq 1 ] && [ ! -s /tmp/_non_meta_$$ ]; then
-  echo "🛈 Pre-push: solo cambios meta (docs/adr/** o .gitignore) — se omiten TypeScript y ESLint."
-  exit 0
-fi
 
 echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
 
-# # TypeScript (usa script si existe; si no, tsc directo)
-# if npm run -s typecheck >/dev/null 2>&1; then
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm tsc --noEmit
   echo "✅ TypeScript OK (script)"
-# elif npx -y tsc -v >/dev/null 2>&1 && npx -y tsc --noEmit; then
-#   echo "✅ TypeScript OK (tsc)"
+  pnpm lint || true
 else
-  echo "❌ TypeScript con errores"; rm -f /tmp/_non_meta_$$; exit 1
+  npm run -s tsc -- --noEmit
+  echo "✅ TypeScript OK (script)"
+  npm run -s lint || true
 fi
-
-# ESLint (usa script si existe; si no, eslint --config eslint.override.config.js "src/**/*.{ts,tsx}" --quiet
-if npm run -s lint >/dev/null 2>&1; then
-  echo "✅ Lint OK (script)"
-elif npx -y eslint --config eslint.override.config.js "src/**/*.{ts,tsx}" --quiet
-  echo "✅ Lint OK (eslint)"
-else
-  echo "❌ Lint con errores"; rm -f /tmp/_non_meta_$$; exit 1
-fi
-
-rm -f /tmp/_non_meta_$$
