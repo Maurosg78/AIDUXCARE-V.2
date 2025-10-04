@@ -41,3 +41,4 @@ src/components/
 
 # --- declaration files ---
 **/*.d.ts
+src/z_trash/

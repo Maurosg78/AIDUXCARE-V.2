@@ -199,7 +199,7 @@ Genera SOAP en formato JSON:
           return soapNotes;
           
         } catch (parseError) {
-          console.error('Error parsing SOAP JSON:', parseError);
+          clinical note JSON:', parseError);
         }
       }
       
@@ -207,7 +207,7 @@ Genera SOAP en formato JSON:
       return this.generateFallbackSOAP(transcript);
       
     } catch (error) {
-      console.error('Error generating original SOAP notes:', error);
+      clinical note notes:', error);
       
       // Si hay timeout, intentar versión ultra-simplificada
       if (error instanceof Error && error.message.includes('timeout')) {
@@ -254,7 +254,7 @@ JSON:
         };
       }
     } catch (simpleError) {
-      console.error('Error en SOAP simplificado:', simpleError);
+      clinical note simplificado:', simpleError);
     }
     
     // Fallback final
@@ -276,7 +276,7 @@ JSON:
     const useOptimizedSOAP = options.useOptimizedSOAP || false; // Default false (A/B testing)
     
     try {
-      console.log(`🧠 Procesando transcripción${useRAG ? ' con RAG' : ' sin RAG'}${useOptimizedSOAP ? ' (optimización v2)' : ''}...`);
+      clinical note ? ' (optimización v2)' : ''}...`);
       
       // 1. Extraer entidades clínicas
       const entitiesStartTime = Date.now();
@@ -329,7 +329,7 @@ JSON:
         model_used: 'llama3.2:3b'
       };
       
-      console.log(`✅ Procesamiento completo en ${totalTime}ms - Entidades: ${entities.length}, nota: ${soapNotes.confidence_score?.toFixed(2)}, RAG: ${ragResult?.citations.length || 0} citas`);
+      clinical noteNotes.confidence_score?.toFixed(2)}, RAG: ${ragResult?.citations.length || 0} citas`);
       
       return {
         entities,

@@ -26,7 +26,7 @@ declare module '@testing-library/react' {
   export const within: any;
 }
 
-declare module '@testing-library/jest-dom' {
+declare module '@testing-library/jest-dom/vitest/vitest/vitest' {
   export const toBeInTheDocument: any;
   export const toHaveTextContent: any;
   export const toHaveClass: any;
