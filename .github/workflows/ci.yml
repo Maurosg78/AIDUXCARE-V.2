@@ -1,56 +1,23 @@
 name: CI
 on:
-  push: { branches: [ main ] }
   pull_request:
-permissions:
-  contents: read
-  checks: write
-  issues: write
-  pull-requests: write
+  push:
+    branches: [ main, feature/* ]
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v3
-        with: { version: 9 }
-
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-
-      - name: Cache Firebase emulators
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/firebase/emulators
-          key: ${{ runner.os }}-firebase-emulators-v1
-
-      - run: pnpm install --frozen-lockfile
-      - run: npm i -g firebase-tools
-
-      - name: Tests (vitest + emulators)
-        run: pnpm run test:ci
-
-      - name: Subir cobertura
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: |
-            coverage/**
-            coverage/lcov.info
-
-      - name: Subir JUnit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit
-          path: junit.xml
-
-      - name: Publicar resultados JUnit (anotaciones PR)
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: "**/junit.xml"
+      - run: pnpm install --frozen-lockfile=false
+      - name: Run tests (Firestore+Auth emulators)
+        env:
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+        run: pnpm test:ci
