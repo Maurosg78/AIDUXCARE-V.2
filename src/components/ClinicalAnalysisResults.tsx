@@ -36,14 +36,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     
     switch(section) {
       case 'alerts':
-{
         const alertIds: string[] = [];
         editedResults?.redFlags?.forEach((_, i) => alertIds.push(`red-${i}`));
         editedResults?.entities?.filter(e => e.type === 'medication')
           .forEach(e => e.id && alertIds.push(e.id));
         idsToSelect = alertIds;
         break;
-}
         
       case 'clinical':
         idsToSelect = editedResults?.entities?.map(e => e.id).filter(Boolean) || [];
@@ -54,7 +52,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         break;
         
       case 'psychosocial':
-{
         idsToSelect = editedResults?.yellowFlags?.map((_, i) => `yellow-${i}`) || [];
         break;
     }
@@ -67,7 +64,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     let idsToRemove: string[] = [];
     
     switch(section) {
-}
       case 'alerts':
         idsToRemove = selectedIds.filter(id => 
           id.startsWith('red-') || 
