@@ -84,14 +84,15 @@
     "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
     "lint:local": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --cache --cache-location .eslintcache",
     "lint:local:fix": "eslint \"src/**/*.{ts,tsx}\" --config eslint.local.config.mjs --fix --fix-type layout,suggestion --cache --cache-location .eslintcache",
-    "lint:relaxed": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --quiet",
+    "lint:relaxed": "eslint . --config eslint.config.relaxed.js",
     "lint:count": "eslint --config eslint.override.config.js 'src/**/*.{ts,tsx}' --format unix | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 20",
     "test:persistence": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 firebase emulators:exec --only firestore,auth --project demo-notesrepo \"pnpm vitest run test/persistence/notesRepo.spec.ts\"",
     "rules:deploy": "firebase deploy --only firestore:rules",
     "indexes:deploy": "firebase firestore:indexes:create firestore.indexes.json || firebase deploy --only firestore:indexes",
     "pretest:ci": "node --no-warnings scripts/kill-ports.cjs || true",
     "check:no-soap-logs": "node scripts/check-no-soap-logs.mjs",
-    "pretest": "pnpm run check:no-soap-logs"
+    "pretest": "pnpm run check:no-soap-logs",
+    "lint:strict": "eslint ."
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
