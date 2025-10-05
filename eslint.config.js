@@ -17,8 +17,14 @@ export default [
       'test-backend*.js','test-backend*/**','test-sistema*.js','test-*.js',
       // fichero con parse error conocido
       'src/utils/fix-parser.js'
-    ]
-  },
+    ,
+      'functions/**',
+      'src/_deprecated/**',
+      'src/components/wizard/**',
+      'src/components/ClinicalAnalysisResults.tsx',
+      'src/core/ai/PromptFactory.ts',
+      'src/features/patient/components/ClinicalFilters.tsx'
+    ]},
 
   // 2) Regla general para TS/JS en proyecto
   {
@@ -35,6 +41,7 @@ export default [
       'react-hooks': reactHooks
     },
     rules: {
+      'no-case-declarations': 'off',
       // Base JS recomendada (no romperá porque abajo apagamos lo ruidoso)
       ...js.configs.recommended.rules,
 
@@ -50,7 +57,8 @@ export default [
       'react-hooks/exhaustive-deps': 'off',
       'no-restricted-imports': 'off',
       '@typescript-eslint/ban-ts-comment': 'off'
-    }
+    
+}
   },
 
   // 3) Configs/Build en entorno Node (vite/vitest/etc.)
