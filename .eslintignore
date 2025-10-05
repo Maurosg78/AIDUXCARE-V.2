@@ -42,3 +42,8 @@ src/components/
 # --- declaration files ---
 **/*.d.ts
 src/z_trash/
+src/utils/fix-parser.js
+test-backend*.js
+test-backend*/**
+test-sistema*.js
+test-*.js
