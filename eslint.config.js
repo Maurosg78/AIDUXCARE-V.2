@@ -3,7 +3,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
-
+import importPlugin from 'eslint-plugin-import'
 export default [
   // Base JS
   {
@@ -28,7 +28,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin
-    },
+    , 'import': importPlugin},
     rules: {
       // Recomendadas JS
       ...js.configs.recommended.rules,
