@@ -68,8 +68,12 @@ export class NotesRepo {
         const base = typeof next.content === 'string' ? next.content : String(next.id ?? '');
         // hash simple determinístico (no dependemos de crypto node para no romper bundling)
         const simpleHash = 'h' + Buffer.from(base).toString('hex').slice(0, 16);
-        next = { ...next, status: 'signed', signedHash: next.signedHash ?? simpleHash, signedAt: new Date().toISOString() };
-      }
+        
+  const _hash = (next as any).signedHash ?? simpleHash;
+  (next as any).status = 'signed';
+  (next as any).signedHash = _hash;
+  (next as any).signedAt = new Date().toISOString();
+}
 
       // actualizar createdAt sólo si no existía
       if (!next.createdAt) next.createdAt = prev.createdAt ?? new Date().toISOString();
