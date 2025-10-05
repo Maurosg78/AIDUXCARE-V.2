@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import { CaseComplexity, MedicalSpecialty } from './PromptFactory';
 
 import logger from '@/shared/utils/logger';

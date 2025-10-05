@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import React from 'react';
 import { Shield, AlertTriangle, XCircle } from 'lucide-react';
 

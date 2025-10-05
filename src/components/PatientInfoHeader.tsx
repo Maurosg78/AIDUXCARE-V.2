@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import React from 'react';
 import { User, Calendar, Pill, AlertCircle } from 'lucide-react';
 

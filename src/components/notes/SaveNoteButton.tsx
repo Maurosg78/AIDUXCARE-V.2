@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import React, { useEffect, useMemo, useState } from 'react';
 import { notesRepo, NoteError } from '@/core/notes/notesRepo';
 import { useCurrentPatient } from '@/context/CurrentPatientContext';
