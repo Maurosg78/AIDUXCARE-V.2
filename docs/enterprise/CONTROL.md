@@ -26,3 +26,4 @@
 | 2025-10-06 | ROADMAP.md | ✅ Seeded | 10 sprints with DoD |
 | 2025-10-06 | CODE_STANDARDS.md | ✅ Seeded | Commit trailers + lint/test policy |
 | 2025-10-06 | GOTCHAS.md | ✅ Seeded | 5 repo gotchas |
+| 2025-10-06 | diagrams/system-overview.(mmd|svg) | ✅ Done | Placeholder committed (PR #143) |
