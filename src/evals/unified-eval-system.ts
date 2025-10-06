@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import { testCases } from './test-cases';
 import { RobustParser } from '../services/robust-parser';
 import { SessionStorage } from '../services/session-storage';

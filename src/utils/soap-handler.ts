@@ -20,7 +20,7 @@ export const handleGenerateSOAP = async (
     
     return soapData;
   } catch (error) {
-    clinical note:", error);
+    console.error('Error generating clinical note:', error);
     return null;
   }
 };

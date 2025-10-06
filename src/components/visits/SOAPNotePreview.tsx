@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useCurrentPatient } from '@/context/CurrentPatientContext';
 import NotesErrorBoundary from '@/components/notes/NotesErrorBoundary';
-import SaveNoteButton from '@/components/notes/SaveNoteButton';
+import { SaveNoteButton } from '@/components/notes/SaveNoteButton';
 import { isProgressNotesEnabled } from '@/flags';
 import type { ReactNode } from 'react';
 

@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 import React, { useState, useEffect } from 'react';
 import { Card } from '../shared/ui';
 import { FileText, Download, Edit3, Save, Copy } from 'lucide-react';

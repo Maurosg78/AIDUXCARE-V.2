@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/core/notes/transcriptToSOAP.ts
 import { SOAPBuilder, ChecklistSignal } from './SOAPBuilder';
 

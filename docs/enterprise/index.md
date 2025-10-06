@@ -7,3 +7,4 @@
 - [Code Standards & Patterns](./CODE_STANDARDS.md)
 - [Gotchas & Lessons Learned](./GOTCHAS.md)
 - Diagrams: ./diagrams/
+- [Validation Log](./VALIDATION_LOG.md)

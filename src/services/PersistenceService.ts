@@ -83,7 +83,7 @@ export class PersistenceService {
       console.log(`✅ Nota guardada con ID: ${noteId}`);
       return noteId;
     } catch (error) {
-      clinical note:', error);
+      console.error('Error generating clinical note:', error);
       throw new Error('Error al guardar la nota en la base de datos');
     }
   }

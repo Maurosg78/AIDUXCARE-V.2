@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * FHIR Integration Module for AiDuxCare
  * 

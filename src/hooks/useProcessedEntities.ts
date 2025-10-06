@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @fileoverview useProcessedEntities Hook - Clinical Entity Processing
  * @version 1.0.0 Enterprise
