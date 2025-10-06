@@ -1,132 +1,66 @@
-/* @ts-nocheck */
-import React, { useEffect, useMemo, useState } from 'react';
-import { notesRepo, NoteError } from '@/core/notes/notesRepo';
-import { useCurrentPatient } from '@/context/CurrentPatientContext';
-import { isProgressNotesEnabled } from '@/flags';
+import React, { useState } from 'react';
+import { createNote, updateNote, getLastNoteByPatient } from '@/repositories/notesRepo';
+import type { ClinicalNote } from '@/types/notes';
 
 type Props = {
+  patientId: string;
+  clinicianUid: string;
   subjective: string;
   objective: string;
   assessment: string;
   plan: string;
-  /** opcionales: pueden venir por props o contexto/preview */
-  patientId?: string;
-  visitId?: string;
-  clinicianUid?: string;
-  /** si ya existe desde fuera (p.ej. rehidratación) */
-  existingNoteId?: string;
+  onSaved?: (note: ClinicalNote) => void;
 };
 
-function mapErrorToMessage(err: unknown): string {
-  // Normalizamos por code/message o directamente string
-  const code = (err as any)?.code ?? (err as any)?.message ?? String(err);
-  switch (code) {
-    case 'ERR_NOTE_NOT_FOUND':
-    case 'NOT_FOUND':
-      return 'Note could not be found';
-    case 'ERR_NOTE_IMMUTABLE':
-    case NoteError.IMMUTABLE:
-    case 'IMMUTABLE':
-      return 'This note is signed and cannot be edited';
-    case 'ERR_INVALID_STATUS':
-    case NoteError.INVALID_STATUS:
-    case 'INVALID_STATUS':
-      return 'Invalid note status';
-    case 'ERR_UNAUTHORIZED':
-    case NoteError.UNAUTHORIZED:
-    case 'UNAUTHORIZED':
-      return "You don't have permission to modify this note";
-    default:
-      return 'There was a problem saving the note';
-  }
-}
-
 export function SaveNoteButton(props: Props) {
-  if (!isProgressNotesEnabled()) return null;
+  const { patientId, clinicianUid, subjective, objective, assessment, plan, onSaved } = props;
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
 
-  const { currentPatient, currentVisit } = useCurrentPatient();
-  const patientId = props.patientId ?? currentPatient?.id ?? '';
-  const visitId = props.visitId ?? currentVisit?.id ?? '';
-  const clinicianUid = props.clinicianUid ?? '';
-
-  const [noteId, setNoteId] = useState<string | undefined>(props.existingNoteId);
-  const [isSaving, setIsSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const isMissingRequired = useMemo(() => {
-    const required = [props.subjective, props.objective, props.assessment, props.plan];
-    return required.some(s => !s || !s.trim()) || !patientId;
-  }, [props.subjective, props.objective, props.assessment, props.plan, patientId]);
-
-  useEffect(() => {
-    let t: any;
-    if (successMsg) {
-      t = setTimeout(() => setSuccessMsg(null), 3000);
-    }
-    return () => t && clearTimeout(t);
-  }, [successMsg]);
-
-  async function handleSave() {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setIsSaving(true);
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setOk(null);
     try {
-      if (!noteId) {
-        const res = await notesRepo.createNote({
-          patientId,
-          visitId,
-          clinicianUid,
-          subjective: props.subjective,
-          objective: props.objective,
-          assessment: props.assessment,
-          plan: props.plan,
-          status: 'draft',
-        });
-        const createdId = (res as any)?.id ?? res; // tolerante a forma devuelta
-        setNoteId(createdId);
-        console.info('[Notes] Saved (create)', { noteId: createdId }); // no log clínico
+      const last = await getLastNoteByPatient(patientId);
+      const payload = {
+        patientId,
+        clinicianUid,
+        status: 'submitted' as const,
+        subjective,
+        objective,
+        assessment,
+        plan,
+      };
+      let id: string;
+      if (last && last.status !== 'signed') {
+        await updateNote(last.id, payload);
+        id = last.id;
       } else {
-        await notesRepo.updateNote(noteId, {
-          subjective: props.subjective,
-          objective: props.objective,
-          assessment: props.assessment,
-          plan: props.plan,
-        });
-        console.info('[Notes] Saved (update)', { noteId }); // no log clínico
+        id = await createNote(payload as any);
       }
-      setSuccessMsg('Note saved successfully.');
-    } catch (e) {
-      setErrorMsg(mapErrorToMessage(e));
+      setOk('Saved');
+      onSaved && onSaved({ ...(last as any), id, ...payload } as ClinicalNote);
+    } catch (e: any) {
+      setError(e?.message ?? 'Save failed');
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
-  }
+  };
 
   return (
-    <div aria-live="polite" className="mt-3 flex flex-col gap-2">
+    <div className="flex items-center gap-3">
       <button
-        aria-label="Save Note"
-        type="button"
-        disabled={isSaving || isMissingRequired}
-        aria-busy={isSaving ? 'true' : 'false'}
         onClick={handleSave}
+        disabled={saving}
+        className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50"
+        aria-busy={saving}
       >
-        {isSaving ? 'Saving…' : 'Save Note'}
+        {saving ? 'Saving…' : 'Save note'}
       </button>
-
-      {successMsg && (
-        <div role="status">
-          {successMsg}
-        </div>
-      )}
-      {errorMsg && (
-        <div role="alert">
-          {errorMsg}
-        </div>
-      )}
+      {ok && <span role="status" className="text-green-700 text-sm">{ok}</span>}
+      {error && <span role="alert" className="text-red-700 text-sm">{error}</span>}
     </div>
   );
 }
-
-export default SaveNoteButton;
