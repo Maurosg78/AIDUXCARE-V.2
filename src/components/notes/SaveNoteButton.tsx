@@ -5,6 +5,7 @@ import type { ClinicalNote } from '@/types/notes';
 type Props = {
   patientId: string;
   clinicianUid: string;
+  visitId?: string;
   subjective: string;
   objective: string;
   assessment: string;
@@ -13,7 +14,7 @@ type Props = {
 };
 
 export function SaveNoteButton(props: Props) {
-  const { patientId, clinicianUid, subjective, objective, assessment, plan, onSaved } = props;
+  const { patientId, clinicianUid, visitId, subjective, objective, assessment, plan, onSaved } = props;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -24,15 +25,18 @@ export function SaveNoteButton(props: Props) {
     setOk(null);
     try {
       const last = await getLastNoteByPatient(patientId);
+
       const payload = {
         patientId,
         clinicianUid,
+        ...(visitId ? { visitId } : {}),
         status: 'submitted' as const,
         subjective,
         objective,
         assessment,
         plan,
       };
+
       let id: string;
       if (last && last.status !== 'signed') {
         await updateNote(last.id, payload);
@@ -40,6 +44,7 @@ export function SaveNoteButton(props: Props) {
       } else {
         id = await createNote(payload as any);
       }
+
       setOk('Saved');
       onSaved && onSaved({ ...(last as any), id, ...payload } as ClinicalNote);
     } catch (e: any) {
