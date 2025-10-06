@@ -28,3 +28,4 @@
 | 2025-10-06 | GOTCHAS.md | ✅ Seeded | 5 repo gotchas |
 | 2025-10-06 | diagrams/system-overview.(mmd|svg) | ✅ Done | Placeholder committed (PR #143) |
 | 2025-10-06 | ADR-006 indexing strategy | ✅ Done | With firestore.indexes.example.json (PR #143) |
+| 2025-10-06 | ADRs index + global TOC | ✅ Done | Added ADRs/README.md and docs/enterprise/index.md (PR #143) |
