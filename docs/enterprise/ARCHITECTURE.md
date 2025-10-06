@@ -1,7 +1,7 @@
 # AiduxCare — Enterprise Architecture Blueprint (v1)
 
 **Market:** CA · **Language:** en-CA  
-**Date:** $(date +%Y-%m-%d)
+**Date:** 2025-10-06
 
 ---
 

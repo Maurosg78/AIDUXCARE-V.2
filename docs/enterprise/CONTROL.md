@@ -20,3 +20,9 @@
 
 ### Decisiones de hoy
 - (vacío)
+
+| 2025-10-06 | ARCHITECTURE.md | ✅ Done | Executive + 1–3 + diagram placeholder |
+| 2025-10-06 | ADRs 1–5 | ✅ Done | Clean ADRs with context/decision/risks |
+| 2025-10-06 | ROADMAP.md | ✅ Seeded | 10 sprints with DoD |
+| 2025-10-06 | CODE_STANDARDS.md | ✅ Seeded | Commit trailers + lint/test policy |
+| 2025-10-06 | GOTCHAS.md | ✅ Seeded | 5 repo gotchas |
