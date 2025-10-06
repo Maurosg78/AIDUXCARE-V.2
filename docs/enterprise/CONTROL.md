@@ -20,3 +20,12 @@
 
 ### Decisiones de hoy
 - (vacío)
+
+| 2025-10-06 | ARCHITECTURE.md | ✅ Done | Executive + 1–3 + diagram placeholder |
+| 2025-10-06 | ADRs 1–5 | ✅ Done | Clean ADRs with context/decision/risks |
+| 2025-10-06 | ROADMAP.md | ✅ Seeded | 10 sprints with DoD |
+| 2025-10-06 | CODE_STANDARDS.md | ✅ Seeded | Commit trailers + lint/test policy |
+| 2025-10-06 | GOTCHAS.md | ✅ Seeded | 5 repo gotchas |
+| 2025-10-06 | diagrams/system-overview.(mmd|svg) | ✅ Done | Placeholder committed (PR #143) |
+| 2025-10-06 | ADR-006 indexing strategy | ✅ Done | With firestore.indexes.example.json (PR #143) |
+| 2025-10-06 | ADRs index + global TOC | ✅ Done | Added ADRs/README.md and docs/enterprise/index.md (PR #143) |
