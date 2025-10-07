@@ -68,4 +68,4 @@ jobs:
         run: |
           # Ejecuta Vitest dentro de los emuladores
           pnpm exec firebase emulators:exec --project "$GCLOUD_PROJECT" --only firestore,auth \
-            "pnpm vitest run test/persistence/notesRepo.spec.ts"
+            "pnpm vitest run"
