@@ -25,14 +25,14 @@ jobs:
 
       # Si hay Node/JS, configurar Node 20 y cache
       - name: Setup Node (if JS project)
-        if: hashFiles(package.json) != 
+        if: ${{ hashFiles(package.json) !=  }}
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install & Test (Node)
-        if: hashFiles(package.json) != 
+        if: ${{ hashFiles(package.json) !=  }}
         run: |
           if [ -f pnpm-lock.yaml ]; then
             npm i -g pnpm
@@ -49,7 +49,7 @@ jobs:
 
       # Ejecuta tu script si existe (opcional)
       - name: Run repo checks (if present)
-        if: hashFiles(scripts/repo/repair.sh) != 
+        if: ${{ hashFiles(scripts/repo/repair.sh) !=  }}
         run: bash scripts/repo/repair.sh
 
       - name: Basic build check
