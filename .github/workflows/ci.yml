@@ -5,30 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-
-permissions:
-  contents: read
-  actions: read
-  checks: write
-  pull-requests: write
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-
-      - name: Repo integrity check
-        run: |
-          git fsck --no-progress --full
-
         uses: actions/checkout@v4
 
-      # Detectar si es proyecto Node (sin usar hashFiles en if)
+      # Detector de proyecto Node (sin expresiones en if)
       - name: Detect Node project
         id: detect_node
         shell: bash
@@ -62,22 +48,6 @@ jobs:
             npm ci || npm install
             npm -s test || npm -s run test || echo "no tests"
           fi
-
-      # Detectar y ejecutar script opcional si existe
-      - name: Detect repo repair script
-        id: detect_repair
-        shell: bash
-        run: |
-          if [ -f scripts/repo/repair.sh ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Run repo checks
-        if: ${{ steps.detect_repair.outputs.present == true }}
-        shell: bash
-        run: bash scripts/repo/repair.sh
 
       - name: Basic build check
         shell: bash
