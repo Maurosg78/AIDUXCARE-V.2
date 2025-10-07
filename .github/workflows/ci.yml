@@ -1,10 +1,7 @@
 name: CI
-
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
 
 jobs:
   build-test:
@@ -16,14 +13,19 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
-        with:
-          version: 9
+        with: { version: 9 }
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
+
+      - name: Setup Java (for Firebase emulators)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
@@ -36,13 +38,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-firebase-emulators-
 
+      # Tenemos firebase-tools como devDependency; verificamos versión
+      - name: Tooling versions
+        run: |
+          node -v
+          java -version
+          pnpm exec firebase --version
+
       - name: Preflight (TypeScript & Lint)
         run: |
           echo "🔎 Preflight…"
           pnpm -s ts:check || true
           pnpm -s lint
 
-      - name: Run tests (Firestore+Auth emulators)
+      - name: Run tests with Firebase emulators
         env:
+          GCLOUD_PROJECT: demo-test
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
           FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
-        run: pnpm test:ci
+        run: |
+          # Ejecuta Vitest dentro de los emuladores
+          pnpm exec firebase emulators:exec --project "$GCLOUD_PROJECT" --only firestore,auth \
+            "pnpm vitest run test/persistence/notesRepo.spec.ts"
