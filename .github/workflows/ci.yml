@@ -5,7 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -14,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Detector de proyecto Node (sin expresiones en if)
+      # Detectar si es proyecto Node (sin usar hashFiles en if)
       - name: Detect Node project
         id: detect_node
         shell: bash
@@ -48,6 +57,22 @@ jobs:
             npm ci || npm install
             npm -s test || npm -s run test || echo "no tests"
           fi
+
+      # Detectar y ejecutar script opcional si existe
+      - name: Detect repo repair script
+        id: detect_repair
+        shell: bash
+        run: |
+          if [ -f scripts/repo/repair.sh ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run repo checks
+        if: ${{ steps.detect_repair.outputs.present == true }}
+        shell: bash
+        run: bash scripts/repo/repair.sh
 
       - name: Basic build check
         shell: bash
