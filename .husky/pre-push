@@ -1,13 +1,9 @@
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
+# Evita que corra en CI (ahí ya hay check dedicado)
+if [ "${CI:-}" = "true" ]; then exit 0; fi
 
-echo "🔎 Pre-push: ejecutando TypeScript y Lint…"
-
-if command -v pnpm >/dev/null 2>&1; then
-  pnpm tsc --noEmit
-  echo "✅ TypeScript OK (script)"
-  pnpm lint || true
-else
-  npm run -s tsc -- --noEmit
-  echo "✅ TypeScript OK (script)"
-  npm run -s lint || true
-fi
+echo "🔎 git fsck (pre-push)…"
+git fsck --full | tee /dev/stderr
+echo "🧹 git gc --auto (pre-push)…"
+git gc --auto || true

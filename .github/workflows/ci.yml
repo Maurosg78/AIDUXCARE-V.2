@@ -24,6 +24,11 @@ jobs:
 
     steps:
       - name: Checkout
+
+      - name: Repo integrity check
+        run: |
+          git fsck --no-progress --full
+
         uses: actions/checkout@v4
 
       - name: Setup pnpm
