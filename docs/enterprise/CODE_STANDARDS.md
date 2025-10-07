@@ -1,27 +1,25 @@
-# AiduxCare — Code Standards
-**Market:** CA · **Language:** en-CA
+# Code Standards (AiduxCare)
 
-## General
-- TypeScript strict mode ON
-- ESLint: strict local / relaxed CI
-- No `any` or implicit `:string` types
-- Components pure and typed
+## 1. TypeScript patterns
+### 1.1 Domain types + zod
+### 1.2 Error typing + never exhaustive
+...
 
-## UI
-- en-CA copy only
-- Role-based aria attributes (`button`, `status`, `alert`)
-- Tailwind + shadcn/ui only
+## 2. Database + RLS
+### 2.1 Row Level Security policies
+...
 
-## Testing
-- Unit: vitest + React Testing Library
-- Compliance: CI must run `test/compliance/**`
-- No skipped tests in main
+## 3. Error handling standards
+...
 
-## Commits
-- Conventional commits
-- Must include:  
-Market: CA
-Language: en-CA
-COMPLIANCE_CHECKED
-Signed-off-by: ROADMAP_READ
+## 4. Testing patterns (EVAL)
+...
 
+## 5. API design
+...
+
+## 6. React components
+...
+
+## 7. Git / commits / trailers
+...
