@@ -21,11 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-
-      - name: Repo integrity check
-        run: |
-          git fsck --no-progress --full
-
         uses: actions/checkout@v4
 
       # Detectar si es proyecto Node (sin usar hashFiles en if)
