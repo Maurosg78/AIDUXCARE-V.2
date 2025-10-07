@@ -29,3 +29,35 @@
 | 2025-10-06 | diagrams/system-overview.(mmd|svg) | ✅ Done | Placeholder committed (PR #143) |
 | 2025-10-06 | ADR-006 indexing strategy | ✅ Done | With firestore.indexes.example.json (PR #143) |
 | 2025-10-06 | ADRs index + global TOC | ✅ Done | Added ADRs/README.md and docs/enterprise/index.md (PR #143) |
+| 2025-10-06 | PR #143 merged | ✅ Done | Enterprise docs (Day 1) landed in main |
+| 2025-10-06 | PR #143 merged | ✅ Done | Enterprise docs (Day 1) landed in main |
+| 2025-10-07 | Emails sent (team kickoff, Niagara) | ✅ Done | Templates in /docs/enterprise/templates/emails |
+| 2025-10-07 | Day 2 prep PR (#144) | ✅ Open + Auto-merge | ADR-002 + ROADMAP deps in PR |
+
+## FINAL SPRINT (Oct 8–10) — Critical Extraction
+
+### WEDNESDAY OCT 8
+- [ ] 11am: Section 4 draft review
+- [ ] 3pm: Section 5 draft review  
+- [ ] 5pm: Section 6 draft review
+- [ ] EOD: PR #145 merged ✅
+
+### THURSDAY OCT 9  
+- [ ] 10am: ADR-007 draft review
+- [ ] 2pm: CODE_STANDARDS draft review
+- [ ] 5pm: PRs #146 & #147 merged ✅
+
+### FRIDAY OCT 10
+- [ ] 10am: GOTCHAS draft review
+- [ ] 3pm: Integration PR review
+- [ ] 5pm: HANDOFF meeting ✅
+- [ ] 6pm: Final commit & celebration 🎉
+
+### SUCCESS METRICS
+- [ ] ARCHITECTURE.md 100% complete
+- [ ] 7 ADRs documented
+- [ ] CODE_STANDARDS with 10+ examples
+- [ ] GOTCHAS with real war stories
+- [ ] All links/diagrams working
+- [ ] HANDOFF.md created
+- [ ] Team gratitude expressed

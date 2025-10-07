@@ -5,7 +5,7 @@
 |---------|--------|--------------|-----|
 | 0 | Compliance foundation | CPO/PHIPA tests in CI | ✅ Tests green, CI blocking |
 | 1 | Notes MVP | SOAP create/update | ✅ Unit tests, en-CA copy |
-| 2 | Metrics service | Supabase mirror | ✅ `metrics.sql` migration passing |
+| 2 | Metrics service | Supabase mirror | ✅ `metrics.sql`; docs: ADR-006 linked; CONTROL updated |
 | 3 | Audit logs | Firestore stream | ✅ Log table populated |
 | 4 | Consent system | Dynamic forms | ✅ Verified consent flow |
 | 5 | Multi-visit context | `visitId` propagation | ✅ Linked notes visible |
