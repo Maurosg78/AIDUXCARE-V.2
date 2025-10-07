@@ -23,16 +23,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Si hay Node/JS, configurar Node 20 y cache
-      - name: Setup Node (if JS project)
-        if: ${{ hashFiles(package.json) !=  }}
+      # Detectar si es proyecto Node (sin usar hashFiles en if)
+      - name: Detect Node project
+        id: detect_node
+        shell: bash
+        run: |
+          if [ -f package.json ]; then
+            echo "has_node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: ${{ steps.detect_node.outputs.has_node == true }}
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install & Test (Node)
-        if: ${{ hashFiles(package.json) !=  }}
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
         run: |
           if [ -f pnpm-lock.yaml ]; then
             npm i -g pnpm
@@ -47,12 +58,24 @@ jobs:
             npm -s test || npm -s run test || echo "no tests"
           fi
 
-      # Ejecuta tu script si existe (opcional)
-      - name: Run repo checks (if present)
-        if: ${{ hashFiles(scripts/repo/repair.sh) !=  }}
+      # Detectar y ejecutar script opcional si existe
+      - name: Detect repo repair script
+        id: detect_repair
+        shell: bash
+        run: |
+          if [ -f scripts/repo/repair.sh ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run repo checks
+        if: ${{ steps.detect_repair.outputs.present == true }}
+        shell: bash
         run: bash scripts/repo/repair.sh
 
       - name: Basic build check
+        shell: bash
         run: |
           echo "Repo structure:"
           ls -la
