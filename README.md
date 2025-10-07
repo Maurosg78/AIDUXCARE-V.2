@@ -1,3 +1,5 @@
+[![CI](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml/badge.svg)](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml)
+
 # AiduxCare V2
 
 [![CI](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
