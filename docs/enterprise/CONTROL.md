@@ -61,3 +61,4 @@
 - [ ] All links/diagrams working
 - [ ] HANDOFF.md created
 - [ ] Team gratitude expressed
+> | 2025-10-07 | PR #144 merged | ✅ Done | ADR-002 + ROADMAP deps landed in main |
