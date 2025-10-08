@@ -86,3 +86,18 @@
 ### DEFERRED (Mauricio solo work next week)
 - GOTCHAS.md (template provided)
 - ADR-007 polish (already 80% done)
+
+## THURSDAY 11:00 - EXPANSION MODE ACTIVATED
+
+**Decision:** Expand existing ARCHITECTURE.md from 88 → 400+ lines
+**Reason:** Current version lacks investment-grade depth
+
+### Expanded Assignments:
+- Section 2 (Data): +300 words, schema diagram
+- Section 3 (Security): +250 words, RLS examples, auth diagram
+- Section 4 (AI): +300 words, pipeline diagram
+
+### Checkpoints:
+- 14:00: +200 lines minimum or cut scope
+- 17:00: PR draft with progress
+- 18:00: Merge if 350+ lines + diagrams
