@@ -86,3 +86,9 @@
 ### DEFERRED (Mauricio solo work next week)
 - GOTCHAS.md (template provided)
 - ADR-007 polish (already 80% done)
+
+> CI nudge: 2025-10-08 13:29:16 UTC
+
+> CI nudge: 2025-10-08 13:29:54 UTC
+
+> CI nudge: 2025-10-08 13:34:09 UTC
