@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" role="img" aria-label="Data lifecycle diagram placeholder">
+  <rect x="0" y="0" width="800" height="200" fill="#fff" stroke="#ccc"/>
+  <text x="20" y="40" font-family="sans-serif" font-size="18">Data Lifecycle (placeholder)</text>
+  <text x="20" y="80" font-family="sans-serif" font-size="14">Create → Update → Sign → Query → Retention/Erasure + Audit</text>
+</svg>
