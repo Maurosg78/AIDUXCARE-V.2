@@ -1,1 +1,7 @@
 exit 0
+
+# no-foreign-lockfiles
+if git diff --cached --name-only | grep -E '^(yarn.lock|pnpm-lock\.yaml)$' >/dev/null; then
+  echo "❌ This repo uses npm. Do not commit yarn.lock or pnpm-lock.yaml."
+  exit 1
+fi
