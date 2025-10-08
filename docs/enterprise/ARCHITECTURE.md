@@ -80,3 +80,73 @@ Workflows:
 | CI/CD | `.github/workflows/*` | Pipeline enforcement |
 | Docs | `/docs/north`, `/docs/enterprise` | Market source of truth |
 
+
+## 4. Security Architecture
+
+### Executive Summary
+- Cifrado end-to-end: datos en reposo (AES-256, claves rotadas) y en tránsito (TLS 1.2+ con HSTS).
+- RLS restringe acceso por paciente/clinician bajo mínimo privilegio.
+- RBAC con 3 niveles (admin / clinician / read-only) y permisos declarativos.
+- Notas firmadas inmutables; auditoría criptográfica de eventos PHI.
+- MFA, sesiones cortas y rotación/revocación de tokens.
+- Controles PHIPA/PIPEDA + pruebas periódicas de backup/restore.
+
+### Encryption Architecture
+**At rest.** PHI cifrada con AES-256; claves en KMS (CMEK), rotación programada y separación de deberes.  
+**In transit.** TLS 1.2+ con HSTS; ciphers débiles deshabilitados; certificate pinning en móviles.  
+**Secrets.** En secret manager; CI con scopes mínimos (principio Zero-Trust).
+
+### RBAC Model
+| Role      | Read patient | Write notes | Sign notes | Manage users | View audit |
+|-----------|--------------|-------------|------------|--------------|------------|
+| admin     | ✔︎ all       | ✔︎ all      | ✔︎         | ✔︎           | ✔︎         |
+| clinician | ✔︎ own       | ✔︎ own      | ✔︎ own     | ✘            | limited    |
+| read_only | ✔︎ scoped    | ✘           | ✘          | ✘            | limited    |
+
+“own” = pacientes asignados al clinician o creados por él.
+
+### Auth Flow
+![auth-flow](./diagrams/auth-flow.svg)
+Ver `docs/enterprise/diagrams/auth-flow.svg`.  
+1) Usuario → MFA → `id_token` + `access_token`  
+2) Backend valida firma/claims; emite sesión corta  
+3) Autorización = RBAC + RLS  
+4) Refresh tokens rotados y revocables
+
+### Row-Level Security Policies (Postgres/Supabase)
+Habilitar RLS por tabla. Ejemplo para `notes`.
+
+```sql
+-- Requisitos previos
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+
+-- 1) Clinician solo lee notas de sus pacientes
+CREATE POLICY clinician_read_own ON notes
+FOR SELECT
+USING (
+  auth.uid() = clinician_id
+);
+
+-- 2) Clinician inserta notas propias y de pacientes asignados
+CREATE POLICY clinician_insert_own ON notes
+FOR INSERT
+WITH CHECK (
+  auth.uid() = author_id
+  AND EXISTS (
+    SELECT 1 FROM patient_clinicians pc
+    WHERE pc.patient_id = notes.patient_id
+      AND pc.clinician_id = auth.uid()
+  )
+);
+
+-- 3) Notas firmadas no se pueden actualizar
+CREATE POLICY update_unless_signed ON notes
+FOR UPDATE
+USING (NOT signed)
+WITH CHECK (NOT signed);
+
+-- 4) Admin acceso total
+CREATE POLICY admin_all ON notes
+FOR ALL
+USING (is_admin(auth.uid()))
+WITH CHECK (is_admin(auth.uid()));
