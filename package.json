@@ -15,7 +15,7 @@
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
     "lint": "eslint .",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix --fix-type layout,suggestion",
-    "typecheck": "echo '\u23ed\ufe0f typecheck saltado temporalmente'",
+    "typecheck": "echo '⏭️ typecheck saltado temporalmente'",
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run --passWithNoTests",
@@ -180,6 +180,5 @@
     "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
     "zod": "^3.25.76"
-  },
-  "packageManager": "npm@10.8.2"
+  }
 }
