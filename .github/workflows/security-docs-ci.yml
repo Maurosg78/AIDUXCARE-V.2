@@ -2,9 +2,9 @@ name: security-docs-ci
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, ci/bootstrap-workflows ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, ci/bootstrap-workflows ]
 
 jobs:
   build:
