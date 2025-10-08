@@ -1,0 +1,3 @@
+.github/workflows/no-soap-logs.yml:18:      - run: pnpm run check:no-soap-logs
+.github/workflows/no-soap-logs.yml:6:  check-no-soap-logs:
+.github/workflows/protect-infra.yml:22:          scripts/check-no-soap-logs.sh
