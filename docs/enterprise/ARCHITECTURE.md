@@ -71,6 +71,50 @@ _Usuario_
 **Referencias**  
 - Diagrama AI pipeline: `docs/enterprise/diagrams/ai-pipeline.svg`  
 - Evaluación: Langfuse traces/gates
+## 2. Data Architecture
+### 2.x Firestore Indexes (operacionales)
+
+> Índices sugeridos para consultas críticas; exportables vía `firestore:indexes`.
+
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "encounters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath":"patientId","order":"ASCENDING"},
+        {"fieldPath":"startAt","order":"DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath":"patientId","order":"ASCENDING"},
+        {"fieldPath":"signed","order":"DESCENDING"},
+        {"fieldPath":"signedAt","order":"DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "auditTrail",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath":"entity","order":"ASCENDING"},
+        {"fieldPath":"entityId","order":"ASCENDING"},
+        {"fieldPath":"ts","order":"DESCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "notes",
+      "fieldPath": "content",
+      "ttl": {}
+    }
+  ]
+}
+
 ## 3. Security & Compliance
 
 ### Executive Summary
