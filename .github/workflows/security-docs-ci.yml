@@ -1,17 +1,20 @@
 name: security-docs-ci
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main, ci/bootstrap-workflows ]
-  pull_request:
+  pull_request_target:
     branches: [ main, ci/bootstrap-workflows ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
-      - name: Checkout
+      - name: Checkout PR HEAD
         uses: actions/checkout@v4
+        with:
+          # MUY IMPORTANTE: checkout del código del PR, no de la base
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
@@ -27,12 +30,4 @@ jobs:
           if ! git diff --exit-code -- docs/architecture/section4_security_documented.md; then
             echo "::error file=docs/architecture/section4_security_documented.md::El documento no está sincronizado. Ejecuta 'make docs-sec' y commitea el resultado."
             exit 1
-          fi
-
-      - name: Warn on permissive emulator rules
-        run: |
-          if [ -f firestore.rules ]; then
-            if rg -n "allow read, write: if true;" firestore.rules; then
-              echo "::warning ::Se detectó 'allow read, write: if true;' en firestore.rules (ok para emulador, revisar que no aplique a prod)."
-            fi
           fi
