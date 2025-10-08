@@ -13,8 +13,17 @@ jobs:
       - name: Checkout PR HEAD
         uses: actions/checkout@v4
         with:
-          # MUY IMPORTANTE: checkout del código del PR, no de la base
+          # repo y SHA del PR (funciona tanto si es mismo repo como fork)
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Debug workspace
+        run: |
+          echo "HEAD SHA:" $(git rev-parse HEAD)
+          echo "pwd:" $(pwd)
+          ls -la
+          ls -la scripts || true
 
       - name: Setup ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
