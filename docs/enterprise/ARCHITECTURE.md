@@ -150,3 +150,48 @@ CREATE POLICY admin_all ON notes
 FOR ALL
 USING (is_admin(auth.uid()))
 WITH CHECK (is_admin(auth.uid()));
+
+## Section 5 — Data Architecture
+
+**Executive Summary**
+- Firestore es el almacén documental primario; las notas clínicas se **firman** para volverse inmutables.
+- Separación explícita entre **PHI** y metadatos operativos; jamás se registran textos clínicos en logs.
+- Colecciones opinadas: `patients`, `clinical_notes`, `note_signatures`, `consents` y `audit_logs`.
+- Ciclo de vida: **create → update/autosave → sign (immutable) → query/search → retention/erasure**.
+- Índices compuestos (ADR-003) para consultas por paciente, estado y fechas con SLA clínico.
+- Auditoría **append-only** con identificadores y marcas de tiempo; integridad por **hash verificable**.
+- Backups y **recovery** documentados a nivel procedimental (agnóstico de proveedor), con pruebas periódicas.
+
+![data-lifecycle](./diagrams/data-lifecycle.svg)
+
+### 5.1 Firestore Schema (Canada-first, en-CA)
+| Collection       | Key fields                                                                                                    | Notes                                                                                                       |
+|------------------|----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| patients         | `patient_id`(pk), `clinic_id`, `createdAt`, `updatedAt`                                                       | PHI minimizada aquí; información sensible pesada vive en subdocs cifrados (fuera de alcance en esta sección). |
+| clinical_notes   | `note_id`(pk), `patient_id`(fk), `clinic_id`, `author_id`, `status`(draft/signed), `createdAt`, `updatedAt`, `immutable_hash`, `immutable_signed:boolean` | `immutable_*` se fija en el **sign**; los borradores nunca llevan hash final.                             |
+| note_signatures  | `signature_id`(pk), `note_id`(fk), `signer_id`, `signedAt`, `hash`, `algo`                                     | Historial de firmas separado para auditoría y no repite el documento completo.                              |
+| consents         | `consent_id`, `patient_id`, `scope`, `grantedAt`, `revokedAt?`                                                | Opcional según flujo de la clínica; versionado por alcance de consentimiento.                               |
+| audit_logs       | `log_id`, `entity_type`, `entity_id`, `event`, `at`, `actor_id`, `meta(redacted)`                              | Sin texto clínico; solo IDs, estado y timestamps.                                                           |
+
+### 5.2 Data Lifecycle
+1) **Create**: el clínico inicia borrador en `clinical_notes` (`status="draft"`).  
+2) **Update/Autosave**: persistencia incremental; `audit_logs` registra `note.updated` con deltas redaccionados.  
+3) **Sign (Immutable)**: servicio calcula `immutable_hash`, marca `immutable_signed=true` y genera entrada en `note_signatures`; a partir de aquí, el contenido firmado se trata como **inmutable**.  
+4) **Query/Search**: vistas por `patient_id`, `status` y `createdAt/updatedAt` para timeline y trabajo pendiente.  
+5) **Retention/Erasure**: se aplican políticas PHIPA; la eliminación se centra en identificadores/relaciones y no en textos en claro. `audit_logs` permanece ya que no contiene PHI en texto libre.
+
+### 5.3 Indexing (ADR-003)
+Índices compuestos recomendados:
+- `clinical_notes(patient_id ASC, status ASC, createdAt DESC)`  
+- `clinical_notes(clinic_id ASC, status ASC, updatedAt DESC)`  
+Justificación: **timeline** del paciente, **worklists** de notas activas y paneles de productividad. Los índices garantizan latencia estable en consultas principales del flujo clínico. Ver **ADR-003 — Indexing Strategy** para racionales, cardinalidades y ejemplos de consultas.
+
+### 5.4 Audit Trail Flow
+Cada transición significativa emite una entrada en `audit_logs` con `{entity_type, entity_id, event, at, actor_id}` y `meta` redaccionado. En el **sign**, el `immutable_hash` se almacena en la nota y en `note_signatures` para verificación cruzada. La auditoría es **append-only** y puede reconstruir la secuencia de eventos sin exponer PHI.
+
+### 5.5 Backup & Recovery (procedural)
+- **Backups diarios** de Firestore y del catálogo de metadatos (incluye reglas/índices).  
+- **Recovery drills** periódicos: restauración de instantánea en entorno aislado, verificación de conteos, presencia de índices y consistencia de firmas (comparar `immutable_hash`).  
+- Documentación **agnóstica de proveedor**: no se fijan detalles de vendor en el repositorio; la ejecución concreta vive en runbooks operativos.  
+- Métricas de éxito: tiempos de RTO/RPO y porcentaje de restorations verificadas sin incidencia.
+
