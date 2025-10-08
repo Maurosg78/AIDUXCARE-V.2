@@ -1,133 +1,141 @@
-## 2. Data Architecture
-
-### Executive Summary
-- Single source of truth en Firestore con reglas explícitas por tipo de dato.
-- Esquema versionado; migraciones declarativas documentadas.
-- Data lifecycle trazable: captura → validación → uso clínico → archivo → borrado.
-- Auditoría inmutable para eventos PHI y cambios sensibles.
-- Backups automáticos + pruebas de restore documentadas.
-- Minimización de datos y retención por políticas (PHIPA/PIPEDA-aligned).
-
-### Firestore Schema (versión v1)
-**Collections clave**
-- `patients` (PII mínima): `firstName`, `lastName`, `dob`, `mrn`, `primaryClinicianId`, `createdAt`, `updatedAt`, `version`
-- `encounters`: `patientId`, `startAt`, `endAt`, `type`, `status`, `createdBy`, `updatedBy`, `auditId`
-- `notes`: `patientId`, `encounterId`, `authorId`, `noteType` (SOAP), `content`, `signed` (bool), `signedAt`, `signHash`, `version`
-- `attachments`: `encounterId`, `type`, `uri`, `sha256`, `size`, `createdAt`
-- `auditTrail`: `entity`, `entityId`, `action`, `actorId`, `ip`, `userAgent`, `ts`, `checksum`
-- `consents`: `patientId`, `scope`, `granted`, `grantedAt`, `revokedAt`, `version`
-- `rbacRoles`: `roleId`, `permissions[]`, `updatedAt`
-
-**Notas de diseño**
-- Campos `createdAt/updatedAt` normalizados en UTC ISO-8601.
-- Hashes (`sha256`, `signHash`) para detectar tampering.
-- `version` para compatibilidad ante cambios de esquema.
-
-### Patient Data Lifecycle
-![data-lifecycle](./diagrams/data-lifecycle.svg)
-
-1) **Ingesta**: captura desde UI o APIs → validación de tipos y tamaños.  
-2) **Validación**: reglas de negocio (p. ej., MRN único por clínica).  
-3) **Uso clínico**: lectura bajo principio de mínimo privilegio.  
-4) **Firma**: notas firmadas generan `signHash` y bloquean edición (ver Security §3).  
-5) **Auditoría**: todas las operaciones sensibles registradas en `auditTrail`.  
-6) **Retención**: políticas por jurisdicción; auto-archivado de encuentros cerrados.  
-7) **Borrado**: solicitudes del paciente → “tombstone” + purge seguro en anexos.
-
-### Audit Trail (flujo)
-- **Evento**: antes/después de operaciones críticas se escribe `auditTrail`.
-- **Integridad**: `checksum` = HMAC(ts|actor|action|entityId).  
-- **Consultas**: índices por `entityId` y `ts` para revisiones rápidas.
-
-### Backups & Recovery
-- **Backups**: diarios + retención 35 días (full) y 12 meses (mensuales).  
-- **Verificación**: job semanal hace restore a proyecto “shadow” y compara conteos/hash.  
-- **Procedimiento de restore**:
-  1. Congelar escrituras.
-  2. Restaurar snapshot etiquetado.
-  3. Reproducir diffs de `auditTrail` si aplica.
-  4. Reabrir escrituras, monitorizar errores 24h.
-
-### Esquema de índices sugeridos
-- `encounters(patientId, startAt desc)`
-- `notes(patientId, signed desc, signedAt desc)`
-- `auditTrail(entity, entityId, ts desc)`
-
-### Referencias
-- Diagrama del ciclo de vida: `docs/enterprise/diagrams/data-lifecycle.svg`
-# AiduxCare — Enterprise Architecture Blueprint (v1)
-
-**Market:** CA · **Language:** en-CA  
-**Date:** 2025-10-06
-
----
-
-## Executive Summary
-AiduxCare is a compliance-first clinical documentation platform for physiotherapists and allied health professionals in Ontario, Canada.  
-Our stack integrates **React + TypeScript** (frontend), **Firestore** (backend), **Vertex AI** (AI layer), and **GitHub Actions** (CI/CD).  
-Design principles:
-- Compliance-first (PHIPA/PIPEDA/CPO)
-- Predictable, observable AI behaviour
-- Immutable auditability
-
----
-
-## 1. System Overview
-![System Overview](./diagrams/system-overview.svg)
-
-**Layers**
-| Layer | Tech | Description |
-|-------|------|-------------|
-| Frontend | React (Vite+TS) | SOAP interface & clinician workflows |
-| Backend | Firestore | Source of truth for notes, visits, metrics |
-| AI Layer | Vertex AI / Langfuse | Summarization & compliance checks |
-| Compliance | PHIPA Guardrails | Prevents PII in logs, immutable signed notes |
-| CI/CD | GitHub Actions | Typecheck, lint, test, and infra-protection |
-
----
-
-## 3. Security & Compliance
-- Firestore rules:  
-  - Immutable when `status === "signed"`.
-  - Only clinician with matching UID can write.
-- Logs: No SOAP content, only metadata.
-- Feature flags for controlled rollouts.
-
----
 
 ## 4. AI Layer
-- Prompt templates versioned under `/ai/prompts/*.md`
-- Fallback: deterministic summaries when Vertex unavailable.
-- Observability: Langfuse (planned Sprint 7–8)
 
----
+### Executive Summary
+- Pipeline de transcripción confiable (Whisper) con normalización, chunking y control de calidad.
+- Generación de notas SOAP con Vertex AI usando prompts versionados y guardrails clínicos.
+- Evaluación continua con Langfuse: factualidad, estructura y tasas de “hallucination”.
+- Trazabilidad end-to-end (prompt ↔ salida ↔ audio) para auditoría y mejora continua.
+- Estrategia de versionado/rollback de prompts con experimentación A/B y gates de calidad.
+- Minimización de PHI: redacción selectiva y controles de acceso alineados a §3 (Security).
 
-## 5. CI/CD & Environments
-| Env | Branch | Deployment | Purpose |
-|------|---------|-------------|----------|
-| `main` | Production | Vercel | Canada-first |
-| `develop` | Staging | Vercel Preview | QA / Compliance runs |
-| Feature branches | — | Local + PR | Validated via SoT Guardian |
+### 4.1 Transcription Pipeline (Whisper)
+![ai-pipeline](./diagrams/ai-pipeline.svg)
 
-Workflows:
-- `tsc`, `eslint`, `vitest`
-- `protect-infra.yml` for restricted areas
+**Flujo**  
+1) **Upload Audio** (UI/API) → validación de formato (wav/mp3, 16kHz mono recomendado).  
+2) **Pre-processing**: normalización de loudness, VAD (Voice Activity Detection), opcional diarización.  
+3) **Chunking**: segmentos <= 30–60s con solapes de 250ms para continuidad.  
+4) **Whisper Inference**: `task=transcribe`, `temperature=0.0–0.2`, timestamps por palabra.  
+5) **Post-processing**: fusión de segmentos, corrección de puntuación, normalización de abreviaturas clínicas.  
+6) **QC**: confianza media por segmento, % de palabras OOV, heurísticas de ruido; si < umbral → retry/modelo mayor.  
+7) **Persistencia**: texto + timestamps + métricas en `encounters/{id}/transcripts/{v}` (ver §2).  
 
----
+**Parámetros sugeridos**  
+- `model=whisper-large-v3` (o distil para costo/latencia).  
+- `language=auto`, `beam_size=5`, `best_of=5`, `word_timestamps=true`.  
+- **Cost Guardrail**: límite de duración por encuentro; colas con prioridad clínica.
 
-## 6. Decision Highlights (ADRs)
-- ADR-001: React + Firestore chosen over Supabase
-- ADR-002: SoT Guardian hooks for CA/en-CA enforcement
-- ADR-003: Firestore backend active (Oct 2025)
-- ADR-004: Retention & Erasure under PHIPA
-- ADR-005: AI Observability (Langfuse) deferred to Sprint 7
+### 4.2 SOAP Generation con Vertex AI
+**Objetivo**: convertir transcript en nota clínica **estructurada** (SOAP) con enfoque “explainable-by-structure”.
 
----
+**Prompting (ejemplo)**  
+_Sistema_
+_Usuario_
 
-## Appendix
-| Area | File | Responsibility |
-|-------|------|----------------|
-| Notes | `src/components/notes/SaveNoteButton.tsx` | Entry point for SOAP submissions |
-| Rules | `firestore.rules` | Access control |
-| CI/CD | `.github/workflows/*` | Pipeline enforcement |
-| Docs | `/docs/north`, `/docs/enterprise` | Market source of truth |
+**Guardrails**  
+- Redacción de PHI no necesaria si proviene del transcript permitido; nunca añadir nueva PII.  
+- Validación de **estructura JSON** (schema), longitud por sección y vocabulario clínico.  
+- “No new facts”: comprobación cruzada con spans citados; si falla → “fallback to extractive summary”.
+
+**Persistencia**  
+- `notes/{encounterId}/{version}` con `source=vertex-ai`, `promptId`, `model`, `latencyMs`, `qualityScores`.
+
+### 4.3 EVAL con Langfuse
+**Integración**  
+- Registro de `trace/span` por request: prompt, parámetros, output, métricas.  
+- Métricas base:  
+  - **StructureScore** (JSON válido y esquema completo)  
+  - **Factuality** (overlap con spans citados)  
+  - **MedicalStyle** (terminología/claridad)  
+  - **Toxicity/PHI-leak** (clasificadores).  
+- **Gates** (bloquean promoción a prod): `StructureScore≥0.98`, `HallucinationRate≤1%`, `Coverage≥0.9`.
+
+**Ciclo**  
+1) batch nightly sobre muestras nuevas;  
+2) dashboards por versión de prompt;  
+3) ticket automático si gate falla 2+ veces.
+
+### 4.4 Prompt Versioning Strategy
+- **SemVer** de prompts (`soap-scribe@1.4.0`), almacenados en git con metadata (`domain`, `locale`, `schema_id`).  
+- **Runtime header**: `{promptId, promptSemVer, model, safety_profile}` incluido en la nota.  
+- **Canary/A-B** por clínica o porcentaje de tráfico; **rollback** fijo a `N-1` si gate falla.  
+- **Changelog** orientado a hipótesis (p.ej., “mejora de extracción de meds en pediatría”).
+
+### 4.5 Observabilidad & Guardrails
+- Rate limiting por usuario/encounter; colas con prioridad clínica.  
+- Validadores previos/posteriores (longitud, lenguaje, toxicidad).  
+- Telemetría: latencia P50/P95, coste por minuto de audio y por nota; alertas por desviación.  
+- Logs sin PHI; referencias cruzadas con `auditTrail` (§2) y controles de acceso (§3).
+
+**Referencias**  
+- Diagrama AI pipeline: `docs/enterprise/diagrams/ai-pipeline.svg`  
+- Evaluación: Langfuse traces/gates
+## 3. Security & Compliance
+
+### Executive Summary
+- Cifrado end-to-end: datos en reposo (AES-256, claves rotadas) y en tránsito (TLS 1.2+ con HSTS).
+- RLS restringe acceso por paciente/clinician bajo mínimo privilegio.
+- RBAC con 3 niveles (admin / clinician / read-only) y permisos declarativos.
+- Notas firmadas inmutables; auditoría criptográfica de eventos PHI.
+- MFA, sesiones cortas y rotación/revocación de tokens.
+- Controles PHIPA/PIPEDA + pruebas periódicas de backup/restore.
+
+### Encryption Architecture
+**At rest.** PHI cifrada con AES-256; claves en KMS (CMEK), rotación programada y separación de deberes.  
+**In transit.** TLS 1.2+ con HSTS; ciphers débiles deshabilitados; certificate pinning en móviles.  
+**Secrets.** En secret manager; CI con scopes mínimos (principio Zero-Trust).
+
+### RBAC Model
+| Role      | Read patient | Write notes | Sign notes | Manage users | View audit |
+|-----------|--------------|-------------|------------|--------------|------------|
+| admin     | ✔︎ all       | ✔︎ all      | ✔︎         | ✔︎           | ✔︎         |
+| clinician | ✔︎ own       | ✔︎ own      | ✔︎ own     | ✘            | limited    |
+| read_only | ✔︎ scoped    | ✘           | ✘          | ✘            | limited    |
+
+> “own” = pacientes asignados al clinician o creados por él.
+
+### Auth Flow
+Ver `docs/enterprise/diagrams/auth-flow.svg`.  
+1) Usuario → MFA → `id_token` + `access_token`  
+2) Backend valida firma/claims; emite sesión corta  
+3) Autorización = RBAC + RLS  
+4) Refresh tokens rotados y revocables
+
+### Row-Level Security Policies (Postgres/Supabase)
+> Habilitar RLS por tabla. Ejemplo para `notes`.
+
+```sql
+-- Requisitos previos
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+
+-- 1) Clinician solo lee notas de sus pacientes
+CREATE POLICY clinician_read_own ON notes
+FOR SELECT
+USING (
+  auth.uid() = clinician_id
+);
+
+-- 2) Clinician inserta notas propias y de pacientes asignados
+CREATE POLICY clinician_insert_own ON notes
+FOR INSERT
+WITH CHECK (
+  auth.uid() = author_id
+  AND EXISTS (
+    SELECT 1 FROM patient_clinicians pc
+    WHERE pc.patient_id = notes.patient_id
+      AND pc.clinician_id = auth.uid()
+  )
+);
+
+-- 3) Notas firmadas no se pueden actualizar
+CREATE POLICY update_unless_signed ON notes
+FOR UPDATE
+USING (NOT signed)
+WITH CHECK (NOT signed);
+
+-- 4) Admin acceso total
+CREATE POLICY admin_all ON notes
+FOR ALL
+USING (is_admin(auth.uid()))
+WITH CHECK (is_admin(auth.uid()));
