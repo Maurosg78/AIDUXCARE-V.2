@@ -163,6 +163,56 @@ _Usuario_
   ]
 }
 
+### Compliance Mapping (PHIPA/PIPEDA)
+
+#### Executive Snapshot
+- Patient data encrypted at rest (AES-256, CMEK/KMS) and in transit (TLS 1.2+, HSTS, pinning).
+- Access governed by RBAC (admin/clinician/read_only) + RLS policies; least-privilege enforced.
+- Immutable audit trail for PHI events with HMAC checksums and indexed retrieval.
+- Data minimization & consent scoping; no PHI in logs; vetted redaction for AI prompts/outputs.
+- Backups (daily + monthly) with weekly restore tests to a shadow project; documented DR steps.
+- Continuous compliance checks in CI; evidence captured via Langfuse traces and run artefacts.
+- Residency & vendor configuration documented per environment; change-control via Git.
+
+#### Controls at a Glance
+- **Encryption**: AES-256 at rest (CMEK/KMS rotation), TLS 1.2+ in transit. *Evidence*: §3 “Encryption Architecture”.
+- **Access**: RBAC (3 roles) + **4 RLS** on `notes` (read/insert/update/admin). *Evidence*: §3 “RBAC Model”, “RLS Policies”.
+- **Auditability**: Append-only `auditTrail(entity, entityId, action, actorId, ts, checksum)`. *Evidence*: §2 “Audit Trail”.
+- **Minimization**: PII kept minimal in `patients`; PHI excluded from logs/metrics. *Evidence*: §2 schema & logging policy.
+- **Backups/DR**: Daily + monthly snapshots; weekly automated restore check. *Evidence*: §2 “Backups & Recovery”.
+- **AI Guardrails**: “No new facts”, JSON schema validation, Langfuse gates. *Evidence*: §4 “EVAL & Guardrails”.
+
+#### PHIPA / PIPEDA Mapping
+| Requirement | Implementation | Evidence |
+|---|---|---|
+| Safeguards (physical/technical) | AES-256 at rest; TLS 1.2+; secret manager; short-lived sessions | §3 Encryption; Auth Flow diagram |
+| Limiting collection/use | Minimal PII; consent scoping; access by role/patient | §2 Schema; §3 RBAC/RLS |
+| Accuracy & Integrity | Signed notes (immutable); audit checksums; QC on transcripts | §3 RLS (no updates when signed); §4 QC |
+| Openness & Accountability | Versioned policies; change-control in Git; monitoring | Repo history; CI logs; Langfuse |
+| Individual Access & Correction | DSR workflow; tombstone + secure purge for attachments | §2 Lifecycle (Deletion Request) |
+| Retention & Disposal | Policy-based archive; timed deletion; backup rotation | §2 Retention/Archive; Backups |
+
+#### Data-Subject Requests (DSR)
+1) Verify identity & scope (patient/record range).  
+2) Execute *access export* (redacted where required).  
+3) For deletion, write **tombstone** in primary records and purge attachments securely.  
+4) Append audit events (`requested`, `fulfilled`, operator `actorId`).  
+5) Close ticket with evidence bundle (hashes, timestamps).
+
+#### Automated Compliance Checks (CI)
+- Lint for **no-PHI in logs** (denylist + allowlist tests).
+- Detect missing **executive summaries/diagrams** in docs PRs.
+- Backup evidence present & latest restore test < 7 days; alert if stale.
+- Langfuse **gates** enforced: `StructureScore≥0.98`, `HallucinationRate≤1%`, `Coverage≥0.9`.
+
+#### Backup/DR SLOs
+- **RPO** ≤ 24h (daily snapshots), **RTO** ≤ 8h (documented restore runbook).
+- Monthly restore drill to shadow project with object-count/hash spot checks.
+
+#### Open Items / Risks
+- Finalize residency matrix per region/vendor.
+- Add formal incident-response tabletop results (quarterly).
+- Extend RLS to `attachments` and `auditTrail` views where applicable.
 ## 3. Security & Compliance
 
 ### Executive Summary
@@ -188,6 +238,7 @@ _Usuario_
 > “own” = pacientes asignados al clinician o creados por él.
 
 ### Auth Flow
+![auth-flow](./diagrams/auth-flow.svg)
 Ver `docs/enterprise/diagrams/auth-flow.svg`.  
 1) Usuario → MFA → `id_token` + `access_token`  
 2) Backend valida firma/claims; emite sesión corta  
