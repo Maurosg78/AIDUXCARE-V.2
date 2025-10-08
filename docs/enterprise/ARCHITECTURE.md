@@ -1,4 +1,52 @@
 
+### 4.x End-to-End Sample (sanitized)
+
+**Transcript (excerpt)**
+[0.0–3.2] PATIENT: Headaches for 2 weeks, frontal, worse in afternoon. No vision changes.
+[3.3–5.5] CLINICIAN: Any nausea or fever?
+[5.6–6.4] PATIENT: No fever; mild nausea yesterday.
+
+**Generated SOAP (JSON)**
+{
+  "subjective": {
+    "chief_complaint": "Headache for 2 weeks",
+    "history": [
+      "Frontal location; worse in afternoons",
+      "No vision changes",
+      "Mild nausea yesterday; afebrile"
+    ],
+    "citations": [[0.0, 3.2], [5.6, 6.4]]
+  },
+  "objective": {
+    "vitals": { "bp": "120/78", "temp": "afebrile" },
+    "exam": [],
+    "citations": []
+  },
+  "assessment": [
+    {
+      "dx": "Tension-type headache (probable)",
+      "confidence": 0.72,
+      "rationale": "Pattern + location + afebrile; no neuro red flags",
+      "citations": [[0.0, 3.2]]
+    }
+  ],
+  "plan": [
+    { "item": "Hydration and sleep hygiene", "citations": [] },
+    { "item": "Acetaminophen 500 mg PO PRN", "citations": [] },
+    { "item": "Return precautions for red flags", "citations": [] }
+  ],
+  "meta": {
+    "promptId": "soap-scribe",
+    "promptSemVer": "1.4.0",
+    "model": "gemini-1.5-pro",
+    "traceId": "LANGFUSE_TRACE_ID"
+  }
+}
+
+**Guardrails applied**
+- No new facts (limitado al transcript).
+- JSON SOAP validable por esquema.
+- Citaciones de spans por sección.
 ## 4. AI Layer
 
 ### Executive Summary
