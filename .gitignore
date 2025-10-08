@@ -54,3 +54,5 @@ scripts/test-system-quick.html
 junit.xml
 .rescue_untracked/
 .rescue/
+yarn.lock
+pnpm-lock.yaml
