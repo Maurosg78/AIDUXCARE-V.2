@@ -1,0 +1,45 @@
+name: Docs CI (Architecture)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "docs/enterprise/**"
+
+jobs:
+  validate-architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Verify required files exist
+        run: |
+          set -e
+          test -f docs/enterprise/ARCHITECTURE.md
+          test -f docs/enterprise/diagrams/ai-pipeline.svg
+          test -f docs/enterprise/diagrams/prompt-versioning.svg
+          echo "✅ Required docs/diagrams present"
+
+      - name: Check snippet fenced exactly once
+        run: |
+          file="docs/enterprise/ARCHITECTURE.md"
+          count=$(grep -A1 "#### Prompt Versioning Header" "$file" | grep -c '```' || true)
+          echo "Fence count: $count"
+          if [ "$count" -ne 1 ]; then
+            echo "❌ Expected 1 fenced block for Prompt Versioning Header"
+            exit 1
+          fi
+          echo "✅ Snippet fence ok"
+
+      - name: Quick word count sanity (Section 6 target ≥ 400 words)
+        run: |
+          file="docs/enterprise/ARCHITECTURE.md"
+          # toma el bloque de "Section 6 — AI/ML Architecture" hasta la siguiente "## Section "
+          awk '/^## Section 6/{flag=1;next}/^## Section /{flag=0}flag{print}' "$file" | wc -w | awk '{print "words="$1}' > wc6.txt
+          cat wc6.txt
+          words=$(cut -d= -f2 wc6.txt)
+          if [ "$words" -lt 400 ]; then
+            echo "❌ Section 6 has $words words (<400)"
+            exit 1
+          fi
+          echo "✅ Section 6 word count ok ($words)"
