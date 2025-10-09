@@ -1,9 +1,6 @@
 name: Docs CI (Architecture)
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "docs/enterprise/**"
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
@@ -35,13 +32,6 @@ jobs:
           git rev-parse --short HEAD
     fetch-depth: 0
 
-      - name: Debug tree (enterprise)
-        run: |
-          git rev-parse --short HEAD
-          echo "event: ${{ github.event_name }}"
-          ls -la docs || true
-          ls -la docs/enterprise || true
-          ls -la docs/enterprise/diagrams || true
       - name: Verify required files exist
         run: |
           set -e
