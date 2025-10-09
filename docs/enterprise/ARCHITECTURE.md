@@ -435,3 +435,47 @@ A feature flag raises verbosity for a bounded window; the activation itself is a
 
 
 
+
+## Section 8 — Performance & Capacity Planning
+
+**Objectives.** Guarantee user-perceived speed and cost efficiency under Canada-first constraints. Define SLOs, sizing rules, load strategy, and budgets to guide capacity decisions and incident posture.
+
+**User-centric SLOs (Canada-first).**
+- **API latency:** p95 ≤ 250 ms, p99 ≤ 500 ms (CA users).
+- **UI interaction:** TTI ≤ 2.5 s, input latency p95 ≤ 50 ms (median device on CA networks).
+- **Availability:** 99.9% monthly for core clinical workflows (auth, charting, search).
+- **Data ops:** background jobs finish p95 ≤ 5 min; clinical doc export p95 ≤ 30 s.
+
+**Workload model.**
+- **Traffic mix:** 70% reads / 30% writes on clinical entities; bursts x3 at shift changes (08:00–10:00, 16:00–18:00 local CA time).
+- **Record sizes:** notes ≤ 16 KB median; attachments mostly off-path (async).
+- **Multi-tenant:** per-tenant throttles; noisy-neighbour isolation (queues + quotas).
+
+**Capacity guardrails.**
+- **Headroom:** plan for **P95_day × 3** sustained for 15 min; tolerate **P95_day × 5** for 60 s without breaching SLO.
+- **DB limits:** ≤ 70% CPU, ≤ 65% IOPS sustained; RLS-deny rate < 0.5% of queries.
+- **Cache policy:** ≥ 85% hit-rate for hot reads; TTLs tuned to clinical freshness.
+
+**Autoscaling rules (policy level).**
+- **Horiz. scale** on p95 latency or queue depth (p95 API > 220 ms for 2 min, or queue p95 > 200 msgs for 1 min).
+- **Vert. scale** only during maintenance windows; prefer horizontal first.
+- **Cold-start budget:** max 1% of requests impacted during up-scales.
+
+**Load & resilience testing (recurring).**
+- **Quarterly**: capacity sweep to 150% of P95_week; capture knee points.
+- **Monthly**: burst tests (x3 traffic for 10 min), chaos on non-stateful tiers.
+- **Before releases**: smoke @ 20% load; critical paths must keep SLO.
+
+**Cost & token budgets (observability-driven).**
+- **Infra budget:** ≤ CAD X/month per 1k MAU (tracked), alert at 80%.
+- **Inference budget:** target ≤ Y tokens/encounter (p95); block above Y×2.
+- **Storage budget:** clinical blob storage ≤ Z GB/1k MAU; lifecycle to colder tiers at 30/90/365 days.
+
+**Degradation strategy.**
+- On SLO breach: shed non-clinical features, pause heavy exports, switch to cached read-only summaries, queue writes with user notice; auto-revert post-recovery.
+
+**Acceptance criteria.**
+- SLOs published in runbook; dashboards show live p95/p99 and error budgets.
+- Autoscaling thresholds enforced; weekly reports of headroom & cost per MAU.
+- Load/chaos schedules on calendar; last results linked in PRs for risky changes.
+- Canada-first routing validated; no cross-border defaults in perf paths.
