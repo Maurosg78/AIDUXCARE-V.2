@@ -1,5 +1,9 @@
 name: Docs CI (Architecture)
 on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "docs/enterprise/**"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
