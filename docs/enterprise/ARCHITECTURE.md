@@ -479,3 +479,21 @@ A feature flag raises verbosity for a bounded window; the activation itself is a
 - Autoscaling thresholds enforced; weekly reports of headroom & cost per MAU.
 - Load/chaos schedules on calendar; last results linked in PRs for risky changes.
 - Canada-first routing validated; no cross-border defaults in perf paths.
+
+> **Diagram (versioning).**  
+> `docs/enterprise/diagrams/prompt-versioning.svg`  
+![prompt-versioning](./diagrams/prompt-versioning.svg)
+
+#### Prompt Versioning Header (minimal snippet)
+```
+# prompt: soap-note
+version: v3.2.0
+rollout: 25%
+channel: ca-prod
+fallback: v3.1.4
+checksum: sha256:<template-hash>
+changelog:
+  - tightened PHIPA redactions
+  - improved Objective extraction heuristics
+```
+
