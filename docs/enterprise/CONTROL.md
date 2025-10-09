@@ -69,3 +69,6 @@
 
 - [x] Docs CI enabled on main (#165)
 - [ ] PR #163 checks running
+
+- [x] Docs CI enabled on main (#165)
+- [ ] PR #163 checks running
