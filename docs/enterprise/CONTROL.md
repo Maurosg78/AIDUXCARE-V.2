@@ -66,3 +66,6 @@
 - [x] 14:00 Draft review (Section 6–8) — PR #163 en draft
 - [x] 17:00 PR listo (ready for review) — #163
 - [ ] 18:00 Merge decision (tras reviews cruzados)
+
+- [x] Docs CI enabled on main (#165)
+- [ ] PR #163 checks running
