@@ -62,3 +62,7 @@
 - [ ] HANDOFF.md created
 - [ ] Team gratitude expressed
 > | 2025-10-07 | PR #144 merged | ✅ Done | ADR-002 + ROADMAP deps landed in main |
+
+- [x] 14:00 Draft review (Section 6–8) — PR #163 en draft
+- [x] 17:00 PR listo (ready for review) — #163
+- [ ] 18:00 Merge decision (tras reviews cruzados)
