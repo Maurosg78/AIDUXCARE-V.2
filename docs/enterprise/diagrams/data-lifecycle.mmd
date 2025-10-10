@@ -1,0 +1,9 @@
+flowchart LR
+  A[Create note] --> B[Update/Autosave]
+  B --> C[Sign (immutable)]
+  C --> D[Query/Search]
+  D --> E[Retention/Erasure]
+  A --> F[Audit Log]
+  B --> F
+  C --> F
+  D --> F
