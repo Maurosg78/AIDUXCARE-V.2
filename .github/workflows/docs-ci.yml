@@ -8,14 +8,12 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "docs/enterprise/**"
-
+  workflow_dispatch:
 jobs:
   validate-architecture:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-  with:
-
       - name: Switch to PR head (pr_target-safe)
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
@@ -33,8 +31,6 @@ jobs:
           git fetch --no-tags prhead "+refs/heads/$REF:refs/remotes/prhead/$REF"
           git checkout --force "refs/remotes/prhead/$REF"
           git rev-parse --short HEAD
-    fetch-depth: 0
-
       - name: Debug tree (enterprise)
         run: |
           git rev-parse --short HEAD
