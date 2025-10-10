@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><text x="20" y="40">ai-pipeline (render later)</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <title>AI Pipeline (placeholder)</title>
+  <rect x="20" y="40" width="180" height="60" rx="8" ry="8" fill="#eee" stroke="#888"/>
+  <text x="110" y="75" text-anchor="middle" font-family="Arial" font-size="14">Ingestion</text>
+  <rect x="230" y="40" width="180" height="60" rx="8" ry="8" fill="#eee" stroke="#888"/>
+  <text x="320" y="75" text-anchor="middle" font-family="Arial" font-size="14">Processing</text>
+  <rect x="440" y="40" width="180" height="60" rx="8" ry="8" fill="#eee" stroke="#888"/>
+  <text x="530" y="75" text-anchor="middle" font-family="Arial" font-size="14">Serving</text>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L6,3 z" fill="#888"/></marker></defs>
+  <line x1="200" y1="70" x2="230" y2="70" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="410" y1="70" x2="440" y2="70" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+</svg>
