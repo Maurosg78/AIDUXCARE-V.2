@@ -14,8 +14,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+  with:
 
+      - name: Switch to PR head (pr_target-safe)
+        if: ${{ github.event_name == 'pull_request_target' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="${{ github.event.pull_request.head.repo.full_name }}"
+          REF="${{ github.event.pull_request.head.ref }}"
+          SHA="${{ github.event.pull_request.head.sha }}"
+          if [[ -z "$REPO" || -z "$REF" || -z "$SHA" ]]; then
+            echo "No PR context; skipping."
+            exit 0
+          fi
+          echo "Fetching PR head $REPO@$REF ($SHA)…"
+          git remote add prhead "https://github.com/$REPO.git" || true
+          git fetch --no-tags prhead "+refs/heads/$REF:refs/remotes/prhead/$REF"
+          git checkout --force "refs/remotes/prhead/$REF"
+          git rev-parse --short HEAD
+    fetch-depth: 0
+
+      - name: Debug tree (enterprise)
+        run: |
+          git rev-parse --short HEAD
+          echo "event: ${{ github.event_name }}"
+          ls -la docs || true
+          ls -la docs/enterprise || true
+          ls -la docs/enterprise/diagrams || true
       - name: Verify required files exist
         run: |
           set -e
