@@ -32,6 +32,9 @@ jobs:
           git rev-parse --short HEAD
     fetch-depth: 0
 
+      - name: Switch to PR head commit
+        run: git checkout --force ${{ github.event.pull_request.head.sha || github.sha }}
+
       - name: Verify required files exist
         run: |
           set -e
