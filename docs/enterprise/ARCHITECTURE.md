@@ -9,6 +9,7 @@ This document describes the high-level AI/ML architecture used to deliver reliab
 - ![Prompt Versioning](diagrams/prompt-versioning.svg)
 
 #### Prompt Versioning Header (minimal snippet)
+```
 
 **Overview.** The architecture separates ingestion, processing, and serving to reduce coupling and to make capacity planning straightforward. Ingestion focuses on data quality, schema evolution, and privacy; processing handles feature engineering, training, and evaluation; serving exposes fast, predictable interfaces with progressive rollouts and guardrails.
 
