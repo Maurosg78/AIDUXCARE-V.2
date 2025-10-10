@@ -9,10 +9,6 @@ This document describes the high-level AI/ML architecture used to deliver reliab
 - ![Prompt Versioning](diagrams/prompt-versioning.svg)
 
 #### Prompt Versioning Header (minimal snippet)
-version: 1
-date: 2025-10-10
-component: docs-arch
-notes: "Minimal snippet to satisfy CI fence rule"
 
 **Overview.** The architecture separates ingestion, processing, and serving to reduce coupling and to make capacity planning straightforward. Ingestion focuses on data quality, schema evolution, and privacy; processing handles feature engineering, training, and evaluation; serving exposes fast, predictable interfaces with progressive rollouts and guardrails.
 
@@ -31,6 +27,12 @@ notes: "Minimal snippet to satisfy CI fence rule"
 **Lifecycle & governance.** Every model has an owner, SLOs, deprecation criteria, and an EOL date. Changes follow a lightweight RFC process with design, risk analysis, and rollback plan. A weekly review validates incident learnings, privacy commitments, and compliance requirements.
 
 **Cost controls.** Budgets are enforced at namespace and endpoint levels. We track marginal cost per feature and per model to inform architectural choices (e.g., caching, distillation, or batching) and to prevent silent cost creep.
+
+**Operational playbooks.** Each critical pipeline has runbooks with clear detection, diagnosis steps, and rollback commands. Post-incident reviews capture contributing factors, corrective actions, and owners with due dates. Security reviews verify threat models for data exfiltration, prompt injection, and model abuse vectors. Where feasible, we enforce defense-in-depth with allow-lists, content normalization, and strict output schemas. Teams rehearse failure scenarios quarterly so handoffs and tooling stay sharp.
+
+**Compliance posture.** Data retention follows least-privilege and purpose limitation. Sensitive fields are tokenized at ingestion and only detokenized in secure enclaves. All access to training data is logged and periodically reviewed. When fine-tuning on user content, we honor opt-outs and document the provenance of each dataset snapshot.
+
+**Scalability notes.** Batch workloads scale horizontally with autoscaling queues; online inference scales with per-endpoint HPA targets that consider both QPS and tail latency. Where latency budgets are tight, we colocate features, caches, and models to reduce cross-zone chatter. We also provide a cost-aware router that can downshift to distilled models when budgets are constrained or when request criticality is low.
 
 ## Section 7 — Appendix (placeholder)
 
