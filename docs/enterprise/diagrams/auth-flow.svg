@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" font-family="Inter,Arial,sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,3 L0,6 z" fill="#333"/>
+    </marker>
+    <style>
+      .box{fill:#fff;stroke:#333;stroke-width:2;rx:10;ry:10}
+      .title{font-size:18px;font-weight:700;fill:#111}
+      .meta{font-size:12px;fill:#444}
+      .edge{stroke:#333;stroke-width:2;marker-end:url(#arrow)}
+      .label{font-size:12px;fill:#111}
+    </style>
+  </defs>
+
+  <!-- Boxes -->
+  <rect class="box" x="60"  y="80"  width="200" height="90"/>
+  <text class="title" x="160" y="110" text-anchor="middle">User</text>
+  <text class="meta"  x="160" y="130" text-anchor="middle">Client App (Web/Mobile)</text>
+
+  <rect class="box" x="360" y="40"  width="240" height="90"/>
+  <text class="title" x="480" y="70"  text-anchor="middle">MFA Provider</text>
+  <text class="meta"  x="480" y="90"  text-anchor="middle">TOTP / SMS / Push</text>
+
+  <rect class="box" x="360" y="180" width="240" height="110"/>
+  <text class="title" x="480" y="210" text-anchor="middle">Auth (OIDC)</text>
+  <text class="meta"  x="480" y="230" text-anchor="middle">id_token + access_token</text>
+  <text class="meta"  x="480" y="248" text-anchor="middle">Refresh tokens (rotated)</text>
+
+  <rect class="box" x="700" y="180" width="240" height="110"/>
+  <text class="title" x="820" y="210" text-anchor="middle">Backend API</text>
+  <text class="meta"  x="820" y="230" text-anchor="middle">Validates JWT (sig/claims)</text>
+  <text class="meta"  x="820" y="248" text-anchor="middle">Short-lived session</text>
+
+  <rect class="box" x="980" y="180" width="160" height="110"/>
+  <text class="title" x="1060" y="210" text-anchor="middle">DB</text>
+  <text class="meta"  x="1060" y="230" text-anchor="middle">RBAC + RLS</text>
+  <text class="meta"  x="1060" y="248" text-anchor="middle">Immutable signed notes</text>
+
+  <!-- Edges -->
+  <line class="edge" x1="260" y1="110" x2="360" y2="85"/>
+  <text class="label" x="310" y="75">MFA challenge</text>
+
+  <line class="edge" x1="260" y1="125" x2="360" y2="205"/>
+  <text class="label" x="315" y="170">Login (OIDC)</text>
+
+  <line class="edge" x1="600" y1="235" x2="700" y2="235"/>
+  <text class="label" x="650" y="220">JWT (access/id)</text>
+
+  <line class="edge" x1="940" y1="235" x2="980" y2="235"/>
+  <text class="label" x="960" y="220">Authorize</text>
+
+  <!-- Guardrails -->
+  <text class="label" x="480" y="320" text-anchor="middle">TLS 1.2+ · HSTS · Pinning</text>
+  <text class="label" x="820" y="320" text-anchor="middle">Least privilege · Audit trail</text>
+</svg>
