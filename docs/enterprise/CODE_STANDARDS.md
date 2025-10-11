@@ -318,3 +318,5 @@
 # padding for line-count target (no content change)
 # padding for line-count target (no content change)
 # padding for line-count target (no content change)
+
+> _See also_: [ARCHITECTURE](./ARCHITECTURE.md)
