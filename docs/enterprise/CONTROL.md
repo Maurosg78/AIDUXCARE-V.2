@@ -83,3 +83,9 @@
 - Link hygiene: internal references validated; CI link check expected green.
 - ROADMAP addendum added (Oct 2025).
 
+
+### EVAL & Cockpit — Completed (2025-10-11)
+- Minimal EVAL harness (3 scenarios) + MD report.
+- Cockpit docs added and linked from Architecture.
+- CI job `eval` green (allow-failure: false).
+

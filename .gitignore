@@ -54,3 +54,4 @@ scripts/test-system-quick.html
 junit.xml
 .rescue_untracked/
 .rescue/
+tools/eval/reports/*.jsonl

@@ -203,3 +203,7 @@ Security rules, RLS policies (for ancillary stores), and key management are spec
 > _See also_: [ROADMAP](./ROADMAP.md)
 
 > _See also_: [CODE_STANDARDS](./CODE_STANDARDS.md)
+
+## Compliance Components
+See **Compliance Cockpit** for rule coverage and reporting: `./COMPLIANCE_COCKPIT.md`
+
