@@ -38,6 +38,51 @@ This document describes the high-level AI/ML architecture used to deliver reliab
 ## 2. Data Architecture
 ## 3. Security & Compliance
 
+## 4. AI Layer
+
+### Executive Summary
+- Canada-first pipeline from ambient speech to structured SOAP with predictable, auditable latency.
+- Whisper-based transcription with streaming/chunking to keep **p95** within clinical tolerance and reduce rework.
+- Vertex AI prompt chain drives **SOAP** (Subjective, Objective, Assessment, Plan) with guardrails and deterministic fallback.
+- Langfuse observability + EVALs track quality, latency, and regressions with alerting on **red flags**.
+- Versioned prompts (SEMVER) with progressive rollout, instant rollback, and immutable audit records.
+- PHIPA-friendly handling by design: minimisation/redaction, no raw PHI in logs, storage in Canadian regions by default.
+- Cost-aware scaling that protects clinician trust and legal defensibility.
+
+![AI pipeline](./diagrams/ai-pipeline.svg)
+
+### 4.1 Transcription Pipeline — Whisper
+We capture ambient audio from the exam room or virtual visit with explicit user consent and device checks (sample rate, channel config). **Streaming** is preferred for responsiveness; **batch** is supported for long sessions. Audio is segmented into **10–30 s chunks** with a **0.5–1.0 s overlap** to preserve context around boundaries; for streaming, finalisation waits for a short silence window to stabilise tokens. Target latencies: **p50 ≤ 1.5 s**, **p95 ≤ 3.0 s** per chunk on M-class instances backed by GPU where available.  
+Output formats include **JSON** (per-chunk with timestamps and confidence), and **JSONL** session exports for downstream replay. Optional diarisation hints (speaker tags, turn-taking signals) are passed when available; if not, we emit stable timestamps that the SOAP generator can align to sections.
+
+### 4.2 SOAP Generation — Vertex AI
+A structured **prompt chain** transforms the transcript into **SOAP**. Stage 1 normalises text (spelling, medical abbreviations), Stage 2 extracts **Subjective** and **Objective** with units/values, Stage 3 drafts **Assessment** (ICD-10 candidate codes, differential if applicable), and Stage 4 proposes a **Plan** aligned to scope-of-practice.  
+**Guardrails** enforce section presence, ban forbidden content (e.g., speculative diagnoses flagged as definitive), and limit free text to required fields. We run with constrained temperature and **deterministic fallback**: if the EVAL or guardrail fails, we fall back to the last-known-good prompt version to guarantee deliverability. All model calls attach purpose-of-use and clinic scope to support audit and PHIPA reporting.
+
+### 4.3 Observability & EVAL — Langfuse
+Each request generates **traces/spans** across the pipeline: capture → ASR chunks → prompt stages → post-processing. We record latency percentiles, token usage, and **quality scores** (coverage of chief complaint, completeness of vitals, medication reconciliation). **Red-flag alerts** (e.g., hallucinated meds, contradictory vitals) page the on-call and **gate releases**: a rollout halts automatically if quality or p95 exceed thresholds. Traces are retained without raw PHI; we store hashed references and anonymised counters.
+
+### 4.4 Prompt Versioning — Rollout & Rollback
+Prompts follow **SEMVER**: `soap-note@vMAJOR.MINOR.PATCH`. New versions ship behind a **rollout %** (per clinic/tenant or cohort) with Langfuse counters comparing key metrics vs. baseline. **Instant rollback** is a pointer flip to the previous version—no deploy required. We keep an **audit log** of rationale, EVAL results, and sign-off, enabling reproducibility and rapid forensics.
+
+![Prompt versioning](./diagrams/prompt-versioning.svg)
+
+#### Prompt Versioning Header (minimal snippet)
+```
+version: v3.2.0
+rollout: 25%
+channel: ca-prod
+fallback: v3.1.4
+checksum: sha256:<template-hash>
+changelog:
+  - tightened PHIPA redactions
+  - improved Objective extraction heuristics
+```
+
+### 4.5 PII Handling — PHIPA-Friendly
+We apply **minimisation at capture** (mute periods, no-wake zones), and perform **redaction pre-persistence** (identifiers, contact details) with human-in-the-loop overrides when policy allows. Telemetry and logs exclude raw PHI; we store **hashes** or **token counts** only, and keep pointers to encrypted records in Firestore/Cloud Storage (Canada regions). Retention and legal holds inherit from Section 2; exports include only the minimum necessary with time-boxed access and complete audit context.
+
+
 ### Executive Summary
 - Zero-trust posture with least-privilege enforced through **RBAC** (role-based access control) and **RLS** (row-level security).
 - **Verified identity** on every request using **Supabase Auth** JSON Web Tokens (JWT) with scoped claims.
