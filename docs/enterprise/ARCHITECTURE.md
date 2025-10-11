@@ -67,12 +67,6 @@ Prompts follow **SEMVER**: `soap-note@vMAJOR.MINOR.PATCH`. New versions ship beh
 
 ![Prompt versioning](./diagrams/prompt-versioning.svg)
 
-#### Prompt Versioning Header (minimal snippet)
-```
-version: v3.2.0
-rollout: 25%
-channel: ca-prod
-fallback: v3.1.4
 checksum: sha256:<template-hash>
 changelog:
   - tightened PHIPA redactions
