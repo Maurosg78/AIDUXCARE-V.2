@@ -1,4 +1,3 @@
-// tools/eval/runner.ts
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 
