@@ -35,6 +35,65 @@ This document describes the high-level AI/ML architecture used to deliver reliab
 
 **Scalability notes.** Batch workloads scale horizontally with autoscaling queues; online inference scales with per-endpoint HPA targets that consider both QPS and tail latency. Where latency budgets are tight, we colocate features, caches, and models to reduce cross-zone chatter. We also provide a cost-aware router that can downshift to distilled models when budgets are constrained or when request criticality is low.
 
-## Section 7 — Appendix (placeholder)
+## 2. Data Architecture
 
-Additional implementation details and playbooks will be added here as the system evolves.
+### Executive Summary
+Our data architecture is **Firestore as the single source of truth (SoT)** for operational clinical and product data, hosted in **Canada** to align with PHIPA/PIPEDA residency requirements. We implement a **PHIPA-compliant lifecycle** with **7-year retention for clinical records** (CPO minimum) and **10-year retention for audit logs**. Write paths are validated at the edge and normalized in Firestore; read paths are optimized through security-scoped queries and controlled projections. All events carry immutable audit metadata to support regulatory posture and forensic traceability. See the lifecycle diagram: `data-lifecycle.svg`.
+
+### Logical Data Model (high-level)
+- **Tenants & Clinics:** top-level partitioning by tenant (clinic/organization), enforcing strict data isolation.
+- **Patients & Episodes:** patient master records; episodes/encounters as time-bounded containers for notes, measures, orders, and documents.
+- **Clinician & Roles:** RBAC entities referencing directory identities and scoped to tenant and facility.
+- **Documents & Notes:** structured notes with versioning (immutable prior versions) and derived summaries.
+- **Operational Telemetry:** usage metrics, model inferences, and configuration flags (feature-gated, CA-first).
+
+Firestore collections (illustrative):
+- `/tenants/{tenantId}`
+- `/tenants/{tenantId}/patients/{patientId}`
+- `/tenants/{tenantId}/episodes/{episodeId}`
+- `/tenants/{tenantId}/notes/{noteId}`
+- `/tenants/{tenantId}/audit/{eventId}`
+- `/tenants/{tenantId}/metrics/{metricId}`
+
+### Source of Truth & Write Paths
+- **SoT:** Firestore is authoritative for clinical/operational data; object storage is used only for large binaries (attachments) with Firestore pointers.
+- **Validation:** client-side schema guards + server-side validation; writes are **idempotent** via request UUID and **atomic** at the document boundary.
+- **Consistency:** eventual across projections; strong per-document. Critical invariants (e.g., consent, identity link) are verified transactionally.
+
+### Read Paths & Projections
+- **Principle of Least Access:** queries are constrained by tenant, role, and encounter scope.
+- **Projections:** computed/materialized views limited to non-PHI when feasible; PHI projections require explicit policy and purpose of use.
+- **Latency/Cost:** indexes are curated; hot paths pre-indexed; pagination and server timestamps ensure stable reads.
+
+### Data Lifecycle & Retention
+- **Creation → Active Use → Archival → Expiry/Deletion** controlled by policy engines.
+- **Retention:** clinical notes **≥ 7 years**; audit logs **≥ 10 years** (operations, access, and policy decisions).
+- **Legal Holds:** retention clock pauses under hold; deletions are cryptographically recorded in audit trail.
+- **Diagram:** ![Data Lifecycle](./diagrams/data-lifecycle.svg)  ← reference to `data-lifecycle.svg`.
+
+### Backups & Disaster Recovery (DR)
+- **Backups:** daily encrypted snapshots (Canada region), 35-day rolling window minimum; quarterly recovery drills.
+- **RPO/RTO:** target **RPO ≤ 24h**, **RTO ≤ 12h** for Firestore-backed services; runbooks codified and tested.
+- **Integrity:** backup verification via checksums and random record sampling.
+
+### Multi-Tenancy & Partitioning
+- **Isolation:** tenantId is mandatory partition key across all collections; security rules enforce cross-tenant denial by default.
+- **Noisy Neighbor Controls:** quotas on read/write per tenant; index design prevents pathological fan-out.
+
+### Metadata, Audit, and Observability
+- **Audit Events:** append-only events for create/update/delete/read (where supported), including actor, purpose, policy result, and hash of payload.
+- **Time & Identity:** server timestamps; identities bound to OIDC and role assignments.
+- **Telemetry:** product metrics avoid PHI by default; if PHI is strictly necessary for safety, it is minimized and tagged for lifecycle.
+
+### Data Quality & Validation
+- **Schemas:** versioned JSON schemas; backward-compatible migrations; semantic validation for clinical fields (e.g., units, laterality).
+- **Deduplication:** probabilistic patient matching is disallowed for SoT; exact identifiers with verification steps are required.
+- **Attachments:** virus/malware scanning; MIME/type gates; max sizes enforced.
+
+### Interoperability & Exports
+- **Standards:** HL7 FHIR (selected resources), CDA for document export if required by regulators/partners, CSV extracts for patient-initiated requests.
+- **eDiscovery & SAR:** subject access requests supported via export jobs; audit trail included where permissible.
+- **Vendor Exit:** documented pathways to export all tenant data in reasonable formats with mapping specs.
+
+### Security & Compliance Hooks (preview)
+Security rules, RLS policies (for ancillary stores), and key management are specified in Section 3 (Security & Compliance). Section 2 ensures that data layout, lifecycles, and SoT decisions are **en-CA, Market: CA** aligned and auditable.
