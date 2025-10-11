@@ -36,6 +36,69 @@ This document describes the high-level AI/ML architecture used to deliver reliab
 **Scalability notes.** Batch workloads scale horizontally with autoscaling queues; online inference scales with per-endpoint HPA targets that consider both QPS and tail latency. Where latency budgets are tight, we colocate features, caches, and models to reduce cross-zone chatter. We also provide a cost-aware router that can downshift to distilled models when budgets are constrained or when request criticality is low.
 
 ## 2. Data Architecture
+## 3. Security & Compliance
+
+### Executive Summary
+- Zero-trust posture with least-privilege enforced through **RBAC** (role-based access control) and **RLS** (row-level security).
+- **Verified identity** on every request using **Supabase Auth** JSON Web Tokens (JWT) with scoped claims.
+- **Encryption in transit** via **TLS 1.3** and **encryption at rest** in Firestore (GCP-managed keys; **CMEK** optional when required by customers or regulators).
+- **Clinic/patient isolation** using `clinic_id` and author scoping across read/write paths.
+- **Immutable, signed notes** and an **append-only audit trail** enabling forensics and tamper evidence.
+- **PHIPA**-aligned **data minimization**, **retention**, and **redaction** controls, documented and testable.
+- **Deny-by-default** guardrails: no implicit access; policy engines must explicitly allow.
+
+### 3.1 Identity, AuthN/AuthZ (JWT → RBAC → RLS)
+We authenticate users with **Supabase Auth** (OIDC-compatible). The front end obtains a short-lived **JWT** that includes verifiable, minimal claims:
+- `sub` (subject: unique user ID)
+- `role` (e.g., `admin`, `clinician`, `reviewer`)
+- `clinic_id` (current clinic/tenant scope)
+- Optional: `purpose_of_use`, `session_id`, `iat/exp`
+
+The **back end** validates token signature, issuer, audience, and expiry. **RBAC** maps roles to allowed actions (read/write/approve), then **RLS** restricts rows by `clinic_id` and authorship. Access to Firestore uses a server **service account** with scoped permissions; requests include a policy context derived from the JWT. Reads/writes that cannot be attributed to a valid identity and clinic are **denied by default**.
+
+#### RBAC (roles → permissions)
+| Role      | Read Patients      | Write Notes | Approve/Sign | Read Audit | Manage Users |
+|-----------|--------------------|-------------|--------------|------------|--------------|
+| admin     | clinic             | clinic      | yes          | clinic     | yes          |
+| clinician | own + assigned     | own         | own          | no         | no           |
+| reviewer  | clinic (read-only) | no          | co-sign      | clinic     | no           |
+
+### 3.2 Encryption
+- **In transit:** All FE↔BE and BE↔cloud service calls use **HTTPS/TLS 1.3** with modern ciphers; HSTS and TLS version pinning are enabled where supported.
+- **At rest:** Firestore data is encrypted with **Google-managed keys** by default. For customers requiring dedicated control, we support **Customer-Managed Encryption Keys (CMEK)** with documented rotation procedures and incident runbooks.
+
+### 3.3 Row-Level Security (RLS) — isolation
+The **database of record for relational artefacts** (e.g., note metadata, exports, tasks) enforces **RLS** to guarantee clinic and author scoping. Example policy set for `note_metadata`:
+
+```sql
+-- Enable RLS on the table
+ALTER TABLE note_metadata ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: author OR admin/reviewer from the same clinic
+CREATE POLICY nm_read_scoped
+ON note_metadata FOR SELECT USING (
+  current_setting('request.jwt.claims', true)::jsonb->>'clinic_id' = clinic_id
+  AND (
+    current_setting('request.jwt.claims', true)::jsonb->>'sub' = author_id
+    OR (current_setting('request.jwt.claims', true)::jsonb->>'role') IN ('admin','reviewer')
+  )
+);
+
+-- UPDATE: author only, while the note is still a draft
+CREATE POLICY nm_update_author_draft
+ON note_metadata FOR UPDATE USING (
+  current_setting('request.jwt.claims', true)::jsonb->>'clinic_id' = clinic_id
+  AND current_setting('request.jwt.claims', true)::jsonb->>'sub' = author_id
+  AND status = 'draft'
+);
+
+-- No broad "FOR ALL" policies: deny-by-default for any action not explicitly allowed.
+### 3.4 Auth Flow (reference)
+![auth-flow](./diagrams/auth-flow.svg)
+Flow (textual): The FE requests a session and obtains a JWT from Supabase Auth. Each BE request includes the JWT; the BE validates signature/claims and derives an authorization context (role, clinic, purpose). For relational operations, the BE forwards queries to Postgres with JWT claims available to RLS (via request.jwt.claims). For document operations, the BE uses a service account to call Firestore with server-enforced rules and context checks. All allow/deny decisions are logged with reasons.
+### 3.5 Auditability & PHIPA
+All security-relevant events are written to an append-only audit log (actor, timestamp, action, resource, purpose, policy result, hash). Signed notes are versioned; once approved/signed, prior versions are immutable, and any redaction produces a new version with cryptographic linkage. Under PHIPA, we apply data minimization (collect/process only what is necessary), define retention windows (e.g., ≥7 years for clinical records; ≥10 years for audit/forensics), and support redaction for disclosures. Legal holds pause the retention clock and are recorded. Exports for Subject Access Requests (SAR) include audit metadata where permissible and are fulfilled via controlled, time-boxed links.
+
 
 ### Executive Summary
 Our data architecture is **Firestore as the single source of truth (SoT)** for operational clinical and product data, hosted in **Canada** to align with PHIPA/PIPEDA residency requirements. We implement a **PHIPA-compliant lifecycle** with **7-year retention for clinical records** (CPO minimum) and **10-year retention for audit logs**. Write paths are validated at the edge and normalized in Firestore; read paths are optimized through security-scoped queries and controlled projections. All events carry immutable audit metadata to support regulatory posture and forensic traceability. See the lifecycle diagram: `data-lifecycle.svg`.
