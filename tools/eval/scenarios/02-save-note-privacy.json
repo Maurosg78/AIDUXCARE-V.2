@@ -1,0 +1,1 @@
+{ "name": "SaveNote - Privacy Redaction", "input": { "soap": { "subjective": "contains phone + email", "objective": "-", "assessment": "-", "plan": "-" } }, "expect": { "status": "success", "requiresRedaction": true, "scoreMin": 0.9 } }

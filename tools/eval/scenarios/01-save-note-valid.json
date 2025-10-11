@@ -1,0 +1,1 @@
+{ "name": "SaveNote - Valid SOAP", "input": { "soap": { "subjective": "...", "objective": "...", "assessment": "OK", "plan": "Follow-up" } }, "expect": { "status": "success", "scoreMin": 0.9 } }

@@ -26,7 +26,8 @@
     "noImplicitAny": false
   },
   "include": [
-    "src"
+    "src",
+    "tools/eval/**/*"
   ],
   "references": [
     {

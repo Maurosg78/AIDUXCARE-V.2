@@ -92,7 +92,10 @@
     "pretest:ci": "node --no-warnings scripts/kill-ports.cjs || true",
     "check:no-soap-logs": "node scripts/check-no-soap-logs.mjs",
     "pretest": "pnpm run check:no-soap-logs",
-    "lint:strict": "eslint ."
+    "lint:strict": "eslint .",
+    "eval:run": "ts-node --transpile-only tools/eval/runner.ts",
+    "eval:report": "node tools/eval/reporter-md.cjs",
+    "eval": "npm run eval:run && npm run eval:report"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",

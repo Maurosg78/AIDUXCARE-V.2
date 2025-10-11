@@ -1,0 +1,1 @@
+{ "name": "CPO Rules - Block on violation", "input": { "soap": { "subjective": "PHI export", "objective": "-", "assessment": "-", "plan": "-" } }, "expect": { "status": "blocked", "code": "CPO_RULE_BLOCK", "scoreMin": 1.0 } }
