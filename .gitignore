@@ -55,3 +55,6 @@ junit.xml
 .rescue_untracked/
 .rescue/
 tools/eval/reports/*.jsonl
+
+# cockpit eval outputs
+/tools/eval/reports/latest.*
