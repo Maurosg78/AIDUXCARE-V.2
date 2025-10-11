@@ -1,12 +1,14 @@
-import type { CpoContext } from "./CpoRules";
-import { runCpoRules } from "./CpoRules";
+import { runCpoRules } from './CpoRules';
 
-/** Throws on non-compliance. */
-export async function assertCpoCompliance(ctx: CpoContext): Promise<void> {
-  const result = runCpoRules(ctx);
-  if (!result.ok) {
-    const err = new Error("CPO compliance failed");
-    (err as any).failures = result.failures;
-    throw err;
+export async function assertCpoCompliance(ctx: {
+  patientId: string;
+  clinicianId: string;
+  noteMarkdown: string;
+  createdAtISO: string;
+}): Promise<void> {
+  // Simula verificación async
+  const res = runCpoRules(ctx);
+  if (res.failures && res.failures.length > 0) {
+    throw new Error('CPO_FAILED');
   }
 }
