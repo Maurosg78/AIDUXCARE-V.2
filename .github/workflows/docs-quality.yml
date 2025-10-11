@@ -1,0 +1,54 @@
+name: Docs Quality
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "docs/**/*.md"
+      - ".github/workflows/docs-quality.yml"
+      - ".github/spellcheck-config.json"
+      - ".github/custom-words.txt"
+  pull_request:
+    paths:
+      - "docs/**/*.md"
+      - ".github/workflows/docs-quality.yml"
+      - ".github/spellcheck-config.json"
+      - ".github/custom-words.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  Spellcheck:
+    name: Spellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js (for cspell)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install cspell
+        run: npm install -g cspell@8
+      - name: Run cspell (en-CA) on docs/**/*.md
+        run: |
+          cspell --version
+          cspell --config .github/spellcheck-config.json "docs/**/*.md" \
+            --no-progress --show-suggestions --summary
+  Link-Check:
+    name: Link Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run lychee on docs/**/*.md
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: >-
+            --accept 200..399
+            --timeout 20
+            --max-concurrency 8
+            --no-progress
+            --verbose
+            "docs/**/*.md"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
