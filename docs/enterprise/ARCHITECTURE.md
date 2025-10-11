@@ -199,3 +199,7 @@ Firestore collections (illustrative):
 
 ### Security & Compliance Hooks (preview)
 Security rules, RLS policies (for ancillary stores), and key management are specified in Section 3 (Security & Compliance). Section 2 ensures that data layout, lifecycles, and SoT decisions are **en-CA, Market: CA** aligned and auditable.
+
+> _See also_: [ROADMAP](./ROADMAP.md)
+
+> _See also_: [CODE_STANDARDS](./CODE_STANDARDS.md)

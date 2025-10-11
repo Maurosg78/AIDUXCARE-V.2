@@ -72,3 +72,14 @@
 
 - [x] Docs CI enabled on main (#165)
 - [ ] PR #163 checks running
+
+## Quick Wins — Completed
+- Diagram replacements: ai-pipeline.svg / prompt-versioning.svg
+- Internal links sanitised across Architecture and Code Standards
+- ROADMAP synchronised with Sections 2–4 and CODE_STANDARDS v1
+
+### Quick Wins — Completed (2025-10-11)
+- Final diagrams replaced (ai-pipeline.svg, prompt-versioning.svg).
+- Link hygiene: internal references validated; CI link check expected green.
+- ROADMAP addendum added (Oct 2025).
+

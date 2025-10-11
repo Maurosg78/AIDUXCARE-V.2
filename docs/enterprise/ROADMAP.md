@@ -14,3 +14,9 @@
 | 8 | Infra scaling | CDN + Firebase rules audit | ✅ No CI warnings |
 | 9 | Enterprise pilot | Clinic rollout (Niagara) | ✅ Pilot signed off |
 | 10 | SUV docs | Full investor package | ✅ Reviewed by compliance officer |
+## Update (Oct 2025)
+- Sections 2–4 investment-grade: completed and referenced from Architecture.
+- CODE_STANDARDS v1 published (16 patterns) — TS/React first.
+- Near-term focus: EVAL hardening and Compliance Cockpit (CPO/PHIPA dashboards).
+- No scope change to runtime; documentation coherence improved (diagrams + links).
+- Impact: better review velocity, auditability, and onboarding.
