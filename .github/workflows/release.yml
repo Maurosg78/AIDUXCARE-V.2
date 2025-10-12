@@ -1,0 +1,61 @@
+name: release-assets-and-trend
+
+on:
+  push:
+    tags:
+      - '*'
+  release:
+    types: [published]
+
+jobs:
+  eval-on-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # needed by gh release / action-gh-release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run eval and report
+        run: |
+          mkdir -p tools/eval/reports
+          npm run eval:run
+          LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
+          TAG="${GITHUB_REF_NAME:-$(git describe --tags --abbrev=0)}"
+          TS="$(date -u +%Y%m%dT%H%M%SZ)"
+          JSON_OUT="tools/eval/reports/${TAG}__${TS}.jsonl"
+          cp -f "$LATEST" "$JSON_OUT"
+          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG}__${TS}.report.md"
+          npm run eval:gate
+
+      - name: Update trendline
+        run: npm run eval:trend:update
+
+      - name: Commit trendline (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/eval/trends/quality-trend.md
+          git diff --cached --quiet || git commit -m "chore(eval): update quality trendline
+
+Market: CA
+Language: en-CA
+COMPLIANCE_CHECKED
+Signed-off-by: ROADMAP_READ"
+          git push
+
+      - name: Upload assets to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            tools/eval/reports/${{ github.ref_name }}__*.jsonl
+            tools/eval/reports/${{ github.ref_name }}__*.report.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

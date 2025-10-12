@@ -1,20 +1,67 @@
 name: eval
+
 on:
   pull_request:
     branches: [ main ]
-    paths:
-      - "tools/eval/**"
-      - "docs/enterprise/**"
-      - ".github/workflows/eval.yml"
-  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
 jobs:
   eval:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run eval
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run eval
+        run: |
+          mkdir -p tools/eval/reports
+          # Ejecuta el runner que ya tienes
+          npm run eval:run
+          # Asegura un alias "latest.jsonl" si tu runner crea nombre timestamped
+          LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
+          cp -f "$LATEST" tools/eval/reports/latest.jsonl
+
+      - name: Build Markdown report
+        run: npm run eval:report
+
+      - name: Upload artefacts (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-artifacts
+          path: |
+            tools/eval/reports/*.jsonl
+            tools/eval/reports/*.md
+
+  eval-gate:
+    needs: [eval]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Ensure latest eval artefacts
+        uses: actions/download-artifact@v4
+        if: github.event_name == 'pull_request'
+        with:
+          name: eval-artifacts
+          path: tools/eval/reports
+
+      - name: Apply quality gate (blocking)
+        run: npm run eval:gate

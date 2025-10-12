@@ -1,0 +1,5 @@
+{
+  "passRateMin": 0.90,
+  "criticalMax": 0,
+  "minorMax": 5
+}
