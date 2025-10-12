@@ -21,7 +21,7 @@ jobs:
     env:
       TAG_NAME: ${{ inputs.tag != '' && inputs.tag || (github.event_name == 'release' && github.event.release.tag_name) || github.ref_name }}
     steps:
-      - name: Checkout code (tag if available)
+      - name: Checkout (tag si corresponde)
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG_NAME }}
@@ -31,7 +31,7 @@ jobs:
           echo "event=$GITHUB_EVENT_NAME"
           echo "ref=$GITHUB_REF"
           echo "ref_name=$GITHUB_REF_NAME"
-          echo "tag(env.TAG_NAME)=${TAG_NAME}"
+          echo "TAG_NAME=${TAG_NAME}"
           git rev-parse --short=8 HEAD || true
 
       - name: Use Node 20
@@ -58,8 +58,12 @@ jobs:
         run: npm run eval:trend:update
 
       - name: Commit trendline to main (if changed)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git checkout -B main origin/main
           test -f tools/eval/trends/quality-trend.md || exit 0
