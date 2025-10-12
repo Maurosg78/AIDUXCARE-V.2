@@ -93,9 +93,11 @@
     "check:no-soap-logs": "node scripts/check-no-soap-logs.mjs",
     "pretest": "pnpm run check:no-soap-logs",
     "lint:strict": "eslint .",
-    "eval:run": "tsx tools/eval/runner.ts",
-    "eval:report": "node tools/eval/reporter-md.cjs $(ls -1t tools/eval/reports/*.jsonl | head -n1)",
-    "eval": "npm run -s eval:run && npm run -s eval:report"
+    "eval:run": "node tools/eval/runner.ts",
+    "eval:report": "node tools/eval/reporter-md.cjs tools/eval/reports/latest.jsonl > tools/eval/reports/latest.report.md || true",
+    "eval": "npm run -s eval:run && npm run -s eval:report",
+    "eval:gate": "node tools/eval/scripts/eval-gate.cjs",
+    "eval:trend:update": "node tools/eval/scripts/update-trend.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
