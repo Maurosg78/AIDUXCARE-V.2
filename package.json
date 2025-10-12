@@ -94,8 +94,8 @@
     "pretest": "pnpm run check:no-soap-logs",
     "lint:strict": "eslint .",
     "eval:run": "tsx tools/eval/runner.ts",
-    "eval:report": "node tools/eval/reporter-md.cjs $(ls -1t tools/eval/reports/*.jsonl 2>/dev/null | head -n1) || true",
-    "eval": "npm run eval:run && npm run eval:report"
+    "eval:report": "node tools/eval/reporter-md.cjs $(ls -1t tools/eval/reports/*.jsonl | head -n1)",
+    "eval": "npm run -s eval:run && npm run -s eval:report"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
