@@ -25,17 +25,27 @@ function parseJsonl(filePath) {
   return lines.map(l => JSON.parse(l));
 }
 
-// Expect each record to have: { status: "pass"|"fail", severity?: "critical"|"minor"|... , duration_ms?: number, suite?: string }
+// Accepts flexible schemas:
+// - status or result: "pass"|"fail"
+// - or ok|passed|success: boolean
+// - optional: score (0..1) counts as pass if >= 0.5 unless explicit status/result says fail
 function computeMetrics(rows) {
   let passed = 0, failed = 0, critical = 0, minor = 0, durationMs = 0;
   const suites = new Set();
   for (const r of rows) {
     if (r.suite) suites.add(r.suite);
     if (typeof r.duration_ms === 'number') durationMs += r.duration_ms;
-    if (r.status === 'pass') passed++;
+
+    const s = ((r.status ?? r.result) + '' ).toLowerCase();
+    const boolPass = (r.ok === true || r.passed === true || r.success === true);
+    const scorePass = (typeof r.score === 'number' && r.score >= 0.5);
+    const isPass = s === 'pass' || boolPass || (s === 'undefined' && scorePass);
+
+    if (isPass) passed++;
     else {
       failed++;
-      if (r.severity === 'critical') critical++;
+      const sev = ((r.severity ?? r.level) + '').toLowerCase();
+      if (sev === 'critical' || sev === 'blocker') critical++;
       else minor++;
     }
   }
