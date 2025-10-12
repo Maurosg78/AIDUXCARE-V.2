@@ -1,4 +1,4 @@
-name: release-assets-and-trend
+name: release-assets-and-trend (run)
 
 on:
   push:
@@ -6,7 +6,12 @@ on:
       - '*'
   release:
     types: [published]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag a evaluar (opcional; si no se pasa, autodetecta)'
+        required: false
+        type: string
 
 jobs:
   eval-on-tag:
@@ -14,13 +19,12 @@ jobs:
     permissions:
       contents: write
     env:
-      # Tag robusto para ambos eventos (push tag / release published / manual)
-      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
+      TAG_NAME: ${{ inputs.tag != '' && inputs.tag || (github.event_name == 'release' && github.event.release.tag_name) || github.ref_name }}
     steps:
       - name: Checkout code (tag if available)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
+          ref: ${{ env.TAG_NAME }}
 
       - name: Debug context
         run: |
@@ -45,10 +49,9 @@ jobs:
           npm run eval:run
           LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
           TS="$(date -u +%Y%m%dT%H%M%SZ)"
-          TAG="${TAG_NAME:-$(git describe --tags --abbrev=0 || echo unknown)}"
-          JSON_OUT="tools/eval/reports/${TAG}__${TS}.jsonl"
+          JSON_OUT="tools/eval/reports/${TAG_NAME}__${TS}.jsonl"
           cp -f "$LATEST" "$JSON_OUT"
-          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG}__${TS}.report.md"
+          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG_NAME}__${TS}.report.md"
           npm run eval:gate
 
       - name: Update trendline (workspace)
@@ -58,9 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main
-          # asegura commit en main
           git checkout -B main origin/main
-          # mueve el archivo generado desde el checkout previo si hizo falta
           test -f tools/eval/trends/quality-trend.md || exit 0
           git add tools/eval/trends/quality-trend.md
           git diff --cached --quiet || git commit -m "chore(eval): update quality trendline
@@ -80,15 +81,3 @@ Signed-off-by: ROADMAP_READ"
             tools/eval/reports/${{ env.TAG_NAME }}__*.report.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-# reindex: 2025-10-12T12:11:01Z
-
-# reindex: 2025-10-12T13:02:08Z
-
-# reindex: 2025-10-12T19:46:03Z
-
-# reindex: 2025-10-12T20:30:55Z
-
-# reindex: 2025-10-12T20:53:54Z
-
-# reindex: 2025-10-12T21:15:16Z

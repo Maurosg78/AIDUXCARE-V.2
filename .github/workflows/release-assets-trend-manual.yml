@@ -1,0 +1,16 @@
+name: release-assets-and-trend (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a evaluar (opcional). Si vacío, autodetecta.'
+        required: false
+        type: string
+
+jobs:
+  run-eval:
+    uses: ./.github/workflows/release-assets-trend-run.yml
+    with:
+      tag: ${{ inputs.tag }}
+    secrets: inherit
