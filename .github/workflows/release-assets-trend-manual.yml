@@ -10,7 +10,7 @@ on:
 
 jobs:
   run-eval:
-    uses: ./.github/workflows/release-assets-trend-run.yml
+    uses: Maurosg78/AIDUXCARE-V.2/.github/workflows/release-assets-trend-run.yml@main
     with:
       tag: ${{ inputs.tag }}
     secrets: inherit
