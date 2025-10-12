@@ -58,3 +58,7 @@ tools/eval/reports/*.jsonl
 
 # cockpit eval outputs
 /tools/eval/reports/latest.*
+tools/eval/reports/*.report.md
+tools/eval/reports/*.jsonl
+tools/eval/reports/*.report.md
+tools/eval/reports/*.jsonl
