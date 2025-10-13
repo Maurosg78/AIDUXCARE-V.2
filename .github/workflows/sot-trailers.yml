@@ -1,0 +1,18 @@
+name: SoT Trailers
+
+on:
+  pull_request:
+    branches: [ "**" ]
+  push:
+    branches: [ "**" ]
+
+jobs:
+  check-trailers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify SoT trailers on last commit
+        run: scripts/check-sot-trailers.sh
