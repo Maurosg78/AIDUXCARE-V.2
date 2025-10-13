@@ -10,7 +10,7 @@ on:
 
 jobs:
   run-eval:
-    uses: Maurosg78/AIDUXCARE-V.2/.github/workflows/qa-eval-run.yml@main
+    uses: ./.github/workflows/qa-eval-run.yml@main
     with:
       tag: ${{ inputs.tag }}
     secrets: inherit
