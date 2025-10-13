@@ -1,5 +1,4 @@
 name: Data Validation (Zod)
-
 on:
   pull_request:
     branches: [ "**" ]
@@ -22,29 +21,12 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
-
-      - name: Install deps
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm i
-          fi
-
-      - name: Run validation tests (no emulator)
-        run: |
-          npx vitest run -t '' \
-            test/validation/notes.schema.spec.ts \
-            test/validation/audit-logs.schema.spec.ts \
-            test/validation/consents.schema.spec.ts \
-            test/validation/validate-samples.spec.ts
+      - run: npm ci
+      - run: chmod +x scripts/check-sot-trailers.sh || true
+      - run: npm run -s validate:data
