@@ -6,10 +6,16 @@ on:
       - '*'
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Manual tag (optional)'
+        required: false
+        type: string
   workflow_call:
     inputs:
       tag:
-        description: 'Tag a evaluar (opcional; si no se pasa, autodetecta)'
+        description: 'Tag when called as reusable (optional)'
         required: false
         type: string
 
@@ -19,20 +25,20 @@ jobs:
     permissions:
       contents: write
     env:
-      TAG_NAME: ${{ inputs.tag != '' && inputs.tag || (github.event_name == 'release' && github.event.release.tag_name) || github.ref_name }}
+      TAG_NAME: ${{ inputs.tag || (github.event_name == 'release' && github.event.release.tag_name) || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
     steps:
-      - name: Checkout code (tag if available)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG_NAME }}
-
       - name: Debug context
         run: |
           echo "event=$GITHUB_EVENT_NAME"
           echo "ref=$GITHUB_REF"
           echo "ref_name=$GITHUB_REF_NAME"
-          echo "tag(env.TAG_NAME)=${TAG_NAME}"
-          git rev-parse --short=8 HEAD || true
+          echo "inputs.tag=${{ inputs.tag }}"
+          echo "TAG_NAME=${{ env.TAG_NAME }}"
+
+      - name: Checkout (tag or fallback to SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG_NAME != '' && env.TAG_NAME || github.sha }}
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -49,9 +55,10 @@ jobs:
           npm run eval:run
           LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
           TS="$(date -u +%Y%m%dT%H%M%SZ)"
-          JSON_OUT="tools/eval/reports/${TAG_NAME}__${TS}.jsonl"
+          TAG_SAFE="${TAG_NAME:-${GITHUB_REF_NAME:-main}}"
+          JSON_OUT="tools/eval/reports/${TAG_SAFE}__${TS}.jsonl"
           cp -f "$LATEST" "$JSON_OUT"
-          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG_NAME}__${TS}.report.md"
+          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG_SAFE}__${TS}.report.md"
           npm run eval:gate
 
       - name: Update trendline (workspace)
@@ -77,7 +84,7 @@ Signed-off-by: ROADMAP_READ"
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            tools/eval/reports/${{ env.TAG_NAME }}__*.jsonl
-            tools/eval/reports/${{ env.TAG_NAME }}__*.report.md
+            tools/eval/reports/*__*.jsonl
+            tools/eval/reports/*__*.report.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
