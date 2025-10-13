@@ -1,4 +1,4 @@
-name: release-assets-and-trend (manual)
+name: release-assets-trend-manual
 
 on:
   workflow_dispatch:
@@ -9,8 +9,8 @@ on:
         type: string
 
 jobs:
-  run-eval:
-    uses: Maurosg78/AIDUXCARE-V.2/.github/workflows/release-assets-trend-run.yml@main
+  run-qa-eval:
+    uses: ./.github/workflows/qa-eval-run.yml
+    secrets: inherit
     with:
       tag: ${{ inputs.tag }}
-    secrets: inherit
