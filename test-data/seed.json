@@ -1,0 +1,36 @@
+{
+  "clinical_notes": [
+    {
+      "patient_id": "pt-001",
+      "clinic_id": "cl-001",
+      "author_id": "dr-001",
+      "status": "draft",
+      "subjective": "Patient reports lower back pain",
+      "objective": "ROM limited",
+      "assessment": "Acute lumbar strain",
+      "plan": "Ice, rest, follow-up in 3 days",
+      "createdAt": "2025-10-10T10:00:00Z",
+      "updatedAt": "2025-10-10T10:05:00Z"
+    },
+    {
+      "patient_id": "pt-002",
+      "clinic_id": "cl-001",
+      "author_id": "dr-002",
+      "status": "signed",
+      "subjective": "Headache 3 days",
+      "objective": "Vitals WNL",
+      "assessment": "Tension-type headache",
+      "plan": "Hydration, NSAIDs prn",
+      "createdAt": "2025-10-11T09:00:00Z",
+      "updatedAt": "2025-10-11T09:10:00Z",
+      "immutable_hash": "sha256:dummy",
+      "immutable_signed": true
+    }
+  ],
+  "audit_logs": [
+    { "entity_type": "note", "entity_id": "auto", "event": "note.created", "actor_id": "dr-001", "at": "2025-10-10T10:00:00Z" }
+  ],
+  "consents": [
+    { "patient_id": "pt-001", "scope": "data_processing", "grantedAt": "2025-10-09T08:00:00Z", "revokedAt": null }
+  ]
+}

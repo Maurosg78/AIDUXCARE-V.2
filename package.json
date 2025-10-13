@@ -70,7 +70,7 @@
     "fhir:profiles": "vitest --run src/core/fhir/__tests__/validators.test.ts",
     "fhir:adapters": "vitest --run src/core/fhir/__tests__/adapters.integration.test.ts",
     "fhir:all": "npm run fhir:contracts && npm run fhir:profiles && npm run fhir:adapters",
-    "prepare": "husky install",
+    "prepare": "husky",
     "smoke:uat": "node scripts/identitytoolkit-smoke.cjs UAT | tee reports/smoke-uat.txt",
     "smoke:prod": "node scripts/identitytoolkit-smoke.cjs PROD | tee reports/smoke-prod.txt",
     "check:uat": "export $(grep -v \"^#\" .env.local | xargs) && node scripts/identitytoolkit-smoke.cjs UAT",
@@ -97,7 +97,8 @@
     "eval:report": "node tools/eval/reporter-md.cjs tools/eval/reports/latest.jsonl > tools/eval/reports/latest.report.md || true",
     "eval": "npm run -s eval:run && npm run -s eval:report",
     "eval:gate": "node tools/eval/scripts/eval-gate.cjs",
-    "eval:trend:update": "node tools/eval/scripts/update-trend.cjs"
+    "eval:trend:update": "node tools/eval/scripts/update-trend.cjs",
+    "validate:data": "vitest run -t \"\" test/validation/*.schema.spec.ts test/validation/validate-samples.spec.ts && scripts/check-sot-trailers.sh"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -134,7 +135,8 @@
     "@babel/types": "^7.27.1",
     "@eslint/js": "^9.37.0",
     "@firebase/rules-unit-testing": "^5.0.0",
-    "@playwright/test": "^1.56.0",
+    "@google-cloud/firestore": "^7.11.6",
+    "@playwright/test": "^1.54.2",
     "@storybook/react": "^8.6.14",
     "@storybook/types": "^8.6.14",
     "@testing-library/jest-dom": "^6.9.0",
