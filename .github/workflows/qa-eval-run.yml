@@ -43,7 +43,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: HUSKY=0 npm ci
       - name: Run QA eval
         run: npm run eval
       - name: Tag current eval report with QA gate tag
