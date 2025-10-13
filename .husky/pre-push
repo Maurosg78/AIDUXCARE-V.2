@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
 set -e
 echo "🚦 pre-push: running Zod validation tests + SoT trailers…"
 npx vitest run -t '' \
