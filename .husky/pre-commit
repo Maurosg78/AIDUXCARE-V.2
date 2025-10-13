@@ -1,1 +1,4 @@
-exit 0
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+echo "🔎 Running data validation (Zod) + SoT trailers…"
+npm run -s validate:data || exit $?
