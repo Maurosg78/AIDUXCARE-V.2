@@ -10,7 +10,7 @@ on:
 
 jobs:
   run-eval:
-    uses: ./.github/workflows/qa-eval-run.yml@main
+    uses: ./.github/workflows/qa-eval-run.yml
     with:
       tag: ${{ inputs.tag }}
     secrets: inherit
