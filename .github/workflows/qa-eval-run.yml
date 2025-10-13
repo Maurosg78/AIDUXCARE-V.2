@@ -1,4 +1,4 @@
-name: release-assets-and-trend (run)
+name: qa-eval-run (fresh-id)
 
 on:
   push:
