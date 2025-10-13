@@ -78,6 +78,7 @@ jobs:
         if: always()
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.GATE_TAG }}
           files: |
             tools/eval/reports/*__*.jsonl
             tools/eval/reports/*__*.report.md
