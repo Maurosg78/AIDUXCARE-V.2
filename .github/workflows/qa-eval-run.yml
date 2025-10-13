@@ -32,53 +32,48 @@ jobs:
           echo "event=$GITHUB_EVENT_NAME"
           echo "ref=$GITHUB_REF"
           echo "ref_name=$GITHUB_REF_NAME"
-          echo "inputs.tag=${{ inputs.tag }}"
           echo "TAG_NAME=${{ env.TAG_NAME }}"
-
-      - name: Checkout (tag or fallback to SHA)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG_NAME != '' && env.TAG_NAME || github.sha }}
-
-      - name: Use Node 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install deps
+          cache: 'npm'
+      - name: Install dependencies
         run: npm ci
-
-      - name: Run eval and report
+      - name: Run QA eval
+        run: npm run eval
+      - name: Tag current eval report with QA gate tag
+        if: always()
         run: |
           set -euo pipefail
-          mkdir -p tools/eval/reports
-          npm run eval:run
-          LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
-          TS="$(date -u +%Y%m%dT%H%M%SZ)"
-          TAG_SAFE="${TAG_NAME:-${GITHUB_REF_NAME:-main}}"
-          JSON_OUT="tools/eval/reports/${TAG_SAFE}__${TS}.jsonl"
-          cp -f "$LATEST" "$JSON_OUT"
-          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG_SAFE}__${TS}.report.md"
-          npm run eval:gate
-
-      - name: Update trendline (workspace)
-        run: npm run eval:trend:update
-
-      - name: Commit trendline to main (if changed)
+          GATE_TAG="qa-eval-gate-$(date -u +%Y%m%dT%H%M%SZ)"
+          echo "GATE_TAG=$GATE_TAG" >> $GITHUB_ENV
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$GATE_TAG" -m "QA Eval Gate for ${{ env.TAG_NAME || github.sha }}"
+          git push origin "$GATE_TAG"
+      - name: Update trendline
+        if: always()
+        run: npm run eval:reporter -- trendline
+      - name: Commit trendline to main
+        if: always()
         run: |
           set -euo pipefail
           git fetch origin main
           git checkout -B main origin/main
           test -f tools/eval/trends/quality-trend.md || exit 0
           git add tools/eval/trends/quality-trend.md
-          git diff --cached --quiet || git commit -m "chore(eval): update quality trendline
-
-Market: CA
-Language: en-CA
-COMPLIANCE_CHECKED
-Signed-off-by: ROADMAP_READ"
+          git diff --cached --quiet || git commit -m "chore(eval): update quality trendline" \
+            -m "" \
+            -m "Market: CA" \
+            -m "Language: en-CA" \
+            -m "COMPLIANCE_CHECKED" \
+            -m "Signed-off-by: ROADMAP_READ"
           git push origin main
-
       - name: Upload assets to Release
         if: always()
         uses: softprops/action-gh-release@v2
