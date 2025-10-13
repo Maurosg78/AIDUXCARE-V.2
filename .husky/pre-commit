@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+
 . "$(dirname "$0")/_/husky.sh"
 
 echo "🔎 Running data validation (Zod) + SoT trailers…"
