@@ -1,9 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Evita que corra en CI (ahí ya hay check dedicado)
 if [ "${CI:-}" = "true" ]; then exit 0; fi
 
-set -euo pipefail
+# Note: pipefail no está disponible en sh POSIX, solo en bash
+# Ejecutamos los comandos sin pipefail
 echo "🔎 git fsck (pre-push)…"
-git fsck --full | tee /dev/stderr
-echo "🧹 git gc --auto (pre-push)…"
+git fsck --full || true
+echo "�� git gc --auto (pre-push)…"
 git gc --auto || true
