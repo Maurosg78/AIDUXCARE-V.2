@@ -1,0 +1,90 @@
+name: qa-eval-run (fresh-id)
+
+on:
+  push:
+    tags:
+      - '*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Manual tag (optional)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag when called as reusable (optional)'
+        required: false
+        type: string
+
+jobs:
+  eval-on-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG_NAME: ${{ inputs.tag || (github.event_name == 'release' && github.event.release.tag_name) || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+    steps:
+      - name: Debug context
+        run: |
+          echo "event=$GITHUB_EVENT_NAME"
+          echo "ref=$GITHUB_REF"
+          echo "ref_name=$GITHUB_REF_NAME"
+          echo "inputs.tag=${{ inputs.tag }}"
+          echo "TAG_NAME=${{ env.TAG_NAME }}"
+
+      - name: Checkout (tag or fallback to SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG_NAME != '' && env.TAG_NAME || github.sha }}
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run eval and report
+        run: |
+          set -euo pipefail
+          mkdir -p tools/eval/reports
+          npm run eval:run
+          LATEST="$(ls -1t tools/eval/reports/*.jsonl | head -n1)"
+          TS="$(date -u +%Y%m%dT%H%M%SZ)"
+          TAG_SAFE="${TAG_NAME:-${GITHUB_REF_NAME:-main}}"
+          JSON_OUT="tools/eval/reports/${TAG_SAFE}__${TS}.jsonl"
+          cp -f "$LATEST" "$JSON_OUT"
+          node tools/eval/reporter-md.cjs "$JSON_OUT" > "tools/eval/reports/${TAG_SAFE}__${TS}.report.md"
+          npm run eval:gate
+
+      - name: Update trendline (workspace)
+        run: npm run eval:trend:update
+
+      - name: Commit trendline to main (if changed)
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
+          test -f tools/eval/trends/quality-trend.md || exit 0
+          git add tools/eval/trends/quality-trend.md
+          git diff --cached --quiet || git commit -m "chore(eval): update quality trendline
+
+Market: CA
+Language: en-CA
+COMPLIANCE_CHECKED
+Signed-off-by: ROADMAP_READ"
+          git push origin main
+
+      - name: Upload assets to Release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            tools/eval/reports/*__*.jsonl
+            tools/eval/reports/*__*.report.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
