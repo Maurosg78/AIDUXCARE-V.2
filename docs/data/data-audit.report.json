@@ -1,0 +1,86 @@
+{
+  "generatedAtISO": "2025-10-13T16:06:33.039Z",
+  "collectionsInventory": {
+    "notes": {
+      "total": 2,
+      "byStatus": {
+        "draft": 1,
+        "signed": 1,
+        "other": 0
+      }
+    },
+    "audit_logs": {
+      "total": 1
+    },
+    "consents": {
+      "total": 1
+    }
+  },
+  "schemaConformity": {
+    "notesRequiredFields": [
+      "patient_id",
+      "clinic_id",
+      "author_id",
+      "status",
+      "createdAt",
+      "updatedAt"
+    ],
+    "sampleChecked": 2,
+    "issues": {
+      "missingRequired": [],
+      "invalidStatus": [],
+      "invalidTimestamps": []
+    }
+  },
+  "samples": {
+    "notes": [
+      {
+        "id": "MexcFQDqCQm6CsgtAsRy",
+        "patient_id": "pt-002",
+        "clinic_id": "cl-001",
+        "author_id": "dr-002",
+        "status": "signed",
+        "subjective": "Headache 3 days",
+        "objective": "Vitals WNL",
+        "assessment": "Tension-type headache",
+        "plan": "Hydration, NSAIDs prn",
+        "createdAt": "2025-10-11T09:00:00Z",
+        "updatedAt": "2025-10-11T09:10:00Z",
+        "immutable_hash": "sha256:dummy",
+        "immutable_signed": true
+      },
+      {
+        "id": "VV5Ufi1qzEEJMkpXsSWz",
+        "patient_id": "pt-001",
+        "clinic_id": "cl-001",
+        "author_id": "dr-001",
+        "status": "draft",
+        "subjective": "Patient reports lower back pain",
+        "objective": "ROM limited",
+        "assessment": "Acute lumbar strain",
+        "plan": "Ice, rest, follow-up in 3 days",
+        "createdAt": "2025-10-10T10:00:00Z",
+        "updatedAt": "2025-10-10T10:05:00Z"
+      }
+    ],
+    "audit_logs": [
+      {
+        "id": "Wcnclt3zqZTsuYDxSx1I",
+        "entity_type": "note",
+        "entity_id": "auto",
+        "event": "note.created",
+        "actor_id": "dr-001",
+        "at": "2025-10-10T10:00:00Z"
+      }
+    ],
+    "consents": [
+      {
+        "id": "kczSDgwTFr1JBre8FtU0",
+        "patient_id": "pt-001",
+        "scope": "data_processing",
+        "grantedAt": "2025-10-09T08:00:00Z",
+        "revokedAt": null
+      }
+    ]
+  }
+}
