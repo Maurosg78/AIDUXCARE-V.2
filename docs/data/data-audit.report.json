@@ -1,5 +1,5 @@
 {
-  "generatedAtISO": "2025-10-13T16:06:33.039Z",
+  "generatedAtISO": "2025-10-13T19:49:30.299Z",
   "collectionsInventory": {
     "notes": {
       "total": 2,
@@ -35,7 +35,7 @@
   "samples": {
     "notes": [
       {
-        "id": "MexcFQDqCQm6CsgtAsRy",
+        "id": "6F0NshUuz24dUOyStmp4",
         "patient_id": "pt-002",
         "clinic_id": "cl-001",
         "author_id": "dr-002",
@@ -50,7 +50,7 @@
         "immutable_signed": true
       },
       {
-        "id": "VV5Ufi1qzEEJMkpXsSWz",
+        "id": "GanyPH8OLO8J2wMNhFtY",
         "patient_id": "pt-001",
         "clinic_id": "cl-001",
         "author_id": "dr-001",
@@ -65,7 +65,7 @@
     ],
     "audit_logs": [
       {
-        "id": "Wcnclt3zqZTsuYDxSx1I",
+        "id": "9n1Yf2X1vTK9UJFDmZWA",
         "entity_type": "note",
         "entity_id": "auto",
         "event": "note.created",
@@ -75,7 +75,7 @@
     ],
     "consents": [
       {
-        "id": "kczSDgwTFr1JBre8FtU0",
+        "id": "GptYEk9xOEtpXtcmDYFX",
         "patient_id": "pt-001",
         "scope": "data_processing",
         "grantedAt": "2025-10-09T08:00:00Z",
