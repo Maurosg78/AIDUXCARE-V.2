@@ -1,19 +1,22 @@
 name: Data Validation (Zod)
+
 on:
   pull_request:
-    branches: [ "**" ]
+    branches: ["**"]
     paths:
       - "src/validation/**"
       - "test/validation/**"
       - "test-data/**"
+      - "scripts/check-sot-trailers.sh"
       - "package.json"
       - "package-lock.json"
   push:
-    branches: [ "**" ]
+    branches: ["**"]
     paths:
       - "src/validation/**"
       - "test/validation/**"
       - "test-data/**"
+      - "scripts/check-sot-trailers.sh"
       - "package.json"
       - "package-lock.json"
 
@@ -22,13 +25,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0@v4
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20.19.0"
           cache: "npm"
-      - run: npm ci
-      - run: chmod +x scripts/check-sot-trailers.sh || true
-      - run: npm run -s validate:data
+
+      - name: Install deps
+        run: npm ci || npm i
+
+      - name: Run validation tests + SoT trailers
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          chmod +x scripts/check-sot-trailers.sh
+          npm run -s validate:data

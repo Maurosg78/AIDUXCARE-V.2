@@ -1,10 +1,10 @@
 name: SoT Trailers
 
 on:
-  pull_request:
-    branches: [ "**" ]
   push:
-    branches: [ "**" ]
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
   check-trailers:
@@ -14,7 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-        with:
-          fetch-depth: 0
-      - name: Verify SoT trailers on last commit
-        run: scripts/check-sot-trailers.sh
+      - name: Verify SoT trailers on all commits in scope
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          chmod +x scripts/check-sot-trailers.sh
+          scripts/check-sot-trailers.sh
