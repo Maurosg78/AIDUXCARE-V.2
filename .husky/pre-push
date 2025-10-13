@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
 # Evita que corra en CI (ahí ya hay check dedicado)
 if [ "${CI:-}" = "true" ]; then exit 0; fi
 
+set -euo pipefail
 echo "🔎 git fsck (pre-push)…"
 git fsck --full | tee /dev/stderr
 echo "🧹 git gc --auto (pre-push)…"

@@ -58,7 +58,7 @@ jobs:
           git push origin "$GATE_TAG"
       - name: Update trendline
         if: always()
-        run: npm run eval:reporter -- trendline
+        run: npm run eval:report -- trendline
       - name: Commit trendline to main
         if: always()
         run: |
