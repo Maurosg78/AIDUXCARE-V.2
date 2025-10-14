@@ -23,7 +23,11 @@
         "src/*"
       ]
     },
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": [
+      "vitest/globals",
+      "node"
+    ]
   },
   "include": [
     "src",
