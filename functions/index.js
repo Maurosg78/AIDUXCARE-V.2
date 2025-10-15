@@ -105,3 +105,106 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 });
 
 console.log("[OK] functions/index.js: vertexAIProxy@v1 ready");
+
+// ===== Validation Wiring (auto-appended via script) =====
+try {
+  const { onRequest } = require("firebase-functions/v2/https");
+  const {
+    ClinicalNoteSchema,
+    AuditLogSchema,
+    ConsentSchema
+  } = require("../dist/validation"); // <- build desde src/validation (CJS)
+
+  const VALIDATION_ENABLED = process.env.VALIDATION_ENABLED !== 'false';
+
+  // POST /api/notes -> exports.apiCreateNote
+  if (typeof exports.apiCreateNote === "undefined") {
+    exports.apiCreateNote = onRequest(async (req, res) => {
+      if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+      if (VALIDATION_ENABLED) {
+        const result = ClinicalNoteSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+        }
+        req.body = result.data; // normalizado (aliases/timestamps)
+      }
+      return res.status(201).json({ ok: true, note: req.body });
+    });
+  }
+
+  // PUT /api/notes/:id -> exports.apiUpdateNote  (opcional)
+  if (typeof exports.apiUpdateNote === "undefined") {
+    exports.apiUpdateNote = onRequest(async (req, res) => {
+      if (req.method !== "PUT") return res.status(405).send("Method Not Allowed");
+      if (VALIDATION_ENABLED) {
+        const result = ClinicalNoteSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+        }
+        req.body = result.data;
+      }
+      return res.status(200).json({ ok: true, note: req.body });
+    });
+  }
+
+  // POST /api/notes/:id/sign -> exports.apiSignNote
+  if (typeof exports.apiSignNote === "undefined") {
+    exports.apiSignNote = onRequest(async (req, res) => {
+      if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+      if (VALIDATION_ENABLED) {
+        const result = ClinicalNoteSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+        }
+        const note = result.data;
+        const soapOk = !!(note.subjective && note.objective && note.assessment && note.plan);
+        if (note.status !== 'submitted' || !soapOk) {
+          return res.status(400).json({
+            error: "Cannot sign note",
+            details: { status: "must be 'submitted' with full SOAP" }
+          });
+        }
+        if (!note.immutable_hash || !note.immutable_signed) {
+          return res.status(400).json({
+            error: "Cannot sign note",
+            details: { immutable: "immutable_hash and immutable_signed required" }
+          });
+        }
+        req.body = note;
+      }
+      return res.status(200).json({ ok: true, signed: true });
+    });
+  }
+
+  // POST /api/audit-logs -> exports.apiAuditLog
+  if (typeof exports.apiAuditLog === "undefined") {
+    exports.apiAuditLog = onRequest(async (req, res) => {
+      if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+      if (VALIDATION_ENABLED) {
+        const result = AuditLogSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+        }
+      }
+      return res.status(201).json({ ok: true });
+    });
+  }
+
+  // POST /api/consents -> exports.apiConsent
+  if (typeof exports.apiConsent === "undefined") {
+    exports.apiConsent = onRequest(async (req, res) => {
+      if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+      if (VALIDATION_ENABLED) {
+        const result = ConsentSchema.safeParse(req.body);
+        if (!result.success) {
+          return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+        }
+      }
+      return res.status(201).json({ ok: true });
+    });
+  }
+
+} catch (e) {
+  console.error("Validation wiring skipped (maybe missing dist/validation):", e && e.message);
+}
+// ===== End Validation Wiring =====
