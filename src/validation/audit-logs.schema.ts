@@ -111,7 +111,7 @@ export const AuditLogSchema = z
       for (const k of hits) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: [container, k],
+          path: ([container as 'oldValue'|'newValue'|'meta', k as string | number] as (string | number)[]),
           message: "PHI/SOAP keys are not allowed",
         });
       }

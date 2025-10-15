@@ -98,7 +98,13 @@
     "eval": "npm run -s eval:run && npm run -s eval:report",
     "eval:gate": "node tools/eval/scripts/eval-gate.cjs",
     "eval:trend:update": "node tools/eval/scripts/update-trend.cjs",
-    "validate:data": "vitest run -t \"\" test/validation/*.schema.spec.ts test/validation/validate-samples.spec.ts && scripts/check-sot-trailers.sh"
+    "validate:data": "vitest run -t \"\" test/validation/*.schema.spec.ts test/validation/validate-samples.spec.ts && scripts/check-sot-trailers.sh",
+    "build:validation": "tsc -p tsconfig.json --outDir dist --declaration false --emitDeclarationOnly false",
+    "emulate:functions": "VALIDATION_ENABLED=true npx firebase emulators:start --only functions",
+    "build:validation:cjs": "tsc --declaration false --emitDeclarationOnly false --noEmit false --esModuleInterop true --skipLibCheck true --target ES2019 --module commonjs --outDir dist/validation src/validation/index.ts src/validation/notes.schema.ts src/validation/audit-logs.schema.ts src/validation/consents.schema.ts src/validation/timestamps.ts src/validation/errors.ts && node -e \"require(\\\"fs\\\").writeFileSync(\\\"dist/validation/package.json\\\",\\\"{\\\\\\\"type\\\\\\\":\\\\\\\"commonjs\\\\\\\"}\\\\n\\\")\"",
+    "smoke:functions": "scripts/smoke-functions.sh",
+    "emu:functions": "VALIDATION_ENABLED=true npx firebase emulators:start --only functions",
+    "emu:stop": "pkill -f \"firebase.*emulators:start\" || true"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -167,7 +173,7 @@
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "firebase-admin": "^13.4.0",
-    "firebase-tools": "13.22.0",
+    "firebase-tools": "^13.22.0",
     "globals": "^16.4.0",
     "happy-dom": "^18.0.1",
     "husky": "^9.1.7",
