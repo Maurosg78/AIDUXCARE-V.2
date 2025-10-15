@@ -14,23 +14,6 @@ echo "Functions => $BASE"
 # --- end: auto-fallbacks ---
 set -euo pipefail
 trap 'echo "❌ Error en línea $LINENO"; exit 1' ERR
-set -euo pipefail
-trap 'echo "❌ Error en línea $LINENO"; exit 1' ERR
-
-PROJECT_ID="${PROJECT_ID:-aiduxcare-v2-uat-dev}"
-
-# Descubre host:puerto del Functions emulator preguntando al Hub (tolerante)
-FUN_HOSTPORT="$(
-  curl -s http://127.0.0.1:4400/emulators 2>/dev/null \
-  | jq -r '(.functions.host+":"+(.functions.port|tostring)) // empty' 2>/dev/null \
-  || true
-)"
-if [[ -z "${FUN_HOSTPORT:-}" || "$FUN_HOSTPORT" == ":" ]]; then
-  FUN_HOSTPORT="127.0.0.1:5001"
-fi
-
-BASE="http://$FUN_HOSTPORT/$PROJECT_ID/us-central1"
-echo "Functions => $BASE"
 
 # Helper: curl con status esperado
 hit() {
@@ -62,8 +45,6 @@ if [[ -z "${BASE:-}" || "$BASE" == http://:null* ]]; then
 fi
 
 echo "Functions => $BASE"
-
-echo "== Salud (OPTIONS -> 204) =="
 for fn in apiCreateNote apiUpdateNote apiSignNote apiAuditLog apiConsent vertexAIProxy processWithVertexAI; do
   hit OPTIONS "$BASE/$fn" 204
 done
