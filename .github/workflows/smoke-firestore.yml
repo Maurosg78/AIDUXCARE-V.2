@@ -1,0 +1,31 @@
+name: Firestore Smoke
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "scripts/smoke-firestore.sh"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/smoke-firestore.yml"
+  push:
+    branches: [ chore/smoke-firestore, chore/smoke-firestore-v2 ]
+jobs:
+  firestore-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install firebase-tools & jq
+        run: |
+          npm i -g firebase-tools@13.x
+          sudo apt-get update -y && sudo apt-get install -y jq netcat-openbsd
+      - name: Start Firestore emulator
+        env:
+          PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev' }}
+        run: |
+          firebase emulators:start --only firestore --project "$PROJECT_ID" > /tmp/firestore.emu.log 2>&1 &
+          for i in {1..40}; do nc -z 127.0.0.1 8080 && break; sleep 0.5; done
+      - name: Run smoke
+        run: bash -x scripts/smoke-firestore.sh
