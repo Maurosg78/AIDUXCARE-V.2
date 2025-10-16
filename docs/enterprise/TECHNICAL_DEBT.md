@@ -45,5 +45,5 @@ Auto-delete on merge is enabled, preventing future accumulation.
 ---
 
 **Status:** Tracked  
-**Issue:** #245  
+**Issue:** #246  
 **Market:** CA · **Language:** en-CA
