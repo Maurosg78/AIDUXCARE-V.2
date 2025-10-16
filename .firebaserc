@@ -1,3 +1,5 @@
 {
-  "projects": { "default": "demo-audit" }
+  "projects": {
+    "default": "aiduxcare-v2-uat-dev"
+  }
 }
