@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
-set -euo pipefail
-# Evita que corra en CI (ahí ya hay check dedicado)
-if [ "${CI:-}" = "true" ]; then exit 0; fi
-
-echo "🔎 git fsck (pre-push)…"
-git fsck --full | tee /dev/stderr
-echo "🧹 git gc --auto (pre-push)…"
-git gc --auto || true
+set -e
+echo "🚦 pre-push: running Zod validation tests + SoT trailers…"
+npx vitest run -t '' \
+  test/validation/notes.schema.spec.ts \
+  test/validation/audit-logs.schema.spec.ts \
+  test/validation/consents.schema.spec.ts \
+  test/validation/validate-samples.spec.ts
+scripts/check-sot-trailers.sh
+echo "✅ pre-push checks passed."

@@ -62,3 +62,6 @@ tools/eval/reports/*.report.md
 tools/eval/reports/*.jsonl
 tools/eval/reports/*.report.md
 tools/eval/reports/*.jsonl
+
+# Local backups de index.js
+functions/index.js.pre-esm.*

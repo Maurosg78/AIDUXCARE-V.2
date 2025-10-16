@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
-if (!process.env.CI) {
-  console.log('CI not detected – installing Playwright browsers...');
-  execSync('npx playwright install', { stdio: 'inherit' });
+if (process.env.CI === 'true' || process.env.PW_INSTALL === '1') {
+  console.log('Installing Playwright browsers...');
+  // Descomenta si quieres realmente descargar en CI:
+  // require('child_process').execSync('npx playwright install', { stdio: 'inherit' });
 } else {
-  console.log('CI detected – skipping Playwright browser download.');
+  console.log('CI not detected – skipping Playwright browsers...');
 }

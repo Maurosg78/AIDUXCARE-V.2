@@ -1,25 +1,16 @@
-[![CI](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml/badge.svg)](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml)
+# AiDuxCare V2
 
-# AiduxCare V2
+[![Data Validation (Zod)](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/data-validation.yml/badge.svg)](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/data-validation.yml)
+[![SoT Trailers](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/sot-trailers.yml/badge.svg)](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/sot-trailers.yml)
 
-[![CI](https://github.com/Maurosg78/AIDUXCARE-V.2/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-![Node](https://img.shields.io/badge/node-%E2%89%A520.x-blue)
-![License](https://img.shields.io/badge/license-Private-inactive)
+## Data Validation (Zod)
+Quality gate de datos (docs-only thread). No requiere emulador para correr tests.
 
-**Single Source of Truth (SSoT)** for onboarding and investors lives in:  
-- **Project Handbook** → [`/docs/PROJECT_HANDBOOK.md`](docs/PROJECT_HANDBOOK.md)  
-- **Processes** (DoR/DoD, Release) → [`/docs/processes`](docs/processes)  
-- **Technical** (Architecture, Deployment, API) → [`/docs/technical`](docs/technical)
+### Run local (sin watcher)
+```bash
+npm run -s validate:data
+Data Validation (Zod): corre en PR/push sobre src/validation/**, test/validation/**, test-data/**
 
-### Quick start (dev)
-- Requirements: Node ≥ 20, npm ≥ 10
-- Install: `npm ci`
-- Build: `npm run build`
-- Tests (JS/TS): `npm test`
-- **Python legacy tests are isolated**: see `tests/_legacy_python` (not executed in CI)
+SoT Trailers: falla si faltan trailers de Source of Truth
 
-### Contributing
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). PRs must:
-- Be in **English**
-- Reference the relevant Handbook sections (deep links)
-- Pass CI (docs-only PRs are CI-light)
+Market: CA · Language: en-CA

@@ -1,0 +1,14 @@
+name: test-reusable-minimal
+
+on:
+  workflow_call:
+    inputs:
+      test_input:
+        required: false
+        type: string
+
+jobs:
+  test_job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Input was ${{ inputs.test_input || 'empty' }}"

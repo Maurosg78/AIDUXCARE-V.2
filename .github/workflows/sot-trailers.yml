@@ -1,0 +1,24 @@
+name: SoT Trailers
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  check-trailers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify SoT trailers on all commits in scope
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          chmod +x scripts/check-sot-trailers.sh
+          scripts/check-sot-trailers.sh

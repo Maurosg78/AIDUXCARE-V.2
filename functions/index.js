@@ -105,3 +105,124 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 });
 
 console.log("[OK] functions/index.js: vertexAIProxy@v1 ready");
+
+
+// ===== Validation Wiring v2 (ESM-friendly) =====
+try {
+  const { onRequest } = require("firebase-functions/v2/https");
+  const { pathToFileURL } = require("url");
+  const path = require("path");
+
+  const VALIDATION_ENABLED = process.env.VALIDATION_ENABLED !== 'false';
+
+  let __schemasPromise;
+  function loadSchemas() {
+    if (!__schemasPromise) {
+      const fileUrl = pathToFileURL(
+        path.resolve(__dirname, "../dist/validation/index.cjs")
+      ).href;
+      __schemasPromise = import(fileUrl);
+    }
+    return __schemasPromise;
+  }
+
+  // POST /api/notes -> create
+  exports.apiCreateNote = exports.apiCreateNote || onRequest(async (req, res) => {
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+    if (VALIDATION_ENABLED) {
+      const { ClinicalNoteSchema } = await loadSchemas().catch((e) => {
+        console.error("Validation module load failed:", e && e.message);
+        return {};
+      });
+      if (!ClinicalNoteSchema) return res.status(500).json({ error: "Validation module unavailable" });
+      const result = ClinicalNoteSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+      }
+      req.body = result.data;
+    }
+    return res.status(201).json({ ok: true, note: req.body });
+  });
+
+  // PUT /api/notes/:id -> update
+  exports.apiUpdateNote = exports.apiUpdateNote || onRequest(async (req, res) => {
+    if (req.method !== "PUT") return res.status(405).send("Method Not Allowed");
+    if (VALIDATION_ENABLED) {
+      const { ClinicalNoteSchema } = await loadSchemas().catch((e) => {
+        console.error("Validation module load failed:", e && e.message);
+        return {};
+      });
+      if (!ClinicalNoteSchema) return res.status(500).json({ error: "Validation module unavailable" });
+      const result = ClinicalNoteSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+      }
+      req.body = result.data;
+    }
+    return res.status(200).json({ ok: true, note: req.body });
+  });
+
+  // POST /api/notes/:id/sign -> sign
+  exports.apiSignNote = exports.apiSignNote || onRequest(async (req, res) => {
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+    if (VALIDATION_ENABLED) {
+      const { ClinicalNoteSchema } = await loadSchemas().catch((e) => {
+        console.error("Validation module load failed:", e && e.message);
+        return {};
+      });
+      if (!ClinicalNoteSchema) return res.status(500).json({ error: "Validation module unavailable" });
+      const result = ClinicalNoteSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+      }
+      const note = result.data;
+      const soapOk = !!(note.subjective && note.objective && note.assessment && note.plan);
+      if (note.status !== 'submitted' || !soapOk) {
+        return res.status(400).json({ error: "Cannot sign note", details: { status: "must be 'submitted' with full SOAP" } });
+      }
+      if (!note.immutable_hash || !note.immutable_signed) {
+        return res.status(400).json({ error: "Cannot sign note", details: { immutable: "immutable_hash and immutable_signed required" } });
+      }
+      req.body = note;
+    }
+    return res.status(200).json({ ok: true, signed: true });
+  });
+
+  // POST /api/audit-logs
+  exports.apiAuditLog = exports.apiAuditLog || onRequest(async (req, res) => {
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+    if (VALIDATION_ENABLED) {
+      const { AuditLogSchema } = await loadSchemas().catch((e) => {
+        console.error("Validation module load failed:", e && e.message);
+        return {};
+      });
+      if (!AuditLogSchema) return res.status(500).json({ error: "Validation module unavailable" });
+      const result = AuditLogSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+      }
+    }
+    return res.status(201).json({ ok: true });
+  });
+
+  // POST /api/consents
+  exports.apiConsent = exports.apiConsent || onRequest(async (req, res) => {
+    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+    if (VALIDATION_ENABLED) {
+      const { ConsentSchema } = await loadSchemas().catch((e) => {
+        console.error("Validation module load failed:", e && e.message);
+        return {};
+      });
+      if (!ConsentSchema) return res.status(500).json({ error: "Validation module unavailable" });
+      const result = ConsentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: "Validation failed", details: result.error.format() });
+      }
+    }
+    return res.status(201).json({ ok: true });
+  });
+
+} catch (e) {
+  console.error("Validation wiring v2 failed:", e && e.message);
+}
+// ===== End Validation Wiring v2 =====
