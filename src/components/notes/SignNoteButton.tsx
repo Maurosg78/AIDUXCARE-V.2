@@ -3,7 +3,7 @@
  * Only visible when note status is 'submitted'
  */
 
-import { Button } from '@/components/ui/button';
+import Button from '@/components/ui/button';
 import { PenLine } from 'lucide-react';
 
 export interface SignNoteButtonProps {

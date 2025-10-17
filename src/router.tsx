@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProfessionalWorkflowPage from "./pages/ProfessionalWorkflowPage";
 import DebugAudioPage from "./pages/DebugAudioPage";
 import TestFullWorkflowPage from "./pages/TestFullWorkflowPage";
+import PatientHistoryPage from "./pages/PatientHistoryPage";
 
 export default function AppRouter() {
   return (
@@ -19,6 +20,7 @@ export default function AppRouter() {
         <Route path="/professional-workflow" element={<ProfessionalWorkflowPage />} />
         <Route path="/debug-audio" element={<DebugAudioPage />} />
         <Route path="/test-workflow" element={<TestFullWorkflowPage />} />
+        <Route path="/patient-history/:patientId" element={<PatientHistoryPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

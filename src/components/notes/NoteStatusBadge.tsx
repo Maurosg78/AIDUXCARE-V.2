@@ -3,7 +3,7 @@
  * Shows: Draft, Ready to Sign, or Signed
  */
 
-import { Badge } from '@/components/ui/badge';
+import Badge from '@/components/ui/badge';
 import { CheckCircle2, Clock, Edit3 } from 'lucide-react';
 
 export interface NoteStatusBadgeProps {
