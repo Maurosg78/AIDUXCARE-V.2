@@ -1,16 +1,12 @@
 /**
  * Hook for fetching and filtering patient clinical notes history
- * Provides loading state, filtering, and error handling
- * 
- * @example
- * const { notes, filters, setFilters, loading } = usePatientHistory('patient-1');
+ * Provides loading state, filtering, and error handling with toast notifications
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ClinicalNote } from '@/types/notes';
 import { getPatientNotes } from '@/api/__mocks__/notes';
-// TODO: Switch to real API when backend ready
-// import { getPatientNotes } from '@/api/notes';
+import { useErrorToast } from '@/hooks/useErrorToast';
 
 export interface PatientHistoryFilters {
   status?: 'draft' | 'submitted' | 'signed' | 'all';
@@ -34,6 +30,7 @@ export const usePatientHistory = (patientId: string): UsePatientHistoryResult =>
   const [filters, setFilters] = useState<PatientHistoryFilters>({ status: 'all' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const { showApiError, showSuccess } = useErrorToast();
 
   // Fetch notes from API
   const fetchHistory = useCallback(async () => {
@@ -49,14 +46,19 @@ export const usePatientHistory = (patientId: string): UsePatientHistoryResult =>
         b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()
       );
       setAllNotes(sortedNotes);
+      
+      if (notes.length === 0) {
+        showSuccess('Patient History', 'No previous notes found for this patient');
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch patient history');
       setError(error);
+      showApiError(error);
       console.error('❌ Failed to fetch patient history:', error);
     } finally {
       setLoading(false);
     }
-  }, [patientId]);
+  }, [patientId, showApiError, showSuccess]);
 
   // Auto-fetch on mount and patientId change
   useEffect(() => {
