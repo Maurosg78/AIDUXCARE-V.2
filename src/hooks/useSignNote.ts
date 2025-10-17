@@ -1,16 +1,11 @@
 /**
  * Hook for signing clinical notes
- * Provides loading state and error handling for sign operations
- * 
- * @example
- * const { signNote, isLoading, error } = useSignNote();
- * await signNote(noteId);
+ * Provides loading state and error handling for sign operations with toast notifications
  */
 
 import { useState, useCallback } from 'react';
 import { signNote as signNoteAPI } from '@/api/__mocks__/notes';
-// TODO: Switch to real API when backend ready
-// import { signNote as signNoteAPI } from '@/api/notes';
+import { useErrorToast } from '@/hooks/useErrorToast';
 
 export interface UseSignNoteResult {
   signNote: (noteId: string) => Promise<void>;
@@ -22,6 +17,7 @@ export interface UseSignNoteResult {
 export const useSignNote = (): UseSignNoteResult => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const { showApiError, showSuccess } = useErrorToast();
 
   const clearError = useCallback(() => {
     setError(null);
@@ -29,7 +25,10 @@ export const useSignNote = (): UseSignNoteResult => {
 
   const signNote = useCallback(async (noteId: string): Promise<void> => {
     if (!noteId) {
-      throw new Error('Note ID is required');
+      const error = new Error('Note ID is required');
+      setError(error);
+      showApiError(error);
+      throw error;
     }
 
     setIsLoading(true);
@@ -42,18 +41,24 @@ export const useSignNote = (): UseSignNoteResult => {
         throw new Error('Failed to sign note');
       }
 
+      showSuccess(
+        'Note Signed Successfully',
+        'The clinical note has been signed and is now read-only.'
+      );
+      
       console.log('✅ Note signed successfully:', response.note);
       
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error signing note');
       setError(error);
+      showApiError(error);
       console.error('❌ Failed to sign note:', error);
       throw error;
       
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showApiError, showSuccess]);
 
   return {
     signNote,
