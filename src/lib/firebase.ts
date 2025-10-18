@@ -3,7 +3,7 @@
  */
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeFirestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 const envTarget = import.meta.env.VITE_ENV_TARGET || 'PROD';
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
@@ -23,7 +23,7 @@ if (envTarget === 'PROD' && useEmulators) {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, { experimentalForceLongPolling: true, experimentalAutoDetectLongPolling: true, useFetchStreams: false });
 
 if (useEmulators) {
   // 🔌 Conecta a emuladores locales explícitamente

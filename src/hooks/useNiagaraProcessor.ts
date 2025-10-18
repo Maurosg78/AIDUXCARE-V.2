@@ -1,49 +1,62 @@
-import { useState } from 'react';
-import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
-import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
+import { parseVertexResponse } from "@/core/niagara/responseParser";
+import { normalizeVertexResponse } from "/src/utils/cleanVertexResponse";
+import { useState } from "react";
+import { VertexAIServiceViaFirebase } from "../services/vertex-ai-service-firebase";
 
 export const useNiagaraProcessor = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(null);
+  const [niagaraResults, setNiagaraResults] = useState<ClinicalAnalysis | null>(
+    null,
+  );
   const [soapNote, setSoapNote] = useState<string | null>(null);
-  
+
   const processText = async (text: string) => {
     if (!text?.trim()) return null;
     setIsAnalyzing(true);
     try {
-      const response = await VertexAIServiceViaFirebase.processWithNiagara(text);
+      const response =
+        await VertexAIServiceViaFirebase.processWithNiagara(text);
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);
-      const cleaned = normalizeVertexResponse(response);
+      const cleaned = (() => {
+        const rawText =
+          typeof response?.text === "string"
+            ? response.text
+            : typeof response === "string"
+              ? response
+              : "";
+        const parsed = parseVertexResponse(rawText);
+        return normalizeVertexResponse(parsed);
+      })();
       console.log("Cleaned response:", cleaned);
       setNiagaraResults(cleaned);
       return cleaned;
     } catch (error) {
-      console.error('Error procesando con Niagara:', error);
+      console.error("Error procesando con Niagara:", error);
       return null;
     } finally {
       setIsAnalyzing(false);
     }
   };
-  
+
   const generateSOAPNote = async () => {
     if (!niagaraResults) return null;
     const s = niagaraResults;
     const soap = `SOAP Note
-S: ${s.motivo_consulta || 'N/A'}
-O: Hallazgos: ${s.hallazgos_relevantes?.join(', ') || 'N/A'}
-A: ${s.diagnosticos_probables?.join(', ') || 'N/A'}
-P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
+S: ${s.motivo_consulta || "N/A"}
+O: Hallazgos: ${s.hallazgos_relevantes?.join(", ") || "N/A"}
+A: ${s.diagnosticos_probables?.join(", ") || "N/A"}
+P: ${s.plan_tratamiento_sugerido?.join(", ") || "N/A"}`;
     setSoapNote(soap);
     return soap;
   };
-  
+
   return {
     processText,
     generateSOAPNote,
     niagaraResults,
     soapNote,
-    isProcessing: isAnalyzing
+    isProcessing: isAnalyzing,
   };
 };
 
