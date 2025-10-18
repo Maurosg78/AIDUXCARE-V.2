@@ -32,7 +32,7 @@ export const usePatientHistory = (patientId: string): UsePatientHistoryResult =>
   const [error, setError] = useState<Error | null>(null);
   const { showApiError, showSuccess } = useErrorToast();
 
-  // Fetch notes from API
+  // Fetch notes from API - FIXED: Remove toast dependencies from useCallback
   const fetchHistory = useCallback(async () => {
     if (!patientId) return;
     
@@ -40,12 +40,14 @@ export const usePatientHistory = (patientId: string): UsePatientHistoryResult =>
     setError(null);
     
     try {
+      console.log('🔧 FIXED: Fetching patient history for:', patientId);
       const notes = await getPatientNotes(patientId);
       // Sort by creation date, most recent first
       const sortedNotes = notes.sort((a, b) => 
         b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()
       );
       setAllNotes(sortedNotes);
+      console.log('✅ FIXED: Successfully loaded', notes.length, 'notes');
       
       if (notes.length === 0) {
         showSuccess('Patient History', 'No previous notes found for this patient');
@@ -58,9 +60,9 @@ export const usePatientHistory = (patientId: string): UsePatientHistoryResult =>
     } finally {
       setLoading(false);
     }
-  }, [patientId, showApiError, showSuccess]);
+  }, [patientId]); // ✅ FIXED: Only depend on patientId
 
-  // Auto-fetch on mount and patientId change
+  // Auto-fetch on mount and patientId change - FIXED: Stable dependency
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
