@@ -1,54 +1,70 @@
-import * as React from "react";
-import { Dialog } from "@headlessui/react";
+import React, { useState } from "react";
 
-export type SignNoteModalProps = {
+export interface SignNoteModalProps {
   open: boolean;
   onClose: () => void;
-  noteId?: string;
-  onSigned?: (signatureId: string) => void;
-};
+  /** Acción asíncrona que efectúa la firma; si falla, deja el modal abierto. */
+  onConfirm?: () => Promise<void>;
+  soapPreview: React.ReactElement;
+  /** Habilita/inhabilita la firma (ej. permisos). */
+  canSign: boolean;
+}
 
 export default function SignNoteModal({
   open,
   onClose,
-  noteId,
-  onSigned,
+  onConfirm,
+  soapPreview,
+  canSign,
 }: SignNoteModalProps) {
-  const handleConfirm = () => {
-    // TODO: integrar flujo de firma real (SoT)
-    onSigned?.(crypto?.randomUUID?.() ?? "signature-placeholder");
-    onClose();
-  };
+  const [submitting, setSubmitting] = useState(false);
+  if (!open) return null;
+
+  async function handleConfirm() {
+    if (!canSign || submitting) return;
+    if (!onConfirm) {
+      onClose();
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await onConfirm();
+      onClose();
+    } catch {
+      // opcional: toast/log; mantenemos el modal abierto si falla
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-          <Dialog.Title className="text-lg font-semibold">
-            Sign note
-          </Dialog.Title>
-          <p className="mt-2 text-sm text-gray-600">
-            Signature flow pending implementation{noteId ? ` (note ${noteId})` : ""}.
-          </p>
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              className="rounded-md bg-black px-3 py-1.5 text-sm text-white"
-            >
-              Confirm
-            </button>
-          </div>
-        </Dialog.Panel>
+    <div role="dialog" aria-modal="true" aria-labelledby="sign-note-title" className="fixed inset-0 z-50 grid place-items-center bg-black/40">
+      <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-lg">
+        <h2 id="sign-note-title" className="text-lg font-semibold mb-3">Review &amp; Sign</h2>
+        <div className="max-h-[60vh] overflow-auto border rounded p-3 mb-4">
+          {soapPreview}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-2 rounded border"
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+            disabled={!canSign || submitting}
+            aria-disabled={!canSign || submitting}
+          >
+            {submitting ? "Signing…" : "Confirm & Sign"}
+          </button>
+        </div>
       </div>
-    </Dialog>
+    </div>
   );
 }
