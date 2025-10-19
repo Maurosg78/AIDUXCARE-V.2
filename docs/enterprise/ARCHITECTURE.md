@@ -207,3 +207,7 @@ Security rules, RLS policies (for ancillary stores), and key management are spec
 ## Compliance Components
 See **Compliance Cockpit** for rule coverage and reporting: `./COMPLIANCE_COCKPIT.md`
 
+
+## Canonical Specs
+- [CANONICAL_PIPELINE.md](./CANONICAL_PIPELINE.md)
+- [CANONICAL_MATRIX.md](./CANONICAL_MATRIX.md)
