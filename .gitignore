@@ -65,3 +65,7 @@ tools/eval/reports/*.jsonl
 
 # Local backups de index.js
 functions/index.js.pre-esm.*
+.worktrees/
+tmp/
+tmp/**
+docs/_archive/mirror/**/.DS_Store
