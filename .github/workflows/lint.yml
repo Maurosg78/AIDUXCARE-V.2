@@ -1,13 +1,10 @@
-name: SoT Trailers
+name: Lint
 on:
   pull_request:
   push:
     branches: [ main ]
-
 jobs:
-  check-trailers:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +15,4 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm i --frozen-lockfile
-      - run: chmod +x scripts/check-sot-trailers.sh
-      - name: Check SoT trailers
-        run: scripts/check-sot-trailers.sh
+      - run: pnpm eslint . --max-warnings=0
