@@ -22,7 +22,7 @@
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test --project=chromium",
+    "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
@@ -104,7 +104,9 @@
     "build:validation:cjs": "tsc --declaration false --emitDeclarationOnly false --noEmit false --esModuleInterop true --skipLibCheck true --target ES2019 --module commonjs --outDir dist/validation src/validation/index.ts src/validation/notes.schema.ts src/validation/audit-logs.schema.ts src/validation/consents.schema.ts src/validation/timestamps.ts src/validation/errors.ts && node -e \"require(\\\"fs\\\").writeFileSync(\\\"dist/validation/package.json\\\",\\\"{\\\\\\\"type\\\\\\\":\\\\\\\"commonjs\\\\\\\"}\\\\n\\\")\"",
     "smoke:functions": "scripts/smoke-functions.sh",
     "emu:functions": "VALIDATION_ENABLED=true npx firebase emulators:start --only functions",
-    "emu:stop": "pkill -f \"firebase.*emulators:start\" || true"
+    "emu:stop": "pkill -f \"firebase.*emulators:start\" || true",
+    "eslint": "eslint --ext .ts,.tsx src tests || true",
+    "size": "size-limit"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -142,7 +144,8 @@
     "@eslint/js": "^9.37.0",
     "@firebase/rules-unit-testing": "^5.0.0",
     "@google-cloud/firestore": "^7.11.6",
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "^1.56.0",
+    "@size-limit/file": "^11.2.0",
     "@storybook/react": "^8.6.14",
     "@storybook/types": "^8.6.14",
     "@testing-library/jest-dom": "^6.9.0",
@@ -181,7 +184,9 @@
     "magic-string": "^0.30.17",
     "pathe": "^1.1.2",
     "postcss": "^8.4.47",
+    "prettier": "^3.6.2",
     "rollup-plugin-visualizer": "^6.0.3",
+    "size-limit": "^11.2.0",
     "tailwindcss": "^3.4.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
@@ -193,5 +198,11 @@
     "wait-on": "^8.0.3",
     "web-vitals": "^5.0.2",
     "zod": "^3.25.76"
-  }
+  },
+  "size-limit": [
+    {
+      "path": "dist/assets/index-*.js",
+      "limit": "900 kB"
+    }
+  ]
 }
