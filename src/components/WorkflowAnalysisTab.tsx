@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { t } from "../utils/translations";
 import React, { useEffect, useState } from 'react';
 import { Mic, MicOff, Brain, AlertCircle, User, Calendar, FileText } from 'lucide-react';
 import { ClinicalAnalysisResults } from './ClinicalAnalysisResults';
@@ -209,7 +209,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
       />
 
       <div className="flex flex-col gap-4">
-        <TranscriptionArea 
+        <TranscriptionArea isAnalyzing={isProcessing}  
           transcript={transcript}
           setTranscript={setTranscript}
           isRecording={isRecording}
@@ -262,7 +262,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
                 onClick={clearSelection}
                 className="text-xs text-gray-600 hover:text-gray-800 underline"
               >
-                Limpiar
+                Clear
               </button>
             </div>
           </div>
