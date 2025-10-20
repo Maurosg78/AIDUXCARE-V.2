@@ -2,9 +2,9 @@ import { safeLogger } from "../utils/safeLogger";
 import { useState, useEffect } from 'react';
 import { useLanguage } from "../contexts/LanguageContext";
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
-import { DocGenDisplay } from '../components/DocGenDisplay';
+import { DocGenDisplay } from '../components/SOAPDisplay';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
-import { ProfessionalDocGenGenerator } from "../services/DocGen-generator-professional";
+import { ProfessionalDocGenGenerator } from "../services/soap-generator-professional";
 import { useChunkedAnalysis } from '../hooks/useChunkedAnalysis';
 import { useTranscript } from '../hooks/useTranscript';
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
@@ -200,7 +200,6 @@ const ProfessionalWorkflowPage = () => {
               {activeTab === 'analysis' && (
                 <WorkflowAnalysisTab
                   selectedPatient={selectedPatient}
-                  onSelectPatient={setSelectedPatient}
                   transcript={transcript}
                   setTranscript={setTranscript}
                   isRecording={isRecording}
@@ -218,7 +217,7 @@ const ProfessionalWorkflowPage = () => {
               )}
               
               {activeTab === 'evaluation' && (
-                <PhysicalEvaluationTab />
+                <PhysicalEvaluationTab   selectedTests={[]} patientData={selectedPatient as any} onSaveResults={() => {}} />
               )}
               
               {activeTab === 'DocGen' && (

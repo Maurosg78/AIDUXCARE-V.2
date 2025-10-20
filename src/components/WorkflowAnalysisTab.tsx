@@ -1,3 +1,5 @@
+/* shim: optional props not present in caller */
+
 import { t } from "../utils/translations";
 import React, { useEffect, useState } from 'react';
 import { Mic, MicOff, Brain, AlertCircle, User, Calendar, FileText } from 'lucide-react';
@@ -27,7 +29,7 @@ interface WorkflowAnalysisTabProps {
   onGenerateSOAP: () => void;
   onContinueToEvaluation: () => void;
   physicalExamResults: any[];
-  handleExamResultsChange: (results: any[]) => void;
+  handleExamResultsChange: (niagaraResults: any[]) => void;
 }
 
 export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
@@ -58,8 +60,8 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   
   // Hook V2 con validación
   const { 
-    processTranscript, 
-    results, 
+    processText, 
+    niagaraResults, 
     validation, 
     metrics, 
     isProcessing, 
@@ -68,7 +70,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
-    niagaraResults || results,
+    niagaraResults || niagaraResults,
     onSelectionChange,
     { enabled: true }
   );
@@ -229,10 +231,10 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Resultados del análisis */}
-        {(niagaraResults || results) && (
+        {(niagaraResults || niagaraResults) && (
           <div className="mt-4">
             <ClinicalAnalysisResults 
-              results={adaptedResults || results}
+              niagaraResults={adaptedResults || niagaraResults}
               selectedIds={selectedIds}
               onSelectionChange={onSelectionChange}
             />
@@ -240,7 +242,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Contador de selección si hay resultados */}
-        {(niagaraResults || results) && selectedIds.length > 0 && (
+        {(niagaraResults || niagaraResults) && selectedIds.length > 0 && (
           <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
             <span className="text-sm text-blue-700">
               Elementos seleccionados: <strong>{selectedIds.length}</strong>

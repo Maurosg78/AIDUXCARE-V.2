@@ -17,10 +17,10 @@ export class ProfessionalSOAPGenerator {
     
     try {
       const response = await callVertexAI(prompt);
-      console.log("[SOAP] Raw response to parse:", response);
+      console.log("[DocGen] Raw response to parse:", response);
       return this.parseVertexResponse(response, request);
     } catch (error) {
-      console.error('[SOAP Generator] Vertex AI error:', error);
+      console.error('[DocGen Generator] Vertex AI error:', error);
       return this.generateFallbackSOAP(request);
     }
   }
@@ -129,7 +129,7 @@ Required JSON structure with specific medical content:
             return response;
           }
         } catch (error) {
-          console.error("[SOAP Parser] JSON truncated, using fallback");
+          console.error("[DocGen Parser] JSON truncated, using fallback");
           throw new Error("JSON_TRUNCATED");
         }
       })();
@@ -192,7 +192,7 @@ Required JSON structure with specific medical content:
 
       return { subjective, objective, assessment, plan, metadata };
     } catch (error) {
-      console.error('[SOAP Parser] Parse error:', error);
+      console.error('[DocGen Parser] Parse error:', error);
       return this.generateFallbackSOAP(request);
     }
   }
