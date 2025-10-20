@@ -1,9 +1,10 @@
+import { safeLogger } from "../utils/safeLogger";
 import { useState, useEffect } from 'react';
 import { useLanguage } from "../contexts/LanguageContext";
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
-import { SOAPDisplay } from '../components/SOAPDisplay';
+import { DocGenDisplay } from '../components/DocGenDisplay';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
-import { ProfessionalSOAPGenerator } from "../services/soap-generator-professional";
+import { ProfessionalDocGenGenerator } from "../services/DocGen-generator-professional";
 import { useChunkedAnalysis } from '../hooks/useChunkedAnalysis';
 import { useTranscript } from '../hooks/useTranscript';
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
@@ -22,7 +23,7 @@ interface PatientData {
 }
 
 const ProfessionalWorkflowPage = () => {
-  const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'DocGen'>('analysis');
   const { t } = useLanguage();
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
   const [transcript, setTranscript] = useState('');
@@ -30,8 +31,8 @@ const ProfessionalWorkflowPage = () => {
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const { setAnalysisResults: setSharedAnalysisResults } = useSharedWorkflowState();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [soapNote, setSoapNote] = useState<any>(null);
-  const [soapLoading, setSoapLoading] = useState(false);
+  const [DocGenNote, setDocGenNote] = useState<any>(null);
+  const [DocGenLoading, setDocGenLoading] = useState(false);
   const [shouldSuggestPro, setShouldSuggestPro] = useState(false);
   const [credits, setCredits] = useState(150);
   
@@ -41,7 +42,7 @@ const ProfessionalWorkflowPage = () => {
   
   const consumeCredits = (amount: number): boolean => {
     if (credits >= amount) {
-      console.log(`💳 Using ${amount} créditos. Remaining: ${credits - amount}`);
+      safeLogger.debug(`💳 Using ${amount} créditos. Remaining: ${credits - amount}`);
       setCredits(prev => prev - amount);
       return true;
     }
@@ -66,7 +67,7 @@ const ProfessionalWorkflowPage = () => {
     }
   }, []);
 
-  const canAccessSOAP = () => {
+  const canAccessDocGen = () => {
     return analysisResults && transcript && transcript.length > 50;
   };
 
@@ -82,7 +83,7 @@ const ProfessionalWorkflowPage = () => {
     const result = await analyzeWithChunking(transcript, false);
     
     if (result && result.analysis) {
-      console.log("✅ Análisis completado:", result);
+      safeLogger.debug("✅ Análisis completado:", result);
       (window as any).__lastAnalysisResult = result;
       setAnalysisResults(result.analysis);
       setSharedAnalysisResults(result.analysis);
@@ -92,25 +93,25 @@ const ProfessionalWorkflowPage = () => {
   const handleStartRecording = async () => {
     setIsRecording(true);
     await startRecording();
-    console.log("🎙️ Grabación iniciada");
+    safeLogger.debug("🎙️ Grabación iniciada");
   };
 
   const handleStopRecording = async () => {
     setIsRecording(false);
     await stopRecording();
     setTranscript(recordedTranscript);
-    console.log("⏹️ Grabación detenida");
+    safeLogger.debug("⏹️ Grabación detenida");
   };
 
-  const handleGenerateSOAP = async () => {
+  const handleGenerateDocGen = async () => {
     if (!analysisResults || !transcript) return;
     
-    setSoapLoading(true);
+    setDocGenLoading(true);
     
     try {
       const { completedTests } = useSharedWorkflowState.getState();
       
-      console.log('[SOAP] Starting generation with loading indicator...');
+      safeLogger.debug('[DocGen] Starting generation with loading indicator...');
       
       const extractedPatient = extractPatientFromTranscript(transcript);
       const patientData = extractedPatient 
@@ -119,10 +120,10 @@ const ProfessionalWorkflowPage = () => {
       
       const sessionType = extractedPatient?.sessionType || 'initial';
       
-      console.log('[SOAP Generation] Using patient data:', patientData);
-      console.log('[SOAP Generation] Session type:', sessionType);
+      safeLogger.debug('[DocGen] Using patient data:', patientData);
+      safeLogger.debug('[DocGen] Session type:', sessionType);
       
-      const soapRequest = {
+      const DocGenRequest = {
         analysisResults,
         physicalTestResults: completedTests || [],
         patientData,
@@ -134,14 +135,14 @@ const ProfessionalWorkflowPage = () => {
         }
       };
       
-      const soap = await ProfessionalSOAPGenerator.generateWithVertex(soapRequest);
-      setSoapNote(soap);
-      console.log('[SOAP] Generation completed successfully');
+      const DocGen = await ProfessionalDocGenGenerator.generateWithVertex(DocGenRequest);
+      setDocGenNote(DocGen);
+      safeLogger.debug('[DocGen] Generation completed successfully');
       
     } catch (error) {
-      console.error('[SOAP] Error generating:', error);
+      safeLogger.error('[DocGen] Error generating:', error);
     } finally {
-      setSoapLoading(false);
+      setDocGenLoading(false);
     }
   };
 
@@ -180,17 +181,17 @@ const ProfessionalWorkflowPage = () => {
                   {t.physicalEval}
                 </button>
                 <button
-                  onClick={() => canAccessSOAP() && setActiveTab('soap')}
-                  disabled={!canAccessSOAP()}
+                  onClick={() => canAccessDocGen() && setActiveTab('DocGen')}
+                  disabled={!canAccessDocGen()}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'soap'
+                    activeTab === 'DocGen'
                       ? 'border-blue-500 text-blue-600'
-                      : canAccessSOAP()
+                      : canAccessDocGen()
                         ? 'border-transparent text-gray-500 hover:text-gray-700'
                         : 'border-transparent text-gray-300 cursor-not-allowed'
                   }`}
                 >
-                  {t.soap} {!canAccessSOAP() && '(Requires Analysis)'}
+                  {t.DocGen} {!canAccessDocGen() && '(Requires Analysis)'}
                 </button>
               </nav>
             </div>
@@ -220,34 +221,34 @@ const ProfessionalWorkflowPage = () => {
                 <PhysicalEvaluationTab />
               )}
               
-              {activeTab === 'soap' && (
+              {activeTab === 'DocGen' && (
                 <div>
-                  {soapLoading ? (
+                  {DocGenLoading ? (
                     <div className="text-center py-12">
                       <div className="inline-flex items-center gap-4">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                         <div className="text-left">
-                          <p className="text-lg font-medium text-gray-700">Generating SOAP Note...</p>
+                          <p className="text-lg font-medium text-gray-700">Generating DocGen Note...</p>
                           <p className="text-sm text-gray-500">AI is analyzing clinical data and creating documentation</p>
                         </div>
                       </div>
                     </div>
-                  ) : soapNote ? (
-                    <SOAPDisplay soapNote={soapNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
+                  ) : DocGenNote ? (
+                    <DocGenDisplay DocGenNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-gray-500 mb-4">
-                        Ready to generate SOAP note from analysis data
+                        Ready to generate DocGen note from analysis data
                       </p>
                       <button
-                        onClick={handleGenerateSOAP}
-                        disabled={!analysisResults || soapLoading}
+                        onClick={handleGenerateDocGen}
+                        disabled={!analysisResults || DocGenLoading}
                         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 mx-auto"
                       >
-                        {soapLoading && (
+                        {DocGenLoading && (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         )}
-                        {soapLoading ? 'Generating...' : 'Generate SOAP Note'}
+                        {DocGenLoading ? 'Generating...' : 'Generate DocGen Note'}
                       </button>
                     </div>
                   )}
