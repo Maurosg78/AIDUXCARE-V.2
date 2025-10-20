@@ -203,7 +203,7 @@ const ProfessionalWorkflowPage = () => {
                   transcript={transcript}
                   setTranscript={setTranscript}
                   isRecording={isRecording}
-                  onStartRecording={handleStartRecording}
+                  startRecording={handleStartRecording}
                   onStopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
                   isProcessing={isProcessing}

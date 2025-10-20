@@ -1,11 +1,26 @@
-export interface ClinicalEntity { id?: string; label?: string; value?: string; confidence?: number }
-export interface PhysicalTestResult { id?: string; name?: string; result?: string; notes?: string }
-export interface SubjectiveSection { chief_complaint?: string; history?: string; medications?: string[] }
-export interface ObjectiveSection { findings?: string[]; tests?: PhysicalTestResult[] }
-export interface AssessmentSection { diagnosis?: string; red_flags?: string[] }
-export interface PlanSection { plan?: string; treatment_plan?: string; follow_up?: string }
-export interface SOAPMetadata { sessionId?: string; createdAt?: string; author?: string }
-
+export interface ClinicalEntity {
+  id?: string; label?: string; value?: string; confidence?: number;
+  type?: string; name?: string;
+}
+export interface PhysicalTestResult {
+  id?: string; name?: string; result?: string; notes?: string;
+  values?: any; interpretation?: string;
+}
+export interface SubjectiveSection {
+  chief_complaint?: string; history?: string; medications?: string[]; content?: string;
+}
+export interface ObjectiveSection {
+  findings?: string[]; tests?: PhysicalTestResult[]; content?: string;
+}
+export interface AssessmentSection {
+  diagnosis?: string; red_flags?: string[]; content?: string;
+}
+export interface PlanSection {
+  plan?: string; treatment_plan?: string; follow_up?: string; content?: string;
+}
+export interface SOAPMetadata {
+  sessionId?: string; createdAt?: string; author?: string; patientId?: string;
+}
 export interface EditableSOAPNote {
   subjective?: SubjectiveSection;
   objective?: ObjectiveSection;
@@ -13,7 +28,6 @@ export interface EditableSOAPNote {
   plan?: PlanSection;
   metadata?: SOAPMetadata;
 }
-
 export interface SOAPGenerationRequest {
   analysisResults: any;
   physicalTestResults: PhysicalTestResult[];

@@ -43,7 +43,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   isAnalyzing,
   isTranscribing,
   onAnalyze,
-  niagaraResults,
   selectedFindings,
   setSelectedFindings,
   onGenerateSOAP,
@@ -61,7 +60,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   // Hook V2 con validación
   const { 
     processText, 
-    niagaraResults, 
     validation, 
     metrics, 
     isProcessing, 
@@ -234,7 +232,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         {(niagaraResults || niagaraResults) && (
           <div className="mt-4">
             <ClinicalAnalysisResults 
-              niagaraResults={adaptedResults || niagaraResults}
+              results={adaptedResults || niagaraResults}
               selectedIds={selectedIds}
               onSelectionChange={onSelectionChange}
             />
