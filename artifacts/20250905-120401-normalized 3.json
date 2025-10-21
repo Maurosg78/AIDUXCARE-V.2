@@ -1,0 +1,34 @@
+{
+  "motivo_consulta": "Dolor interescapular de 3 días de evolución tras sobreesfuerzo por carga.",
+  "hallazgos_relevantes": [
+    "Adulto activo, sin comorbilidades conocidas.",
+    "Dolor entre las escápulas (interescapular).",
+    "Inicio hace 3 días.",
+    "Causa: sobreesfuerzo cargando asientos de furgoneta.",
+    "Ocupación: Músico, implica carga de instrumentos.",
+    "Sin irradiación.",
+    "Dolor NO lumbar."
+  ],
+  "diagnosticos_probables": [
+    "Distensión muscular de la musculatura interescapular (ej. romboides, trapecio medio).",
+    "Síndrome de dolor miofascial."
+  ],
+  "red_flags": [],
+  "evaluaciones_fisicas_sugeridas": [
+    "Observación postural estática y dinámica.",
+    "Palpación de la musculatura interescapular y paravertebral torácica.",
+    "Evaluación del rango de movimiento activo y pasivo de columna cervical y torácica, y cintura escapular.",
+    "Pruebas de fuerza muscular de la musculatura interescapular y estabilizadores escapulares.",
+    "Evaluación de la movilidad articular de la columna torácica y costillas."
+  ],
+  "plan_tratamiento_sugerido": [
+    "Educación sobre manejo del dolor y posturas.",
+    "Modificación de actividad (evitar sobreesfuerzos y cargas pesadas temporales).",
+    "Aplicación de termoterapia o crioterapia local.",
+    "Técnicas de terapia manual (masaje, movilizaciones articulares suaves).",
+    "Ejercicios de estiramiento suave para la musculatura afectada.",
+    "Ejercicios de fortalecimiento y estabilización escapular y torácica progresivos.",
+    "Reeducación postural y ergonómica (especialmente para su actividad como músico y cargas)."
+  ],
+  "riesgo_legal": "bajo"
+}

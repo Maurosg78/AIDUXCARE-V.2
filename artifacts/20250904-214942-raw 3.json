@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-214937",
+  "text": "{\n  \"motivo_consulta\": \"Dolor cervical de 5 días de evolución, que empeora con el movimiento.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente masculino, 45 años\",\n    \"Dolor cervical\",\n    \"5 días de evolución\",\n    \"Empeora con el movimiento\",\n    \"Adulto activo\",\n    \"Sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Cervicalgia mecánica aguda\",\n    \"Contractura muscular cervical\",\n    \"Disfunción articular cervical\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación de la postura cervical\",\n    \"Rango de movimiento cervical activo y pasivo\",\n    \"Palpación de la musculatura cervical y estructuras óseas\",\n    \"Evaluación neurológica superficial (sensibilidad, fuerza, reflejos) para descartar radiculopatía\",\n    \"Pruebas de provocación articular cervical\",\n    \"Evaluación de la movilidad de la cintura escapular y dorsal alta\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y ergonomía\",\n    \"Movilización suave y progresiva del cuello\",\n    \"Terapia manual para reducir la tensión muscular y mejorar la movilidad articular\",\n    \"Ejercicios de movilidad y fortalecimiento cervical\",\n    \"Aplicación de calor/frío local\",\n    \"Recomendaciones para actividades de la vida diaria\"\n  ],\n  \"riesgo_legal\": \"bajo\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor cervical de 5 días de evolución, que empeora con el movimiento.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente masculino, 45 años\",\n    \"Dolor cervical\",\n    \"5 días de evolución\",\n    \"Empeora con el movimiento\",\n    \"Adulto activo\",\n    \"Sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Cervicalgia mecánica aguda\",\n    \"Contractura muscular cervical\",\n    \"Disfunción articular cervical\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación de la postura cervical\",\n    \"Rango de movimiento cervical activo y pasivo\",\n    \"Palpación de la musculatura cervical y estructuras óseas\",\n    \"Evaluación neurológica superficial (sensibilidad, fuerza, reflejos) para descartar radiculopatía\",\n    \"Pruebas de provocación articular cervical\",\n    \"Evaluación de la movilidad de la cintura escapular y dorsal alta\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y ergonomía\",\n    \"Movilización suave y progresiva del cuello\",\n    \"Terapia manual para reducir la tensión muscular y mejorar la movilidad articular\",\n    \"Ejercicios de movilidad y fortalecimiento cervical\",\n    \"Aplicación de calor/frío local\",\n    \"Recomendaciones para actividades de la vida diaria\"\n  ],\n  \"riesgo_legal\": \"bajo\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.29588951498775157
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 226,
+      "candidatesTokenCount": 354,
+      "totalTokenCount": 1227,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 226
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 354
+        }
+      ],
+      "thoughtsTokenCount": 647
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T19:49:37.922894Z",
+    "responseId": "Ue25aI6qOJKS1dkP26_uaA"
+  }
+}

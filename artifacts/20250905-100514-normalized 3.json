@@ -1,0 +1,30 @@
+{
+  "motivo_consulta": "Dolor lumbar con irradiación a pierna derecha",
+  "hallazgos_relevantes": [
+    "Dolor lumbar de 3 días de evolución",
+    "Irradiación a pierna derecha",
+    "Ocupación: músico que carga instrumentos",
+    "Adulto activo, sin comorbilidades conocidas"
+  ],
+  "diagnosticos_probables": [
+    "Radiculopatía lumbar (posible ciática)",
+    "Lumbalgia mecánica",
+    "Hernia discal lumbar"
+  ],
+  "red_flags": [],
+  "evaluaciones_fisicas_sugeridas": [
+    "SLR",
+    "Neurological screen",
+    "Slump test",
+    "Femoral stretch test"
+  ],
+  "plan_tratamiento_sugerido": [
+    "Educación sobre manejo del dolor y ergonomía (especialmente para la carga de instrumentos)",
+    "Movilización suave y ejercicios de control motor lumbar (ej. estabilización core)",
+    "Terapia manual (ej. movilizaciones articulares, técnicas de tejidos blandos) si indicada",
+    "Ejercicios de neurodinamia si se confirma radiculopatía",
+    "Modificación de actividad y reposo relativo inicial si el dolor es agudo",
+    "Derivación médica si se identifican red flags o síntomas neurológicos progresivos"
+  ],
+  "riesgo_legal": "medio"
+}

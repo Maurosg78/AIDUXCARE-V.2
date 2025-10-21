@@ -1,0 +1,33 @@
+{
+  "motivo_consulta": "Dolor lumbar agudo de 3 días de evolución con irradiación y hormigueo en pierna derecha.",
+  "hallazgos_relevantes": [
+    "Paciente de 45 años",
+    "Dolor lumbar agudo",
+    "3 días de evolución",
+    "Irradiación hacia pierna derecha",
+    "Hormigueo en pierna derecha"
+  ],
+  "diagnosticos_probables": [
+    "Radiculopatía lumbar",
+    "Hernia discal lumbar",
+    "Ciática",
+    "Lumbalgia aguda"
+  ],
+  "red_flags": [],
+  "evaluaciones_fisicas_sugeridas": [
+    "Examen neurológico (reflejos, fuerza muscular, sensibilidad en dermatomas)",
+    "Pruebas de tensión neural (ej. Lasègue, Slump test)",
+    "Evaluación de la movilidad lumbar (rangos de movimiento activos y pasivos)",
+    "Palpación de la musculatura lumbar y glútea",
+    "Evaluación de la postura y marcha"
+  ],
+  "plan_tratamiento_sugerido": [
+    "Educación sobre el manejo del dolor y la postura",
+    "Movilización neural suave",
+    "Ejercicios de estabilización lumbar",
+    "Terapia manual para reducir la tensión muscular y mejorar la movilidad",
+    "Ejercicios de movilidad controlada y fortalecimiento progresivo",
+    "Recomendaciones ergonómicas y de actividad"
+  ],
+  "riesgo_legal": "medio"
+}

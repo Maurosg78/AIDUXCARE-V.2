@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-222739",
+  "text": "{\n  \"motivo_consulta\": \"Dolor cervical de 5 días de evolución con irradiación a brazo derecho.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor cervical de 5 días de evolución\",\n    \"Irradiación del dolor a brazo derecho\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía cervical\",\n    \"Cervicalgia mecánica\",\n    \"Síndrome miofascial cervical\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación neurológica completa (dermatomas, miotomas, reflejos del miembro superior derecho)\",\n    \"Rango de movimiento cervical activo y pasivo\",\n    \"Palpación de la musculatura cervical y paravertebral\",\n    \"Pruebas especiales para radiculopatía cervical (ej. Spurling, Distracción)\",\n    \"Pruebas de tensión neural del miembro superior (ULTT)\",\n    \"Evaluación postural\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Manejo del dolor (modalidades físicas si aplica)\",\n    \"Terapia manual (movilizaciones cervicales, técnicas de tejidos blandos)\",\n    \"Ejercicios terapéututicos (movilidad, fortalecimiento isométrico e isotónico, estabilización cervical)\",\n    \"Educación al paciente sobre postura, ergonomía y manejo de la actividad\",\n    \"Reeducación neuromuscular\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor cervical de 5 días de evolución con irradiación a brazo derecho.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor cervical de 5 días de evolución\",\n    \"Irradiación del dolor a brazo derecho\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía cervical\",\n    \"Cervicalgia mecánica\",\n    \"Síndrome miofascial cervical\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación neurológica completa (dermatomas, miotomas, reflejos del miembro superior derecho)\",\n    \"Rango de movimiento cervical activo y pasivo\",\n    \"Palpación de la musculatura cervical y paravertebral\",\n    \"Pruebas especiales para radiculopatía cervical (ej. Spurling, Distracción)\",\n    \"Pruebas de tensión neural del miembro superior (ULTT)\",\n    \"Evaluación postural\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Manejo del dolor (modalidades físicas si aplica)\",\n    \"Terapia manual (movilizaciones cervicales, técnicas de tejidos blandos)\",\n    \"Ejercicios terapéututicos (movilidad, fortalecimiento isométrico e isotónico, estabilización cervical)\",\n    \"Educación al paciente sobre postura, ergonomía y manejo de la actividad\",\n    \"Reeducación neuromuscular\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.8910346917346516
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 221,
+      "candidatesTokenCount": 339,
+      "totalTokenCount": 1697,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 221
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 339
+        }
+      ],
+      "thoughtsTokenCount": 1137
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T20:27:39.868146Z",
+    "responseId": "O_a5aLL-NL3rgLUPzPT-mAE"
+  }
+}

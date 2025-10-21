@@ -1,0 +1,7 @@
+
+// Agregar al App.tsx:
+import { LanguageSelector } from './components/LanguageSelector';
+
+// En el return del App, agregar:
+<LanguageSelector />
+
