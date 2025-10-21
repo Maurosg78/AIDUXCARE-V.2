@@ -52,7 +52,7 @@ export const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-medium text-gray-900">Contenido de la Consulta</h3>
+        <h3 className="font-medium text-gray-900">Consultation Content</h3>
         <div className="flex items-center gap-3">
           {transcript.length > 0 && (
             <span className="text-xs text-gray-500">{transcript.split(' ').length} palabras</span>

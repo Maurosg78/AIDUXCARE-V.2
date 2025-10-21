@@ -97,12 +97,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   return (
     <div className="flex flex-col gap-4">
       
-      {/* FILA 1: Alertas Médico-Legales */}
+      {/* FILA 1: Medical-Legal Alerts */}
       <div className="bg-red-50 rounded-lg p-4 border border-red-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <h3 className="font-semibold text-gray-800">Alertas Médico-Legales</h3>
+            <h3 className="font-semibold text-gray-800">Medical-Legal Alerts</h3>
           </div>
           <div className="flex gap-2">
             <button 
@@ -154,12 +154,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
       </div>
 
-      {/* FILA 2: Hallazgos Clínicos */}
+      {/* FILA 2: Clinical Findings */}
       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-800">Hallazgos Clínicos</h3>
+            <h3 className="font-semibold text-gray-800">Clinical Findings</h3>
           </div>
           <div className="flex gap-2">
             <button 

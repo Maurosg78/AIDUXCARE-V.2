@@ -86,10 +86,10 @@ export const SelectableFindings: React.FC<SelectableFindingsProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* Columna 1: Hallazgos Clínicos */}
+      {/* Columna 1: Clinical Findings */}
       <Card className="w-full p-3 bg-green-50 border-green-200">
         <h3 className="font-semibold mb-2 text-green-700 text-sm">
-          🩺 Hallazgos Clínicos
+          🩺 Clinical Findings
         </h3>
         
         {categorized.symptoms.length > 0 && (
