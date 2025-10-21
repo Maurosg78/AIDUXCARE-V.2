@@ -8,10 +8,10 @@ import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { useTranscript } from '../hooks/useTranscript';
 import { useTimer } from '../hooks/useTimer';
 import sessionService from '../services/sessionService';
-
+import { useLanguage } from "../contexts/LanguageContext";
 const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
-  const [selectedPatient] = useState<PatientData>({
+    const [selectedPatient] = useState<PatientData>({
     id: "PAC-TEST-001",
     nombre: "María",
     apellidos: "González",
@@ -114,7 +114,7 @@ const ProfessionalWorkflowPage = () => {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">AiDuxCare - Flujo Profesional</h1>
+          <h1 className="text-2xl font-bold text-gray-800">AiDuxCare - {t.workflow}</h1>
           <span className="text-sm text-gray-600">mauricio@aiduxcare.com</span>
         </div>
       </header>
@@ -131,7 +131,7 @@ const ProfessionalWorkflowPage = () => {
                   : 'border-transparent text-gray-500'
               }`}
             >
-              1. Análisis Inicial
+              1. {t.analysis}
             </button>
             <button
               onClick={() => setActiveTab('evaluation')}
@@ -141,7 +141,7 @@ const ProfessionalWorkflowPage = () => {
                   : 'border-transparent text-gray-500'
               }`}
             >
-              2. Evaluación Física
+              2. {t.physicalEval}
             </button>
             <button
               onClick={() => setActiveTab('soap')}
