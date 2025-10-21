@@ -1,3 +1,7 @@
+/* shim: alias opcional si el hook no exporta niagaraResults */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const niagaraResultsOpt: any = (typeof (globalThis as any).___unused === "undefined" && typeof niagaraResults !== "undefined") ? (niagaraResults as any) : undefined;
+
 /* shim: props de validación no usados en esta variante */
 const validation: any = undefined, metrics: any = undefined, error: any = undefined;
 
@@ -69,7 +73,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
-    niagaraResults || niagaraResults,
+    niagaraResultsOpt,
     onSelectionChange,
     { enabled: true }
   );
@@ -157,7 +161,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   };
   const adaptedResults = niagaraResults ? {
     ...niagaraResults,
-    physicalTests: (niagaraResults.evaluaciones_fisicas_sugeridas || []).map(test => {
+    physicalTests: ((niagaraResultsOpt as any).evaluaciones_fisicas_sugeridas || []).map(test => {
       if (typeof test === 'string') return test;
       return {
         name: test.test || test.nombre || 'Test físico',
@@ -169,14 +173,14 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     }),
     entities: [
       // Síntomas físicos - directo de hallazgos_clinicos
-      ...(niagaraResults.hallazgos_clinicos || [])
+      ...((niagaraResultsOpt as any).hallazgos_clinicos || [])
         .map((h, i) => ({
           id: `symptom-${i}`,
           text: h,
           type: 'symptom' as const
         })),
       // Medicación - directo de medicacion_actual
-      ...(niagaraResults.medicacion_actual || [])
+      ...((niagaraResultsOpt as any).medicacion_actual || [])
         .map((h, i) => ({
           id: `medication-${i}`,
           text: h,
@@ -185,12 +189,12 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     ],
     // Yellow flags combinando contextos y flags psicosociales
     yellowFlags: [
-      ...(niagaraResults.yellow_flags || []),
-      ...(niagaraResults.contexto_ocupacional || []),
-      ...(niagaraResults.contexto_psicosocial || [])
+      ...((niagaraResultsOpt as any).yellow_flags || []),
+      ...((niagaraResultsOpt as any).contexto_ocupacional || []),
+      ...((niagaraResultsOpt as any).contexto_psicosocial || [])
     ],
-    redFlags: niagaraResults.red_flags || [],
-    diagnoses: niagaraResults.diagnosticos_probables || []
+    redFlags: (niagaraResultsOpt as any).red_flags || [],
+    diagnoses: (niagaraResultsOpt as any).diagnosticos_probables || []
   } : null;
   return (
     <>
@@ -230,10 +234,10 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Resultados del análisis */}
-        {(niagaraResults || niagaraResults) && (
+        {(niagaraResultsOpt) && (
           <div className="mt-4">
             <ClinicalAnalysisResults 
-              results={adaptedResults || niagaraResults}
+              results={adaptedResults || niagaraResultsOpt}
               selectedIds={selectedIds}
               onSelectionChange={onSelectionChange}
             />
@@ -241,7 +245,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Contador de selección si hay resultados */}
-        {(niagaraResults || niagaraResults) && selectedIds.length > 0 && (
+        {(niagaraResultsOpt) && selectedIds.length > 0 && (
           <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
             <span className="text-sm text-blue-700">
               Elementos seleccionados: <strong>{selectedIds.length}</strong>

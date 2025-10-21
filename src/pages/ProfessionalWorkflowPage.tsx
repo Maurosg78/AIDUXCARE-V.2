@@ -207,7 +207,6 @@ const ProfessionalWorkflowPage = () => {
                   stopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
                   niagaraResults={analysisResults}
-                  progress={progress}
                   currentMessage={currentMessage}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
