@@ -72,7 +72,7 @@ HORA: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-dig
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Informe SOAP Generado</h2>
+        <h2 className="text-xl font-semibold">SOAP Report Generado</h2>
         <div className="flex gap-2">
           <div className="flex items-center gap-1 mr-2">
             <input 

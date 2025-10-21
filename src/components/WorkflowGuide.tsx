@@ -21,7 +21,7 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep }) => 
     },
     { 
       id: 3, 
-      title: "Informe SOAP",
+      title: "SOAP Report",
       description: "Generar documentación clínica",
       example: "Subjetivo, Objetivo, Análisis, Plan"
     }

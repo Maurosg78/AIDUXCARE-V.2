@@ -8,7 +8,7 @@ interface LoadingOverlayProps {
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ 
   isLoading, 
-  message = 'Analizando con IA...' 
+  message = 'Analyzing with AI...' 
 }) => {
   if (!isLoading) return null;
 
@@ -23,7 +23,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{message}</h3>
         <p className="text-sm text-gray-600">
-          Procesando transcripción médica...
+          Processing medical transcription...
         </p>
         <div className="mt-4 flex justify-center space-x-1">
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>

@@ -161,7 +161,7 @@ Fecha: ${new Date().toLocaleString()}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold">Informe SOAP</h2>
+            <h2 className="text-xl font-semibold">SOAP Report</h2>
           </div>
           <div className="flex gap-2">
             <button

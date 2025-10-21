@@ -151,7 +151,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
                   : 'border-transparent text-gray-500'
               }`}
             >
-              3. Informe SOAP
+              3. SOAP Report
             </button>
           </div>
         </div>

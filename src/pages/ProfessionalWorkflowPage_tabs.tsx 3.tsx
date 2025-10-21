@@ -35,7 +35,7 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
             : 'border-transparent text-gray-500 hover:text-gray-700'
         } ${!soapNote ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        3. Informe SOAP
+        3. SOAP Report
       </button>
     </nav>
   </div>
@@ -55,7 +55,7 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
 
 {activeTab === 'soap' && (
   <div className="text-center py-8">
-    <h2 className="text-xl font-semibold mb-4">Informe SOAP</h2>
+    <h2 className="text-xl font-semibold mb-4">SOAP Report</h2>
     {soapNote ? (
       <pre className="text-left whitespace-pre-wrap">{soapNote}</pre>
     ) : (

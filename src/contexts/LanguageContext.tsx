@@ -22,7 +22,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       workflow: 'Flujo de Trabajo Clínico',
       analysis: 'Análisis Inicial', 
       physicalEval: 'Evaluación Física',
-      soap: 'Informe SOAP'
+      soap: 'SOAP Report'
     }
   };
 
