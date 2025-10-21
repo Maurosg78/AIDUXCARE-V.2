@@ -62,7 +62,7 @@ const LoginPage: React.FC = () => {
 
       
       // Redirigir al centro de comando
-      navigate('/dashboard');
+      navigate('/professional-workflow');
     } catch (err) {
       logger.error('[DEBUG] Error en login:', err);
       setError('Error al iniciar sesión. Inténtalo de nuevo.');
