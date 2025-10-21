@@ -9,32 +9,37 @@ export interface PhysicalTestResult {
 export interface SubjectiveSection {
   chief_complaint?: string; history?: string; medications?: string[]; content?: string;
   editable?: boolean; validated?: boolean;
-  // alias camelCase/extra usados por el generador
+  // alias/extra usados por el generador
   chiefComplaint?: string;
   symptoms?: string[];
+  painScale?: number | string;
+  functionalLimitations?: string[];
 }
 export interface ObjectiveSection {
   findings?: string[]; tests?: PhysicalTestResult[]; content?: string;
   editable?: boolean; validated?: boolean;
   physicalExamFindings?: string[];
   testResults?: PhysicalTestResult[];
+  observations?: string[];
 }
 export interface AssessmentSection {
   diagnosis?: string; red_flags?: string[]; content?: string;
   editable?: boolean; validated?: boolean;
   primaryDiagnosis?: string[];
   differentialDiagnosis?: string[];
+  clinicalImpression?: string;
 }
 export interface PlanSection {
   plan?: string; treatment_plan?: string; follow_up?: string; content?: string;
   editable?: boolean; validated?: boolean;
   interventions?: string[];
   shortTermGoals?: string[];
+  longTermGoals?: string[];
 }
 export interface SOAPMetadata {
   sessionId?: string; createdAt?: string; author?: string;
   patientId?: string; professionalId?: string; professionalName?: string;
-  generatedAt?: string;
+  generatedAt?: string; lastModified?: string;
 }
 export interface EditableSOAPNote {
   subjective?: SubjectiveSection;

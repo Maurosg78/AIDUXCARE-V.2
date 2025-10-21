@@ -185,7 +185,7 @@ Required JSON structure with specific medical content:
         professionalId: 'current-professional-id', // TODO: Get from auth
         professionalName: 'Dr. Professional Name', // TODO: Get from auth
         generatedAt: now.toISOString(),
-        lastModified: now,
+        lastModified: now.toISOString(),
         status: 'draft',
         supervisionRequired: false
       };
@@ -295,7 +295,7 @@ Required JSON structure with specific medical content:
         professionalId: 'pending',
         professionalName: 'Pending',
         generatedAt: now.toISOString(),
-        lastModified: now,
+        lastModified: now.toISOString(),
         status: 'draft',
         supervisionRequired: true
       }

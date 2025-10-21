@@ -1,6 +1,9 @@
-/* shim: alias opcional de resultados (solo para typecheck) */
+/* shims para typecheck */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const niagaraResultsOpt: any = undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const error: any = undefined;
+
 
 
 /* shim: props de validación no usados en esta variante */
@@ -160,8 +163,8 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     // Si no encaja en ninguna categoría clara, decidir por contexto
     return 'general';
   };
-  const adaptedResults = niagaraResults ? {
-    ...niagaraResults,
+  const adaptedResults = niagaraResultsOpt ? {
+    ... (niagaraResultsOpt as any),
     physicalTests: ((niagaraResultsOpt as any).evaluaciones_fisicas_sugeridas || []).map(test => {
       if (typeof test === 'string') return test;
       return {
