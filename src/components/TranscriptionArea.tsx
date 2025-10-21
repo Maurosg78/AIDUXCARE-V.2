@@ -70,7 +70,7 @@ export const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
         <textarea
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
-          placeholder="Escribe, dicta o pega el contenido de la consulta..."
+          placeholder="Type, dictate or paste the consultation content..."
           className="w-full h-full min-h-[150px] p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
       </div>
