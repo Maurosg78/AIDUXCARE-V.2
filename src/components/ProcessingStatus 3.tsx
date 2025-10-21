@@ -26,7 +26,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
   if (isRecording) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 animate-pulse">
-        <p className="text-blue-800 font-medium">🔴 Grabando consulta...</p>
+        <p className="text-blue-800 font-medium">🔴 Recording consulta...</p>
         <p className="text-sm text-blue-600 mt-1">Hable claramente cerca del micrófono</p>
       </div>
     );

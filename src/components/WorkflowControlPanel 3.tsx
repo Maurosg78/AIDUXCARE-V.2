@@ -38,7 +38,7 @@ export const WorkflowControlPanel: React.FC<ControlPanelProps> = ({
               className="flex-1"
             >
               {isRecording ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
-              {isRecording ? 'Parar' : 'Grabar'}
+              {isRecording ? 'Parar' : 'Record'}
             </Button>
             <Button variant="outline" size="sm" title="Subir archivo">
               <Upload className="w-3 h-3" />
@@ -56,7 +56,7 @@ export const WorkflowControlPanel: React.FC<ControlPanelProps> = ({
           size="sm"
         >
           <Brain className="w-3 h-3 mr-1" />
-          {isAnalyzing ? 'Analizando...' : 'Analizar'}
+          {isAnalyzing ? 'Analyzing...' : 'Analizar'}
         </Button>
         
         <Button 
