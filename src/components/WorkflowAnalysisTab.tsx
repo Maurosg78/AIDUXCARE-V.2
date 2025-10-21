@@ -61,7 +61,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   const { 
     processText, 
     validation, 
-    metrics, 
     isProcessing, 
     error 
   } = useNiagaraProcessor();

@@ -2,9 +2,9 @@ import { safeLogger } from "../utils/safeLogger";
 import { useState, useEffect } from 'react';
 import { useLanguage } from "../contexts/LanguageContext";
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
-import { DocGenDisplay } from '../components/SOAPDisplay';
+import { SOAPDisplay } from '../components/SOAPDisplay';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
-import { ProfessionalDocGenGenerator } from "../services/soap-generator-professional";
+import { ProfessionalSOAPGenerator } from "../services/soap-generator-professional";
 import { useChunkedAnalysis } from '../hooks/useChunkedAnalysis';
 import { useTranscript } from '../hooks/useTranscript';
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
@@ -135,7 +135,7 @@ const ProfessionalWorkflowPage = () => {
         }
       };
       
-      const DocGen = await ProfessionalDocGenGenerator.generateWithVertex(DocGenRequest);
+      const DocGen = await ProfessionalSOAPGenerator.generateWithVertex(DocGenRequest);
       setDocGenNote(DocGen);
       safeLogger.debug('[DocGen] Generation completed successfully');
       
@@ -204,7 +204,7 @@ const ProfessionalWorkflowPage = () => {
                   setTranscript={setTranscript}
                   isRecording={isRecording}
                   startRecording={handleStartRecording}
-                  onStopRecording={handleStopRecording}
+                  stopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
                   isProcessing={isProcessing}
                   niagaraResults={analysisResults}
@@ -233,7 +233,7 @@ const ProfessionalWorkflowPage = () => {
                       </div>
                     </div>
                   ) : DocGenNote ? (
-                    <DocGenDisplay DocGenNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
+                    <SOAPDisplay DocGenNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-gray-500 mb-4">

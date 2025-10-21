@@ -8,18 +8,22 @@ export interface PhysicalTestResult {
 }
 export interface SubjectiveSection {
   chief_complaint?: string; history?: string; medications?: string[]; content?: string;
+  editable?: boolean;
 }
 export interface ObjectiveSection {
   findings?: string[]; tests?: PhysicalTestResult[]; content?: string;
+  editable?: boolean;
 }
 export interface AssessmentSection {
   diagnosis?: string; red_flags?: string[]; content?: string;
+  editable?: boolean;
 }
 export interface PlanSection {
   plan?: string; treatment_plan?: string; follow_up?: string; content?: string;
+  editable?: boolean;
 }
 export interface SOAPMetadata {
-  sessionId?: string; createdAt?: string; author?: string; patientId?: string;
+  sessionId?: string; createdAt?: string; author?: string; patientId?: string; professionalId?: string;
 }
 export interface EditableSOAPNote {
   subjective?: SubjectiveSection;
