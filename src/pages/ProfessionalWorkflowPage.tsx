@@ -206,7 +206,6 @@ const ProfessionalWorkflowPage = () => {
                   startRecording={handleStartRecording}
                   stopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
-                  isProcessing={isProcessing}
                   niagaraResults={analysisResults}
                   progress={progress}
                   currentMessage={currentMessage}
@@ -233,7 +232,7 @@ const ProfessionalWorkflowPage = () => {
                       </div>
                     </div>
                   ) : DocGenNote ? (
-                    <SOAPDisplay DocGenNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
+                    <SOAPDisplay soapNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-gray-500 mb-4">

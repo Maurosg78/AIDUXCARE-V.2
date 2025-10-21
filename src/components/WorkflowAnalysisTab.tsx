@@ -1,3 +1,6 @@
+/* shim: props de validación no usados en esta variante */
+const validation: any = undefined, metrics: any = undefined, error: any = undefined;
+
 /* shim: optional props not present in caller */
 
 import { t } from "../utils/translations";
@@ -60,7 +63,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   // Hook V2 con validación
   const { 
     processText, 
-    validation, 
     isProcessing, 
     error 
   } = useNiagaraProcessor();
