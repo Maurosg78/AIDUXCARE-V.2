@@ -12,7 +12,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
     const [selectedPatient] = useState<PatientData>({
-    id: "PAC-TEST-001",
+  const { t } = useLanguage();    id: "PAC-TEST-001",
     nombre: "María",
     apellidos: "González",
     fechaNacimiento: "1980-01-01",
