@@ -158,7 +158,7 @@ export interface NLPConfig {
   temperature: number;
   enable_entity_extraction: boolean;
   enable_soap_generation: boolean;
-  language: 'es' | 'en';
+  language: 'en' | 'en';
 }
 
 export interface OpenAIConfig extends NLPConfig {
@@ -289,7 +289,7 @@ export const DEFAULT_NLP_CONFIG: NLPConfig = {
   temperature: 0.3,
   enable_entity_extraction: true,
   enable_soap_generation: true,
-  language: 'es'
+  language: 'en'
 };
 
 export const MCP_VERSION = '1.0.0';
