@@ -207,7 +207,6 @@ const ProfessionalWorkflowPage = () => {
                   stopRecording={handleStopRecording}
                   onAnalyze={handleAnalyze}
                   niagaraResults={analysisResults}
-                  currentMessage={currentMessage}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
                   onNavigateToEvaluation={() => setActiveTab("evaluation")}

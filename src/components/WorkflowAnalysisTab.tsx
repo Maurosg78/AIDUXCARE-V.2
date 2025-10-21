@@ -1,6 +1,7 @@
-/* shim: alias opcional si el hook no exporta niagaraResults */
+/* shim: alias opcional de resultados (solo para typecheck) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const niagaraResultsOpt: any = (typeof (globalThis as any).___unused === "undefined" && typeof niagaraResults !== "undefined") ? (niagaraResults as any) : undefined;
+const niagaraResultsOpt: any = undefined;
+
 
 /* shim: props de validación no usados en esta variante */
 const validation: any = undefined, metrics: any = undefined, error: any = undefined;
@@ -94,9 +95,9 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   
 //   
   // Adaptar estructura de datos para componente legacy
-  console.log("niagaraResults estructura:", JSON.stringify(niagaraResults, null, 2));
+  console.log("niagaraResults estructura:", JSON.stringify(niagaraResultsOpt, null, 2));
   // Adaptar estructura de datos para componente legacy
-  console.log("niagaraResults estructura:", JSON.stringify(niagaraResults, null, 2));
+  console.log("niagaraResults estructura:", JSON.stringify(niagaraResultsOpt, null, 2));
   
   // Función helper para categorizar hallazgos
   const categorizeHallazgo = (hallazgo: string) => {
