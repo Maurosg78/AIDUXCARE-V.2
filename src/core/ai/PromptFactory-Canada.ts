@@ -15,7 +15,7 @@ export const CanadianPromptFactory = {
     
     // Personalización basada en perfil
     const specialtyInstructions = getSpecialtyInstructions(specialty, profile);
-    const legalComplianceSection = getOntarioLegalFramework();
+    const legalComplianceSection = getUpdatedOntarioLegalFramework();
     const techniquePersonalization = getTechniquePersonalization(profile);
     
     return `You are a specialized clinical assistant for physiotherapy in Ontario, Canada. 
@@ -100,7 +100,7 @@ SPECIALIZED TECHNIQUES AVAILABLE:
   return techniques;
 }
 
-function getOntarioLegalFramework(): string {
+function getUpdatedOntarioLegalFramework(): string {
   return `
 PHIPA (Personal Health Information Protection Act):
 - Patient consent documented for all assessments
