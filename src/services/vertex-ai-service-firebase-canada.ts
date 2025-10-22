@@ -1,4 +1,4 @@
-import { CanadianPromptFactory } from "../core/ai/CanadianPromptFactory-v3";
+import { CanadianPromptFactory } from "../core/ai/PromptFactory-Canada";
 
 export async function analyzeWithVertexProxy(payload: {
   professionalProfile?: ProfessionalProfile;
