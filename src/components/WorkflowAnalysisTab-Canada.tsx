@@ -8,10 +8,6 @@ import { LoadingOverlay } from "./LoadingOverlay";
 import ValidationMetrics from "./ValidationMetrics";
 import { useSession } from '../context/SessionContext';
 // import.*useNiagaraProcessor";
-import { useAutoSelection } from "../hooks/useAutoSelection";
-
-interface WorkflowAnalysisTabProps {
-  selectedPatient: any;
   transcript: string;
   setTranscript: (text: string) => void;
   isRecording: boolean;
@@ -21,7 +17,6 @@ interface WorkflowAnalysisTabProps {
   isAnalyzing: boolean;
   isTranscribing: boolean;
   onAnalyze: () => void;
-  niagaraResults: any;
   selectedFindings: string[];
   setSelectedFindings: (findings: string[]) => void;
   onGenerateSOAP: () => void;
@@ -41,7 +36,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   isAnalyzing,
   isTranscribing,
   onAnalyze,
-  niagaraResults,
   selectedFindings,
   setSelectedFindings,
   onGenerateSOAP,
@@ -66,10 +60,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     error 
   
   // Auto-selección basada en IA
-  const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
-    niagaraResults || results,
-    onSelectionChange,
-    { enabled: true }
   );
   
   // Sincronizar con props legacy si es necesario
@@ -88,9 +78,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   
 //   
   // Adaptar estructura de datos para componente legacy
-  console.log("niagaraResults estructura:", JSON.stringify(niagaraResults, null, 2));
   // Adaptar estructura de datos para componente legacy
-  console.log("niagaraResults estructura:", JSON.stringify(niagaraResults, null, 2));
   
   // Función helper para categorizar hallazgos
   const categorizeHallazgo = (hallazgo: string) => {
@@ -153,9 +141,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     // Si no encaja en ninguna categoría clara, decidir por contexto
     return 'general';
   };
-  const adaptedResults = niagaraResults ? {
-    ...niagaraResults,
-    physicalTests: (niagaraResults.evaluaciones_fisicas_sugeridas || []).map(test => {
       if (typeof test === 'string') return test;
       return {
         name: test.test || test.nombre || 'Test físico',
@@ -167,14 +152,12 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     }),
     entities: [
       // Síntomas físicos - directo de hallazgos_clinicos
-      ...(niagaraResults.hallazgos_clinicos || [])
         .map((h, i) => ({
           id: `symptom-${i}`,
           text: h,
           type: 'symptom' as const
         })),
       // Medicación - directo de medicacion_actual
-      ...(niagaraResults.medicacion_actual || [])
         .map((h, i) => ({
           id: `medication-${i}`,
           text: h,
@@ -183,12 +166,7 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     ],
     // Yellow flags combinando contextos y flags psicosociales
     yellowFlags: [
-      ...(niagaraResults.yellow_flags || []),
-      ...(niagaraResults.contexto_ocupacional || []),
-      ...(niagaraResults.contexto_psicosocial || [])
     ],
-    redFlags: niagaraResults.red_flags || [],
-    diagnoses: niagaraResults.diagnosticos_probables || []
   } : null;
   return (
     <>
@@ -228,7 +206,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Resultados del análisis */}
-        {(niagaraResults || results) && (
           <div className="mt-4">
             <ClinicalAnalysisResults 
               results={adaptedResults || results}
@@ -239,7 +216,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
         )}
         
         {/* Contador de selección si hay resultados */}
-        {(niagaraResults || results) && selectedIds.length > 0 && (
           <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
             <span className="text-sm text-blue-700">
               Elementos seleccionados: <strong>{selectedIds.length}</strong>
