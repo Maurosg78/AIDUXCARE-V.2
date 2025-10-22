@@ -1,6 +1,7 @@
 import { CanadianPromptFactory } from "../core/ai/CanadianPromptFactory-v3";
 
 export async function analyzeWithVertexProxy(payload: {
+  professionalProfile?: ProfessionalProfile;
   action: 'analyze';
   prompt?: string;
   transcript?: string;
