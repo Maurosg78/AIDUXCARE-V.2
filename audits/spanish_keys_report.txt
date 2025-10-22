@@ -1,0 +1,329 @@
+src/evals/unified-eval-system.ts:      banderas_rojas: testCase.expected.redFlags.map(rf => ({
+src/evals/unified-eval-system.ts:      banderas_amarillas: testCase.expected.yellowFlags
+src/evals/test-cases 3.ts:    empeora al estar sentado mucho tiempo. Sin irradiación. Sin banderas rojas. 
+src/evals/test-cases.ts:    empeora al estar sentado mucho tiempo. Sin irradiación. Sin banderas rojas. 
+src/types/nlp.ts:  | 'plan'             // Planes de tratamiento
+src/types/nlp.ts:  plan: string;         // P: Plan de tratamiento
+src/core/assistant/rails.ts:  'fisioterapia', 'rehabilitación', 'terapia', 'tratamiento',
+src/core/assistant/rails.ts:    'dolor', 'lesión', 'tratamiento', 'ejercicio', 'movimiento',
+src/core/assistant/rails.ts:    'dolor', 'lesión', 'tratamiento', 'evaluación', 'seguimiento'
+src/core/agent/AgentExplainer.ts:            `el tratamiento. Se recomienda evaluar cuidadosamente la situación.`
+src/core/ai/ModelSelector.ts:      description: 'Casos rutinarios, sin banderas rojas'
+src/core/ai/ModelSelector.ts:      description: 'Casos con múltiples banderas rojas o alta complejidad'
+src/core/ai/ModelSelector.ts:      // Detección de banderas rojas
+src/core/ai/ModelSelector.ts:   * Detección de banderas rojas específicas por especialidad
+src/core/ai/ModelSelector.ts:        reason: `Caso crítico: ${redFlags.length} banderas rojas, urgencia ${urgency}`,
+src/core/ai/ModelSelector.ts:      reason: `Caso ${complexity}: ${redFlags.length} banderas rojas, urgencia ${urgency}`,
+src/core/ai/ModelSelector.ts:    // Ajustar por banderas rojas
+src/core/ai/PromptFactory-v3.ts:  "motivo_consulta": "Descripción precisa en <20 palabras",
+src/core/ai/PromptFactory-v3.ts:  "hallazgos_clinicos": [],
+src/core/ai/PromptFactory-v3.ts:  "plan_tratamiento_sugerido": [],
+src/core/ai/PromptFactory-v3.ts:  "riesgo_legal": "bajo"
+src/core/ai/PromptFactory.ts:  "motivo_consulta": string,
+src/core/ai/PromptFactory.ts:  "plan_tratamiento_sugerido": string[],
+src/core/ai/PromptFactory.ts:  "riesgo_legal": "bajo" | "medio" | "alto"
+src/core/ai/PromptFactory.ts:  "motivo_consulta": string,
+src/core/ai/PromptFactory.ts:  "plan_tratamiento_sugerido": string[],
+src/core/ai/PromptFactory.ts:  "riesgo_legal": "bajo" | "medio" | "alto"
+src/core/ai/PromptFactory.ts.backup:Usa tu conocimiento actualizado sobre el sistema de banderas en fisioterapia musculoesquelética:
+src/core/ai/PromptFactory.ts.backup:2. Identifica banderas según el sistema de colores médico estándar
+src/core/ai/PromptFactory.ts.backup:- Usa tu conocimiento médico actualizado para identificar banderas
+src/core/ai/PromptFactory.ts.backup:  "precautions": "Precauciones específicas basadas en banderas identificadas",
+src/core/ai/PromptFactory-v3.ts.backup:  "motivo_consulta": "Descripción clara del problema principal del paciente",
+src/core/ai/PromptFactory-v3.ts.backup:  "plan_tratamiento_sugerido": [
+src/core/ai/PromptFactory-v3.ts.backup:  "riesgo_legal": "bajo"
+src/core/ai/PromptFactory.ts.backup.20250901 2:Debes distinguir entre síntomas que requieren derivación urgente versus efectos secundarios esperados de condiciones/tratamientos conocidos.
+src/core/ai/PromptFactory.ts.backup.20250901 2:- Fatiga post-tratamiento oncológico
+src/core/ai/PromptFactory.ts.backup.20250901 3:Debes distinguir entre síntomas que requieren derivación urgente versus efectos secundarios esperados de condiciones/tratamientos conocidos.
+src/core/ai/PromptFactory.ts.backup.20250901 3:- Fatiga post-tratamiento oncológico
+src/core/ai/PromptFactory-v3 3.ts:  "motivo_consulta": "Descripción precisa en <20 palabras",
+src/core/ai/PromptFactory-v3 3.ts:  "hallazgos_clinicos": [
+src/core/ai/PromptFactory-v3 3.ts:  "plan_tratamiento_sugerido": [
+src/core/ai/PromptFactory-v3 3.ts:  "riesgo_legal": "bajo"
+src/core/ai/PromptFactory.ts.backup-20250903-165228:- Condiciones médicas conocidas bajo tratamiento NO son emergencias
+src/core/ai/PromptFactory.ts.backup-20250903-165228:  "banderas_rojas": [
+src/core/ai/PromptFactory.ts.backup-20250903-165228:  "banderas_amarillas": ["factores psicosociales identificados"],
+src/core/ai/PromptFactory.ts.backup-20250903-165228:  "motivo_consulta": "razón principal de la visita"
+src/core/ai/PromptFactory.ts.backup-20250903-165228:    "objetivos_tratamiento": ["objetivos SMART a corto y largo plazo"],
+src/core/ai/PromptFactory.ts.backup-20250903-165228:    "frecuencia_tratamiento": "X veces por semana por Y semanas",
+src/core/ai/PromptFactory-v3.ts.backup-canadian-20251021:  "motivo_consulta": "Descripción precisa en <20 palabras",
+src/core/ai/PromptFactory-v3.ts.backup-canadian-20251021:  "hallazgos_clinicos": [],
+src/core/ai/PromptFactory-v3.ts.backup-canadian-20251021:  "plan_tratamiento_sugerido": [],
+src/core/ai/PromptFactory-v3.ts.backup-canadian-20251021:  "riesgo_legal": "bajo"
+src/core/ai/PromptFactory.ts.backup.20250901:Debes distinguir entre síntomas que requieren derivación urgente versus efectos secundarios esperados de condiciones/tratamientos conocidos.
+src/core/ai/PromptFactory.ts.backup.20250901:- Fatiga post-tratamiento oncológico
+src/core/clinical/taxonomies.ts:  'Cáncer en tratamiento'
+src/core/domain/professionalType.ts:    description: 'Técnica invasiva para tratamiento de tendinopatías',
+src/core/domain/professionalType.ts:    description: 'Evaluación ecográfica para diagnóstico y guía de tratamiento',
+src/core/domain/professionalType.ts:    description: 'Evaluación y tratamiento del control neuromuscular',
+src/core/domain/professionalType.ts:    description: 'Sistema de evaluación y tratamiento mecánico del dolor',
+src/utils/responseParser 3.ts:    motivo_consulta: "",
+src/utils/responseParser 3.ts:    plan_tratamiento_sugerido: []
+src/utils/responseParser 3.ts:    // Extraer motivo_consulta
+src/utils/responseParser 3.ts:    const motivoMatch = text.match(/"motivo_consulta":\s*"([^"]+)"/);
+src/utils/responseParser 3.ts:    if (motivoMatch) data.motivo_consulta = motivoMatch[1];
+src/utils/responseParser 3.ts:    if (response && typeof response === 'object' && response.motivo_consulta !== undefined) {
+src/utils/responseParser 3.ts:    'motivo_consulta',
+src/utils/cleanVertexResponse-v2 4.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse-v2 4.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse-v2 4.ts:  riesgo_legal: 'bajo' | 'medio' | 'alto';
+src/utils/cleanVertexResponse-v2 4.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse-v2 4.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse-v2 4.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse-v2 4.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse-v2 4.ts:    plan_tratamiento_sugerido: Array.isArray(parsed?.plan_tratamiento_sugerido)
+src/utils/cleanVertexResponse-v2 4.ts:      ? parsed.plan_tratamiento_sugerido : [],
+src/utils/cleanVertexResponse-v2 4.ts:    riesgo_legal: parsed?.riesgo_legal || 'bajo'
+src/utils/cleanVertexResponse.ts.backup:  motivo_consulta: string;
+src/utils/cleanVertexResponse.ts.backup:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.ts.backup:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.ts.backup:      motivo_consulta: '',
+src/utils/cleanVertexResponse.ts.backup:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.ts.backup:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.ts.backup:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.ts.backup:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.ts.backup:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.ts.backup:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.ts.backup:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.ts.backup:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.ts:  hallazgos_clinicos?: string[];  // Nuevo campo
+src/utils/cleanVertexResponse.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.ts:      hallazgos_clinicos: [],
+src/utils/cleanVertexResponse.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.ts:    hallazgos_clinicos: toArray(parsed?.hallazgos_clinicos),
+src/utils/cleanVertexResponse.ts:    hallazgos_relevantes: raw?.hallazgos_relevantes || raw?.hallazgos_clinicos || [],    contexto_ocupacional: toArray(parsed?.contexto_ocupacional),
+src/utils/cleanVertexResponse.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse-protocol 3.ts:      region: raw?.region || detectRegionFromText(raw?.motivo_consulta),
+src/utils/cleanVertexResponse-protocol 3.ts:      symptoms: raw?.hallazgos_clinicos || [],
+src/utils/cleanVertexResponse.backup.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup.ts:    riesgo_legal: riesgoSafe
+src/utils/responseParser.ts:    motivo_consulta: "",
+src/utils/responseParser.ts:    plan_tratamiento_sugerido: []
+src/utils/responseParser.ts:    // Extraer motivo_consulta
+src/utils/responseParser.ts:    const motivoMatch = text.match(/"motivo_consulta":\s*"([^"]+)"/);
+src/utils/responseParser.ts:    if (motivoMatch) data.motivo_consulta = motivoMatch[1];
+src/utils/responseParser.ts:    if (response && typeof response === 'object' && response.motivo_consulta !== undefined) {
+src/utils/responseParser.ts:    'motivo_consulta',
+src/utils/cleanVertexResponse.backup 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup 3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup 3.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup 3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup 3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup 3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup 3.ts:    riesgo_legal: riesgoSafe
+src/utils/metricsCollector 3.ts:      symptomsSeparation: output.hallazgos_clinicos?.length > 0,
+src/utils/metricsCollector 3.ts:      'motivo_consulta', 'hallazgos_clinicos', 'diagnosticos_probables',
+src/utils/metricsCollector 3.ts:      'evaluaciones_fisicas_sugeridas', 'plan_tratamiento_sugerido'
+src/utils/cleanVertexResponse 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse 3.ts:  hallazgos_clinicos?: string[];  // Nuevo campo
+src/utils/cleanVertexResponse 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse 3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse 3.ts:      hallazgos_clinicos: [],
+src/utils/cleanVertexResponse 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse 3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse 3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse 3.ts:    hallazgos_clinicos: toArray(parsed?.hallazgos_clinicos),
+src/utils/cleanVertexResponse 3.ts:    hallazgos_relevantes: toArray(parsed?.hallazgos_relevantes || parsed?.hallazgos_clinicos),
+src/utils/cleanVertexResponse 3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse 3.ts:    riesgo_legal: riesgoSafe
+src/utils/metricsCollector.ts:      symptomsSeparation: output.hallazgos_clinicos?.length > 0,
+src/utils/metricsCollector.ts:      'motivo_consulta', 'hallazgos_clinicos', 'diagnosticos_probables',
+src/utils/metricsCollector.ts:      'evaluaciones_fisicas_sugeridas', 'plan_tratamiento_sugerido'
+src/utils/cleanVertexResponse.backup2.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup2.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup2.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup2.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup2.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup2.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup2.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup2.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup2.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup2.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup2.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup2.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse.backup3 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup3 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup3 3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup3 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup3 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup3 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup3 3.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup3 3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup3 3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup3 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup3 3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup3 3.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse-v2.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse-v2.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse-v2.ts:  riesgo_legal: 'bajo' | 'medio' | 'alto';
+src/utils/cleanVertexResponse-v2.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse-v2.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse-v2.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse-v2.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse-v2.ts:    plan_tratamiento_sugerido: Array.isArray(parsed?.plan_tratamiento_sugerido)
+src/utils/cleanVertexResponse-v2.ts:      ? parsed.plan_tratamiento_sugerido : [],
+src/utils/cleanVertexResponse-v2.ts:    riesgo_legal: parsed?.riesgo_legal || 'bajo'
+src/utils/cleanVertexResponse.backup2 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup2 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup2 3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup2 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup2 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup2 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup2 3.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup2 3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup2 3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup2 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup2 3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup2 3.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse.backup3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.backup3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.backup3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.backup3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.backup3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.backup3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.backup3.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.backup3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.backup3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.backup3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.backup3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.backup3.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse-protocol.ts:      region: raw?.region || detectRegionFromText(raw?.motivo_consulta),
+src/utils/cleanVertexResponse-protocol.ts:      symptoms: raw?.hallazgos_clinicos || [],
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.20250905_211848.backup.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:  riesgo_legal: RiesgoLegal;
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:  const motivo = (parsed?.motivo_consulta || '').toLowerCase();
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:  const riesgoSafe: RiesgoLegal = ['bajo', 'medio', 'alto'].includes(parsed?.riesgo_legal) 
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:    ? parsed.riesgo_legal 
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:    plan_tratamiento_sugerido: toArray(parsed?.plan_tratamiento_sugerido),
+src/utils/cleanVertexResponse.20250905_211848.backup 3.ts:    riesgo_legal: riesgoSafe
+src/utils/cleanVertexResponse-v2 3.ts:  motivo_consulta: string;
+src/utils/cleanVertexResponse-v2 3.ts:  plan_tratamiento_sugerido: string[];
+src/utils/cleanVertexResponse-v2 3.ts:  riesgo_legal: 'bajo' | 'medio' | 'alto';
+src/utils/cleanVertexResponse-v2 3.ts:      motivo_consulta: '',
+src/utils/cleanVertexResponse-v2 3.ts:      plan_tratamiento_sugerido: [],
+src/utils/cleanVertexResponse-v2 3.ts:      riesgo_legal: 'bajo'
+src/utils/cleanVertexResponse-v2 3.ts:    motivo_consulta: String(parsed?.motivo_consulta || ''),
+src/utils/cleanVertexResponse-v2 3.ts:    plan_tratamiento_sugerido: Array.isArray(parsed?.plan_tratamiento_sugerido)
+src/utils/cleanVertexResponse-v2 3.ts:      ? parsed.plan_tratamiento_sugerido : [],
+src/utils/cleanVertexResponse-v2 3.ts:    riesgo_legal: parsed?.riesgo_legal || 'bajo'
+src/components/professional/VirtualAssistant.tsx:3. Sugerencias de tratamiento
+src/components/professional/ProfessionalRoleSelector.tsx:      'Detección banderas rojas'
+src/components/ClinicalAlerts 3.tsx:      message: 'Dolor puede no ser solo musculoesquelético. Evaluar progresión de metástasis vs. efectos del tratamiento vs. dolor mecánico'
+src/components/ClinicalAlerts.tsx:      message: 'Dolor puede no ser solo musculoesquelético. Evaluar progresión de metástasis vs. efectos del tratamiento vs. dolor mecánico'
+src/components/WorkflowAnalysisTab-Canada.tsx:      // Síntomas físicos - directo de hallazgos_clinicos
+src/components/WorkflowAnalysisTab-Canada.tsx:      ...(niagaraResults.hallazgos_clinicos || [])
+src/components/WorkflowAnalysisTab.tsx.backup:          // Síntomas físicos - directo de hallazgos_clinicos
+src/components/WorkflowAnalysisTab.tsx.backup:          ...(niagaraResults.hallazgos_clinicos || []).map((h, i) => ({
+src/components/PatientHeader.tsx:              {isFirstVisit ? 'Evaluación inicial' : 'En tratamiento'}
+src/components/Tooltips.tsx:  consent: "Documento legal requerido antes de iniciar tratamiento en pacientes de riesgo"
+src/components/PatientHeader 3.tsx:              {isFirstVisit ? 'Evaluación inicial' : 'En tratamiento'}
+src/components/WorkflowAnalysisTab 3.tsx:      // Síntomas físicos - directo de hallazgos_clinicos
+src/components/WorkflowAnalysisTab 3.tsx:      ...(niagaraResults.hallazgos_clinicos || [])
+src/components/LegalChecklist.tsx:• Detección de banderas rojas y contraindicaciones
+src/components/LegalChecklist.tsx:• Identificación de posibles banderas rojas
+src/components/WorkflowAnalysisTab.tsx 2.original:      // Síntomas físicos - directo de hallazgos_clinicos
+src/components/WorkflowAnalysisTab.tsx 2.original:      ...(niagaraResults.hallazgos_clinicos || [])
+src/components/Tooltips 3.tsx:  consent: "Documento legal requerido antes de iniciar tratamiento en pacientes de riesgo"
+src/hooks/useSharedWorkflowState.ts:    unselectedFindings: state.analysisResults?.hallazgos_clinicos
+src/hooks/useNiagaraProcessor 3.ts:S: ${s.motivo_consulta || 'N/A'}
+src/hooks/useNiagaraProcessor 3.ts:P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
+src/hooks/useNiagaraProcessor.ts:S: ${s.motivo_consulta || 'N/A'}
+src/hooks/useNiagaraProcessor.ts:P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
+src/pages/TestFullWorkflowPage.tsx:  // Historia desordenada con banderas rojas para fisioterapia
+src/pages/TestFullWorkflowPage.tsx:      setCurrentPhase('Fase 1: Análisis inicial - Detección de banderas rojas');
+src/pages/TestFullWorkflowPage.tsx:                <br />1. Análisis inicial con detección de banderas rojas
+src/pages/ClinicalInfoPage.tsx:        notes: 'Mejora significativa con tratamiento'
+src/pages/HumanFigurePage.tsx:      plan: 'Plan de tratamiento personalizado'
+src/_deprecated/features_onboarding/SimpleOnboardingPage.tsx:                    Acepto el tratamiento de datos personales (GDPR)
+src/services/nlpServiceOllama.ts:- treatment: tratamientos, ejercicios, técnicas
+src/services/nlpServiceOllama.ts:            plan: soapData.plan || 'Plan de tratamiento por determinar',
+src/services/nlpServiceOllama.ts:      assessment: 'Condición evaluada conforme a hallazgos clínicos. Respuesta al tratamiento monitoreada.',
+src/services/vertex-ai-service-update 2.ts:    - chief_complaint (not motivo_consulta)
+src/services/vertex-ai-service-update 2.ts:    - clinical_findings (not hallazgos_clinicos)
+src/services/vertex-ai-service-update 2.ts:    - suggested_treatment_plan (not plan_tratamiento_sugerido)
+src/services/VertexAIServiceDirect 3.ts:[tratamiento propuesto]`;
+src/services/VertexAIServiceDirect 3.ts:   // Extraer banderas rojas
+src/services/VertexAIServiceDirect 3.ts:   // Extraer banderas amarillas
+src/services/CompetencySuggestionService.ts:    // Verificar técnicas en el plan de tratamiento
+src/services/VertexAIServiceViaFirebase 3.ts:        plan: 'Plan de tratamiento fisioterapéutico'
+src/services/canadianResponseParser.ts:    motivo_consulta: str(data["chief_complaint"] ?? data["reason_for_visit"]),
+src/services/canadianResponseParser.ts:    hallazgos_clinicos: arr(data["clinical_findings"]),
+src/services/canadianResponseParser.ts:    banderas_rojas: arr(data["red_flags"]),
+src/services/canadianResponseParser.ts:    banderas_amarillas: arr(data["yellow_flags"]),
+src/services/canadianResponseParser.ts:    plan_tratamiento: str(data["treatment_plan"]),
+src/services/canadianResponseParser.ts:    motivo_consulta: "",
+src/services/canadianResponseParser.ts:    hallazgos_clinicos: [],
+src/services/canadianResponseParser.ts:    banderas_rojas: [],
+src/services/canadianResponseParser.ts:    banderas_amarillas: [],
+src/services/canadianResponseParser.ts:    plan_tratamiento: "",
+src/services/OptimizedClinicalBrainService.ts:  category: 'compliance' | 'seguridad' | 'diagnóstico' | 'tratamiento';
+src/services/OptimizedClinicalBrainService.ts:    // Detección de banderas rojas
+src/services/OptimizedClinicalBrainService.ts:      assessment += `Se detectaron ${redFlags.length} banderas rojas que requieren atención médica. `;
+src/services/OptimizedClinicalBrainService.ts:    let plan = 'Plan de tratamiento fisioterapéutico: ';
+src/services/OptimizedClinicalBrainService.ts:      plan += 'Precauciones especiales por banderas rojas identificadas. ';
+src/services/ProfessionalCompetencyService.ts:      description: 'Técnicas osteopáticas para el tratamiento de disfunciones somáticas',
+src/services/ProfessionalCompetencyService.ts:      description: 'Técnicas quiroprácticas para el tratamiento de disfunciones vertebrales',
+src/services/ProfessionalCompetencyService.ts:      description: 'Técnica invasiva para el tratamiento del síndrome de dolor miofascial',
+src/services/PhysiotherapyPipelineService.ts:  category: 'compliance' | 'seguridad' | 'diagnóstico' | 'tratamiento';
+src/services/PhysiotherapyPipelineService.ts:        description: 'No se mencionaron alergias - Investigar antes de tratamiento',
+src/services/PhysiotherapyPipelineService.ts:    let plan = 'Plan de tratamiento fisioterapéutico: ';
+src/services/VertexAIServiceDirect.ts:[tratamiento propuesto]`;
+src/services/VertexAIServiceDirect.ts:   // Extraer banderas rojas
+src/services/VertexAIServiceDirect.ts:   // Extraer banderas amarillas
+src/services/KnowledgeBaseService.ts:    // Técnicas de tratamiento
+src/services/KnowledgeBaseService.ts:        content: 'La punción seca es una técnica invasiva para el tratamiento de puntos gatillo...',
+src/services/KnowledgeBaseService.ts:        indications: ['Dolor lumbar agudo < 6 semanas', 'Origen mecánico', 'Sin banderas rojas'],
+src/services/robust-parser.ts:      const flags = jsonData.banderas_rojas || [];
+src/services/robust-parser.ts:      result.yellowFlags = jsonData.banderas_amarillas || [];
+src/services/VertexAIServiceViaFirebase.ts:        plan: 'Plan de tratamiento fisioterapéutico'
+src/services/robust-parser 3.ts:      const flags = jsonData.banderas_rojas || [];
+src/services/robust-parser 3.ts:      result.yellowFlags = jsonData.banderas_amarillas || [];
+src/services/ProfessionalServicesService.ts: * Determina qué servicios y tratamientos pueden ofrecerse según la ubicación y certificaciones
+src/services/ProfessionalServicesService.ts:    description: 'Técnicas manuales de evaluación y tratamiento fisioterapéutico',
+src/services/ProfessionalServicesService.ts:    description: 'Uso de corrientes eléctricas para tratamiento fisioterapéutico',
+src/services/ProfessionalServicesService.ts:    description: 'Técnica de punción seca para el tratamiento del dolor muscular',
+src/services/ProfessionalServicesService.ts:    description: 'Masaje terapéutico para el tratamiento de tejidos blandos',
+src/services/ProfessionalServicesService.ts:    description: 'Técnicas específicas para el tratamiento de patologías respiratorias',

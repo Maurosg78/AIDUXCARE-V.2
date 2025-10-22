@@ -8,7 +8,7 @@
   },
   "scripts": {
     "debug:mcp": "tsx src/core/mcp/debugMCP.ts",
-    "dev": "npm run check:env && vite",
+    "dev": "vite",
     "build": "vite build",
     "build:ci": "npm run check:env && tsc && vite build --config vite.config.ci.ts",
     "build:migration": "npm run check:env && tsc --project tsconfig.migration.json && vite build",

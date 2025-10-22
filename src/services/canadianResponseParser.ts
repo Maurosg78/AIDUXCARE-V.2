@@ -1,55 +1,73 @@
-// Canadian JSON Response Parser
-export function parseCanadianVertexResponse(response: any) {
-  console.log('[Canadian Parser] Processing response:', response);
-  
-  try {
-    // Handle different response formats
-    let jsonData = null;
-    
-    if (typeof response === 'string') {
-      // Try to parse JSON from string
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonData = JSON.parse(jsonMatch[0]);
-      }
-    } else if (response && typeof response === 'object') {
-      jsonData = response;
-    }
-    
-    if (!jsonData) {
-      console.error('[Canadian Parser] No JSON data found');
-      return null;
-    }
-    
-    // Validate English schema
-    const requiredEnglishKeys = [
-      'chief_complaint',
-      'clinical_findings',
-      'physical_assessments_suggested',
-      'treatment_plan_suggested'
-    ];
-    
-    const hasEnglishSchema = requiredEnglishKeys.some(key => key in jsonData);
-    
-    if (hasEnglishSchema) {
-      console.log('[Canadian Parser] English schema detected');
-      return {
-        motivo_consulta: jsonData.chief_complaint || '',
-        hallazgos_clinicos: jsonData.clinical_findings || [],
-        evaluaciones_fisicas_sugeridas: jsonData.physical_assessments_suggested || [],
-        plan_tratamiento_sugerido: jsonData.treatment_plan_suggested || [],
-        red_flags: jsonData.red_flags || [],
-        yellow_flags: jsonData.yellow_flags || [],
-        riesgo_legal: jsonData.legal_risk_assessment || 'bajo',
-        ontario_compliance: jsonData.ontario_compliance_notes || ''
-      };
-    }
-    
-    console.log('[Canadian Parser] Fallback to original format');
-    return jsonData;
-    
-  } catch (error) {
-    console.error('[Canadian Parser] Error:', error);
-    return null;
+/**
+ * Canadian Vertex → AiduxCare Schema Parser
+ * Converts Vertex AI English-keyed response objects into AiduxCare's
+ * internal Spanish-keyed schema, preserving value language (en-CA).
+ *
+ * Market: CA | Language: en-CA
+ * COMPLIANCE_PARSING_RESTORED
+ */
+
+import type { ClinicalAnalysis } from "@/types/clinical";
+
+/**
+ * Maps a raw Vertex AI response to the internal AiduxCare schema.
+ */
+export function parseCanadianVertexResponse(raw: unknown): ClinicalAnalysis {
+  console.log("[Canadian Parser] Processing response");
+
+  if (raw == null) {
+    console.warn("[Canadian Parser] Empty input received");
+    return createEmptyClinicalAnalysis();
   }
+
+  let data: Record<string, unknown>;
+  if (typeof raw === "string") {
+    try {
+      data = JSON.parse(raw) as Record<string, unknown>;
+    } catch (error) {
+      console.error("[Canadian Parser] JSON parse error:", error);
+      return createEmptyClinicalAnalysis();
+    }
+  } else if (typeof raw === "object") {
+    data = { ...(raw as Record<string, unknown>) };
+  } else {
+    console.warn("[Canadian Parser] Unsupported input type");
+    return createEmptyClinicalAnalysis();
+  }
+
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x)) : [];
+
+  const mapped: ClinicalAnalysis = {
+    motivo_consulta: str(data["chief_complaint"] ?? data["reason_for_visit"]),
+    hallazgos_clinicos: arr(data["clinical_findings"]),
+    banderas_rojas: arr(data["red_flags"]),
+    banderas_amarillas: arr(data["yellow_flags"]),
+    evaluacion_fisica_propuesta: arr(data["proposed_tests"]),
+    alertas_medico_legales: arr(data["medical_legal_alerts"]),
+    plan_tratamiento: str(data["treatment_plan"]),
+    contexto_psicosocial: arr(
+      data["psychosocial_context"] ?? data["psychological_factors"]
+    ),
+    resumen: str(data["summary"]),
+  };
+
+  const frozen = Object.freeze(mapped);
+  console.log("[Canadian Parser] Mapping complete:", frozen);
+  return frozen;
+}
+
+function createEmptyClinicalAnalysis(): ClinicalAnalysis {
+  return Object.freeze({
+    motivo_consulta: "",
+    hallazgos_clinicos: [],
+    banderas_rojas: [],
+    banderas_amarillas: [],
+    evaluacion_fisica_propuesta: [],
+    alertas_medico_legales: [],
+    plan_tratamiento: "",
+    contexto_psicosocial: [],
+    resumen: "",
+  });
 }

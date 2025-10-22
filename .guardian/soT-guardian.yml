@@ -1,0 +1,5 @@
+rules:
+  - id: no-spanish-fields
+    description: "Reject commits containing Spanish field names or UI strings."
+    pattern: "(motivo_consulta|hallazgos_clinicos|banderas|tratamiento|riesgo_legal)"
+    severity: error
