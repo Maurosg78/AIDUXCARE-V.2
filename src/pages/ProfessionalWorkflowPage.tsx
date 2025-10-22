@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PatientData } from '../types/PatientData';
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
 import { SOAPDisplay } from '../components/SOAPDisplay';
-import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
+import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab-Canada';
 import { SOAPGenerator } from '../services/soap-generator';
 import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { useTranscript } from '../hooks/useTranscript';
