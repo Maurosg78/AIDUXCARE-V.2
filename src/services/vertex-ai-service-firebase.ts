@@ -1,4 +1,4 @@
-import { CanadianPromptFactory } from "../core/ai/CanadianPromptFactory-Canada";
+import { CanadianPromptFactory } from "../core/ai/PromptFactory-Canada";
 
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';
