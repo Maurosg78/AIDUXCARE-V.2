@@ -1,4 +1,4 @@
-import { PromptFactory } from "../core/ai/PromptFactory-v3";
+import { CanadianPromptFactory } from "../core/ai/CanadianPromptFactory-Canada";
 
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';
@@ -9,7 +9,7 @@ export async function analyzeWithVertexProxy(payload: {
   // Si hay transcript, construir prompt con esquema JSON
   let finalPrompt = payload.prompt;
   if (payload.transcript && !payload.prompt) {
-    const structuredPrompt = PromptFactory.create({
+    const structuredPrompt = CanadianPromptFactory.create({
       contextoPaciente: "Paciente en evaluación fisioterapéutica",
       instrucciones: "Analiza la siguiente transcripción y extrae información clínica relevante.",
       transcript: payload.transcript
@@ -46,4 +46,4 @@ export class VertexAIServiceViaFirebase {
   }
 }
 
-console.log("[OK] vertex-ai-service-firebase.ts integrated with PromptFactory");
+console.log("[OK] vertex-ai-service-firebase.ts integrated with CanadianPromptFactory");
