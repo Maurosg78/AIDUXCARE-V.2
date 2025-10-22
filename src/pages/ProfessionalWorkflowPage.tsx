@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PatientData } from '../types/PatientData';
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
 import { SOAPDisplay } from '../components/SOAPDisplay';
-import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
+import { WorkflowAnalysisTab-Canada } from '../components/WorkflowAnalysisTab';
 import { SOAPGenerator } from '../services/soap-generator';
 import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { useTranscript } from '../hooks/useTranscript';
@@ -160,7 +160,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
       {/* Content */}
       <main className="max-w-7xl mx-auto p-4">
         {activeTab === 'analysis' && (
-          <WorkflowAnalysisTab
+          <WorkflowAnalysisTab-Canada
             selectedPatient={selectedPatient}
             transcript={transcript}
             setTranscript={setTranscript}
