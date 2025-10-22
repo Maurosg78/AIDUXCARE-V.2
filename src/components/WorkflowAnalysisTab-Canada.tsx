@@ -64,9 +64,6 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     metrics, 
     isProcessing, 
     error 
-  const [results, setResults] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
