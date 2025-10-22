@@ -236,7 +236,7 @@ const ProfessionalWorkflowPage = () => {
                       </div>
                     </div>
                   ) : DocGenNote ? (
-                    <SOAPDisplay soapNote={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
+                    <SOAPDisplay soapNote as any={DocGenNote} patientData={(selectedPatient as any) ?? {}} onDownloadPDF={() => {}} />
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-gray-500 mb-4">

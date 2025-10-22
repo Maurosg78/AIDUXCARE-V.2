@@ -6,7 +6,7 @@ interface PatientHeaderProps {
   analysisResults?: any;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
-  previousSessions?: any[];
+  previousSessions?: unknown[];
   isFirstVisit?: boolean;
 }
 

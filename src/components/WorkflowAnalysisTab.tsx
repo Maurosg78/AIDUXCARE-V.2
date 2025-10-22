@@ -25,8 +25,8 @@ interface WorkflowAnalysisTabProps {
   setSelectedFindings: (findings: string[]) => void;
   onGenerateSOAP: () => void;
   onContinueToEvaluation: () => void;
-  physicalExamResults: any[];
-  handleExamResultsChange: (results: any[]) => void;
+  physicalExamResults: unknown[];
+  handleExamResultsChange: (results: unknown[]) => void;
 }
 
 export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({

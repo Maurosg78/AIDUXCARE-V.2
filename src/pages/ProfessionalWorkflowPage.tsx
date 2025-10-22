@@ -38,7 +38,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
     processText, 
     generateSOAPNote, 
     niagaraResults, 
-    soapNote,
+    soapNote as any as any,
     isProcessing: isAnalyzing 
   } = useNiagaraProcessor();
 
@@ -54,7 +54,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
   
   const [selectedFindings, setSelectedFindings] = useState<string[]>([]);
   const [physicalTestsToPerform, setPhysicalTestsToPerform] = useState<string[]>([]);
-  const [physicalExamResults, setPhysicalExamResults] = useState<any[]>([]);
+  const [physicalExamResults, setPhysicalExamResults] = useState<unknown[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<any>(null);
 
   const handleAnalyzeWithAI = async () => {
@@ -62,14 +62,14 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
     console.log("Enviando texto al procesador:", transcript);    await processText(transcript);
   };
 
-  const handleExamResultsChange = (results: any[]) => {
+  const handleExamResultsChange = (results: unknown[]) => {
     setPhysicalExamResults(results);
   };
 
   const handleGenerateSOAP = async () => {
     try {
       const soapData = SOAPGenerator.generateFromData(
-        niagaraResults?.entities || [],
+        (niagaraResults as any)?.entities || [],
         physicalExamResults,
         selectedPatient
       );
@@ -82,7 +82,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
           patientName: `${selectedPatient.nombre} ${selectedPatient.apellidos}`,
           patientId: selectedPatient.id,
           transcript: transcript,
-          soapNote: soapData,
+          soapNote as any as any: soapData,
           physicalTests: physicalExamResults,
           status: "completed"
         });
@@ -101,14 +101,14 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
 
   const handleDownloadReport = async () => {
     const { handleDownloadPDF } = await import("../utils/pdf-handler");
-    await handleDownloadPDF(localSoapNote || soapNote, selectedPatient, physicalExamResults);
+    await handleDownloadPDF(localSoapNote || soapNote as any as any, selectedPatient, physicalExamResults);
   };
 
   useEffect(() => {
-    if (soapNote) {
-      setLocalSoapNote(soapNote);
+    if (soapNote as any as any) {
+      setLocalSoapNote(soapNote as any as any);
     }
-  }, [soapNote]);
+  }, [soapNote as any as any]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,7 +218,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
 
         {activeTab === 'soap' && localSoapNote && (
           <SOAPDisplay
-            soapNote={localSoapNote}
+            soapNote as any as any={localSoapNote}
             patientData={selectedPatient}
             onDownloadPDF={handleDownloadReport}
           />

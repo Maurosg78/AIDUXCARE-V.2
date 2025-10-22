@@ -28,12 +28,12 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
       </button>
       <button 
         onClick={() => setActiveTab('soap')}
-        disabled={!soapNote}
+        disabled={!soapNote as any}
         className={`py-3 px-4 border-b-2 font-medium text-sm ${
           activeTab === 'soap' 
             ? 'border-blue-500 text-blue-600' 
             : 'border-transparent text-gray-500 hover:text-gray-700'
-        } ${!soapNote ? 'opacity-50 cursor-not-allowed' : ''}`}
+        } ${!soapNote as any ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         3. Informe SOAP
       </button>
@@ -56,8 +56,8 @@ const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('
 {activeTab === 'soap' && (
   <div className="text-center py-8">
     <h2 className="text-xl font-semibold mb-4">Informe SOAP</h2>
-    {soapNote ? (
-      <pre className="text-left whitespace-pre-wrap">{soapNote}</pre>
+    {soapNote as any ? (
+      <pre className="text-left whitespace-pre-wrap">{soapNote as any}</pre>
     ) : (
       <p>Complete la evaluación física primero</p>
     )}

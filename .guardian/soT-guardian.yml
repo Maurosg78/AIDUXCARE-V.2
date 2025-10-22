@@ -3,3 +3,7 @@ rules:
     description: "Reject commits containing Spanish field names or UI strings."
     pattern: "(motivo_consulta|hallazgos_clinicos|banderas|tratamiento|riesgo_legal)"
     severity: error
+  - id: enforce-market-language
+    description: "Ensure all commits declare Market: CA and Language: en-CA."
+    pattern: "Market:\\s*CA|Language:\\s*en-CA"
+    severity: error

@@ -22,7 +22,7 @@ export const PhysicalEvaluationTab: React.FC<PhysicalEvaluationTabProps> = ({ on
     analysisResults
   } = useSharedWorkflowState();
 
-  const [currentResults, setCurrentResults] = useState<any[]>(physicalExamResults);
+  const [currentResults, setCurrentResults] = useState<unknown[]>(physicalExamResults);
   const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
 
   const handleTestResult = (testName: string, result: any) => {

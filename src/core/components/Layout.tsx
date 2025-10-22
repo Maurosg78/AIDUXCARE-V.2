@@ -65,11 +65,11 @@ const Layout = () => {
       case 'audio':
         return (
           <EnhancedAudioCapture
-            onTranscriptionComplete={(segments) => {
+            onTranscriptionComplete={(segments: unknown) => {
               logger.info('Transcripción completada:', segments);
               // Aquí se puede integrar con el sistema de notas o historial
             }}
-            onTranscriptionUpdate={(segments) => {
+            onTranscriptionUpdate={(segments: unknown) => {
               logger.info('Transcripción actualizada:', segments);
             }}
             className="h-full"

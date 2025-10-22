@@ -4,8 +4,8 @@ import { Card } from '../shared/ui';
 
 interface SegregatedAlertsProps {
   medicalAlerts: any;
-  legalAlerts: any[];
-  drugInteractions: any[];
+  legalAlerts: unknown[];
+  drugInteractions: unknown[];
 }
 
 export const SegregatedAlerts: React.FC<SegregatedAlertsProps> = ({

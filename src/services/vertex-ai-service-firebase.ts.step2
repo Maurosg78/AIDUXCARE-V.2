@@ -1,5 +1,4 @@
 import { CanadianPromptFactory } from "../core/ai/PromptFactory-Canada";
-import { parseCanadianVertexResponse } from "./canadianResponseParser";
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';
   prompt?: string;

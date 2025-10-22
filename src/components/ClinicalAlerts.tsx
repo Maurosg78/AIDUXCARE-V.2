@@ -2,9 +2,9 @@ import React from 'react';
 import { AlertTriangle, Eye, Pill, Shield, Brain } from 'lucide-react';
 
 interface ClinicalAlertsProps {
-  conditions: any[];
-  medications: any[];
-  symptoms: any[];
+  conditions: unknown[];
+  medications: unknown[];
+  symptoms: unknown[];
 }
 
 export const ClinicalAlerts: React.FC<ClinicalAlertsProps> = ({

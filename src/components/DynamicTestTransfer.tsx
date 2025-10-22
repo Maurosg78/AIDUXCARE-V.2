@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight, CheckSquare } from 'lucide-react';
 
 interface DynamicTestTransferProps {
-  selectedTests: any[];
+  selectedTests: unknown[];
   onTransfer: () => void;
   disabled?: boolean;
 }
