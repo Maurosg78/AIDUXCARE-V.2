@@ -33,24 +33,8 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
     ultimaModificacion: new Date().toISOString(),
     modificadoPor: "Sistema"
   });
-
-  const { 
-    processText, 
-    generateSOAPNote, 
-    niagaraResults, 
-    soapNote as any as any,
-    isProcessing: isAnalyzing 
-  } = useNiagaraProcessor();
-
-  const { 
-    transcript, 
-    isRecording, 
-    startRecording, 
-    stopRecording,
-    setTranscript 
-  } = useTranscript();
-
-  const { time: recordingTime } = useTimer(isRecording);
+  const { processText, stopRecording, setTranscript } = useTranscript();
+  const { generateSOAPNote, niagaraResults, soapNote, isProcessing: isAnalyzing } = useNiagaraProcessor();  const { time: recordingTime } = useTimer(isRecording);
   
   const [selectedFindings, setSelectedFindings] = useState<string[]>([]);
   const [physicalTestsToPerform, setPhysicalTestsToPerform] = useState<string[]>([]);
@@ -82,7 +66,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
           patientName: `${selectedPatient.nombre} ${selectedPatient.apellidos}`,
           patientId: selectedPatient.id,
           transcript: transcript,
-          soapNote as any as any: soapData,
+          soapNote: soapData,
           physicalTests: physicalExamResults,
           status: "completed"
         });
@@ -101,14 +85,14 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
 
   const handleDownloadReport = async () => {
     const { handleDownloadPDF } = await import("../utils/pdf-handler");
-    await handleDownloadPDF(localSoapNote || soapNote as any as any, selectedPatient, physicalExamResults);
+    await handleDownloadPDF(localSoapNote || soapNote as any, selectedPatient, physicalExamResults);
   };
 
   useEffect(() => {
-    if (soapNote as any as any) {
-      setLocalSoapNote(soapNote as any as any);
+    if (soapNote as any) {
+      setLocalSoapNote(soapNote as any);
     }
-  }, [soapNote as any as any]);
+  }, [soapNote as any]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,7 +202,7 @@ import { useLanguage } from "../contexts/LanguageContext";const ProfessionalWork
 
         {activeTab === 'soap' && localSoapNote && (
           <SOAPDisplay
-            soapNote as any as any={localSoapNote}
+            soapNote as any={localSoapNote}
             patientData={selectedPatient}
             onDownloadPDF={handleDownloadReport}
           />
