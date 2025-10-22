@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useRef } from 'react';
 import { Card } from '../shared/ui';
 import { Mic, MicOff, Brain, Camera, Upload, FileText, X } from 'lucide-react';
@@ -54,8 +57,8 @@ export const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-medium text-gray-900">Consultation Content</h3>
         <div className="flex items-center gap-3">
-          {transcript.length > 0 && (
-            <span className="text-xs text-gray-500">{transcript.split(' ').length} palabras</span>
+          {transcript?.length > 0 && (
+            <span className="text-xs text-gray-500">{transcript?.split(' ').length} palabras</span>
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
