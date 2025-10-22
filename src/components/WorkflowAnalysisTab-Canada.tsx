@@ -64,7 +64,9 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
     metrics, 
     isProcessing, 
     error 
-  } = useNiagaraProcessor();
+  const [results, setResults] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
   
   // Auto-selección basada en IA
   const { selectQuickValidation, selectCriticalOnly } = useAutoSelection(
@@ -272,3 +274,30 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
   );
 };
 export default WorkflowAnalysisTab;
+
+  // Función de análisis con perfil profesional
+  const handleAnalyzeWithProfile = async () => {
+    if (!transcript.trim()) return;
+    
+    setIsProcessing(true);
+    setError(null);
+    
+    try {
+      const response = await analyzeWithProfile(transcript);
+      setResults(response);
+      
+      // Log para debugging - mostrar personalización
+      console.log('🇨🇦 Canadian Analysis Complete:', {
+        specialty: specialtyInfo.specialty,
+        experience: specialtyInfo.experience,
+        techniques: specialtyInfo.techniques,
+        profileReady: isProfileReady
+      });
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Canadian VertexAI Error:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
