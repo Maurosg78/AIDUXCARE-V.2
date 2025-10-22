@@ -122,32 +122,3 @@ CPO (College of Physicians and Surgeons Ontario):
 import { PHIPA_REGULATIONS } from '../legal/ontario/phipa-regulations';
 import { CPO_STANDARDS } from '../legal/ontario/cpo-standards';
 
-function getUpdatedOntarioLegalFramework(): string {
-  const phipaRequirements = PHIPA_REGULATIONS
-    .map(reg => `- ${reg.title}: ${reg.clinicalRelevance}`)
-    .join('\n');
-    
-  const cpoStandards = CPO_STANDARDS
-    .map(std => `- ${std.title}: ${std.clinicalApplication}`)
-    .join('\n');
-
-  return `
-CURRENT ONTARIO LEGAL FRAMEWORK (Updated: ${new Date().toISOString().split('T')[0]}):
-
-PHIPA COMPLIANCE REQUIREMENTS:
-${phipaRequirements}
-
-CPO PROFESSIONAL STANDARDS:
-${cpoStandards}
-
-PIPEDA PRIVACY REQUIREMENTS:
-- Patient data minimization applied
-- Consent documentation maintained
-- Data retention limits observed
-- Cross-border transfer restrictions noted
-
-COMPLIANCE VERIFICATION:
-- All recommendations verified against current regulations
-- Professional liability considerations included
-- Documentation standards met per Ontario requirements`;
-}
