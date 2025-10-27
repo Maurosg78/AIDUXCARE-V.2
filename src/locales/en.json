@@ -27,3 +27,16 @@
   "submit": "Confirm Consent",
   "confirmation": "Your consent has been recorded successfully."
 }
+,
+"notifications": {
+  "accountUpdated": "Your account information was successfully updated.",
+  "passwordChanged": "Your password has been changed.",
+  "sessionExpired": "Your session has expired. Please log in again.",
+  "newMessage": "You have a new clinical message."
+},
+"emails": {
+  "welcomeSubject": "Welcome to AiDuxCare",
+  "welcomeBody": "Thank you for joining AiDuxCare. We’re excited to help streamline your clinical notes.",
+  "alertSubject": "Clinical Alert",
+  "alertBody": "A new clinical alert has been generated in your account."
+}
