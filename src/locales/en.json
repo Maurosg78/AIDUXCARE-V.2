@@ -17,3 +17,19 @@
     "plan": "Plan"
   }
 }
+,
+"system": {
+  "logSaved": "Audit log saved successfully",
+  "logError": "Failed to record audit log",
+  "sessionExpired": "Session expired, please log in again",
+  "permissionDenied": "Access denied",
+  "networkIssue": "Network issue, please check your connection",
+  "updateAvailable": "A new update is available",
+  "maintenanceMode": "System under maintenance"
+}
+,
+"audit": {
+  "auditLogs": "Audit Logs",
+  "saveLog": "Save Log",
+  "noLogs": "No logs recorded yet"
+}

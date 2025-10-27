@@ -17,3 +17,19 @@
     "plan": "Plan"
   }
 }
+,
+"system": {
+  "logSaved": "Registro de auditoría guardado correctamente",
+  "logError": "No se pudo registrar el evento de auditoría",
+  "sessionExpired": "Sesión expirada, por favor inicia sesión nuevamente",
+  "permissionDenied": "Acceso denegado",
+  "networkIssue": "Problema de red, revisa tu conexión",
+  "updateAvailable": "Nueva actualización disponible",
+  "maintenanceMode": "Sistema en mantenimiento"
+}
+,
+"audit": {
+  "auditLogs": "Registros de auditoría",
+  "saveLog": "Guardar registro",
+  "noLogs": "Aún no hay registros"
+}
