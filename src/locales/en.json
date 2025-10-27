@@ -65,3 +65,9 @@
     "default": "Provide an audit summary for clinical compliance verification."
   }
 }
+,
+"rephrase": {
+  "button": "Suggest improvement",
+  "loading": "Rephrasing...",
+  "suggestion": "Suggestion"
+}

@@ -65,3 +65,9 @@
     "default": "Proporciona un resumen de auditoría para verificación de cumplimiento clínico."
   }
 }
+,
+"rephrase": {
+  "button": "Sugerir mejora",
+  "loading": "Reformulando...",
+  "suggestion": "Sugerencia"
+}
