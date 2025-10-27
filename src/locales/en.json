@@ -26,3 +26,14 @@
   "errorNetwork": "Network error. Please try again.",
   "errorValidation": "Some fields are invalid. Please review them."
 }
+,
+"forms": {
+  "namePlaceholder": "Enter patient name",
+  "emailPlaceholder": "Enter your email",
+  "requiredField": "This field is required",
+  "invalidEmail": "Please enter a valid email"
+},
+"banners": {
+  "success": "Operation completed successfully",
+  "warning": "Please review highlighted items"
+}

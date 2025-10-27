@@ -7,8 +7,9 @@ interface LoadingOverlayProps {
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ 
+  const { t } = useTranslation();
   isLoading, 
-  message = 'Analizando con IA...' 
+  message = t('ui.loading') 
 }) => {
   if (!isLoading) return null;
 

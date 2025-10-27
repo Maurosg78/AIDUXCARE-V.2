@@ -26,3 +26,14 @@
   "errorNetwork": "Error de red. Por favor, inténtalo de nuevo.",
   "errorValidation": "Algunos campos son inválidos. Revísalos."
 }
+,
+"forms": {
+  "namePlaceholder": "Introduce el nombre del paciente",
+  "emailPlaceholder": "Introduce tu correo electrónico",
+  "requiredField": "Este campo es obligatorio",
+  "invalidEmail": "Por favor, introduce un correo válido"
+},
+"banners": {
+  "success": "Operación completada con éxito",
+  "warning": "Por favor, revisa los elementos resaltados"
+}
