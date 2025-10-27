@@ -17,3 +17,13 @@
     "plan": "Plan"
   }
 }
+,
+"consent": {
+  "title": "Informed Consent Agreement",
+  "generalNotice": "By continuing, you consent to the use of your data according to our policies.",
+  "phipaNotice": "This consent aligns with Ontario's PHIPA regulations regarding health information protection.",
+  "pipedaNotice": "This consent aligns with federal PIPEDA requirements for personal data use.",
+  "agree": "I have read and agree to the consent terms.",
+  "submit": "Confirm Consent",
+  "confirmation": "Your consent has been recorded successfully."
+}

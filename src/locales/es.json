@@ -17,3 +17,13 @@
     "plan": "Plan"
   }
 }
+,
+"consent": {
+  "title": "Acuerdo de Consentimiento Informado",
+  "generalNotice": "Al continuar, das tu consentimiento para el uso de tus datos según nuestras políticas.",
+  "phipaNotice": "Este consentimiento cumple con las regulaciones de PHIPA de Ontario sobre protección de información de salud.",
+  "pipedaNotice": "Este consentimiento cumple con los requisitos federales de PIPEDA sobre uso de datos personales.",
+  "agree": "He leído y acepto los términos del consentimiento.",
+  "submit": "Confirmar consentimiento",
+  "confirmation": "Tu consentimiento ha sido registrado correctamente."
+}
