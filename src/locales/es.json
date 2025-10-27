@@ -40,3 +40,13 @@
   "alertSubject": "Alerta Clínica",
   "alertBody": "Se ha generado una nueva alerta clínica en tu cuenta."
 }
+,
+"context": {
+  "save": "Guardar",
+  "save.role.physio": "Guardar nota de tratamiento",
+  "save.role.assistant": "Guardar registro del paciente",
+  "save.session.initial": "Guardar evaluación inicial",
+  "save.session.followup": "Guardar control de seguimiento",
+  "status.pending": "Pendiente de revisión",
+  "status.closed": "Registro cerrado"
+}

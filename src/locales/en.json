@@ -40,3 +40,13 @@
   "alertSubject": "Clinical Alert",
   "alertBody": "A new clinical alert has been generated in your account."
 }
+,
+"context": {
+  "save": "Save",
+  "save.role.physio": "Save treatment note",
+  "save.role.assistant": "Save patient log",
+  "save.session.initial": "Save initial evaluation",
+  "save.session.followup": "Save follow-up entry",
+  "status.pending": "Pending review",
+  "status.closed": "Closed record"
+}
