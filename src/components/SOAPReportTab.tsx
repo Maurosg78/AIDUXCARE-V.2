@@ -33,7 +33,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     const subjective = generateSubjective();
     const objective = generateObjective();
     const assessment = generateAssessment();
-    const plan = generatePlan();
+    const plan = generate${t("soap.plan")}();
 
     setSoapReport({
       subjective,
@@ -97,7 +97,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     return text;
   };
 
-  const generatePlan = () => {
+  const generate${t("soap.plan")} = () => {
     let text = 'PLAN DE TRATAMIENTO:\n';
     
     // Si hay red flags
@@ -162,7 +162,7 @@ Fecha: ${new Date().toLocaleString()}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold">Informe SOAP</h2>
+            <h2 className="text-xl font-semibold">${t("workflow.soapReport")}</h2>
           </div>
           <div className="flex gap-2">
             <button
@@ -192,7 +192,7 @@ Fecha: ${new Date().toLocaleString()}
         <div className="space-y-4">
           {/* SUBJETIVO */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-blue-600">S - Subjetivo</h3>
+            <h3 className="font-semibold text-lg mb-2 text-blue-600">S - ${t("soap.subjective")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.subjective}
@@ -209,7 +209,7 @@ Fecha: ${new Date().toLocaleString()}
 
           {/* OBJETIVO */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-green-600">O - Objetivo</h3>
+            <h3 className="font-semibold text-lg mb-2 text-green-600">O - ${t("soap.objective")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.objective}
@@ -243,7 +243,7 @@ Fecha: ${new Date().toLocaleString()}
 
           {/* PLAN */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-orange-600">P - Plan</h3>
+            <h3 className="font-semibold text-lg mb-2 text-orange-600">P - ${t("soap.plan")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.plan}

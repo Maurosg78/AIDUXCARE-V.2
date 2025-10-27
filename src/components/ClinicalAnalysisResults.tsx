@@ -220,12 +220,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
       </div>
 
-      {/* FILA 3: Evaluación Física */}
+      {/* FILA 3: ${t("workflow.physicalEvaluation")} */}
       <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-gray-800">Evaluación Física Propuesta</h3>
+            <h3 className="font-semibold text-gray-800">${t("workflow.physicalEvaluationProposed")}</h3>
           </div>
           <div className="flex gap-2">
             <button 
