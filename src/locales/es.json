@@ -17,3 +17,39 @@
     "plan": "Plan"
   }
 }
+,
+"clinical": {
+  "patientName": "Nombre del paciente",
+  "diagnosis": "Diagnóstico",
+  "treatmentPlan": "Plan de tratamiento",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "formTitle": "Registro clínico",
+  "success": "¡Registro guardado correctamente!",
+  "warning": "Revisa los datos del paciente",
+  "error": "Ocurrió un error al guardar."
+}
+,
+"clinical": {
+  "patientName": "Nombre del paciente",
+  "diagnosis": "Diagnóstico",
+  "treatmentPlan": "Plan de tratamiento",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "formTitle": "Registro clínico",
+  "success": "¡Registro guardado correctamente!",
+  "warning": "Revisa los datos del paciente",
+  "error": "Ocurrió un error al guardar."
+}
+,
+"clinical": {
+  "patientName": "Nombre del paciente",
+  "diagnosis": "Diagnóstico",
+  "treatmentPlan": "Plan de tratamiento",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "formTitle": "Registro clínico",
+  "success": "¡Registro guardado correctamente!",
+  "warning": "Revisa los datos del paciente",
+  "error": "Ocurrió un error al guardar."
+}

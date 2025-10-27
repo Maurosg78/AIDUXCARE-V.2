@@ -17,3 +17,39 @@
     "plan": "Plan"
   }
 }
+,
+"clinical": {
+  "patientName": "Patient Name",
+  "diagnosis": "Diagnosis",
+  "treatmentPlan": "Treatment Plan",
+  "save": "Save",
+  "cancel": "Cancel",
+  "formTitle": "Clinical Record",
+  "success": "Record saved successfully!",
+  "warning": "Check patient data",
+  "error": "An error occurred while saving."
+}
+,
+"clinical": {
+  "patientName": "Patient Name",
+  "diagnosis": "Diagnosis",
+  "treatmentPlan": "Treatment Plan",
+  "save": "Save",
+  "cancel": "Cancel",
+  "formTitle": "Clinical Record",
+  "success": "Record saved successfully!",
+  "warning": "Check patient data",
+  "error": "An error occurred while saving."
+}
+,
+"clinical": {
+  "patientName": "Patient Name",
+  "diagnosis": "Diagnosis",
+  "treatmentPlan": "Treatment Plan",
+  "save": "Save",
+  "cancel": "Cancel",
+  "formTitle": "Clinical Record",
+  "success": "Record saved successfully!",
+  "warning": "Check patient data",
+  "error": "An error occurred while saving."
+}
