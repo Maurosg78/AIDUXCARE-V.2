@@ -50,3 +50,18 @@
   "status.pending": "Pendiente de revisión",
   "status.closed": "Registro cerrado"
 }
+,
+"prompts": {
+  "soap": {
+    "default": "Resume esta sesión en formato SOAP.",
+    "tone.formal": "Genera una nota SOAP estructurada y profesional.",
+    "role.physio": "Genera una nota SOAP que enfatice los hallazgos de evaluación física.",
+    "role.assistant": "Crea una nota de progreso concisa basada en las observaciones del asistente."
+  },
+  "consent": {
+    "default": "Explica el proceso de consentimiento informado en términos claros."
+  },
+  "audit": {
+    "default": "Proporciona un resumen de auditoría para verificación de cumplimiento clínico."
+  }
+}

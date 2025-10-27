@@ -50,3 +50,18 @@
   "status.pending": "Pending review",
   "status.closed": "Closed record"
 }
+,
+"prompts": {
+  "soap": {
+    "default": "Summarize this session into SOAP format.",
+    "tone.formal": "Generate a structured and professional SOAP note.",
+    "role.physio": "Produce a SOAP note emphasizing physical assessment findings.",
+    "role.assistant": "Create a concise progress note based on the assistant's observations."
+  },
+  "consent": {
+    "default": "Explain the informed consent process in clear terms."
+  },
+  "audit": {
+    "default": "Provide an audit summary for clinical compliance verification."
+  }
+}
