@@ -17,3 +17,12 @@
     "plan": "Plan"
   }
 }
+,
+"ui": {
+  "loading": "Cargando...",
+  "saving": "Guardando...",
+  "synced": "Todos los cambios guardados",
+  "tooltipHelp": "Haz clic aquí para más información",
+  "errorNetwork": "Error de red. Por favor, inténtalo de nuevo.",
+  "errorValidation": "Algunos campos son inválidos. Revísalos."
+}

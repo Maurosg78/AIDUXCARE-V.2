@@ -17,3 +17,12 @@
     "plan": "Plan"
   }
 }
+,
+"ui": {
+  "loading": "Loading...",
+  "saving": "Saving...",
+  "synced": "All changes saved",
+  "tooltipHelp": "Click here for more information",
+  "errorNetwork": "Network error. Please try again.",
+  "errorValidation": "Some fields are invalid. Please review them."
+}
