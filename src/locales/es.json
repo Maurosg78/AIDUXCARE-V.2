@@ -71,3 +71,8 @@
   "loading": "Reformulando...",
   "suggestion": "Sugerencia"
 }
+,
+"test_locale": {
+  "soap_header": "Subjetivo / Objetivo / Valoración / Plan",
+  "soap_footer": "Fin de la nota clínica."
+}

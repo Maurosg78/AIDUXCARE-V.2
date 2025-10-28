@@ -71,3 +71,8 @@
   "loading": "Rephrasing...",
   "suggestion": "Suggestion"
 }
+,
+"test_locale": {
+  "soap_header": "Subjective / Objective / Assessment / Plan",
+  "soap_footer": "End of clinical note."
+}
