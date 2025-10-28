@@ -76,3 +76,11 @@
   "soap_header": "Subjective / Objective / Assessment / Plan",
   "soap_footer": "End of clinical note."
 }
+,
+"review": {
+  "feedback": "AI translation reviewer active",
+  "actions": {
+    "improve": "Suggest improved translation",
+    "check": "Run consistency check"
+  }
+}
