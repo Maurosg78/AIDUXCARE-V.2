@@ -76,3 +76,11 @@
   "soap_header": "Subjetivo / Objetivo / Valoración / Plan",
   "soap_footer": "Fin de la nota clínica."
 }
+,
+"review": {
+  "feedback": "Revisor automático de traducciones activo",
+  "actions": {
+    "improve": "Sugerir traducción mejorada",
+    "check": "Ejecutar comprobación de consistencia"
+  }
+}

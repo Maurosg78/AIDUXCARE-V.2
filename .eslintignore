@@ -54,3 +54,5 @@ test-backend*.js
 test-backend*/**
 test-sistema*.js
 test-*.js
+backups/
+docs/_archive/
