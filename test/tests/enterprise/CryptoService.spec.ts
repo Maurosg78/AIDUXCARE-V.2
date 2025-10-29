@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CryptoService } from '../../src/services/CryptoService';
+import { CryptoService } from '../../../src/services/CryptoService';
 
 describe('CryptoService', () => {
   it('encrypts and decrypts medical data', async () => {
