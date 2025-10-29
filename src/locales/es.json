@@ -1,0 +1,37 @@
+{
+  "workflow": {
+    "title": "Flujo Profesional",
+    "initialAnalysis": "Análisis Inicial",
+    "physicalEvaluation": "Evaluación Física",
+    "soapReport": "Informe SOAP",
+    "consultationContent": "Contenido de la Consulta",
+    "analyzeWithAI": "Analizar con IA",
+    "record": "Grabar"
+  },
+  "soap": {
+    "subjective": "Subjetivo",
+    "objective": "Objetivo",
+    "assessment": "Evaluación",
+    "plan": "Plan"
+  },
+  "consent": {
+    "title": "Acuerdo de Consentimiento Informado",
+    "generalNotice": "Al continuar, consientes el uso de tus datos según nuestras políticas.",
+    "phipaNotice": "Este consentimiento cumple con las regulaciones de PHIPA de Ontario sobre la protección de información sanitaria.",
+    "pipedaNotice": "Este consentimiento cumple con los requisitos federales de PIPEDA para el uso de datos personales.",
+    "agree": "He leído y acepto los términos de consentimiento.",
+    "submit": "Confirmar Consentimiento",
+    "confirmation": "Tu consentimiento se ha registrado correctamente."
+  },
+  "notifications": {
+    "accountUpdated": "Tu información de cuenta se actualizó correctamente.",
+    "passwordChanged": "Tu contraseña ha sido cambiada.",
+    "sessionExpired": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+    "newMessage": "Tienes un nuevo mensaje clínico."
+  },
+  "emails": {
+    "welcomeSubject": "Bienvenido a AiDuxCare",
+    "welcomeBody": "Gracias por unirte a AiDuxCare. Estamos encantados de ayudarte a optimizar tus notas clínicas.",
+    "alertSubject": "Alerta Clínica"
+  }
+}
