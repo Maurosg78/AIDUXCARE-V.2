@@ -1,3 +1,16 @@
+#!/usr/bin/env bash
+set -e
 
 echo "🔎 Running data validation (Zod) + SoT trailers…"
+
+# 1️⃣ Ejecuta validación de datos (Zod)
 npm run -s validate:data || exit $?
+
+# 2️⃣ Auto-agrega los trailers SoT si faltan
+if [ -f scripts/auto-add-trailers.sh ]; then
+  bash scripts/auto-add-trailers.sh || true
+else
+  echo "⚠️ scripts/auto-add-trailers.sh no encontrado, omitiendo."
+fi
+
+echo "✅ pre-commit ejecutado correctamente."

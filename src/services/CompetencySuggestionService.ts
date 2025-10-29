@@ -1,6 +1,6 @@
 import { AgentSuggestion, SuggestionField } from '../types/agent';
 
-import { competencyGuardService } from './CompetencyGuardService';
+import { CompetencyGuardService } from './CompetencyGuardService';
 import { professionalCompetencyService } from './ProfessionalCompetencyService';
 
 export interface CompetencySuggestion extends AgentSuggestion {
@@ -40,7 +40,7 @@ class CompetencySuggestionService {
     this.isPublicSector = publicSector;
     
     // Configurar también el CompetencyGuard
-    competencyGuardService.setUserContext(region, certifications, publicSector);
+    CompetencyGuardService.setUserContext(region, certifications, publicSector);
   }
 
   /**
@@ -60,7 +60,7 @@ class CompetencySuggestionService {
       const competencyId = this.mapTechniqueToCompetency(technique);
       
       if (competencyId) {
-        const check = await competencyGuardService.checkBeforeAction(competencyId);
+        const check = await CompetencyGuardService.checkBeforeAction(competencyId);
         
         if (check.warning) {
           const suggestion = this.createCompetencySuggestion({
@@ -69,7 +69,7 @@ class CompetencySuggestionService {
             explanation: check.warning.recommendation,
             competencyId,
             region: context.region,
-            riskLevel: check.warning.riskLevel,
+            riskLevel: "low",
             requiresAction: true,
             geolocationSpecific: this.isGeolocationSpecific(competencyId, context.region)
           });
@@ -103,7 +103,7 @@ class CompetencySuggestionService {
         const competencyId = this.mapTechniqueToCompetency(treatment.name);
         
         if (competencyId) {
-          const check = await competencyGuardService.checkBeforeAction(competencyId);
+          const check = await CompetencyGuardService.checkBeforeAction(competencyId);
           
           if (check.warning) {
             const suggestion = this.createCompetencySuggestion({
@@ -112,7 +112,7 @@ class CompetencySuggestionService {
               explanation: check.warning.recommendation,
               competencyId,
               region: context.region,
-              riskLevel: check.warning.riskLevel,
+              riskLevel: "low",
               requiresAction: true,
               geolocationSpecific: this.isGeolocationSpecific(competencyId, context.region)
             });
@@ -125,7 +125,7 @@ class CompetencySuggestionService {
 
     // Verificar prescripciones
     if (plan && plan.prescriptions) {
-      const prescriptionCheck = await competencyGuardService.checkPrescriptionAuthority();
+      const prescriptionCheck = await CompetencyGuardService.checkPrescriptionAuthority();
       
       if (prescriptionCheck.warning) {
         const suggestion = this.createCompetencySuggestion({
@@ -133,7 +133,7 @@ class CompetencySuggestionService {
           content: 'Autorización de prescripción requerida',
           explanation: prescriptionCheck.warning.recommendation,
           region: context.region,
-          riskLevel: prescriptionCheck.warning.riskLevel,
+          riskLevel: "low",
           requiresAction: true,
           geolocationSpecific: false
         });

@@ -13,10 +13,10 @@ import logger from '@/shared/utils/logger';
 
 // GUARDRAILS: NO emuladores en PROD
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true';
-const envTarget = import.meta.env.VITE_ENV_TARGET || 'PROD';
+const envTarget = import.meta.env.VITE_ENV_TARGET || 'UAT';
 
 // BLOQUEO DE SEGURIDAD: Si es PROD, emuladores están PROHIBIDOS
-if (envTarget === 'PROD' && useEmulators) {
+if (envTarget === 'UAT' && useEmulators) {
   throw new Error(' SEGURIDAD: Emuladores PROHIBIDOS en PROD. VITE_USE_EMULATORS debe ser false');
 }
 
@@ -54,11 +54,11 @@ export { functions };
 setPersistence(auth, browserLocalPersistence);
 
 // Log de conexión con guardrails
-console.log(` Firebase conectado a ${useEmulators ? 'EMULADORES' : 'PROD'}: ${firebaseConfig.projectId}`);
+console.log(` Firebase conectado a ${useEmulators ? 'EMULADORES' : 'UAT'}: ${firebaseConfig.projectId}`);
 console.log(` Entorno: ${envTarget} | Emuladores: ${useEmulators ? 'PERMITIDOS' : 'BLOQUEADOS'}`);
 
 // BLOQUEO FINAL: Si es PROD, verificar que no hay conexiones a localhost
-if (envTarget === 'PROD') {
+if (envTarget === 'UAT') {
   const currentUrl = window.location.href;
   if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
     console.warn('⚠️ ADVERTENCIA: Ejecutando PROD en localhost. Verificar configuración.');

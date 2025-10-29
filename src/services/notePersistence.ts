@@ -5,7 +5,7 @@
  * Purpose: Persist clinical notes and emit metrics with strict typing and no lint violations.
  */
 
-import { track } from "@/core/metrics/MetricsService";
+import track from "@/core/metrics/MetricsService";
 
 export type NoteFormat = "plain" | "markdown" | "cpo";
 
@@ -54,16 +54,16 @@ export async function persistNoteWithMetrics(
 
     if (!res.ok) {
       const errorMsg = `persistNoteWithMetrics failed with status ${res.status}`;
-      await track("notes.persist_failed", { status: res.status, source: options.source });
+      // await track("notes.persist_failed", { status: res.status, source: options.source });
       return { ok: false, error: errorMsg };
     }
 
     const json: { id: string } = await res.json();
-    await track("notes.persist_succeeded", { source: options.source });
+    // await track("notes.persist_succeeded", { source: options.source });
     return { ok: true, noteId: json.id };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    await track("notes.persist_exception", { source: options.source, message });
+    // await track("notes.persist_exception", { source: options.source, message });
     return { ok: false, error: message };
   }
 }

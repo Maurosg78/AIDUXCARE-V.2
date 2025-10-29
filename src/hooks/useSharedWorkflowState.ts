@@ -1,3 +1,4 @@
+import { trackComplianceEvent } from "../services/analytics-service";
 /* @ts-nocheck */
 import { useState, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
@@ -18,7 +19,6 @@ export const useSharedWorkflowState = () => {
   const passTestsToEvaluation = (tests: any[]) => {
     updateSessionData('tab2', { suggestedTests: tests });
     setSharedState(prev => ({ ...prev, selectedTests: tests }));
-    console.log(`Pasando ${tests.length} tests a evaluación`);
   };
 
   // Tab 2 -> Tab 3: Pasar resultados de evaluación

@@ -9,19 +9,19 @@ export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep }) => 
   const steps = [
     { 
       id: 1, 
-      title: t("workflow.initialAnalysis"),
+      title: "Workflow",
       description: "Capturar y analizar información del paciente",
       example: "Historia clínica, síntomas, medicación"
     },
     { 
       id: 2, 
-      title: t("workflow.physicalEvaluation"),
+      title: "Workflow",
       description: "Realizar tests seleccionados",
       example: "ROM, fuerza, tests especiales"
     },
     { 
       id: 3, 
-      title: t("workflow.soapReport"),
+      title: "Workflow",
       description: "Generar documentación clínica",
       example: "Subjetivo, Objetivo, Análisis, Plan"
     }
