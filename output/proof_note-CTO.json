@@ -1,0 +1,9 @@
+{
+  "note_id": "note-CTO",
+  "user_id": "user-A",
+  "consent_version": "1.1",
+  "integrity_hash": "hashCTO",
+  "timestamp": "2025-10-31T10:08:04.951Z",
+  "signature": "e4980779beb4379ec7a63753ee88f101117bfdd46cc92c7d53446d9a8e882385",
+  "verified": true
+}
