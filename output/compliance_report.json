@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-10-31T13:24:31.972Z",
+  "counts": {
+    "json": 60,
+    "pdf": 22,
+    "html": 6
+  },
+  "compliance_score": 100,
+  "rules_checked": [
+    "PHIPA",
+    "PIPEDA",
+    "CPO Ontario"
+  ],
+  "compliant": true,
+  "signature": "a9f4fd402e92b8bf75fb36f6165b1cd1501d12d7454dd0dd29fad2d824cd5b4d"
+}
