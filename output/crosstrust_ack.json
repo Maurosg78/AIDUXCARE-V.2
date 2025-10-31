@@ -1,0 +1,9 @@
+{
+  "agreement_id": "72879260-3896-458f-84be-833c91ea7126",
+  "issued_at": "2025-10-31T14:24:14.950Z",
+  "ca_ledger_id": "4a3d2b9e-6a2d-4f35-8a3d-63519b41caa3",
+  "eu_ledger_id": "b064a852-e65a-43a2-84ad-f4d180f46df9",
+  "bilateral_signature": "0b93e89be78863f409d379c01d850b864dd6d141bc49014bdad50b5760dbd9df",
+  "status": "SYNCHRONIZED",
+  "verified": true
+}
