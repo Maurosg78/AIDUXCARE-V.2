@@ -1,0 +1,8 @@
+{
+  "id": "b9adcce2-73b7-4a1a-9601-908deb7b37c4",
+  "published_at": "2025-10-31T13:44:35.391Z",
+  "payload_hash": "945b2b7dc978d0ed3b7934dbdf8fb3c0ab77b25d96108fbe0213f34e9ca2f4ef",
+  "signature": "d2819a865fd10f70f7ad9d5d518649656b804cb6e96dc113b4570cd49a272bbe",
+  "status": "mock_sent",
+  "endpoint": "supabase://audit_metrics_log"
+}
