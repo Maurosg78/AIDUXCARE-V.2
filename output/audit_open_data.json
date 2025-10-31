@@ -1,0 +1,14 @@
+{
+  "project": "AiDuxCare",
+  "phase": "12B",
+  "registry_hash": "3a839f067e070be63dc10848fd1e9df3767e3e51e8bc58a11c58319d3a5354fd",
+  "authority": "E-Trust Canada",
+  "published_at": "2025-10-31T12:55:40.832Z",
+  "compliance_chain": [
+    "PHIPA",
+    "PIPEDA",
+    "CPO Ontario",
+    "Health Canada"
+  ],
+  "verified": true
+}
