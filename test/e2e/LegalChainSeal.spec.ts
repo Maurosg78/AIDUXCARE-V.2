@@ -9,8 +9,7 @@ import { LegalChainSealService } from "../../src/services/LegalChainSealService"
 
 describe("🏁 LegalChainSealService — CTO Final Signature & Legal Chain Seal", () => {
   const outputDir = path.join(process.cwd(), "output");
-
-  it("✅ should compute master hash, signature and PDF seal", () => {
+  it("✅ should compute master hash, sign and produce PDF seal", () => {
     const result = LegalChainSealService.sealAll();
     expect(result).toBe(true);
 
