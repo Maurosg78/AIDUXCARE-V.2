@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="UTF-8" />
+<title>AiDuxCare — Regulator Verification Portal</title>
+<style>
+  body { font-family: Inter, Arial, sans-serif; background:#f9fafb; margin:2rem; color:#111; }
+  h1 { color:#1e3a8a; }
+  table { width:100%; border-collapse:collapse; margin-top:1.5rem; }
+  th,td { border:1px solid #ddd; padding:8px; font-size:0.9rem; }
+  th { background:#dbeafe; text-align:left; }
+  tr:nth-child(even){ background:#f1f5f9; }
+  .ok { color:#059669; font-weight:600; }
+  .fail { color:#dc2626; font-weight:600; }
+  footer { margin-top:2rem; text-align:center; font-size:0.8rem; color:#555; }
+  button { background:#2563eb; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>🔍 AiDuxCare — Regulator Verification Portal</h1>
+<p>This portal provides real-time verification of compliance chain artifacts.</p>
+<table>
+<tr><th>Artifact</th><th>Hash (SHA256)</th><th>Status</th></tr>
+<tr><td>audit_dashboard.json</td><td><code>89c7f7eda8f41a5517d64b5a...</code></td><td class="ok">✓ Verified</td></tr><tr><td>blockchain_ledger.json</td><td><code>113ca403dee51f0e98d125e7...</code></td><td class="ok">✓ Verified</td></tr><tr><td>federated_exchange_log.json</td><td><code>9ad51b920016bbbd53fe10c8...</code></td><td class="ok">✓ Verified</td></tr><tr><td>patient_consent_ledger.json</td><td><code>cf0af18cabbedb6cdd6d8c4f...</code></td><td class="ok">✓ Verified</td></tr><tr><td>CTO_Compliance_Report.md</td><td><code>322b293fe444981072f60766...</code></td><td class="ok">✓ Verified</td></tr><tr><td>vault_attestation.json</td><td><code>b459186f9e7948da74c762ee...</code></td><td class="ok">✓ Verified</td></tr>
+</table>
+<div style="margin-top:2rem;text-align:center;">
+<button onclick="location.reload()">Re-Verify All</button>
+</div>
+<footer>
+<p>Generated: 2025-10-31T11:14:57.194Z</p>
+<p>© 2025 AiDuxCare — CPO Ontario Verification Dashboard</p>
+</footer>
+</body>
+</html>
