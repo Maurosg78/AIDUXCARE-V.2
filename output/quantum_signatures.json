@@ -1,42 +1,42 @@
 {
-  "batch_id": "d9cbe5a9-de0d-49bf-bbe2-eccb1f474311",
-  "generated_at": "2025-10-31T15:16:31.006Z",
+  "batch_id": "0e8314fb-505e-4862-a219-2ffc1f358cac",
+  "generated_at": "2025-10-31T15:16:44.922Z",
   "signatures": [
     {
       "artifact": "global_trust_manifest.json",
       "sha512": "52e66f60e5522571c2040202114745685b8b1fc5f102a069ef6ddef6ec62142b188242c0a3f4faa6d721112700b7f96256af3337b528e59e298272742446a9af",
       "pq_signature": "8ac0ebbec9432cd1aa78badc17425d7b829a3b4d355c38bc393f65a1a41815acd105a8ee7c22e192d85a2d1d3f2c1113fab60b1043c9a5e48c04b5d8f447607c",
-      "timestamp": "2025-10-31T15:16:31.004Z"
+      "timestamp": "2025-10-31T15:16:44.920Z"
     },
     {
       "artifact": "public_audit_ledger.json",
       "sha512": "96365532ecec46e2a7d1bc3d7664f522ab74b7c3fddc29062501969517822049e2ebe71e49f5ffd541746b4aa25b04e00bee76e8266e6876fe84945a3f3f9b1f",
       "pq_signature": "e4e74435e8490b8efb3fddc977a1ae7ef7dfbfced3b016586a7407ef9ec47d91d9d5feb7575fd12ed7a6cdb4d2898a4df6b10bb8dd411b00f36b74d59d406daf",
-      "timestamp": "2025-10-31T15:16:31.005Z"
+      "timestamp": "2025-10-31T15:16:44.920Z"
     },
     {
       "artifact": "crosstrust_sync_ledger.json",
       "sha512": "cda858807672cd8eae7e209ef80b9b31aead90d7b27354783b2c04ce6cff9acf4f1a40e9a006fbc536bc22a6691025365c40a9d5f3c6087fcfa6feaa507c39f7",
       "pq_signature": "916186755cff2f8541f0847e568273ce7a63cdd3c6a108f2a7d39926338b9f83297311d3433b56d2b53c7fa3c15ee629f9d5fd9349fd514ebdb898529ecd3ca8",
-      "timestamp": "2025-10-31T15:16:31.005Z"
+      "timestamp": "2025-10-31T15:16:44.921Z"
     },
     {
       "artifact": "clinical_audit_reconciliation.json",
       "sha512": "7f55d32e88a2faba605fc9d90bb394da55963a57625507fb9c8a68c1ced00e6b14a1d6d91c8cc3025ebaa71dc28d4a444f4bcf0148e5f5678fa44364ff848a8a",
       "pq_signature": "142e46eb50cd66d3c2bb3354daeadb00d846e0516e5291167cbcb2070cff9b35582f4ecc4f6295724f665f6c5d9d3bea82d7221c1fbdfac74a8a9ed4e93c8e57",
-      "timestamp": "2025-10-31T15:16:31.005Z"
+      "timestamp": "2025-10-31T15:16:44.921Z"
     },
     {
       "artifact": "global_final_certificate.pdf",
       "sha512": "d206a3905f60abac9345c229b9398113ace1654532f2c94546506daf5f3764b5769010d571fcaa2fddef9a33cbf3c9b324936d1f5210702ddb22283a0d708c29",
       "pq_signature": "a95b6e166df4baa300e00b1b484722258279ae5762ea6c8e3c57866c11bd0bf4bebde5aa50f5e7ee109bcd704830eef8f06a0431bfaaa170d972ca1ac1dbe61a",
-      "timestamp": "2025-10-31T15:16:31.005Z"
+      "timestamp": "2025-10-31T15:16:44.921Z"
     },
     {
       "artifact": "ai_validation_report.json",
       "sha512": "2560fddb46e6a69cb653cb7ca041bc0476cb63add32557daa339d535f2aac3b4d663d60b29e7c4fa4f4725e3353e45721aba035fb86276f6eebee436ab00f68a",
       "pq_signature": "ae12e59fda7cded93e6958abdb1cf28c969a9aab34c709ce4e355e8b6701870727a7ef2a382a4b7e5bac521dc0e4bc5884731cd42d831ae74b56c41d98e2213e",
-      "timestamp": "2025-10-31T15:16:31.006Z"
+      "timestamp": "2025-10-31T15:16:44.922Z"
     }
   ],
   "verified": true,
