@@ -1,0 +1,9 @@
+{
+  "note_id": "note-B900",
+  "user_id": "user-B",
+  "consent_version": "1.1",
+  "integrity_hash": "hashB900",
+  "timestamp": "2025-10-31T10:33:50.557Z",
+  "signature": "fb01a7c1ee659a54e6c5ba64e8794e7a878a459fa83154b76e7b82ea460e0444",
+  "verified": true
+}

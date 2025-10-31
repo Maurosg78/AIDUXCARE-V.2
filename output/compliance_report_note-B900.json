@@ -1,0 +1,35 @@
+{
+  "generated_at": "2025-10-31T10:33:50.560Z",
+  "jurisdiction": "Ontario, Canada",
+  "compliance_framework": [
+    "PHIPA",
+    "PIPEDA",
+    "CPO Ontario Standards"
+  ],
+  "user_id": "user-B",
+  "note_id": "note-B900",
+  "consent_version": "1.1",
+  "auditTrail": [
+    {
+      "event": "CREATE"
+    }
+  ],
+  "proof": {
+    "note_id": "note-B900",
+    "user_id": "user-B",
+    "consent_version": "1.1",
+    "integrity_hash": "hashB900",
+    "timestamp": "2025-10-31T10:33:50.557Z",
+    "signature": "fb01a7c1ee659a54e6c5ba64e8794e7a878a459fa83154b76e7b82ea460e0444",
+    "verified": true
+  },
+  "ledgerEntry": {
+    "id": "15cc483f-0cdb-4a2d-afce-03a9f626144b",
+    "bundle_hash": "5468bf0beabcc03900604ad9cd3fe41dc5acd810d9dc5e36c73f325435e6b147",
+    "timestamp": "2025-10-31T10:33:50.560Z"
+  },
+  "verification": {
+    "integrity_verified": true,
+    "ledger_verified": true
+  }
+}

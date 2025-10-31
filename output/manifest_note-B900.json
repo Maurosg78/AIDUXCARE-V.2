@@ -1,0 +1,38 @@
+[
+  {
+    "file": "audit_note-B900.json",
+    "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695"
+  },
+  {
+    "file": "compliance_report_note-B900.json",
+    "hash": "2ca3237bb04442607b801049cf5fac088d3d3c43e190a7a233f7634e552d39bb"
+  },
+  {
+    "file": "compliance_report_note-B900.md",
+    "hash": "9b44b3d3b106861d5630cac9395d3b995bf18aa020cf3a7e95063f7ce6d46586"
+  },
+  {
+    "file": "compliance_report_note-B900_audit_signed.pdf",
+    "hash": "bd513a4b3404dfbf6478a29bd51d9c6e55e4655dda9217d60c2971fad0ba43ba"
+  },
+  {
+    "file": "manifest_note-B900.json",
+    "hash": "9e10a1d3b94f3e784a81f35b85fdf1aedc1af37ebf98da59114c6f4ee43e7e3b"
+  },
+  {
+    "file": "proof_bundle_note-B900.zip",
+    "hash": "5468bf0beabcc03900604ad9cd3fe41dc5acd810d9dc5e36c73f325435e6b147"
+  },
+  {
+    "file": "proof_note-B900.json",
+    "hash": "8d7da3b33b9778d318d1c6571ecd591dc2eefcb94647c0704a623db8f032da71"
+  },
+  {
+    "file": "proof_note-B900.pdf",
+    "hash": "faa7bdc9159d722166e3024d713496216e0086210a000b9899374103499b71cf"
+  },
+  {
+    "file": "regulator_bundle_note-B900.zip",
+    "hash": "f8226b92d1fc0f2c5907fc26594bfac9079d77d9ee3e45ee9f6d472f0058b5da"
+  }
+]
