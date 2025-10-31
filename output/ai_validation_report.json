@@ -1,0 +1,10 @@
+{
+  "validation_id": "44e3c723-816a-4df6-b36e-42d136ec05d0",
+  "executed_at": "2025-10-31T15:10:25.118Z",
+  "source_reconciliation": "3351e216-2c4b-4163-a521-8b5e4de7f144",
+  "certificate_detected": true,
+  "ai_score": 96,
+  "trust_hash": "51bc20dbef158281e12b4dc004a36e109601bc15a7c0041f235f8ec3ebfe851a",
+  "integrity_verified": true,
+  "status": "AI_VALIDATED"
+}
