@@ -1,16 +1,21 @@
+/**
+ * AiDuxCare — App Entry Point
+ * Market: CA | Language: en-CA
+ * Phase: 2A (Legal UI Integration)
+ * WO: WO-2024-002
+ */
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-
-// 🧩 Páginas principales
-import HomePage from "./pages/HomePage"; // si no existe, se creará luego
-import ProfessionalWorkflowPage from "./pages/ProfessionalWorkflowPage";
-import PatientConsentPage from "./pages/PatientConsentPage";
-
-// 🛠️ (opcional) componentes comunes
 import { Toaster } from "react-hot-toast";
 
-// ⚙️ Configuración general de la app
-export default function App() {
+// 🧩 Páginas principales
+import HomePage from "./pages/HomePage";
+import PatientConsentPage from "./pages/PatientConsentPage";
+import ProfessionalWorkflowPage from "./pages/ProfessionalWorkflowPage";
+import LegalAuditDashboard from "./pages/LegalAuditDashboard";
+
+function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -23,16 +28,18 @@ export default function App() {
           {/* 🧠 Página de flujo profesional */}
           <Route path="/workflow" element={<ProfessionalWorkflowPage />} />
 
-          {/* ✅ NUEVA RUTA: Consentimiento informado PIPEDA */}
-          <Route
-            path="/patient-consent"
-            element={<PatientConsentPage />}
-          />
+          {/* ✅ Página de consentimiento informado PIPEDA/PHIPA */}
+          <Route path="/patient-consent" element={<PatientConsentPage />} />
 
-          {/* 🚫 Ruta por defecto */}
+          {/* 🧾 Panel de auditoría legal (solo CPO/Admin) */}
+          <Route path="/legal-audit" element={<LegalAuditDashboard />} />
+
+          {/* 🚧 Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>
   );
 }
+
+export default App;

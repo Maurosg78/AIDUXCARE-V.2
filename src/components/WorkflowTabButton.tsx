@@ -1,21 +1,29 @@
+/**
+ * AiDuxCare — WorkflowTabButton (fixed for optional onClick)
+ * Market: CA | Language: en-CA
+ */
+
 import React from "react";
 
-interface WorkflowTabButtonProps {
-  active: boolean;
+export interface WorkflowTabButtonProps {
   label: string;
-  onClick: () => void;
+  active?: boolean;
+  onClick?: () => void;
 }
 
-export const WorkflowTabButton: React.FC<WorkflowTabButtonProps> = ({ active, label, onClick }) => {
+export const WorkflowTabButton: React.FC<WorkflowTabButtonProps> = ({
+  label,
+  active = false,
+  onClick,
+}) => {
+  const base =
+    "px-4 py-2 rounded-md text-sm font-medium border transition-colors duration-150";
+  const activeStyle = active
+    ? "bg-blue-600 text-white border-blue-600"
+    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50";
+
   return (
-    <button
-      onClick={onClick}
-      className={`py-3 px-1 border-b-2 ${
-        active
-          ? 'border-blue-500 text-blue-600'
-          : 'border-transparent text-gray-500'
-      }`}
-    >
+    <button className={`${base} ${activeStyle}`} onClick={onClick}>
       {label}
     </button>
   );

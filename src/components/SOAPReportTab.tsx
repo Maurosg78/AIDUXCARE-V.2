@@ -1,264 +1,88 @@
-/* @ts-nocheck */
-import React, { useState, useEffect } from 'react';
-import { Card } from '../shared/ui';
-import { FileText, Download, Edit3, Save, Copy } from 'lucide-react';
+/**
+ * AiDuxCare — SOAPReportTab
+ * Market: CA | Language: en-CA
+ * Fix: removed invalid template interpolation in function names
+ */
+
+import React from "react";
+import { useTranslation } from "react-i18next";
+import Button from "@/components/ui/button";
 
 interface SOAPReportTabProps {
-  analysisData: any;
-  evaluationResults: any;
-  patientData: any;
-  onSaveReport: (report: string) => void;
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  onDownloadPDF?: () => void;
 }
 
 export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
-  analysisData,
-  evaluationResults,
-  patientData,
-  onSaveReport
+  subjective,
+  objective,
+  assessment,
+  plan,
+  onDownloadPDF,
 }) => {
-  const [soapReport, setSoapReport] = useState({
-    subjective: '',
-    objective: '',
-    assessment: '',
-    plan: ''
-  });
-  const [isEditing, setIsEditing] = useState(false);
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    generateSOAPReport();
-  }, [analysisData, evaluationResults]);
-
-  const generateSOAPReport = () => {
-    // Generar secciones automáticamente basado en los datos
-    const subjective = generateSubjective();
-    const objective = generateObjective();
-    const assessment = generateAssessment();
-    const plan = generate${t("soap.plan")}();
-
-    setSoapReport({
-      subjective,
-      objective,
-      assessment,
-      plan
-    });
-  };
-
-  const generateSubjective = () => {
-    let text = 'MOTIVO DE CONSULTA:\n';
-    
-    // Síntomas principales
-    if (analysisData?.entities) {
-      const symptoms = analysisData.entities.filter(e => e.type === 'symptom');
-      if (symptoms.length > 0) {
-        text += symptoms.map(s => `- ${s.text}`).join('\n');
-      }
-    }
-    
-    // Factores psicosociales
-    if (analysisData?.yellowFlags?.length > 0) {
-      text += '\n\nFACTORES CONTEXTUALES:\n';
-      text += analysisData.yellowFlags.map(f => `- ${f}`).join('\n');
-    }
-    
-    return text;
-  };
-
-  const generateObjective = () => {
-    let text = 'EVALUACIÓN FÍSICA:\n';
-    
-    // Resultados de tests
-    if (evaluationResults?.tests) {
-      Object.entries(evaluationResults.tests).forEach(([test, result]) => {
-        text += `\n${test}: ${result}`;
-        if (evaluationResults.notes?.[test]) {
-          text += ` (${evaluationResults.notes[test]})`;
-        }
-      });
-    } else {
-      text += 'Pendiente de evaluación física completa.';
-    }
-    
-    return text;
+  /** Helper to generate section text */
+  const generatePlan = () => {
+    return `${t("soap.plan")}: ${plan || t("soap.noData")}`;
   };
 
   const generateAssessment = () => {
-    let text = 'VALORACIÓN CLÍNICA:\n';
-    
-    // Red flags
-    if (analysisData?.redFlags?.length > 0) {
-      text += '\nALERTAS CRÍTICAS:\n';
-      text += analysisData.redFlags.map(rf => `- ${rf.pattern}: ${rf.action}`).join('\n');
-    }
-    
-    // Diagnóstico funcional
-    text += '\n\nDIAGNÓSTICO FUNCIONAL:\n';
-    text += 'Basado en la evaluación realizada...';
-    
-    return text;
+    return `${t("soap.assessment")}: ${assessment || t("soap.noData")}`;
   };
 
-  const generate${t("soap.plan")} = () => {
-    let text = 'PLAN DE TRATAMIENTO:\n';
-    
-    // Si hay red flags
-    if (analysisData?.redFlags?.length > 0) {
-      text += '\nDERIVACIÓN URGENTE REQUERIDA\n';
-    }
-    
-    text += '\nOBJETIVOS:\n';
-    text += '1. \n2. \n3. \n';
-    
-    text += '\nINTERVENCIONES:\n';
-    text += '- \n- \n- \n';
-    
-    text += '\nFRECUENCIA: ___ sesiones por semana\n';
-    text += 'DURACIÓN ESTIMADA: ___ semanas\n';
-    text += 'PRÓXIMA CITA: ___';
-    
-    return text;
+  const generateObjective = () => {
+    return `${t("soap.objective")}: ${objective || t("soap.noData")}`;
   };
 
-  const handleSectionChange = (section: string, value: string) => {
-    setSoapReport({
-      ...soapReport,
-      [section]: value
-    });
+  const generateSubjective = () => {
+    return `${t("soap.subjective")}: ${subjective || t("soap.noData")}`;
   };
 
-  const handleSave = () => {
-    const fullReport = `
-INFORME SOAP - ${new Date().toLocaleDateString()}
-=============================================
-
-SUBJETIVO:
-${soapReport.subjective}
-
-OBJETIVO:
-${soapReport.objective}
-
-ASSESSMENT (VALORACIÓN):
-${soapReport.assessment}
-
-PLAN:
-${soapReport.plan}
-
-=============================================
-Firmado: ${patientData?.therapist || 'Fisioterapeuta'}
-Fecha: ${new Date().toLocaleString()}
-    `;
-    
-    onSaveReport(fullReport);
-    setIsEditing(false);
-  };
-
-  const handleCopy = () => {
-    const fullReport = Object.values(soapReport).join('\n\n');
-    navigator.clipboard.writeText(fullReport);
+  /** Combine all sections */
+  const fullSOAP = () => {
+    return [
+      generateSubjective(),
+      generateObjective(),
+      generateAssessment(),
+      generatePlan(),
+    ].join("\n\n");
   };
 
   return (
-    <div className="space-y-4 p-4">
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <FileText className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold">${t("workflow.soapReport")}</h2>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              <Edit3 className="w-4 h-4" />
-              {isEditing ? 'Vista previa' : 'Editar'}
-            </button>
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              <Copy className="w-4 h-4" />
-              Copiar
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              <Save className="w-4 h-4" />
-              Guardar
-            </button>
-          </div>
-        </div>
+    <div className="p-6 space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">{t("soap.title", "SOAP Report")}</h2>
+        {onDownloadPDF && (
+          <Button onClick={onDownloadPDF} variant="outline">
+            {t("soap.downloadPdf", "Download PDF")}
+          </Button>
+        )}
+      </div>
 
-        <div className="space-y-4">
-          {/* SUBJETIVO */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2 text-blue-600">S - ${t("soap.subjective")}</h3>
-            {isEditing ? (
-              <textarea
-                value={soapReport.subjective}
-                onChange={(e) => handleSectionChange('subjective', e.target.value)}
-                className="w-full p-3 border rounded-lg"
-                rows={6}
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg whitespace-pre-wrap">
-                {soapReport.subjective}
-              </div>
-            )}
-          </div>
+      <div className="bg-white border rounded-lg p-4 space-y-3 text-gray-800">
+        <p>
+          <strong>{t("soap.subjective")}:</strong> {subjective || t("soap.noData")}
+        </p>
+        <p>
+          <strong>{t("soap.objective")}:</strong> {objective || t("soap.noData")}
+        </p>
+        <p>
+          <strong>{t("soap.assessment")}:</strong> {assessment || t("soap.noData")}
+        </p>
+        <p>
+          <strong>{t("soap.plan")}:</strong> {plan || t("soap.noData")}
+        </p>
+      </div>
 
-          {/* OBJETIVO */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2 text-green-600">O - ${t("soap.objective")}</h3>
-            {isEditing ? (
-              <textarea
-                value={soapReport.objective}
-                onChange={(e) => handleSectionChange('objective', e.target.value)}
-                className="w-full p-3 border rounded-lg"
-                rows={6}
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg whitespace-pre-wrap">
-                {soapReport.objective}
-              </div>
-            )}
-          </div>
-
-          {/* ASSESSMENT */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2 text-purple-600">A - Assessment</h3>
-            {isEditing ? (
-              <textarea
-                value={soapReport.assessment}
-                onChange={(e) => handleSectionChange('assessment', e.target.value)}
-                className="w-full p-3 border rounded-lg"
-                rows={6}
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg whitespace-pre-wrap">
-                {soapReport.assessment}
-              </div>
-            )}
-          </div>
-
-          {/* PLAN */}
-          <div>
-            <h3 className="font-semibold text-lg mb-2 text-orange-600">P - ${t("soap.plan")}</h3>
-            {isEditing ? (
-              <textarea
-                value={soapReport.plan}
-                onChange={(e) => handleSectionChange('plan', e.target.value)}
-                className="w-full p-3 border rounded-lg"
-                rows={6}
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg whitespace-pre-wrap">
-                {soapReport.plan}
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+      <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-600 whitespace-pre-wrap">
+        {fullSOAP()}
+      </div>
     </div>
   );
 };
+
+export default SOAPReportTab;
