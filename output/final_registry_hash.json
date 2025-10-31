@@ -1,0 +1,9 @@
+{
+  "id": "2a54213b-bf8a-48af-83e8-e563604b0156",
+  "master_hash": "3a839f067e070be63dc10848fd1e9df3767e3e51e8bc58a11c58319d3a5354fd",
+  "federal_signature": "d539b7f20542a1434ec874bd57feb833e188a7f78a0f460aa3a80fa31d8ec0b3",
+  "provincial_signature": "c99bdff681542132ce6249bacc2e2fe41db5039ad26709299e428947e6afb41c",
+  "verified": true,
+  "issued_at": "2025-10-31T12:08:34.436Z",
+  "issuer": "E-Trust Canada Audit Registry (Simulated)"
+}
