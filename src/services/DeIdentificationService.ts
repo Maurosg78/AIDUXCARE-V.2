@@ -2,23 +2,34 @@
  * AiDuxCare — DeIdentificationService
  * Work Order: WO-2024-002
  * Scope: Replace identifiable terms (PHIPA/PIPEDA minimal compliance)
+ * Phase: 2A Final Fix — Stable
  */
 
 const NAME_PATTERN = /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b/g;
 const DATE_PATTERN = /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g;
 const LOCATION_PATTERN = /\b(Toronto|Niagara|Hamilton|Ontario|Canada)\b/gi;
 const PHONE_PATTERN = /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g;
-const ID_PATTERN = /\b[A-Z0-9]{6,}\b/g;
+/**
+ * ID_PATTERN captures only long alphanumerics (≥8)
+ * to prevent false positives on short words.
+ */
+const ID_PATTERN = /\b[A-Z0-9]{8,}\b/g;
 
 /**
  * De-identifies sensitive info in <50ms
  */
 export async function deIdentifyText(text: string): Promise<string> {
   if (!text) return "";
-  return text
-    .replace(NAME_PATTERN, "[PACIENTE]")
+
+  let sanitized = text
+    .replace(NAME_PATTERN, "__PACIENTE__")
     .replace(DATE_PATTERN, "[FECHA]")
     .replace(LOCATION_PATTERN, "[UBICACIÓN]")
     .replace(PHONE_PATTERN, "[IDENTIFICADOR]")
     .replace(ID_PATTERN, "[IDENTIFICADOR]");
+
+  // restore patient markers safely
+  sanitized = sanitized.replace(/__PACIENTE__/g, "[PACIENTE]");
+
+  return sanitized;
 }
