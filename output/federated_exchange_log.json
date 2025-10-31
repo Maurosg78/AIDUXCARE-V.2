@@ -24,5 +24,18 @@
     "signature": "c44d9037aa477724b45bf5b6549042d313122ae05d62683a04065ab4a5f22a37",
     "timestamp": "2025-10-31T10:43:03.406Z",
     "verified": true
+  },
+  {
+    "id": "905a9ca4-0246-4b4f-a18d-f3f46dd717ee",
+    "source": "Niagara",
+    "target": "Kingston",
+    "range": [
+      0,
+      3
+    ],
+    "payload_hash": "a6dbc41b57edaf372d4c149f145a302f076f19562db64094fa113b0a1aad0654",
+    "signature": "c79a9c10f466ac09abe69a89b777e75de0e1787284e5fd7356778a6527a096fb",
+    "timestamp": "2025-10-31T10:49:37.830Z",
+    "verified": false
   }
 ]

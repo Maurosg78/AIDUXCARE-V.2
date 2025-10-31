@@ -873,5 +873,285 @@
     "acknowledged": true,
     "timestamp": "2025-10-31T10:43:03.395Z",
     "signature": "fc9d2a6bd77a99fe0e7d51ce51b39a9d3871aad8cfccbbeb364760b4825ee043"
+  },
+  {
+    "id": "31e11bf6-90bc-4252-8fb1-e9951ca988ec",
+    "regulator_record_id": "b449e550-7e33-434a-a505-167e844154a8",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "d0e839b4-4200-469d-9d42-4bcbdf2380a6",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "d0e839b4-4200-469d-9d42-4bcbdf2380a6",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:15:59.866Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.820Z",
+    "signature": "e9ad8771a86d92065d99914d377e130ffa3f6a7243622b3743e6b0670e394545"
+  },
+  {
+    "id": "16d29cda-f7b2-4df0-954b-d14102959149",
+    "regulator_record_id": "de80a380-f416-4f2d-822a-de0eb7e019dc",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "01f406db-a4a8-482c-85d3-2dbf9b2b8fc3",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "01f406db-a4a8-482c-85d3-2dbf9b2b8fc3",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:21:56.596Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "85dfba27f6ea47e6bc5ee4ac6d2dcfbb33d41db286232dee05b1e004343d8a64"
+  },
+  {
+    "id": "aab7bf96-8899-46e8-8275-b2eca34de239",
+    "regulator_record_id": "e70b2847-4545-4bb2-a243-bd2434f9e74b",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "b704a0aa-2eda-47c5-a20c-8f1155edd686",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "b704a0aa-2eda-47c5-a20c-8f1155edd686",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:24:39.640Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "38bc10e86c7c7973f1751a48547dd941b2559cea995a8205ba7ad9e9bc7512ed"
+  },
+  {
+    "id": "f420c621-6309-4e5b-8d14-4de238d85a76",
+    "regulator_record_id": "dd6dab8e-950b-4bf6-a4ce-49466c8f8fce",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "c49a97a9-5252-45e5-8aee-8caf12c73306",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "c49a97a9-5252-45e5-8aee-8caf12c73306",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:26:49.946Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "a04d5b78557212d0521063ee594267a8ca74403d98e555c90117de311aca2c11"
+  },
+  {
+    "id": "aba0d241-169d-48da-88cd-bfff2680bcf4",
+    "regulator_record_id": "4cc74f98-be77-49e9-97ba-a4276753b5c3",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "cb041bd7-4979-4a0c-982f-877e7ac66421",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "cb041bd7-4979-4a0c-982f-877e7ac66421",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:32:25.724Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "887072a27dbb9e7a7bfa9547aa6937eaf911f7a5247f6e8380549469c936ec46"
+  },
+  {
+    "id": "6cc516a8-d36a-4a2c-ac71-b6b5670f22b9",
+    "regulator_record_id": "919e2cb0-393c-4fa3-8872-a3f3e8502523",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "626bfaf5-f359-47df-9283-6e04260713bb",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "626bfaf5-f359-47df-9283-6e04260713bb",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:33:50.592Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "6bea49bd3d1146e2047f53c138bcde6194f82e36d9afabb004c89cc3d7ddf4f3"
+  },
+  {
+    "id": "3b4a683c-2ef2-4ad8-b9af-9519dfdabf0c",
+    "regulator_record_id": "1f065f43-98dd-4ecd-b53e-82cee404b3da",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "b80bec4a-a1fa-44fe-9550-bdce9bda614b",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "b80bec4a-a1fa-44fe-9550-bdce9bda614b",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:43:03.393Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "9a093a4565f34fd2223b6bb1d1a400f834382b4f3ff48aaf2d491404a78e68d6"
+  },
+  {
+    "id": "1c6cf763-ded8-44f9-9c05-358cb700c487",
+    "regulator_record_id": "5e6e63ca-0de7-4185-aaf8-e6fc5df48e27",
+    "insurer": "Mock Health Insurance Ltd.",
+    "fhir_claim_id": "9fd4eabb-42ba-4008-bc0b-681be08ae392",
+    "payload": {
+      "resourceType": "ClaimAudit",
+      "id": "9fd4eabb-42ba-4008-bc0b-681be08ae392",
+      "status": "completed",
+      "outcome": "partial",
+      "recorded": "2025-10-31T10:49:37.818Z",
+      "insurer": {
+        "reference": "Organization/AiDux-MockInsurer",
+        "display": "Mock Health Insurance Ltd."
+      },
+      "item": [
+        {
+          "sequence": 1,
+          "detail": {
+            "code": "bundle-validation",
+            "outcome": "unverified"
+          }
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+          "valueString": "CPO Ontario"
+        }
+      ]
+    },
+    "acknowledged": true,
+    "timestamp": "2025-10-31T10:49:37.821Z",
+    "signature": "25b5dae82cb7ab8b767641b22065efb4fd66e1fe4981b1a0f348c580d9374239"
   }
 ]
