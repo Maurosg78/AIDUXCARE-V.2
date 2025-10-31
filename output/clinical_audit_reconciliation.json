@@ -1,0 +1,18 @@
+{
+  "reconciliation_id": "3351e216-2c4b-4163-a521-8b5e4de7f144",
+  "generated_at": "2025-10-31T15:01:07.238Z",
+  "total_consent_records": 1330,
+  "jurisdictions": [
+    "Canada",
+    "European Union"
+  ],
+  "participants": [
+    "NiagaraPhysio",
+    "Clinique Santé Lyon"
+  ],
+  "trust_reference": "ed809f88-2836-4c7b-99fa-b17db31cfb0a",
+  "consistency_check": "cbe08c079ee958a8632c78b3ecc99db211afa62c87c3814c09cafd1748784d00",
+  "audit_events_linked": 495,
+  "verified": true,
+  "status": "RECONCILED"
+}
