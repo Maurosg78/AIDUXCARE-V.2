@@ -1,0 +1,42 @@
+{
+  "manifest_id": "ed809f88-2836-4c7b-99fa-b17db31cfb0a",
+  "compiled_at": "2025-10-31T14:34:51.398Z",
+  "jurisdictions": [
+    "Canada",
+    "European Union"
+  ],
+  "trust_chain": {
+    "id": "97073376-b518-4c35-bbda-07d6149dbd83",
+    "master_hash": "81fdcd87d483097828d9b744931e0df9a9edb3efa6b2b7d6e4a1eaa3a0c03582",
+    "verification_status": "VALID"
+  },
+  "ledgers": {
+    "canada": {
+      "ledger_id": "4a3d2b9e-6a2d-4f35-8a3d-63519b41caa3",
+      "chain_id": "97073376-b518-4c35-bbda-07d6149dbd83",
+      "verified": true,
+      "recorded_at": "2025-10-31T14:13:12.688Z",
+      "record_hash": "6d39624efc7aa7c29fb8d4ece4db6c28b8ac36c581c6cccbfcf5ffb6e10e75a9",
+      "authority": "Canadian Public Ledger (AiDuxCare Mock)"
+    },
+    "european_union": {
+      "ledger_id": "b064a852-e65a-43a2-84ad-f4d180f46df9",
+      "jurisdiction": "EU-GDPR",
+      "chain_id": "97073376-b518-4c35-bbda-07d6149dbd83",
+      "synced_at": "2025-10-31T14:24:13.368Z",
+      "record_hash": "129a52f8b416ab0c12c6c85353347438290e7966b922ba3ab6223041aaec4dd6",
+      "verified": true
+    }
+  },
+  "cross_ack": {
+    "agreement_id": "72879260-3896-458f-84be-833c91ea7126",
+    "issued_at": "2025-10-31T14:24:14.950Z",
+    "ca_ledger_id": "4a3d2b9e-6a2d-4f35-8a3d-63519b41caa3",
+    "eu_ledger_id": "b064a852-e65a-43a2-84ad-f4d180f46df9",
+    "bilateral_signature": "0b93e89be78863f409d379c01d850b864dd6d141bc49014bdad50b5760dbd9df",
+    "status": "SYNCHRONIZED",
+    "verified": true
+  },
+  "global_checksum": "0e43d38132840960cef6abd53337ee7248d9fa45a3c520f0e6e6dd152068a5bc",
+  "verified": true
+}
