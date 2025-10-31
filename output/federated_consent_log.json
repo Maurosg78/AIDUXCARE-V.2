@@ -1,0 +1,23 @@
+{
+  "federation_id": "8d837506-dc5c-47f2-92c2-45f6c9690a64",
+  "issued_at": "2025-10-31T14:54:44.841Z",
+  "participants": [
+    {
+      "org": "NiagaraPhysio",
+      "jurisdiction": "Canada",
+      "records_shared": 128
+    },
+    {
+      "org": "Clinique Santé Lyon",
+      "jurisdiction": "EU",
+      "records_shared": 95
+    }
+  ],
+  "analytics_ref": "c589203e-8160-41a1-ba82-9f9c4f50aaf8",
+  "compliance": [
+    "PHIPA",
+    "PIPEDA",
+    "GDPR"
+  ],
+  "verified": true
+}
