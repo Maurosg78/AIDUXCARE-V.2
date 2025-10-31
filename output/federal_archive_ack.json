@@ -1,0 +1,8 @@
+{
+  "request_id": "fcaae070-a905-4493-a755-8faa09276525",
+  "manifest_hash": "4e546fa2cd1e263eb8b4b54f8bcb2f169720db61cb02599f52d7024159cedd4d",
+  "tsa_signature": "58e220f9ae855b633e7865133407d2a1f55a10695e3a294c9492dd4af65afb37",
+  "accepted": true,
+  "acknowledged_at": "2025-10-31T11:50:32.687Z",
+  "authority": "Canada Digital Archive (Mock API)"
+}
