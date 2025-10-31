@@ -1,0 +1,9 @@
+{
+  "note_id": "note-002",
+  "user_id": "user-010",
+  "consent_version": "1.1",
+  "integrity_hash": "hash002",
+  "timestamp": "2025-10-31T09:56:57.756Z",
+  "signature": "f5348119278424ea5b494e2617b6bee4f19b5f1f59c8d4e6cfc6fbcd2d2abafe",
+  "verified": true
+}
