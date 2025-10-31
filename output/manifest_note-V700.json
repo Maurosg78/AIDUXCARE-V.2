@@ -1,0 +1,38 @@
+[
+  {
+    "file": "audit_note-V700.json",
+    "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695"
+  },
+  {
+    "file": "compliance_report_note-V700.json",
+    "hash": "3b2bc4dbe4e3bb24b3ccdd37a4769ccb3a2d3a81404f0352c7e48aaf89cadf19"
+  },
+  {
+    "file": "compliance_report_note-V700.md",
+    "hash": "17c8e8b56a582ca492914e4ca39fca251757c7248042d0411a4c6f1d0b64082f"
+  },
+  {
+    "file": "compliance_report_note-V700_audit_signed.pdf",
+    "hash": "017a81c817751e0bd7c8e60902e48961f31b09f9cb1da2abcd71c8637433e5c9"
+  },
+  {
+    "file": "manifest_note-V700.json",
+    "hash": "84b9db6485d4bcd847857fbb23444659864b039a9374ac27b5f4ab77a1c7d09c"
+  },
+  {
+    "file": "proof_bundle_note-V700.zip",
+    "hash": "0b8bc59f37ec97a61353d5a52f5ff57c79ece95e706c3fcd099a246966e476ec"
+  },
+  {
+    "file": "proof_note-V700.json",
+    "hash": "1eeeec00ce1e2423f82b2ee51d730a6d36a2f8fc177e356dc01457807006de11"
+  },
+  {
+    "file": "proof_note-V700.pdf",
+    "hash": "b8c31c18a97eb9cf0189d5529974e70a1dc138b522346bcd924716c78a8accc8"
+  },
+  {
+    "file": "regulator_bundle_note-V700.zip",
+    "hash": "b500bba2aa52e2dad39496d46c14237c2b7b7ac05fab151a806402eb81840a97"
+  }
+]
