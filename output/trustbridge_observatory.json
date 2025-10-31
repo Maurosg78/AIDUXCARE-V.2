@@ -1,0 +1,815 @@
+{
+  "observatory_id": "3cc55e08-9dc9-4845-b51d-3431dbe42f75",
+  "generated_at": "2025-10-31T22:35:08.055Z",
+  "total_files": 115,
+  "total_size_kb": "342.47",
+  "observations": [
+    {
+      "file": "ai_validation_portal.html",
+      "type": "html",
+      "size": 548,
+      "hash": "c017b27dd90206dd25d5a28930de7fa9b615e421ddfe64fcb59f4c39d5c59cf0",
+      "timestamp": "2025-10-31T22:35:08.033Z"
+    },
+    {
+      "file": "ai_validation_report.json",
+      "type": "json",
+      "size": 365,
+      "hash": "c6a11a81a096d83ad684becc098ad139349fd6ce57f73ed800254b2edfdf064d",
+      "timestamp": "2025-10-31T22:35:08.034Z"
+    },
+    {
+      "file": "audit_dashboard.json",
+      "type": "json",
+      "size": 59689,
+      "hash": "89c7f7eda8f41a5517d64b5a97188303fd1f2a76fd04ff7bf9c0facc1f1a7468",
+      "timestamp": "2025-10-31T22:35:08.034Z"
+    },
+    {
+      "file": "audit_note-001.json",
+      "type": "json",
+      "size": 132,
+      "hash": "dd11cf28a550437812dff1f0fa88be655358560a2750e15e5ba98f02cfb714f9",
+      "timestamp": "2025-10-31T22:35:08.035Z"
+    },
+    {
+      "file": "audit_note-002.json",
+      "type": "json",
+      "size": 31,
+      "hash": "023aefff6b87a6dba34f624963742b8acd88ffac14dbee70ecd624b4ae145207",
+      "timestamp": "2025-10-31T22:35:08.036Z"
+    },
+    {
+      "file": "audit_note-900.json",
+      "type": "json",
+      "size": 62,
+      "hash": "c28ddddc5b4f267bb89b5d2065a56522177af84330bea0d89cf289ac7f7ef69b",
+      "timestamp": "2025-10-31T22:35:08.036Z"
+    },
+    {
+      "file": "audit_note-B900.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.037Z"
+    },
+    {
+      "file": "audit_note-CTO.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.037Z"
+    },
+    {
+      "file": "audit_note-D700.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.037Z"
+    },
+    {
+      "file": "audit_note-F800.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_note-I200.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_note-P600.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_note-R900.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_note-V700.json",
+      "type": "json",
+      "size": 33,
+      "hash": "5b1d6c34d2455e3ee59ee72332d0fe0f4b0055767d7025fccd0814c269586695",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_open_data.json",
+      "type": "json",
+      "size": 327,
+      "hash": "9614c2c4c6cfcb370faadc56179f977a0743266944987427b413f9850b8bd3ba",
+      "timestamp": "2025-10-31T22:35:08.038Z"
+    },
+    {
+      "file": "audit_ops_status.json",
+      "type": "json",
+      "size": 14037,
+      "hash": "ec4546aeb5c1d6df05c97b71d16305ad8ee6bce03206d181d15933b704e7c09a",
+      "timestamp": "2025-10-31T22:35:08.039Z"
+    },
+    {
+      "file": "audit_public_notice.html",
+      "type": "html",
+      "size": 967,
+      "hash": "40721f01e0314da9446695679690d8efa34778df304d29a241a79645a6970d13",
+      "timestamp": "2025-10-31T22:35:08.039Z"
+    },
+    {
+      "file": "audit_registry_certificate.pdf",
+      "type": "pdf",
+      "size": 1819,
+      "hash": "f8e395c0f23545a4fbe84210539f396fb705049fbbf38227ca63783515756dc1",
+      "timestamp": "2025-10-31T22:35:08.039Z"
+    },
+    {
+      "file": "blockchain_ledger.json",
+      "type": "json",
+      "size": 20283,
+      "hash": "113ca403dee51f0e98d125e7c17a70a07c23f0bf92f01eb72345f3ccb7a2a306",
+      "timestamp": "2025-10-31T22:35:08.039Z"
+    },
+    {
+      "file": "canada_gov_feed.html",
+      "type": "html",
+      "size": 11807,
+      "hash": "28508f2cee6fb62d9cc16b987819f0b0f5db4caf824270217f188193254ad22e",
+      "timestamp": "2025-10-31T22:35:08.039Z"
+    },
+    {
+      "file": "chain_final_seal.pdf",
+      "type": "pdf",
+      "size": 1825,
+      "hash": "2add779765053c0f4fc56dc8709126619eeb902a28e7487f8291f91b9b785066",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "chain_final_signature.json",
+      "type": "json",
+      "size": 320,
+      "hash": "e97d2e46b2bddd21709bd3243fe5e41b66534c69092dcc6b7471979a7094f388",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "clinical_audit_reconciliation.json",
+      "type": "json",
+      "size": 506,
+      "hash": "03719a45056fd0b0812655b59b4fa5608c902dc3839827d322f1845839624b83",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "compliance_report.html",
+      "type": "html",
+      "size": 623,
+      "hash": "e0a3f4c240159e75fd8f8ccdc818c2498e97b0d44983ca38398651f66fdbb842",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "compliance_report.json",
+      "type": "json",
+      "size": 311,
+      "hash": "bea87ee26742ab19d7a5944cca8870221ff1ebdd368a44d4f820579c77df118e",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "compliance_report_note-900.json",
+      "type": "json",
+      "size": 919,
+      "hash": "6617d91c91eab61494f814498eecb25bf4edeac43b32c4f67b659757bf9c8fe5",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "compliance_report_note-B900.json",
+      "type": "json",
+      "size": 885,
+      "hash": "2ca3237bb04442607b801049cf5fac088d3d3c43e190a7a233f7634e552d39bb",
+      "timestamp": "2025-10-31T22:35:08.040Z"
+    },
+    {
+      "file": "compliance_report_note-B900_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2061,
+      "hash": "bd513a4b3404dfbf6478a29bd51d9c6e55e4655dda9217d60c2971fad0ba43ba",
+      "timestamp": "2025-10-31T22:35:08.041Z"
+    },
+    {
+      "file": "compliance_report_note-CTO.json",
+      "type": "json",
+      "size": 882,
+      "hash": "4ef1f052be41b849d805919872d7d91dd36072990d6c24d65ce3ca1cd6a31efe",
+      "timestamp": "2025-10-31T22:35:08.041Z"
+    },
+    {
+      "file": "compliance_report_note-CTO_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2064,
+      "hash": "17bbb10b82e0c8579c0ce7000f71856320c8db3fd6900d3dd1ae474e95a508c0",
+      "timestamp": "2025-10-31T22:35:08.041Z"
+    },
+    {
+      "file": "compliance_report_note-D700.json",
+      "type": "json",
+      "size": 885,
+      "hash": "83b5c903cd97a006f7bdf60bac5b2f5614982872db7e7c8816615890fd9c7266",
+      "timestamp": "2025-10-31T22:35:08.041Z"
+    },
+    {
+      "file": "compliance_report_note-D700_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2062,
+      "hash": "03312b972d63d3dab90e8e3933f999ad3b0fe9b4ed170ee99d772c1a7df51658",
+      "timestamp": "2025-10-31T22:35:08.041Z"
+    },
+    {
+      "file": "compliance_report_note-F800.json",
+      "type": "json",
+      "size": 885,
+      "hash": "7f952a02c130dc2e7304dbd6d09194d328e24200acac6c6d219b757d325e7022",
+      "timestamp": "2025-10-31T22:35:08.042Z"
+    },
+    {
+      "file": "compliance_report_note-F800_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2065,
+      "hash": "b4bfe1a87194263c2f3c444372faa75cfb123a3ed3eaf8b55d8dcb382b729c71",
+      "timestamp": "2025-10-31T22:35:08.042Z"
+    },
+    {
+      "file": "compliance_report_note-I200.json",
+      "type": "json",
+      "size": 885,
+      "hash": "16c874f2e9fb147a4f4a24117c5f50f6f125d39fb3d8504e3c514c623bf95df9",
+      "timestamp": "2025-10-31T22:35:08.042Z"
+    },
+    {
+      "file": "compliance_report_note-I200_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2067,
+      "hash": "9a95451aa88056f2501a8093b6c2a5268b3c412339910f125ae0b0640d34bcfd",
+      "timestamp": "2025-10-31T22:35:08.042Z"
+    },
+    {
+      "file": "compliance_report_note-P600.json",
+      "type": "json",
+      "size": 885,
+      "hash": "dfc97746aa6cc62cf53eec2a8fafeb6b967d96173b92a5bce8e2f4d2b99ec880",
+      "timestamp": "2025-10-31T22:35:08.043Z"
+    },
+    {
+      "file": "compliance_report_note-P600_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2062,
+      "hash": "65eddf00a8433d1f8a7be645fa3d89a017e81b2ed3743992502282853c549a60",
+      "timestamp": "2025-10-31T22:35:08.043Z"
+    },
+    {
+      "file": "compliance_report_note-R900.json",
+      "type": "json",
+      "size": 885,
+      "hash": "532aa4b9bfe63befbe883bcbdbb090cbace144f1abe83fec25393a6034060f27",
+      "timestamp": "2025-10-31T22:35:08.043Z"
+    },
+    {
+      "file": "compliance_report_note-R900_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2068,
+      "hash": "2c8c3d3fae614a4c20030094db7440328ce440f27c03aecde1c46213baba268d",
+      "timestamp": "2025-10-31T22:35:08.043Z"
+    },
+    {
+      "file": "compliance_report_note-V700.json",
+      "type": "json",
+      "size": 885,
+      "hash": "3b2bc4dbe4e3bb24b3ccdd37a4769ccb3a2d3a81404f0352c7e48aaf89cadf19",
+      "timestamp": "2025-10-31T22:35:08.043Z"
+    },
+    {
+      "file": "compliance_report_note-V700_audit_signed.pdf",
+      "type": "pdf",
+      "size": 2067,
+      "hash": "017a81c817751e0bd7c8e60902e48961f31b09f9cb1da2abcd71c8637433e5c9",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "consent_analytics.json",
+      "type": "json",
+      "size": 433,
+      "hash": "8f89c04850b9d9b505fdf04183bde45aa1b79a78d4e63c7e720bb4c42a4d87b8",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "crosstrust_ack.json",
+      "type": "json",
+      "size": 360,
+      "hash": "f284cb1fe11b248dc2271d580d2ac6d862889ac8bad9cad3ee64a38825eed4f1",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "crosstrust_exchange.json",
+      "type": "json",
+      "size": 340,
+      "hash": "a32a42dd7a97a3eaa0874e003ea9d55bf84f256c62c0da221b72b6a14d1e1d8d",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "crosstrust_sync_ledger.json",
+      "type": "json",
+      "size": 288,
+      "hash": "aa4cdce2f4b9c2751c373d2362abbf15fc11574758d1813804efa2c9a53e79b6",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "delivery_receipt.json",
+      "type": "json",
+      "size": 300,
+      "hash": "12501c5a52b8080d6910a557f07d5f0230f4835ea9ee540352059e4b31b0782f",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "exchange_Niagara_to_Kingston.json",
+      "type": "json",
+      "size": 1319,
+      "hash": "a6dbc41b57edaf372d4c149f145a302f076f19562db64094fa113b0a1aad0654",
+      "timestamp": "2025-10-31T22:35:08.044Z"
+    },
+    {
+      "file": "exchange_Niagara_to_Toronto.json",
+      "type": "json",
+      "size": 2198,
+      "hash": "9324c64d14146d95c0db269c2ca9ee6b87243292d8c80c8b32926ba88ed043dd",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "external_validation_ledger.json",
+      "type": "json",
+      "size": 2186,
+      "hash": "9cc8a97d50c49457abc326a22d11f28fcc4d5c8b0889a62b7fffe24e8db2abf8",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "federal_archive_ack.json",
+      "type": "json",
+      "size": 353,
+      "hash": "d5f16a79edea897d4ce6bd765ee8c186f5626a6aaef76d6ebd3ac998eaea301b",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "federal_archive_manifest.json",
+      "type": "json",
+      "size": 16163,
+      "hash": "2a1872d8be9863891116a3d92b13253422c6843c10e6d6c83b00ccfa19530b98",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "federal_archive_receipt.pdf",
+      "type": "pdf",
+      "size": 1652,
+      "hash": "0a68a1ea6d90386547177bf692a20f78ac488112c67c91ed0e185197cc34508b",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "federated_consent_log.json",
+      "type": "json",
+      "size": 476,
+      "hash": "bcf49b3a975d1843dbe957a28587f1f1b682d7130a32bf2a271ff94619e67b86",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "federated_exchange_log.json",
+      "type": "json",
+      "size": 1169,
+      "hash": "9ad51b920016bbbd53fe10c80a8b86d453a85e71a4a802d6e0277782c8a2d6ea",
+      "timestamp": "2025-10-31T22:35:08.045Z"
+    },
+    {
+      "file": "final_registry_hash.json",
+      "type": "json",
+      "size": 440,
+      "hash": "037f3f690d8e290f91dd975ee72d6862db5383f237c4867900eb03c38f92a808",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "global_final_certificate.pdf",
+      "type": "pdf",
+      "size": 1652,
+      "hash": "6bf8a79534937a8c95f9f56f1b976c7261c522a524aa1c6aed39c3755dcd19ce",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "global_trust_manifest.json",
+      "type": "json",
+      "size": 1585,
+      "hash": "54cf89dd045ac468e914a437616906a05e93d790389b615dee40be0d56987b59",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "govcloud_ack.json",
+      "type": "json",
+      "size": 332,
+      "hash": "9a2f489bbe2f1f6edaf0198f2eb7901c144686d1a4663a955d4d3e599c3d714d",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "govcloud_sync_manifest.json",
+      "type": "json",
+      "size": 14215,
+      "hash": "f7d727ed91b414489e63a5d1f3f85e84d17c96c6be99c192415c9e7e7d5c1dad",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "insurance_audit_log.json",
+      "type": "json",
+      "size": 35378,
+      "hash": "269009a9ca9e8d73af374a894406f3c32d25ede8ac1ba152d8fa3e9cd415b56b",
+      "timestamp": "2025-10-31T22:35:08.046Z"
+    },
+    {
+      "file": "ledger_sync_receipt.json",
+      "type": "json",
+      "size": 284,
+      "hash": "b074afc7ef6f56dd4651c13d0e83b2c97ccba376bd6c5029321476b2a6097d0f",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-B900.json",
+      "type": "json",
+      "size": 1182,
+      "hash": "0a67e61c94d85ae3d0d4c360185432b175a52bdc046558e7a267ed9437326342",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-D700.json",
+      "type": "json",
+      "size": 921,
+      "hash": "aa1ca695840aacd6ea2bc6d7d07e9bf4d41b18096c71f000bd527ad806a6653f",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-F800.json",
+      "type": "json",
+      "size": 921,
+      "hash": "28d5d8ff27e4b7bac5316eaa008ddf00ea41b3afcc66260b8ff2216e83d6183f",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-I200.json",
+      "type": "json",
+      "size": 921,
+      "hash": "e01128b9b5dcf35fe3a773805fb2910eef029c4451c46994b06022024bc4a09a",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-P600.json",
+      "type": "json",
+      "size": 921,
+      "hash": "6a6dd662989760f4041625c07903b56faad4e127c0905ac91ebb22e6ba1955e5",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-R900.json",
+      "type": "json",
+      "size": 921,
+      "hash": "8bfc92d1dc66654b07ebc5fa4ff61bb6e76d84cae9a40fa0b9363eb4891248fb",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "manifest_note-V700.json",
+      "type": "json",
+      "size": 1182,
+      "hash": "4815c081d71e97a2a14eb19a07c3f9c75550dfe332047cc3cfca08d4feb034ae",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "metrics_publish_ack.json",
+      "type": "json",
+      "size": 336,
+      "hash": "3d71de24b2b361f0f38318ff3a85a4dfc95a2eff72b0549c6a6492e9a7fa54e9",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "orchestration_manifest.json",
+      "type": "json",
+      "size": 1357,
+      "hash": "35552ab554cee6b653e4ca8b41e0f7d3c3f0082d72ef1e09ebbeaa2378cf7f84",
+      "timestamp": "2025-10-31T22:35:08.047Z"
+    },
+    {
+      "file": "patient_consent_ledger.json",
+      "type": "json",
+      "size": 16396,
+      "hash": "cf0af18cabbedb6cdd6d8c4f14f8615ac8b2f6a1c1ccf5e1a18e17f37fa4135c",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "patient_consent_portal.html",
+      "type": "html",
+      "size": 9843,
+      "hash": "00c99547f931d994355b4537fb37f55e3e05817414686fbbd9adab908d30caa5",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "proof_note-001.json",
+      "type": "json",
+      "size": 257,
+      "hash": "531d81d2545a37ef1fc654a012a13ef8c3e7d155d64c5d6a373935546a25421c",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "proof_note-001.pdf",
+      "type": "pdf",
+      "size": 239,
+      "hash": "828a2593eecf58b5cc579aa126b9004986d97a690247aa6caf10ea777c4cd3e1",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "proof_note-002.json",
+      "type": "json",
+      "size": 257,
+      "hash": "e68403394ccf42d5824a395d3fcfb002e6a4e82b814116e43772530911cff079",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "proof_note-002.pdf",
+      "type": "pdf",
+      "size": 239,
+      "hash": "00f324c5258ef1e4acaa2cd4ff3e8cc0e79dad5b3e0545cf02a2b2fa08bbffc1",
+      "timestamp": "2025-10-31T22:35:08.048Z"
+    },
+    {
+      "file": "proof_note-900.json",
+      "type": "json",
+      "size": 256,
+      "hash": "443bd55100201f8b18b0fc999174f66396637f471c4220efd030c7abedd048a5",
+      "timestamp": "2025-10-31T22:35:08.049Z"
+    },
+    {
+      "file": "proof_note-900.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "191e03f930c48e5884fed79521e9c15a5f9ce0fa0e030fe1f867acbfd7300cff",
+      "timestamp": "2025-10-31T22:35:08.049Z"
+    },
+    {
+      "file": "proof_note-B900.json",
+      "type": "json",
+      "size": 257,
+      "hash": "8d7da3b33b9778d318d1c6571ecd591dc2eefcb94647c0704a623db8f032da71",
+      "timestamp": "2025-10-31T22:35:08.049Z"
+    },
+    {
+      "file": "proof_note-B900.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "faa7bdc9159d722166e3024d713496216e0086210a000b9899374103499b71cf",
+      "timestamp": "2025-10-31T22:35:08.049Z"
+    },
+    {
+      "file": "proof_note-CTO.json",
+      "type": "json",
+      "size": 255,
+      "hash": "9d5073ddeb068af46cd1bbd4283d1bea92d0ef2d1d42a86ab0b68b2123ee8964",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-CTO.pdf",
+      "type": "pdf",
+      "size": 237,
+      "hash": "5b431005ccc3065c1f61abf48055a09b4910842cff543885a3a8a371eb9f5052",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-D700.json",
+      "type": "json",
+      "size": 257,
+      "hash": "c41c0866b971865ae8357723b997f8279fc6d2e6f74883ec8c29bb3044d41cbe",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-D700.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "cc4c0304c9641462bfb5d8b9a3bbebb8cb96f6ed160c266ef08c1179b9ff0313",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-F800.json",
+      "type": "json",
+      "size": 257,
+      "hash": "0ecab633127c45eeb73518397007ed2e342233842ece65788297bf7fa7d2f9d0",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-F800.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "c6d8468864cae8bb2abbf100edb85b76a9ff8c2e09eb85a477c0d44363117276",
+      "timestamp": "2025-10-31T22:35:08.050Z"
+    },
+    {
+      "file": "proof_note-I200.json",
+      "type": "json",
+      "size": 257,
+      "hash": "7c3aa384de32af9120245422d689e58ca5e505b31fcfa5aa9038d563fdfb1b6e",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-I200.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "59eeb3a5a91f63e7d4c3a5f17d42086a9c0fcc9e3ae70ff20403e947f0fdbb41",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-P600.json",
+      "type": "json",
+      "size": 257,
+      "hash": "a90e5f7425527e97b1326a08baea3d13d89c373a1b4fa71d0386bdfdf48ec869",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-P600.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "f93e30d88574bba6655d6b33832e3c85e5e0d712c591efff3e56230164936580",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-R900.json",
+      "type": "json",
+      "size": 257,
+      "hash": "7ec3f2586aa00def0a1dc5a95d6744914b88381dfa6e82787461ae6c0a39626d",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-R900.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "107c1d7a359c187b54a2be8a4ad8775f347f584390139fd857a0c03ca78d5398",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-V700.json",
+      "type": "json",
+      "size": 257,
+      "hash": "1eeeec00ce1e2423f82b2ee51d730a6d36a2f8fc177e356dc01457807006de11",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "proof_note-V700.pdf",
+      "type": "pdf",
+      "size": 238,
+      "hash": "b8c31c18a97eb9cf0189d5529974e70a1dc138b522346bcd924716c78a8accc8",
+      "timestamp": "2025-10-31T22:35:08.051Z"
+    },
+    {
+      "file": "public_audit_export.json",
+      "type": "json",
+      "size": 12942,
+      "hash": "99ef978c0cb2d298b5eea13d66fd924e30439ac0a92cced3f2e9339ad34e6120",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "public_audit_ledger.json",
+      "type": "json",
+      "size": 319,
+      "hash": "637ebe2e4102a2615a5528302fe0d3126814cdd5c851ee77659b157950c8ec87",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "public_audit_portal.html",
+      "type": "html",
+      "size": 559,
+      "hash": "345e7697df28b7e42520d76ad6c90bc0c208332bbba2f0de9807f83d7929bab2",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "public_index.html",
+      "type": "html",
+      "size": 493,
+      "hash": "d65e2708d5f61fdeecea315ef500b1f6ec76b5599bd2a63ba4cec71010f7da67",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "public_ledger.json",
+      "type": "json",
+      "size": 2472,
+      "hash": "770c0fd960d990551d56b5f2a0dc12c1fd7de427b0eb457f47e17047cd3e3bba",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "public_ledger_sync.json",
+      "type": "json",
+      "size": 16607,
+      "hash": "31f785333547e33c591dec242eb3db047ef2a2aef3bb0f86e1e64d2e39f982ed",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "quantum_signatures.json",
+      "type": "json",
+      "size": 2650,
+      "hash": "b82df94eaeb9a2257b88b0b61371300aec475bdb10ae5e0449daa727f2159c08",
+      "timestamp": "2025-10-31T22:35:08.052Z"
+    },
+    {
+      "file": "registry_publication_ack.json",
+      "type": "json",
+      "size": 331,
+      "hash": "51481e7adb9da60140f212c15d9aa111c3028c84c88400800a04bd37b47b3fcd",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "regulator_audit_portal.html",
+      "type": "html",
+      "size": 13268,
+      "hash": "48a61dc3c87be5c75ca14287fb6e65a48392407bf24ca0a13610723656d94bf7",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "regulator_eu_feed.html",
+      "type": "html",
+      "size": 502,
+      "hash": "d2ec5f2164ddae50a89825d446089300facbd29a539930dfcb0df85677b1c157",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "regulator_replay_log.json",
+      "type": "json",
+      "size": 19461,
+      "hash": "1b1a3b61465ed090e40744c75a1bfcf269e3e8fa679f65db5386551cc7603271",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "regulator_verification_portal.html",
+      "type": "html",
+      "size": 1994,
+      "hash": "1c6ec412f3795bfee8341af659f5be82a8cd14b0a25417928e974c9733748267",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "supabase_metrics_payload.json",
+      "type": "json",
+      "size": 216,
+      "hash": "af32859a2dadb283c235e358d698383f6d8f2ab154b445b21463bcec03377e74",
+      "timestamp": "2025-10-31T22:35:08.053Z"
+    },
+    {
+      "file": "trustbridge_ack.json",
+      "type": "json",
+      "size": 250,
+      "hash": "95005f4955b91646ba7d117559e6cc4eded9d31c5397ed5ba83bbacadd50c707",
+      "timestamp": "2025-10-31T22:35:08.054Z"
+    },
+    {
+      "file": "trustbridge_dashboard.html",
+      "type": "html",
+      "size": 1144,
+      "hash": "da37be04a76660e0aa5267c186c7ee9e93181297599bd2b2ee957488f7945add",
+      "timestamp": "2025-10-31T22:35:08.054Z"
+    },
+    {
+      "file": "trustbridge_final_certificate.pdf",
+      "type": "pdf",
+      "size": 1716,
+      "hash": "684937d76fac0369c3972623ccbe803fd315409766033903ba9b3280f4d870e1",
+      "timestamp": "2025-10-31T22:35:08.055Z"
+    },
+    {
+      "file": "trustbridge_final_chain.json",
+      "type": "json",
+      "size": 291,
+      "hash": "4ec75072b63e76a004c82901cb7d57af0ec02ea619d55e14dc2fe377c91e4ae6",
+      "timestamp": "2025-10-31T22:35:08.055Z"
+    },
+    {
+      "file": "vault_attestation.json",
+      "type": "json",
+      "size": 334,
+      "hash": "b459186f9e7948da74c762ee3cda1efeeb9ce2910e793eeba86204a916920f2a",
+      "timestamp": "2025-10-31T22:35:08.055Z"
+    },
+    {
+      "file": "verification_proof.json",
+      "type": "json",
+      "size": 279,
+      "hash": "0940f2ff424186a3d09bfa87d070d8be052d96c5dd7c6f2ea5a6a9e9a1ad6338",
+      "timestamp": "2025-10-31T22:35:08.055Z"
+    },
+    {
+      "file": "verification_summary.html",
+      "type": "html",
+      "size": 14970,
+      "hash": "24ad380684968d2d9dc8b36c9a58499444c87de7b406f4b3e08539218cea93c4",
+      "timestamp": "2025-10-31T22:35:08.055Z"
+    }
+  ],
+  "integrity_score": 100,
+  "status": "OBSERVED"
+}
