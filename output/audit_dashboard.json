@@ -1,0 +1,630 @@
+[
+  {
+    "note_id": "note-001",
+    "proof": {
+      "note_id": "note-001",
+      "user_id": "user-001",
+      "consent_version": "1.1",
+      "integrity_hash": "hash001",
+      "timestamp": "2025-10-31T09:53:58.565Z",
+      "signature": "d6dac43ac43f62183db292d0da11f9272aae5a85e36d3c4caf4ea55a9573182d",
+      "verified": true
+    },
+    "compliance_report": null,
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-002",
+    "proof": {
+      "note_id": "note-002",
+      "user_id": "user-010",
+      "consent_version": "1.1",
+      "integrity_hash": "hash002",
+      "timestamp": "2025-10-31T09:56:57.756Z",
+      "signature": "f5348119278424ea5b494e2617b6bee4f19b5f1f59c8d4e6cfc6fbcd2d2abafe",
+      "verified": true
+    },
+    "compliance_report": null,
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-900",
+    "proof": {
+      "note_id": "note-900",
+      "user_id": "user-CA",
+      "consent_version": "1.1",
+      "integrity_hash": "hash900",
+      "timestamp": "2025-10-31T10:00:34.070Z",
+      "signature": "19864890c7d0b55f7c92025db3ff5765ad582b1fedf96efb5a0fa9e0280e7c09",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:00:34.075Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-CA",
+      "note_id": "note-900",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        },
+        {
+          "event": "SYNC"
+        }
+      ],
+      "proof": {
+        "note_id": "note-900",
+        "user_id": "user-CA",
+        "consent_version": "1.1",
+        "integrity_hash": "hash900",
+        "timestamp": "2025-10-31T10:00:34.070Z",
+        "signature": "19864890c7d0b55f7c92025db3ff5765ad582b1fedf96efb5a0fa9e0280e7c09",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "4c235b8f-3466-4cee-bbbc-8749f6b21cf7",
+        "bundle_hash": "f7a697c6293459c4f3eb6b5ebc3ba5611b6a757e733176436f8119600e34cec7",
+        "timestamp": "2025-10-31T10:00:34.074Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-CTO",
+    "proof": {
+      "note_id": "note-CTO",
+      "user_id": "user-A",
+      "consent_version": "1.1",
+      "integrity_hash": "hashCTO",
+      "timestamp": "2025-10-31T10:08:04.951Z",
+      "signature": "e4980779beb4379ec7a63753ee88f101117bfdd46cc92c7d53446d9a8e882385",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:08:04.953Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-A",
+      "note_id": "note-CTO",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        }
+      ],
+      "proof": {
+        "note_id": "note-CTO",
+        "user_id": "user-A",
+        "consent_version": "1.1",
+        "integrity_hash": "hashCTO",
+        "timestamp": "2025-10-31T10:08:04.951Z",
+        "signature": "e4980779beb4379ec7a63753ee88f101117bfdd46cc92c7d53446d9a8e882385",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "d4aca764-e41f-4dc7-bef0-ab89a199d125",
+        "bundle_hash": "ff82e9a2cac0396b4e14695abc3fef1882136938a73c1b4b53f2b77b1c36bccc",
+        "timestamp": "2025-10-31T10:08:04.953Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "audit_pdf": "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-FRESH/aiduxcare-clean/output/compliance_report_note-CTO_audit_signed.pdf",
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-D700",
+    "proof": {
+      "note_id": "note-D700",
+      "user_id": "user-D",
+      "consent_version": "1.1",
+      "integrity_hash": "hashD700",
+      "timestamp": "2025-10-31T10:26:49.896Z",
+      "signature": "fb54eaa05ae941e3e22bfff7edc90200154e5a68ddb5b662209cbd0dd1125a6d",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:26:49.898Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-D",
+      "note_id": "note-D700",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        }
+      ],
+      "proof": {
+        "note_id": "note-D700",
+        "user_id": "user-D",
+        "consent_version": "1.1",
+        "integrity_hash": "hashD700",
+        "timestamp": "2025-10-31T10:26:49.896Z",
+        "signature": "fb54eaa05ae941e3e22bfff7edc90200154e5a68ddb5b662209cbd0dd1125a6d",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "fd379fae-9078-426a-9802-c34f9133dd0d",
+        "bundle_hash": "73cb0b52b08202bf0ab902f8bdc9dc23e5b2d6de02d513217deb10454e99212d",
+        "timestamp": "2025-10-31T10:26:49.898Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "audit_pdf": "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-FRESH/aiduxcare-clean/output/compliance_report_note-D700_audit_signed.pdf",
+    "regulator_validation": {
+      "id": "dd6dab8e-950b-4bf6-a4ce-49466c8f8fce",
+      "note_id": "note-D700",
+      "bundle_hash": "78f6a8720d07e46871a8281851f36e7141e5d1fd01de621fa2ddbe0f2a654fbe",
+      "verified": false,
+      "timestamp": "2025-10-31T10:26:49.946Z",
+      "regulator": "CPO Ontario"
+    },
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-I200",
+    "proof": {
+      "note_id": "note-I200",
+      "user_id": "user-I",
+      "consent_version": "1.1",
+      "integrity_hash": "hashI200",
+      "timestamp": "2025-10-31T10:24:39.608Z",
+      "signature": "0c3c153127c80dad746ee8b07d031516a91cfe7d6cf486633e7454dd231d2ea2",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:24:39.610Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-I",
+      "note_id": "note-I200",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        }
+      ],
+      "proof": {
+        "note_id": "note-I200",
+        "user_id": "user-I",
+        "consent_version": "1.1",
+        "integrity_hash": "hashI200",
+        "timestamp": "2025-10-31T10:24:39.608Z",
+        "signature": "0c3c153127c80dad746ee8b07d031516a91cfe7d6cf486633e7454dd231d2ea2",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "9cd42c7c-4f5e-40d9-99a3-6319b714ad0c",
+        "bundle_hash": "d0a099a9eb271542f5720a9ac09e14d74929173d97e0591e1d58972f68b40482",
+        "timestamp": "2025-10-31T10:24:39.609Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "audit_pdf": "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-FRESH/aiduxcare-clean/output/compliance_report_note-I200_audit_signed.pdf",
+    "regulator_validation": {
+      "id": "e70b2847-4545-4bb2-a243-bd2434f9e74b",
+      "note_id": "note-I200",
+      "bundle_hash": "62284d6d7bc0c7ed50958c3748a5c6e9afe1b8a9434b9022f3a520a9ac2530de",
+      "verified": false,
+      "timestamp": "2025-10-31T10:24:39.640Z",
+      "regulator": "CPO Ontario"
+    },
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-R900",
+    "proof": {
+      "note_id": "note-R900",
+      "user_id": "user-R",
+      "consent_version": "1.1",
+      "integrity_hash": "hashR900",
+      "timestamp": "2025-10-31T10:12:40.656Z",
+      "signature": "26041fd5a135657cea488949e5c55233ddcffa518c2ea896dd2a815551313f34",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:12:40.659Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-R",
+      "note_id": "note-R900",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        }
+      ],
+      "proof": {
+        "note_id": "note-R900",
+        "user_id": "user-R",
+        "consent_version": "1.1",
+        "integrity_hash": "hashR900",
+        "timestamp": "2025-10-31T10:12:40.656Z",
+        "signature": "26041fd5a135657cea488949e5c55233ddcffa518c2ea896dd2a815551313f34",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "7a9bc183-afff-454e-9006-13b51229bee3",
+        "bundle_hash": "6e1daf0a1d0ec8dee7faa274c32536b198e17f06906fcc86a7ad84706a172738",
+        "timestamp": "2025-10-31T10:12:40.658Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "audit_pdf": "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-FRESH/aiduxcare-clean/output/compliance_report_note-R900_audit_signed.pdf",
+    "timestamp": "2025-10-31T10:26:49.951Z"
+  },
+  {
+    "note_id": "note-V700",
+    "proof": {
+      "note_id": "note-V700",
+      "user_id": "user-V",
+      "consent_version": "1.1",
+      "integrity_hash": "hashV700",
+      "timestamp": "2025-10-31T10:21:56.555Z",
+      "signature": "91b3107ba5d5a9a1af3a604fe0392553b49a5999ab833a53dee923e5dd915f72",
+      "verified": true
+    },
+    "compliance_report": {
+      "generated_at": "2025-10-31T10:21:56.558Z",
+      "jurisdiction": "Ontario, Canada",
+      "compliance_framework": [
+        "PHIPA",
+        "PIPEDA",
+        "CPO Ontario Standards"
+      ],
+      "user_id": "user-V",
+      "note_id": "note-V700",
+      "consent_version": "1.1",
+      "auditTrail": [
+        {
+          "event": "CREATE"
+        }
+      ],
+      "proof": {
+        "note_id": "note-V700",
+        "user_id": "user-V",
+        "consent_version": "1.1",
+        "integrity_hash": "hashV700",
+        "timestamp": "2025-10-31T10:21:56.555Z",
+        "signature": "91b3107ba5d5a9a1af3a604fe0392553b49a5999ab833a53dee923e5dd915f72",
+        "verified": true
+      },
+      "ledgerEntry": {
+        "id": "0579dd82-9767-4e27-bc6e-1560b7f2be1f",
+        "bundle_hash": "0b8bc59f37ec97a61353d5a52f5ff57c79ece95e706c3fcd099a246966e476ec",
+        "timestamp": "2025-10-31T10:21:56.557Z"
+      },
+      "verification": {
+        "integrity_verified": true,
+        "ledger_verified": true
+      }
+    },
+    "audit_pdf": "/Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-FRESH/aiduxcare-clean/output/compliance_report_note-V700_audit_signed.pdf",
+    "regulator_validation": {
+      "id": "b449e550-7e33-434a-a505-167e844154a8",
+      "note_id": "note-V700",
+      "bundle_hash": "b500bba2aa52e2dad39496d46c14237c2b7b7ac05fab151a806402eb81840a97",
+      "verified": false,
+      "timestamp": "2025-10-31T10:15:59.866Z",
+      "regulator": "CPO Ontario"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "cbd9b970-773d-447a-b95e-b16aa51fa00a",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "4a4012ba-eb5b-4613-a97e-cd9066fa79f3",
+      "regulator_record_id": "b449e550-7e33-434a-a505-167e844154a8",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "cbd9b970-773d-447a-b95e-b16aa51fa00a",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "cbd9b970-773d-447a-b95e-b16aa51fa00a",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:15:59.866Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:24:39.640Z",
+      "signature": "7631b0ddf194275aa9979924e7ef07b0bdb71868efc51f216c759ebc877392b1"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "513a1eeb-5409-4867-9e96-7e7a6bf9b64c",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "729bc552-0951-449c-bb5b-14c9405f585d",
+      "regulator_record_id": "de80a380-f416-4f2d-822a-de0eb7e019dc",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "513a1eeb-5409-4867-9e96-7e7a6bf9b64c",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "513a1eeb-5409-4867-9e96-7e7a6bf9b64c",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:21:56.596Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:24:39.641Z",
+      "signature": "a49b6f80cc7d642dc3fcd59401d55305000be99b7df59b007df0d11937971fd3"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "65af221a-ad5c-4d1b-bf0a-6a169a773dbb",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "3c82b452-4d95-4fbc-8575-42f3d9d90f98",
+      "regulator_record_id": "e70b2847-4545-4bb2-a243-bd2434f9e74b",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "65af221a-ad5c-4d1b-bf0a-6a169a773dbb",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "65af221a-ad5c-4d1b-bf0a-6a169a773dbb",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:24:39.640Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:24:39.641Z",
+      "signature": "de6091db5f8cd0c8d194d4cc5e0ca168107c6aebbaf5beb52e0aab7418ae7678"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "a392797b-3c4c-4dc7-9d87-3d1ce1f64763",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "ca8dc785-1fcc-4083-b6ef-64266b62b87e",
+      "regulator_record_id": "b449e550-7e33-434a-a505-167e844154a8",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "a392797b-3c4c-4dc7-9d87-3d1ce1f64763",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "a392797b-3c4c-4dc7-9d87-3d1ce1f64763",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:15:59.866Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:26:49.948Z",
+      "signature": "e60cfc0cb7464598e36f7788010e21e8a205116e3644d84cb228c15e3d000f86"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "b411e9c9-1e85-4933-be71-981a78fb2120",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "5115b3fc-b5df-4343-8297-838e478d9722",
+      "regulator_record_id": "de80a380-f416-4f2d-822a-de0eb7e019dc",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "b411e9c9-1e85-4933-be71-981a78fb2120",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "b411e9c9-1e85-4933-be71-981a78fb2120",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:21:56.596Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:26:49.948Z",
+      "signature": "f4f3cd03a5ddcfad2a43e4b061357f81701d13f0913a3a1856651241fb91e99d"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "b32bfdd6-2e0f-4019-b390-0e50e1e5d978",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "da0cf8dc-778e-41b5-aaf5-1842aa0afcaf",
+      "regulator_record_id": "e70b2847-4545-4bb2-a243-bd2434f9e74b",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "b32bfdd6-2e0f-4019-b390-0e50e1e5d978",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "b32bfdd6-2e0f-4019-b390-0e50e1e5d978",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:24:39.640Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:26:49.948Z",
+      "signature": "2881110fd8a3bc1233b9cc3a88b439f6ccf67d17a290b5c42c244876ddf93ce9"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  },
+  {
+    "note_id": "f5d70b86-1fd1-4749-8704-b6b07e248ac9",
+    "compliance_report": null,
+    "insurance_record": {
+      "id": "db824bf0-c3c3-497c-87d7-dd296d3463ce",
+      "regulator_record_id": "dd6dab8e-950b-4bf6-a4ce-49466c8f8fce",
+      "insurer": "Mock Health Insurance Ltd.",
+      "fhir_claim_id": "f5d70b86-1fd1-4749-8704-b6b07e248ac9",
+      "payload": {
+        "resourceType": "ClaimAudit",
+        "id": "f5d70b86-1fd1-4749-8704-b6b07e248ac9",
+        "status": "completed",
+        "outcome": "partial",
+        "recorded": "2025-10-31T10:26:49.946Z",
+        "insurer": {
+          "reference": "Organization/AiDux-MockInsurer",
+          "display": "Mock Health Insurance Ltd."
+        },
+        "item": [
+          {
+            "sequence": 1,
+            "detail": {
+              "code": "bundle-validation",
+              "outcome": "unverified"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://aiduxcare.ca/fhir/extensions/regulatorRef",
+            "valueString": "CPO Ontario"
+          }
+        ]
+      },
+      "acknowledged": true,
+      "timestamp": "2025-10-31T10:26:49.948Z",
+      "signature": "164930d8618698ac8e89ab8a966da91333ba02a93183c259e41d70e693b8cad3"
+    },
+    "timestamp": "2025-10-31T10:26:49.952Z"
+  }
+]
