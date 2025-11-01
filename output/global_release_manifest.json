@@ -1,0 +1,673 @@
+{
+  "release_id": "39f2ff6e-7ca9-44b3-9d14-d989b543fbda",
+  "version": "v1.0-CA",
+  "generated_at": "2025-11-01T00:57:45.717Z",
+  "artifacts": [
+    {
+      "file": "ai_validation_report.json",
+      "size_kb": "0.36",
+      "sha512": "2560fddb46e6a69cb653cb7ca041bc0476cb63add32557daa339d535f2aac3b4d663d60b29e7c4fa4f4725e3353e45721aba035fb86276f6eebee436ab00f68a"
+    },
+    {
+      "file": "audit_dashboard.json",
+      "size_kb": "58.29",
+      "sha512": "7d52aefd85f194669e76bbcecfd3b3cff0a511f45a56b31d06aaf97607d4dfedf40929760d0afb26189b2daaf5ef31ebe239d9037866d03116ec056d9edb1d73"
+    },
+    {
+      "file": "audit_manifest.json",
+      "size_kb": "29.76",
+      "sha512": "7e053e2f02ace9312d8adc9017c1bc19f3040f33841427cc3545648d00401df7fb81be7f4c51e659d169217cbc5f2c8461f085f28d5dd30ca2abbec75e9f54fc"
+    },
+    {
+      "file": "audit_note-001.json",
+      "size_kb": "0.13",
+      "sha512": "1b5224dad8b38d9de502865819147f7228e4077e2956af4e32de7d8032d4c9a63d74186f4856532ba14f366cf9d1c21105666f7babb3887e2ee7ab6ff2d3e1cc"
+    },
+    {
+      "file": "audit_note-002.json",
+      "size_kb": "0.03",
+      "sha512": "9cb5fedb87a64b4dd99dbb9f708490c67e4b2df4b15ddb5922d1035e7bbd27a7d76471a1a9e1294aacf97e24111b1cd0849beba9923a3cc03733371443b0c559"
+    },
+    {
+      "file": "audit_note-900.json",
+      "size_kb": "0.06",
+      "sha512": "5baf6ed957b4262828d3207e8662ad8b21781549ccd58f08a0cad3fcd2d3ce900c154bd8ff560aef70e0536bae8dfa1b326ec07eb49ec4ae28047dbfa2eee347"
+    },
+    {
+      "file": "audit_note-B900.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-CTO.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-D700.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-F800.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-I200.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-P600.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-R900.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_note-V700.json",
+      "size_kb": "0.03",
+      "sha512": "972d79a1796d5b02548d8e45b47cbaad6cf3e076ecca1ef4cac37f4d30e082d2be77d509773a2676b58ae8d098b5f905dde5dfe102514f6b89297d346ca3b6a1"
+    },
+    {
+      "file": "audit_open_data.json",
+      "size_kb": "0.32",
+      "sha512": "94960b946f4e6813f7b4593f42a3352983adfecb04096109efb29091c4a988c1e2b2a28ea09de8d777f4bc284cef358fdab951d7fa1104d9fd50420b239c1d21"
+    },
+    {
+      "file": "audit_ops_status.json",
+      "size_kb": "13.71",
+      "sha512": "d66712a0da85aefd3a8e77828441205393f7833c3f5aaed262ada2cf1da7d3c3284d9c3215962777459a6155fc811c0a3e668e76ef8c8cd61ae56ac29a2b5535"
+    },
+    {
+      "file": "audit_registry_certificate.pdf",
+      "size_kb": "1.78",
+      "sha512": "43fc7944b5c7dee35f1cf5fed513debbf445ba31dcb34f84abb461304ac4c243ba8fcb60612528e8c834760171e3e211e0ffe88abcce1e7839145930a660e8c9"
+    },
+    {
+      "file": "blockchain_ledger.json",
+      "size_kb": "19.81",
+      "sha512": "80433ae1272dd4131ce0feda127724cfc732ffd6406dd485b7ac1f353db67b1f084d04cf47e004b45df063dd737b1fcf46d7af561f10412cb0920e2815e44c02"
+    },
+    {
+      "file": "chain_final_seal.pdf",
+      "size_kb": "1.78",
+      "sha512": "9c5ea6d14c297346a1ad0f9c4a3bebfba791b9353cac9406f4b5b8bb51cb47b1ae1bb9e1bd3e18282119f74cd5fada387da154262d6f088fe61c3e4897b259bc"
+    },
+    {
+      "file": "chain_final_signature.json",
+      "size_kb": "0.31",
+      "sha512": "6e55f9792a412f9cd4561d2b963c0577d5b51d1714394bf1a0e55707aa2043b04389693d062678539a34fd91631068d41c272c967671568845ee58af86040333"
+    },
+    {
+      "file": "clinical_audit_reconciliation.json",
+      "size_kb": "0.49",
+      "sha512": "7f55d32e88a2faba605fc9d90bb394da55963a57625507fb9c8a68c1ced00e6b14a1d6d91c8cc3025ebaa71dc28d4a444f4bcf0148e5f5678fa44364ff848a8a"
+    },
+    {
+      "file": "compliance_chain_proof.zip",
+      "size_kb": "52.32",
+      "sha512": "b75490fbe36575ca47140061eda8cc4685e8d34e87e1092d781d85e4dea6268c1465f6405aa7cc8cb0102305621115738558d089684a62642a4e6efd18005f61"
+    },
+    {
+      "file": "compliance_report.json",
+      "size_kb": "0.30",
+      "sha512": "f955d248eee1bce7c6f8a2705c91f3d71f56f3a25103e27c31c480fb4af7524f3701ee893a228d723753b23edbe06240d995d0bce567e485fb45ca5fc057f0b3"
+    },
+    {
+      "file": "compliance_report_note-900.json",
+      "size_kb": "0.90",
+      "sha512": "0c8f1b3a11e6b9519ee1ffa71a11446a4c59314bc1cee78e9436d18e22546e24d2b5d4b3d80ee8870467f301603f314a5910da3b10340918146b7aa3e830bfe3"
+    },
+    {
+      "file": "compliance_report_note-B900.json",
+      "size_kb": "0.86",
+      "sha512": "6b631675ce51c5e63dd54cab9a4952c06f6efca15800b4fd4e123824e96aeef11ccc7823062118b9e339cbe89b72207f4911df49ce743f313b8edcaa616e108a"
+    },
+    {
+      "file": "compliance_report_note-B900_audit_signed.pdf",
+      "size_kb": "2.01",
+      "sha512": "a2b846e74b9dbfa416c1781a00f1c32e303b24e3042880684e7baf97c1172276f9cf753058fb7fe82035d34c69bdb63f61d587f510fadfb26bd01e7fc559a336"
+    },
+    {
+      "file": "compliance_report_note-CTO.json",
+      "size_kb": "0.86",
+      "sha512": "58d58d9b126bc50662edc4d2ac281b1d3de9c73f0041908ea15528d4e4dc49c374199ebc043009a721e2a766bb3d711acd478ce4d35ca1ba89cb4a8eb7242894"
+    },
+    {
+      "file": "compliance_report_note-CTO_audit_signed.pdf",
+      "size_kb": "2.02",
+      "sha512": "4a485a765c1b49e19bb116262bb426b957008afe9124535c3cb35a8ffe32d192cb2b9da14d4d02db49e7cc092115cfe6483402d6d359a5416a6325027ac18277"
+    },
+    {
+      "file": "compliance_report_note-D700.json",
+      "size_kb": "0.86",
+      "sha512": "70183a628dfbab1d2a140a6aa669ea02f420d9695750c800d1c161d6dd2e1126f630eeca88bb41fb0b438dd75aa6a666d92f5c8250bca6dfc09cbf919b24c2da"
+    },
+    {
+      "file": "compliance_report_note-D700_audit_signed.pdf",
+      "size_kb": "2.01",
+      "sha512": "a45bc7f4b883307091bcc811939d186a85b7f8b2effc54a2390355800b8f94d8eb3cfc6a54df7cdada3343b2fcc80d53e54b32b32113fc42c12972fd86431510"
+    },
+    {
+      "file": "compliance_report_note-F800.json",
+      "size_kb": "0.86",
+      "sha512": "0071b71f6c0c1dd54a368a56c5d9332bb3268b9ff840014eb281241176003aa85b6dd0918360e014080732346dedb216fdb48e270c3085d65a94cd934593c510"
+    },
+    {
+      "file": "compliance_report_note-F800_audit_signed.pdf",
+      "size_kb": "2.02",
+      "sha512": "5f6dd3ceefc4b06b369297fa0801726969e074f167bfde94d9de052523f2d4e173789124bfd97222cd30d99b15eb2f9668054bbaf82e11e0f11d4df24adf646b"
+    },
+    {
+      "file": "compliance_report_note-I200.json",
+      "size_kb": "0.86",
+      "sha512": "4ba6d7ecebdaa4debfc3eab24c2b29b4f998acf3ade55185f27154473d36a3c22403b9dd8f0ea5c04c8447dba9c06adcddfef9ef4ee703449e727f3b7e0fa71d"
+    },
+    {
+      "file": "compliance_report_note-I200_audit_signed.pdf",
+      "size_kb": "2.02",
+      "sha512": "1641d6faa70f7932bf31da3493100b7e132b324487b1d8db990c7d6c7f7d3fd278f2cb3bcd2b0b597c24b5f9f45480ffaac9c87ee35a4c865131ecdcb3cd2185"
+    },
+    {
+      "file": "compliance_report_note-P600.json",
+      "size_kb": "0.86",
+      "sha512": "71c513c8a57a0f3dd553e7ff5a2cea100c941d0e51f956708c6d4978d251348d9b73059e1efa2c9d6a134d09e6e0e88372981e1dee4865c9f2c280f7864f74a8"
+    },
+    {
+      "file": "compliance_report_note-P600_audit_signed.pdf",
+      "size_kb": "2.01",
+      "sha512": "a114bb0a8123ab705c35e3dc1b485f3d5442b54982f056d60698bd5ce0c06a628a66e9719ce33e522dd336f1c2580d4229ce50becc721b0b4e29eae127b49156"
+    },
+    {
+      "file": "compliance_report_note-R900.json",
+      "size_kb": "0.86",
+      "sha512": "70a55b78ec02abf4c33173f28107eb76c56169ec76150c2ea3ae4813bd622b68e1a80d5db3e84c4d58e40a34457335ca50a8a4cd2d5fca830b34644836717622"
+    },
+    {
+      "file": "compliance_report_note-R900_audit_signed.pdf",
+      "size_kb": "2.02",
+      "sha512": "5e742a7be91eb9da702f0b6ce91392c3da3b1504114aea02d4d6928a66e78bd80de6158f2f9b0acb135839296ca8ba9511e8b0b14324e7601119b4739c62cfc6"
+    },
+    {
+      "file": "compliance_report_note-V700.json",
+      "size_kb": "0.86",
+      "sha512": "cd58293f0cccb3f3866a4347861199a267e0e1f0a68ab4834418d3f3db2be6888f095751c9f7f2ebc29bb2ac653b9d5966193fd12feb3775254a6382461c9399"
+    },
+    {
+      "file": "compliance_report_note-V700_audit_signed.pdf",
+      "size_kb": "2.02",
+      "sha512": "9c078fbe8b09547fe5a58b1e255cacde40ab330c1e9466100f98293dfce7182f161fe26dfe5945934780487aecdfed5f5fe64c3c36665ed1dce2c2b6ca473dc5"
+    },
+    {
+      "file": "compliance_vault.zip",
+      "size_kb": "135.79",
+      "sha512": "63b3d55903e097f83b275434e637af63521d6f7239f67f7787888db764c207008485d76a89ae0a45fe4286b0d9a6959345f93c6db2605185513ad792e6cf4357"
+    },
+    {
+      "file": "consent_analytics.json",
+      "size_kb": "0.42",
+      "sha512": "f03d5b0498b9fde6ba2a864ba9802c998746d9f070a63b0d4b9370eeb6f04e6f4b0d0cda73d2b12ff18cfa7c5be6bfa56c6c790600d66977bbfc18df301c67f0"
+    },
+    {
+      "file": "crosstrust_ack.json",
+      "size_kb": "0.35",
+      "sha512": "933ec096bda7b7dc15cef818bf63823109b93908091b7374c89ea0854c5dd9adf909cffb9c9f668e461d77c42d1db58a1b92818dba7f224deeec5679ba940948"
+    },
+    {
+      "file": "crosstrust_exchange.json",
+      "size_kb": "0.33",
+      "sha512": "0a7783103a0c08ad3efe9dd71193bdb57d24f662833aa458f334ab9d83be3a37ffbcd3a46ec25c5e075f2b0aee1ff90b1c6badaf0387b66309db3b91d15c91c6"
+    },
+    {
+      "file": "crosstrust_sync_ledger.json",
+      "size_kb": "0.28",
+      "sha512": "cda858807672cd8eae7e209ef80b9b31aead90d7b27354783b2c04ce6cff9acf4f1a40e9a006fbc536bc22a6691025365c40a9d5f3c6087fcfa6feaa507c39f7"
+    },
+    {
+      "file": "delivery_receipt.json",
+      "size_kb": "0.29",
+      "sha512": "7b1b91ef95884e23ecef06888b30158ec708300c4a0b6292fe7b62168263eac1508580513121f5c1d94b43e9827297956278b84a108f196ccce3240cad9c9e4c"
+    },
+    {
+      "file": "deployment_manifest.json",
+      "size_kb": "29.89",
+      "sha512": "d245c1ad430e2a291b2a934f56f33d6c8b7b530862f388725f6c271e07aa93d92eac0dff14624afa8abb91e5ef82acc8e2f9151bc7bd97c9b8e518d5278c84f6"
+    },
+    {
+      "file": "exchange_Niagara_to_Kingston.json",
+      "size_kb": "1.29",
+      "sha512": "00fd4a223bcc726e3b5f7c45226f0e454111144bb5aa152d4bf3c72e03246ea934c16364a8d574ca50936b36f83a0134510f45248e2235df84a36fc720e82bce"
+    },
+    {
+      "file": "exchange_Niagara_to_Toronto.json",
+      "size_kb": "2.15",
+      "sha512": "ffda61abb752cbb18a4c1d7bf629b141cf61d01df16f66f4c22e135174568703cc85821ede918e9058beeca60834dad8bbb7658374e8090393ebc7d363f2704f"
+    },
+    {
+      "file": "external_validation_ledger.json",
+      "size_kb": "2.13",
+      "sha512": "3ce6daec9b483f3bcc6667404cd0fa2ad13e54880bda453755db418ffb0f5bc583e31ff3326b6d45d76005500c27658bec4d0bd794eb9632a55f16771d8260a2"
+    },
+    {
+      "file": "federal_archive_ack.json",
+      "size_kb": "0.34",
+      "sha512": "593d5b602bb1e1ca19427ae02d7b05634006c0c2edaf549307d373edff9f5636769702430dd1c6503979d19af737e5a378485912a1438eae8a8ffbff87e4bd8c"
+    },
+    {
+      "file": "federal_archive_manifest.json",
+      "size_kb": "15.78",
+      "sha512": "84c2038ecea7f2bea177eaf5c500185dfbbfd9cefd877164baa4653ac7305627ddb3815d13d2566d53f301cd6f67dd98742ab3802c9c9efb73f2e26629b00263"
+    },
+    {
+      "file": "federal_archive_receipt.pdf",
+      "size_kb": "1.61",
+      "sha512": "95c27a3db710ca1bdc172b352f0056c06c324d69aad15605eceece6ee8280ea6020d9e816595b7e7f2cf89046961b6c21c6a3849ecd1e2ec63811bf6a570f0dc"
+    },
+    {
+      "file": "federated_consent_log.json",
+      "size_kb": "0.46",
+      "sha512": "25f46c786d891dd2c740df6981fc481b95ec0fb225a33a0a3a291639af3ffe62746aefdbd80da42c24725e0d988bea479e9825eedd35f5372d4c5248893266cf"
+    },
+    {
+      "file": "federated_exchange_log.json",
+      "size_kb": "1.14",
+      "sha512": "fa7903fe5d1632cbbdca0a34f5481606316f8f4ee3f29b562a7e85d3d5d5fcdd77c0674bf39351a3aa309c2a56cb186a2af5db94d411cc62f26266ca940ec5c2"
+    },
+    {
+      "file": "final_registry_hash.json",
+      "size_kb": "0.43",
+      "sha512": "a959e6ae11bef029fc37f2be6e724f7810f0465b8963b12dc42522c11a6f75debd842468c41ae838e3835ecdd70e855fa978021bada9b7f29c3fa454c12ffc1d"
+    },
+    {
+      "file": "final_report_manifest.json",
+      "size_kb": "0.29",
+      "sha512": "3bef6c70efdb217690dbbdf1c8e3406596056c07496e6992e37e6e142f32b41e5da58ce6556fe8b40d335cd59a5266a4cd43cfa7a5f576f4870333ac8a4fc479"
+    },
+    {
+      "file": "global_final_certificate.pdf",
+      "size_kb": "1.61",
+      "sha512": "d206a3905f60abac9345c229b9398113ace1654532f2c94546506daf5f3764b5769010d571fcaa2fddef9a33cbf3c9b324936d1f5210702ddb22283a0d708c29"
+    },
+    {
+      "file": "global_trust_manifest.json",
+      "size_kb": "1.55",
+      "sha512": "52e66f60e5522571c2040202114745685b8b1fc5f102a069ef6ddef6ec62142b188242c0a3f4faa6d721112700b7f96256af3337b528e59e298272742446a9af"
+    },
+    {
+      "file": "govcloud_ack.json",
+      "size_kb": "0.32",
+      "sha512": "11268bc2298f821abb6b4f0a71644b021a9e733ccb8bc27abacc0430ae0e183f939612d8e1c99e489376b34f02c4131d731afaec7f5081a1da08f18bb833594b"
+    },
+    {
+      "file": "govcloud_sync_bundle.zip",
+      "size_kb": "4.14",
+      "sha512": "f54cdf0fe0b19ae1bceb523c1f7d24071bf727b52eb67afdf33fdde06a4759de8656caa94e8523bd0d1508a75d0b07c2a416208806ebc704d5e2bcf3427d2b7b"
+    },
+    {
+      "file": "govcloud_sync_manifest.json",
+      "size_kb": "13.88",
+      "sha512": "465e2637b8011bb04658257b6e27fbb5320eab96655459ebf4662c707aaac797ba25ef6ff05554a7714fe245212b3dbbd011d615ce3e4fd6dfd103c01620ed42"
+    },
+    {
+      "file": "insurance_audit_log.json",
+      "size_kb": "34.55",
+      "sha512": "8a952235c987b7dd8e6a81f6d271fbed237ce08f29fee2989e821d2ca87e5e004f3e005570b2a6f6153b67fb6a58bfa977f392f3f9ffa137fd6ba17152e15f35"
+    },
+    {
+      "file": "ledger_sync_receipt.json",
+      "size_kb": "0.28",
+      "sha512": "a03af530021bfd773ff44310264c09b8e97da91e07de05afacf8fe02bf799c9861de23d4b55ce2a2cb199cbe43514bba7491f8d859417eb9a057212d988f6e23"
+    },
+    {
+      "file": "manifest_note-B900.json",
+      "size_kb": "1.15",
+      "sha512": "3b9ed00fe7130477cb2084a46d9c5c0020d5cb31e2fb2604926dd28c22e85db20ea7ccd77f7e7100be37a91985696374be01a5d58d0f6e2189b4c5eda7c8c327"
+    },
+    {
+      "file": "manifest_note-D700.json",
+      "size_kb": "0.90",
+      "sha512": "5967ac7a94404f0a4c12d2586bacacbf3d1862c94a3b5d4266268dc03d062ea7cf03468c86153b066c229472ecd1555536445d8cb19b4d4e18b2fe45a1400593"
+    },
+    {
+      "file": "manifest_note-F800.json",
+      "size_kb": "0.90",
+      "sha512": "20deadea2a8d48d16f52471951e7e1b9fe21d703dacbc725a7015c843adef9cd63c5e5cb99cd620dc538d0186f1e24c3b25636cb8322434c94b0a46e9e3fbcbf"
+    },
+    {
+      "file": "manifest_note-I200.json",
+      "size_kb": "0.90",
+      "sha512": "073db40f7888b6e7881f9d70f080ded171ffd6ddd10bf5bc14079b204a392c5a4f5aabc5a76c95829b2b1eec8b76a40460b3288f96d50b7f4f5209410590974d"
+    },
+    {
+      "file": "manifest_note-P600.json",
+      "size_kb": "0.90",
+      "sha512": "7f54fef4685118e08e957b729af589eb8dc75215780e5907bbcba16f9002f6eaf8a34b167177173391358eb4b5ed5763a1282f6284c87cf3a0a53dbc8e0c0ed5"
+    },
+    {
+      "file": "manifest_note-R900.json",
+      "size_kb": "0.90",
+      "sha512": "ad8a463cdae70f609edb54e2b8a5b04f91e15b00c39a87cad1a3c63b21a61037386c3714751736b17d96d5d22c3e64c9eee1b3efbe0d07bb8efac5aa4830b5ce"
+    },
+    {
+      "file": "manifest_note-V700.json",
+      "size_kb": "1.15",
+      "sha512": "a2b2d548301eaa4db3dd65cc765ace9859a098147dcf562e306fb764854157558b5817ff43a5313fb7689e24c415d1a01fd1b1c75325770831c7b64f0713025c"
+    },
+    {
+      "file": "metrics_publish_ack.json",
+      "size_kb": "0.33",
+      "sha512": "0bdd515e9083aaf068841c613d4aa540b4ffa6f5cb3ebaa9d4dcdf014993cbfdf916cc354940fb9cba40ee5e44b1785c1b8db43673d93c9794841d3300edd48e"
+    },
+    {
+      "file": "orchestration_manifest.json",
+      "size_kb": "1.33",
+      "sha512": "6e4870eb4d6d489a7946dd09821e85d5fbc98826db8d2ae61b2d8a5c35e0aed46e8aaf1f3fa6c3d88de7bc49e2329305cd02b2f5fd35c37fb07cf20bae842d53"
+    },
+    {
+      "file": "patient_consent_ledger.json",
+      "size_kb": "16.01",
+      "sha512": "3a7840a7be4ff0343ee5e551bcad194b4ddb2dc317783791c3e2d6b53267dd751aacc00b58a305356c9b98726a0689d1bb4386e59759ef6f41a6d4278912c2a1"
+    },
+    {
+      "file": "proof_bundle_note-001.zip",
+      "size_kb": "0.29",
+      "sha512": "bd1aecb3affa4c054acd6fcd6d26adfe10b32adb07fd68d2572df1f79f2e03b400a8f8a9e41608bc1b1419dcbb93aeaedba26a8cbd3004da4b4e84e49e443b7f"
+    },
+    {
+      "file": "proof_bundle_note-002.zip",
+      "size_kb": "0.29",
+      "sha512": "49220b9f773ede637c7444a32f2c9e08e5b2f8e4d5fd09c7dceacc175aa8cf1a12efd0374c27e38b5c5c7ed8d53cb4285e62309d9a221db274565a7d9dcb5184"
+    },
+    {
+      "file": "proof_bundle_note-900.zip",
+      "size_kb": "0.29",
+      "sha512": "d074421fcfead0c7154496b1076d079a299a3d0ddcc0510a2b5e279864e789aec69b07fd2e22edf09ed175fc20f5b5d84dc9182989548fef971bd2d7ea8ab9d3"
+    },
+    {
+      "file": "proof_bundle_note-B900.zip",
+      "size_kb": "0.29",
+      "sha512": "9a15a0388ba83fa99b66203ba8ccac2e76c22c1be3356fc4c9ec3b8b7a0e1c04bb443233b979952accf71a60bcd5e3219d0f9c795b798c1f33903375c8e80309"
+    },
+    {
+      "file": "proof_bundle_note-CTO.zip",
+      "size_kb": "0.29",
+      "sha512": "788a2212b4964a59019fd7ebd22d4288483068cb12fba2a9c47b93290b368a2e6e76d4078b0002d26ff5e04d15e226b1c29af88340627a77d5dfecebdc535e08"
+    },
+    {
+      "file": "proof_bundle_note-D700.zip",
+      "size_kb": "0.29",
+      "sha512": "e3fd88ab5b5dd91d297025a5ccebd5c50a94182a17ad9c789a981f562479dd80b521e6d5e0a2df9daad5b7ac311923e16d8cebf8266c42408436fda597f49310"
+    },
+    {
+      "file": "proof_bundle_note-F800.zip",
+      "size_kb": "0.29",
+      "sha512": "27fabf6dd71d68657c6beb98c3f8e299f727c6068e66e1d8896411019efb46ed9efe3dabbff4d1140ab2908654b118fe5b6a7931ac57c910b66c859224fba688"
+    },
+    {
+      "file": "proof_bundle_note-I200.zip",
+      "size_kb": "0.29",
+      "sha512": "8329b55429c204e403083d7c04fecfb89e48ae26b5bdcc357095d3b0530ab839b6007b3c0f60d948f2b9572289b0aa63849ded6ce9ae081d6d494b96e0e4d06d"
+    },
+    {
+      "file": "proof_bundle_note-P600.zip",
+      "size_kb": "0.29",
+      "sha512": "28980dd04100d405e4f735f8c49056b59f04af05d41ada2894cbadf0fb8e585e09849ba69ed1c640ae270d612fb01fb04e5c5484322dc96832a3e39b82c91283"
+    },
+    {
+      "file": "proof_bundle_note-R900.zip",
+      "size_kb": "0.29",
+      "sha512": "f2e5c1d1935fc35f25aee0512058db2237d4d491bb7af4a25fab777141faaca226c9e94c4306f7e7084d2b68e4882798739906d8184bad020176b538636bd3a9"
+    },
+    {
+      "file": "proof_bundle_note-V700.zip",
+      "size_kb": "0.29",
+      "sha512": "130b2facadd1525c7bb34afe19179c7d99e7ef321465762a8f998eda641e6bce1078a594aa48da3e92a25ad904e8faf1f5773902804c0bf40ec6f86ae82e5533"
+    },
+    {
+      "file": "proof_note-001.json",
+      "size_kb": "0.25",
+      "sha512": "85d2bc1ddbaf40d11760c2e55475f4563701855aff76db0d1e5037b144aea46e32b12f1309cd16ccaa118e867750164aea9a6d584f40fdf989352fa81b425af9"
+    },
+    {
+      "file": "proof_note-001.pdf",
+      "size_kb": "0.23",
+      "sha512": "28507dcc4507067c205295f001bc5f1a705292486687f50e234141bb15f5474df3e5180e04b4e215bb091eebc31f32d5720ced3f5111b843f7301b56dd775032"
+    },
+    {
+      "file": "proof_note-002.json",
+      "size_kb": "0.25",
+      "sha512": "1bdf4350d52824b708c9dc429cf314b66a2174f2c0ec26b4467db816afbb12531c1b6f06a383d0ccbcbfa44b9ff32b5e602caa77df6886bce13f78c44aaf1dbe"
+    },
+    {
+      "file": "proof_note-002.pdf",
+      "size_kb": "0.23",
+      "sha512": "3d2d4d0f2ef44e9761b4d8dcb4c1362c7204427a49bb3298b1f6b587571d5645db4135dc7e71f42319df5b1e987859b9a1d60bbef31010132361ef687109a9a3"
+    },
+    {
+      "file": "proof_note-900.json",
+      "size_kb": "0.25",
+      "sha512": "c1f967bea40b293d8b718535e4b74052f8c825872b4bef974a38176bddbd74e55c3fbb3949f1526811bcb9b40f655e990e3f613c40043e0c913a92a527ed24a7"
+    },
+    {
+      "file": "proof_note-900.pdf",
+      "size_kb": "0.23",
+      "sha512": "3eaf57fa9d84ad32963492f3c1e14695ef856a44efc3765cb022a8ccc0d5af3bc86a1575a2fb4c85aabcc8cbf65900581284fc9690706eafb29ba40e64f616e4"
+    },
+    {
+      "file": "proof_note-B900.json",
+      "size_kb": "0.25",
+      "sha512": "c83aa5b7e58d5c35a978b37befacf064b439688f31811dd443357f5c70465b93e85cf8db5b56da698ca6805452ddce8b67d97d044c19bdcb53160d6dc123153c"
+    },
+    {
+      "file": "proof_note-B900.pdf",
+      "size_kb": "0.23",
+      "sha512": "eb228f86e0027cb93618d8267fc2ddd43beafd6f574ecf4a10e37bf6e622abe19aa3532547df4f1e2ad53b94c7e37eef6f627f2299adc2300e6951b6e0c3e2c8"
+    },
+    {
+      "file": "proof_note-CTO.json",
+      "size_kb": "0.25",
+      "sha512": "e6f6179a35d24df0f6fa993a11b9b9f8d1aaa0f132b23627a401822972f40c8cbe8db922100c4be73327b117a0086a5d659a77d45d208e62eed5650d49f5773b"
+    },
+    {
+      "file": "proof_note-CTO.pdf",
+      "size_kb": "0.23",
+      "sha512": "b06eccc9513cc00d2f2d071b87d690a48bfef25058742c77dac3cf60483bd4261bea4662790374a5f2b7af7b937c659859a22948e70ecf4675d4d47f31abcbfa"
+    },
+    {
+      "file": "proof_note-D700.json",
+      "size_kb": "0.25",
+      "sha512": "e5f5664594bb54d9373a96c8a6a0c760892c93217c28450e79645c865f6222677756b0a8050d18496b661f852cf762b188dc7aeb0548888fd4c971b2c130c2f3"
+    },
+    {
+      "file": "proof_note-D700.pdf",
+      "size_kb": "0.23",
+      "sha512": "edb672242048a90b005cfbd29eebb11471b19a16382c8980ac1ba07f479b588957d0485b4122918fe364753cfa5177c1aae50942dc7baa1a67e32a8f5f42186a"
+    },
+    {
+      "file": "proof_note-F800.json",
+      "size_kb": "0.25",
+      "sha512": "71d1c3f1f2881320f8305c49995d698c96d133219104e939cd6be915275d4af570b9bbd8967f1391f0f4c562e915ba602a4228fa01fb7f4119e86297eda771a7"
+    },
+    {
+      "file": "proof_note-F800.pdf",
+      "size_kb": "0.23",
+      "sha512": "1cc197cba04774635d3670224942274c878319389470362fe5ad895b731fff3c57f368c2256bdf3244b489e393ab61a238a8e359ac61ec7cfc0e8e4ccab432ad"
+    },
+    {
+      "file": "proof_note-I200.json",
+      "size_kb": "0.25",
+      "sha512": "24c896ad7c413c8579e0468ff8768dec7d00af26ee1554e9ddfaa53ead66ab1fbe4a7f3074076b1b19273b909f265cf07466159e1cecc937cb9fe4d1fcc7dd11"
+    },
+    {
+      "file": "proof_note-I200.pdf",
+      "size_kb": "0.23",
+      "sha512": "981e1c6749a2fece274756e0e6bce6019e74b2198d20a44aa160260960b9ef3e107721de954d37ae73e00052a675bb2b3e11a76b735d252d333172fff7d5d992"
+    },
+    {
+      "file": "proof_note-P600.json",
+      "size_kb": "0.25",
+      "sha512": "f01011d6a38274bd3a191d2cb038de91fca4821a384e1237d0c9538355bdfa835545b9c831b7a77579d6a10aaa03d76dbf6673a49d48580006fefc5aae5c793f"
+    },
+    {
+      "file": "proof_note-P600.pdf",
+      "size_kb": "0.23",
+      "sha512": "36cafa5f23d657bbfc7bef409a83e4fb2aefd30bbd66a9feae29d06ff1400bb28e42d474aae878143dd37832e525296ff5368792720c7bd2697225dd5b549f35"
+    },
+    {
+      "file": "proof_note-R900.json",
+      "size_kb": "0.25",
+      "sha512": "8e6727eea321662dbd60ec133ad4c6be83d64c291db3b94604606d532eafdb5185b046cd42af2b11864fbdefd6d91d9d15e68d621c91e4d6c44ade4ed5895e27"
+    },
+    {
+      "file": "proof_note-R900.pdf",
+      "size_kb": "0.23",
+      "sha512": "023467406f5484dda754add98a0a4bf3793163743d2c9af62ac41ff64d04b9200e6830f4781cc4b2bc4e3cc30015cb430e838786ccfdc9b0fc74cd887238dcb0"
+    },
+    {
+      "file": "proof_note-V700.json",
+      "size_kb": "0.25",
+      "sha512": "4d640b8bbd7669fdb82beb213a9abf1a56a3fc3c849b147011e8c7a8bd5640da11778cdd6c5e39cacf78b36132c8967c9407bc64f437d20ac396efc1e6fba039"
+    },
+    {
+      "file": "proof_note-V700.pdf",
+      "size_kb": "0.23",
+      "sha512": "f67c2aaae7bc5f15d8869f9e297d8acfe8965e99ed5175ac65f83a89c0cf8f7efe90f6b1307cd1911c98b378efb2673f70f7492c33a9a01341c1be3b10869b9b"
+    },
+    {
+      "file": "public_audit_export.json",
+      "size_kb": "12.64",
+      "sha512": "752c846cfade9e7f72a418135598513dc30b0882bdfa929d54ba77cd0d6f5d4ed0d645ea525425b405afe01763e5e9cec0740fc1fd831bdc1e17f679c2c4b652"
+    },
+    {
+      "file": "public_audit_ledger.json",
+      "size_kb": "0.31",
+      "sha512": "96365532ecec46e2a7d1bc3d7664f522ab74b7c3fddc29062501969517822049e2ebe71e49f5ffd541746b4aa25b04e00bee76e8266e6876fe84945a3f3f9b1f"
+    },
+    {
+      "file": "public_ledger.json",
+      "size_kb": "2.41",
+      "sha512": "9bfc442fb0b91bb9b7f0f4c4da1849aff162114f9fca145b972a892f28fdccccd8d00f723340a1c3859b29704df4e9ca5aa3cf33c915e08822af358c5649cf63"
+    },
+    {
+      "file": "public_ledger_sync.json",
+      "size_kb": "16.22",
+      "sha512": "6a5c8ba2febac76b51ca06e3e4f95e8ada49736c8e465e02de39b47ef115166c6d9b8d25c2e451727087818a8ccc48a014a03dedf8d289fa8e8740f268442ab6"
+    },
+    {
+      "file": "quantum_signatures.json",
+      "size_kb": "2.59",
+      "sha512": "8666481a83270c202ab8e5c5f26b0b8c5a8d53cc68b1895e5757151a3dcad6ac1b81e8d4bdcb768d1f53d2fd5b2118a064f3edb37166a9d290d8a6ff4577fb4f"
+    },
+    {
+      "file": "registry_publication_ack.json",
+      "size_kb": "0.32",
+      "sha512": "0ab44af8dc555aae276056d21e5383a10b6b7b737518e84b104a3f8b6ad1b9c45a7b2872a66043d61be81a3eec4713ae4612c174192ff80bbcf575d1914fc970"
+    },
+    {
+      "file": "regulator_bundle_note-B900.zip",
+      "size_kb": "8.93",
+      "sha512": "1bc6ee19d57b5f9635f04c5d67168f10e49d507b2c4018d6b7036ee4ee9be455ecf5f61929c80e88cac2a51ce2d6a1532905d8a4e85e32b37c57da98d6344087"
+    },
+    {
+      "file": "regulator_bundle_note-D700.zip",
+      "size_kb": "4.41",
+      "sha512": "9981ad27563981306d0d9c370461ac4b490c23f8f30392e8f81d5696f088d4000f425b71a1b9a6674fee877573e81ac1a62c368f2b1bca9985ab59e7e7265194"
+    },
+    {
+      "file": "regulator_bundle_note-F800.zip",
+      "size_kb": "4.41",
+      "sha512": "4f0e959a501881a510221d615f1d27c72ac7be63de6b7aa4d830d5d78c10818101469e6755b2c5b364f13475a430df92a61cb3858d0c59f09f4d7846fbe24101"
+    },
+    {
+      "file": "regulator_bundle_note-I200.zip",
+      "size_kb": "4.42",
+      "sha512": "8a0443c0131745fcbdf9385f89dc0180f39ee803244b88b72ea738ea075cfedd7e9e77faee14c0d03d13247c42ace8d41785d0ca50aa451e0be8acda0ce465be"
+    },
+    {
+      "file": "regulator_bundle_note-P600.zip",
+      "size_kb": "4.41",
+      "sha512": "8e6f6cce291a2ee6a36b46670bb3207d4c20eb30ee6a288ee5ee7cfce0857ad0da71ccf29ef9841489572ac58e23ce181305ec38a24bd5affbb8e95d7ddb549d"
+    },
+    {
+      "file": "regulator_bundle_note-R900.zip",
+      "size_kb": "4.41",
+      "sha512": "c1b58c728489376967cd04cc35a660678b3ff8ff5a59906e82c59a075364233ccae4ae6952cb8bf3c67b213841487467d92dc23010c83006e0f6b16f85dc109d"
+    },
+    {
+      "file": "regulator_bundle_note-V700.zip",
+      "size_kb": "8.94",
+      "sha512": "8d874f190eaeb21cb194980969145281e0900c39c78e2fc1de53aec60bab3f62e9aacf4b6180cf1f61408041d09cb76572183f42da030e6a9c72f1bb5fb3e38f"
+    },
+    {
+      "file": "regulator_delivery_bundle.zip",
+      "size_kb": "419.21",
+      "sha512": "4a3dbeebdd77976e0e45ecb68a3158086e62eb54d0f8b2fc685b29e239d8ea3e4ec631b20d93410b2e2a8772f69fb7debcdbcdb1b9eef0c2c7a781b2d2d80c36"
+    },
+    {
+      "file": "regulator_replay_log.json",
+      "size_kb": "19.00",
+      "sha512": "90c0080e4f223efa9c2d86e1a40fbc6545f386fe57a9134ae20647a8996faebd7f4ce43376a0a18fb33adbdaea0c951ae5da1d50a8be4b6e34b4bcd279185a12"
+    },
+    {
+      "file": "supabase_metrics_payload.json",
+      "size_kb": "0.21",
+      "sha512": "98ad704ba0fd1d71d9c61d7e9e3b159ed7ce1d96b8fec4da2ca462e78733be011af5e2b628dcf13756d7df1a0587a2a062345bd8ea5474a8e5af9ddb2ae27be9"
+    },
+    {
+      "file": "trustbridge_ack.json",
+      "size_kb": "0.24",
+      "sha512": "cb2b1182f05b00c64f7065571cbef913e9901e63f46969466f4bdddc91554363a9c7ee715f8b04092fe69dc1e86985bf44c33a732848465ea2621df65b839a58"
+    },
+    {
+      "file": "trustbridge_audit_bundle.zip",
+      "size_kb": "958.22",
+      "sha512": "8c2117acd6ae81cd082a2ce461f04f2befef31d4f04be277943cb13ae3cdde03bfd292399807ee7037dffb46286bf63c437e2b11262e90c9c5fe7bf46c9a35f0"
+    },
+    {
+      "file": "trustbridge_final_certificate.pdf",
+      "size_kb": "1.68",
+      "sha512": "1407473672550b01548404fd27e30e5750206a15b0e09c2d33efc0de365ccd36d0523b10a1b77fa6184a75b86408de0d73c362879b52eb9d7196863e6884f00e"
+    },
+    {
+      "file": "trustbridge_final_chain.json",
+      "size_kb": "0.28",
+      "sha512": "9aee055e1d24a92de2cfcbe5a31c3fa54d14e9efa726fdcd8d65c5a96f055ab19857c8ed65f2e73cfe84c93c39fb4b4bcdaa13f34fb56c5440bffa8c586c42b1"
+    },
+    {
+      "file": "trustbridge_final_report.pdf",
+      "size_kb": "5.48",
+      "sha512": "aeb7d0a287d2b2e3944fa38e22f94836aa8d526ee2bac1434bf341a8fbb4706343cfe4c20f90dc04460d58f5f2c2cf7d0b38dc06c16135e4d0df3602d466f1cb"
+    },
+    {
+      "file": "trustbridge_observatory.json",
+      "size_kb": "25.52",
+      "sha512": "f05d53c5eb8a0ae9bd42a5a22c5086f029c71ff32f9b2182c71db3742694adf7e129c945334c7866cb255b181cf133d9554e3a0ad30772753f0acac8d5a59c55"
+    },
+    {
+      "file": "trustbridge_selfheal.json",
+      "size_kb": "34.14",
+      "sha512": "aedca98e08f70be84649cdd1f98d5e9666891681748a757d768fe367a745bff858e2a5581ab3ad03d81f949c47e6562c4d2564bde17c182f389cd44b6890caef"
+    },
+    {
+      "file": "vault_attestation.json",
+      "size_kb": "0.33",
+      "sha512": "3a54ec203c5a93c120212fb61fe1c1dbf2ef3d631d1a83bb6594c39c90159c8011f65db06f9bde9420fb069969a2be0766c5bc1ad2516b6d89734fbe7a981c2f"
+    },
+    {
+      "file": "verification_proof.json",
+      "size_kb": "0.27",
+      "sha512": "e8da911dd96948a5c7ec5d259f6fe888fd922ae0eee9757b1d72f9514bdb5f4ba16491423c38b7f368c7c51c706d191bb3bde5a67c759df0b39bfa734dcf9eca"
+    }
+  ],
+  "total_artifacts": 132,
+  "release_hash": "fa45078139b98739d54d1070598021184cc44fb5960ea451d1edf8689eeaee6575f7bcf55bd2b188b21cc54eb224a096615f3ec49f7ff5e4113f35181a9bc6e8",
+  "region": "CA-ON",
+  "locale": "en-CA",
+  "organization": "AiDuxCare / Niagara Innovation Hub",
+  "status": "RELEASE_READY"
+}
