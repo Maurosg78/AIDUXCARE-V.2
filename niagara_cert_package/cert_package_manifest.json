@@ -1,0 +1,31 @@
+{
+  "package_id": "f04ad3a0-ef85-4026-b204-d8a1d161e886",
+  "generated_at": "2025-11-01T00:08:36.682Z",
+  "artifacts": [
+    {
+      "file": "trustbridge_final_report.pdf",
+      "sha512": "aeb7d0a287d2b2e3944fa38e22f94836aa8d526ee2bac1434bf341a8fbb4706343cfe4c20f90dc04460d58f5f2c2cf7d0b38dc06c16135e4d0df3602d466f1cb",
+      "size_kb": "5.48"
+    },
+    {
+      "file": "trustbridge_audit_bundle.zip",
+      "sha512": "8c2117acd6ae81cd082a2ce461f04f2befef31d4f04be277943cb13ae3cdde03bfd292399807ee7037dffb46286bf63c437e2b11262e90c9c5fe7bf46c9a35f0",
+      "size_kb": "958.22"
+    },
+    {
+      "file": "final_report_manifest.json",
+      "sha512": "3bef6c70efdb217690dbbdf1c8e3406596056c07496e6992e37e6e142f32b41e5da58ce6556fe8b40d335cd59a5266a4cd43cfa7a5f576f4870333ac8a4fc479",
+      "size_kb": "0.29"
+    },
+    {
+      "file": "audit_manifest.json",
+      "sha512": "7e053e2f02ace9312d8adc9017c1bc19f3040f33841427cc3545648d00401df7fb81be7f4c51e659d169217cbc5f2c8461f085f28d5dd30ca2abbec75e9f54fc",
+      "size_kb": "29.76"
+    }
+  ],
+  "total_artifacts": 4,
+  "status": "CERT_READY",
+  "region": "CA-ON",
+  "organization": "AiDuxCare / Niagara Innovation Hub",
+  "version": "v1.0-CA"
+}
