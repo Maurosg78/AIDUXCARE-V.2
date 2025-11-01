@@ -1,0 +1,22 @@
+{
+  "delivery_id": "2c717f71-d602-4a73-8c86-6c5300303dc3",
+  "generated_at": "2025-11-01T01:26:08.588Z",
+  "artifacts": [
+    {
+      "file": "aiduxcare_executive_changelog.pdf",
+      "sha512": "14793119eedfeb09996d6369020a67541526f6854ad9c029e48a4f685fd38e03cdf182152d1467fe97b158854c7613f0e28655c31647c50396642aec407016ff"
+    },
+    {
+      "file": "aiduxcare_executive_changelog.sig",
+      "sha512": "40d1e7ff748d8f2c5a1215ac66d1655cd070e25eb85d9ae30963230f1c34473f6effb52a754646ce961962ed466d9dfb42795cff8e306fa1b530d8799b6d9cfd"
+    },
+    {
+      "file": "aiduxcare_north_v1.0_CA_release.zip",
+      "sha512": "33f3962c66f47f868a078ae917d032ba316a9fcd0dafd2be76dfc8a3829e63a5e6decbdf1e8794be94d611fb46d73043169ff64b0d21b13de3a68e7f9c234cc2"
+    }
+  ],
+  "region": "CA-ON",
+  "organization": "AiDuxCare / Niagara Innovation Hub",
+  "version": "v1.0-CA",
+  "status": "SIGNED"
+}
