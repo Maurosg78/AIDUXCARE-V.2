@@ -1,6 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../lib/firebase';
 import type { ClinicalAnalysisResponse, SOAPNote, PhysicalExamResult } from '../types/vertex-ai';
+import type { ClinicalAnalysis } from '../utils/cleanVertexResponse';
 import { parseVertexResponse } from './vertexResponseParser';
 
 const functions = getFunctions(app);
@@ -107,26 +108,76 @@ EVALUACIÓN FÍSICA PROPUESTA:
     }
   }
 
-  static async generateSOAP(
-    selectedEntityIds: string[], 
-    physicalExamResults: PhysicalExamResult[]
-  ): Promise<SOAPNote> {
+  static async generateSOAP(params: {
+    transcript: string;
+    selectedEntityIds: string[];
+    physicalExamResults: PhysicalExamResult[];
+    analysis: ClinicalAnalysis | ClinicalAnalysisResponse | null;
+  }): Promise<SOAPNote> {
+    const { transcript, selectedEntityIds, physicalExamResults, analysis } = params;
     try {
       console.log('📝 Generando nota clínica...');
-      const prompt = `Genera una nota clínica con los siguientes hallazgos: ${JSON.stringify({selectedEntityIds, physicalExamResults})}`;
-      const response = await callVertexAI(prompt);
-      
-      const soapNote: SOAPNote = {
-        subjective: 'Paciente refiere síntomas descritos en la evaluación',
-        objective: 'Hallazgos objetivos de la evaluación física realizada',
-        assessment: 'Evaluación clínica basada en hallazgos',
-        plan: 'Plan de tratamiento fisioterapéutico'
+      const payload = {
+        transcript,
+        selectedEntityIds,
+        physicalExamResults,
+        analysis
       };
-      
-      return soapNote;
+
+      const prompt = `Eres un fisioterapeuta clínico colegiado por el CPO.
+Genera una nota SOAP lista para firmar usando EXCLUSIVAMENTE la información provista.
+RESPONDE SOLO CON JSON válido que siga este esquema:
+{
+  "subjective": string,
+  "objective": string,
+  "assessment": string,
+  "plan": string,
+  "followUp": string,
+  "precautions": string
+}
+No agregues texto fuera del JSON. Usa oraciones concisas en español (máx 2 frases por campo).
+
+DATOS DISPONIBLES:
+${JSON.stringify(payload, null, 2)}`;
+
+      const response = await callVertexAI(prompt);
+      const parsed = parseSoapResponse(response);
+
+      if (!parsed) {
+        throw new Error('Vertex AI returned non-JSON response for SOAP');
+      }
+
+      return parsed;
     } catch (error) {
       console.error('Error generating clinical note:', error);
       throw error;
     }
+  }
+}
+
+function parseSoapResponse(text: string): SOAPNote | null {
+  if (!text) return null;
+
+  let candidate = text.trim();
+  const jsonBlock = text.match(/```json([\s\S]*?)```/i) || text.match(/```([\s\S]*?)```/i);
+  if (jsonBlock && jsonBlock[1]) {
+    candidate = jsonBlock[1];
+  }
+
+  try {
+    const parsed = JSON.parse(candidate.trim());
+    return {
+      subjective: String(parsed.subjective || ''),
+      objective: String(parsed.objective || ''),
+      assessment: String(parsed.assessment || ''),
+      plan: String(parsed.plan || ''),
+      additionalNotes: parsed.additionalNotes ? String(parsed.additionalNotes) : undefined,
+      followUp: parsed.followUp ? String(parsed.followUp) : undefined,
+      precautions: parsed.precautions ? String(parsed.precautions) : undefined,
+      referrals: parsed.referrals ? String(parsed.referrals) : undefined
+    };
+  } catch (err) {
+    console.error('Error parsing SOAP response:', err);
+    return null;
   }
 }

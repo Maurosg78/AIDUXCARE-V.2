@@ -4,11 +4,11 @@ import { PatientData } from '../types/PatientData';
 import { PhysicalEvaluationTab } from '../components/PhysicalEvaluationTab';
 import { SOAPDisplay } from '../components/SOAPDisplay';
 import { WorkflowAnalysisTab } from '../components/WorkflowAnalysisTab';
-import { SOAPGenerator } from '../services/soap-generator';
 import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { useTranscript } from '../hooks/useTranscript';
 import { useTimer } from '../hooks/useTimer';
 import sessionService from '../services/sessionService';
+import type { SOAPNote } from '../types/vertex-ai';
 
 const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
@@ -46,21 +46,24 @@ const ProfessionalWorkflowPage = () => {
   const { 
     transcript, 
     isRecording, 
+    isTranscribing,
     startRecording, 
     stopRecording,
     setTranscript 
   } = useTranscript();
 
   const { time: recordingTime } = useTimer(isRecording);
-  
+
   const [selectedFindings, setSelectedFindings] = useState<string[]>([]);
   const [physicalTestsToPerform, setPhysicalTestsToPerform] = useState<string[]>([]);
   const [physicalExamResults, setPhysicalExamResults] = useState<any[]>([]);
-  const [localSoapNote, setLocalSoapNote] = useState<any>(null);
+  const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
 
   const handleAnalyzeWithAI = async () => {
-    console.log("Texto a analizar:", transcript);    if (!transcript) return;
-    console.log("Enviando texto al procesador:", transcript);    await processText(transcript);
+    console.log("Texto a analizar:", transcript);
+    if (!transcript) return;
+    console.log("Enviando texto al procesador:", transcript);
+    await processText(transcript);
   };
 
   const handleExamResultsChange = (results: any[]) => {
@@ -69,11 +72,17 @@ const ProfessionalWorkflowPage = () => {
 
   const handleGenerateSOAP = async () => {
     try {
-      const soapData = SOAPGenerator.generateFromData(
-        niagaraResults?.entities || [],
+      const soapData = await generateSOAPNote?.({
+        selectedEntityIds: selectedFindings,
         physicalExamResults,
-        selectedPatient
-      );
+        transcript
+      });
+
+      if (!soapData) {
+        console.warn('SOAP no disponible, omitiendo guardado.');
+        return;
+      }
+
       setLocalSoapNote(soapData);
       
       // Guardar en Firestore
@@ -90,10 +99,6 @@ const ProfessionalWorkflowPage = () => {
         console.log("Sesión guardada:", sessionId);
       } catch (error) {
         console.error("Error guardando sesión:", error);
-      }
-      
-      if (generateSOAPNote) {
-        generateSOAPNote(selectedFindings, physicalExamResults);
       }
     } catch (error) {
       console.error('Error generating clinical note:', error);
@@ -158,73 +163,71 @@ const ProfessionalWorkflowPage = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto p-4">
-        {activeTab === 'analysis' && (
-          <WorkflowAnalysisTab
-            selectedPatient={selectedPatient}
-            transcript={transcript}
-            setTranscript={setTranscript}
-            isRecording={isRecording}
-            startRecording={startRecording}
-            stopRecording={stopRecording}
-            recordingTime={recordingTime}
-            isAnalyzing={isAnalyzing}
-            isTranscribing={false}
-            onAnalyze={handleAnalyzeWithAI}
-            niagaraResults={niagaraResults}
-            selectedFindings={selectedFindings}
-            setSelectedFindings={setSelectedFindings}
-            onGenerateSOAP={handleGenerateSOAP}
-// Reemplazar líneas 178-184 en ProfessionalWorkflowPage.tsx
-// Este es el código correcto para onContinueToEvaluation
-            onContinueToEvaluation={() => {
-              // Extraer tests seleccionados del rawResponse
-              const selectedTestIds = selectedFindings.filter(id => id.startsWith('test-'));
-              let testsToPerform = [];
-              
-              if (niagaraResults?.rawResponse) {
-                try {
-                  const rawJson = JSON.parse(
-                    niagaraResults.rawResponse.replace(/```json\n?/g, '').replace(/```/g, '')
-                  );
-                  if (rawJson.evaluaciones_fisicas_sugeridas) {
-                    testsToPerform = rawJson.evaluaciones_fisicas_sugeridas
-                      .filter((test, index) => selectedTestIds.includes(`test-${index}`))
-                      .map(test => test.split(':')[0].trim()); // Solo el nombre del test
+        {/* Content */}
+        <main className="max-w-7xl mx-auto p-4">
+          {activeTab === 'analysis' && (
+            <WorkflowAnalysisTab
+              selectedPatient={selectedPatient}
+              transcript={transcript}
+              setTranscript={setTranscript}
+              isRecording={isRecording}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              recordingTime={recordingTime}
+              isAnalyzing={isAnalyzing}
+              isTranscribing={isTranscribing}
+              onAnalyze={handleAnalyzeWithAI}
+              niagaraResults={niagaraResults}
+              selectedFindings={selectedFindings}
+              setSelectedFindings={setSelectedFindings}
+              onGenerateSOAP={handleGenerateSOAP}
+              onContinueToEvaluation={() => {
+                // Extraer tests seleccionados del rawResponse
+                const selectedTestIds = selectedFindings.filter(id => id.startsWith('test-'));
+                let testsToPerform = [];
+
+                if (niagaraResults?.rawResponse) {
+                  try {
+                    const rawJson = JSON.parse(
+                      niagaraResults.rawResponse.replace(/```json\n?/g, '').replace(/```/g, '')
+                    );
+                    if (rawJson.evaluaciones_fisicas_sugeridas) {
+                      testsToPerform = rawJson.evaluaciones_fisicas_sugeridas
+                        .filter((test, index) => selectedTestIds.includes(`test-${index}`))
+                        .map(test => test.split(':')[0].trim()); // Solo el nombre del test
+                    }
+                  } catch (e) {
+                    console.error('Error extrayendo tests:', e);
                   }
-                } catch (e) {
-                  console.error('Error extrayendo tests:', e);
                 }
-              }
-              
-              console.log(`Pasando ${testsToPerform.length} tests a evaluación física`);
-              setPhysicalTestsToPerform(testsToPerform);
-              setActiveTab("evaluation");
-            }}
-            handleExamResultsChange={handleExamResultsChange}
-          />
-        )}
 
-        {activeTab === 'evaluation' && (
-          <PhysicalEvaluationTab
-            suggestedTests={physicalTestsToPerform}
-            onComplete={(results) => {
-              setPhysicalExamResults(results);
-              handleGenerateSOAP();
-              setActiveTab('soap');
-            }}
-          />
-        )}
+                console.log(`Pasando ${testsToPerform.length} tests a evaluación física`);
+                setPhysicalTestsToPerform(testsToPerform);
+                setActiveTab('evaluation');
+              }}
+              handleExamResultsChange={handleExamResultsChange}
+            />
+          )}
 
-        {activeTab === 'soap' && localSoapNote && (
-          <SOAPDisplay
-            soapNote={localSoapNote}
-            patientData={selectedPatient}
-            onDownloadPDF={handleDownloadReport}
-          />
-        )}
-      </main>
+          {activeTab === 'evaluation' && (
+            <PhysicalEvaluationTab
+              suggestedTests={physicalTestsToPerform}
+              onComplete={(results) => {
+                setPhysicalExamResults(results);
+                handleGenerateSOAP();
+                setActiveTab('soap');
+              }}
+            />
+          )}
+
+          {activeTab === 'soap' && localSoapNote && (
+            <SOAPDisplay
+              soapNote={localSoapNote}
+              patientData={selectedPatient}
+              onDownloadPDF={handleDownloadReport}
+            />
+          )}
+        </main>
     </div>
   );
 };
