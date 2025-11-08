@@ -1,118 +1,80 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getAuth, sendEmailVerification } from 'firebase/auth';
+/**
+ * ✅ VerifyEmailPage (en-CA)
+ * Market: CA | Language: en-CA | Compliance: PHIPA / PIPEDA / SOC2
+ */
 
-export const VerifyEmailPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getAuth, sendEmailVerification } from 'firebase/auth';
+import logger from '@/shared/utils/logger';
+
+const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
-  const auth = getAuth();
-  
-  const email = searchParams.get('email');
+  const location = useLocation();
+  const email = (location.state as any)?.email || '';
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (email && auth.currentUser) {
-      // Si el usuario está autenticado, enviar verificación automáticamente
+    const auth = getAuth();
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
       sendVerificationEmail();
     }
-  }, [email, auth.currentUser]);
+  }, []);
 
   const sendVerificationEmail = async () => {
-    if (!auth.currentUser) {
-      setError('Usuario no autenticado');
-      return;
-    }
-
     setLoading(true);
     try {
-      await sendEmailVerification(auth.currentUser);
-      setVerificationSent(true);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      setError(errorMessage);
+      const auth = getAuth();
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+        setSent(true);
+        logger.info('Verification email sent to:', email);
+      }
+    } catch (err: any) {
+      logger.error('Email verification error:', err);
+      setError('Failed to send verification email.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSkipVerification = () => {
-    // Para desarrollo, permitir saltar verificación
-    navigate('/command-center');
-  };
-
-  if (!email) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
-          <p className="text-gray-600">Email no especificado</p>
-          <button
-            onClick={() => navigate('/')}
-            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
-          >
-            Volver al inicio
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Verificar Email</h1>
-        
-        {verificationSent ? (
-          <div className="text-center">
-            <div className="text-green-500 text-6xl mb-4">✓</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Email de verificación enviado
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Hemos enviado un email de verificación a <strong>{email}</strong>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E10098] via-pink-500 to-[#0072FF] font-sans px-4">
+      <div className="max-w-md w-full bg-white/80 rounded-xl shadow-lg p-8">
+        <h1 className="text-2xl font-bold text-center text-slate-800 mb-4">Verify Your Email</h1>
+        {error && <p className="text-red-600 text-sm text-center mb-4">{error}</p>}
+        {!sent ? (
+          <>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              A verification email will be sent to <strong>{email}</strong>.
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Por favor, revise su bandeja de entrada y haga clic en el enlace de verificación.
-            </p>
-            <button
-              onClick={() => navigate('/command-center')}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
-            >
-              Continuar al Command Centre
-            </button>
-          </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-gray-600 mb-6">
-              Necesitamos verificar su email <strong>{email}</strong> para continuar.
-            </p>
-            
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-800 text-sm">{error}</p>
-              </div>
-            )}
-            
             <button
               onClick={sendVerificationEmail}
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 mb-4"
+              className="w-full py-2 px-4 rounded-md text-white font-medium bg-gradient-to-r from-[#E10098] to-[#0072FF] hover:opacity-90 disabled:opacity-50 transition-all"
             >
-              {loading ? 'Enviando...' : 'Enviar Email de Verificación'}
+              {loading ? 'Sending…' : 'Send Verification Email'}
             </button>
-            
-            {/* Botón para desarrollo - saltar verificación */}
+          </>
+        ) : (
+          <>
+            <div className="text-center text-green-600 text-lg font-medium mb-4">✓ Email sent!</div>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              Please check your inbox and click the verification link.
+            </p>
             <button
-              onClick={handleSkipVerification}
-              className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+              onClick={() => navigate('/professional-workflow')}
+              className="w-full py-2 px-4 rounded-md text-white font-medium bg-gradient-to-r from-[#0072FF] to-[#E10098] hover:opacity-90 transition-all"
             >
-              🧪 Saltar Verificación (Solo Desarrollo)
+              Continue to AiDuxCare
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>
   );
 };
+
+export default VerifyEmailPage;
