@@ -1,65 +1,56 @@
-import logger from '@/shared/utils/logger';
 /**
  * Variables de entorno para AiDuxCare V.2
  * Centraliza todas las configuraciones del sistema
  */
 
-// Variables de Supabase
+// Supabase
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Variables de APIs de IA
+// Firebase
+export const FIREBASE_CONFIG = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+};
+
+// Vertex AI configuration
+export const VERTEX_AI_URL = import.meta.env.VITE_VERTEX_AI_URL || '';
+export const VERTEX_AI_API_KEY = import.meta.env.VITE_VERTEX_AI_API_KEY || '';
+export const VERTEX_AI_REGION = import.meta.env.VITE_VERTEX_AI_REGION || 'us-central1';
+export const VERTEX_AI_FUNCTION = import.meta.env.VITE_VERTEX_AI_FUNCTION || 'vertexAIProxy';
+
+// Whisper (OpenAI) configuration
 export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-export const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
+export const WHISPER_MODEL = import.meta.env.VITE_WHISPER_MODEL || 'whisper-1';
 
-// Variables de entorno de la aplicación
+// App environment
 export const APP_ENVIRONMENT = import.meta.env.VITE_APP_ENVIRONMENT || 'development';
-
-// Configuración de Ollama (local)
-const OLLAMA_DEFAULT_URL = 'http://localhost:11434';
-const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b-instruct';
-
-// Configuración del AiDux Assistant
-export const AIDUX_ASSISTANT_PROVIDER = import.meta.env.VITE_AIDUX_ASSISTANT_PROVIDER || 'local';
-export const AIDUX_ASSISTANT_BASE_URL = import.meta.env.VITE_AIDUX_ASSISTANT_BASE_URL || OLLAMA_DEFAULT_URL;
-export const AIDUX_ASSISTANT_MODEL = import.meta.env.VITE_AIDUX_ASSISTANT_MODEL || OLLAMA_DEFAULT_MODEL;
-export const AIDUX_ASSISTANT_TIMEOUT = parseInt(import.meta.env.VITE_AIDUX_ASSISTANT_TIMEOUT || '10000'); // 10 segundos
 
 /**
  * Configuración completa del entorno
  */
 export const ENV_CONFIG = {
-  // Base de datos
   supabase: {
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANON_KEY
   },
-  
-  // APIs de IA
+  firebase: FIREBASE_CONFIG,
   ai: {
-    openai: {
-      apiKey: OPENAI_API_KEY
+    vertex: {
+      url: VERTEX_AI_URL,
+      apiKey: VERTEX_AI_API_KEY,
+      region: VERTEX_AI_REGION,
+      functionName: VERTEX_AI_FUNCTION
     },
-    huggingface: {
-      apiKey: HUGGINGFACE_API_KEY
-    },
-    ollama: {
-      url: OLLAMA_DEFAULT_URL,
-      model: OLLAMA_DEFAULT_MODEL
+    whisper: {
+      apiKey: OPENAI_API_KEY,
+      model: WHISPER_MODEL
     }
   },
-
-  // AiDux Assistant
-  assistant: {
-    provider: AIDUX_ASSISTANT_PROVIDER,
-    baseUrl: AIDUX_ASSISTANT_BASE_URL,
-    model: AIDUX_ASSISTANT_MODEL,
-    timeout: AIDUX_ASSISTANT_TIMEOUT,
-    isLocal: AIDUX_ASSISTANT_PROVIDER === 'local',
-    isCloud: AIDUX_ASSISTANT_PROVIDER === 'cloud'
-  },
-  
-  // Configuración de la aplicación
   app: {
     environment: APP_ENVIRONMENT,
     isDevelopment: APP_ENVIRONMENT === 'development',
@@ -76,7 +67,13 @@ export function validateEnvironment(): {
 } {
   const required = [
     { key: 'VITE_SUPABASE_URL', value: SUPABASE_URL },
-    { key: 'VITE_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY }
+    { key: 'VITE_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY },
+    { key: 'VITE_FIREBASE_API_KEY', value: FIREBASE_CONFIG.apiKey },
+    { key: 'VITE_FIREBASE_AUTH_DOMAIN', value: FIREBASE_CONFIG.authDomain },
+    { key: 'VITE_FIREBASE_PROJECT_ID', value: FIREBASE_CONFIG.projectId },
+    { key: 'VITE_VERTEX_AI_URL', value: VERTEX_AI_URL },
+    { key: 'VITE_VERTEX_AI_API_KEY', value: VERTEX_AI_API_KEY },
+    { key: 'VITE_OPENAI_API_KEY', value: OPENAI_API_KEY }
   ];
 
   const missing = required
@@ -93,21 +90,17 @@ export function validateEnvironment(): {
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
-  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);
-  
-  // Configuración del Assistant
-  console.log(`- AIDUX_ASSISTANT_PROVIDER: ${AIDUX_ASSISTANT_PROVIDER}`);
-  console.log(`- AIDUX_ASSISTANT_BASE_URL: ${AIDUX_ASSISTANT_BASE_URL}`);
-  console.log(`- AIDUX_ASSISTANT_MODEL: ${AIDUX_ASSISTANT_MODEL}`);
-  console.log(`- AIDUX_ASSISTANT_TIMEOUT: ${AIDUX_ASSISTANT_TIMEOUT}ms`);
-  
-  // Intentar validar la URL
+  console.log(`- FIREBASE_PROJECT_ID: ${FIREBASE_CONFIG.projectId ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- VERTEX_AI_URL: ${VERTEX_AI_URL ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- VERTEX_AI_API_KEY: ${VERTEX_AI_API_KEY ? 'OK ✅' : 'MISSING ❌'}`);
+  console.log(`- WHISPER_MODEL: ${WHISPER_MODEL}`);
+
   if (SUPABASE_URL) {
     try {
       new URL(SUPABASE_URL);
-      console.log('- URL format: VALID ✅');
+      console.log('- SUPABASE_URL format: VALID ✅');
     } catch (_e) {
-      console.error('- URL format: INVALID ❌ - La URL de Supabase no es válida');
+      console.error('- SUPABASE_URL format: INVALID ❌');
     }
   }
 }
