@@ -3,6 +3,10 @@ node_modules/
 dist/
 .npm/
 
+# Vite cache (causa loops infinitos si se monitorea)
+.vite/
+node_modules/.vite/
+
 # Logs & OS
 *.log
 .DS_Store

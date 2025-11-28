@@ -5,6 +5,27 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if true;
     }
+
+    // Value Analytics Collection - PHIPA Compliant
+    // Only pseudonymized data, no PHI
+    match /value_analytics/{document} {
+      allow read: if request.auth != null; // Authenticated users can read
+      allow write: if request.auth != null; // Authenticated users can write (for now, restrict in production)
+    }
+
+    // User Feedback Collection - Beta Testing
+    // Users can submit feedback during testing period
+    match /user_feedback/{document} {
+      allow read: if request.auth != null; // Team can read feedback
+      allow write: if request.auth != null; // Authenticated users can submit feedback
+    }
+
+    // Consent Verifications Collection - PHIPA Compliance
+    // Audit trail for consent verification with permanent retention
+    match /consent_verifications/{document} {
+      allow read: if request.auth != null; // Authenticated users can read
+      allow write: if request.auth != null; // Authenticated users can write (audit logging)
+    }
   }
 }
 

@@ -1,0 +1,19 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+
+function App() {
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1>🎉 AiduxCare V.2 - WORKING!</h1>
+      <p>✅ React is mounting correctly</p>
+      <p>✅ Dev server functional</p>
+      <p>📋 Ready for Sprint 2B</p>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

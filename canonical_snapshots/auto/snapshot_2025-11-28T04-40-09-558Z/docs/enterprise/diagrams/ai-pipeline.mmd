@@ -1,0 +1,10 @@
+flowchart LR
+  Mic[Audio Input] --> VAD[Noise/VAD]
+  VAD --> Whisper[Transcription (Whisper)]
+  Whisper --> Cleaner[Text Cleaner/Segmentation]
+  Cleaner --> Prompt[Prompt Builder (versioned)]
+  Prompt --> Vertex[Vertex AI Completion]
+  Vertex --> Sanitizer[Sanitize/PII Guard]
+  Sanitizer --> Persist[(Persist: note + metadata)]
+  Vertex -->|trace| Langfuse[Langfuse Traces/EVALs]
+  Langfuse --> Monitor[Observability/Alerts]

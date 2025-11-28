@@ -72,6 +72,23 @@
             "value": "public, max-age=31536000, immutable"
           }
         ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          }
+        ]
       }
     ]
   },
@@ -84,6 +101,10 @@
       "enabled": true,
       "port": 4000
     },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
     "functions": {
       "host": "127.0.0.1",
       "port": 5001
@@ -93,7 +114,15 @@
       "port": 4400
     }
   },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
   "functions": {
     "source": "functions"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }

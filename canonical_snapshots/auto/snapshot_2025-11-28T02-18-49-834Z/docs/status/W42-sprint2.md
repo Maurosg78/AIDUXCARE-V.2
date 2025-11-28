@@ -1,0 +1,13 @@
+# Week 42 — Sprint 2 Status
+
+## Highlights
+- …
+
+## Risks / Blockers
+- …
+
+## Next Actions
+- …
+
+## Demos / Links
+- …

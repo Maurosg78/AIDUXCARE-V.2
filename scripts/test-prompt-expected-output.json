@@ -1,0 +1,105 @@
+{
+  "medicolegal_alerts": {
+    "red_flags": [
+      "Medication interaction: Ibuprofen (NSAID) + Fluoxetine (SSRI) significantly increases gastrointestinal bleeding risk. Requires medical monitoring and medication review. Clinical concern: Increased risk of GI bleeding, ulcers. Medical referral recommended for medication review.",
+      "Mental health condition: Fluoxetine use indicates depression or anxiety. May affect treatment adherence, pain perception, and safety considerations. Consider impact on treatment plan."
+    ],
+    "yellow_flags": [
+      "Progressive symptom escalation over 1 month despite self-management (wrist brace, analgesics)",
+      "Occupational factors (repetitive 3D animation work) directly contribute to symptoms"
+    ],
+    "legal_exposure": "moderate",
+    "alert_notes": [
+      "Document medication interaction and recommend medical review before continuing NSAID use",
+      "Document symptom progression and occupational factors. Consider ergonomic assessment."
+    ]
+  },
+  "conversation_highlights": {
+    "chief_complaint": "Pain on outside of right wrist towards little finger, started 1 month ago as mild discomfort, progressively intensified with repetitive drawing/writing activities. Pain radiates to posterior elbow region.",
+    "key_findings": [
+      "Pattern consistent with De Quervain tenosynovitis: pain location (ulnar wrist), aggravating activities (repetitive thumb/wrist use), occupational factors (3D animation work). Alternative considerations include intersection syndrome, C6-C7 radiculopathy (given radiation to elbow), or wrist joint pathology.",
+      "Symptom progression: mild discomfort → intensifying pain with increased hand use → radiation to posterior elbow. Temporal pattern suggests mechanical origin.",
+      "Occupational factor: 3D animator with repetitive drawing/writing tasks using right hand. Job-specific activity directly aggravates symptoms."
+    ],
+    "medical_history": [
+      "Obesity reported. May influence treatment approach and functional capacity. Sedentary lifestyle associated."
+    ],
+    "medications": [
+      "Ibuprofen, unknown dosage, every 8 hours, approximately 1 week",
+      "Paracetamol, unknown dosage, every 8 hours, approximately 1 week",
+      "Fluoxetine, 50mg daily (2 x 25mg tablets, patient mentioned '25 grams' interpreted as 25mg per tablet), unknown frequency, unknown duration"
+    ],
+    "summary": "Clinical presentation shows pain on outside of right wrist towards little finger, progressively worsening over 1 month with repetitive drawing/writing. Pain radiates to posterior elbow. Patterns consistent with De Quervain tenosynovitis, though C6-C7 radiculopathy should be considered given radiation pattern. Occupational factors (3D animation work) directly contribute. Patient using wrist brace and analgesics. CRITICAL: Medication interaction (Ibuprofen + Fluoxetine) requires medical review due to increased GI bleeding risk. Important to evaluate neural involvement given radiation, assess De Quervain with Finkelstein's test, and consider ergonomic modifications. Sedentary lifestyle and obesity may impact treatment approach."
+  },
+  "recommended_physical_tests": [
+    {
+      "name": "Finkelstein's Test",
+      "objective": "Consider to evaluate De Quervain tenosynovitis",
+      "region": "wrist/hand",
+      "rationale": "May help assess De Quervain given pain location (ulnar wrist) and aggravating activities (repetitive thumb/wrist use)",
+      "evidence_level": "strong"
+    },
+    {
+      "name": "Phalen's Test",
+      "objective": "Consider to evaluate carpal tunnel syndrome",
+      "region": "wrist/hand",
+      "rationale": "May help assess median nerve involvement as differential consideration",
+      "evidence_level": "moderate"
+    },
+    {
+      "name": "Tinel's Sign",
+      "objective": "Consider to evaluate neural involvement",
+      "region": "wrist/hand",
+      "rationale": "May help assess peripheral nerve involvement given pain radiation to posterior elbow",
+      "evidence_level": "moderate"
+    },
+    {
+      "name": "Cervical Spine Assessment",
+      "objective": "Consider to evaluate C6-C7 radiculopathy",
+      "region": "cervical",
+      "rationale": "May help assess cervical radiculopathy as differential given pain radiation to posterior elbow",
+      "evidence_level": "emerging"
+    },
+    {
+      "name": "Grip Strength Testing",
+      "objective": "Consider to evaluate functional capacity",
+      "region": "wrist/hand",
+      "rationale": "May help assess functional impact and compare bilateral strength",
+      "evidence_level": "moderate"
+    },
+    {
+      "name": "Resisted Wrist Extension",
+      "objective": "Consider to evaluate extensor tendon involvement",
+      "region": "wrist/hand",
+      "rationale": "May help assess intersection syndrome or extensor tendinopathy",
+      "evidence_level": "emerging"
+    }
+  ],
+  "biopsychosocial_factors": {
+    "psychological": [
+      "Mental health condition: Fluoxetine use indicates depression or anxiety. May influence pain perception and treatment adherence."
+    ],
+    "social": [],
+    "occupational": [
+      "3D animator with repetitive drawing/writing tasks using right hand",
+      "Job-specific activities (drawing, writing) directly aggravate symptoms",
+      "Full-time work demands may impact treatment adherence and activity modification"
+    ],
+    "protective_factors": [
+      "Wrist brace use: current self-management strategy",
+      "Active self-care: using analgesics and brace to manage symptoms",
+      "Patient motivation: seeks to balance work without further hand damage"
+    ],
+    "functional_limitations": [
+      "Work-related: drawing and writing activities limited by pain",
+      "Functional impact: pain intensifies with increased hand use",
+      "Sedentary lifestyle: no physical activity or exercise reported. May impact treatment approach given obesity comorbidity."
+    ],
+    "legal_or_employment_context": [],
+    "patient_strengths": [
+      "Motivated to learn proper hand use and balance work demands",
+      "Active participation: using self-management strategies (brace, analgesics)"
+    ]
+  }
+}
+

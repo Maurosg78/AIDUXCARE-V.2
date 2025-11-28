@@ -1,0 +1,49 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.container {
+  background-color: var(--aidux-bone-white);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.card {
+  margin: 2rem 0;
+  padding: 2rem;
+  background-color: var(--aidux-pure-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-clinical);
+  transition: transform 0.3s ease;
+}
+
+.button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6em 1.2em;
+  background-color: var(--aidux-coral);
+  color: var(--aidux-pure-white);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.3s;
+  font-family: var(--font-family-primary);
+}
+
+.button:hover {
+  background-color: var(--aidux-coral-dark);
+}
+
+.success {
+  color: var(--aidux-intersection-green);
+  font-weight: bold;
+}
+
+.error {
+  color: var(--aidux-coral-dark);
+  font-weight: bold;
+} 

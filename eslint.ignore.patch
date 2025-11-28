@@ -1,0 +1,18 @@
+--- a/eslint.config.js
++++ b/eslint.config.js
+@@ -1,6 +1,15 @@
+ export default [
+   {
+     ignores: [
++      // Aidux North — legacy backup directories
++      "backups/**",
++      "backups/i18n-phase1/**",
++      "docs/_archive/**",
++
++      // Deprecated internal folders
++      "src/_deprecated/**",
++      "src/z_trash/**",
++
+       // Existing ignore entries (whatever was originally there)
+     ],
+   },

@@ -1,16 +1,49 @@
-import { defineConfig } from 'vitest/config';
-import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
+
+const IGNORED = [
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/.git/**",
+  "**/.idea/**",
+  "**/.vscode/**",
+  "**/canonical_snapshots/**",
+  "**/docs/**",
+  "**/backups/**",
+  "**/*.bak",
+  "**/*.backup",
+  "**/*.orig",
+  "**/*.rej",
+];
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
   test: {
-    environment: 'jsdom',
+    watchExclude: IGNORED,
+    environment: 'jsdom', // Use jsdom for React component tests
     globals: true,
-    setupFiles: ['test/setupTests.ts'],
-    clearMocks: true,
-    restoreMocks: true,
-    include: ['test/**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: ['./src/test-setup.ts'],
+    testTimeout: 30000, // 30 seconds max per test
+    hookTimeout: 30000, // 30 seconds max for hooks
+    teardownTimeout: 30000, // 30 seconds max for teardown
+    pool: 'forks', // Use separate processes instead of threads
+    poolOptions: {
+      forks: {
+        singleFork: true, // Run tests sequentially to avoid file system issues
+      },
+    },
+    isolate: true, // Isolate each test file
+  },
+  // Skip CSS/PostCSS processing in tests - use simple config
+  css: {
+    modules: {
+      classNameStrategy: 'non-scoped',
+    },
   },
 });

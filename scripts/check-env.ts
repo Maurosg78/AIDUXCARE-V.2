@@ -44,4 +44,11 @@ function checkEnvVars() {
 }
 
 // Ejecutar la verificación
+try {
 checkEnvVars();
+  // Salir inmediatamente después de la verificación
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Error en verificación de entorno:', error);
+  process.exit(1);
+}
