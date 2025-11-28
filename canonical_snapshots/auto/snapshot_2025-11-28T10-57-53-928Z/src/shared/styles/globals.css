@@ -1,0 +1,26 @@
+/* Fuente profesional */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Tailwind CSS - FORZAR HMR */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+/* FORZAR GRADIENTES - DEBUG */
+.debug-gradient {
+  background: linear-gradient(to right, #c026d3, #7c3aed, #3b82f6);
+}

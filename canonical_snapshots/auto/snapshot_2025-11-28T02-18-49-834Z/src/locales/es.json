@@ -1,0 +1,86 @@
+{
+  "workflow": {
+    "title": "Flujo Profesional",
+    "initialAnalysis": "Análisis Inicial",
+    "physicalEvaluation": "Evaluación Física",
+    "soapReport": "Informe SOAP",
+    "consultationContent": "Contenido de la Consulta",
+    "analyzeWithAI": "Analizar con IA",
+    "record": "Grabar"
+  }
+}
+{
+  "soap": {
+    "subjective": "Subjetivo",
+    "objective": "Objetivo",
+    "assessment": "Evaluación",
+    "plan": "Plan"
+  }
+}
+,
+"consent": {
+  "title": "Acuerdo de Consentimiento Informado",
+  "generalNotice": "Al continuar, das tu consentimiento para el uso de tus datos según nuestras políticas.",
+  "phipaNotice": "Este consentimiento cumple con las regulaciones de PHIPA de Ontario sobre protección de información de salud.",
+  "pipedaNotice": "Este consentimiento cumple con los requisitos federales de PIPEDA sobre uso de datos personales.",
+  "agree": "He leído y acepto los términos del consentimiento.",
+  "submit": "Confirmar consentimiento",
+  "confirmation": "Tu consentimiento ha sido registrado correctamente."
+}
+,
+"notifications": {
+  "accountUpdated": "Tu información de cuenta se ha actualizado correctamente.",
+  "passwordChanged": "Tu contraseña ha sido cambiada.",
+  "sessionExpired": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+  "newMessage": "Tienes un nuevo mensaje clínico."
+},
+"emails": {
+  "welcomeSubject": "Bienvenido a AiDuxCare",
+  "welcomeBody": "Gracias por unirte a AiDuxCare. Estamos encantados de ayudarte a optimizar tus notas clínicas.",
+  "alertSubject": "Alerta Clínica",
+  "alertBody": "Se ha generado una nueva alerta clínica en tu cuenta."
+}
+,
+"context": {
+  "save": "Guardar",
+  "save.role.physio": "Guardar nota de tratamiento",
+  "save.role.assistant": "Guardar registro del paciente",
+  "save.session.initial": "Guardar evaluación inicial",
+  "save.session.followup": "Guardar control de seguimiento",
+  "status.pending": "Pendiente de revisión",
+  "status.closed": "Registro cerrado"
+}
+,
+"prompts": {
+  "soap": {
+    "default": "Resume esta sesión en formato SOAP.",
+    "tone.formal": "Genera una nota SOAP estructurada y profesional.",
+    "role.physio": "Genera una nota SOAP que enfatice los hallazgos de evaluación física.",
+    "role.assistant": "Crea una nota de progreso concisa basada en las observaciones del asistente."
+  },
+  "consent": {
+    "default": "Explica el proceso de consentimiento informado en términos claros."
+  },
+  "audit": {
+    "default": "Proporciona un resumen de auditoría para verificación de cumplimiento clínico."
+  }
+}
+,
+"rephrase": {
+  "button": "Sugerir mejora",
+  "loading": "Reformulando...",
+  "suggestion": "Sugerencia"
+}
+,
+"test_locale": {
+  "soap_header": "Subjetivo / Objetivo / Valoración / Plan",
+  "soap_footer": "Fin de la nota clínica."
+}
+,
+"review": {
+  "feedback": "Revisor automático de traducciones activo",
+  "actions": {
+    "improve": "Sugerir traducción mejorada",
+    "check": "Ejecutar comprobación de consistencia"
+  }
+}

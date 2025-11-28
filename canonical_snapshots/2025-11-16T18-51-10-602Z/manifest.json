@@ -1,0 +1,28 @@
+{
+  "createdAt": "2025-11-16T18:51:10.619Z",
+  "files": [
+    "src/pages/LoginPage.tsx",
+    "src/pages/OnboardingPage.tsx",
+    "src/components/wizard/PersonalDataStep.tsx",
+    "src/components/wizard/ProfessionalDataStep.tsx",
+    "src/components/wizard/LocationDataStep.tsx",
+    "src/styles/wizard.module.css",
+    "src/pages/ProfessionalWorkflowPage.tsx",
+    "src/components/ClinicalAnalysisResults.tsx",
+    "src/components/AiDuxVoiceButton.tsx",
+    "src/components/ClinicalInfoPanel.tsx",
+    "src/hooks/useNiagaraProcessor.ts",
+    "src/services/vertex-ai-service-firebase.ts",
+    "src/core/ai/PromptFactory-Canada.ts",
+    "src/utils/cleanVertexResponse.ts",
+    "src/services/OpenAIWhisperService.ts",
+    "src/hooks/useTranscript.ts",
+    "src/services/sessionService.ts",
+    "src/services/clinicalAttachmentService.ts"
+  ],
+  "missingFiles": [
+    "src/hooks/useAiDuxVoice.ts",
+    "src/services/AiDuxVoiceService.ts",
+    "src/services/AiDuxVoiceTypes.ts"
+  ]
+}

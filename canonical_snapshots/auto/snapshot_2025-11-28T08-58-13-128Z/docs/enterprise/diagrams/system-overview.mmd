@@ -1,0 +1,27 @@
+flowchart LR
+  subgraph Client [Frontend (React + TypeScript)]
+    UI[SOAP UI & Flows]
+  end
+
+  subgraph Backend [Firestore (PHIPA/PIPEDA)]
+    NOTES[(notes)]
+    AUDIT[(audit_logs)]
+    CONSENTS[(consents)]
+  end
+
+  subgraph AI [Vertex AI / (Langfuse planned)]
+    SUMM[Summarization]
+    CHECK[Compliance Check]
+  end
+
+  UI -->|Create/Update| NOTES
+  NOTES --> AUDIT
+  UI -->|Prompt| SUMM --> CHECK
+  CHECK -->|Metadata only (no SOAP in logs)| AUDIT
+
+  subgraph CI[CI/CD (GitHub Actions)]
+    TSC[Typecheck]
+    ESL[ESLint]
+    TEST[Vitest]
+    PROT[protect-infra.yml]
+  end

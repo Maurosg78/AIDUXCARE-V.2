@@ -10,21 +10,36 @@ export default [
   // 1) Ignorados globales (antes de cualquier bloque con 'files')
   {
     ignores: [
+      // Node & build
       'node_modules/**','dist/**','build/**','coverage/**','.next/**',
-      // backups / duplicados / nombres con espacios
+  
+      // Duplicados / backups / nombres problemáticos
       '**/*backup*.ts','**/* backup*.ts','**/* back*.*','**/* 2.*',
-      // scripts de pruebas ad-hoc
+  
+      // --- Aidux North | Legacy backups a ignorar ---
+      'backups/**',
+      'backups/i18n-phase1/**',
+      'docs/_archive/**',
+  
+      // Scripts de pruebas antiguos
       'test-backend*.js','test-backend*/**','test-sistema*.js','test-*.js',
-      // fichero con parse error conocido
-      'src/utils/fix-parser.js'
-    ,
+  
+      // Archivos con parse-error conocido
+      'src/utils/fix-parser.js',
+  
+      // Directorios internos que no deben ser linted
       'functions/**',
       'src/_deprecated/**',
+      'src/z_trash/**',
+  
+      // Componentes excluidos en auditorías previas
       'src/components/wizard/**',
       'src/components/ClinicalAnalysisResults.tsx',
       'src/core/ai/PromptFactory.ts',
       'src/features/patient/components/ClinicalFilters.tsx'
-    ]},
+    ]
+  },
+  
 
   // 2) Regla general para TS/JS en proyecto
   {
