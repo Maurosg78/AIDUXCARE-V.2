@@ -1,0 +1,73 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.test
+.env.test.local
+*.env
+.env.local.example
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+firebase-export-*/
+.firebaserc.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+ui-debug.log
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Backups
+backups/
+canonical_snapshots_OLD*/
+*.backup
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Emulator data
+emulator-data/
+
