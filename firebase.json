@@ -122,7 +122,7 @@
     "port": 9099
   },
   "functions": {
-    "source": "functions"
+    "source": "functions-deploy"
   },
   "firestore": {
     "rules": "firestore.rules",
