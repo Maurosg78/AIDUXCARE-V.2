@@ -156,5 +156,73 @@ No incluye (queda como deuda posterior):
 
 ---
 
+## Resultados del smoke test
+
+### Smoke test UAT — Initial Assessment
+
+**Fecha:** ____ / ____ / 2025  
+
+**Tester:** ___________________
+
+#### Paso a paso
+
+1. [ ] Abrir app en entorno UAT (`aiduxcare-v2-uat-dev`).
+
+2. [ ] Hacer login como fisioterapeuta del piloto.
+
+3. [ ] Ir al Command Centre / pantalla principal.
+
+4. [ ] Seleccionar un paciente existente:
+
+    - [ ] Confirmar que se carga la ficha sin errores en consola.
+
+5. [ ] Iniciar un **Initial Assessment**:
+
+    - [ ] Confirmar que se crea/carga `activeEpisode` sin errores.
+
+6. [ ] Completar los campos mínimos requeridos.
+
+7. [ ] Disparar generación de SOAP:
+
+    - [ ] Confirmar que se obtiene respuesta y se muestra en UI.
+
+8. [ ] Guardar sesión / episodio:
+
+    - [ ] Confirmar que no hay errores de Firestore en consola.
+
+9. [ ] Refrescar la página:
+
+    - [ ] Confirmar que el episodio/sesión aparecen como esperados.
+
+#### Observaciones de consola (browser devtools)
+
+- Errores Firestore (`Missing or insufficient permissions`):  
+
+  - [ ] No aparecen  
+
+  - [ ] Sí aparecen → Detalle:
+
+  ```text
+  [PEGA AQUÍ MENSAJES DE ERROR SI LOS HAY]
+  ```
+
+* Nuevas sugerencias de índices (pantalla Firestore):
+
+  * [ ] No aparecieron
+
+  * [ ] Sí aparecieron → Colección / campos:
+
+  ```text
+  [DETALLE DEL ÍNDICE SUGERIDO]
+  ```
+
+#### Resultado
+
+* [ ] Smoke test **APROBADO** (flujo completo sin errores de permisos)
+
+* [ ] Smoke test **RECHAZADO** (detalles arriba)
+
+---
+
 **Última actualización:** 2025-12-07
 
