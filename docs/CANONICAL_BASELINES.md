@@ -87,5 +87,19 @@ Usar el script de sanity check:
 ./scripts/git-sanity-check.sh
 ```
 
-Este documento se actualizará cada vez que se cree una nueva baseline importante.
+## Documentación canónica — Idioma
+
+All canonical documentation for Aidux North MUST be written in English (en-CA). Spanish content is allowed only in temporary drafts or personal notes, never as canonical SoT (Source of Truth).
+
+**Scope:**
+- All documentation in `docs/` (except temporary drafts)
+- All WOs (Work Orders)
+- All technical specifications
+- All user-facing guides
+
+**Exceptions:**
+- Personal notes or temporary drafts (clearly marked)
+- Historical documents that predate this policy
+
+This document will be updated each time a new important baseline is created.
 
