@@ -1,6 +1,6 @@
 'use strict';
 
-const { processImagingReport } = require('../../functions-min/src/processImagingReport.js');
+const { processImagingReport } = require('../src/processImagingReport.js');
 
 async function main() {
   const storagePath = process.argv[2];
