@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ---- helpers ----
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // UAT: de momento NO hacemos diferenciación por clinic/owner.
+    // Lo importante es que nadie sin login entre a los datos.
+    
+    // Professionals
+    match /professionals/{professionalId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Patients
+    match /patients/{patientId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Episodes (Episode Treatment Plan, Clinical Vault, etc.)
+    match /episodes/{episodeId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Sessions (clinic notes, daily notes)
+    match /sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Analytics simplificado (eventos agregados, counters, etc.)
+    match /analytics/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Fallback UAT: por si alguna colección nueva se nos escapa
+    // IMPORTANTE: esto es UAT sólo. Revisar antes de ir a producción.
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+    
+  }
+}
