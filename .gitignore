@@ -1,75 +1,73 @@
-# Node
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.test
+.env.test.local
+*.env
+.env.local.example
+
+# Dependencies
 node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
 dist/
-.npm/
+build/
+*.tsbuildinfo
 
-# Vite cache (causa loops infinitos si se monitorea)
-.vite/
-node_modules/.vite/
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+firebase-export-*/
+.firebaserc.local
 
-# Logs & OS
-*.log
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Playwright cache
-**/.cache/ms-playwright/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+ui-debug.log
 
-# Build artifacts / temp
-artifacts/
-aidux-*.sh
-.temp_legacy_ui/
-.aidux-snapshot/
-*.recovered.*
-*.recovered.tsx
-* 2
-* 3
-* 4
-* 2.*
-* 3.*
-* 4.*
-
-# Git
-!.gitignore
-
-# Python legacy (kept tracked if inside repo)
-/tests/_legacy_python/*
-# Rescate de archivos no versionados
-.rescue_untracked/
-
-# Backups/artefactos locales comunes
-*.bak*
-*.backup*
-*.broken
-*.snap
-playwright-report/
-test-results/
-# Coverage reports
+# Testing
 coverage/
+.nyc_output/
+test-results/
+playwright-report/
 
-# Environment files (CRITICAL)
-.env*.local
-!.env.example
+# Backups
+backups/
+canonical_snapshots_OLD*/
+*.backup
+*.bak
 
-# Temp files
-*.timestamp-*.mjs
-npm-install-log.txt
-forms/
-scripts/test-system-quick.html
-junit.xml
-.rescue_untracked/
-.rescue/
-tools/eval/reports/*.jsonl
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
 
-# cockpit eval outputs
-/tools/eval/reports/latest.*
-tools/eval/reports/*.report.md
-tools/eval/reports/*.jsonl
-tools/eval/reports/*.report.md
-tools/eval/reports/*.jsonl
+# Emulator data
+emulator-data/
 
-# Local backups de index.js
-functions/index.js.pre-esm.*
-.worktrees/
-tmp/
-tmp/**
-docs/_archive/mirror/**/.DS_Store

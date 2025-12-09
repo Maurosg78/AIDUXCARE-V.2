@@ -99,7 +99,7 @@
     },
     "ui": {
       "enabled": true,
-      "port": 4000
+      "port": 4002
     },
     "auth": {
       "host": "127.0.0.1",
@@ -111,18 +111,24 @@
     },
     "hub": {
       "host": "127.0.0.1",
-      "port": 4400
+      "port": 4402
+    },
+    "logging": {
+      "port": 4502
     }
   },
-    "auth": {
-      "host": "127.0.0.1",
-      "port": 9099
-    },
+  "auth": {
+    "host": "127.0.0.1",
+    "port": 9099
+  },
   "functions": {
-    "source": "functions"
+    "source": "functions-deploy"
   },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules.uat-dev"
   }
 }

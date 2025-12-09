@@ -1,5 +1,0 @@
-# Ignora todo
-**
-# …pero permite estos dos archivos
-!src/services/notePersistence.ts
-!src/components/SaveNoteCPOGate.tsx

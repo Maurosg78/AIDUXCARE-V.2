@@ -1,4 +1,0 @@
-[core]
-project = aiduxcare-v2-uat-dev
-
-Your active configuration is: [default]
