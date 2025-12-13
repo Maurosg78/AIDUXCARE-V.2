@@ -60,7 +60,8 @@
     "script:createSecondVisit": "tsx scripts/createSecondVisitAndrea.ts",
     "test:rag": "tsx scripts/test-rag-pubmed.ts",
     "check:env": "node scripts/check-env.cjs",
-    "postinstall": "npm run check:env"
+    "postinstall": "npm run check:env",
+    "check:no-soap-logs": "node scripts/check-no-soap-logs.cjs"
   },
   "dependencies": {
     "@firebase/app": "^0.10.14",
