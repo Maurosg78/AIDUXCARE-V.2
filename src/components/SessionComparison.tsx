@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { SessionComparisonService } from '../services/sessionComparisonService';
-import type { ComparisonDisplayData, SessionComparison, Session } from '../services/sessionComparisonService';
+import type { ComparisonDisplayData, SessionComparisonView, Session } from '../services/sessionComparisonService';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { ErrorMessage } from './ui/ErrorMessage';
 import sessionService from '../services/sessionService';
@@ -24,7 +24,7 @@ export interface SessionComparisonProps {
   currentSessionId?: string;
   currentSession?: Session | null; // Optional: current session data
   isLoading?: boolean;
-  onComparisonLoad?: (comparison: SessionComparison) => void;
+  onComparisonLoad?: (comparison: SessionComparisonView) => void;
   className?: string;
 }
 
@@ -81,7 +81,7 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
 
     // Prevent infinite loops: if we've already attempted and hit max errors, stop
     if (fetchAttemptedRef.current && errorCountRef.current >= MAX_ERROR_COUNT) {
-      console.warn('[SessionComparison] Max error count reached, stopping fetch attempts');
+      console.warn('[SessionComparisonView] Max error count reached, stopping fetch attempts');
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -96,21 +96,21 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
 
     try {
       // Get previous session
-      console.log('[SessionComparison] Getting previous session for patient:', patientId);
+      console.log('[SessionComparisonView] Getting previous session for patient:', patientId);
       const previousSession = await service.getPreviousSession(
         patientId,
         currentSessionId || '',
         undefined // userId - will be filtered by patientId only
       );
 
-      console.log('[SessionComparison] Previous session found:', previousSession ? previousSession.id : 'none');
+      console.log('[SessionComparisonView] Previous session found:', previousSession ? previousSession.id : 'none');
 
       // Reset error count on success
       errorCountRef.current = 0;
 
       if (!previousSession) {
         // First session - no comparison available
-        console.log('[SessionComparison] No previous session found - this is the first session');
+        console.log('[SessionComparisonView] No previous session found - this is the first session');
         const firstSessionData = service.formatComparisonForUI(null, true);
         setState({
           comparison: firstSessionData,
@@ -160,7 +160,7 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
       }
 
       // Compare sessions (both have data)
-      console.log('[SessionComparison] Comparing sessions:', {
+      console.log('[SessionComparisonView] Comparing sessions:', {
         previous: previousSession.id,
         current: currentSession.id,
         hasSOAP: !!currentSession.soapNote
@@ -168,7 +168,7 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
       const comparison = service.compareSessions(previousSession, currentSession);
       const uiData = service.formatComparisonForUI(comparison, false);
 
-      console.log('[SessionComparison] Comparison result:', {
+      console.log('[SessionComparisonView] Comparison result:', {
         hasComparison: uiData.hasComparison,
         daysBetween: uiData.daysBetween,
         overallProgress: comparison.deltas.overallProgress
@@ -194,13 +194,13 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
       
       // Only log error once to avoid console spam
       if (errorCountRef.current === 1) {
-        console.error('[SessionComparison] Error fetching comparison:', error);
+        console.error('[SessionComparisonView] Error fetching comparison:', error);
       }
       
       // STOP after first error to prevent infinite loops
       // Always treat as first session to prevent retries
       if (errorCountRef.current >= 1) {
-        console.warn('[SessionComparison] Error detected, treating as first session to prevent loops');
+        console.warn('[SessionComparisonView] Error detected, treating as first session to prevent loops');
         const firstSessionData = service.formatComparisonForUI(null, true);
         setState({
           comparison: firstSessionData,
@@ -236,13 +236,13 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
     
     // Only fetch if we haven't already fetched and we have a patientId
     if (!externalLoading && !hasFetchedRef.current && patientId) {
-      console.log('[SessionComparison] Fetching comparison for patient:', patientId, 'session:', currentSessionId);
+      console.log('[SessionComparisonView] Fetching comparison for patient:', patientId, 'session:', currentSessionId);
       hasFetchedRef.current = true;
       
       // Use timeout to prevent immediate re-fetch
       fetchTimeoutRef.current = setTimeout(() => {
         fetchComparison().catch((err) => {
-          console.error('[SessionComparison] Fetch failed:', err);
+          console.error('[SessionComparisonView] Fetch failed:', err);
           // Mark as fetched even on error to prevent infinite retries
           hasFetchedRef.current = true;
         }).finally(() => {
@@ -558,5 +558,5 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
   );
 };
 
-export default SessionComparison;
+export default SessionComparisonView;
 

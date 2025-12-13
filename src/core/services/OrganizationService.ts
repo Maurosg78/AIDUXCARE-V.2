@@ -377,7 +377,7 @@ export class OrganizationService {
       if (!member) return false;
 
       const rolePermissions = ORGANIZATION_ROLES[member.role]?.permissions || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       return rolePermissions.includes(requiredPermission as any);
     } catch (error) {
       console.error('Error checking permission:', error);
@@ -510,7 +510,7 @@ export class OrganizationService {
         }
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       return exportData as any;
     } catch (error) {
       console.error('Error exporting organization data:', error);

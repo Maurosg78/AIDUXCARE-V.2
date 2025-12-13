@@ -41,9 +41,9 @@ interface FirestoreMocks {
 
 declare global {
   // Extiende globalThis para tipar los mocks
-  // eslint-disable-next-line no-var
+   
   var authMocks: AuthMocks;
-  // eslint-disable-next-line no-var
+   
   var firestoreMocks: FirestoreMocks;
 }
 

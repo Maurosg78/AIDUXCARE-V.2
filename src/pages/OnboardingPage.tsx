@@ -95,7 +95,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     // Evitar que validate cause setState extra cuando sólo evaluamos canGoNext
     setErrors({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const canGoNext = useMemo(() => {

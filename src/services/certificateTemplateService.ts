@@ -427,7 +427,7 @@ export class CertificateTemplateService {
   private static extractOnsetDate(subjective: string, session: Session): Date {
     // Try to extract date from subjective
     const datePatterns = [
-      /(?:since|starting|began|onset)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /(?:since|starting|began|onset)\s+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
       /(?:since|starting|began|onset)\s+(\w+\s+\d{1,2},?\s+\d{4})/i,
     ];
     
@@ -557,7 +557,7 @@ export class CertificateTemplateService {
     
     // Extract return date
     const datePatterns = [
-      /(?:return|resume|back to work)\s+(?:on|by|date)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /(?:return|resume|back to work)\s+(?:on|by|date)\s+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
       /(?:return|resume|back to work)\s+(?:on|by|date)\s+(\w+\s+\d{1,2},?\s+\d{4})/i,
     ];
     
@@ -708,7 +708,7 @@ export class CertificateTemplateService {
     if (followUpRequired) {
       // Extract follow-up date
       const datePatterns = [
-        /(?:follow.?up|review|reassessment|return)\s+(?:on|date|in)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+        /(?:follow.?up|review|reassessment|return)\s+(?:on|date|in)\s+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
         /(?:follow.?up|review|reassessment|return)\s+(?:on|date|in)\s+(\w+\s+\d{1,2},?\s+\d{4})/i,
         /(?:in|after)\s+(\d+)\s*(?:weeks?|months?|days?)/i,
       ];
@@ -774,7 +774,7 @@ export class CertificateTemplateService {
     const combined = plan + ' ' + assessment;
     
     const datePatterns = [
-      /(?:expected|anticipated|projected)\s+(?:recovery|return)\s+(?:date|on|by)\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /(?:expected|anticipated|projected)\s+(?:recovery|return)\s+(?:date|on|by)\s+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
       /(?:expected|anticipated|projected)\s+(?:recovery|return)\s+(?:date|on|by)\s+(\w+\s+\d{1,2},?\s+\d{4})/i,
     ];
     

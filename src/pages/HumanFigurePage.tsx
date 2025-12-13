@@ -234,7 +234,7 @@ export const HumanFigurePage: React.FC = () => {
               onClick={handleFigureClick}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                   
                   handleFigureClick(e as any);
                 }
               }}

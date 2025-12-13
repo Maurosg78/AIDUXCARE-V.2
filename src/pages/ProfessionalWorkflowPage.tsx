@@ -393,7 +393,7 @@ const ProfessionalWorkflowPage = () => {
     };
 
     trackSessionStart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [sessionTrackingKey]); // Only depend on sessionTrackingKey - patientId, user.uid, sessionStartTime, visitType are stable or captured in closure
 
   // Load patient data from Firestore

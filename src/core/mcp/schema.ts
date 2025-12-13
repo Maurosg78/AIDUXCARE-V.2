@@ -79,7 +79,7 @@ const MemoryItemSchema = z.object({
   validated: z.boolean().optional()
 })
 // Transformar los datos para agregar timestamp si no existe pero hay created_at
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 .transform((data: any) => {
   if (!data.timestamp && data.created_at) {
     return {
@@ -90,7 +90,7 @@ const MemoryItemSchema = z.object({
   return data;
 })
 // Refinamiento para asegurar que hay al menos timestamp o created_at
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 .refine((data: any) => data.timestamp || data.created_at, {
   message: "Debe existir al menos 'timestamp' o 'created_at'"
 });

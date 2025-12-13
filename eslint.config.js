@@ -7,6 +7,23 @@ import importPlugin from 'eslint-plugin-import'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
+
+  {
+    ignores: [
+      
+      ".env*",
+"canonical_snapshots/**",
+      "docs/_archive/**",
+      "src/_deprecated/**",
+      "scripts/**",
+      "**/*backup*.js",
+      "**/*index-backup.js",
+      "dist/**",
+      "coverage/**",
+      "node_modules/**"
+    ],
+  },
+
   // 1) Ignorados globales (antes de cualquier bloque con 'files')
   {
     ignores: [

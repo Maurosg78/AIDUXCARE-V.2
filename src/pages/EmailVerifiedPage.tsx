@@ -25,7 +25,7 @@ export const EmailVerifiedPage: React.FC = () => {
       // Si no hay código, asumir que ya está verificado y redirigir
       setIsVerifying(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [mode, oobCode]);
 
   const handleEmailVerification = async (code: string) => {

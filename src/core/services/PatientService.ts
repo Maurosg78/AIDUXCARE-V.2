@@ -406,7 +406,7 @@ export class PatientService {
   /**
    * Cifrar datos sensibles del paciente
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private static async encryptSensitiveData(patient: Partial<Patient>): Promise<any> {
     const encryptedPatient = { ...patient };
 
@@ -438,7 +438,7 @@ export class PatientService {
   /**
    * Descifrar datos sensibles del paciente
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private static async decryptSensitiveData(data: any): Promise<any> {
     const decryptedData = { ...data };
 
@@ -470,7 +470,7 @@ export class PatientService {
   /**
    * Exportar paciente para auditoría (sin datos sensibles)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   static async exportPatientForAudit(patientId: string): Promise<any> {
     try {
       const patient = await this.getPatientById(patientId, 'AUDIT_SYSTEM');

@@ -40,12 +40,12 @@ export interface MedicalAlert {
 export const VITAL_SIGNS_PATTERNS = {
   bloodPressure: {
     // Patterns: PA 140/90, PA: 140/90, Presión 140-90, etc.
-    regex: /(?:PA|presi[óo]n\s*(?:arterial)?|tensi[óo]n)[:\s]*(\d{2,3})[\/\-](\d{2,3})/gi,
+    regex: /(?:PA|presi[óo]n\s*(?:arterial)?|tensi[óo]n)[:\s]*(\d{2,3})[/-](\d{2,3})/gi,
     unit: 'mmHg',
   },
   painScale: {
     // Patterns: EVA 6/10, EVA: 8/10, escala 7 de 10, etc.
-    regex: /(?:EVA|escala\s*(?:visual\s*)?anal[óo]gica)[:\s]*([0-9]|10)\/10/gi,
+    regex: /(?:EVA|escala\s*(?:visual\s*)?anal[óo]gica)[:\s]*([0-9]|10)/10/gi,
     unit: '/10',
   },
   oxygenSaturation: {

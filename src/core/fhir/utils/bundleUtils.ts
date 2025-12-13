@@ -114,7 +114,7 @@ export function extractBundleResources(bundle: FhirBundle): {
  */
 export function validateFhirBundle(
   bundle: FhirBundle,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   options: ValidationOptions = {}
 ): BundleValidationResult {
   const errors: string[] = [];

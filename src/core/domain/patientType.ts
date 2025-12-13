@@ -299,7 +299,7 @@ export const PatientSchema = {
     gdprConsent: 'boolean',
     dataProcessingConsent: 'boolean'
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   parse: function(data: any) {
     return data as Patient;
   }

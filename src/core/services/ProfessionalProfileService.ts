@@ -257,7 +257,7 @@ export class ProfessionalProfileService {
   /**
    * Cifrar datos sensibles del perfil
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private static async encryptSensitiveData(profile: Partial<ProfessionalProfile>): Promise<any> {
     const encryptedProfile = { ...profile };
 
@@ -289,7 +289,7 @@ export class ProfessionalProfileService {
   /**
    * Descifrar datos sensibles del perfil
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private static async decryptSensitiveData(data: any): Promise<any> {
     const decryptedData = { ...data };
 
@@ -307,7 +307,7 @@ export class ProfessionalProfileService {
       decryptedData.professionalInfo = {
         ...data.professionalInfo,
         certifications: await Promise.all(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           data.professionalInfo.certifications.map(async (cert: any) => ({
             ...cert,
             credentialId: await decryptMetadata(cert.credentialId)
@@ -322,7 +322,7 @@ export class ProfessionalProfileService {
   /**
    * Exportar perfil para auditoría (sin datos sensibles)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   static async exportProfileForAudit(profileId: string): Promise<any> {
     try {
       const profile = await this.getProfileById(profileId, 'AUDIT_SYSTEM');

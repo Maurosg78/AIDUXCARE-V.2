@@ -76,7 +76,7 @@ const HospitalPortalPage: React.FC = () => {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []); // Only run once on mount - searchParams is stable
   
   // Helper function to load note content (for pre-authenticated sessions)

@@ -206,7 +206,7 @@ export class FeedbackService {
   private static getCurrentPatientId(): string | null {
     try {
       // Intentar desde URL
-      const urlMatch = window.location.pathname.match(/\/workflow\/([^\/]+)/);
+      const urlMatch = window.location.pathname.match(/\/workflow\/([^/]+)\//);
       if (urlMatch && urlMatch[1]) {
         return urlMatch[1];
       }
