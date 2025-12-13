@@ -9,6 +9,7 @@ type NiagaraProxyPayload = {
   mode?: "live" | "dictation";
   timestamp?: number;
   visitType?: 'initial' | 'follow-up';
+  imagingContext?: string; // 🔹 nuevo, opcional
 };
 
 type VoiceClinicalCategory =
@@ -153,6 +154,7 @@ export async function analyzeWithVertexProxy(payload: {
   traceId?: string;
   professionalProfile?: ProfessionalProfile | null;
   visitType?: 'initial' | 'follow-up';
+  imagingContext?: string; // 🔹 nuevo, opcional
 }) {
   // ✅ PHIPA COMPLIANCE: De-identify transcript before sending to AI
   let finalPrompt = payload.prompt;
@@ -176,9 +178,46 @@ export async function analyzeWithVertexProxy(payload: {
         : "Analiza la siguiente transcripción y extrae información clínica relevante.",
       transcript: deidentifiedText, // Use de-identified transcript
       professionalProfile: payload.professionalProfile, // Pass professional profile
-      visitType: payload.visitType || 'initial' // Pass visit type for prompt customization
+      visitType: payload.visitType || 'initial', // Pass visit type for prompt customization
+      imagingContext: payload.imagingContext, // 🔹 nuevo, opcional (pasa tal cual, puede ser undefined)
     });
     finalPrompt = structuredPrompt;
+    
+    // ✅ DEV/UAT ONLY: Log prompt para verificar si PDF/imaging context está incluido
+    // ⚠️ IMPORTANTE: Desactivar antes de producción para no violar PHI/PHIPA
+    if (import.meta.env.DEV || import.meta.env.VITE_ENABLE_PROMPT_LOGGING === 'true') {
+      const promptPreview = finalPrompt.length > 2000 
+        ? finalPrompt.substring(0, 2000) + '... [truncated]' 
+        : finalPrompt;
+      
+      console.debug('[NIAGARA PROMPT] Raw prompt to Vertex (DEV ONLY):', {
+        length: finalPrompt.length,
+        hasImagingContext: finalPrompt.includes('[Imaging Context]') || finalPrompt.includes('imaging'),
+        hasPatientContext: finalPrompt.includes('[Patient Context]'),
+        hasClinicalInstructions: finalPrompt.includes('[Clinical Instructions]'),
+        preview: promptPreview
+      });
+      
+      // Buscar indicadores de PDF/imaging en el prompt
+      const imagingIndicators = [
+        '[Imaging Context]',
+        'imaging',
+        'radiology',
+        'MRI',
+        'X-ray',
+        'CT scan',
+        'ultrasound'
+      ];
+      const foundIndicators = imagingIndicators.filter(indicator => 
+        finalPrompt.toLowerCase().includes(indicator.toLowerCase())
+      );
+      
+      if (foundIndicators.length > 0) {
+        console.debug('[NIAGARA PROMPT] ✅ Imaging context detected in prompt:', foundIndicators);
+      } else {
+        console.debug('[NIAGARA PROMPT] ⚠️ No imaging context detected in prompt');
+      }
+    }
   }
   
   const response = await fetch(VERTEX_PROXY_URL, {
@@ -231,7 +270,8 @@ export class VertexAIServiceViaFirebase {
       transcript: sanitizedTranscript,
       traceId: traceIdParts.join('|'),
       professionalProfile: payload.professionalProfile, // Pass professional profile
-      visitType: payload.visitType || 'initial' // Pass visit type for follow-up specific prompts
+      visitType: payload.visitType || 'initial', // Pass visit type for follow-up specific prompts
+      imagingContext: payload.imagingContext, // 🔹 nuevo, opcional
     });
 
     if (response?.error) {
@@ -278,7 +318,7 @@ export class VertexAIServiceViaFirebase {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'generate_soap',
+        action: 'analyze',
         transcript: deidentifiedText, // Use de-identified transcript
         selectedEntityIds: params.selectedEntityIds,
         physicalExamResults: params.physicalExamResults,

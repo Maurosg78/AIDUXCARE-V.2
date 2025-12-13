@@ -18,6 +18,20 @@ import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
 import { generateSOAPNote as generateSOAPNoteFromService } from "../services/vertex-ai-soap-service";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
+import { mapToCanonicalSOAP } from "../core/soap/canonicalSOAPMapper";
+import type { CanonicalSOAPNote } from "../core/soap/types";
+import type { ImagingReport } from "@/core/imaging/types";
+import { buildImagingContextFromReports } from "@/core/imaging/imagingReportFactory";
+import { ImagingReportsService } from "@/core/imaging/imagingReportsService";
+import { ImagingFromPdfModal } from "@/components/imaging/ImagingFromPdfModal";
+// ✅ TEST UTILS: Imaging reports test utilities (DEV only)
+import { setupBrowserTestUtils } from "@/core/imaging/imagingReportsTestUtils";
+// ✅ WO-P2-05/P2-06: Today's Plan builder (DEV-only, behind feature flag)
+import { TodaysPlanOrchestrator } from "@/core/plan/TodaysPlanOrchestrator";
+// ✅ WO-P2-07: Today's Plan Dev Panel (DEV-only, read-only UI)
+import { TodaysPlanDevPanel } from "@/components/plan/TodaysPlanDevPanel";
+// ✅ WO-P2-09: Today's Plan Clinical View (read-only, clinical UI)
+import { TodaysPlanClinicalView } from "@/components/plan/TodaysPlanClinicalView";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
 import { AnalyticsService } from "../services/analyticsService";
 import type { ValueMetricsEvent } from "../services/analyticsService";
@@ -51,6 +65,7 @@ import type { Session } from "../services/sessionComparisonService";
 import { Timestamp } from "firebase/firestore";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
 import { useActiveEpisode } from "../features/patient-dashboard/hooks/useActiveEpisode";
+import { episodesRepo } from "../repositories/episodesRepo";
 import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePatientVisitCount";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
@@ -208,7 +223,15 @@ const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
+  const [canonicalSOAP, setCanonicalSOAP] = useState<CanonicalSOAPNote | null>(null);
+  const [imagingReports, setImagingReports] = useState<ImagingReport[]>([]);
+  const [imagingContext, setImagingContext] = useState<string>("");
+  const [isImagingModalOpen, setIsImagingModalOpen] = useState<boolean>(false);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
+
+  // ✅ WO-P2-03: Feature flag para inyección de ImagingContext (solo DEV y con env flag explícito)
+  const ENABLE_IMAGING_CONTEXT_IN_ANALYSIS =
+    import.meta.env.DEV && import.meta.env.VITE_ENABLE_IMAGING_CONTEXT === 'true';
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
   
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
@@ -266,6 +289,37 @@ const ProfessionalWorkflowPage = () => {
   const lastEncounter = useLastEncounter(patientId);
   const activeEpisode = useActiveEpisode(patientId);
   const visitCount = usePatientVisitCount(patientId);
+  
+  // 🔍 DIAGNÓSTICO: Log del estado de imaging context (después de declarar activeEpisode)
+  // ✅ TEST UTILS: Setup browser test utilities (DEV only) - moved after reloadImagingReports declaration
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+      const episode = activeEpisode.data;
+      
+      console.log("[IMAGING_DIAGNOSTIC] Episode status:", {
+        patientId,
+        activeEpisodeLoading: activeEpisode.loading,
+        activeEpisodeError: activeEpisode.error?.message,
+        activeEpisode: episode ? {
+          id: episode.id,
+          status: episode.status,
+          createdAt: episode.createdAt,
+        } : null,
+        hasActiveEpisode: !!episode,
+      });
+      
+      console.debug("[IMAGING_DIAGNOSTIC] Feature flags:", {
+        isDev: import.meta.env.DEV,
+        VITE_ENABLE_IMAGING_CONTEXT: import.meta.env.VITE_ENABLE_IMAGING_CONTEXT,
+        ENABLE_IMAGING_CONTEXT_IN_ANALYSIS,
+        imagingReportsCount: imagingReports.length,
+        imagingContextLength: imagingContext.length,
+        activeEpisodeId: episode?.id,
+      });
+    }
+  }, [activeEpisode, patientId, imagingReports.length, imagingContext.length]);
   
   // Get session type from URL or default to visitType
   const currentSessionType = sessionTypeFromUrl || (visitType === 'initial' ? 'initial' : 'followup');
@@ -349,11 +403,19 @@ const ProfessionalWorkflowPage = () => {
     return `pilot-session-${patientId}-${user.uid}`;
   }, [patientId, user?.uid]);
   const trackedSessionsRef = useRef<Set<string>>(new Set());
+  const trackedWorkflowSessionsRef = useRef<Set<string>>(new Set()); // ✅ Guard para workflow_session_started
+  
+  // ✅ WORKFLOW SESSION TRACKING KEY: Estable para evitar duplicados
+  const workflowSessionTrackingKey = useMemo(() => {
+    if (!patientId || !user?.uid) return null;
+    return `workflow-session-${patientId}-${user.uid}`;
+  }, [patientId, user?.uid]);
   
   useEffect(() => {
-    // Only track once per unique session key
+    // ✅ Guard: Solo trackear una vez por unique session key
     if (!sessionTrackingKey || !patientId || !user?.uid) return;
     if (trackedSessionsRef.current.has(sessionTrackingKey)) {
+      console.debug('[PILOT METRICS] Session already tracked, skipping');
       return; // Already tracked
     }
     
@@ -463,15 +525,36 @@ const ProfessionalWorkflowPage = () => {
           setActiveTab(initialTab as ActiveTab);
         }
 
-        // ✅ WORKFLOW OPTIMIZATION: Track workflow session start
-        const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
-        await trackWorkflowSessionStart(
-          sessionIdForMetrics,
-          patientId,
-          user.uid,
-          route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial',
-          route.skipTabs.length
-        );
+        // ✅ WORKFLOW OPTIMIZATION: Track workflow session start (con guard para evitar duplicados)
+        if (workflowSessionTrackingKey && !trackedWorkflowSessionsRef.current.has(workflowSessionTrackingKey)) {
+          // Marcar como tracked ANTES de hacer la llamada
+          trackedWorkflowSessionsRef.current.add(workflowSessionTrackingKey);
+          
+          const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
+          const workflowType = route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial';
+          
+          try {
+            await trackWorkflowSessionStart(
+              sessionIdForMetrics,
+              patientId,
+              user.uid,
+              workflowType,
+              route.skipTabs.length
+            );
+            console.log('[WORKFLOW] ✅ Workflow session start tracked:', {
+              sessionId: sessionIdForMetrics,
+              workflowType,
+              skipTabs: route.skipTabs.length,
+            });
+          } catch (error) {
+            console.error('[WORKFLOW] ⚠️ Error tracking workflow session start:', error);
+            // Remover del set en caso de error para permitir reintento
+            trackedWorkflowSessionsRef.current.delete(workflowSessionTrackingKey);
+            // Non-blocking: no fallar el workflow si analytics falla
+          }
+        } else if (workflowSessionTrackingKey) {
+          console.debug('[WORKFLOW] Workflow session already tracked, skipping');
+        }
 
         console.log('[WORKFLOW] Workflow detected:', {
           routeType: route.type,
@@ -911,6 +994,7 @@ const ProfessionalWorkflowPage = () => {
   // Check if this is the first session and handle patient consent via SMS
   // Use ref to prevent multiple executions in React Strict Mode
   const consentCheckRef = useRef(false);
+  const creatingEpisodeRef = useRef(false); // ✅ Guard para evitar crear episodios duplicados
   
   useEffect(() => {
     // Prevent multiple executions
@@ -1351,6 +1435,247 @@ const ProfessionalWorkflowPage = () => {
     console.log('[PHASE2] Clearing selectedEntityIds due to new motivo_consulta');
     setSelectedEntityIds([]);
   }, [niagaraResults?.motivo_consulta]);
+
+  // ✅ AUTO-CREATE EPISODIO: Crear episodio activo si no existe (con guard para evitar duplicados)
+  useEffect(() => {
+    // Guard: no crear si ya estamos creando uno
+    if (creatingEpisodeRef.current) return;
+    
+    // Guard: no crear si todavía está cargando
+    if (activeEpisode.loading) return;
+    
+    // Guard: no crear si ya hay episodio
+    if (activeEpisode.data) return;
+    
+    // Guard: no crear si hay error (evitar loops)
+    if (activeEpisode.error) return;
+    
+    // Guard: no crear si faltan datos necesarios
+    if (!patientId || !user?.uid) return;
+    
+    // Marcar que estamos creando para evitar duplicados
+    creatingEpisodeRef.current = true;
+    
+    (async () => {
+      try {
+        console.log("[EPISODE] No hay episodio activo, creando uno nuevo...", {
+          patientId,
+          userId: user.uid,
+        });
+        
+        const episodeId = await episodesRepo.createEpisode({
+          patientId,
+          ownerUid: user.uid,
+          reason: "Initial assessment",
+          startDate: new Date(),
+          expectedDuration: 8, // 8 semanas por defecto
+        });
+        
+        console.log("[EPISODE] ✅ Episodio creado:", episodeId);
+        // El hook useActiveEpisode debería recargar automáticamente
+      } catch (error) {
+        console.error("[EPISODE] ❌ Error creando episodio:", error);
+      } finally {
+        // Resetear el flag después de un delay para permitir reintentos si es necesario
+        setTimeout(() => {
+          creatingEpisodeRef.current = false;
+        }, 2000);
+      }
+    })();
+  }, [activeEpisode.loading, activeEpisode.data, activeEpisode.error, patientId, user?.uid]);
+
+  // ✅ WO-P3-IMAGING-OCR-MODEL: Load imaging reports for active episode
+  useEffect(() => {
+    // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+    const episode = activeEpisode.data;
+    
+    if (!episode?.id) {
+      // Clear imaging reports when no episode is active
+      setImagingReports([]);
+      setImagingContext("");
+      if (import.meta.env.DEV) {
+        console.debug("[IMAGING_DEBUG] Cleared imaging reports (no active episode)", {
+          loading: activeEpisode.loading,
+          hasData: !!activeEpisode.data,
+          error: activeEpisode.error?.message,
+        });
+      }
+      return;
+    }
+
+    let alive = true;
+
+    const loadImagingReports = async () => {
+      try {
+        // ✅ Validar que episode.id existe antes de llamar al servicio
+        if (!episode?.id) {
+          console.warn("[IMAGING_DIAGNOSTIC] activeEpisode sin episodeId válido", episode);
+          if (alive) {
+            setImagingReports([]);
+            setImagingContext("");
+          }
+          return;
+        }
+        
+        const reports = await ImagingReportsService.getImagingReportsForEpisode(episode.id);
+        
+        // ✅ Manejar caso de "no hay informes" graciosamente (no es un error)
+        if (!Array.isArray(reports)) {
+          console.warn("[IMAGING_DIAGNOSTIC] Reports no es un array:", reports);
+          if (alive) {
+            setImagingReports([]);
+            setImagingContext("");
+          }
+          return;
+        }
+        
+        if (alive) {
+          setImagingReports(reports);
+          const context = buildImagingContextFromReports(reports);
+          setImagingContext(context);
+          
+          if (reports.length === 0) {
+            console.log("[IMAGING_DIAGNOSTIC] No imaging reports for episode", episode.id);
+          } else {
+            logger.debug("[IMAGING_REPORTS] Loaded reports for episode", {
+              episodeId: episode.id,
+              count: reports.length,
+              contextLength: context.length,
+            });
+
+            // 🔍 DIAGNÓSTICO: Log detallado del estado
+            console.log("[IMAGING_DIAGNOSTIC] ✅ Reports loaded:", {
+              episodeId: episode.id,
+              reportsCount: reports.length,
+              contextLength: context.length,
+              contextPreview: context.substring(0, 300) + (context.length > 300 ? '...' : ''),
+              reports: reports.map(r => ({
+                id: r.id,
+                studyType: r.studyType,
+                bodyRegion: r.bodyRegion,
+                studyDate: r.studyDate,
+                keyFindingsCount: r.keyFindings?.length || 0,
+                keyFindingsPreview: r.keyFindings?.slice(0, 2).join(', ') || 'N/A',
+                impressionPreview: r.impression?.substring(0, 100) + (r.impression?.length > 100 ? '...' : '') || 'N/A',
+              })),
+            });
+          }
+          
+          // Enhanced debug logging in DEV
+          if (import.meta.env.DEV) {
+            console.debug("[IMAGING_DEBUG] episodeId:", episode.id);
+            console.debug("[IMAGING_DEBUG] imagingReports:", reports);
+            console.debug("[IMAGING_DEBUG] imagingContext length:", context.length);
+            if (context.length > 0) {
+              console.debug("[IMAGING_DEBUG] imagingContext content:", context.substring(0, 200) + (context.length > 200 ? '...' : ''));
+            }
+          }
+        }
+      } catch (error: any) {
+        // ✅ Manejar errores graciosamente sin romper el flujo clínico
+        logger.error("[IMAGING_REPORTS] Failed to load reports", {
+          episodeId: episode?.id,
+          error: error?.message || String(error),
+        });
+        
+        // 🔍 DIAGNÓSTICO: Log del error
+        console.error("[IMAGING_DIAGNOSTIC] ❌ Failed to load reports (non-blocking):", {
+          episodeId: episode?.id,
+          error: error?.message || String(error),
+          stack: error?.stack,
+        });
+        
+        // ✅ Degradar con gracia: dejar contexto vacío pero continuar el flujo
+        if (alive) {
+          setImagingReports([]);
+          setImagingContext("");
+        }
+      }
+    };
+
+    loadImagingReports();
+
+    return () => {
+      alive = false;
+    };
+  }, [activeEpisode.data?.id, activeEpisode.loading]); // ✅ Se ejecuta cuando cambia el episodeId o cuando termina de cargar
+
+  // ✅ REFRESH UTILITY: Función para recargar imaging reports manualmente (útil después de guardar un report)
+  const reloadImagingReports = useCallback(async () => {
+    const episode = activeEpisode.data;
+    if (!episode?.id) {
+      logger.warn("[IMAGING_REPORTS] Cannot reload: no active episode");
+      return;
+    }
+
+    logger.info("[IMAGING_REPORTS] 🔄 Manually reloading imaging reports", {
+      episodeId: episode.id,
+    });
+
+    try {
+      const reports = await ImagingReportsService.getImagingReportsForEpisode(episode.id);
+      setImagingReports(reports);
+      const context = buildImagingContextFromReports(reports);
+      setImagingContext(context);
+      
+      logger.info("[IMAGING_REPORTS] ✅ Reloaded imaging reports", {
+        episodeId: episode.id,
+        count: reports.length,
+        contextLength: context.length,
+      });
+
+      if (import.meta.env.DEV) {
+        console.log("[IMAGING_DIAGNOSTIC] ✅ Reports reloaded:", {
+          episodeId: episode.id,
+          reportsCount: reports.length,
+          contextLength: context.length,
+          contextPreview: context.substring(0, 300) + (context.length > 300 ? '...' : ''),
+        });
+      }
+    } catch (error: any) {
+      logger.error("[IMAGING_REPORTS] ❌ Failed to reload reports", {
+        episodeId: episode.id,
+        error: error?.message || error,
+      });
+    }
+  }, [activeEpisode.data]);
+
+  // ✅ TEST UTILS: Setup browser test utilities (DEV only) - AFTER reloadImagingReports declaration
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      setupBrowserTestUtils();
+      
+      // ✅ Expose reload function for manual testing (using closure to avoid dependency issues)
+      (window as any).reloadImagingReports = () => {
+        console.log('🔄 Manually triggering imaging reports reload...');
+        // Use the current value of reloadImagingReports from closure
+        const episode = activeEpisode.data;
+        if (!episode?.id) {
+          console.warn('[IMAGING_REPORTS] Cannot reload: no active episode');
+          return;
+        }
+        
+        ImagingReportsService.getImagingReportsForEpisode(episode.id)
+          .then((reports) => {
+            const context = buildImagingContextFromReports(reports);
+            setImagingReports(reports);
+            setImagingContext(context);
+            console.log('[IMAGING_REPORTS] ✅ Reloaded imaging reports', {
+              episodeId: episode.id,
+              count: reports.length,
+              contextLength: context.length,
+            });
+          })
+          .catch((error: any) => {
+            console.error('[IMAGING_REPORTS] ❌ Failed to reload reports', {
+              episodeId: episode.id,
+              error: error?.message || error,
+            });
+          });
+      };
+      console.log('💡 Tip: After test, call window.reloadImagingReports() to refresh imaging context without reloading page');
+    }
+  }, [activeEpisode.data]); // Only depend on activeEpisode.data, not reloadImagingReports
   
   // ✅ PHASE 2: Clear evaluation tests when patient changes or new session starts
   useEffect(() => {
@@ -1610,9 +1935,47 @@ const ProfessionalWorkflowPage = () => {
         timestamp: Date.now(),
         visitType: visitType === 'follow-up' ? 'follow-up' : 'initial' // Pass visit type for follow-up specific prompts
       };
+      // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+      const episode = activeEpisode.data;
+      
+      // Only include imagingContext if it's enabled, not empty, and we have an active episode
+      const shouldIncludeImagingContext =
+        ENABLE_IMAGING_CONTEXT_IN_ANALYSIS &&
+        imagingContext.trim().length > 0 &&
+        episode?.id;
+
+      // 🔍 DIAGNÓSTICO: Log detallado antes de enviar
+      console.log("[IMAGING_DIAGNOSTIC] 🔍 Pre-analysis check:", {
+        ENABLE_IMAGING_CONTEXT_IN_ANALYSIS,
+        imagingContextLength: imagingContext.trim().length,
+        imagingContextPreview: imagingContext.substring(0, 200) + (imagingContext.length > 200 ? '...' : ''),
+        activeEpisodeId: episode?.id,
+        activeEpisodeLoading: activeEpisode.loading,
+        activeEpisodeError: activeEpisode.error?.message,
+        shouldIncludeImagingContext,
+        imagingReportsCount: imagingReports.length,
+      });
+
+      if (import.meta.env.DEV) {
+        console.debug("[IMAGING_DEBUG] shouldIncludeImagingContext:", shouldIncludeImagingContext);
+        if (shouldIncludeImagingContext) {
+          console.debug("[IMAGING_DEBUG] ✅ Including imagingContext in analysis");
+          console.debug("[IMAGING_DEBUG] Full imagingContext:", imagingContext);
+        } else {
+          console.warn("[IMAGING_DEBUG] ⚠️ NOT including imagingContext. Reasons:", {
+            flagEnabled: ENABLE_IMAGING_CONTEXT_IN_ANALYSIS,
+            hasContext: imagingContext.trim().length > 0,
+            hasEpisode: !!episode?.id,
+            episodeLoading: activeEpisode.loading,
+            episodeError: activeEpisode.error?.message,
+          });
+        }
+      }
+
       await processText({
         ...payload,
-        professionalProfile: professionalProfile || undefined
+        professionalProfile: professionalProfile || undefined,
+        imagingContext: shouldIncludeImagingContext ? imagingContext : undefined,
       });
       setAnalysisError(null);
     } catch (error: any) {
@@ -2040,6 +2403,54 @@ const ProfessionalWorkflowPage = () => {
       setLocalSoapNote(soapWithReviewFlags);
       setSoapStatus('draft');
       setActiveTab("soap");
+
+      // ✅ WO-P2-01: Map to canonical SOAP structure (behind-the-scenes, no UI changes)
+      try {
+        const canonicalSOAPResult = mapToCanonicalSOAP(
+          soapWithReviewFlags,
+          organized.structuredData.physicalExamResults
+        );
+        setCanonicalSOAP(canonicalSOAPResult);
+        
+        // Debug logging in DEV only (for QA/CTO inspection)
+        if (import.meta.env.DEV) {
+          console.debug("[CANONICAL_SOAP_NOTE]", canonicalSOAPResult);
+        }
+      } catch (error) {
+        // Don't break the workflow if canonical mapping fails
+        console.warn("[CANONICAL_SOAP_MAPPER] Failed to map SOAP to canonical structure:", error);
+      }
+
+      // ✅ WO-P2-06/P2-04: Build Today's Plan (DEV-only, behind feature flag)
+      // 🔁 Builder de Today's Plan (solo DEV, solo si flag activo)
+      if (
+        import.meta.env.DEV &&
+        import.meta.env.VITE_ENABLE_TODAYS_PLAN_DEV === "true" &&
+        activeEpisode.data?.id &&
+        sessionIdForMetrics &&
+        user?.uid &&
+        canonicalSOAPResult
+      ) {
+        try {
+          // 1. Save Canonical SOAP and update ETP
+          await TodaysPlanOrchestrator.saveCanonicalSOAPAndUpdateETP({
+            episodeId: activeEpisode.data.id,
+            sessionId: sessionIdForMetrics,
+            soap: canonicalSOAPResult,
+          });
+
+          // 2. Build and snapshot Today's Plan
+          const todaysPlan = await TodaysPlanOrchestrator.buildAndSnapshotTodaysPlan({
+            episodeId: activeEpisode.data.id,
+            sessionId: sessionIdForMetrics,
+            clinicianId: user.uid,
+          });
+          // Solo para inspección en DEV
+          console.debug("[TODAYS_PLAN_DEBUG]", todaysPlan);
+        } catch (error) {
+          console.error("[TODAYS_PLAN_ERROR]", error);
+        }
+      }
 
       // Step 5: Save to session with all structured data
       await sessionService.createSession({
@@ -2643,6 +3054,27 @@ const ProfessionalWorkflowPage = () => {
           </div>
         )}
 
+        {/* ✅ WO-P2-09: Today's Plan Clinical View (read-only, clinical UI) */}
+        {import.meta.env.VITE_ENABLE_TODAYS_PLAN_CLINICAL_UI === "true" &&
+          activeEpisode.data?.id && (
+            <TodaysPlanClinicalView episodeId={activeEpisode.data.id} />
+          )}
+
+        {/* ✅ WO-P3-IMAGING-OCR-MODEL: Add Imaging from PDF button (DEV only) */}
+        {import.meta.env.VITE_ENABLE_IMAGING_OCR_DEV === "true" &&
+          activeEpisode.data?.id &&
+          patientIdFromUrl && (
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setIsImagingModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg hover:shadow-md transition-all font-apple"
+              >
+                <Paperclip className="w-4 h-4" />
+                Add Imaging from PDF (DEV)
+              </button>
+            </div>
+          )}
+
         <nav className="flex flex-wrap gap-2">
           {[
             { id: "analysis", label: "1 · Initial Analysis" },
@@ -2830,6 +3262,19 @@ const ProfessionalWorkflowPage = () => {
             />
           </Suspense>
         )}
+
+        {/* ✅ WO-P2-07/P2-08: Today's Plan Dev Panel (DEV-only, read-only or interactive) */}
+        {import.meta.env.DEV &&
+          import.meta.env.VITE_ENABLE_TODAYS_PLAN_DEV_UI === "true" &&
+          activeEpisode.data?.id &&
+          sessionIdForMetrics &&
+          user?.uid && (
+            <TodaysPlanDevPanel
+              episodeId={activeEpisode.data?.id || ''}
+              sessionId={sessionIdForMetrics}
+              clinicianId={user.uid}
+            />
+          )}
       </div>
 
 
@@ -2901,6 +3346,30 @@ const ProfessionalWorkflowPage = () => {
           }}
         />
       )}
+
+      {/* ✅ WO-P3-IMAGING-OCR-MODEL: Imaging From PDF Modal */}
+      {import.meta.env.VITE_ENABLE_IMAGING_OCR_DEV === "true" &&
+        activeEpisode.data?.id &&
+        patientIdFromUrl && (
+          <ImagingFromPdfModal
+            episodeId={activeEpisode.data.id}
+            patientId={patientIdFromUrl}
+            isOpen={isImagingModalOpen}
+            onClose={() => setIsImagingModalOpen(false)}
+            onReportSaved={(report) => {
+              // ✅ DIAGNOSTIC: Log when report is saved
+              logger.info("[IMAGING_REPORTS] Report saved callback triggered", {
+                reportId: report.id,
+                reportEpisodeId: report.episodeId,
+                activeEpisodeId: activeEpisode.data?.id,
+                match: report.episodeId === activeEpisode.data?.id,
+              });
+              
+              // ✅ Use the reload utility function (simplified and consistent)
+              reloadImagingReports();
+            }}
+          />
+        )}
     </div>
   );
 };
