@@ -1,4 +1,5 @@
 /**
+import { devLog } from "../../../core/utils/devLog";
  * SOAPTab Component
  * 
  * Extracted from ProfessionalWorkflowPage for better code organization.
@@ -378,7 +379,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           onFinalize={handleFinalizeSOAP}
           onUnfinalize={handleUnfinalizeSOAP}
           onPreview={(soap) => {
-            console.log('[Workflow] Clinical note preview requested', soap);
+            devLog('[Workflow] Clinical note preview requested', soap);
           }}
           onShare={() => {
             setIsShareMenuOpen(true);

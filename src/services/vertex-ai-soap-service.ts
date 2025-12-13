@@ -103,7 +103,7 @@ export async function generateSOAPNote(
       },
       body: JSON.stringify({
         prompt,
-        action: 'generate_soap',
+        action: 'analyze',
         traceId,
         model: 'gemini-2.0-flash-exp', // Use same model as clinical analysis
       }),

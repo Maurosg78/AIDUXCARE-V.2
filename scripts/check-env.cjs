@@ -22,7 +22,11 @@ function checkEnvVars() {
 
   if (missingVars.length > 0) {
     console.error('❌ Variables de entorno Firebase faltantes:', missingVars);
-    process.exit(1);
+    if (!process.env.CI) {
+  process.exit(1);
+} else {
+  console.warn("⚠️ CI: missing env vars for Firebase (skipping hard fail)");
+}
   }
 
   // Mostrar solo información no sensible

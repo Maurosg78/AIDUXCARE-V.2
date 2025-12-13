@@ -18,6 +18,20 @@ import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
 import { generateSOAPNote as generateSOAPNoteFromService } from "../services/vertex-ai-soap-service";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
+import { mapToCanonicalSOAP } from "../core/soap/canonicalSOAPMapper";
+import type { CanonicalSOAPNote } from "../core/soap/types";
+import type { ImagingReport } from "@/core/imaging/types";
+import { buildImagingContextFromReports } from "@/core/imaging/imagingReportFactory";
+import { ImagingReportsService } from "@/core/imaging/imagingReportsService";
+import { ImagingFromPdfModal } from "@/components/imaging/ImagingFromPdfModal";
+// ✅ TEST UTILS: Imaging reports test utilities (DEV only)
+import { setupBrowserTestUtils } from "@/core/imaging/imagingReportsTestUtils";
+// ✅ WO-P2-05/P2-06: Today's Plan builder (DEV-only, behind feature flag)
+import { TodaysPlanOrchestrator } from "@/core/plan/TodaysPlanOrchestrator";
+// ✅ WO-P2-07: Today's Plan Dev Panel (DEV-only, read-only UI)
+import { TodaysPlanDevPanel } from "@/components/plan/TodaysPlanDevPanel";
+// ✅ WO-P2-09: Today's Plan Clinical View (read-only, clinical UI)
+import { TodaysPlanClinicalView } from "@/components/plan/TodaysPlanClinicalView";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
 import { AnalyticsService } from "../services/analyticsService";
 import type { ValueMetricsEvent } from "../services/analyticsService";
@@ -51,6 +65,7 @@ import type { Session } from "../services/sessionComparisonService";
 import { Timestamp } from "firebase/firestore";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
 import { useActiveEpisode } from "../features/patient-dashboard/hooks/useActiveEpisode";
+import { episodesRepo } from "../repositories/episodesRepo";
 import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePatientVisitCount";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
@@ -193,7 +208,6 @@ const ProfessionalWorkflowPage = () => {
       
       localStorageClearedRef.current = true; // Mark as cleared
     } catch (e) {
-      console.warn('[WORKFLOW] Error clearing localStorage:', e);
       localStorageClearedRef.current = true; // Mark as attempted even if failed
     }
   }
@@ -208,7 +222,15 @@ const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
+  const [canonicalSOAP, setCanonicalSOAP] = useState<CanonicalSOAPNote | null>(null);
+  const [imagingReports, setImagingReports] = useState<ImagingReport[]>([]);
+  const [imagingContext, setImagingContext] = useState<string>("");
+  const [isImagingModalOpen, setIsImagingModalOpen] = useState<boolean>(false);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
+
+  // ✅ WO-P2-03: Feature flag para inyección de ImagingContext (solo DEV y con env flag explícito)
+  const ENABLE_IMAGING_CONTEXT_IN_ANALYSIS =
+    import.meta.env.DEV && import.meta.env.VITE_ENABLE_IMAGING_CONTEXT === 'true';
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
   
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
@@ -267,6 +289,16 @@ const ProfessionalWorkflowPage = () => {
   const activeEpisode = useActiveEpisode(patientId);
   const visitCount = usePatientVisitCount(patientId);
   
+  // 🔍 DIAGNÓSTICO: Log del estado de imaging context (después de declarar activeEpisode)
+  // ✅ TEST UTILS: Setup browser test utilities (DEV only) - moved after reloadImagingReports declaration
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+      const episode = activeEpisode.data;
+    }
+  }, [activeEpisode, patientId, imagingReports.length, imagingContext.length]);
+  
   // Get session type from URL or default to visitType
   const currentSessionType = sessionTypeFromUrl || (visitType === 'initial' ? 'initial' : 'followup');
   const sessionTypeConfig = SessionTypeService.getSessionTypeConfig(currentSessionType);
@@ -317,7 +349,6 @@ const ProfessionalWorkflowPage = () => {
       return getPublicBaseUrl();
     } catch (error) {
       // Fallback to window.location.origin if urlHelpers not available
-      console.warn('[WORKFLOW] Failed to get public base URL, using window.location.origin:', error);
       return typeof window !== 'undefined' ? window.location.origin : '';
     }
   }, []);
@@ -337,7 +368,6 @@ const ProfessionalWorkflowPage = () => {
       setCopyConsentFeedback('success');
       setTimeout(() => setCopyConsentFeedback('idle'), 3000);
     } catch (err) {
-      console.error('[WORKFLOW] Failed to copy consent link:', err);
       setCopyConsentFeedback('error');
     }
   }, [consentLink]);
@@ -349,9 +379,16 @@ const ProfessionalWorkflowPage = () => {
     return `pilot-session-${patientId}-${user.uid}`;
   }, [patientId, user?.uid]);
   const trackedSessionsRef = useRef<Set<string>>(new Set());
+  const trackedWorkflowSessionsRef = useRef<Set<string>>(new Set()); // ✅ Guard para workflow_session_started
+  
+  // ✅ WORKFLOW SESSION TRACKING KEY: Estable para evitar duplicados
+  const workflowSessionTrackingKey = useMemo(() => {
+    if (!patientId || !user?.uid) return null;
+    return `workflow-session-${patientId}-${user.uid}`;
+  }, [patientId, user?.uid]);
   
   useEffect(() => {
-    // Only track once per unique session key
+    // ✅ Guard: Solo trackear una vez por unique session key
     if (!sessionTrackingKey || !patientId || !user?.uid) return;
     if (trackedSessionsRef.current.has(sessionTrackingKey)) {
       return; // Already tracked
@@ -369,12 +406,6 @@ const ProfessionalWorkflowPage = () => {
           
           // ✅ CRITICAL FIX: Use explicit URL parameter for visitType in tracking
           const trackingVisitType = sessionTypeFromUrl === 'followup' ? 'follow-up' : visitType;
-          console.log('[WORKFLOW] 📊 Analytics tracking:', {
-            sessionTypeFromUrl,
-            visitType,
-            trackingVisitType,
-            isExplicitFollowUp: sessionTypeFromUrl === 'followup'
-          });
           await AnalyticsService.trackEvent('pilot_session_started', {
             patientId,
             userId: user.uid,
@@ -382,10 +413,8 @@ const ProfessionalWorkflowPage = () => {
             visitType: trackingVisitType,
             isPilotUser: true
           });
-          console.log('✅ [PILOT METRICS] Session start tracked:', patientId, 'with visitType:', trackingVisitType);
         }
       } catch (error) {
-        console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
         // Remove from tracked set on error so it can retry if needed
         trackedSessionsRef.current.delete(sessionTrackingKey);
         // Non-blocking: don't fail session if analytics fails
@@ -409,12 +438,9 @@ const ProfessionalWorkflowPage = () => {
         const patient = await PatientService.getPatientById(patientIdFromUrl);
         if (patient) {
           setCurrentPatient(patient);
-          console.log('[WORKFLOW] Patient loaded:', patient.fullName);
         } else {
-          console.warn('[WORKFLOW] Patient not found:', patientIdFromUrl);
         }
       } catch (error) {
-        console.error('[WORKFLOW] Error loading patient:', error);
       } finally {
         setLoadingPatient(false);
       }
@@ -463,25 +489,30 @@ const ProfessionalWorkflowPage = () => {
           setActiveTab(initialTab as ActiveTab);
         }
 
-        // ✅ WORKFLOW OPTIMIZATION: Track workflow session start
-        const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
-        await trackWorkflowSessionStart(
-          sessionIdForMetrics,
-          patientId,
-          user.uid,
-          route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial',
-          route.skipTabs.length
-        );
-
-        console.log('[WORKFLOW] Workflow detected:', {
-          routeType: route.type,
-          explicitFollowUp: isExplicitFollowUp,
-          sessionTypeFromUrl,
-          initialTab,
-          skipTabs: route.skipTabs,
-        });
+        // ✅ WORKFLOW OPTIMIZATION: Track workflow session start (con guard para evitar duplicados)
+        if (workflowSessionTrackingKey && !trackedWorkflowSessionsRef.current.has(workflowSessionTrackingKey)) {
+          // Marcar como tracked ANTES de hacer la llamada
+          trackedWorkflowSessionsRef.current.add(workflowSessionTrackingKey);
+          
+          const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
+          const workflowType = route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial';
+          
+          try {
+            await trackWorkflowSessionStart(
+              sessionIdForMetrics,
+              patientId,
+              user.uid,
+              workflowType,
+              route.skipTabs.length
+            );
+          } catch (error) {
+            // Remover del set en caso de error para permitir reintento
+            trackedWorkflowSessionsRef.current.delete(workflowSessionTrackingKey);
+            // Non-blocking: no fallar el workflow si analytics falla
+          }
+        } else if (workflowSessionTrackingKey) {
+        }
       } catch (error) {
-        console.error('[WORKFLOW] Error detecting workflow:', error);
         // Fallback: if explicit followup, still set it
         if (sessionTypeFromUrl === 'followup') {
           setVisitType('follow-up');
@@ -501,7 +532,6 @@ const ProfessionalWorkflowPage = () => {
     
     // If follow-up and Niagara analysis is complete, navigate to SOAP tab
     if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap') {
-      console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
       setActiveTab('soap');
     }
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
@@ -535,13 +565,11 @@ const ProfessionalWorkflowPage = () => {
         if (!isVerified) {
           // Only redirect if verification explicitly returns false
           // Don't redirect on errors - allow workflow to continue
-          console.log('[WORKFLOW] Consent not verified, redirecting to verification...');
           navigate(`/consent-verification/${patientId}`);
         }
       } catch (error) {
         // If verification check fails, log but don't block workflow
         // This allows the workflow to render even if consent service is unavailable
-        console.warn('[WORKFLOW] Consent verification check failed, allowing workflow to continue:', error);
       }
     };
 
@@ -663,15 +691,8 @@ const ProfessionalWorkflowPage = () => {
   // ✅ WORKFLOW PERSISTENCE: Restore workflow state from localStorage on mount
   // ✅ CRITICAL FIX: URL parameters take priority over localStorage
   useEffect(() => {
-    console.log('🔍 [DEBUG] useEffect - localStorage restore check starting...');
-    console.log('🔍 [DEBUG] useEffect - sessionTypeFromUrl:', sessionTypeFromUrl);
-    console.log('🔍 [DEBUG] useEffect - patientId:', patientId);
-    console.log('🔍 [DEBUG] useEffect - patientIdFromUrl:', patientIdFromUrl);
-    
     // ✅ AGGRESSIVE FIX: Clear localStorage for follow-up visits IMMEDIATELY
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-    console.log('🔍 [DEBUG] useEffect - isExplicitFollowUp:', isExplicitFollowUp);
-    
     if (isExplicitFollowUp && patientId) {
       // Mark as processed FIRST to prevent infinite loops
       if (useEffectClearedRef.current) {
@@ -722,29 +743,24 @@ const ProfessionalWorkflowPage = () => {
           const sanitized = savedState.evaluationTests.map(sanitizeEvaluationEntry);
           setEvaluationTests(sanitized);
           updatePhysicalEvaluation(sanitized);
-          console.log('[WORKFLOW] ✅ Restored evaluation tests:', sanitized.length);
         }
 
         // ✅ CRITICAL FIX: Only restore active tab if URL doesn't specify a type
         // If URL has type=followup, we already set it to 'soap' in initial state
         if (!sessionTypeFromUrl && savedState.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedState.activeTab)) {
           setActiveTab(savedState.activeTab as ActiveTab);
-          console.log('[WORKFLOW] ✅ Restored active tab:', savedState.activeTab);
         }
 
         // Restore SOAP note if exists
         if (savedState.localSoapNote) {
           setLocalSoapNote(savedState.localSoapNote);
-          console.log('[WORKFLOW] ✅ Restored SOAP note');
         }
 
         // Restore selected entity IDs
         if (savedState.selectedEntityIds && Array.isArray(savedState.selectedEntityIds)) {
           setSelectedEntityIds(savedState.selectedEntityIds);
-          console.log('[WORKFLOW] ✅ Restored selected entity IDs:', savedState.selectedEntityIds.length);
         }
       } catch (error) {
-        console.error('[WORKFLOW] Error restoring workflow state:', error);
       }
     };
 
@@ -793,13 +809,7 @@ const ProfessionalWorkflowPage = () => {
 
         prevStateRef.current = stateKey;
         SessionStorage.saveSession(patientId, workflowState);
-        console.log('[WORKFLOW] 💾 Auto-saved workflow state:', {
-          transcriptLength: transcript?.length || 0,
-          testCount: evaluationTests.length,
-          activeTab: activeTab
-        });
       } catch (error) {
-        console.error('[WORKFLOW] Error saving workflow state:', error);
       }
     };
 
@@ -830,7 +840,6 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     // ✅ PHASE 2: Skip if we're actively adding tests (to prevent overwriting)
     if (isAddingTestsRef.current) {
-      console.log(`[PHASE2] useEffect - Skipping load (actively adding tests)`);
       return;
     }
     
@@ -839,22 +848,12 @@ const ProfessionalWorkflowPage = () => {
     
     // ✅ FIX: Skip if sharedState hasn't actually changed
     if (lastSharedStateRef.current === currentSharedStateKey) {
-      console.log(`[PHASE2] useEffect - SharedState unchanged, skipping update`);
       return;
     }
     
     // ✅ PHASE 2: Enhanced logging for debugging
-    console.log(`[PHASE2] useEffect - Loading from sharedState:`, {
-      hasSelectedTests: !!sharedState.physicalEvaluation?.selectedTests,
-      selectedTestsCount: sharedState.physicalEvaluation?.selectedTests?.length || 0,
-      selectedTests: sharedState.physicalEvaluation?.selectedTests,
-      detectedCaseRegion: detectedCaseRegion,
-    });
-    
     if (sharedState.physicalEvaluation?.selectedTests) {
       const sanitized = sharedState.physicalEvaluation.selectedTests.map(sanitizeEvaluationEntry);
-      console.log(`[PHASE2] Sanitized tests from sharedState:`, sanitized.map(t => ({ name: t.name, id: t.id, region: t.region })));
-      
       // ✅ FIX: Update ref before setting state to prevent re-trigger
       lastSharedStateRef.current = currentSharedStateKey;
       
@@ -868,7 +867,6 @@ const ProfessionalWorkflowPage = () => {
         const isInitialLoad = currentTests.length === 0;
         
         if (!hasNewTests && !isInitialLoad) {
-          console.log(`[PHASE2] No new tests in sharedState and not initial load, preserving current ${currentTests.length} tests`);
           return currentTests; // Return current state unchanged
         }
         
@@ -885,25 +883,19 @@ const ProfessionalWorkflowPage = () => {
             
             // For manual/custom tests, check region match
             if (test.region && test.region !== detectedCaseRegion) {
-              console.warn(`[PHASE2] Filtering out manual test "${test.name}" (${test.region}) - wrong region for case (${detectedCaseRegion})`);
               return false;
             }
             return true;
           });
-          console.log(`[PHASE2] Filtered tests by region (${detectedCaseRegion}):`, testsToSet.map(t => ({ name: t.name, id: t.id, region: t.region, source: t.source })));
         }
-        
-        console.log(`[PHASE2] Setting evaluationTests (${testsToSet.length} tests)`);
         return testsToSet;
       });
     } else {
       // ✅ PHASE 2: Clear tests if sharedState is empty (new session)
       if (evaluationTests.length > 0) {
-        console.log(`[PHASE2] sharedState has no selectedTests, clearing evaluationTests`);
         lastSharedStateRef.current = '';
         setEvaluationTests([]);
       } else {
-        console.log(`[PHASE2] No selectedTests in sharedState, skipping load`);
       }
     }
   }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion]); // ✅ FIX: Removed evaluationTests.length to prevent infinite loop
@@ -911,6 +903,7 @@ const ProfessionalWorkflowPage = () => {
   // Check if this is the first session and handle patient consent via SMS
   // Use ref to prevent multiple executions in React Strict Mode
   const consentCheckRef = useRef(false);
+  const creatingEpisodeRef = useRef(false); // ✅ Guard para evitar crear episodios duplicados
   
   useEffect(() => {
     // Prevent multiple executions
@@ -942,7 +935,6 @@ const ProfessionalWorkflowPage = () => {
               setCurrentPatient(loadedPatient); // Update state for future use
             }
           } catch (error) {
-            console.warn('[WORKFLOW] Could not load patient, using demo:', error);
           }
         }
         
@@ -976,7 +968,6 @@ const ProfessionalWorkflowPage = () => {
             // Validate phone number format for Twilio
             const phoneNumber = patient.phone?.trim();
             if (!phoneNumber) {
-              console.warn('[WORKFLOW] Patient phone not available, cannot send SMS');
               return;
             }
 
@@ -1041,10 +1032,7 @@ const ProfessionalWorkflowPage = () => {
               token
             );
             setConsentPending(true);
-            console.log('[WORKFLOW] Consent SMS sent to patient:', formattedPhone);
-            console.log('[WORKFLOW] ✅ SMS sent via Vonage. Check Firestore → sms_delivery_receipts for delivery status.');
           } catch (error) {
-            console.error('[WORKFLOW] Error generating consent token or sending SMS:', error);
             // Don't block workflow if SMS fails
             const message = error instanceof Error ? error.message : 'Failed to send SMS consent link.';
             setSmsError(message);
@@ -1052,7 +1040,6 @@ const ProfessionalWorkflowPage = () => {
           }
         }
       } catch (error) {
-        console.error('[WORKFLOW] Error checking first session:', error);
         // Fail-safe: don't block workflow if check fails
         setIsFirstSession(false);
         setPatientHasConsent(false);
@@ -1069,14 +1056,7 @@ const ProfessionalWorkflowPage = () => {
 
   const persistEvaluation = useCallback((next: EvaluationTestEntry[]) => {
     // ✅ PHASE 2: Enhanced logging for debugging
-    console.log(`[PHASE2] persistEvaluation called:`, {
-      nextCount: next.length,
-      nextTests: next.map(t => ({ name: t.name, id: t.id, region: t.region })),
-    });
-    
     const sanitized = next.map(sanitizeEvaluationEntry);
-    console.log(`[PHASE2] Sanitized tests:`, sanitized.map(t => ({ name: t.name, id: t.id, region: t.region })));
-    
     // ✅ FIX: Use functional update to get current state and compare
     setEvaluationTests((currentTests) => {
       // ✅ FIX: Deep comparison - check IDs, values, notes, and result
@@ -1097,22 +1077,16 @@ const ProfessionalWorkflowPage = () => {
         const currentValuesStr = JSON.stringify(currentTest.values || {});
         const newValuesStr = JSON.stringify(newTest.values || {});
         if (currentValuesStr !== newValuesStr) {
-          console.log(`[PHASE2] Value change detected in test ${newTest.id}:`, {
-            current: currentTest.values,
-            new: newTest.values
-          });
           return true;
         }
         
         // Compare notes
         if ((currentTest.notes || '') !== (newTest.notes || '')) {
-          console.log(`[PHASE2] Notes change detected in test ${newTest.id}`);
           return true;
         }
         
         // Compare result
         if (currentTest.result !== newTest.result) {
-          console.log(`[PHASE2] Result change detected in test ${newTest.id}: ${currentTest.result} -> ${newTest.result}`);
           return true;
         }
         
@@ -1122,12 +1096,8 @@ const ProfessionalWorkflowPage = () => {
       const hasChanges = hasTestChanges || hasValueChanges;
       
       if (!hasChanges) {
-        console.log(`[PHASE2] No changes detected, skipping update`);
         return currentTests; // Return unchanged
       }
-      
-      console.log(`[PHASE2] Changes detected (tests: ${hasTestChanges}, values: ${hasValueChanges}), updating evaluationTests...`);
-      
       // ✅ FIX: Update ref to prevent useEffect from re-triggering
       // Use a more comprehensive key that includes values to detect real changes
       const stateKey = JSON.stringify(sanitized.map(t => ({
@@ -1146,9 +1116,7 @@ const ProfessionalWorkflowPage = () => {
       
       // ✅ FIX: Update sharedState AFTER state update
       setTimeout(() => {
-        console.log(`[PHASE2] Calling updatePhysicalEvaluation...`);
     updatePhysicalEvaluation(sanitized);
-        console.log(`[PHASE2] persistEvaluation completed`);
       }, 0);
       
       return sanitized;
@@ -1167,15 +1135,6 @@ const ProfessionalWorkflowPage = () => {
   const addEvaluationTest = useCallback(
     (entry: EvaluationTestEntry) => {
       // ✅ PHASE 2: Enhanced logging for debugging
-      console.log(`[PHASE2] addEvaluationTest called:`, {
-        name: entry.name,
-        id: entry.id,
-        region: entry.region,
-        source: entry.source,
-        detectedCaseRegion: detectedCaseRegion,
-        currentTestsCount: evaluationTests.length
-      });
-      
       // ✅ PHASE 1: Allow AI-recommended tests even if region doesn't match exactly
       // The AI has full context and may recommend related tests (e.g., hand/ankle tests
       // when patient reports pain in those areas during acute episodes)
@@ -1183,14 +1142,12 @@ const ProfessionalWorkflowPage = () => {
       
       // ✅ P1.1: Validate region match before adding test, but allow AI recommendations
       if (detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion && !isAIRecommended) {
-        console.warn(`[PHASE2] Test "${entry.name}" region (${entry.region}) does not match case region (${detectedCaseRegion}). Skipping.`);
         setAnalysisError(`Test "${entry.name}" is for ${regionLabels[entry.region]}, but this case is for ${regionLabels[detectedCaseRegion]}. Please select tests appropriate for the current case.`);
         return; // Block adding test from different region (unless AI-recommended)
       }
       
       // Log when AI-recommended test from different region is allowed
       if (isAIRecommended && detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion) {
-        console.log(`[PHASE2] Allowing AI-recommended test "${entry.name}" (${entry.region}) for case region (${detectedCaseRegion}) - AI has full context`);
       }
       
       // ✅ PHASE 2 FIX: Use functional update to ensure we have latest state
@@ -1200,14 +1157,9 @@ const ProfessionalWorkflowPage = () => {
       );
         
         if (exists) {
-          console.log(`[PHASE2] Test "${entry.name}" already exists, skipping`);
           return currentTests; // Return current state unchanged
         }
-        
-        console.log(`[PHASE2] ✅ Adding test "${entry.name}" to evaluationTests`);
         const newTests = [...currentTests, entry];
-        console.log(`[PHASE2] New tests array (${newTests.length} tests):`, newTests.map(t => t.name));
-        
         // ✅ PHASE 2 FIX: Persist immediately with new state using setTimeout to avoid batching issues
         setTimeout(() => {
           persistEvaluation(newTests);
@@ -1348,14 +1300,194 @@ const ProfessionalWorkflowPage = () => {
 
   useEffect(() => {
     // ✅ PHASE 2: Clear selections when new analysis starts
-    console.log('[PHASE2] Clearing selectedEntityIds due to new motivo_consulta');
     setSelectedEntityIds([]);
   }, [niagaraResults?.motivo_consulta]);
+
+  // ✅ AUTO-CREATE EPISODIO: Crear episodio activo si no existe (con guard para evitar duplicados)
+  useEffect(() => {
+    // Guard: no crear si ya estamos creando uno
+    if (creatingEpisodeRef.current) return;
+    
+    // Guard: no crear si todavía está cargando
+    if (activeEpisode.loading) return;
+    
+    // Guard: no crear si ya hay episodio
+    if (activeEpisode.data) return;
+    
+    // Guard: no crear si hay error (evitar loops)
+    if (activeEpisode.error) return;
+    
+    // Guard: no crear si faltan datos necesarios
+    if (!patientId || !user?.uid) return;
+    
+    // Marcar que estamos creando para evitar duplicados
+    creatingEpisodeRef.current = true;
+    
+    (async () => {
+      try {
+        const episodeId = await episodesRepo.createEpisode({
+          patientId,
+          ownerUid: user.uid,
+          reason: "Initial assessment",
+          startDate: new Date(),
+          expectedDuration: 8, // 8 semanas por defecto
+        });
+        // El hook useActiveEpisode debería recargar automáticamente
+      } catch (error) {
+      } finally {
+        // Resetear el flag después de un delay para permitir reintentos si es necesario
+        setTimeout(() => {
+          creatingEpisodeRef.current = false;
+        }, 2000);
+      }
+    })();
+  }, [activeEpisode.loading, activeEpisode.data, activeEpisode.error, patientId, user?.uid]);
+
+  // ✅ WO-P3-IMAGING-OCR-MODEL: Load imaging reports for active episode
+  useEffect(() => {
+    // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+    const episode = activeEpisode.data;
+    
+    if (!episode?.id) {
+      // Clear imaging reports when no episode is active
+      setImagingReports([]);
+      setImagingContext("");
+      if (import.meta.env.DEV) {
+      }
+      return;
+    }
+
+    let alive = true;
+
+    const loadImagingReports = async () => {
+      try {
+        // ✅ Validar que episode.id existe antes de llamar al servicio
+        if (!episode?.id) {
+          if (alive) {
+            setImagingReports([]);
+            setImagingContext("");
+          }
+          return;
+        }
+        
+        const reports = await ImagingReportsService.getImagingReportsForEpisode(episode.id);
+        
+        // ✅ Manejar caso de "no hay informes" graciosamente (no es un error)
+        if (!Array.isArray(reports)) {
+          if (alive) {
+            setImagingReports([]);
+            setImagingContext("");
+          }
+          return;
+        }
+        
+        if (alive) {
+          setImagingReports(reports);
+          const context = buildImagingContextFromReports(reports);
+          setImagingContext(context);
+          
+          if (reports.length === 0) {
+          } else {
+            logger.debug("[IMAGING_REPORTS] Loaded reports for episode", {
+              episodeId: episode.id,
+              count: reports.length,
+              contextLength: context.length,
+            });
+
+            // 🔍 DIAGNÓSTICO: Log detallado del estado
+          }
+          
+          // Enhanced debug logging in DEV
+          if (import.meta.env.DEV) {
+            if (context.length > 0) {
+            }
+          }
+        }
+      } catch (error: any) {
+        // ✅ Manejar errores graciosamente sin romper el flujo clínico
+        logger.error("[IMAGING_REPORTS] Failed to load reports", {
+          episodeId: episode?.id,
+          error: error?.message || String(error),
+        });
+        
+        // 🔍 DIAGNÓSTICO: Log del error
+        // ✅ Degradar con gracia: dejar contexto vacío pero continuar el flujo
+        if (alive) {
+          setImagingReports([]);
+          setImagingContext("");
+        }
+      }
+    };
+
+    loadImagingReports();
+
+    return () => {
+      alive = false;
+    };
+  }, [activeEpisode.data?.id, activeEpisode.loading]); // ✅ Se ejecuta cuando cambia el episodeId o cuando termina de cargar
+
+  // ✅ REFRESH UTILITY: Función para recargar imaging reports manualmente (útil después de guardar un report)
+  const reloadImagingReports = useCallback(async () => {
+    const episode = activeEpisode.data;
+    if (!episode?.id) {
+      logger.warn("[IMAGING_REPORTS] Cannot reload: no active episode");
+      return;
+    }
+
+    logger.info("[IMAGING_REPORTS] 🔄 Manually reloading imaging reports", {
+      episodeId: episode.id,
+    });
+
+    try {
+      const reports = await ImagingReportsService.getImagingReportsForEpisode(episode.id);
+      setImagingReports(reports);
+      const context = buildImagingContextFromReports(reports);
+      setImagingContext(context);
+      
+      logger.info("[IMAGING_REPORTS] ✅ Reloaded imaging reports", {
+        episodeId: episode.id,
+        count: reports.length,
+        contextLength: context.length,
+      });
+
+      if (import.meta.env.DEV) {
+      }
+    } catch (error: any) {
+      logger.error("[IMAGING_REPORTS] ❌ Failed to reload reports", {
+        episodeId: episode.id,
+        error: error?.message || error,
+      });
+    }
+  }, [activeEpisode.data]);
+
+  // ✅ TEST UTILS: Setup browser test utilities (DEV only) - AFTER reloadImagingReports declaration
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      setupBrowserTestUtils();
+      
+      // ✅ Expose reload function for manual testing (using closure to avoid dependency issues)
+      (window as any).reloadImagingReports = () => {
+        // Use the current value of reloadImagingReports from closure
+        const episode = activeEpisode.data;
+        if (!episode?.id) {
+          return;
+        }
+        
+        ImagingReportsService.getImagingReportsForEpisode(episode.id)
+          .then((reports) => {
+            const context = buildImagingContextFromReports(reports);
+            setImagingReports(reports);
+            setImagingContext(context);
+          })
+          .catch((error: any) => {
+          });
+      };
+    }
+  }, [activeEpisode.data]); // Only depend on activeEpisode.data, not reloadImagingReports
   
   // ✅ PHASE 2: Clear evaluation tests when patient changes or new session starts
   useEffect(() => {
     if (patientIdFromUrl && patientIdFromUrl !== currentPatient?.id) {
-      console.log('[PHASE2] Patient changed, clearing evaluation tests');
       setEvaluationTests([]);
       isAddingTestsRef.current = false;
     }
@@ -1393,7 +1525,6 @@ const ProfessionalWorkflowPage = () => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
     if (isFollowUpWorkflow) {
-      console.log('[WORKFLOW] ⚠️ Skipping physical test suggestions for follow-up visit');
       return [];
     }
     
@@ -1610,23 +1741,37 @@ const ProfessionalWorkflowPage = () => {
         timestamp: Date.now(),
         visitType: visitType === 'follow-up' ? 'follow-up' : 'initial' // Pass visit type for follow-up specific prompts
       };
+      // ✅ FIX: activeEpisode es AsyncState<Episode>, acceder a .data
+      const episode = activeEpisode.data;
+      
+      // Only include imagingContext if it's enabled, not empty, and we have an active episode
+      const shouldIncludeImagingContext =
+        ENABLE_IMAGING_CONTEXT_IN_ANALYSIS &&
+        imagingContext.trim().length > 0 &&
+        episode?.id;
+
+      // 🔍 DIAGNÓSTICO: Log detallado antes de enviar
+      if (import.meta.env.DEV) {
+        if (shouldIncludeImagingContext) {
+        } else {
+        }
+      }
+
       await processText({
         ...payload,
-        professionalProfile: professionalProfile || undefined
+        professionalProfile: professionalProfile || undefined,
+        imagingContext: shouldIncludeImagingContext ? imagingContext : undefined,
       });
       setAnalysisError(null);
     } catch (error: any) {
       const message = error?.message || 'Unable to analyze transcript with our AI system.';
       setAnalysisError(message);
-      console.error('[Workflow] Vertex analysis failed:', message);
-      
       // Submit error feedback automatically
       if (error instanceof Error) {
         FeedbackService.submitErrorFeedback(error, {
           workflowStep: 'AI analysis',
           hasTranscript: !!transcript?.trim(),
         }).catch((err) => {
-          console.error('[Workflow] Failed to submit error feedback:', err);
         });
       }
       
@@ -1656,7 +1801,6 @@ const ProfessionalWorkflowPage = () => {
 
       setAttachments((prev) => [...prev, ...uploads]);
       } catch (error) {
-      console.error("Attachment upload failed", error);
       setAttachmentError(
         error instanceof Error
           ? error.message
@@ -1675,7 +1819,6 @@ const ProfessionalWorkflowPage = () => {
       await ClinicalAttachmentService.delete(attachment.storagePath);
       setAttachments((prev) => prev.filter((item) => item.id !== attachment.id));
     } catch (error) {
-      console.error("Failed to delete attachment", error);
       setAttachmentError(
         error instanceof Error
           ? error.message
@@ -1688,14 +1831,6 @@ const ProfessionalWorkflowPage = () => {
 
   const continueToEvaluation = () => {
     // ✅ PHASE 2: Enhanced logging for debugging test transfer
-    console.log('[PHASE2] continueToEvaluation called');
-    console.log('[PHASE2] selectedEntityIds:', selectedEntityIds);
-    console.log('[PHASE2] aiSuggestions:', aiSuggestions);
-    console.log('[PHASE2] niagaraResults.evaluaciones_fisicas_sugeridas:', niagaraResults?.evaluaciones_fisicas_sugeridas);
-    console.log('[PHASE2] interactiveResults.physicalTests:', interactiveResults?.physicalTests);
-    console.log('[PHASE2] current evaluationTests:', evaluationTests);
-    console.log('[PHASE2] detectedCaseRegion:', detectedCaseRegion);
-    
     // ✅ PHASE 2: Set flag to prevent useEffect from overwriting
     isAddingTestsRef.current = true;
     
@@ -1704,63 +1839,29 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ PHASE 2 FIX: Use aiSuggestions directly - they're already mapped correctly
     // aiSuggestions has the correct key (originalIndex) and includes library matches
-    console.log('[PHASE2] Using aiSuggestions directly for mapping');
-    console.log('[PHASE2] aiSuggestions keys:', aiSuggestions.map(s => s.key));
-    
     // ✅ PHASE 2 FIX: Create a map from key (originalIndex) to suggestion
     const suggestionMap = new Map(aiSuggestions.map((item) => [item.key, item]));
-    console.log('[PHASE2] suggestionMap created:', Array.from(suggestionMap.entries()).map(([k, v]) => [k, v.rawName]));
-
     // ✅ PHASE 2 FIX: Get physical test IDs and map them correctly
     const physicalTestIds = selectedEntityIds.filter((id) => id.startsWith("physical-"));
-    console.log('[PHASE2] physicalTestIds found:', physicalTestIds);
-    
     // ✅ PHASE 2 FIX: Collect all entries first, then add them all at once
     physicalTestIds.forEach((entityId) => {
       const originalIndex = parseInt(entityId.split("-")[1], 10);
-      console.log(`[PHASE2] Processing physical test ID: ${entityId}, originalIndex: ${originalIndex}`);
-      
       // ✅ PHASE 2 FIX: Get suggestion directly by key (originalIndex)
       const suggestion = suggestionMap.get(originalIndex);
       if (!suggestion) {
-        console.error(`[PHASE2] ❌ CRITICAL: No suggestion found for originalIndex ${originalIndex}`);
-        console.error(`[PHASE2] Available keys in suggestionMap:`, Array.from(suggestionMap.keys()));
-        console.error(`[PHASE2] aiSuggestions:`, aiSuggestions.map(s => ({ key: s.key, rawName: s.rawName })));
-        console.error(`[PHASE2] niagaraResults.evaluaciones_fisicas_sugeridas length:`, niagaraResults?.evaluaciones_fisicas_sugeridas?.length);
         return;
       }
-      
-      console.log(`[PHASE2] ✅ Found suggestion for originalIndex ${originalIndex}:`, {
-        key: suggestion.key,
-        rawName: suggestion.rawName,
-        hasMatch: !!suggestion.match,
-        matchName: suggestion.match?.name
-      });
-      
       let entry: EvaluationTestEntry;
         if (suggestion.match) {
         // ✅ PHASE 2 FIX: Use library match if available (has region, fields, etc.)
-        console.log(`[PHASE2] Creating entry from library match:`, suggestion.match.name);
         entry = createEntryFromLibrary(suggestion.match, "ai");
         } else {
         // ✅ PHASE 2 FIX: Use suggestion rawName
-        console.log(`[PHASE2] Creating custom entry for:`, suggestion.rawName);
         entry = createCustomEntry(suggestion.rawName, "ai");
       }
-      
-      console.log(`[PHASE2] Created entry:`, {
-        name: entry.name,
-        id: entry.id,
-        region: entry.region,
-        source: entry.source
-      });
-      
       additions.push(entry);
       entriesToAdd.push(entry);
     });
-
-    console.log(`[PHASE2] Total entries collected: ${entriesToAdd.length}`, entriesToAdd.map(e => e.name));
-    
     // ✅ PHASE 2 FIX: Add all tests at once using functional update to avoid race conditions
     if (entriesToAdd.length > 0) {
       setEvaluationTests((currentTests) => {
@@ -1770,20 +1871,16 @@ const ProfessionalWorkflowPage = () => {
           (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
         );
           if (exists) {
-            console.log(`[PHASE2] Test "${entry.name}" already exists, skipping`);
             return false;
           }
           return true;
         });
         
         if (newTests.length === 0) {
-          console.log(`[PHASE2] All tests already exist, no new tests to add`);
           return currentTests;
         }
         
         const finalTests = [...currentTests, ...newTests];
-        console.log(`[PHASE2] ✅ Adding ${newTests.length} new tests. Total: ${finalTests.length}`, finalTests.map(t => t.name));
-        
         // Persist all tests at once
         setTimeout(() => {
           persistEvaluation(finalTests);
@@ -1792,24 +1889,12 @@ const ProfessionalWorkflowPage = () => {
         return finalTests;
       });
     }
-
-    console.log(`[PHASE2] Expected vs Actual:`, {
-      expected: physicalTestIds.length,
-      actual: entriesToAdd.length,
-      missing: physicalTestIds.length - entriesToAdd.length
-    });
-
     // ✅ PHASE 2 FIX: Wait for all state updates to complete before clearing flag
     setTimeout(() => {
-      console.log(`[PHASE2] Checking state after additions...`);
       setEvaluationTests((currentTests) => {
-        console.log(`[PHASE2] Current evaluationTests:`, currentTests.map(t => t.name));
-        console.log(`[PHASE2] Expected ${entriesToAdd.length} tests, current: ${currentTests.length}`);
-        
         // Clear flag after delay
         setTimeout(() => {
           isAddingTestsRef.current = false;
-          console.log(`[PHASE2] ✅ Flag cleared - ${currentTests.length} tests in state`);
         }, 500);
         
         return currentTests; // Return unchanged
@@ -1824,11 +1909,7 @@ const ProfessionalWorkflowPage = () => {
     const newlyDismissed = aiSuggestions
       .filter((item) => !selectedKeys.has(item.key))
       .map((item) => item.key);
-
-    console.log(`[PHASE2] Dismissing ${newlyDismissed.length} suggestions:`, newlyDismissed);
     setDismissedSuggestionKeys((prev) => Array.from(new Set([...prev, ...newlyDismissed])));
-
-    console.log(`[PHASE2] Switching to evaluation tab`);
     setActiveTab("evaluation");
   };
 
@@ -1892,7 +1973,6 @@ const ProfessionalWorkflowPage = () => {
             setPreviousTreatmentPlan(null);
           }
         } catch (error) {
-          console.error('[Workflow] Failed to load treatment plan:', error);
         }
       };
       loadTreatmentPlan();
@@ -1912,13 +1992,11 @@ const ProfessionalWorkflowPage = () => {
         setPreviousTreatmentPlan(plan);
       }
     } catch (error) {
-      console.error('[Workflow] Failed to reload treatment plan:', error);
     }
   };
 
   const handleGenerateSoap = async () => {
     if (!niagaraResults) {
-      console.warn('[Workflow] Cannot generate clinical note: no analysis results');
       return;
     }
 
@@ -1973,15 +2051,12 @@ const ProfessionalWorkflowPage = () => {
 
       // Log warnings if any
       if (validation.warnings.length > 0) {
-        console.warn('[Workflow] Clinical note validation warnings:', validation.warnings);
       }
 
       // Step 3: Organize all data into structured format for SOAP prompt
       const organized = organizeSOAPData(unifiedData);
 
       // Log data summary for debugging
-      console.log('[Workflow] Clinical data organization summary:', createDataSummary(organized));
-
       // Step 4: Generate SOAP using organized context
       // ✅ WORKFLOW OPTIMIZATION: Pass analysisLevel from workflowRoute
       const analysisLevel = workflowRoute?.analysisLevel || 'full';
@@ -2015,7 +2090,6 @@ const ProfessionalWorkflowPage = () => {
       );
       
       if (!objectiveValidation.isValid) {
-        console.warn('[SOAP Validation] Objective section violations:', objectiveValidation);
         // Log violations but don't block - flag for review
         // The requiresReview flag will ensure clinician reviews this
       }
@@ -2040,6 +2114,50 @@ const ProfessionalWorkflowPage = () => {
       setLocalSoapNote(soapWithReviewFlags);
       setSoapStatus('draft');
       setActiveTab("soap");
+
+      // ✅ WO-P2-01: Map to canonical SOAP structure (behind-the-scenes, no UI changes)
+      try {
+        const canonicalSOAPResult = mapToCanonicalSOAP(
+          soapWithReviewFlags,
+          organized.structuredData.physicalExamResults
+        );
+        setCanonicalSOAP(canonicalSOAPResult);
+        
+        // Debug logging in DEV only (for QA/CTO inspection)
+        if (import.meta.env.DEV) {
+        }
+      } catch (error) {
+        // Don't break the workflow if canonical mapping fails
+      }
+
+      // ✅ WO-P2-06/P2-04: Build Today's Plan (DEV-only, behind feature flag)
+      // 🔁 Builder de Today's Plan (solo DEV, solo si flag activo)
+      if (
+        import.meta.env.DEV &&
+        import.meta.env.VITE_ENABLE_TODAYS_PLAN_DEV === "true" &&
+        activeEpisode.data?.id &&
+        sessionIdForMetrics &&
+        user?.uid &&
+        canonicalSOAPResult
+      ) {
+        try {
+          // 1. Save Canonical SOAP and update ETP
+          await TodaysPlanOrchestrator.saveCanonicalSOAPAndUpdateETP({
+            episodeId: activeEpisode.data.id,
+            sessionId: sessionIdForMetrics,
+            soap: canonicalSOAPResult,
+          });
+
+          // 2. Build and snapshot Today's Plan
+          const todaysPlan = await TodaysPlanOrchestrator.buildAndSnapshotTodaysPlan({
+            episodeId: activeEpisode.data.id,
+            sessionId: sessionIdForMetrics,
+            clinicianId: user.uid,
+          });
+          // Solo para inspección en DEV
+        } catch (error) {
+        }
+      }
 
       // Step 5: Save to session with all structured data
       await sessionService.createSession({
@@ -2066,8 +2184,6 @@ const ProfessionalWorkflowPage = () => {
         },
       });
     } catch (error: any) {
-      console.error('[Workflow] Clinical note generation failed:', error);
-      
       // Submit error feedback automatically
       if (error instanceof Error) {
         FeedbackService.submitErrorFeedback(error, {
@@ -2075,7 +2191,6 @@ const ProfessionalWorkflowPage = () => {
           hasConsent: patientHasConsent || false,
           hasAnalysis: !!niagaraResults,
         }).catch((err) => {
-          console.error('[Workflow] Failed to submit error feedback:', err);
         });
       }
       
@@ -2190,12 +2305,7 @@ const ProfessionalWorkflowPage = () => {
       
       // Track metrics
       await AnalyticsService.trackValueMetrics(metrics);
-      console.log('[VALUE METRICS] Metrics tracked successfully:', {
-        totalTime: totalDocumentationTime,
-        featuresUsed: Object.values(featuresUsed).filter(Boolean).length,
-      });
     } catch (error) {
-      console.error('❌ [VALUE METRICS] Error tracking value metrics:', error);
       // Don't throw - analytics should not break main flow
     }
   }, [
@@ -2294,13 +2404,11 @@ const ProfessionalWorkflowPage = () => {
         await calculateAndTrackValueMetrics(new Date());
       }
     } catch (error) {
-      console.error('[Workflow] Failed to save clinical note:', error);
     }
   };
 
   const handleUnfinalizeSOAP = async (soap: SOAPNote) => {
     // When unfinalizing, save as draft and create edit history
-    console.log('[Workflow] Unfinalizing note for editing. Original note:', soap);
     // The actual unfinalization is handled by the component state
     // This handler can be used to log or track the unfinalization event
   };
@@ -2319,7 +2427,6 @@ const ProfessionalWorkflowPage = () => {
         if (user?.uid && workflowRoute) {
           const metrics = await trackWorkflowSessionEnd(sessionIdForMetrics, user.uid, patientIdFromUrl || demoPatient.id);
           if (metrics) {
-            console.log('[WORKFLOW] Workflow session metrics:', metrics);
             // Build WorkflowMetrics from session metrics
             const workflowMetricsData: WorkflowMetrics = {
               workflowType: workflowRoute.type === 'follow-up' ? 'follow-up' : 'initial',
@@ -2338,7 +2445,6 @@ const ProfessionalWorkflowPage = () => {
           }
         }
       } catch (error) {
-        console.error('[WORKFLOW] Error tracking workflow session end:', error);
         // Non-blocking
       }
     
@@ -2361,10 +2467,8 @@ const ProfessionalWorkflowPage = () => {
           hasPhysicalTests: evaluationTests.length > 0,
           isPilotUser: true
         });
-        console.log('✅ [PILOT METRICS] Session completion tracked:', patientId, `Duration: ${sessionDuration} min`);
       }
     } catch (error) {
-      console.error('⚠️ [PILOT METRICS] Error tracking session completion:', error);
       // Non-blocking: don't fail finalization if analytics fails
     }
     
@@ -2383,18 +2487,6 @@ const ProfessionalWorkflowPage = () => {
         confidence: 0.85, // Default confidence for finalized notes
         timestamp: new Date().toISOString(),
       };
-      
-      console.log('[Workflow] Saving SOAP to Clinical Vault:', {
-        patientId,
-        sessionId,
-        soapDataLength: {
-          subjective: soapDataToSave.subjective.length,
-          objective: soapDataToSave.objective.length,
-          assessment: soapDataToSave.assessment.length,
-          plan: soapDataToSave.plan.length,
-        }
-      });
-      
       // ✅ SPRINT 2 P2: Use enhanced persistence with retry and backup
       const { saveSOAPNoteWithRetry } = await import('../services/PersistenceServiceEnhanced');
       const result = await saveSOAPNoteWithRetry(
@@ -2410,20 +2502,11 @@ const ProfessionalWorkflowPage = () => {
       );
 
       if (result.success && result.noteId) {
-        console.log('[Workflow] ✅ SOAP note saved to Clinical Vault:', {
-          noteId: result.noteId,
-          patientId,
-          sessionId,
-          retries: result.retries,
-          usedBackup: result.usedBackup,
-          timestamp: new Date().toISOString()
-        });
         setSuccessMessage('SOAP note saved successfully to Clinical Vault.');
       } else {
         throw new Error(result.error || 'Failed to save after retries');
       }
     } catch (error) {
-      console.error('[Workflow] Failed to save SOAP to Clinical Vault:', error);
       // Non-blocking: show warning but don't block finalization
       // ✅ SPRINT 2 P2: Inform user about backup
       setAnalysisError(
@@ -2444,9 +2527,7 @@ const ProfessionalWorkflowPage = () => {
           soap.plan,
           visitType
         );
-        console.log('[Workflow] Treatment plan saved for reminders');
       } catch (error) {
-        console.error('[Workflow] Failed to save treatment plan:', error);
         // Non-blocking: continue even if plan save fails
       }
     }
@@ -2643,6 +2724,27 @@ const ProfessionalWorkflowPage = () => {
           </div>
         )}
 
+        {/* ✅ WO-P2-09: Today's Plan Clinical View (read-only, clinical UI) */}
+        {import.meta.env.VITE_ENABLE_TODAYS_PLAN_CLINICAL_UI === "true" &&
+          activeEpisode.data?.id && (
+            <TodaysPlanClinicalView episodeId={activeEpisode.data.id} />
+          )}
+
+        {/* ✅ WO-P3-IMAGING-OCR-MODEL: Add Imaging from PDF button (DEV only) */}
+        {import.meta.env.VITE_ENABLE_IMAGING_OCR_DEV === "true" &&
+          activeEpisode.data?.id &&
+          patientIdFromUrl && (
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setIsImagingModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg hover:shadow-md transition-all font-apple"
+              >
+                <Paperclip className="w-4 h-4" />
+                Add Imaging from PDF (DEV)
+              </button>
+            </div>
+          )}
+
         <nav className="flex flex-wrap gap-2">
           {[
             { id: "analysis", label: "1 · Initial Analysis" },
@@ -2830,6 +2932,19 @@ const ProfessionalWorkflowPage = () => {
             />
           </Suspense>
         )}
+
+        {/* ✅ WO-P2-07/P2-08: Today's Plan Dev Panel (DEV-only, read-only or interactive) */}
+        {import.meta.env.DEV &&
+          import.meta.env.VITE_ENABLE_TODAYS_PLAN_DEV_UI === "true" &&
+          activeEpisode.data?.id &&
+          sessionIdForMetrics &&
+          user?.uid && (
+            <TodaysPlanDevPanel
+              episodeId={activeEpisode.data?.id || ''}
+              sessionId={sessionIdForMetrics}
+              clinicianId={user.uid}
+            />
+          )}
       </div>
 
 
@@ -2888,7 +3003,6 @@ const ProfessionalWorkflowPage = () => {
             noteType: 'soap',
           }}
           onShareComplete={(result) => {
-            console.log('[Workflow] Share completed:', result);
             if (result.success) {
               setSuccessMessage(
                 result.method === 'portal'
@@ -2901,6 +3015,30 @@ const ProfessionalWorkflowPage = () => {
           }}
         />
       )}
+
+      {/* ✅ WO-P3-IMAGING-OCR-MODEL: Imaging From PDF Modal */}
+      {import.meta.env.VITE_ENABLE_IMAGING_OCR_DEV === "true" &&
+        activeEpisode.data?.id &&
+        patientIdFromUrl && (
+          <ImagingFromPdfModal
+            episodeId={activeEpisode.data.id}
+            patientId={patientIdFromUrl}
+            isOpen={isImagingModalOpen}
+            onClose={() => setIsImagingModalOpen(false)}
+            onReportSaved={(report) => {
+              // ✅ DIAGNOSTIC: Log when report is saved
+              logger.info("[IMAGING_REPORTS] Report saved callback triggered", {
+                reportId: report.id,
+                reportEpisodeId: report.episodeId,
+                activeEpisodeId: activeEpisode.data?.id,
+                match: report.episodeId === activeEpisode.data?.id,
+              });
+              
+              // ✅ Use the reload utility function (simplified and consistent)
+              reloadImagingReports();
+            }}
+          />
+        )}
     </div>
   );
 };
