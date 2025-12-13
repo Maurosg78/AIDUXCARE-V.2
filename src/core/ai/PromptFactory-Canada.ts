@@ -1,4 +1,6 @@
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import { devLog } from "../utils/devLog";
+import { devLog } from "../utils/devLog";
 
 export interface CanadianPromptParams {
   contextoPaciente: string;
@@ -89,11 +91,11 @@ const DEFAULT_INSTRUCTIONS_FOLLOWUP = `Analyse this FOLLOW-UP visit transcript a
 
 const buildProfessionalContext = (profile?: ProfessionalProfile | null): string => {
   if (!profile) {
-    console.log('🔍 [PROMPT] No professional profile provided');
+    devLog('🔍 [PROMPT] No professional profile provided');
     return '';
   }
   
-  console.log('🔍 [PROMPT] Building professional context from profile:', {
+  devLog('🔍 [PROMPT] Building professional context from profile:', {
     specialty: profile.specialty,
     professionalTitle: profile.professionalTitle,
     experienceYears: profile.experienceYears,
@@ -136,9 +138,9 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
     : '';
   
   if (context) {
-    console.log('✅ [PROMPT] Professional context added:', context);
+    devLog('✅ [PROMPT] Professional context added:', context);
   } else {
-    console.log('⚠️ [PROMPT] No professional context data available');
+    devLog('⚠️ [PROMPT] No professional context data available');
   }
   
   return context;
@@ -181,4 +183,4 @@ export const CanadianPromptFactory = {
   },
 };
 
-console.log("[OK] PromptFactory-Canada ready");
+devLog("[OK] PromptFactory-Canada ready");
