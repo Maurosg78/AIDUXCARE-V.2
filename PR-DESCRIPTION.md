@@ -5,7 +5,7 @@
 ### Checklist DoD
 - [x] `pnpm -s lint` pasa
 - [x] `pnpm -s build` pasa
-- [x] `pnpm -s test -- --run` pasa (suites críticas verdes)
+- [x] `pnpm -s test` pasa (suites críticas verdes)
 - [x] Warnings documentados (P2 conocido)
 
 ### Cambios principales
@@ -18,25 +18,28 @@
 - DocumentsPage: selectores robustos
 
 **Build:**
-- Resuelto bloqueo de @firebase/util
-- Warning CSS minify documentado como P2 conocido
+- Resuelto bloqueo de `@firebase/util`
+- Warning de minificación CSS documentado como P2 conocido
 
 **Dependencies:**
-- baseline-browser-mapping actualizado a 2.9.7
-- zustand instalado
+- `baseline-browser-mapping` actualizado a 2.9.7
+- `zustand` instalado
 
 ### Notas
 
-⚠️ **Build warning CSS minify es P2 conocido** (ver `docs/forensics/2025-12/CSS_MINIFY_WARNING.md`).  
-⚠️ **Skips intencionales documentados** (SessionComparison callback deprecated).
+⚠️ **Build warning CSS minify es P2 conocido**  
+(ver `docs/forensics/2025-12/CSS_MINIFY_WARNING.md`)
+
+⚠️ **Skips intencionales documentados**  
+(SessionComparison callback deprecated)
 
 ### Testing
 
 ```bash
 # Verificación local (todos deben pasar)
 pnpm -s lint
+pnpm -s test
 pnpm -s build
-pnpm -s test -- --run
 ```
 
 ---
@@ -44,15 +47,16 @@ pnpm -s test -- --run
 ## Copy-paste version (sin markdown)
 
 ```
-## Stabilización CI: Tests + Build
+Stabilización CI: Tests + Build
 
-### Checklist DoD
-- [x] pnpm -s lint pasa
-- [x] pnpm -s build pasa
-- [x] pnpm -s test -- --run pasa (suites críticas verdes)
-- [x] Warnings documentados (P2 conocido)
+Checklist DoD
 
-### Cambios principales
+- pnpm -s lint pasa
+- pnpm -s build pasa
+- pnpm -s test pasa (suites críticas verdes)
+- Warnings documentados (P2 conocido)
+
+Cambios principales
 
 Tests estabilizados:
 - TransparencyReport: selectores robustos (regex para múltiples elementos)
@@ -69,9 +73,8 @@ Dependencies:
 - baseline-browser-mapping actualizado a 2.9.7
 - zustand instalado
 
-### Notas
+Notas:
 
-⚠️ Build warning CSS minify es P2 conocido (ver docs/forensics/2025-12/CSS_MINIFY_WARNING.md).
-⚠️ Skips intencionales documentados (SessionComparison callback deprecated).
+⚠️ Build warning CSS minify es P2 conocido (docs/forensics/2025-12/CSS_MINIFY_WARNING.md)
+⚠️ Skips intencionales documentados (SessionComparison callback deprecated)
 ```
-

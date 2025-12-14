@@ -73,3 +73,6 @@ functions/index.js.pre-esm.*
 tmp/
 tmp/**
 docs/_archive/mirror/**/.DS_Store
+
+# npm lockfile (pnpm is source of truth)
+package-lock.json

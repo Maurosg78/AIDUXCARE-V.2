@@ -9,7 +9,7 @@ on:
       - "test-data/**"
       - "scripts/check-sot-trailers.sh"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
   push:
     branches: ["**"]
     paths:
@@ -18,7 +18,7 @@ on:
       - "test-data/**"
       - "scripts/check-sot-trailers.sh"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
 
 jobs:
   validate:
@@ -32,10 +32,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20.19.0"
-          cache: "npm"
+          cache: "pnpm"
 
-      - name: Install deps
-        run: npm ci || npm i
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.9"
+          run_install: false
+
+      - name: Install deps (pnpm)
+        run: pnpm install --frozen-lockfile
 
       - name: Run validation tests + SoT trailers
         env:
@@ -44,5 +49,5 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           chmod +x scripts/check-sot-trailers.sh
-          npm run -s validate:data || echo "Validation warnings - continuing..."
+          pnpm -s validate:data || echo "Validation warnings - continuing..."
         continue-on-error: true

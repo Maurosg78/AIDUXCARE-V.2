@@ -41,7 +41,7 @@
 
 ```bash
 pnpm -s lint
-pnpm -s test -- --run
+pnpm -s test
 pnpm -s build
 ```
 
