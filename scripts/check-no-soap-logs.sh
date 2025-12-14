@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Sin -P para no depender de PCRE2 en el runner
-if rg -n --hidden --glob 'src/**/*.{ts,tsx}' -i \
-  '^\s*(console\.(log|info|warn)|logger)\s*\([^)]*\b(SOAP|Subjective|Objective|Assessment|Plan)\b'
-then
-  echo '❌ Bloqueado: logs con palabras vetadas'
+PATTERN='console\.(log|info|warn|error)\s*\(|logger\.(debug|info|warn|error)\s*\('
+WORDS='\b(SOAP|Subjective|Objective|Assessment|Plan)\b'
+
+# Solo buscamos en archivos versionados, y evitamos vendor/build
+OFFENDERS=$(git grep -nE "${PATTERN}.*${WORDS}" -- \
+  'src/**' 'functions/**' 'scripts/**' \
+  ':!**/dist/**' ':!**/build/**' ':!**/node_modules/**' ':!**/test/**' || true)
+
+if [[ -n "${OFFENDERS}" ]]; then
+  echo "❌ SOAP-like logs found:"
+  echo "${OFFENDERS}"
   exit 1
-else
-  echo '✅ OK: no hay logs prohibidos'
 fi
+
+echo "✅ No SOAP-like logs found."

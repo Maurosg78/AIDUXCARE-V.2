@@ -11,12 +11,5 @@ jobs:
 
       - name: Fail if SOAP content is logged
         run: |
-          set -euo pipefail
-          # Ajusta los patrones a lo que consideres "prohibido" en logs
-          PATTERN='SOAP|Subjective:|Objective:|Assessment:|Plan:|S\\.?O\\.?A\\.?P'
-          # Escaneamos solo código fuente (evita node_modules/dist)
-          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage --exclude-dir=.git "$PATTERN" src functions scripts; then
-            echo "❌ Found forbidden SOAP/log patterns in tracked code."
-            exit 1
-          fi
-          echo "✅ No forbidden SOAP/log patterns found."
+          chmod +x scripts/check-no-soap-logs.sh
+          ./scripts/check-no-soap-logs.sh
