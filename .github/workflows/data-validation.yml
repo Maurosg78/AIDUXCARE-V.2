@@ -29,15 +29,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20.19.0"
-          cache: "pnpm"
-
+      # pnpm debe instalarse ANTES de usar cache pnpm
       - uses: pnpm/action-setup@v4
         with:
           version: "9.15.9"
           run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+          cache: "pnpm"
 
       - name: Install deps (pnpm)
         run: pnpm install --frozen-lockfile
