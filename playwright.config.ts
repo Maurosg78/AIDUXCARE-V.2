@@ -7,11 +7,11 @@ export default defineConfig({
     // baseURL será configurado por el workflow o variable de entorno
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5174',
   },
-  webServer: {
-    // Solo se usa si PLAYWRIGHT_BASE_URL no está configurado
-    command: process.env.CI ? undefined : 'pnpm dev',
+  // Solo usar webServer si no hay un servidor externo corriendo (local dev)
+  webServer: process.env.CI ? undefined : {
+    command: 'pnpm dev',
     port: 5174,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120000,
   },
 });
