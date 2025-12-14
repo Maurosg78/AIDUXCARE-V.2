@@ -8,12 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile=false
-      - run: pnpm run check:no-soap-logs
+
+      - name: Fail if SOAP content is logged
+        run: |
+          set -euo pipefail
+          # Ajusta los patrones a lo que consideres "prohibido" en logs
+          PATTERN='SOAP|Subjective:|Objective:|Assessment:|Plan:|S\\.?O\\.?A\\.?P'
+          # Escaneamos solo código fuente (evita node_modules/dist)
+          if grep -RInE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=coverage --exclude-dir=.git "$PATTERN" src functions scripts; then
+            echo "❌ Found forbidden SOAP/log patterns in tracked code."
+            exit 1
+          fi
+          echo "✅ No forbidden SOAP/log patterns found."
