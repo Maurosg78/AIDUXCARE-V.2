@@ -4,6 +4,7 @@
  * Tests erasure request processing, validation, and certificate generation
  */
 
+import { vi } from 'vitest';
 import {
   validateErasureRequest,
   processErasureRequest,
@@ -14,14 +15,14 @@ import {
 } from '../dataErasureService';
 
 // Mock Firestore and Storage
-jest.mock('../lib/firebase', () => ({
+vi.mock('../lib/firebase', () => ({
   db: {},
   storage: {},
 }));
 
-jest.mock('../core/audit/FirestoreAuditLogger', () => ({
+vi.mock('../core/audit/FirestoreAuditLogger', () => ({
   FirestoreAuditLogger: {
-    logEvent: jest.fn().mockResolvedValue('mock-log-id'),
+    logEvent: vi.fn().mockResolvedValue('mock-log-id'),
   },
 }));
 

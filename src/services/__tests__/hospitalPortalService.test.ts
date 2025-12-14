@@ -17,21 +17,26 @@ vi.mock('../lib/firebase', () => ({
   db: {},
 }));
 
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  doc: vi.fn(),
-  setDoc: vi.fn(),
-  getDoc: vi.fn(),
-  deleteDoc: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(),
-  serverTimestamp: vi.fn(() => new Date()),
-  Timestamp: {
-    now: vi.fn(() => ({ toDate: () => new Date() })),
-    fromDate: vi.fn((date: Date) => ({ toDate: () => date })),
-  },
-}));
+vi.mock('firebase/firestore', async () => {
+  const actual = await vi.importActual<any>('firebase/firestore');
+  return {
+    ...actual,
+    getFirestore: vi.fn(() => ({})),
+    collection: vi.fn(),
+    doc: vi.fn(),
+    setDoc: vi.fn(),
+    getDoc: vi.fn(),
+    deleteDoc: vi.fn(),
+    query: vi.fn(),
+    where: vi.fn(),
+    getDocs: vi.fn(),
+    serverTimestamp: vi.fn(() => new Date()),
+    Timestamp: actual?.Timestamp || {
+      now: vi.fn(() => ({ toDate: () => new Date() })),
+      fromDate: vi.fn((date: Date) => ({ toDate: () => date })),
+    },
+  };
+});
 
 vi.mock('bcryptjs', () => ({
   default: {
