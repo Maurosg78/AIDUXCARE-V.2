@@ -14,6 +14,8 @@
  */
 
 import { db } from '../lib/firebase';
+import EpisodeService from "./episodeService";
+import TraceabilityService from "./traceabilityService";
 import { 
   collection, 
   doc, 
@@ -226,15 +228,11 @@ export class HospitalPortalService {
       // ✅ TRACEABILITY: Generate trace number and episode if hospital context
       let patientTraceNumber: string | undefined;
       let episodeId: string | undefined;
-      let TraceabilityServiceInstance: typeof import('./traceabilityService').default | null = null;
+
       
       if (options?.hospitalId) {
         try {
           // Import services dynamically to avoid circular dependencies
-          const traceabilityModule = await import('./traceabilityService');
-          TraceabilityServiceInstance = traceabilityModule.default;
-          const { default: EpisodeService } = await import('./episodeService');
-          
           // Get or create episode for this hospital admission
           // Note: This is a simplified version - in production, you'd want to pass patientTraceNumber
           // or create episode before creating notes
@@ -254,9 +252,7 @@ export class HospitalPortalService {
       }
 
       // Create note record with traceability
-      const noteId = TraceabilityServiceInstance
-        ? TraceabilityServiceInstance.generateNoteId()
-        : `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const noteId = TraceabilityService.generateNoteId();
       
       const noteRecord: Omit<NoteRecord, 'createdAt' | 'expiresAt'> & {
         createdAt: any;
@@ -292,7 +288,6 @@ export class HospitalPortalService {
       // ✅ TRACEABILITY: Add note to episode if episodeId exists
       if (episodeId) {
         try {
-          const { default: EpisodeService } = await import('./episodeService');
           await EpisodeService.addNoteToEpisode(episodeId, noteId);
           console.log(`[HospitalPortal] Note ${noteId} added to episode ${episodeId}`);
         } catch (err) {

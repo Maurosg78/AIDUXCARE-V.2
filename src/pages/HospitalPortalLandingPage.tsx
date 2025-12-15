@@ -10,6 +10,7 @@
  */
 
 import React, { useState } from 'react';
+import HospitalPortalService from "../services/hospitalPortalService";
 import { useNavigate } from 'react-router-dom';
 import { Building2, User, ArrowRight, Shield, AlertCircle, FileText } from 'lucide-react';
 
@@ -40,7 +41,6 @@ const HospitalPortalLandingPage: React.FC = () => {
     
     try {
       // Import HospitalPortalService dynamically
-      const HospitalPortalService = (await import('../services/hospitalPortalService')).default;
       
       // Get client info for authentication
       const ipAddress = await HospitalPortalService.getClientIpAddress();

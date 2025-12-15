@@ -26,6 +26,8 @@ import { SMSService } from "../services/smsService";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import treatmentPlanService from "../services/treatmentPlanService";
+import PersistenceService from "../services/PersistenceService";
 import { FeedbackWidget } from "../components/feedback/FeedbackWidget";
 import { FeedbackService } from "../services/feedbackService";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
@@ -1871,7 +1873,6 @@ const ProfessionalWorkflowPage = () => {
     if (visitType === 'follow-up') {
       const loadTreatmentPlan = async () => {
         try {
-          const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
           const patientId = patientIdFromUrl || demoPatient.id;
           
           // Load the most recent treatment plan
@@ -1905,7 +1906,6 @@ const ProfessionalWorkflowPage = () => {
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
     try {
-      const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
       const patientId = patientIdFromUrl || demoPatient.id;
       const plan = await treatmentPlanService.getTreatmentPlan(patientId);
       if (plan) {
@@ -2370,7 +2370,6 @@ const ProfessionalWorkflowPage = () => {
     
     // ✅ P1.3: Save finalized SOAP to Clinical Vault (Firestore)
     try {
-      const { PersistenceService } = await import('../services/PersistenceService');
       const patientId = patientIdFromUrl || demoPatient.id;
       const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
       
@@ -2436,7 +2435,6 @@ const ProfessionalWorkflowPage = () => {
     // Save treatment plan for future reminders
     if (soap.plan) {
       try {
-        const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
         await treatmentPlanService.saveTreatmentPlan(
           patientIdFromUrl || demoPatient.id,
           currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,

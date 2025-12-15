@@ -77,6 +77,7 @@ export default defineConfig({
     if (id.includes("react-router")) return "vendor-react-router";
     if (id.includes("react")) return "vendor-react";
     if (id.includes("dompurify") || id.includes("html2canvas")) return "vendor-utils";
+    if (id.includes("jspdf") || id.includes("html2pdf")) return "vendor-pdf";
     return "vendor";
   }
 },

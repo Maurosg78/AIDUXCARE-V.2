@@ -7,7 +7,8 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import { buildSOAPPrompt, type SOAPPromptOptions } from '../core/soap/SOAPPromptFactory';
+import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
+import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
 import type { SOAPNote } from '../types/vertex-ai';
 import type { SessionType } from './sessionTypeService';
@@ -89,9 +90,7 @@ export async function generateSOAPNote(
     let tokenOptimization;
     if (useOptimized && context.visitType === 'follow-up') {
       // Compare with standard follow-up prompt
-      const { buildFollowUpPrompt } = await import('../core/soap/SOAPPromptFactory');
       const standardPrompt = buildFollowUpPrompt(deidentifiedContext, options);
-      const { compareTokenUsage } = await import('../core/soap/FollowUpSOAPPromptBuilder');
       tokenOptimization = compareTokenUsage(prompt, standardPrompt);
     }
 
