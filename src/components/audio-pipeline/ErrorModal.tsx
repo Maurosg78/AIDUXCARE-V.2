@@ -72,7 +72,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({ error, onRetry, onClose 
           <p className="text-sm text-gray-600">
             {friendlyMessage}
           </p>
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <details className="mt-3">
               <summary className="text-xs text-gray-500 cursor-pointer">
                 Technical details

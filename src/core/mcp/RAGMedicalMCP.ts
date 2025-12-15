@@ -329,7 +329,7 @@ export class RAGMedicalMCP {
     maxResults: number = 5
   ): Promise<RAGQueryResult> {
     // Para testing, devolver datos simulados si no hay conexión a PubMed
-    if (process.env.NODE_ENV === 'test' || (typeof navigator !== 'undefined' && !navigator?.onLine)) {
+    if ((import.meta.env.MODE === 'test' || import.meta.env.VITEST) || (typeof navigator !== 'undefined' && !navigator?.onLine)) {
       return this.getMockResults(clinicalQuery, specialty, maxResults);
     }
     const startTime = Date.now();
