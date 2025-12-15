@@ -8,13 +8,15 @@
 
 import React, { useState } from 'react';
 import '../styles/legal-checklist.css';
+import { LegalModal } from './legal/LegalModal';
+import { PrivacyContent, TermsContent, PHIPAPIPEDAContent, LAST_UPDATED } from './legal/legalContent';
 
 export interface LegalChecklistItem {
   id: string;
   title: string;
   description: string;
   required: boolean;
-  category: 'terms' | 'privacy' | 'medical' | 'compliance' | 'security';
+  category: 'terms' | 'privacy' | 'medical' | 'compliance' | 'security' | 'phipa-pipeda';
   checked: boolean;
   termsContent?: string;
 }
@@ -26,48 +28,6 @@ export interface LegalChecklistProps {
   showDetails?: boolean;
 }
 
-interface TermsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  content: string;
-}
-
-const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose, title, content }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="terms-modal-overlay">
-      <div className="terms-modal">
-        <div className="terms-modal-header">
-          <h2 className="terms-modal-title">{title}</h2>
-          <button
-            onClick={onClose}
-            className="terms-modal-close"
-          >
-            ×
-          </button>
-        </div>
-        
-        <div className="terms-modal-content">
-          <div className="terms-modal-text">
-            {content}
-          </div>
-        </div>
-        
-        <div className="terms-modal-footer">
-          <button
-            onClick={onClose}
-            className="terms-modal-button"
-          >
-            Entendido
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export const LegalChecklist: React.FC<LegalChecklistProps> = ({
   items,
   onItemChange,
@@ -76,11 +36,11 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
-    content: string;
+    content: React.ReactNode | null;
   }>({
     isOpen: false,
     title: '',
-    content: ''
+    content: null
   });
 
   const handleItemChange = (itemId: string, checked: boolean) => {
@@ -95,7 +55,23 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
     onComplete(checkedRequiredItems.length === requiredItems.length);
   };
 
-  const openTermsModal = (title: string, content: string) => {
+  const openTermsModal = (title: string, itemId: string) => {
+    let content: React.ReactNode | null = null;
+    
+    switch (itemId) {
+      case 'terms-accepted':
+        content = <TermsContent />;
+        break;
+      case 'privacy-accepted':
+        content = <PrivacyContent />;
+        break;
+      case 'phipa-pipeda-accepted':
+        content = <PHIPAPIPEDAContent />;
+        break;
+      default:
+        content = <p>Content not available.</p>;
+    }
+    
     setModalState({
       isOpen: true,
       title,
@@ -107,153 +83,8 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
     setModalState({
       isOpen: false,
       title: '',
-      content: ''
+      content: null
     });
-  };
-
-  // Iconografía eliminada por estética IN
-
-  const getTermsContent = (itemId: string): string => {
-    switch (itemId) {
-      case 'terms-accepted':
-        return `TÉRMINOS Y CONDICIONES DE USO - AiDuxCare
-
-1. PROPÓSITO DEL SISTEMA
-AiDuxCare es un copiloto clínico inteligente diseñado para asistir a profesionales de la salud, no para reemplazarlos. El sistema proporciona:
-• Asistencia en documentación clínica mediante IA
-• Generación de notas SOAP estructuradas
-• Detección de banderas rojas y contraindicaciones
-• Optimización del flujo de trabajo clínico
-
-2. RESPONSABILIDADES DEL PROFESIONAL
-Al usar AiDuxCare, usted acepta:
-• Mantener el juicio clínico independiente
-• Revisar y validar todas las sugerencias del sistema
-• Asumir la responsabilidad final por todas las decisiones clínicas
-• No delegar decisiones críticas al sistema de IA
-
-3. LIMITACIONES DEL SERVICIO
-• El sistema no sustituye la evaluación clínica profesional
-• Los resultados deben ser interpretados por profesionales cualificados
-• No garantiza la precisión absoluta en todas las situaciones
-• Requiere supervisión humana constante
-
-4. USO ACEPTABLE
-• Solo para profesionales de la salud autorizados
-• En entornos clínicos apropiados
-• Con fines de asistencia y documentación
-• Respetando la confidencialidad del paciente
-
-5. TERMINACIÓN
-Podemos suspender o terminar su acceso si:
-• Viola estos términos
-• Usa el sistema de manera inapropiada
-• Compromete la seguridad del sistema`;
-
-      case 'privacy-accepted':
-        return `POLÍTICA DE PRIVACIDAD Y SEGURIDAD - AiDuxCare
-
-1. PROTECCIÓN DE DATOS MÉDICOS
-• Cumplimiento con HIPAA (EE.UU.) y GDPR (UE)
-• Cifrado end-to-end de todos los datos clínicos
-• Almacenamiento seguro en servidores certificados
-• Acceso restringido solo a personal autorizado
-
-2. RECOPILACIÓN DE DATOS
-Recopilamos únicamente:
-• Información de contacto profesional
-• Datos de sesión clínica (con consentimiento)
-• Métricas de uso del sistema
-• Información técnica para soporte
-
-3. USO DE DATOS
-Los datos se utilizan exclusivamente para:
-• Proporcionar servicios clínicos
-• Mejorar la funcionalidad del sistema
-• Cumplir obligaciones legales
-• Mantener la seguridad del sistema
-
-4. COMPARTIR DATOS
-No compartimos datos con terceros excepto:
-• Cuando es legalmente requerido
-• Con su consentimiento explícito
-• Para servicios técnicos esenciales (con garantías)
-
-5. SUS DERECHOS
-Usted tiene derecho a:
-• Acceder a sus datos personales
-• Solicitar corrección de datos inexactos
-• Solicitar eliminación de datos
-• Portabilidad de datos
-• Oposición al procesamiento
-
-6. SEGURIDAD
-Implementamos:
-• Cifrado AES-256 para datos en tránsito y reposo
-• Autenticación multifactor (MFA)
-• Auditoría completa de accesos
-• Copias de seguridad seguras
-• Monitoreo 24/7 de seguridad
-
-7. RETENCIÓN DE DATOS
-• Datos clínicos: Según normativa local (mínimo 7 años)
-• Datos de cuenta: Mientras mantenga la cuenta activa
-• Datos de auditoría: 10 años para cumplimiento legal`;
-
-      case 'medical-disclaimer':
-        return `DESCARGO DE RESPONSABILIDAD MÉDICA - AiDuxCare
-
-1. NATURALEZA DEL SISTEMA
-AiDuxCare es una herramienta de asistencia clínica que:
-• NO sustituye la evaluación médica profesional
-• NO proporciona diagnósticos definitivos
-• NO reemplaza la experiencia clínica
-• NO garantiza resultados específicos
-
-2. LIMITACIONES CLÍNICAS
-El sistema tiene limitaciones inherentes:
-• Puede no detectar todas las condiciones
-• Puede generar falsos positivos/negativos
-• Requiere interpretación clínica experta
-• No considera todos los factores individuales
-
-3. RESPONSABILIDAD PROFESIONAL
-Usted es responsable de:
-• Todas las decisiones clínicas finales
-• La interpretación correcta de las sugerencias
-• La validación de todos los resultados
-• El cumplimiento de estándares de práctica
-
-4. CASOS DE USO APROPIADOS
-El sistema es apropiado para:
-• Asistencia en documentación clínica
-• Identificación de posibles banderas rojas
-• Optimización de flujos de trabajo
-• Referencias educativas
-
-5. CASOS DE USO INAPROPIADOS
-NO use el sistema para:
-• Diagnósticos definitivos sin evaluación
-• Decisiones críticas sin supervisión
-• Sustituir consultas médicas urgentes
-• Emergencias médicas
-
-6. ADVERTENCIAS ESPECÍFICAS
-• Siempre verifique la información del paciente
-• Considere el contexto clínico completo
-• Mantenga la supervisión humana constante
-• Documente su juicio clínico independiente
-
-7. ACUERDO DE USO
-Al usar AiDuxCare, usted:
-• Reconoce estas limitaciones
-• Acepta la responsabilidad clínica total
-• Se compromete a usar el sistema apropiadamente
-• Entiende que es una herramienta de asistencia`;
-
-      default:
-        return 'Contenido no disponible';
-    }
   };
 
   const requiredItems = items.filter(item => item.required);
@@ -329,11 +160,11 @@ Al usar AiDuxCare, usted:
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    openTermsModal(item.title, getTermsContent(item.id));
+                    openTermsModal(item.title, item.id);
                   }}
                   className="legal-checklist-terms-link"
                 >
-                  Leer términos completos
+                  Read full terms
                 </button>
               </div>
             </div>
@@ -354,11 +185,12 @@ Al usar AiDuxCare, usted:
       )}
 
       {/* Modal de términos */}
-      <TermsModal
+      <LegalModal
         isOpen={modalState.isOpen}
         onClose={closeTermsModal}
         title={modalState.title}
         content={modalState.content}
+        lastUpdated={LAST_UPDATED}
       />
     </div>
   );

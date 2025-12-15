@@ -123,26 +123,26 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
   const [legalChecklistItems, setLegalChecklistItems] = useState<LegalChecklistItem[]>([
     {
       id: 'terms-accepted',
-      title: 'Acepto los Términos y Condiciones de Uso',
-      description: 'He leído y comprendo las condiciones de uso de AiDuxCare',
+      title: 'I accept the Terms of Use',
+      description: 'I have read and understand the Terms of Use for AiDuxCare',
       required: true,
       category: 'terms',
       checked: false // NO pre-cargar consentimientos
     },
     {
       id: 'privacy-accepted',
-      title: 'Acepto la Política de Privacidad',
-      description: 'Autorizo el procesamiento de datos según la política de privacidad',
+      title: 'I accept the Privacy Policy',
+      description: 'I authorize data processing according to the Privacy Policy',
       required: true,
       category: 'privacy',
       checked: false // NO pre-cargar consentimientos
     },
     {
-      id: 'medical-disclaimer',
-      title: 'Acepto el Disclaimer Médico',
-      description: 'Entiendo que AiDuxCare es un asistente y no reemplaza mi juicio clínico',
+      id: 'phipa-pipeda-accepted',
+      title: 'I acknowledge PHIPA / PIPEDA requirements',
+      description: 'I understand my responsibilities as Health Information Custodian (HIC)',
       required: true,
-      category: 'medical',
+      category: 'phipa-pipeda',
       checked: false // NO pre-cargar consentimientos
     }
   ]);
@@ -327,12 +327,11 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
 
     // Actualizar el estado del formulario según el tipo de consentimiento
     if (itemId === 'terms-accepted') {
-      handleFieldChangeWithContext('consentGDPR', checked);
+      // Terms acceptance (stored in location data if needed)
     } else if (itemId === 'privacy-accepted') {
-      handleFieldChangeWithContext('consentHIPAA', checked);
-    } else if (itemId === 'medical-disclaimer') {
-      // Para el disclaimer médico, también actualizar consentGDPR como fallback
-      handleFieldChangeWithContext('consentGDPR', checked);
+      handleFieldChangeWithContext('pipedaConsent', checked);
+    } else if (itemId === 'phipa-pipeda-accepted') {
+      handleFieldChangeWithContext('phipaConsent', checked);
     }
   };
 
@@ -467,7 +466,7 @@ export const LocationDataStep: React.FC<LocationDataStepProps> = ({
           {/* Fila 3: Consentimientos Legales - Ultra-compactos */}
           <div className="form-group md:col-span-2">
             <h3 className="text-xs font-medium text-gray-900 mb-1">
-              Consentimientos Legales *
+              Legal Consent * (Required)
             </h3>
             
             <LegalChecklist
