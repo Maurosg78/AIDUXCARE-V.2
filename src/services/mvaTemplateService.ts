@@ -225,6 +225,21 @@ export class MVATemplateService {
     // Extract body parts affected
     const bodyPartsAffected = this.extractBodyParts(objective);
     
+    // After bodyPartsAffected has been computed, check for whiplash/neck/cervical keywords
+    // and add "Neck" if not already present (P1: clinical requirement - whiplash should include Neck)
+    const rawText = [
+      soapNote.subjective,
+      soapNote.objective,
+      soapNote.assessment,
+      soapNote.plan,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (/(whiplash|neck|cervical)/.test(rawText)) {
+      if (!bodyPartsAffected.includes('Neck')) {
+        bodyPartsAffected.push('Neck');
+      }
+    }
+    
     // Extract primary injury from Assessment
     const primaryInjury = this.extractPrimaryInjury(assessment);
     

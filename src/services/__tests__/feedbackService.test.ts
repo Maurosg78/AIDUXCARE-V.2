@@ -11,11 +11,16 @@ vi.mock('@/shared/utils/logger', () => ({
 }));
 
 // Mock Firestore
-vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
-  addDoc: vi.fn(),
-  serverTimestamp: vi.fn(() => ({ toMillis: () => Date.now() })),
-}));
+vi.mock('firebase/firestore', async () => {
+  const actual = await vi.importActual<any>('firebase/firestore');
+  return {
+    ...actual,
+    getFirestore: vi.fn(() => ({})),
+    collection: vi.fn(),
+    addDoc: vi.fn(),
+    serverTimestamp: vi.fn(() => ({ toMillis: () => Date.now() })),
+  };
+});
 
 // Mock Firebase
 vi.mock('../lib/firebase', () => ({

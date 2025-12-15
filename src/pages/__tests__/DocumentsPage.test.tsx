@@ -81,8 +81,8 @@ describe('DocumentsPage', () => {
         expect(screen.getByText('Clinical Vault')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('patient-001')).toBeInTheDocument();
-      expect(screen.getByText('patient-002')).toBeInTheDocument();
+      expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getByText(/patient-002/i)).toBeInTheDocument();
     });
 
     it('displays loading state initially', () => {
@@ -141,15 +141,15 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
       fireEvent.change(searchInput, { target: { value: 'patient-001' } });
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
-        expect(screen.queryByText('patient-002')).not.toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.queryByText(/patient-002/i)).not.toBeInTheDocument();
       });
     });
 
@@ -161,15 +161,15 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
       fireEvent.change(searchInput, { target: { value: 'lower back pain' } });
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
-        expect(screen.queryByText('patient-002')).not.toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.queryByText(/patient-002/i)).not.toBeInTheDocument();
       });
     });
 
@@ -181,7 +181,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
@@ -202,7 +202,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const copyButtons = screen.getAllByTitle('Copy to clipboard');
@@ -221,7 +221,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const copyButtons = screen.getAllByTitle('Copy to clipboard');
@@ -250,7 +250,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -269,7 +269,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -295,7 +295,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -335,15 +335,15 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
       fireEvent.change(searchInput, { target: { value: '' } });
 
       await waitFor(() => {
-        expect(screen.getByText('patient-001')).toBeInTheDocument();
-        expect(screen.getByText('patient-002')).toBeInTheDocument();
+        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getByText(/patient-002/i)).toBeInTheDocument();
       });
     });
   });

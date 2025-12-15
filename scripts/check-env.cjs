@@ -21,6 +21,11 @@ function checkEnvVars() {
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
   if (missingVars.length > 0) {
+    // En CI no tenemos secretos/vars locales: no debe bloquear el pipeline.
+    if (process.env.CI) {
+      console.warn('⚠️ CI: Variables de entorno Firebase faltantes (no bloqueante):', missingVars);
+      return;
+    }
     console.error('❌ Variables de entorno Firebase faltantes:', missingVars);
     process.exit(1);
   }

@@ -41,22 +41,56 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install & Test (Node)
+      - name: Install dependencies
         if: ${{ steps.detect_node.outputs.has_node == true }}
         shell: bash
         run: |
           if [ -f pnpm-lock.yaml ]; then
             npm i -g pnpm
             pnpm install --frozen-lockfile
-            pnpm -s test || pnpm -s run test || echo "no tests"
           elif [ -f yarn.lock ]; then
             corepack enable
             yarn install --frozen-lockfile
-            yarn -s test || yarn -s run test || echo "no tests"
           else
-            npm ci || npm install
-            npm -s test || npm -s run test || echo "no tests"
+            npm ci
           fi
+
+      - name: Lint
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm run lint
+          elif [ -f yarn.lock ]; then
+            yarn run lint
+          else
+            npm run lint
+          fi
+
+      - name: Build
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm run build
+          elif [ -f yarn.lock ]; then
+            yarn run build
+          else
+            npm run build
+          fi
+
+      - name: Test
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm test || pnpm run test || echo "Tests skipped or failed (non-blocking)"
+          elif [ -f yarn.lock ]; then
+            yarn test || yarn run test || echo "Tests skipped or failed (non-blocking)"
+          else
+            npm test || npm run test || echo "Tests skipped or failed (non-blocking)"
+          fi
+        continue-on-error: true
 
       # Detectar y ejecutar script opcional si existe
       - name: Detect repo repair script

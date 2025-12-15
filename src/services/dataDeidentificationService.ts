@@ -36,7 +36,7 @@ const IDENTIFIER_PATTERNS = {
   healthCard: /\b([0-9]{4}[-]?[0-9]{3}[-]?[0-9]{3}[-]?[A-Z]{2})\b/gi,
   
   // Dates (various formats)
-  date: /\b([0-9]{1,2}[/-.][0-9]{1,2}[/-.][0-9]{2,4})\b/g,
+  date: /\b([0-9]{1,2}[/.-][0-9]{1,2}[/.-][0-9]{2,4})\b/g,
   
   // Email addresses
   email: /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,})\b/g,

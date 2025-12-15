@@ -7,23 +7,6 @@ import importPlugin from 'eslint-plugin-import'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
-
-  {
-    ignores: [
-      
-      ".env*",
-"canonical_snapshots/**",
-      "docs/_archive/**",
-      "src/_deprecated/**",
-      "scripts/**",
-      "**/*backup*.js",
-      "**/*index-backup.js",
-      "dist/**",
-      "coverage/**",
-      "node_modules/**"
-    ],
-  },
-
   // 1) Ignorados globales (antes de cualquier bloque con 'files')
   {
     ignores: [
@@ -37,12 +20,21 @@ export default [
       'backups/**',
       'backups/i18n-phase1/**',
       'docs/_archive/**',
+      'canonical_snapshots_OLD*/**',
+      'canonical_snapshots/**',
+      '**/canonical_snapshots/**',
+      '**/canonical_snapshots_OLD*/**',
   
       // Scripts de pruebas antiguos
       'test-backend*.js','test-backend*/**','test-sistema*.js','test-*.js',
+      'scripts/create-uat-simulated-users.js',
   
       // Archivos con parse-error conocido
       'src/utils/fix-parser.js',
+  
+      // Environment files
+      '.env*.local',
+      '.env.test.local',
   
       // Directorios internos que no deben ser linted
       'functions/**',

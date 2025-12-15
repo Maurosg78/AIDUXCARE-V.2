@@ -6,7 +6,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")
-    }
+    },
+    // Optimizar resolución de dependencias de Firebase
+    dedupe: ['@firebase/util']
   },
   plugins: [react()],
   css: {
@@ -60,7 +62,7 @@ export default defineConfig({
       "firebase/auth",
       "firebase/firestore",
     ],
-    exclude: ["@firebase/util"],
+    // No excluir @firebase/util - dejar que Vite lo optimice automáticamente
     // Forzar re-optimización cuando cambien los módulos
     force: false,
   },

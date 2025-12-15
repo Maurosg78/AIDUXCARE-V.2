@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { TokenTrackingServiceClass } from '../tokenTrackingService';
+import { TokenTrackingService } from '../tokenTrackingService';
 import type { TokenUsage, TokenAllocation } from '../tokenTrackingService';
 
 // Mock Firestore
@@ -30,11 +30,11 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 describe('TokenTrackingService', () => {
-  let tokenTrackingService: InstanceType<typeof TokenTrackingServiceClass>;
+  let tokenTrackingService: TokenTrackingService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    tokenTrackingService = new TokenTrackingServiceClass();
+    tokenTrackingService = new TokenTrackingService();
   });
 
   describe('getCurrentTokenUsage', () => {
@@ -165,7 +165,7 @@ describe('TokenTrackingService', () => {
         docs: []
       } as any);
 
-      const canUse = await TokenTrackingService.canUseTokens('user123', 200);
+      const canUse = await tokenTrackingService.canUseTokens('user123', 200);
       expect(canUse).toBe(false);
     });
 
@@ -244,7 +244,7 @@ describe('TokenTrackingService', () => {
         ]
       } as any);
 
-      const allocation = await TokenTrackingService.allocateTokens('user123', 200);
+      const allocation = await tokenTrackingService.allocateTokens('user123', 200);
 
       expect(allocation.source).toBe('purchased');
       expect(allocation.tokensAllocated).toBe(200);
@@ -371,13 +371,14 @@ describe('TokenTrackingService', () => {
 
       await tokenTrackingService.resetMonthlyCycle('user123');
 
-      expect(updateDoc).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          'subscription.tokenAllocation.baseTokensUsed': 0,
-          'subscription.tokenAllocation.baseTokensRemaining': 1200
-        })
-      );
+      expect(updateDoc).toHaveBeenCalled();
+      const updateCall = vi.mocked(updateDoc).mock.calls[0];
+      expect(updateCall[1]).toMatchObject({
+        'subscription.tokenAllocation.baseTokensUsed': 0,
+        'subscription.tokenAllocation.baseTokensRemaining': 1200,
+      });
+      expect(updateCall[1]['subscription.tokenAllocation.currentBillingCycle']).toBeDefined();
+      expect(updateCall[1]['subscription.tokenAllocation.lastResetDate']).toBeInstanceOf(Date);
     });
   });
 });

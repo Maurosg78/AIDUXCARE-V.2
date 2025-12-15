@@ -1,7 +1,7 @@
 // tests/core/metrics/MetricsService.spec.ts
 import { describe, it, expect, vi } from "vitest";
 
-import { MetricsService, SupabasePort, LangfusePort } from "../../../src/core/metrics/MetricsService";
+import { MetricsService, SupabasePort, LangfusePort } from "../../../../src/core/metrics/MetricsService";
 
 describe("MetricsService", () => {
   it("persists and tracks suggestion events", async () => {

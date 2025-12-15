@@ -30,7 +30,8 @@
     "validate:canonical": "bash scripts/validate-canonical-imports.sh",
     "typecheck": "echo '⏭️ typecheck saltado temporalmente'",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest --run",
+    "test:watch": "vitest",
     "test:unit": "vitest run --passWithNoTests",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
@@ -63,10 +64,11 @@
     "postinstall": "npm run check:env"
   },
   "dependencies": {
-    "@firebase/app": "^0.10.14",
-    "@firebase/auth": "^1.9.2",
+    "@firebase/app": "^0.10.18",
+    "@firebase/auth": "^1.11.0",
     "@firebase/firestore": "^4.8.2",
     "@firebase/storage": "^0.12.2",
+    "@firebase/util": "^1.13.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -95,10 +97,12 @@
     "react-router-dom": "^6.30.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
+    "@size-limit/preset-app": "^12.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -110,6 +114,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^2.1.8",
     "autoprefixer": "^10.4.20",
+    "baseline-browser-mapping": "^2.9.7",
     "eslint": "^9.18.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -119,6 +124,7 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "postcss": "^8.4.49",
+    "size-limit": "^12.0.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
