@@ -9,7 +9,7 @@
  * @returns Debounced value
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export function useDebounce<T>(value: T, delay: number = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -39,6 +39,8 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
  * @param delay - Delay in milliseconds (default: 300ms)
  * @returns Debounced callback function
  */
+
+import { useCallback, useRef, useEffect } from 'react';
 
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,

@@ -36,10 +36,10 @@ const IDENTIFIER_PATTERNS = {
   healthCard: /\b([0-9]{4}[-]?[0-9]{3}[-]?[0-9]{3}[-]?[A-Z]{2})\b/gi,
   
   // Dates (various formats)
-  date: /\b([0-9]{1,2}[/.-][0-9]{1,2}[/.-][0-9]{2,4})\b/g,
+  date: /\b([0-9]{1,2}[\/\-\.][0-9]{1,2}[\/\-\.][0-9]{2,4})\b/g,
   
   // Email addresses
-  email: /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,})\b/g,
+  email: /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g,
   
   // Addresses (street numbers and names)
   address: /\b([0-9]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Lane|Ln|Way|Court|Ct|Circle|Cir|Place|Pl))\b/gi,

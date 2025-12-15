@@ -123,7 +123,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-sm text-red-700 mb-3">
                 An error occurred while processing your input. Your data is safe and has been saved.
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <details className="mt-2 text-xs text-red-600">
                   <summary className="cursor-pointer font-medium mb-1">
                     Error details (development only)
