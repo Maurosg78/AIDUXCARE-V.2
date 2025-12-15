@@ -25,28 +25,28 @@ export interface DeidentificationResult {
 const IDENTIFIER_PATTERNS = {
   // Names (common first/last names, capitalized words that might be names)
   name: /(?:^|\s)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/g,
-  
+
   // Phone numbers (Canadian formats)
   phone: /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g,
-  
+
   // Postal codes (Canadian format: A1A 1A1)
   postalCode: /\b([A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9])\b/gi,
-  
+
   // Health card numbers (Ontario format: 1234-567-890-AB)
   healthCard: /\b([0-9]{4}[-]?[0-9]{3}[-]?[0-9]{3}[-]?[A-Z]{2})\b/gi,
-  
+
   // Dates (various formats)
   date: /\b([0-9]{1,2}[/.-][0-9]{1,2}[/.-][0-9]{2,4})\b/g,
-  
+
   // Email addresses
   email: /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g,
-  
+
   // Addresses (street numbers and names)
   address: /\b([0-9]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Lane|Ln|Way|Court|Ct|Circle|Cir|Place|Pl))\b/gi,
-  
+
   // SIN (Social Insurance Number - format: 123 456 789)
   sin: /\b([0-9]{3}\s?[0-9]{3}\s?[0-9]{3})\b/g,
-  
+
   // Medical record numbers (various formats)
   medicalRecord: /\b(MRN|MR#|Chart#|File#)[:\s]?([A-Z0-9-]+)\b/gi,
 };
@@ -74,24 +74,24 @@ export function deidentify(text: string): DeidentificationResult {
   // Process each identifier type
   for (const [type, pattern] of Object.entries(IDENTIFIER_PATTERNS)) {
     const matches = [...text.matchAll(new RegExp(pattern.source, pattern.flags))];
-    
+
     for (const match of matches) {
       const originalValue = match[0].trim();
-      
+
       // Skip if already replaced
       if (deidentifiedText.indexOf(originalValue) === -1) {
         continue;
       }
-      
+
       // Create placeholder
       const placeholder = `[${type.toUpperCase()}_${counter}]`;
-      
+
       // Replace in text
       deidentifiedText = deidentifiedText.replace(originalValue, placeholder);
-      
+
       // Store mapping
       identifiersMap[placeholder] = originalValue;
-      
+
       counter++;
       totalRemoved++;
     }
@@ -160,6 +160,9 @@ export function validateDeidentification(deidentifiedText: string): string[] {
   return remainingIdentifiers;
 }
 
+// Cache the dynamic import to avoid repeated imports
+let auditModulePromise: Promise<any> | null = null;
+
 /**
  * Logs deidentification event for audit purposes
  * 
@@ -180,10 +183,18 @@ export async function logDeidentification(
   }
 ): Promise<void> {
   try {
-    // Dynamic import to avoid build issues
-    const { default: FirestoreAuditLogger } = await import('../core/audit/FirestoreAuditLogger');
-    
-    await FirestoreAuditLogger.log({
+    // Cache the dynamic import to avoid repeated imports
+    if (!auditModulePromise) {
+      auditModulePromise = import('../core/audit/FirestoreAuditLogger').catch(() => null);
+    }
+    const auditModule = await auditModulePromise;
+
+    if (!auditModule?.default?.log) {
+      // Audit logger not available, skip silently (non-blocking)
+      return;
+    }
+
+    await auditModule.default.log({
       event: `data_deidentification_${action}`,
       userId: metadata?.userId || 'system',
       metadata: {
@@ -198,7 +209,8 @@ export async function logDeidentification(
     });
   } catch (error) {
     // Fail silently in case of audit logging issues (don't break main flow)
-    console.warn('[DataDeidentification] Failed to log audit event:', error);
+    console.warn('[audit] logDeidentification failed (non-blocking):', error);
+    // IMPORTANT: no throw
   }
 }
 

@@ -352,51 +352,60 @@ const ProfessionalWorkflowPage = () => {
   }, [patientId, user?.uid]);
   const trackedSessionsRef = useRef<Set<string>>(new Set());
 
+  // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events in dev
+  const trackedOnceRef = useRef<Set<string>>(new Set());
+  const trackOnce = useCallback((key: string, fn: () => void | Promise<void>) => {
+    if (trackedOnceRef.current.has(key)) return;
+    trackedOnceRef.current.add(key); // Mark as tracked BEFORE executing (synchronous)
+    fn(); // Execute async function (fire and forget)
+  }, []);
+
   useEffect(() => {
     // Only track once per unique session key
     if (!sessionTrackingKey || !patientId || !user?.uid) return;
-    if (trackedSessionsRef.current.has(sessionTrackingKey)) {
-      return; // Already tracked
-    }
 
-    const trackSessionStart = async () => {
-      try {
-        // Check if user is pilot user (from registration date)
-        const pilotStartDate = new Date('2024-12-19T00:00:00Z');
-        const isPilotUser = new Date() >= pilotStartDate;
+    // ✅ STRICTMODE FIX: Use trackOnce at the top level to prevent duplicate execution
+    trackOnce(`pilot_session_started_effect:${sessionTrackingKey}`, () => {
+      const trackSessionStart = async () => {
+        try {
+          // Check if user is pilot user (from registration date)
+          const pilotStartDate = new Date('2024-12-19T00:00:00Z');
+          const isPilotUser = new Date() >= pilotStartDate;
 
-        if (isPilotUser) {
-          // Mark as tracked BEFORE making the call to prevent duplicate calls
-          trackedSessionsRef.current.add(sessionTrackingKey);
+          if (isPilotUser) {
+            // ✅ CRITICAL FIX: Use explicit URL parameter for visitType in tracking
+            const trackingVisitType = sessionTypeFromUrl === 'followup' ? 'follow-up' : visitType;
+            console.log('[WORKFLOW] 📊 Analytics tracking:', {
+              sessionTypeFromUrl,
+              visitType,
+              trackingVisitType,
+              isExplicitFollowUp: sessionTypeFromUrl === 'followup'
+            });
 
-          // ✅ CRITICAL FIX: Use explicit URL parameter for visitType in tracking
-          const trackingVisitType = sessionTypeFromUrl === 'followup' ? 'follow-up' : visitType;
-          console.log('[WORKFLOW] 📊 Analytics tracking:', {
-            sessionTypeFromUrl,
-            visitType,
-            trackingVisitType,
-            isExplicitFollowUp: sessionTypeFromUrl === 'followup'
-          });
-          await AnalyticsService.trackEvent('pilot_session_started', {
-            patientId,
-            userId: user.uid,
-            sessionStartTime: sessionStartTime.toISOString(),
-            visitType: trackingVisitType,
-            isPilotUser: true
-          });
-          console.log('✅ [PILOT METRICS] Session start tracked:', patientId, 'with visitType:', trackingVisitType);
+            // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events
+            trackOnce(`pilot_session_started:${patientId}:${trackingVisitType}`, () => {
+              AnalyticsService.trackEvent('pilot_session_started', {
+                patientId,
+                userId: user.uid,
+                sessionStartTime: sessionStartTime.toISOString(),
+                visitType: trackingVisitType,
+                isPilotUser: true
+              }).catch((error) => {
+                console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
+              });
+              console.log('✅ [PILOT METRICS] Session start tracked:', patientId, 'with visitType:', trackingVisitType);
+            });
+          }
+        } catch (error) {
+          console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
+          // Non-blocking: don't fail session if analytics fails
         }
-      } catch (error) {
-        console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
-        // Remove from tracked set on error so it can retry if needed
-        trackedSessionsRef.current.delete(sessionTrackingKey);
-        // Non-blocking: don't fail session if analytics fails
-      }
-    };
+      };
 
-    trackSessionStart();
+      trackSessionStart();
+    });
 
-  }, [sessionTrackingKey]); // Only depend on sessionTrackingKey - patientId, user.uid, sessionStartTime, visitType are stable or captured in closure
+  }, [sessionTrackingKey, trackOnce, patientId, user?.uid, sessionTypeFromUrl, visitType, sessionStartTime]); // Include all dependencies
 
   // Load patient data from Firestore
   useEffect(() => {
@@ -467,13 +476,20 @@ const ProfessionalWorkflowPage = () => {
 
         // ✅ WORKFLOW OPTIMIZATION: Track workflow session start
         const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
-        await trackWorkflowSessionStart(
-          sessionIdForMetrics,
-          patientId,
-          user.uid,
-          route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial',
-          route.skipTabs.length
-        );
+        const workflowTypeForTracking = route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial';
+
+        // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events
+        trackOnce(`workflow_session_started:${patientId}:${workflowTypeForTracking}:${route.type}`, () => {
+          trackWorkflowSessionStart(
+            sessionIdForMetrics,
+            patientId,
+            user.uid,
+            workflowTypeForTracking,
+            route.skipTabs.length
+          ).catch((error) => {
+            console.error('[WORKFLOW] Error tracking workflow session start:', error);
+          });
+        });
 
         console.log('[WORKFLOW] Workflow detected:', {
           routeType: route.type,
@@ -2668,8 +2684,8 @@ const ProfessionalWorkflowPage = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as ActiveTab)}
                 className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
-                    ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
-                    : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                  ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
+                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
                   }`}
               >
                 {tab.label}
