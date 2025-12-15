@@ -24,6 +24,12 @@ export interface ProfessionalRegistration {
   displayName: string;
   professionalTitle: string;
   specialty: string;
+
+  // NEW: captured in onboarding
+  university?: string;
+  experienceYears?: number;
+  workplace?: string;
+
   country: string;
   city?: string;
   province?: string;
