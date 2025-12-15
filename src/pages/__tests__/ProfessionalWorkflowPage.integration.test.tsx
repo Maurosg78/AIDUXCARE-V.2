@@ -10,7 +10,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ProfessionalWorkflowPage } from '../ProfessionalWorkflowPage';
+import { MemoryRouter } from 'react-router-dom';
+import ProfessionalWorkflowPage from '../ProfessionalWorkflowPage';
 import { SessionComparisonService } from '../../services/sessionComparisonService';
 import sessionService from '../../services/sessionService';
 import { AnalyticsService } from '../../services/analyticsService';
@@ -99,10 +100,31 @@ vi.mock('../../context/ProfessionalProfileContext', () => ({
   }),
 }));
 
-vi.mock('react-router-dom', () => ({
-  useSearchParams: () => [new URLSearchParams('?patientId=test-patient-1')],
-  useNavigate: () => vi.fn(),
-  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+// Mock removed: using MemoryRouter instead for real router context
+
+// Mock patient dashboard hooks
+vi.mock('../../features/patient-dashboard/hooks/useLastEncounter', () => ({
+  useLastEncounter: () => ({
+    lastEncounter: null,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../../features/patient-dashboard/hooks/useActiveEpisode', () => ({
+  useActiveEpisode: () => ({
+    activeEpisode: null,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../../features/patient-dashboard/hooks/usePatientVisitCount', () => ({
+  usePatientVisitCount: () => ({
+    visitCount: 0,
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
@@ -149,7 +171,11 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
         summary: 'First session',
       });
 
-      render(<ProfessionalWorkflowPage />);
+      render(
+        <MemoryRouter initialEntries={['/workflow?patientId=test-patient-1']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
 
       await waitFor(() => {
         // SessionComparison should render (check for first session message)
@@ -208,7 +234,11 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
     it('should not break main workflow if SessionComparison fails', async () => {
       mockGetPreviousSession.mockRejectedValue(new Error('Comparison failed'));
 
-      render(<ProfessionalWorkflowPage />);
+      render(
+        <MemoryRouter initialEntries={['/workflow?patientId=test-patient-1']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
 
       // Main workflow should still render
       await waitFor(() => {
