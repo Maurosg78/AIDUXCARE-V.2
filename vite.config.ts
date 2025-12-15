@@ -71,10 +71,15 @@ export default defineConfig({
     assetsDir: 'assets',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'react-router': ['react-router-dom'],
-        },
+        manualChunks: (id) => {
+  if (id.includes("node_modules")) {
+    if (id.includes("firebase")) return "vendor-firebase";
+    if (id.includes("react-router")) return "vendor-react-router";
+    if (id.includes("react")) return "vendor-react";
+    if (id.includes("dompurify") || id.includes("html2canvas")) return "vendor-utils";
+    return "vendor";
+  }
+},
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
