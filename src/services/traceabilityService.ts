@@ -202,7 +202,8 @@ export class TraceabilityService {
    * Generate note ID: NT-{timestamp}-{uuid}
    */
   static generateNoteId(): string {
-    const timestamp = (() => { const iso = new Date().toISOString().slice(0, 19); return iso.replaceAll("-", "").replaceAll(":", "").replace("T", ""); })();
+    const iso = new Date().toISOString();
+    const timestamp = iso.slice(0, 19).replaceAll("-", "").replaceAll(":", "").replace("T", "");
     const uuid = Math.random().toString(36).substring(2, 8);
     return `NT-${timestamp}-${uuid}`;
   }
