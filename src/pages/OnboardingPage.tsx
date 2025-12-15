@@ -95,7 +95,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     // Evitar que validate cause setState extra cuando sólo evaluamos canGoNext
     setErrors({});
-     
+
   }, []);
 
   const canGoNext = useMemo(() => {
@@ -174,7 +174,7 @@ export default function OnboardingPage() {
       const phoneCountryCode = (data.personal as any).phoneCountryCode?.trim() || '+1';
       const phoneNumber = data.personal.phone?.trim() || '';
       const fullPhone = phoneCountryCode && phoneNumber ? `${phoneCountryCode}${phoneNumber}` : '';
-      
+
       const payload = {
         email: data.personal.email ?? "",
         password: data.personal.password ?? "",
@@ -261,8 +261,8 @@ export default function OnboardingPage() {
             const badgeClass = isCompleted
               ? `${styles.progressBadge} ${styles.progressBadgeCompleted}`
               : isActive
-              ? `${styles.progressBadge} ${styles.progressBadgeActive}`
-              : `${styles.progressBadge} ${styles.progressBadgeIdle}`;
+                ? `${styles.progressBadge} ${styles.progressBadgeActive}`
+                : `${styles.progressBadge} ${styles.progressBadgeIdle}`;
 
             return (
               <React.Fragment key={step}>

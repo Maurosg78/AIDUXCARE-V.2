@@ -81,12 +81,12 @@ export class EmailActivationService {
       // Generar token de activación único y ID inmediatamente (no requiere esperar)
       const activationToken = this.generateActivationToken();
       const professionalId = this.generateProfessionalId();
-      
+
       // NOTA: No verificamos email duplicado aquí porque:
       // 1. Firebase Auth ya valida duplicados al crear el usuario
       // 2. Esto elimina 2 llamadas secuenciales innecesarias (Firestore + Auth)
       // 3. Si el email existe, createUserWithEmailAndPassword lanzará un error que manejamos
-      
+
       // Crear registro del profesional
       const professional: ProfessionalRegistration = {
         ...professionalData,
@@ -117,7 +117,7 @@ export class EmailActivationService {
         isPilotUser,
         ...(pilotPhase && { pilotPhase })
       };
-      
+
       // Solo agregar lastLogin si existe
       if (professional.lastLogin) {
         firestoreData.lastLogin = professional.lastLogin.toISOString();
@@ -141,7 +141,7 @@ export class EmailActivationService {
         // Guardar en Firestore de forma asíncrona (no bloquea el envío de SMS)
         setDoc(userDoc, firestoreData).then(async () => {
           console.log('✅ [DEBUG] Profesional guardado en Firestore:', professionalId);
-          
+
           // ✅ PILOT METRICS: Track pilot user registration
           if (isPilotUser) {
             try {
@@ -166,7 +166,7 @@ export class EmailActivationService {
         // Usar el teléfono del profesional si está disponible
         if (professionalData.phone) {
           const professionalName = professionalData.displayName || 'Profesional';
-          
+
           SMSService.sendActivationLink(
             professionalData.phone,
             professionalName,
@@ -188,7 +188,7 @@ export class EmailActivationService {
 
         return {
           success: true,
-          message: professionalData.phone 
+          message: professionalData.phone
             ? 'Registro exitoso. Revisa tu SMS y email para activar tu cuenta.'
             : 'Registro exitoso. Revisa tu email para activar tu cuenta.',
           professionalId: professional.id,
@@ -197,9 +197,9 @@ export class EmailActivationService {
 
       } catch (authError: unknown) {
         console.error('❌ [DEBUG] Error en Firebase Auth:', authError);
-        
+
         const error = authError as { code?: string };
-        
+
         // Manejar errores específicos de Firebase Auth
         if (error.code === 'auth/email-already-in-use') {
           return {
@@ -207,26 +207,26 @@ export class EmailActivationService {
             message: 'Este email ya está registrado en el sistema'
           };
         }
-        
+
         if (error.code === 'auth/invalid-email') {
           return {
             success: false,
             message: 'El formato del email no es válido'
           };
         }
-        
+
         if (error.code === 'auth/weak-password') {
           return {
             success: false,
             message: 'La contraseña es demasiado débil. Debe tener al menos 6 caracteres'
           };
         }
-        
+
         // Si falla la creación en Auth y ya se guardó en Firestore, intentar limpiar (asíncrono, no bloquea)
         deleteDoc(userDoc).catch((deleteError) => {
           console.error('⚠️ [DEBUG] Error al eliminar registro de Firestore:', deleteError);
         });
-        
+
         return {
           success: false,
           message: 'Error al crear la cuenta de usuario. Inténtalo de nuevo.'
@@ -253,7 +253,7 @@ export class EmailActivationService {
       const usersRef = collection(db, 'users');
       const tokenQuery = query(usersRef, where('activationToken', '==', token));
       const tokenSnapshot = await getDocs(tokenQuery);
-      
+
       if (tokenSnapshot.empty) {
         console.log('❌ [DEBUG] Token no encontrado:', token);
         return {
@@ -328,7 +328,7 @@ export class EmailActivationService {
   public async getProfessional(email: string): Promise<ProfessionalRegistration | null> {
     try {
       console.log('[DEBUG] Buscando profesional en Firestore:', email);
-      
+
       // Buscar en la colección 'users' (no 'professionals')
       const usersRef = collection(db, 'users');
       const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
@@ -341,14 +341,14 @@ export class EmailActivationService {
 
       const doc = snapshot.docs[0];
       const data = doc.data();
-      
+
       console.log('✅ [DEBUG] Usuario encontrado:', {
         email: data.email,
         displayName: data.displayName,
         emailVerified: data.emailVerified,
         isActive: data.isActive
       });
-      
+
       return {
         ...data,
         registrationDate: new Date(data.registrationDate || data.createdAt),
@@ -393,7 +393,7 @@ export class EmailActivationService {
 
       // Verificar si el profesional existe
       const professional = await this.getProfessional(email);
-      
+
       if (!professional) {
         console.log('❌ [DEBUG] Profesional no encontrado:', email);
         return {
@@ -424,7 +424,7 @@ export class EmailActivationService {
 
       // Generar token de recuperación único
       const recoveryToken = this.generateRecoveryToken();
-      
+
       // Guardar token de recuperación en Firestore
       const usersRef = collection(db, 'users');
       const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
@@ -488,7 +488,7 @@ export class EmailActivationService {
 
       // Verificar si el profesional existe
       const professional = await this.getProfessional(email);
-      
+
       if (!professional) {
         console.log('❌ [DEBUG] Profesional no encontrado:', email);
         return {
@@ -543,7 +543,7 @@ export class EmailActivationService {
     try {
       const professionalsRef = collection(db, 'professionals');
       const snapshot = await getDocs(professionalsRef);
-      
+
       const total = snapshot.size;
       const active = snapshot.docs.filter(doc => doc.data().isActive).length;
       const pending = total - active;

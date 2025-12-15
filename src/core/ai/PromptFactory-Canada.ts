@@ -1,4 +1,5 @@
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import { deriveProfessionalCapabilities } from './capabilities/deriveProfessionalCapabilities';
 
 export interface CanadianPromptParams {
   contextoPaciente: string;
@@ -87,6 +88,31 @@ const DEFAULT_INSTRUCTIONS_INITIAL = `Analyse the transcript as a clinical reaso
 
 const DEFAULT_INSTRUCTIONS_FOLLOWUP = `Analyse this FOLLOW-UP visit transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Focus on PROGRESS ASSESSMENT and CLINICAL CONTINUITY rather than initial evaluation. Expose clinical variables related to: treatment response, symptom progression (improvement/worsening/stability), functional gains or limitations, adherence to previous treatment plan, new concerns or complications, and changes in biopsychosocial factors since the last visit. Present progress-focused clinical considerations including: comparison to baseline, treatment effectiveness indicators, functional improvements or setbacks, adherence patterns, and any new clinical considerations. Recommend evidence-based physiotherapy assessments ONLY if new concerns arise or if progress monitoring requires specific tests. Summarise biopsychosocial factors with emphasis on changes since last visit. Note when medical imaging or physician follow-up is required because findings exceed physiotherapy scope or pose safety risks. Remember: you are exposing information to support clinical reasoning focused on progress assessment, not making clinical decisions.`;
 
+/**
+ * Builds capability context (experience level, domain focus, output style).
+ * Maximum 4 lines. Affects PRIORITY and LANGUAGE, not total text length.
+ */
+const buildCapabilityContext = (profile?: ProfessionalProfile | null): string => {
+  const capabilities = deriveProfessionalCapabilities(profile);
+  
+  if (!profile || capabilities.seniority === 'mid' && capabilities.domainFocus === 'general') {
+    // Skip if default/mid/general (no meaningful adjustment needed)
+    return '';
+  }
+  
+  const styleMap: Record<string, string> = {
+    'guiding': 'guided, explanatory',
+    'neutral': 'balanced, evidence-focused',
+    'terse': 'concise, non-explanatory, clinically prioritized',
+  };
+  
+  return `\n[Clinician Capability Context]
+- Experience level: ${capabilities.seniority}
+- Primary domain: ${capabilities.domainFocus}
+- Expected output style: ${styleMap[capabilities.languageTone]}
+`;
+};
+
 const buildProfessionalContext = (profile?: ProfessionalProfile | null): string => {
   if (!profile) {
     console.log('🔍 [PROMPT] No professional profile provided');
@@ -151,6 +177,7 @@ export const buildCanadianPrompt = ({
   professionalProfile,
   visitType = 'initial',
 }: CanadianPromptParams): string => {
+  const capabilityContext = buildCapabilityContext(professionalProfile);
   const professionalContext = buildProfessionalContext(professionalProfile);
   
   // Use follow-up specific instructions if visit type is follow-up
@@ -163,7 +190,7 @@ export const buildCanadianPrompt = ({
     : '\n[Visit Type: INITIAL ASSESSMENT - Comprehensive clinical evaluation]\n';
   
   return `
-${PROMPT_HEADER}${professionalContext}${visitTypeContext}
+${PROMPT_HEADER}${capabilityContext}${professionalContext}${visitTypeContext}
 [Patient Context]
 ${contextoPaciente.trim()}
 
