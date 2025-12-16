@@ -241,8 +241,14 @@ export const LocationDataStep: React.FC<Props> = ({
           {useTextInput ? (
             <input
               type="text"
-              value={data.city ?? ''}
-              onChange={(event) => onFieldChange('city', event.target.value)}
+              value={data.city && !data.city.includes('@') ? data.city : ''}
+              onChange={(event) => {
+                const value = event.target.value;
+                // Prevent email addresses from being entered
+                if (!value.includes('@')) {
+                  onFieldChange('city', value);
+                }
+              }}
               className={styles.textInput}
               placeholder="Enter your city"
               required
