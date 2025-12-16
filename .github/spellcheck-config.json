@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en-CA",
+  "useGitignore": true,
+  "ignorePaths": [
+    "node_modules/**",
+    ".git/**",
+    "docs/**/*.svg"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "custom-words",
+      "path": "./.github/custom-words.txt",
+      "description": "CTO-approved custom terms (en-CA).",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["en_CA", "custom-words"],
+  "words": [],
+  "overrides": [
+    {
+      "filename": "**/*.md",
+      "caseSensitive": false,
+      "language": "en-CA",
+      "ignoreRegExpList": [
+        "/https?:\\/\\/\\S+/",
+        "/`[^`]+`/"
+      ]
+    }
+  ]
+}

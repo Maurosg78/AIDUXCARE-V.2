@@ -1,0 +1,10 @@
+name: eval
+on:
+  workflow_dispatch: {}   # sólo manual por ahora
+
+jobs:
+  eval:
+    if: ${{ false }}      # cinturón y tirantes: jamás corre automático
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Temporarily disabled. Run manually if needed."

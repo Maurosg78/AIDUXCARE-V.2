@@ -1,0 +1,1 @@
+const GENERIC_CLINICAL_PROMPT = 

@@ -1,0 +1,274 @@
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  serverTimestamp,
+  Timestamp 
+} from 'firebase/firestore';
+
+import { useAuth } from './AuthContext';
+
+import logger from '@/shared/utils/logger';
+
+export interface ProfessionalProfile {
+  uid: string;
+  email: string;
+  displayName?: string;
+  fullName?: string;
+  role?: 'physio' | 'admin' | 'assistant';
+  specialty?: string;
+  professionalTitle?: string;
+  university?: string;
+  licenseNumber?: string;
+  workplace?: string;
+  experienceYears?: string;
+  clinic?: { 
+    name?: string; 
+    city?: string; 
+    country?: string 
+  };
+  timezone?: string;
+  languages?: string[];
+  phone?: string;
+  country?: string;
+  province?: string;
+  city?: string;
+  consentGranted?: boolean;
+  preferredSalutation?: string; // p.ej. "FT."
+  lastNamePreferred?: string;   // p.ej. "Sobarzo"
+  createdAt: Timestamp;
+  lastLoginAt?: Timestamp;
+  lastSeenAt?: Timestamp;
+  preferences?: { 
+    theme: 'inside' | 'outside'; 
+    density: 'comfortable' | 'compact' 
+  };
+  registrationStatus?: 'incomplete' | 'complete';
+}
+
+interface ProfessionalProfileContextType {
+  profile?: ProfessionalProfile;
+  loading: boolean;
+  error?: Error;
+  updateProfile: (updates: Partial<ProfessionalProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  updateWizardData: (field: keyof ProfessionalProfile, value: unknown) => Promise<void>;
+  setCurrentStep: (step: number) => void;
+}
+
+const ProfessionalProfileContext = createContext<ProfessionalProfileContextType | undefined>(undefined);
+
+export const useProfessionalProfile = () => {
+  const context = useContext(ProfessionalProfileContext);
+  if (context === undefined) {
+    throw new Error('useProfessionalProfile must be used within a ProfessionalProfileProvider');
+  }
+  return context;
+};
+
+interface ProfessionalProfileProviderProps {
+  children: React.ReactNode;
+}
+
+export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderProps> = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<ProfessionalProfile | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | undefined>(undefined);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
+  const [/* currentStep */, setCurrentStepState] = useState<number>(0);
+  
+  // Lazy initialization de Firestore - solo se obtiene cuando se necesita
+  // Esto evita inicializar Firestore si el usuario no está autenticado
+  const getDb = () => {
+    // Memoizar la instancia de Firestore
+    if (!getDb._db) {
+      getDb._db = getFirestore();
+    }
+    return getDb._db;
+  };
+  getDb._db = null as ReturnType<typeof getFirestore> | null;
+
+  // Función para obtener zona horaria por defecto
+  const getDefaultTimezone = (): string => {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  };
+
+  /**
+   * Helper function to remove undefined values from objects (Firestore doesn't accept undefined)
+   */
+  const cleanUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) return null;
+    if (Array.isArray(obj)) {
+      return obj.map(cleanUndefined).filter(item => item !== null && item !== undefined);
+    }
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const key in obj) {
+        if (obj[key] !== undefined) {
+          cleaned[key] = cleanUndefined(obj[key]);
+        }
+      }
+      return cleaned;
+    }
+    return obj;
+  };
+
+  // Función para crear perfil inicial
+  const createInitialProfile = async (uid: string, email: string): Promise<ProfessionalProfile> => {
+    const db = getDb();
+    const initialProfile: ProfessionalProfile = {
+      uid,
+      email,
+      displayName: user?.displayName || undefined,
+      role: 'physio',
+      timezone: getDefaultTimezone(),
+      languages: ['es'],
+      preferredSalutation: 'FT.',
+      lastNamePreferred: user?.displayName?.split(' ').slice(-1)[0] ?? undefined,
+      createdAt: serverTimestamp() as Timestamp,
+      lastLoginAt: serverTimestamp() as Timestamp,
+      lastSeenAt: serverTimestamp() as Timestamp,
+      preferences: {
+        theme: 'inside',
+        density: 'comfortable'
+      }
+    };
+
+    // ✅ FIX: Clean undefined values before saving to Firestore
+    const cleanedProfile = cleanUndefined(initialProfile);
+    await setDoc(doc(db, 'users', uid), cleanedProfile);
+    return initialProfile;
+  };
+
+  // Función para cargar perfil desde Firestore
+  const loadProfile = async (uid: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(undefined);
+      const db = getDb();
+
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as ProfessionalProfile;
+        setProfile(userData);
+        
+        // Actualizar lastLoginAt
+        await updateDoc(doc(db, 'users', uid), {
+          lastLoginAt: serverTimestamp()
+        });
+      } else {
+        // Crear perfil inicial
+        const initialProfile = await createInitialProfile(uid, user?.email || '');
+        setProfile(initialProfile);
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Error desconocido al cargar perfil');
+      setError(error);
+      logger.error('Error cargando perfil profesional:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para actualizar perfil
+  const updateProfile = async (updates: Partial<ProfessionalProfile>): Promise<void> => {
+    if (!user?.uid) return;
+
+    try {
+      const db = getDb();
+      const userRef = doc(db, 'users', user.uid);
+      
+      // ✅ FIX: Clean undefined values before saving to Firestore
+      const cleanedUpdates = cleanUndefined({
+        ...updates,
+        lastSeenAt: serverTimestamp()
+      });
+      
+      await updateDoc(userRef, cleanedUpdates);
+
+      // Actualizar estado local
+      setProfile(prev => prev ? { ...prev, ...updates } : undefined);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Error al actualizar perfil');
+      setError(error);
+      throw error;
+    }
+  };
+
+  // Soporte para wizard (compatibilidad con componentes existentes)
+  const updateWizardData = async (field: keyof ProfessionalProfile, value: unknown): Promise<void> => {
+    await updateProfile({ [field]: value } as Partial<ProfessionalProfile>);
+  };
+
+  const setCurrentStep = (step: number): void => {
+    setCurrentStepState(step);
+  };
+
+  // Función para refrescar perfil
+  const refreshProfile = async (): Promise<void> => {
+    if (user?.uid) {
+      await loadProfile(user.uid);
+    }
+  };
+
+  // Función para heartbeat (actualizar lastSeenAt)
+  const updateHeartbeat = async (): Promise<void> => {
+    if (!user?.uid || !profile) return;
+
+    try {
+      const db = getDb();
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastSeenAt: serverTimestamp()
+      });
+    } catch (err) {
+      logger.warn('Error en heartbeat:', err);
+    }
+  };
+
+  // Efecto para cargar perfil cuando cambia el usuario
+  // Solo carga el perfil si el usuario está autenticado y Auth ya terminó de cargar
+  useEffect(() => {
+    if (!authLoading && user?.uid) {
+      loadProfile(user.uid);
+    } else if (!authLoading && !user) {
+      // Usuario no autenticado - limpiar estado sin cargar Firestore
+      setProfile(undefined);
+      setLoading(false);
+      setError(undefined);
+    }
+  }, [user?.uid, authLoading]);
+
+  // Efecto para heartbeat cada 60 segundos
+  useEffect(() => {
+    if (profile) {
+      heartbeatRef.current = setInterval(updateHeartbeat, 60000); // 60 segundos
+    }
+
+    return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+      }
+    };
+  }, [profile]);
+
+  const value: ProfessionalProfileContextType = {
+    profile,
+    loading,
+    error,
+    updateProfile,
+    refreshProfile,
+    updateWizardData,
+    setCurrentStep
+  };
+
+  return (
+    <ProfessionalProfileContext.Provider value={value}>
+      {authLoading ? <>{children}</> : children}
+    </ProfessionalProfileContext.Provider>
+  );
+};

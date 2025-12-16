@@ -1,0 +1,40 @@
+{
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/canonical_snapshots/**": true,
+    "**/docs/**": true,
+    "**/backups/**": true,
+    "**/_deprecated/**": true,
+    "**/*.bak": true,
+    "**/*.backup": true,
+    "**/*.orig": true,
+    "**/*.rej": true,
+    "**/__tests__/**": true,
+    "**/__test__/**": true,
+    "**/__fixtures__/**": true,
+    "**/__snapshots__/**": true,
+    "**/snapshots/**": true,
+    "**/test/**": true,
+    "**/tests/**": true
+  },
+  "typescript.tsserver.watchDirectory": "off",
+  "typescript.tsserver.watchFile": "off",
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "off",
+    "watchDirectory": "off",
+    "fallbackPolling": "dynamicPriority"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "search.exclude": {
+    "**/backups/**": true,
+    "**/canonical_snapshots/**": true,
+    "**/docs/**": true,
+    "**/_deprecated/**": true,
+    "**/__tests__/**": true,
+    "**/__fixtures__/**": true,
+    "**/snapshots/**": true
+  }
+}

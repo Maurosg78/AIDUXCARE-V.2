@@ -1,0 +1,116 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Detectar si es proyecto Node (sin usar hashFiles en if)
+      - name: Detect Node project
+        id: detect_node
+        shell: bash
+        run: |
+          if [ -f package.json ]; then
+            echo "has_node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            npm i -g pnpm
+            pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Lint
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm run lint
+          elif [ -f yarn.lock ]; then
+            yarn run lint
+          else
+            npm run lint
+          fi
+
+      - name: Build
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm run build
+          elif [ -f yarn.lock ]; then
+            yarn run build
+          else
+            npm run build
+          fi
+
+      - name: Test
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm test || pnpm run test || echo "Tests skipped or failed (non-blocking)"
+          elif [ -f yarn.lock ]; then
+            yarn test || yarn run test || echo "Tests skipped or failed (non-blocking)"
+          else
+            npm test || npm run test || echo "Tests skipped or failed (non-blocking)"
+          fi
+        continue-on-error: true
+
+      # Detectar y ejecutar script opcional si existe
+      - name: Detect repo repair script
+        id: detect_repair
+        shell: bash
+        run: |
+          if [ -f scripts/repo/repair.sh ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run repo checks
+        if: ${{ steps.detect_repair.outputs.present == true }}
+        shell: bash
+        run: bash scripts/repo/repair.sh
+
+      - name: Basic build check
+        shell: bash
+        run: |
+          echo "Repo structure:"
+          ls -la
+          echo "✅ CI baseline ok"

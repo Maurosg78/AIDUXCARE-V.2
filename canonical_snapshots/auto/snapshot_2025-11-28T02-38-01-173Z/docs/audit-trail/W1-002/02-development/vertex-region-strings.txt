@@ -1,0 +1,17 @@
+src/pages/FAQPage.tsx:26:    answer: 'All notes are stored securely in Canada (northamerica-northeast1 region). You can access them anytime from the Clinical Vault in the Command Center.'
+src/services/vertex-ai-service-firebase.ts:36:// ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
+src/services/vertex-ai-service-firebase.ts:38:const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+src/services/vertex-ai-soap-service.ts:16:// ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
+src/services/vertex-ai-soap-service.ts:17:const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+src/core/assistant/assistantAdapter.ts:64:    const region = 'northamerica-northeast1'; // Montreal, Canada
+src/components/transparency/TransparencyReport.tsx:84:                  <span className="text-gray-900">northamerica-northeast1 (Montreal, Canada)</span>
+src/components/transparency/TransparencyReport.tsx:126:                <p className="text-sm text-gray-600">Region: northamerica-northeast1 (Montreal, Canada)</p>
+src/components/transparency/TransparencyReport.tsx:133:                <p className="text-sm text-gray-600">Region: northamerica-northeast1 (Montreal, Canada)</p>
+src/components/transparency/TransparencyReport.tsx:140:                <p className="text-sm text-gray-600">Region: northamerica-northeast1 (Montreal, Canada)</p>
+src/config/env.ts:21:// Service in use: Google Vertex AI via Firebase Functions (northamerica-northeast1, Canada)
+src/config/env.ts:26:export const AIDUX_ASSISTANT_BASE_URL = import.meta.env.VITE_AIDUX_ASSISTANT_BASE_URL || 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+src/config/env.ts:51:      region: 'northamerica-northeast1',
+src/config/env.ts:53:      endpoint: 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy'
+src/config/env.ts:65:    region: 'northamerica-northeast1' // ✅ Canada (Montreal)
+src/components/transparency/__tests__/TransparencyReport.test.tsx:96:      const regions = screen.getAllByText(/northamerica-northeast1 \(Montreal, Canada\)/i);
+src/components/transparency/__tests__/TransparencyReport.test.tsx:146:      expect(firestoreRegion).toContain('northamerica-northeast1');

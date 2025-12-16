@@ -1,0 +1,28 @@
+automaticUpdatePolicy: {}
+availableMemoryMb: 256
+buildEnvironmentVariables:
+  GOOGLE_NODE_RUN_SCRIPTS: ''
+buildId: 3ddebff9-570e-4326-a443-6754d6ddaefe
+buildName: projects/935285025887/locations/northamerica-northeast1/builds/3ddebff9-570e-4326-a443-6754d6ddaefe
+buildServiceAccount: projects/aiduxcare-v2-uat-dev/serviceAccounts/935285025887-compute@developer.gserviceaccount.com
+dockerRegistry: ARTIFACT_REGISTRY
+entryPoint: vertexAIProxy
+environmentVariables:
+  EVENTARC_CLOUD_EVENT_SOURCE: projects/aiduxcare-v2-uat-dev/locations/northamerica-northeast1/functions/vertexAIProxy
+  FIREBASE_CONFIG: '{"projectId":"aiduxcare-v2-uat-dev","storageBucket":"aiduxcare-v2-uat-dev.firebasestorage.app"}'
+  GCLOUD_PROJECT: aiduxcare-v2-uat-dev
+httpsTrigger:
+  securityLevel: SECURE_ALWAYS
+  url: https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy
+ingressSettings: ALLOW_ALL
+labels:
+  deployment-tool: cli-firebase
+  firebase-functions-hash: c6d124c7c864c35e446097d346e8e24d0c0e39a4
+name: projects/aiduxcare-v2-uat-dev/locations/northamerica-northeast1/functions/vertexAIProxy
+runtime: nodejs20
+serviceAccountEmail: aiduxcare-v2-uat-dev@appspot.gserviceaccount.com
+sourceUploadUrl: https://storage.googleapis.com/uploads-96341462987.northamerica-northeast1.cloudfunctions.appspot.com/845bd53d-f6cf-46ef-b6a3-0f3f3e0f7526.zip
+status: ACTIVE
+timeout: 60s
+updateTime: '2025-11-23T12:45:04.313699293Z'
+versionId: '1'

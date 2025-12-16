@@ -1,0 +1,11 @@
+# Exclude test files and temporary files from Firebase deployment
+*.test.js
+*.spec.js
+*.bak.*
+*-debug.js
+*-fix.js
+*-complete.js
+dist/
+node_modules/
+src/
+

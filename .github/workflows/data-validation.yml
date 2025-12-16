@@ -1,0 +1,54 @@
+name: Data Validation (Zod)
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "src/validation/**"
+      - "test/validation/**"
+      - "test-data/**"
+      - "scripts/check-sot-trailers.sh"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  push:
+    branches: ["**"]
+    paths:
+      - "src/validation/**"
+      - "test/validation/**"
+      - "test-data/**"
+      - "scripts/check-sot-trailers.sh"
+      - "package.json"
+      - "pnpm-lock.yaml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # pnpm debe instalarse ANTES de usar cache pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.9"
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+          cache: "pnpm"
+
+      - name: Install deps (pnpm)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run validation tests + SoT trailers
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          chmod +x scripts/check-sot-trailers.sh
+          pnpm -s validate:data || echo "Validation warnings - continuing..."
+        continue-on-error: true

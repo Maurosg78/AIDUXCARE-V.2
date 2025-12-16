@@ -1,0 +1,778 @@
+/**
+ * SOAP Editor Component
+ * 
+ * Provides editable interface for SOAP note sections (S/O/A/P)
+ * with Draft/Finalized states and validation.
+ * 
+ * Market: CA · en-CA · PHIPA/PIPEDA Ready
+ */
+
+import React, { useState, useEffect } from 'react';
+import { FileText, Save, CheckCircle, AlertCircle, Loader2, RefreshCw, Eye, Copy, Download, Check, X } from 'lucide-react';
+import type { SOAPNote } from '../types/vertex-ai';
+
+export type SOAPStatus = 'draft' | 'finalized';
+
+export interface SOAPEditorProps {
+  soap: SOAPNote | null;
+  status: SOAPStatus;
+  visitType: 'initial' | 'follow-up';
+  isGenerating?: boolean;
+  onSave: (soap: SOAPNote, status: SOAPStatus) => void;
+  onRegenerate?: () => void;
+  onFinalize?: (soap: SOAPNote) => void;
+  onUnfinalize?: (soap: SOAPNote) => void;
+  onPreview?: (soap: SOAPNote) => void;
+  className?: string;
+}
+
+export const SOAPEditor: React.FC<SOAPEditorProps> = ({
+  soap,
+  status,
+  visitType,
+  isGenerating = false,
+  onSave,
+  onRegenerate,
+  onFinalize,
+  onUnfinalize,
+  onPreview,
+  className = '',
+}) => {
+  const [editedSOAP, setEditedSOAP] = useState<SOAPNote | null>(soap);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isEditingFinalized, setIsEditingFinalized] = useState(false);
+
+  // Update local state when prop changes
+  useEffect(() => {
+    setEditedSOAP(soap);
+    setHasChanges(false);
+  }, [soap]);
+
+  const handleSectionChange = (section: keyof SOAPNote, value: string) => {
+    if (!editedSOAP) return;
+    
+    setEditedSOAP({
+      ...editedSOAP,
+      [section]: value,
+    });
+    setHasChanges(true);
+  };
+
+  const handleSaveDraft = () => {
+    if (!editedSOAP) return;
+    onSave(editedSOAP, 'draft');
+    setHasChanges(false);
+  };
+
+  const handleFinalize = () => {
+    if (!editedSOAP) return;
+    
+    // ✅ DÍA 2: CPO Review Gate - Validar que está reviewed si requiere review
+    if (requiresReview && !isReviewed) {
+      // No mostrar confirmación si no está reviewed
+      // El error será mostrado por handleSaveSOAP en ProfessionalWorkflowPage
+      return;
+    }
+    
+    if (showFinalizeConfirm) {
+      // ✅ DÍA 2: Asegurar que isReviewed está actualizado antes de finalizar
+      const soapToFinalize = {
+        ...editedSOAP,
+        isReviewed: requiresReview ? true : editedSOAP.isReviewed,
+      };
+      onFinalize?.(soapToFinalize);
+      setShowFinalizeConfirm(false);
+    } else {
+      setShowFinalizeConfirm(true);
+    }
+  };
+
+  const handleCancelFinalize = () => {
+    setShowFinalizeConfirm(false);
+  };
+
+  const handlePreview = () => {
+    if (!currentSOAP) return;
+    // Always show internal preview modal
+    setShowPreview(true);
+    // Also call external handler if provided
+    if (onPreview) {
+      onPreview(currentSOAP);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setShowPreview(false);
+  };
+
+  const handleUnfinalize = () => {
+    if (!currentSOAP) return;
+    setIsEditingFinalized(true);
+    setHasChanges(false);
+    // Call external handler if provided
+    if (onUnfinalize) {
+      onUnfinalize(currentSOAP);
+    }
+  };
+
+  const handleSaveAfterUnfinalize = () => {
+    if (!currentSOAP) return;
+    // Save as draft when editing finalized note
+    handleSaveDraft();
+    setIsEditingFinalized(false);
+  };
+
+  /**
+   * Generate plain text format for EMR export
+   * Compatible with most EMR systems (text-only, no formatting)
+   */
+  const generatePlainTextFormat = (soapNote: SOAPNote): string => {
+    const currentDate = new Date();
+    const dateStr = currentDate.toLocaleDateString('en-CA', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const timeStr = currentDate.toLocaleTimeString('en-CA', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    return `SOAP NOTE
+${'='.repeat(60)}
+
+Date: ${dateStr}
+Time: ${timeStr}
+Visit Type: ${visitType === 'initial' ? 'Initial Assessment' : 'Follow-up Visit'}
+
+${'─'.repeat(60)}
+
+S: SUBJECTIVE
+${'─'.repeat(60)}
+${soapNote.subjective || 'No subjective information recorded.'}
+
+${'─'.repeat(60)}
+
+O: OBJECTIVE
+${'─'.repeat(60)}
+${soapNote.objective || 'No objective findings recorded.'}
+
+${'─'.repeat(60)}
+
+A: ASSESSMENT
+${'─'.repeat(60)}
+${soapNote.assessment || 'No assessment recorded.'}
+
+${'─'.repeat(60)}
+
+P: PLAN
+${'─'.repeat(60)}
+${soapNote.plan || 'No treatment plan recorded.'}
+
+${'─'.repeat(60)}
+
+${soapNote.referrals ? `Referrals:\n${soapNote.referrals}\n\n${'─'.repeat(60)}\n` : ''}
+${soapNote.precautions ? `Precautions:\n${soapNote.precautions}\n\n${'─'.repeat(60)}\n` : ''}
+${soapNote.additionalNotes ? `Additional Notes:\n${soapNote.additionalNotes}\n\n${'─'.repeat(60)}\n` : ''}
+
+Generated by AiDuxCare
+Document ID: ${Date.now()}
+Status: Finalized
+
+${'='.repeat(60)}`;
+  };
+
+  /**
+   * Copy SOAP note to clipboard as plain text
+   */
+  const handleCopyToClipboard = async () => {
+    if (!currentSOAP) return;
+
+    try {
+      const plainText = generatePlainTextFormat(currentSOAP);
+      await navigator.clipboard.writeText(plainText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = generatePlainTextFormat(currentSOAP);
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  /**
+   * Download SOAP note as .txt file
+   */
+  const handleDownloadAsText = () => {
+    if (!currentSOAP) return;
+
+    const plainText = generatePlainTextFormat(currentSOAP);
+    const blob = new Blob([plainText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SOAP_Note_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (isGenerating) {
+    return (
+      <div className={`rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ${className}`}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent mb-4" />
+          <p className="text-[15px] font-light text-slate-700 font-apple">Generating SOAP note with AiduxCare AI...</p>
+          <p className="text-[12px] text-slate-500 mt-2 font-apple font-light">This may take a few seconds</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!soap && !editedSOAP) {
+    return (
+      <div className={`rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center ${className}`}>
+        <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+        <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
+        <p className="text-xs text-slate-500">Complete the analysis and physical evaluation tabs, then generate a SOAP note</p>
+      </div>
+    );
+  }
+
+  const currentSOAP = editedSOAP || soap;
+  const isReadOnly = status === 'finalized' && !showFinalizeConfirm && !isEditingFinalized;
+  
+  // ✅ DÍA 2: Review state tracking
+  const requiresReview = currentSOAP?.requiresReview || false;
+  const isReviewed = currentSOAP?.isReviewed || false;
+  
+  // ✅ DÍA 2: Handler para marcar como reviewed
+  const handleMarkAsReviewed = () => {
+    if (!currentSOAP) return;
+    setEditedSOAP({
+      ...currentSOAP,
+      isReviewed: true,
+    });
+    setHasChanges(true);
+  };
+
+  return (
+    <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
+      {/* Header */}
+      <div className="border-b border-slate-200 bg-gray-50 px-6 py-4 rounded-t-2xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-primary-blue/20 to-primary-purple/20">
+              <FileText className="w-5 h-5 text-primary-blue" />
+            </div>
+            <div>
+              <h3 className="text-xl font-medium bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-apple">
+                SOAP Note - {visitType === 'initial' ? 'Initial Assessment' : 'Follow-up Visit'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                Status: <span className={`font-medium ${status === 'finalized' ? 'text-green-600' : 'text-amber-600'}`}>
+                  {status === 'finalized' ? 'Finalized' : 'Draft'}
+                </span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {status === 'draft' && (
+              <>
+                {onRegenerate && (
+                  <button
+                    onClick={onRegenerate}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Regenerate
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={!hasChanges}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Save Draft
+                </button>
+                <button
+                  onClick={handlePreview}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Preview
+                </button>
+              </>
+            )}
+            {status === 'draft' && onFinalize && (
+              <button
+                onClick={handleFinalize}
+                className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-[15px] font-medium shadow-sm transition font-apple"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Finalize & Save
+              </button>
+            )}
+            {status === 'finalized' && currentSOAP && (
+              <>
+                {!isEditingFinalized ? (
+                  <>
+                    <button
+                      onClick={handleUnfinalize}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg bg-gradient-warning hover:bg-gradient-warning-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      title="Unfinalize to edit this note (creates edit history)"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Edit Note
+                    </button>
+                    <button
+                      onClick={handleCopyToClipboard}
+                      className="inline-flex flex-col items-center gap-1 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      title="Copy to clipboard for pasting into your EMR"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy to Clipboard</span>
+                          <span className="text-[10px] font-normal opacity-90">Paste into your EMR</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleDownloadAsText}
+                      className="inline-flex flex-col items-center gap-1 px-3 py-1.5 min-h-[48px] rounded-lg bg-gradient-secondary hover:bg-gradient-secondary-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      title="Download as text file"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download .txt</span>
+                      <span className="text-[10px] font-normal opacity-90">Save as text file</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleSaveAfterUnfinalize}
+                      disabled={!hasChanges}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingFinalized(false);
+                        setEditedSOAP(soap); // Reset to original
+                        setHasChanges(false);
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      Cancel Edit
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ✅ DÍA 2: Review Required Badge - CPO Compliance */}
+      {requiresReview && !isReviewed && status === 'draft' && (
+        <div className="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900 mb-1">
+                  ⚠️ Review Required - CPO Compliance
+                </p>
+                <p className="text-xs text-yellow-700 leading-relaxed">
+                  This SOAP note was AI-generated and <strong>requires your review before finalization</strong>. 
+                  Please verify all content, especially clinical assessments and treatment plans, to ensure accuracy 
+                  and completeness per CPO TRUST Framework requirements.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleMarkAsReviewed}
+              className="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors flex-shrink-0"
+            >
+              Mark as Reviewed
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* ✅ DÍA 2: Review Completed Indicator */}
+      {requiresReview && isReviewed && status === 'draft' && (
+        <div className="px-6 py-3 bg-green-50 border-b border-green-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <p className="text-xs text-green-800">
+              <strong>✓ Reviewed:</strong> This SOAP note has been reviewed and is ready for finalization.
+              {currentSOAP?.reviewed?.reviewedAt && (
+                <span className="ml-2 text-green-700">
+                  Reviewed on {new Date(currentSOAP.reviewed.reviewedAt).toLocaleString('en-CA')}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Disclaimer / Export Info */}
+      <div className={`px-6 py-3 border-b ${status === 'finalized' ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+        {status === 'finalized' ? (
+          <div className="flex items-start gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-green-800 mb-2">
+                <strong>✓ Finalized Document:</strong> This SOAP note has been finalized and is ready for export. Use "Copy to Clipboard" to paste into your EMR system, or download as a text file.
+              </p>
+              <p className="text-[10px] text-green-700">
+                <strong>EMR Compatibility:</strong> The copied text is plain text format, compatible with most EMR systems. Simply paste (Ctrl+V / Cmd+V) into your EMR's note field.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-800">
+              <strong>AI-Assisted Documentation:</strong> This SOAP note is AI-generated. Review and edit all content before finalizing. The clinician is responsible for the accuracy and completeness of this note.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* SOAP Sections */}
+      <div className="p-6 space-y-6">
+        {/* Subjective */}
+        <div className="border-l-4 border-purple-300 pl-4">
+          <label className="block text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+            S: Subjective
+          </label>
+          <textarea
+            value={currentSOAP?.subjective || ''}
+            onChange={(e) => handleSectionChange('subjective', e.target.value)}
+            readOnly={isReadOnly}
+            rows={4}
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+              isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
+            }`}
+            placeholder="Chief complaint, history of present condition, relevant medical history, medications, functional limitations..."
+          />
+        </div>
+
+        {/* Objective */}
+        <div className="border-l-4 border-blue-300 pl-4">
+          <label className="block text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            O: Objective
+          </label>
+          <textarea
+            value={currentSOAP?.objective || ''}
+            onChange={(e) => handleSectionChange('objective', e.target.value)}
+            readOnly={isReadOnly}
+            rows={4}
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+              isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
+            }`}
+            placeholder="Physical examination findings, test results, measurements, observations..."
+          />
+        </div>
+
+        {/* Assessment */}
+        <div className="border-l-4 border-purple-400 pl-4">
+          <label className="block text-sm font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            A: Assessment
+          </label>
+          <textarea
+            value={currentSOAP?.assessment || ''}
+            onChange={(e) => handleSectionChange('assessment', e.target.value)}
+            readOnly={isReadOnly}
+            rows={4}
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+              isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
+            }`}
+            placeholder="Clinical reasoning, pattern identification, differential considerations (non-diagnostic language)..."
+          />
+        </div>
+
+        {/* Plan */}
+        <div className="border-l-4 border-blue-400 pl-4">
+          <label className="block text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+            P: Plan
+          </label>
+          <textarea
+            value={currentSOAP?.plan || ''}
+            onChange={(e) => handleSectionChange('plan', e.target.value)}
+            readOnly={isReadOnly}
+            rows={6}
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+              isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
+            }`}
+            placeholder="Treatment plan, goals, interventions, frequency, duration, follow-up schedule...
+
+Available modalities:
+- TENS (Transcutaneous Electrical Nerve Stimulation)
+- US (Ultrasound therapy)
+- Tecar therapy (Capacitive/Resistive diathermy)
+- Infrared light therapy
+- Shockwave therapy (Extracorporeal Shock Wave Therapy)
+
+Include specific parameters, duration, and frequency for each modality used."
+          />
+          {!isReadOnly && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-800 font-medium mb-2">💡 Treatment Modalities Available (click to add):</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { label: 'TENS', full: 'TENS (Transcutaneous Electrical Nerve Stimulation)' },
+                  { label: 'US', full: 'US (Ultrasound therapy)' },
+                  { label: 'Tecar', full: 'Tecar therapy (Capacitive/Resistive diathermy)' },
+                  { label: 'Infrared', full: 'Infrared light therapy' },
+                  { label: 'Shockwave', full: 'Shockwave therapy (Extracorporeal Shock Wave Therapy)' },
+                ].map((modality) => {
+                  const isAlreadyAdded = currentSOAP?.plan?.includes(modality.full) || false;
+                  return (
+                    <button
+                      key={modality.label}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!currentSOAP) return;
+                        const currentPlan = currentSOAP.plan || '';
+                        const modalityText = `- ${modality.full}`;
+                        // Check if already added
+                        if (!isAlreadyAdded) {
+                          const newPlan = currentPlan.trim() 
+                            ? `${currentPlan}\n${modalityText}`
+                            : modalityText;
+                          handleSectionChange('plan', newPlan);
+                        }
+                      }}
+                      disabled={isAlreadyAdded}
+                      className={`text-left px-2 py-1.5 rounded border transition cursor-pointer ${
+                        isAlreadyAdded
+                          ? 'bg-blue-200 border-blue-400 text-blue-800 cursor-not-allowed opacity-60'
+                          : 'hover:bg-blue-100 border-transparent hover:border-blue-300 text-blue-700 active:bg-blue-200'
+                      }`}
+                      title={isAlreadyAdded ? 'Already added to plan' : `Click to add ${modality.label} to treatment plan`}
+                    >
+                      • {modality.full}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Optional sections */}
+        {(currentSOAP?.additionalNotes || currentSOAP?.followUp || currentSOAP?.precautions || currentSOAP?.referrals) && (
+          <div className="pt-4 border-t border-slate-200 space-y-4">
+            {currentSOAP.additionalNotes && (
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Additional Notes
+                </label>
+                <textarea
+                  value={currentSOAP.additionalNotes}
+                  onChange={(e) => handleSectionChange('additionalNotes', e.target.value)}
+                  readOnly={isReadOnly}
+                  rows={2}
+                  className={`w-full rounded-lg border px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 ${
+                    isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200'
+                  }`}
+                />
+              </div>
+            )}
+            {currentSOAP.followUp && (
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                  Follow-up
+                </label>
+                <textarea
+                  value={currentSOAP.followUp}
+                  onChange={(e) => handleSectionChange('followUp', e.target.value)}
+                  readOnly={isReadOnly}
+                  rows={2}
+                  className={`w-full rounded-lg border px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 ${
+                    isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200'
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Preview Modal */}
+      {showPreview && currentSOAP && (
+        <div 
+          className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Close if clicking on backdrop
+            if (e.target === e.currentTarget) {
+              handleClosePreview();
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-4">
+              <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">SOAP Note Preview</h3>
+              <button
+                onClick={handleClosePreview}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                aria-label="Close preview"
+                type="button"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-800">
+                  <strong>Preview Mode:</strong> This is how your SOAP note will appear once finalized. Review all sections carefully before accepting.
+                </p>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="border-l-4 border-purple-300 pl-4">
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">S: Subjective</h4>
+                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-purple-100">
+                    {currentSOAP.subjective || 'No content'}
+                  </div>
+                </div>
+                
+                <div className="border-l-4 border-blue-300 pl-4">
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">O: Objective</h4>
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-blue-100">
+                    {currentSOAP.objective || 'No content'}
+                  </div>
+                </div>
+                
+                <div className="border-l-4 border-purple-400 pl-4">
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">A: Assessment</h4>
+                  <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-purple-200">
+                    {currentSOAP.assessment || 'No content'}
+                  </div>
+                </div>
+                
+                <div className="border-l-4 border-blue-400 pl-4">
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">P: Plan</h4>
+                  <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-blue-200">
+                    {currentSOAP.plan || 'No content'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6 pt-4 border-t border-slate-200">
+              <button
+                onClick={handleClosePreview}
+                className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Back to Edit
+              </button>
+              {onFinalize && (
+                <button
+                  onClick={() => {
+                    handleClosePreview();
+                    handleFinalize();
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg bg-gradient-primary text-white text-sm font-medium hover:bg-gradient-primary-hover transition"
+                >
+                  Accept & Finalize
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Finalize Confirmation Modal */}
+      {showFinalizeConfirm && (
+        <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Finalize SOAP Note?</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Once finalized, this SOAP note will be saved and marked as complete. You can still edit it, but it will require "unfinalizing" first.
+            </p>
+            
+            {/* ✅ DÍA 2: CPO Review Checkbox - HTML5 required */}
+            {requiresReview && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="reviewed-checkbox-finalize"
+                    checked={isReviewed}
+                    onChange={(e) => {
+                      if (currentSOAP) {
+                        setEditedSOAP({
+                          ...currentSOAP,
+                          isReviewed: e.target.checked,
+                        });
+                      }
+                    }}
+                    required={requiresReview}
+                    className="mt-1 h-4 w-4 text-yellow-600 rounded border-gray-300 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-yellow-900">
+                    I have reviewed and verified this SOAP note (CPO requirement)
+                  </span>
+                </label>
+                {!isReviewed && (
+                  <p className="text-xs text-yellow-700 mt-2 ml-6">
+                    This checkbox is required before finalizing AI-generated SOAP notes.
+                  </p>
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelFinalize}
+                className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFinalize}
+                disabled={requiresReview && !isReviewed}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  requiresReview && !isReviewed
+                    ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+                    : 'bg-gradient-primary text-white hover:bg-gradient-primary-hover'
+                }`}
+              >
+                Finalize
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
