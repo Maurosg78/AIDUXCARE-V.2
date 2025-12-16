@@ -115,7 +115,7 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
         </div>
         
         <p className="legal-checklist-instruction">
-          You must accept all 3 consents to continue
+          You must accept all {requiredItems.length} consent{requiredItems.length !== 1 ? 's' : ''} to continue
         </p>
       </div>
 

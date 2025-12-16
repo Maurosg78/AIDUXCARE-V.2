@@ -176,8 +176,8 @@ export default function OnboardingPage() {
       const phoneNumber = data.personal.phone?.trim() || '';
       // Remove all non-digit characters from phone number, then combine
       const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
-      const fullPhone = phoneCountryCode && cleanPhoneNumber 
-        ? `${phoneCountryCode}${cleanPhoneNumber}` 
+      const fullPhone = phoneCountryCode && cleanPhoneNumber
+        ? `${phoneCountryCode}${cleanPhoneNumber}`
         : '';
 
       const payload = {
