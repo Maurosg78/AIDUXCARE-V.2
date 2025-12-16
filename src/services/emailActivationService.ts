@@ -125,6 +125,14 @@ export class EmailActivationService {
         firestoreData.lastLogin = professional.lastLogin.toISOString();
       }
 
+      // Remove undefined fields (Firestore doesn't accept undefined values)
+      const cleanFirestoreData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(firestoreData)) {
+        if (value !== undefined) {
+          cleanFirestoreData[key] = value;
+        }
+      }
+
       // Crear cuenta de usuario en Firebase Auth con contraseña temporal
       let userCredential;
       try {
@@ -141,7 +149,7 @@ export class EmailActivationService {
         });
 
         // Guardar en Firestore de forma asíncrona (no bloquea el envío de SMS)
-        setDoc(userDoc, firestoreData).then(async () => {
+        setDoc(userDoc, cleanFirestoreData).then(async () => {
           console.log('✅ [DEBUG] Profesional guardado en Firestore:', professionalId);
 
           // ✅ PILOT METRICS: Track pilot user registration
