@@ -171,9 +171,14 @@ export default function OnboardingPage() {
 
     try {
       // Combine phoneCountryCode and phone into full phone number
+      // Ensure proper format: +[country code][area code][number] (no spaces, no dashes)
       const phoneCountryCode = (data.personal as any).phoneCountryCode?.trim() || '+1';
       const phoneNumber = data.personal.phone?.trim() || '';
-      const fullPhone = phoneCountryCode && phoneNumber ? `${phoneCountryCode}${phoneNumber}` : '';
+      // Remove all non-digit characters from phone number, then combine
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      const fullPhone = phoneCountryCode && cleanPhoneNumber 
+        ? `${phoneCountryCode}${cleanPhoneNumber}` 
+        : '';
 
       const payload = {
         email: data.personal.email ?? "",
@@ -188,6 +193,7 @@ export default function OnboardingPage() {
         university: data.professional.university ?? "",
         experienceYears: data.professional.experienceYears ?? 0,
         mskSkills: (data.professional as any).mskSkills ?? "",
+        mskSkillsOther: (data.professional as any).mskSkillsOther ?? "",
         country: data.location.country ?? "",
         province: data.location.province ?? "",
         city: data.location.city ?? "",
@@ -202,6 +208,7 @@ export default function OnboardingPage() {
         experienceYears: Number.isFinite(payload.experienceYears) ? payload.experienceYears : undefined,
         workplace: payload.workplace || undefined,
         mskSkills: payload.mskSkills || undefined,
+        mskSkillsOther: payload.mskSkillsOther || undefined,
         country: payload.country || 'Canada',
         city: payload.city || undefined,
         province: payload.province || undefined,
@@ -345,6 +352,7 @@ export default function OnboardingPage() {
                 data={data.location as LocationData}
                 errors={errors}
                 onFieldChange={onFieldChange}
+                personalData={data.personal}
               />
             )}
           </>

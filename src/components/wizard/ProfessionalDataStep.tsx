@@ -199,6 +199,24 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
                 {selectedSkills.length} skill{selectedSkills.length !== 1 ? 's' : ''} selected
               </p>
             )}
+            
+            {/* "Other" skill input */}
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+              <label className={styles.fieldLabel} style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                Other MSK Skills / Certifications (Optional)
+              </label>
+              <input
+                type="text"
+                value={(data as any).mskSkillsOther ?? ""}
+                onChange={handleChange("mskSkillsOther")}
+                className={styles.textInput}
+                placeholder="e.g., Advanced Manual Therapy, IASTM, Cupping Therapy..."
+                style={{ fontSize: '0.875rem' }}
+              />
+              <p className={styles.helperText} style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                Enter any additional certifications or training courses not listed above
+              </p>
+            </div>
           </div>
         )}
       </div>

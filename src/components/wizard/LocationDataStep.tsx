@@ -77,6 +77,7 @@ type Props = {
   errors?: Record<string, string>;
   onFieldChange: (field: keyof LocationData, value: string | boolean) => void;
   locationData?: { countryCode?: string; region?: string; city?: string };
+  personalData?: Partial<{ country?: string; province?: string; city?: string }>;
 };
 
 export const LocationDataStep: React.FC<Props> = ({
@@ -84,6 +85,7 @@ export const LocationDataStep: React.FC<Props> = ({
   errors,
   onFieldChange,
   locationData,
+  personalData,
 }) => {
   const [legalItems, setLegalItems] = useState<LegalChecklistItem[]>([
     {
@@ -118,18 +120,33 @@ export const LocationDataStep: React.FC<Props> = ({
     );
   }, [data.phipaConsent, data.pipedaConsent]);
 
+  // Auto-fill from personal data (if available) or locationData
   React.useEffect(() => {
-    if (!locationData) return;
-    if (!data.country && locationData.countryCode) {
-      onFieldChange('country', locationData.countryCode.toLowerCase());
+    // Priority: personalData > locationData > existing data
+    if (!data.country) {
+      if (personalData?.country) {
+        onFieldChange('country', personalData.country);
+      } else if (locationData?.countryCode) {
+        onFieldChange('country', locationData.countryCode.toLowerCase());
+      }
     }
-    if (!data.province && locationData.region) {
-      onFieldChange('province', locationData.region);
+    if (!data.province) {
+      if (personalData?.province) {
+        // Convert province label to code if needed
+        const provinceCode = personalData.province.toLowerCase().replace(/\s+/g, '-');
+        onFieldChange('province', provinceCode);
+      } else if (locationData?.region) {
+        onFieldChange('province', locationData.region);
+      }
     }
-    if (!data.city && locationData.city) {
-      onFieldChange('city', locationData.city);
+    if (!data.city) {
+      if (personalData?.city) {
+        onFieldChange('city', personalData.city);
+      } else if (locationData?.city) {
+        onFieldChange('city', locationData.city);
+      }
     }
-  }, [locationData, data.country, data.province, data.city, onFieldChange]);
+  }, [locationData, personalData, data.country, data.province, data.city, onFieldChange]);
 
   const handleLegalItemChange = (itemId: string, checked: boolean) => {
     setLegalItems((prev) =>
