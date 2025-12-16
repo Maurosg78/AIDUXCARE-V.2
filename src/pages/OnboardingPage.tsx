@@ -352,7 +352,11 @@ export default function OnboardingPage() {
                 data={data.location as LocationData}
                 errors={errors}
                 onFieldChange={onFieldChange}
-                personalData={data.personal}
+                personalData={{
+                  country: data.personal.country,
+                  province: data.personal.province,
+                  city: data.personal.city,
+                }}
               />
             )}
           </>

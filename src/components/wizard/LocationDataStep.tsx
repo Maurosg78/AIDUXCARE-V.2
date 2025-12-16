@@ -122,16 +122,26 @@ export const LocationDataStep: React.FC<Props> = ({
 
   // Auto-fill from personal data (if available) or locationData
   React.useEffect(() => {
+    // Helper to validate city (not an email or invalid)
+    const isValidCity = (city: string | undefined): boolean => {
+      if (!city || city.trim() === '') return false;
+      // Reject if it looks like an email
+      if (city.includes('@')) return false;
+      // Reject if it's too short (likely not a city name)
+      if (city.trim().length < 2) return false;
+      return true;
+    };
+
     // Priority: personalData > locationData > existing data
     if (!data.country) {
-      if (personalData?.country) {
+      if (personalData?.country && personalData.country.trim() !== '') {
         onFieldChange('country', personalData.country);
       } else if (locationData?.countryCode) {
         onFieldChange('country', locationData.countryCode.toLowerCase());
       }
     }
     if (!data.province) {
-      if (personalData?.province) {
+      if (personalData?.province && personalData.province.trim() !== '') {
         // Convert province label to code if needed
         const provinceCode = personalData.province.toLowerCase().replace(/\s+/g, '-');
         onFieldChange('province', provinceCode);
@@ -140,10 +150,11 @@ export const LocationDataStep: React.FC<Props> = ({
       }
     }
     if (!data.city) {
-      if (personalData?.city) {
-        onFieldChange('city', personalData.city);
-      } else if (locationData?.city) {
-        onFieldChange('city', locationData.city);
+      // Only use personalData.city if it's a valid city (not an email)
+      if (personalData?.city && isValidCity(personalData.city)) {
+        onFieldChange('city', personalData.city.trim());
+      } else if (locationData?.city && isValidCity(locationData.city)) {
+        onFieldChange('city', locationData.city.trim());
       }
     }
   }, [locationData, personalData, data.country, data.province, data.city, onFieldChange]);
