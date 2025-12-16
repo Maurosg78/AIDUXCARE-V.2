@@ -29,6 +29,7 @@ export interface ProfessionalRegistration {
   university?: string;
   experienceYears?: number;
   workplace?: string;
+  mskSkills?: string; // Comma-separated list of MSK skill codes (e.g., "manual-therapy,dry-needling,mckenzie")
 
   country: string;
   city?: string;

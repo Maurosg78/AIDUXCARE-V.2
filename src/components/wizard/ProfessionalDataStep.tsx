@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 
 import styles from '@/styles/wizard.module.css';
 import type { ProfessionalData } from "../../types/wizard";
-import { PROFESSIONAL_TITLES, PRIMARY_SPECIALTIES } from './onboardingConstants';
+import { PROFESSIONAL_TITLES, PRIMARY_SPECIALTIES, MSK_SKILLS } from './onboardingConstants';
 
 interface ProfessionalDataStepProps {
   data: ProfessionalData;
@@ -18,11 +18,24 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
 }) => {
   const [showOtherTitle, setShowOtherTitle] = useState(false);
   const [showOtherSpecialty, setShowOtherSpecialty] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(
+    (data as any).mskSkills ? (data as any).mskSkills.split(',').filter(Boolean) : []
+  );
 
   useEffect(() => {
     setShowOtherTitle(data.professionalTitle === 'other');
     setShowOtherSpecialty(data.specialty === 'other');
   }, [data.professionalTitle, data.specialty]);
+
+  useEffect(() => {
+    // Sync selectedSkills with data.mskSkills
+    if ((data as any).mskSkills) {
+      const skills = (data as any).mskSkills.split(',').filter(Boolean);
+      setSelectedSkills(skills);
+    } else {
+      setSelectedSkills([]);
+    }
+  }, [(data as any).mskSkills]);
 
   const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const value = field === 'experienceYears' ? Number(event.target.value) : event.target.value;
@@ -37,6 +50,19 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   const handleSpecialtyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     onFieldChange('specialty', value);
+    // Clear MSK skills if specialty changes away from MSK
+    if (value !== 'msk') {
+      onFieldChange('mskSkills', '');
+      setSelectedSkills([]);
+    }
+  };
+
+  const handleSkillToggle = (skillValue: string) => {
+    const newSkills = selectedSkills.includes(skillValue)
+      ? selectedSkills.filter(s => s !== skillValue)
+      : [...selectedSkills, skillValue];
+    setSelectedSkills(newSkills);
+    onFieldChange('mskSkills', newSkills.join(','));
   };
 
   return (
@@ -109,6 +135,70 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
               placeholder="e.g., Manual Therapy, Dry Needling, Motor Control..."
               required
             />
+          </div>
+        )}
+
+        {/* MSK Skills Selection - Only shown when MSK is selected */}
+        {data.specialty === 'msk' && (
+          <div className={styles.fieldGroup} style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+            <label className={styles.fieldLabel} style={{ marginBottom: '0.75rem' }}>
+              MSK Skills & Continuing Education (Optional)
+            </label>
+            <p className={styles.helperText} style={{ marginBottom: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
+              Select your certifications and training courses. This helps us personalize treatment plans based on your capabilities.
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '0.75rem',
+              padding: '1rem',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.5rem',
+              backgroundColor: '#f9fafb',
+              maxHeight: '300px',
+              overflowY: 'auto',
+            }}>
+              {MSK_SKILLS.map((skill) => (
+                <label
+                  key={skill.value}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem',
+                    cursor: 'pointer',
+                    borderRadius: '0.25rem',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSkills.includes(skill.value)}
+                    onChange={() => handleSkillToggle(skill.value)}
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      cursor: 'pointer',
+                      accentColor: '#2563eb',
+                    }}
+                  />
+                  <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                    {skill.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {selectedSkills.length > 0 && (
+              <p className={styles.helperText} style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#059669' }}>
+                {selectedSkills.length} skill{selectedSkills.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
           </div>
         )}
       </div>
