@@ -99,10 +99,10 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
       <div className="legal-checklist-header">
         <div className="legal-checklist-progress">
           <h3 className="legal-checklist-title">
-            Consentimientos Legales Requeridos
+            Required Legal Consent
           </h3>
           <div className="legal-checklist-progress-text">
-            {checkedRequiredItems.length} de {requiredItems.length} completados
+            {checkedRequiredItems.length} of {requiredItems.length} completed
           </div>
         </div>
         
@@ -115,7 +115,7 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
         </div>
         
         <p className="legal-checklist-instruction">
-          Debe aceptar los 3 consentimientos para continuar
+          You must accept all 3 consents to continue
         </p>
       </div>
 
@@ -139,34 +139,78 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
                   accentColor: '#2563eb'
                 }}
               />
-              <div className="legal-checklist-label">
+              <label 
+                htmlFor={item.id}
+                className="legal-checklist-label cursor-pointer"
+              >
                 <div className="legal-checklist-item-header">
                   <span className="legal-checklist-category-icon"></span>
                   <span className="legal-checklist-item-title">
-                    {item.title}
+                    {item.id === 'terms-accepted' && (
+                      <>
+                        I agree to the{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openTermsModal(item.title, item.id);
+                          }}
+                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                          aria-label="Open Terms of Use"
+                        >
+                          Terms of Use
+                        </button>
+                      </>
+                    )}
+                    {item.id === 'privacy-accepted' && (
+                      <>
+                        I have read the{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openTermsModal(item.title, item.id);
+                          }}
+                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                          aria-label="Open Privacy Policy"
+                        >
+                          Privacy Policy
+                        </button>
+                      </>
+                    )}
+                    {item.id === 'phipa-pipeda-accepted' && (
+                      <>
+                        I acknowledge{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openTermsModal(item.title, item.id);
+                          }}
+                          className="text-blue-600 underline hover:text-blue-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                          aria-label="Open PHIPA/PIPEDA information"
+                        >
+                          PHIPA / PIPEDA
+                        </button>
+                        {' '}safeguards and my responsibilities as Health Information Custodian (HIC)
+                      </>
+                    )}
+                    {!['terms-accepted', 'privacy-accepted', 'phipa-pipeda-accepted'].includes(item.id) && item.title}
                   </span>
                   {item.required && (
                     <span className="legal-checklist-required">*</span>
                   )}
                 </div>
                 
-                <p className="legal-checklist-description">
-                  {item.description}
-                </p>
-                
-                {/* Link para ver términos */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openTermsModal(item.title, item.id);
-                  }}
-                  className="legal-checklist-terms-link"
-                >
-                  Read full terms
-                </button>
-              </div>
+                {item.description && (
+                  <p className="legal-checklist-description text-xs text-gray-600 mt-1">
+                    {item.description}
+                  </p>
+                )}
+              </label>
             </div>
           </div>
         ))}
@@ -178,7 +222,7 @@ export const LegalChecklist: React.FC<LegalChecklistProps> = ({
           <div className="legal-checklist-success-content">
             <span className="legal-checklist-success-icon"></span>
             <p className="legal-checklist-success-text">
-              Todos los consentimientos han sido aceptados
+              All consents have been accepted
             </p>
           </div>
         </div>

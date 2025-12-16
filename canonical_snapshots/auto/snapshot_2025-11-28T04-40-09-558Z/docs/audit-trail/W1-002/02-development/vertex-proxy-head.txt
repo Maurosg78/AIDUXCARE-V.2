@@ -1,15 +1,0 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0    41    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
-HTTP/2 405 
-access-control-allow-origin: *
-access-control-allow-methods: POST, OPTIONS
-access-control-allow-headers: Content-Type, Authorization
-content-type: application/json; charset=utf-8
-function-execution-id: fgxrh9xq47z9
-x-cloud-trace-context: 9b79ebef09427de613b2c18ad1a8a06e;o=1
-content-length: 41
-date: Thu, 27 Nov 2025 13:42:20 GMT
-server: Google Frontend
-alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-

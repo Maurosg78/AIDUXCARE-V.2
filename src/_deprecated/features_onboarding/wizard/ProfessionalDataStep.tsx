@@ -9,8 +9,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ProfessionalData, professionalTitles } from '../../types/wizard';
+import { ProfessionalData } from '../../types/wizard';
 import { useProfessionalProfile, ProfessionalProfile } from '../../context/ProfessionalProfileContext';
+import { PROFESSIONAL_TITLES, PRIMARY_SPECIALTIES } from './onboardingConstants';
 
 interface ProfessionalDataStepProps {
   data: ProfessionalData;
@@ -26,6 +27,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
   const { updateWizardData } = useProfessionalProfile();
   const [showOtherUniversity, setShowOtherUniversity] = useState(false);
   const [showOtherSpecialty, setShowOtherSpecialty] = useState(false);
+  const [showOtherTitle, setShowOtherTitle] = useState(false);
 
   // Mapear campos del wizard a campos del contexto
   const handleFieldChangeWithContext = (field: string, value: string) => {
@@ -209,11 +211,14 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
 
   useEffect(() => {
     // Mostrar campo "otro" para universidad si se selecciona
-    setShowOtherUniversity(data.university === 'otro');
+    setShowOtherUniversity(data.university === 'otro' || data.university === 'other');
     
     // Mostrar campo "otro" para especialidad si se selecciona
-    setShowOtherSpecialty(data.specialty === 'otro');
-  }, [data.university, data.specialty]);
+    setShowOtherSpecialty(data.specialty === 'other');
+    
+    // Mostrar campo "otro" para título profesional si se selecciona
+    setShowOtherTitle(data.professionalTitle === 'other');
+  }, [data.university, data.specialty, data.professionalTitle]);
 
   const handleUniversityChange = (value: string) => {
     handleFieldChangeWithContext('university', value);
@@ -238,16 +243,22 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
           {/* Fila 1: Título Profesional y Especialidad */}
           <div className="form-group">
             <label htmlFor="professionalTitle" className="block text-sm font-medium text-gray-700 mb-2">
-              Título Profesional *
+              Professional Title *
             </label>
             <select 
               id="professionalTitle"
               value={data.professionalTitle} 
-              onChange={(e) => handleFieldChangeWithContext('professionalTitle', e.target.value)} 
+              onChange={(e) => {
+                const value = e.target.value;
+                handleFieldChangeWithContext('professionalTitle', value);
+                if (value !== 'other') {
+                  // Clear other title if switching away
+                }
+              }} 
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
             >
-              <option value="">Selecciona tu título</option>
-              {professionalTitles.map((title) => (
+              <option value="">Select your professional title</option>
+              {PROFESSIONAL_TITLES.map((title) => (
                 <option key={title.value} value={title.value}>
                   {title.label}
                 </option>
@@ -258,11 +269,26 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
             )}
           </div>
           
+          {/* Other Title field */}
+          {showOtherTitle && (
+            <div className="form-group md:col-span-2">
+              <label htmlFor="professionalTitleOther" className="block text-sm font-medium text-gray-700 mb-2">
+                Specify your professional title *
+              </label>
+              <input 
+                id="professionalTitleOther"
+                type="text" 
+                value={(data as any).professionalTitleOther || ''} 
+                onChange={(e) => handleFieldChangeWithContext('professionalTitleOther', e.target.value)} 
+                className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.professionalTitle ? 'border-red-300' : 'border-gray-200'}`}
+                placeholder="e.g., Athletic Therapist, Kinesiologist..."
+              />
+            </div>
+          )}
+          
           <div className="form-group">
             <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-2">
-              {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                ? 'Especialidad *' 
-                : 'Área de Expertiz'}
+              Primary Specialty *
             </label>
             <select 
               id="specialty"
@@ -271,12 +297,8 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
               className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialty ? 'border-red-300' : 'border-gray-200'} ${!data.professionalTitle ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={!data.professionalTitle}
             >
-              <option value="">
-                {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                  ? 'Selecciona tu especialidad' 
-                  : 'Selecciona tu área'}
-              </option>
-              {data.professionalTitle && getSpecialtiesByTitle(data.professionalTitle).map((specialty) => (
+              <option value="">Select your primary specialty</option>
+              {PRIMARY_SPECIALTIES.map((specialty) => (
                 <option key={specialty.value} value={specialty.value}>
                   {specialty.label}
                 </option>
@@ -291,9 +313,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
           {showOtherSpecialty && (
             <div className="form-group md:col-span-2">
               <label htmlFor="specialtyOther" className="block text-sm font-medium text-gray-700 mb-2">
-                {data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                  ? 'Especifica tu especialidad *' 
-                  : 'Especifica tu área de expertiz *'}
+                Specify your specialty *
               </label>
               <input 
                 id="specialtyOther"
@@ -301,11 +321,7 @@ export const ProfessionalDataStep: React.FC<ProfessionalDataStepProps> = ({
                 value={data.specialtyOther || ''} 
                 onChange={(e) => handleFieldChangeWithContext('specialtyOther', e.target.value)} 
                 className={`block w-full h-12 px-4 py-3 border rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-base ${errors.specialtyOther ? 'border-red-300' : 'border-gray-200'}`}
-                placeholder={
-                  data.professionalTitle === 'Dr.' || data.professionalTitle === 'Dra.' 
-                    ? 'Ej: Medicina Interna, Cirugía Vascular...' 
-                    : 'Ej: Terapia Manual, Rehabilitación Deportiva...'
-                }
+                placeholder="e.g., Manual Therapy, Dry Needling, Motor Control..."
               />
               {errors.specialtyOther && (
                 <p className="text-sm text-red-600 mt-1">{errors.specialtyOther}</p>

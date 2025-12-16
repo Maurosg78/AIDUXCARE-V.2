@@ -1,6 +1,0 @@
-src/services/vertex-ai-soap-service.ts:17:const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
-src/services/vertex-ai-soap-service.ts:57:    const response = await fetch(VERTEX_PROXY_URL, {
-src/services/vertex-ai-service-firebase.ts:38:const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
-src/services/vertex-ai-service-firebase.ts:52:  const response = await fetch(VERTEX_PROXY_URL, {
-src/services/vertex-ai-service-firebase.ts:162:  const response = await fetch(VERTEX_PROXY_URL, {
-src/services/vertex-ai-service-firebase.ts:230:    const response = await fetch(VERTEX_PROXY_URL, {
