@@ -68,6 +68,8 @@ const router = createBrowserRouter([
   { path: '/workflow', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
+  { path: '/consent/:token', element: <ConsentVerificationPage /> }, // Public consent link (no auth required)
+  { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number
   { path: '/hospital/note', element: <HospitalPortalPage /> }, // Original note code portal (legacy)

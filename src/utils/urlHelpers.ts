@@ -42,10 +42,22 @@ export function getPublicBaseUrl(): string {
       validateDevelopmentUrl(devUrl);
       return devUrl.trim();
     }
+    // Fallback: Use production URL if available, otherwise throw error
+    // This prevents localhost/IP addresses from being used in SMS links
+    if (import.meta.env.VITE_PUBLIC_BASE_URL) {
+      const prodUrl = import.meta.env.VITE_PUBLIC_BASE_URL.trim();
+      validateProductionUrl(prodUrl);
+      console.warn(
+        '[URL Helper] VITE_DEV_PUBLIC_URL not set. Using production URL for SMS links. ' +
+        'This may cause issues if the production URL is not accessible. ' +
+        'Set VITE_DEV_PUBLIC_URL for development SMS testing.'
+      );
+      return prodUrl;
+    }
     throw new Error(
-      'VITE_DEV_PUBLIC_URL required for development SMS testing. ' +
+      'VITE_DEV_PUBLIC_URL or VITE_PUBLIC_BASE_URL required for development SMS testing. ' +
       'Use ngrok or similar service to expose localhost (e.g., ngrok http 5174). ' +
-      'Set VITE_DEV_PUBLIC_URL=https://your-ngrok-url.ngrok.io'
+      'Set VITE_DEV_PUBLIC_URL=https://your-ngrok-url.ngrok.io or VITE_PUBLIC_BASE_URL=https://your-production-url.com'
     );
   }
   
