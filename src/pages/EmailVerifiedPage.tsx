@@ -35,7 +35,19 @@ export const EmailVerifiedPage: React.FC = () => {
       setIsVerifying(false);
     } catch (error: any) {
       console.error('Error verificando email:', error);
-      setVerificationError(error.message || 'Error al verificar el email');
+      // Firebase error codes for expired/already used links
+      const errorCode = error?.code || '';
+      const errorMessage = error?.message || 'Error al verificar el email';
+      
+      // Check if it's an expired or already used link
+      const isExpired = errorCode.includes('expired') || errorMessage.toLowerCase().includes('expired');
+      const isAlreadyUsed = errorCode.includes('invalid') || errorMessage.toLowerCase().includes('already') || errorMessage.toLowerCase().includes('used');
+      
+      if (isExpired || isAlreadyUsed) {
+        setVerificationError('EXPIRED_OR_USED');
+      } else {
+        setVerificationError(errorMessage);
+      }
       setIsVerifying(false);
     }
   };
@@ -113,6 +125,11 @@ export const EmailVerifiedPage: React.FC = () => {
 
   // Mostrar error si hubo problema
   if (verificationError) {
+    const isExpiredOrUsed = verificationError === 'EXPIRED_OR_USED' || 
+                           verificationError.toLowerCase().includes('expired') || 
+                           verificationError.toLowerCase().includes('already') ||
+                           verificationError.toLowerCase().includes('used');
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -120,19 +137,26 @@ export const EmailVerifiedPage: React.FC = () => {
             <CheckCircleIcon className="h-10 w-10 text-yellow-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Verificación completada
+            {isExpiredOrUsed ? 'Enlace de verificación expirado' : 'Error de verificación'}
           </h1>
           <p className="text-gray-600 mb-6">
-            {verificationError.includes('already') || verificationError.includes('expired') 
-              ? 'Tu email ya está verificado o el enlace ha expirado. Puedes iniciar sesión normalmente.'
-              : 'Tu email ha sido verificado. Ya puedes iniciar sesión.'}
+            {isExpiredOrUsed 
+              ? 'El enlace de verificación ha expirado o ya fue utilizado. Tu email puede estar ya verificado. Intenta iniciar sesión, o solicita un nuevo enlace de verificación.'
+              : 'Hubo un problema al verificar tu email. Por favor, intenta nuevamente.'}
           </p>
-          <button
-            onClick={handleGoToLogin}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
-          >
-            Ir al Login
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={handleGoToLogin}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
+            >
+              Ir al Login
+            </button>
+            {isExpiredOrUsed && (
+              <p className="text-sm text-gray-500">
+                Si tu email ya está verificado, podrás iniciar sesión normalmente.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
