@@ -46,8 +46,17 @@ export const ConsentVerificationPage: React.FC = () => {
   // Initialize verification on mount
   useEffect(() => {
     const initialize = async () => {
+      // Support both /consent/:token (public) and /consent-verification/:patientId (auth required)
+      if (token) {
+        // Handle public consent link with token
+        // TODO: Implement token-based consent verification
+        setError('Token-based consent verification not yet implemented');
+        setLoading(false);
+        return;
+      }
+      
       if (!patientId) {
-        setError('Invalid patient ID');
+        setError('Invalid patient ID or token');
         setLoading(false);
         return;
       }
