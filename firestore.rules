@@ -37,12 +37,15 @@ service cloud.firestore {
     // ✅ Activation Tokens Collection - CONTROLADA (WO-SEC-001)
     // Tokens de activación separados de users para cumplir compliance
     match /activation_tokens/{token} {
-      // Lectura: Solo si el token no ha expirado y no ha sido usado
-      allow read: if 
+      // GET: Permitir lectura de token específico si no expirado y no usado
+      allow get: if 
         resource.data.expiresAt > request.time &&
         !('usedAt' in resource.data);
       
-      // Escritura: Solo para marcar como usado (single-use)
+      // LIST: Prohibido (evita enumeración de tokens)
+      allow list: if false;
+      
+      // UPDATE: Solo para marcar como usado (single-use)
       allow update: if 
         resource.data.expiresAt > request.time &&
         !('usedAt' in resource.data) &&
@@ -50,10 +53,12 @@ service cloud.firestore {
           .hasOnly(['usedAt']) &&
         request.resource.data.usedAt == request.time;
       
-      // Creación: Solo desde Cloud Functions (con permisos de servicio)
-      allow create: if false;
+      // CREATE: Permitir desde frontend (registro/resend) - TODO: Migrar a Cloud Function
+      // NOTA: Frontend actualmente crea tokens con setDoc (líneas 168, 652 en emailActivationService.ts)
+      // Para producción, migrar creación a Cloud Function y cambiar a: allow create: if false;
+      allow create: if true;
       
-      // Eliminación: Prohibida (requiere auditoría)
+      // DELETE: Prohibida (requiere auditoría)
       allow delete: if false;
     }
     
