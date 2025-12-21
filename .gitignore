@@ -89,3 +89,6 @@ eslint-*.json
 --*
 auth:
 firebase
+
+# Local backups (never commit)
+backups/

@@ -22,6 +22,7 @@ import InpatientPortalPage from '../pages/InpatientPortalPage';
 import PublicLandingPage from '../pages/PublicLandingPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
+import AuthActionPage from '../pages/AuthActionPage';
 
 // LayoutWrapper simple
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   { path: '/onboarding', element: <OnboardingPage /> },
   { path: '/email-verified', element: <EmailVerifiedPage /> },
+  { path: '/auth/action', element: <AuthActionPage /> },
   {
     path: '/command-center',
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>

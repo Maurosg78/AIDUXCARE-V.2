@@ -10,9 +10,11 @@ type ComplianceConfig = { regulations: Regulation[]; showAllRegulations?: boolea
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuth, sendEmailVerification } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 
 import { app } from '../core/firebase/firebaseClient';
+import { firebaseAuthService } from '@/services/firebaseAuthService';
+
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
 import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
 import Button from '../components/ui/button';
@@ -165,15 +167,19 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       
       logger.info('Perfil profesional guardado exitosamente en Firebase Firestore');
 
-      // Enviar email de verificación de forma asíncrona (no bloquea la navegación)
-      sendEmailVerification(user).catch((error) => {
-        logger.error('Error enviando email de verificación:', error);
-      });
-      
-      // Redirigir inmediatamente (no esperar el email)
-      navigate('/verify-email');
+      // Pilot: enviar verificación via firebaseAuthService (usa /auth/action) y volver a login
+      const verifyRes = await firebaseAuthService.sendEmailVerification(user);
+      if (!verifyRes.success) {
+        logger.warn("[PILOT] sendEmailVerification failed", { message: verifyRes.message });
+      }
 
-    } catch (error) {
+      // Forzar re-login post verification
+      await signOut(getAuth());
+
+      // Simplificado: volver a login (sin /verify-email intermedio)
+      navigate("/login");
+
+} catch (error) {
       logger.error('Error creando perfil:', error);
       setError('Error al crear el perfil profesional. Por favor, inténtalo de nuevo.');
     } finally {

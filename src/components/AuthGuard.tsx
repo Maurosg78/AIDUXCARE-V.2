@@ -63,7 +63,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   // Si requiere verificación de email y no está verificado
   if (requireEmailVerification && emailVerified === false && user.email) {
-    return <Navigate to={`/verify-email?email=${encodeURIComponent(user.email)}`} replace />;
+    return <Navigate to="/login?reason=email_not_verified" replace />;
   }
 
   // Usuario autenticado y verificado (si es requerido)

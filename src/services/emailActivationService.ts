@@ -14,6 +14,7 @@ import { SMSService } from './smsService';
 import { AnalyticsService } from './analyticsService';
 
 import logger from '@/shared/utils/logger';
+import { getPublicBaseUrl } from '@/utils/urlHelpers';
 
 // Pilot start date - users registered from this date onwards are pilot users
 const PILOT_START_DATE = new Date('2024-12-19T00:00:00Z');
@@ -140,8 +141,9 @@ export class EmailActivationService {
         console.log('✅ [DEBUG] Usuario creado en Firebase Auth');
 
         // Enviar email de verificación de Firebase (no bloquea)
+        const baseUrl = getPublicBaseUrl();
         const actionCodeSettings: ActionCodeSettings = {
-          url: `${window.location.origin}/email-verified`,
+          url: baseUrl + "/auth/action?mode=verifyEmail",
           handleCodeInApp: true,
         };
         sendEmailVerification(userCredential.user, actionCodeSettings).catch((error) => {

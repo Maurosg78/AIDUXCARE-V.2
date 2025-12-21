@@ -4,7 +4,8 @@
  * @author AiDuxCare Development Team
  */
 
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { firebaseAuthService } from '@/services/firebaseAuthService';
 
 import { auth } from '../lib/firebase';
 
@@ -30,7 +31,7 @@ async function createTestUser(): Promise<void> {
     logger.info(`   Email verificado: ${user.emailVerified}`);
     
     // Enviar email de verificación
-    await sendEmailVerification(user);
+    await firebaseAuthService.sendEmailVerification(user);
     logger.info('Email de verificación enviado');
     
     logger.info('\nUsuario de prueba creado exitosamente!');
