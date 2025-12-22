@@ -182,9 +182,7 @@ export class EmailActivationService {
 
         return {
           success: true,
-          message: professionalData.phone
-            ? 'Registro exitoso. Revisa tu SMS y email para activar tu cuenta.'
-            : 'Registro exitoso. Revisa tu email para activar tu cuenta.',
+          message: 'Registro exitoso. Revisa tu email para activar tu cuenta.',
           professionalId: professional.id,
           activationToken
         };

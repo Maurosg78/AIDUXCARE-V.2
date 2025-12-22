@@ -1,4 +1,3 @@
-import { } from 'firebase/firestore';
 
 import { VisitDataSourceFirestore } from './visitDataSourceFirestore';
 import { db as sharedDb } from "@/lib/firebase";
