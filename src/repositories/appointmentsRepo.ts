@@ -1,4 +1,5 @@
-import { addDoc, collection, getFirestore, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { db as sharedDb } from "@/lib/firebase";
 
 export type AppointmentCreateData = {
   clinicianUid: string;
@@ -11,7 +12,7 @@ export type AppointmentCreateData = {
 };
 
 export async function createAppointment(input: AppointmentCreateData): Promise<string> {
-  const db = getFirestore();
+  const db = sharedDb;
   const payload = {
     clinicianUid: input.clinicianUid,
     patientId: input.patientId,

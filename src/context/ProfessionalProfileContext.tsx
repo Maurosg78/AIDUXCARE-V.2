@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { 
-  getFirestore, 
   doc, 
   getDoc, 
   setDoc, 
@@ -12,6 +11,7 @@ import {
 import { useAuth } from './AuthContext';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 export interface ProfessionalProfile {
   uid: string;
@@ -86,7 +86,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
   const getDb = () => {
     // Memoizar la instancia de Firestore
     if (!getDb._db) {
-      getDb._db = getFirestore();
+      getDb._db = sharedDb;
     }
     return getDb._db;
   };

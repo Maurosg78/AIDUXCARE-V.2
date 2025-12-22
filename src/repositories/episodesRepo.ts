@@ -1,5 +1,4 @@
 import { 
-  getFirestore, 
   collection, 
   doc, 
   getDoc, 
@@ -15,6 +14,7 @@ import {
 } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 export interface Episode {
   id: string;
@@ -62,7 +62,7 @@ export interface EpisodeCreateData {
 }
 
 class EpisodesRepository {
-  private db = getFirestore();
+  private db = sharedDb;
   private collectionName = 'episodes';
 
   async getEpisodeById(id: string): Promise<Episode | null> {

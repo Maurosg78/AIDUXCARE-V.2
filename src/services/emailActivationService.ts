@@ -143,8 +143,8 @@ export class EmailActivationService {
         // Enviar email de verificación de Firebase (no bloquea)
         const baseUrl = getPublicBaseUrl();
         const actionCodeSettings: ActionCodeSettings = {
-          url: baseUrl + "/auth/action?mode=verifyEmail",
-          handleCodeInApp: true,
+          url: baseUrl + "/email-verified",
+          handleCodeInApp: false,
         };
         sendEmailVerification(userCredential.user, actionCodeSettings).catch((error) => {
           console.error('⚠️ [DEBUG] Error enviando email de verificación:', error);
@@ -173,26 +173,8 @@ export class EmailActivationService {
         }).catch((error) => {
           console.error('⚠️ [DEBUG] Error guardando en Firestore:', error);
         });
-
-        // Enviar SMS con link de activación inmediatamente (no espera Firestore)
-        // Usar el teléfono del profesional si está disponible
-        if (professionalData.phone) {
-          const professionalName = professionalData.displayName || 'Profesional';
-
-          SMSService.sendActivationLink(
-            professionalData.phone,
-            professionalName,
-            activationToken
-          ).then(() => {
-            console.log('✅ [DEBUG] SMS de activación enviado a:', professionalData.phone);
-          }).catch((error) => {
-            console.error('⚠️ [DEBUG] Error enviando SMS de activación:', error);
-            // No fallar el registro si el SMS falla, solo loguear el error
-          });
-        } else {
-          console.warn('⚠️ [DEBUG] No se proporcionó teléfono, no se enviará SMS de activación');
-        }
-
+          // SMS disabled (email-only activation)
+          logger.info("[SMS Activation] skipped: email-only mode");
         // Log link de activación para testing (no bloquea con alert)
         const activationLink = `${window.location.origin}/activate?token=${activationToken}`;
         console.log('[DEBUG] Link de activación:', activationLink);

@@ -1,5 +1,4 @@
 import { 
-  getFirestore, 
   collection, 
   doc, 
   getDoc, 
@@ -16,6 +15,7 @@ import {
 import { Patient } from '../core/types/patient';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 // Extender el tipo Patient del core para incluir id y timestamps de Firestore
 export interface PatientWithId extends Patient {
@@ -33,7 +33,7 @@ export interface PatientCreateData extends Omit<Patient, 'id' | 'createdAt' | 'p
 }
 
 class PatientsRepository {
-  private db = getFirestore();
+  private db = sharedDb;
   private collectionName = 'patients';
 
   async getPatientById(id: string): Promise<PatientWithId | null> {

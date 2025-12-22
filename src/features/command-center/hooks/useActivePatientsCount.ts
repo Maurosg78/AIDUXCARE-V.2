@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
 
 import { AsyncState } from './useUserProfile';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 export function useActivePatientsCount(): AsyncState<number> {
   const [state, setState] = useState<AsyncState<number>>({
@@ -13,7 +14,7 @@ export function useActivePatientsCount(): AsyncState<number> {
 
   useEffect(() => {
     const auth = getAuth();
-    const db = getFirestore();
+    const db = sharedDb;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {

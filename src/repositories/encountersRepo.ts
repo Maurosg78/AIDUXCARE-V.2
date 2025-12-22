@@ -1,5 +1,4 @@
 import { 
-  getFirestore, 
   collection, 
   doc, 
   getDoc, 
@@ -15,6 +14,7 @@ import {
 } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 export interface Encounter {
   id: string;
@@ -79,7 +79,7 @@ export interface EncounterCreateData {
 }
 
 class EncountersRepository {
-  private db = getFirestore();
+  private db = sharedDb;
   private collectionName = 'encounters';
 
   async getEncounterById(id: string): Promise<Encounter | null> {

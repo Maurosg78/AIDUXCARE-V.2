@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 
 import { useAuth } from '../hooks/useAuth';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 interface AuditLogEntry {
   id: string;
@@ -41,7 +42,7 @@ export const AuditWidget: React.FC<AuditWidgetProps> = ({ isVisible, onClose }) 
 
     setLoading(true);
     try {
-      const db = getFirestore();
+      const db = sharedDb;
       
       // Calcular rango de fechas
       const now = new Date();

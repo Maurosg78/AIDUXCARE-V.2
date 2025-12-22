@@ -263,7 +263,7 @@ export class FirebaseAuthService {
     try {
       const baseUrl = getPublicBaseUrl();
       const actionCodeSettings: ActionCodeSettings = {
-        url: baseUrl + "/auth/action?mode=verifyEmail",
+        url: baseUrl + "/auth/action",
         handleCodeInApp: true,
       };
       
@@ -300,7 +300,7 @@ export class FirebaseAuthService {
       
       const baseUrl = getPublicBaseUrl();
       await sendPasswordResetEmail(auth, normalizedEmail, {
-        url: baseUrl + "/auth/action?mode=resetPassword",
+        url: baseUrl + "/auth/action",
         handleCodeInApp: true,
       });
       

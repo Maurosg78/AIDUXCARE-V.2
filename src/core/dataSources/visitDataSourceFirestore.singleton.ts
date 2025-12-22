@@ -1,5 +1,6 @@
-import { getFirestore } from 'firebase/firestore';
+import { } from 'firebase/firestore';
 
 import { VisitDataSourceFirestore } from './visitDataSourceFirestore';
+import { db as sharedDb } from "@/lib/firebase";
 
-export const visitDataSourceFirestore = new VisitDataSourceFirestore(getFirestore()); 
+export const visitDataSourceFirestore = new VisitDataSourceFirestore(sharedDb); 

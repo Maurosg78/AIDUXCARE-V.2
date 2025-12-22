@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import {
   initializeAuth,
@@ -87,7 +87,7 @@ function initAuthWithPersistence(): Auth {
 }
 
 export const auth = initAuthWithPersistence();
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, { experimentalForceLongPolling: true, useFetchStreams: false });
 export const storage = getStorage(app);
 
 console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
