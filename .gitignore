@@ -69,3 +69,6 @@ functions/index.js.pre-esm.*
 tmp/
 tmp/**
 docs/_archive/mirror/**/.DS_Store
+
+# WO entregables (documentación temporal de implementación)
+WO-*-ENTREGABLE.md
