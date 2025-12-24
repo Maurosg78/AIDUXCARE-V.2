@@ -1,15 +1,26 @@
+import { 
+  buildPracticePreferencesContext, 
+  type UserProfileData 
+} from './buildPracticePreferencesContext';
+
 export const PromptFactory = {
   create: (params: {
     contextoPaciente: string;
     instrucciones: string;
     transcript: string;
     especialidad?: string;
+    userProfile?: UserProfileData | null; // Perfil desde users/{uid}
   }) => {
     const especialidad = params.especialidad || 'musculoesquelético';
     
+    // Construir contexto de preferencias respetando consentimiento
+    const { clinicianPreferencesContext, patientContextNote } = 
+      buildPracticePreferencesContext(params.userProfile);
+    
     return `Eres un asistente clínico especializado en fisioterapia ${especialidad}. Analiza la transcripción clínica.
 
-CONTEXTO: Diálogo sin identificación de hablantes. Infiere por contenido.
+${clinicianPreferencesContext}CONTEXTO: Diálogo sin identificación de hablantes. Infiere por contenido.
+${patientContextNote ? `NOTA DE CONTEXTO: ${patientContextNote}\n` : ''}
 
 INSTRUCCIONES:
 - Proporciona las mejores evaluaciones según evidencia científica actual

@@ -1,10 +1,12 @@
 import { PromptFactory } from "../core/ai/PromptFactory-v3";
+import { type UserProfileData } from "../core/ai/buildPracticePreferencesContext";
 
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';
   prompt?: string;
   transcript?: string;
   traceId?: string;
+  userProfile?: UserProfileData | null; // Perfil desde users/{uid} - single source of truth
 }) {
   // Si hay transcript, construir prompt con esquema JSON
   let finalPrompt = payload.prompt;
@@ -12,7 +14,8 @@ export async function analyzeWithVertexProxy(payload: {
     const structuredPrompt = PromptFactory.create({
       contextoPaciente: "Paciente en evaluación fisioterapéutica",
       instrucciones: "Analiza la siguiente transcripción y extrae información clínica relevante.",
-      transcript: payload.transcript
+      transcript: payload.transcript,
+      userProfile: payload.userProfile // Pasar perfil para respetar consentimiento
     });
     finalPrompt = structuredPrompt;
   }
@@ -36,12 +39,16 @@ export async function analyzeWithVertexProxy(payload: {
 }
 
 export class VertexAIServiceViaFirebase {
-  static async processWithNiagara(text: string) {
+  static async processWithNiagara(
+    text: string, 
+    userProfile?: UserProfileData | null
+  ) {
     if (!text || !text.trim()) return null;
     return analyzeWithVertexProxy({
       action: 'analyze',
       transcript: text,
-      traceId: 'ui-niagara'
+      traceId: 'ui-niagara',
+      userProfile // Asegurar que viene de users/{uid}
     });
   }
 }

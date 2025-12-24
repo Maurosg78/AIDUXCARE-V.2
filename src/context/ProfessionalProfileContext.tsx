@@ -13,6 +13,8 @@ import { useAuth } from './AuthContext';
 
 import logger from '@/shared/utils/logger';
 
+import { type PracticePreferences, type DataUseConsent } from '../core/ai/buildPracticePreferencesContext';
+
 export interface ProfessionalProfile {
   uid: string;
   email: string;
@@ -47,6 +49,9 @@ export interface ProfessionalProfile {
     density: 'comfortable' | 'compact' 
   };
   registrationStatus?: 'incomplete' | 'complete';
+  // Campos requeridos para consentimiento y personalización
+  practicePreferences?: PracticePreferences;
+  dataUseConsent?: DataUseConsent;
 }
 
 interface ProfessionalProfileContextType {
