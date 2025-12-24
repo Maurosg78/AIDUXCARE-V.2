@@ -1,3 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
 echo "🔎 Running data validation (Zod) + SoT trailers…"
-npm run -s validate:data || exit $?
+
+# Run Zod validation tests (cross-platform)
+npm run -s validate:data:zod || exit $?
+
+# Check SoT trailers (cross-platform)
+if command -v bash >/dev/null 2>&1 && [ -f "scripts/check-sot-trailers.sh" ]; then
+  bash scripts/check-sot-trailers.sh || exit $?
+elif [ "$(uname -s)" = "Windows_NT" ] || [ "$OS" = "Windows_NT" ]; then
+  echo "⚠️  Windows detected: SoT trailer check skipped (bash not available)"
+  echo "   SoT validation will run in CI/pre-push hook"
+else
+  echo "⚠️  bash not found: SoT trailer check skipped"
+  echo "   SoT validation will run in CI/pre-push hook"
+fi
