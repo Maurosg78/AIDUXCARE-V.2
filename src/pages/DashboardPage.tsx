@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../shared/ui/Card';
 import { Button } from '../shared/ui/Button';
+import { AssistantProfileCard } from '../components/assistant-profile/AssistantProfileCard';
 import { 
   FileText, 
   ChevronRight,
@@ -32,6 +33,9 @@ export default function DashboardPage() {
 
       {/* Contenido principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Assistant Profile Card - arriba del grid */}
+        <AssistantProfileCard />
+
         <h2 className="text-lg font-semibold text-gray-900 mb-6">Flujos de Trabajo</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
