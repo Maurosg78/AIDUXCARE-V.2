@@ -30,7 +30,30 @@ export class CryptoService {
 
   async decrypt(iv: Uint8Array, ciphertext: ArrayBuffer): Promise<string> {
     if (!this.key) throw new Error('CryptoService not initialized');
-    const decrypted = await crypto.subtle.decrypt({ name: this.algorithm, iv }, this.key, ciphertext);
+    const decrypted = await crypto.subtle.decrypt({ name: this.algorithm, iv: iv as BufferSource }, this.key, ciphertext);
     return new TextDecoder().decode(decrypted);
+  }
+
+  // Static methods for medical data encryption (used by PersistenceService)
+  static async encryptMedicalData(data: any): Promise<string> {
+    const service = new CryptoService();
+    await service.init();
+    const encrypted = await service.encrypt(JSON.stringify(data));
+    // Combine iv and ciphertext into a single string for storage
+    const combined = new Uint8Array(encrypted.iv.length + encrypted.ciphertext.byteLength);
+    combined.set(encrypted.iv, 0);
+    combined.set(new Uint8Array(encrypted.ciphertext), encrypted.iv.length);
+    return btoa(String.fromCharCode(...combined));
+  }
+
+  static async decryptMedicalData(encryptedData: string): Promise<any> {
+    const service = new CryptoService();
+    await service.init();
+    // Decode the combined data
+    const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+    const iv = combined.slice(0, 12);
+    const ciphertext = combined.slice(12).buffer;
+    const decrypted = await service.decrypt(iv, ciphertext);
+    return JSON.parse(decrypted);
   }
 }
