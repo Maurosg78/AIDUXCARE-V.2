@@ -33,7 +33,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     const subjective = generateSubjective();
     const objective = generateObjective();
     const assessment = generateAssessment();
-    const plan = generate${t("soap.plan")}();
+    const plan = generatePlan();
 
     setSoapReport({
       subjective,
@@ -97,7 +97,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     return text;
   };
 
-  const generate${t("soap.plan")} = () => {
+  const generatePlan = () => {
     let text = 'PLAN DE TRATAMIENTO:\n';
     
     // Si hay red flags

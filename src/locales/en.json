@@ -7,9 +7,7 @@
     "consultationContent": "Consultation Content",
     "analyzeWithAI": "Analyze with AI",
     "record": "Record"
-  }
-}
-{
+  },
   "soap": {
     "subjective": "Subjective",
     "objective": "Objective",
