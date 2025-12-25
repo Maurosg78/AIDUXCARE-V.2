@@ -33,11 +33,6 @@
     "src",
     "tools/eval/**/*"
   ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ],
   "exclude": [
     "**/__tests__/**",
     "**/*.spec.*",
