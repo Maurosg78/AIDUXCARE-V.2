@@ -7,9 +7,7 @@
     "consultationContent": "Contenido de la Consulta",
     "analyzeWithAI": "Analizar con IA",
     "record": "Grabar"
-  }
-}
-{
+  },
   "soap": {
     "subjective": "Subjetivo",
     "objective": "Objetivo",

@@ -1,4 +1,6 @@
 set -e
+echo "🛡️  git-guard: checking branch safety…"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/git-guard.ps1 || exit 1
 echo "🚦 pre-push: running Zod validation tests + SoT trailers…"
 npx vitest run -t '' \
   test/validation/notes.schema.spec.ts \

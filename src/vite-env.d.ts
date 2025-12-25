@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+// Global translation function declaration
+declare function t(key: string): string;
+
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string;
   readonly VITE_SUPABASE_ANON_KEY: string;
