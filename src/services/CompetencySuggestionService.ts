@@ -1,6 +1,6 @@
 import { AgentSuggestion, SuggestionField } from '../types/agent';
 
-import { competencyGuardService } from './CompetencyGuardService';
+import { CompetencyGuardService } from './CompetencyGuardService';
 import { professionalCompetencyService } from './ProfessionalCompetencyService';
 
 export interface CompetencySuggestion extends AgentSuggestion {

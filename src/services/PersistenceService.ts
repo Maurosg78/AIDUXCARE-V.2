@@ -4,7 +4,7 @@ import logger from '@/shared/utils/logger';
  * Implementación profesional usando Firestore
  */
 
-import CryptoService from './CryptoService';
+import { CryptoService } from './CryptoService';
 
 import { getAuth } from 'firebase/auth';
 
