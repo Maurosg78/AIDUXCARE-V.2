@@ -35,24 +35,25 @@ export class CryptoService {
   }
 
   // Static methods for medical data encryption (used by PersistenceService)
-  static async encryptMedicalData(data: any): Promise<string> {
+  static async encryptMedicalData(data: any): Promise<{ iv: string; encryptedData: string }> {
     const service = new CryptoService();
     await service.init();
     const encrypted = await service.encrypt(JSON.stringify(data));
-    // Combine iv and ciphertext into a single string for storage
-    const combined = new Uint8Array(encrypted.iv.length + encrypted.ciphertext.byteLength);
-    combined.set(encrypted.iv, 0);
-    combined.set(new Uint8Array(encrypted.ciphertext), encrypted.iv.length);
-    return btoa(String.fromCharCode(...combined));
+    // Convert to base64 strings for storage
+    const ivBase64 = btoa(String.fromCharCode(...encrypted.iv));
+    const ciphertextBase64 = btoa(String.fromCharCode(...new Uint8Array(encrypted.ciphertext)));
+    return {
+      iv: ivBase64,
+      encryptedData: ciphertextBase64
+    };
   }
 
-  static async decryptMedicalData(encryptedData: string): Promise<any> {
+  static async decryptMedicalData(encryptedData: { iv: string; encryptedData: string }): Promise<any> {
     const service = new CryptoService();
     await service.init();
-    // Decode the combined data
-    const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-    const iv = combined.slice(0, 12);
-    const ciphertext = combined.slice(12).buffer;
+    // Decode from base64
+    const iv = Uint8Array.from(atob(encryptedData.iv), c => c.charCodeAt(0));
+    const ciphertext = Uint8Array.from(atob(encryptedData.encryptedData), c => c.charCodeAt(0)).buffer;
     const decrypted = await service.decrypt(iv, ciphertext);
     return JSON.parse(decrypted);
   }
