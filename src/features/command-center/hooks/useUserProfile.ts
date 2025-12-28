@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';
+import { db as sharedDb } from "@/lib/firebase";
 
 export type AsyncState<T> = { 
   data?: T; 
@@ -25,7 +26,7 @@ export function useUserProfile(): AsyncState<UserProfile> {
 
   useEffect(() => {
     const auth = getAuth();
-    const db = getFirestore();
+    const db = sharedDb;
 
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (!user) {

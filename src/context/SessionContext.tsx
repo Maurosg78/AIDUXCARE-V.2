@@ -1,15 +1,11 @@
 /* @ts-nocheck */
 // src/context/SessionContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { SessionStorage } from "../services/session-storage";
 
-// Lazy load SessionStorage - solo se carga cuando se necesita
-let SessionStorageModule: typeof import('../services/session-storage') | null = null;
-const getSessionStorage = async () => {
-  if (!SessionStorageModule) {
-    SessionStorageModule = await import('../services/session-storage');
-  }
-  return SessionStorageModule.SessionStorage;
-};
+// SessionStorage eager (avoid mixed static/dynamic import warnings)
+const getSessionStorage = async () => SessionStorage;
+
 
 interface SessionContextType {
   sessionData: any;

@@ -1,59 +1,116 @@
-// TEST/EMU: permisivo (solo para emulador)
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // ---- helpers ----
+    
+    function isSignedIn() {
+      return request.auth != null;
     }
-
+    
+    // ============================================
+    // WO-SEC-001: Hardening de Activación
+    // Estándar: ISO/IEC 27001 · PHIPA · PIPEDA
+    // ============================================
+    
+    // ✅ Users Collection - PROTEGIDA (WO-SEC-001)
+    // Solo accesible por el usuario autenticado o para creación (onboarding)
+    match /users/{userId} {
+      // Lectura: Solo el propio usuario autenticado
+      allow read: if 
+        request.auth != null &&
+        request.auth.uid == userId;
+      
+      // Escritura: Solo el propio usuario autenticado
+      allow update: if 
+        request.auth != null &&
+        request.auth.uid == userId;
+      
+      // Creación: Permitir sin autenticación (onboarding)
+      allow create: if true;
+      
+      // Eliminación: Prohibida (requiere proceso de borrado de datos)
+      allow delete: if false;
+    }
+    
+    // ✅ Activation Tokens Collection - CONTROLADA (WO-SEC-001)
+    // Tokens de activación separados de users para cumplir compliance
+    match /activation_tokens/{token} {
+      // GET: Permitir lectura de token específico si no expirado y no usado
+      allow get: if 
+        resource.data.expiresAt > request.time &&
+        !('usedAt' in resource.data);
+      
+      // LIST: Prohibido (evita enumeración de tokens)
+      allow list: if false;
+      
+      // UPDATE: Solo para marcar como usado (single-use)
+      allow update: if 
+        resource.data.expiresAt > request.time &&
+        !('usedAt' in resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['usedAt']) &&
+        request.resource.data.usedAt == request.time;
+      
+      // CREATE: Permitir desde frontend (registro/resend) - TODO: Migrar a Cloud Function
+      // NOTA: Frontend actualmente crea tokens con setDoc (líneas 168, 652 en emailActivationService.ts)
+      // Para producción, migrar creación a Cloud Function y cambiar a: allow create: if false;
+      allow create: if true;
+      
+      // DELETE: Prohibida (requiere auditoría)
+      allow delete: if false;
+    }
+    
+    // Professionals
+    match /professionals/{professionalId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Patients
+    match /patients/{patientId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Episodes (Episode Treatment Plan, Clinical Vault, etc.)
+    match /episodes/{episodeId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Sessions (clinic notes, daily notes)
+    match /sessions/{sessionId} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Analytics simplificado (eventos agregados, counters, etc.)
+    match /analytics/{docId} {
+      allow read, write: if isSignedIn();
+    }
+    
     // Value Analytics Collection - PHIPA Compliant
-    // Only pseudonymized data, no PHI
     match /value_analytics/{document} {
-      allow read: if request.auth != null; // Authenticated users can read
-      allow write: if request.auth != null; // Authenticated users can write (for now, restrict in production)
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     // User Feedback Collection - Beta Testing
-    // Users can submit feedback during testing period
     match /user_feedback/{document} {
-      allow read: if request.auth != null; // Team can read feedback
-      allow write: if request.auth != null; // Authenticated users can submit feedback
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     // Consent Verifications Collection - PHIPA Compliance
-    // Audit trail for consent verification with permanent retention
     match /consent_verifications/{document} {
-      allow read: if request.auth != null; // Authenticated users can read
-      allow write: if request.auth != null; // Authenticated users can write (audit logging)
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
+    
+    // Fallback: Solo para colecciones autenticadas
+    // IMPORTANTE: Revisar antes de producción
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+    
   }
 }
 
-/*
--- PROD RULES (comentado; NO habilitar aún) --
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAuthenticated() { return request.auth != null; }
-    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
-
-    match /notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.clinicianUid == request.auth.uid;
-
-      // Nota firmada: SOAP inmutable. Se permiten cambios no clínicos (tags/pinned/audit)
-      allow update: if isAuthenticated() && isOwner(resource.data.clinicianUid) &&
-        (
-          (resource.data.status == 'signed' &&
-           request.resource.data.status == 'signed' &&
-           request.resource.data.soap == resource.data.soap)
-          ||
-          (resource.data.status == 'draft')
-        );
-
-      // Retención legal: no borrar notas clínicas
-      allow delete: if false;
-    }
-  }
-}
-*/

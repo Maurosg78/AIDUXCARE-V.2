@@ -103,14 +103,14 @@ export const CompetencySuggestionsIntegrator: React.FC<CompetencySuggestionsInte
       {children}
       
       {/* Indicador de carga discreto (solo en desarrollo) */}
-      {process.env.NODE_ENV === 'development' && isLoading && (
+      {import.meta.env.DEV && isLoading && (
         <div className="fixed bottom-4 right-4 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs opacity-75">
           Verificando competencias...
         </div>
       )}
       
       {/* Indicador de error discreto (solo en desarrollo) */}
-      {process.env.NODE_ENV === 'development' && error && (
+      {import.meta.env.DEV && error && (
         <div className="fixed bottom-4 right-4 bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs opacity-75">
           Error: {error}
         </div>

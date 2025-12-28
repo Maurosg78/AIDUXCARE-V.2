@@ -169,11 +169,22 @@ export async function analyzeWithVertexProxy(payload: {
       service: 'analyzeWithVertexProxy',
     });
     
+    // WO-AUTH-GUARD-ONB-DATA-01: Build minimal patient context if consent denied
+    // Note: If personalizationFromPatientData is false, contextoPaciente should not include
+    // patient history, episodes, or previous visit data - only current session context
+    // @ts-expect-error - dataUseConsent may exist in profile
+    const consent = payload.professionalProfile?.dataUseConsent;
+    const usePatientData = consent?.personalizationFromPatientData !== false; // default true if not set
+    
+    const contextoPaciente = usePatientData 
+      ? "Patient undergoing physiotherapy assessment" // Can include history if available
+      : "Current session only - no historical data"; // Minimal context per consent
+    
     const structuredPrompt = PromptFactory.create({
-      contextoPaciente: "Paciente en evaluación fisioterapéutica",
+      contextoPaciente,
       instrucciones: payload.visitType === 'follow-up' 
-        ? "Analiza esta visita de seguimiento enfocándote en evaluación de progreso y continuidad clínica."
-        : "Analiza la siguiente transcripción y extrae información clínica relevante.",
+        ? "Analyze this follow-up visit focusing on progress assessment and clinical continuity."
+        : "Analyze the following transcript and extract relevant clinical information.",
       transcript: deidentifiedText, // Use de-identified transcript
       professionalProfile: payload.professionalProfile, // Pass professional profile
       visitType: payload.visitType || 'initial' // Pass visit type for prompt customization

@@ -1,7 +1,8 @@
 // @ts-nocheck
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 import styles from '@/styles/wizard.module.css';
+import { LegalChecklist, type LegalChecklistItem } from "../LegalChecklist";
 
 const COUNTRY_OPTIONS = [
   { value: 'ca', label: 'Canada' },
@@ -69,6 +70,9 @@ export type LocationData = {
   city?: string;
   phipaConsent?: boolean;
   pipedaConsent?: boolean;
+  // Password va aquí (registro), NO en PersonalData (onboarding profesional)
+  password?: string; // Required for registration (createUserWithEmailAndPassword)
+  confirmPassword?: string; // Required for registration
 };
 
 type Props = {
@@ -76,6 +80,7 @@ type Props = {
   errors?: Record<string, string>;
   onFieldChange: (field: keyof LocationData, value: string | boolean) => void;
   locationData?: { countryCode?: string; region?: string; city?: string };
+  personalData?: Partial<{ country?: string; province?: string; city?: string }>;
 };
 
 export const LocationDataStep: React.FC<Props> = ({
@@ -83,19 +88,96 @@ export const LocationDataStep: React.FC<Props> = ({
   errors,
   onFieldChange,
   locationData,
+  personalData,
 }) => {
+  const [legalItems, setLegalItems] = useState<LegalChecklistItem[]>([
+    {
+      id: 'phipa-pipeda-accepted',
+      title: 'PHIPA / PIPEDA Acknowledgement',
+      description: '',
+      required: true,
+      category: 'phipa-pipeda',
+      checked: Boolean(data.phipaConsent),
+    },
+    {
+      id: 'privacy-accepted',
+      title: 'Privacy Policy',
+      description: '',
+      required: true,
+      category: 'privacy',
+      checked: Boolean(data.pipedaConsent),
+    },
+  ]);
+
+  // Sync legal items with data changes
+  useEffect(() => {
+    setLegalItems((prev) =>
+      prev.map((item) => {
+        if (item.id === 'phipa-pipeda-accepted') {
+          return { ...item, checked: Boolean(data.phipaConsent) };
+        } else if (item.id === 'privacy-accepted') {
+          return { ...item, checked: Boolean(data.pipedaConsent) };
+        }
+        return item;
+      })
+    );
+  }, [data.phipaConsent, data.pipedaConsent]);
+
+  // Auto-fill from personal data (if available) or locationData
   React.useEffect(() => {
-    if (!locationData) return;
-    if (!data.country && locationData.countryCode) {
-      onFieldChange('country', locationData.countryCode.toLowerCase());
+    // Helper to validate city (not an email or invalid)
+    const isValidCity = (city: string | undefined): boolean => {
+      if (!city || city.trim() === '') return false;
+      // Reject if it looks like an email
+      if (city.includes('@')) return false;
+      // Reject if it's too short (likely not a city name)
+      if (city.trim().length < 2) return false;
+      return true;
+    };
+
+    // Priority: personalData > locationData > existing data
+    if (!data.country) {
+      if (personalData?.country && personalData.country.trim() !== '') {
+        onFieldChange('country', personalData.country);
+      } else if (locationData?.countryCode) {
+        onFieldChange('country', locationData.countryCode.toLowerCase());
+      }
     }
-    if (!data.province && locationData.region) {
-      onFieldChange('province', locationData.region);
+    if (!data.province) {
+      if (personalData?.province && personalData.province.trim() !== '') {
+        // Convert province label to code if needed
+        const provinceCode = personalData.province.toLowerCase().replace(/\s+/g, '-');
+        onFieldChange('province', provinceCode);
+      } else if (locationData?.region) {
+        onFieldChange('province', locationData.region);
+      }
     }
-    if (!data.city && locationData.city) {
-      onFieldChange('city', locationData.city);
+    if (!data.city) {
+      // Only use personalData.city if it's a valid city (not an email)
+      if (personalData?.city && isValidCity(personalData.city)) {
+        onFieldChange('city', personalData.city.trim());
+      } else if (locationData?.city && isValidCity(locationData.city)) {
+        onFieldChange('city', locationData.city.trim());
+      }
     }
-  }, [locationData, data.country, data.province, data.city, onFieldChange]);
+  }, [locationData, personalData, data.country, data.province, data.city, onFieldChange]);
+
+  const handleLegalItemChange = (itemId: string, checked: boolean) => {
+    setLegalItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, checked } : item))
+    );
+
+    // Map to LocationData fields
+    if (itemId === 'phipa-pipeda-accepted') {
+      onFieldChange('phipaConsent', checked);
+    } else if (itemId === 'privacy-accepted') {
+      onFieldChange('pipedaConsent', checked);
+    }
+  };
+
+  const handleLegalComplete = (allChecked: boolean) => {
+    // Optional: can add validation logic here
+  };
 
   const provinceOptions = data.country ? PROVINCE_MAP[data.country] ?? [] : [];
   const cityOptions = data.province ? CITY_MAP[(data.province.toLowerCase())] ?? [] : [];
@@ -162,8 +244,14 @@ export const LocationDataStep: React.FC<Props> = ({
           {useTextInput ? (
             <input
               type="text"
-              value={data.city ?? ''}
-              onChange={(event) => onFieldChange('city', event.target.value)}
+              value={data.city && !data.city.includes('@') ? data.city : ''}
+              onChange={(event) => {
+                const value = event.target.value;
+                // Prevent email addresses from being entered
+                if (!value.includes('@')) {
+                  onFieldChange('city', value);
+                }
+              }}
               className={styles.textInput}
               placeholder="Enter your city"
               required
@@ -190,31 +278,52 @@ export const LocationDataStep: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className={styles.checkboxCard}>
-        <input
-          type="checkbox"
-          className={styles.checkboxInput}
-          checked={Boolean(data.phipaConsent)}
-          onChange={(event) => onFieldChange('phipaConsent', event.target.checked)}
-        />
-        <span className={styles.checkboxLabel}>
-          I acknowledge AiduxCare operates under PHIPA in Canada and authorise secure handling of my professional data.
-        </span>
-      </div>
-      {errors?.phipaConsent && <p className={styles.helperText} style={{ color: '#b91c1c' }}>{errors.phipaConsent}</p>}
+      {/* Password fields - requerido para registro (permite login con email + password) */}
+      <div className={`${styles.fieldGrid} ${styles.fieldGridTwo}`} style={{ marginTop: '1.5rem' }}>
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            Password <span style={{ color: '#b91c1c', fontWeight: 500 }}>*</span>
+          </label>
+          <input
+            type="password"
+            value={(data as any).password ?? ''}
+            onChange={(event) => onFieldChange('password' as keyof LocationData, event.target.value)}
+            className={styles.textInput}
+            placeholder="Create a secure password"
+            required
+          />
+          {errors?.password && <p className={styles.helperText} style={{ color: '#b91c1c' }}>{errors.password}</p>}
+        </div>
 
-      <div className={styles.checkboxCard}>
-        <input
-          type="checkbox"
-          className={styles.checkboxInput}
-          checked={Boolean(data.pipedaConsent)}
-          onChange={(event) => onFieldChange('pipedaConsent', event.target.checked)}
-        />
-        <span className={styles.checkboxLabel}>
-          I consent to AiduxCare processing my information according to PIPEDA and maintaining audit logs.
-        </span>
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>
+            Confirm Password <span style={{ color: '#b91c1c', fontWeight: 500 }}>*</span>
+          </label>
+          <input
+            type="password"
+            value={(data as any).confirmPassword ?? ''}
+            onChange={(event) => onFieldChange('confirmPassword' as keyof LocationData, event.target.value)}
+            className={styles.textInput}
+            placeholder="Repeat your password"
+            required
+          />
+          {errors?.confirmPassword && <p className={styles.helperText} style={{ color: '#b91c1c' }}>{errors.confirmPassword}</p>}
+        </div>
       </div>
-      {errors?.pipedaConsent && <p className={styles.helperText} style={{ color: '#b91c1c' }}>{errors.pipedaConsent}</p>}
+
+      <div style={{ marginTop: '2rem' }}>
+        <LegalChecklist
+          items={legalItems}
+          onItemChange={handleLegalItemChange}
+          onComplete={handleLegalComplete}
+          showDetails={true}
+        />
+        {(errors?.phipaConsent || errors?.pipedaConsent) && (
+          <p className={styles.helperText} style={{ color: '#b91c1c', marginTop: '0.5rem' }}>
+            {errors.phipaConsent || errors.pipedaConsent}
+          </p>
+        )}
+      </div>
     </section>
   );
 };

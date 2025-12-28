@@ -10,7 +10,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ProfessionalWorkflowPage } from '../ProfessionalWorkflowPage';
+import { MemoryRouter } from 'react-router-dom';
+import ProfessionalWorkflowPage from '../ProfessionalWorkflowPage';
 import { SessionComparisonService } from '../../services/sessionComparisonService';
 import sessionService from '../../services/sessionService';
 import { AnalyticsService } from '../../services/analyticsService';
@@ -31,10 +32,79 @@ vi.mock('../../services/sessionComparisonService', () => ({
   })),
 }));
 
-vi.mock('../../services/analyticsService', () => ({
-  AnalyticsService: {
-    trackSystemEvent: vi.fn().mockResolvedValue(undefined),
-  },
+vi.mock('../../services/analyticsService', () => {
+  class AnalyticsService {
+    static trackEvent = vi.fn(() => Promise.resolve());
+    static trackValueMetrics = vi.fn(() => Promise.resolve());
+    static trackSystemEvent = vi.fn(() => Promise.resolve());
+  }
+
+  const analyticsService = {
+    trackEvent: vi.fn(() => Promise.resolve()),
+    trackValueMetrics: vi.fn(() => Promise.resolve()),
+    trackSystemEvent: vi.fn(() => Promise.resolve()),
+  };
+
+  return { AnalyticsService, analyticsService, default: AnalyticsService };
+});vi.mock('../../services/patientService', () => {
+  const PatientService = {
+    getPatientById: vi.fn().mockResolvedValue({
+      id: 'test-patient-1',
+      fullName: 'Test Patient',
+      email: 'test@example.com',
+      phone: '',
+      dateOfBirth: '',
+      gender: 'other',
+      idNumber: '',
+      medicalHistory: '',
+      allergies: '',
+      medications: '',
+      previousInjuries: '',
+      referringPhysician: '',
+      referringCenter: '',
+      referralDate: '',
+      referralReason: '',
+      insuranceProvider: '',
+      insurancePolicy: '',
+      insuranceGroup: '',
+      copayAmount: 0,
+      deductibleAmount: 0,
+      emergencyContact: { name: '', relationship: '', phone: '', email: '' },
+      occupation: '',
+      workplace: '',
+      workPhone: '',
+      workEmail: '',
+      billingAddress: { street: '', city: '', state: '', zipCode: '', country: '' },
+      preferredContactMethod: 'email',
+      preferredAppointmentTime: 'morning',
+      notes: '',
+      source: 'direct',
+      marketingChannel: 'direct',
+      initialConsultationType: 'assessment',
+      status: 'active',
+      lastVisit: '',
+      createdAt: '',
+      updatedAt: '',
+    }),
+  };
+
+  return { PatientService, default: PatientService };
+});
+
+vi.mock('../../services/patientConsentService', () => ({
+  PatientConsentService: {
+
+    hasConsent: vi.fn().mockResolvedValue(true),
+    getConsentStatus: vi.fn().mockResolvedValue({ hasConsent: true, status: 'ok' }),
+    },
+}));
+
+vi.mock('../../services/consentVerificationService', () => ({
+  ConsentVerificationService: {
+
+    isConsentVerified: vi.fn().mockResolvedValue(true),
+    getVerificationState: vi.fn().mockResolvedValue({ exists: () => true }),
+    },
 }));
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -99,10 +169,31 @@ vi.mock('../../context/ProfessionalProfileContext', () => ({
   }),
 }));
 
-vi.mock('react-router-dom', () => ({
-  useSearchParams: () => [new URLSearchParams('?patientId=test-patient-1')],
-  useNavigate: () => vi.fn(),
-  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+// Mock removed: using MemoryRouter instead for real router context
+
+// Mock patient dashboard hooks
+vi.mock('../../features/patient-dashboard/hooks/useLastEncounter', () => ({
+  useLastEncounter: () => ({
+    lastEncounter: null,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../../features/patient-dashboard/hooks/useActiveEpisode', () => ({
+  useActiveEpisode: () => ({
+    activeEpisode: null,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../../features/patient-dashboard/hooks/usePatientVisitCount', () => ({
+  usePatientVisitCount: () => ({
+    visitCount: 0,
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
@@ -126,9 +217,24 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
+vi.mock('../../services/followUpDetectionService', () => ({
+  detectFollowUp: vi.fn().mockResolvedValue({
+    isFollowUp: false,
+    recommendedWorkflow: 'initial',
+    confidence: 1,
+    reasons: ['test'],
+  }),
+  explainDetectionResult: vi.fn().mockReturnValue('test explanation'),}));
+
+afterEach(() => {
     vi.restoreAllMocks();
   });
+
+vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
+  FirestoreAuditLogger: {
+    logEvent: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
   describe('Component Integration', () => {
     it('should render SessionComparison component in sidebar', async () => {
@@ -149,7 +255,11 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
         summary: 'First session',
       });
 
-      render(<ProfessionalWorkflowPage />);
+      render(
+        <MemoryRouter initialEntries={['/workflow?patientId=test-patient-1']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
 
       await waitFor(() => {
         // SessionComparison should render (check for first session message)
@@ -208,7 +318,11 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
     it('should not break main workflow if SessionComparison fails', async () => {
       mockGetPreviousSession.mockRejectedValue(new Error('Comparison failed'));
 
-      render(<ProfessionalWorkflowPage />);
+      render(
+        <MemoryRouter initialEntries={['/workflow?patientId=test-patient-1']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
 
       // Main workflow should still render
       await waitFor(() => {

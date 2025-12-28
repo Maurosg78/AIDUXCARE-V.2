@@ -1,6 +1,13 @@
+/// <reference types="node" />
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// ESM-compatible __dirname
+const __filename = fileURLToPath(typeof import.meta !== 'undefined' && import.meta.url ? import.meta.url : `file://${process.cwd()}/vitest.config.ts`);
+const __dirname = dirname(__filename);
 
 const IGNORED = [
   "**/node_modules/**",
@@ -28,7 +35,21 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@/shared/utils/logger": path.resolve(__dirname, "./src/test/mocks/logger.ts"),
     },
+  },
+  server: {
+    fs: {
+      deny: [
+        '**/canonical_snapshots/**',
+        '**/canonical_snapshots_OLD*/**',
+      ],
+    },
+  },
+  optimizeDeps: {
+    force: false,
+    entries: [],
+    exclude: ['idb', '@firebase/app', '@firebase/auth'],
   },
   test: {
     // ✅ BALA DE PLATA: sólo corre tests aquí
@@ -36,32 +57,38 @@ export default defineConfig({
       "src/**/*.{test,spec}.{ts,tsx}",
       "test/**/*.{test,spec}.{ts,tsx}",
     ],
-    
+
     // ✅ Cinturón y tirantes (exclude como backup)
-    watchExclude: IGNORED,
     exclude: [
       ...IGNORED,
       '**/canonical_snapshots/**',
       '**/canonical_snapshots_OLD*/**',
       '**/_deprecated/**',
     ],
-    
+
     // ✅ Evita watch/cuelgue accidental
     watch: false,
-    
+
     environment: 'jsdom', // Use jsdom for React component tests
-    globals: true,
-    setupFiles: ['./src/test-setup.ts'],
-    testTimeout: 30000, // 30 seconds max per test
-    hookTimeout: 30000, // 30 seconds max for hooks
-    teardownTimeout: 30000, // 30 seconds max for teardown
-    pool: 'forks', // Use separate processes instead of threads
+    globals: false, // Desactivado: causa hang con --pool=forks
+    setupFiles: ['src/test-watchdog.js', './src/test-port-mocks.ts', './src/test-setup.ts', './test/vitest.setup.ts'],
+    // @ts-expect-error - globalTeardown is supported in runtime but not in type definitions for this Vitest version
+    globalTeardown: './src/test-teardown.ts',
+    testTimeout: 10_000, // 10 seconds max per test (timeout corto para diagnóstico)
+    hookTimeout: 10_000, // 10 seconds max for hooks
+    teardownTimeout: 5_000, // 5 seconds max for teardown
+    isolate: false,
     poolOptions: {
       forks: {
-        singleFork: true, // Run tests sequentially to avoid file system issues
+        singleFork: true,
       },
     },
-    isolate: true, // Isolate each test file
+    deps: {
+      optimizer: {
+        web: { enabled: false },
+        ssr: { enabled: false },
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -93,7 +120,7 @@ export default defineConfig({
   // Skip CSS/PostCSS processing in tests - use simple config
   css: {
     modules: {
-      classNameStrategy: 'non-scoped',
+      // classNameStrategy removed - not supported in this version
     },
   },
 });

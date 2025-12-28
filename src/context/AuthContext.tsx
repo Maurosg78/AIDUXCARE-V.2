@@ -5,13 +5,13 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged, 
-  sendPasswordResetEmail,
   AuthError 
 } from 'firebase/auth';
 
 import { auth } from '../lib/firebase';
 
 import logger from '@/shared/utils/logger';
+import { firebaseAuthService } from '@/services/firebaseAuthService';
 
 export interface RegisterData {
   email: string;
@@ -121,7 +121,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      await sendPasswordResetEmail(auth, email);
+      const result = await firebaseAuthService.sendPasswordResetEmail(email);
+      logger.info("[AUTH] Password reset requested", { ok: result.success, message: result.message });
       
       logger.info('Email de recuperación enviado a:', email);
     } catch (error) {

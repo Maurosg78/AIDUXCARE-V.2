@@ -8,7 +8,9 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-const functions = require('firebase-functions');
+const {onSchedule} = require('firebase-functions/v2/scheduler');
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {setGlobalOptions} = require('firebase-functions/v2');
 const admin = require('firebase-admin');
 
 // Lazy initialization - only initialize when function is called
@@ -71,15 +73,23 @@ async function expireOldPurchasedTokens(currentMonth) {
   }
 }
 
+// Set global options for all functions
+setGlobalOptions({
+  region: 'northamerica-northeast1',
+  maxInstances: 10,
+  timeoutSeconds: 540,
+  memory: '512MiB',
+});
+
 /**
  * Monthly Token Reset Function
  */
-exports.monthlyTokenReset = functions
-  .region('northamerica-northeast1')
-  .runWith({ timeoutSeconds: 540, memory: '512MB' })
-  .pubsub.schedule('0 0 1 * *')
-  .timeZone('America/Toronto')
-  .onRun(async (context) => {
+exports.monthlyTokenReset = onSchedule(
+  {
+    schedule: '0 0 1 * *',
+    timeZone: 'America/Toronto',
+  },
+  async (event) => {
     const firestoreDb = getDb();
     const currentMonth = new Date().toISOString().slice(0, 7);
     const timestamp = admin.firestore.Timestamp.now();
@@ -140,30 +150,29 @@ exports.monthlyTokenReset = functions
       };
     } catch (error) {
       console.error('[MonthlyTokenReset] Fatal error:', error);
-      throw new functions.https.HttpsError('internal', `Monthly reset failed: ${error.message}`);
+      throw new Error(`Monthly reset failed: ${error.message}`);
     }
-  });
+  }
+);
 
 /**
  * Manual Trigger Function (for testing)
  */
-exports.manualTokenReset = functions
-  .region('northamerica-northeast1')
-  .runWith({ timeoutSeconds: 540, memory: '512MB' })
-  .https.onCall(async (data, context) => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+exports.manualTokenReset = onCall(
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Authentication required');
     }
 
     const isDev = process.env.FUNCTIONS_EMULATOR === 'true' || 
                   process.env.GCLOUD_PROJECT?.includes('dev') ||
                   process.env.GCLOUD_PROJECT?.includes('uat');
 
-    if (!isDev && context.auth.token.role !== 'admin') {
-      throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+    if (!isDev && request.auth.token.role !== 'admin') {
+      throw new HttpsError('permission-denied', 'Admin access required');
     }
 
-    console.log('[ManualTokenReset] Manual reset triggered by:', context.auth.uid);
+    console.log('[ManualTokenReset] Manual reset triggered by:', request.auth.uid);
 
     const firestoreDb = getDb();
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -210,7 +219,8 @@ exports.manualTokenReset = functions
       };
     } catch (error) {
       console.error('[ManualTokenReset] Error:', error);
-      throw new functions.https.HttpsError('internal', `Manual reset failed: ${error.message}`);
+      throw new HttpsError('internal', `Manual reset failed: ${error.message}`);
     }
-  });
+  }
+);
 

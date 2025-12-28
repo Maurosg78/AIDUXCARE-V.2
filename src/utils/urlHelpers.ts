@@ -31,8 +31,21 @@ export function getPublicBaseUrl(): string {
       return 'https://aiduxcare.web.app';
     }
     
-    // UAT/Staging
-    return 'https://aiduxcare-mvp-uat.web.app';
+    // UAT/Staging - Match project ID to correct site
+    if (projectId.includes('aiduxcare-v2-uat-dev')) {
+      return 'https://aiduxcare-v2-uat-dev.web.app';
+    }
+    // ✅ WO-P0.2: Removed fallback to legacy mvp-uat (no longer supported)
+    // If project ID includes 'uat' but not 'aiduxcare-v2-uat-dev', throw error
+    if (projectId.includes('uat')) {
+      throw new Error(
+        `❌ SMS BLOCKED: Legacy UAT project detected (${projectId}). ` +
+        `Set VITE_PUBLIC_BASE_URL=https://aiduxcare-v2-uat-dev.web.app explicitly.`
+      );
+    }
+    
+    // Default UAT fallback (should not happen if project ID is set correctly)
+    return 'https://aiduxcare-v2-uat-dev.web.app';
   }
   
   // Development: Require explicit URL for SMS testing
@@ -42,10 +55,22 @@ export function getPublicBaseUrl(): string {
       validateDevelopmentUrl(devUrl);
       return devUrl.trim();
     }
+    // Fallback: Use production URL if available, otherwise throw error
+    // This prevents localhost/IP addresses from being used in SMS links
+    if (import.meta.env.VITE_PUBLIC_BASE_URL) {
+      const prodUrl = import.meta.env.VITE_PUBLIC_BASE_URL.trim();
+      validateProductionUrl(prodUrl);
+      console.warn(
+        '[URL Helper] VITE_DEV_PUBLIC_URL not set. Using production URL for SMS links. ' +
+        'This may cause issues if the production URL is not accessible. ' +
+        'Set VITE_DEV_PUBLIC_URL for development SMS testing.'
+      );
+      return prodUrl;
+    }
     throw new Error(
-      'VITE_DEV_PUBLIC_URL required for development SMS testing. ' +
+      'VITE_DEV_PUBLIC_URL or VITE_PUBLIC_BASE_URL required for development SMS testing. ' +
       'Use ngrok or similar service to expose localhost (e.g., ngrok http 5174). ' +
-      'Set VITE_DEV_PUBLIC_URL=https://your-ngrok-url.ngrok.io'
+      'Set VITE_DEV_PUBLIC_URL=https://your-ngrok-url.ngrok.io or VITE_PUBLIC_BASE_URL=https://your-production-url.com'
     );
   }
   
@@ -53,11 +78,15 @@ export function getPublicBaseUrl(): string {
 }
 
 /**
- * Validate production URL - must be HTTPS and not localhost
+ * Validate production URL - must be HTTPS and not localhost/private IP
  */
 function validateProductionUrl(url: string): void {
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    throw new Error(`Production URL cannot be localhost: ${url}`);
+  // Block localhost and private IPs
+  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('192.168.') || url.includes('10.') || url.includes('172.16.')) {
+    throw new Error(
+      `❌ SMS BLOCKED: Production URL cannot be localhost or private IP: ${url}\n` +
+      'Production URLs must be publicly accessible (e.g., https://aiduxcare-mvp-uat.web.app).'
+    );
   }
   
   if (!url.startsWith('https://')) {
@@ -74,7 +103,7 @@ function validateProductionUrl(url: string): void {
 
 /**
  * Validate development URL - can be HTTP or HTTPS
- * Warns if localhost (won't work on mobile)
+ * Blocks localhost and private IPs (fail-fast for SMS)
  */
 function validateDevelopmentUrl(url: string): void {
   // Development URLs can be http or https
@@ -82,11 +111,12 @@ function validateDevelopmentUrl(url: string): void {
     throw new Error(`Development URL must start with http:// or https://: ${url}`);
   }
   
-  // Warn if using localhost (won't work on mobile)
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    console.warn(
-      '⚠️ Localhost URL will not work on mobile devices. ' +
-      'Use ngrok or similar service for SMS testing.'
+  // CRITICAL: Block localhost/IPs privadas para SMS (no funcionarán en móvil)
+  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('192.168.') || url.includes('10.') || url.includes('172.16.')) {
+    throw new Error(
+      `❌ SMS BLOCKED: Development URL cannot be localhost or private IP: ${url}\n` +
+      'SMS links must use a publicly accessible URL (e.g., ngrok, Firebase Hosting, or production URL).\n' +
+      'Set VITE_DEV_PUBLIC_URL to a public URL (e.g., https://your-ngrok-url.ngrok.io) or use VITE_PUBLIC_BASE_URL for production.'
     );
   }
   

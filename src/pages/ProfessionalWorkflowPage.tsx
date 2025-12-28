@@ -26,6 +26,8 @@ import { SMSService } from "../services/smsService";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import treatmentPlanService from "../services/treatmentPlanService";
+import PersistenceService from "../services/PersistenceService";
 import { FeedbackWidget } from "../components/feedback/FeedbackWidget";
 import { FeedbackService } from "../services/feedbackService";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
@@ -46,7 +48,7 @@ import {
 } from "@/core/msk-tests/library/mskTestLibrary";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { AudioWaveform } from "../components/AudioWaveform";
-import { SessionComparison } from "../components/SessionComparison";
+import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
 import { Timestamp } from "firebase/firestore";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
@@ -58,13 +60,13 @@ import { SessionStorage } from "../services/session-storage";
 import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
 import type { FollowUpDetectionInput } from "../services/followUpDetectionService";
-import { 
-  trackWorkflowSessionStart, 
-  trackSOAPGeneration, 
-  trackUserClick, 
+import {
+  trackWorkflowSessionStart,
+  trackSOAPGeneration,
+  trackUserClick,
   trackWorkflowSessionEnd,
   getWorkflowEfficiencySummary,
-  type WorkflowMetrics 
+  type WorkflowMetrics
 } from "../services/workflowMetricsService";
 import WorkflowFeedback from "../components/workflow/WorkflowFeedback";
 import WorkflowMetricsDisplay from "../components/workflow/WorkflowMetricsDisplay";
@@ -169,48 +171,48 @@ const formatFileSize = (bytes: number) => {
 const ProfessionalWorkflowPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // ✅ DIFFERENT APPROACH: Get URL params and clear localStorage IMMEDIATELY before any state
   const patientIdFromUrl = searchParams.get('patientId');
   const sessionTypeFromUrl = searchParams.get('type') as 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
-  
+
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-  
+
   // ✅ FIX: Use refs to track if localStorage was already cleared (only clear once)
   const localStorageClearedRef = useRef(false);
   const useEffectClearedRef = useRef(false);
-  
+
   // ✅ FIX: Clear localStorage ONLY ONCE on initial mount for follow-up (not on every render)
   if (isExplicitFollowUp && patientIdFromUrl && typeof window !== 'undefined' && !localStorageClearedRef.current) {
     try {
       const storageKey = `aidux_${patientIdFromUrl}`;
       const existingData = localStorage.getItem(storageKey);
-      
+
       // Only clear if there's no transcript saved (don't delete user's work)
       if (!existingData || !JSON.parse(existingData)?.transcript?.trim()) {
         localStorage.removeItem(storageKey);
       }
-      
+
       localStorageClearedRef.current = true; // Mark as cleared
     } catch (e) {
       console.warn('[WORKFLOW] Error clearing localStorage:', e);
       localStorageClearedRef.current = true; // Mark as attempted even if failed
     }
   }
-  
+
   // URL params processed (debug logs removed to reduce re-renders)
-  
+
   // State for real patient data
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
-  
+
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
-  
+
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
   const [workflowMetrics, setWorkflowMetrics] = useState<WorkflowMetrics | null>(null);
@@ -230,17 +232,17 @@ const ProfessionalWorkflowPage = () => {
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
-  
+
   // ✅ Day 3: Session Comparison Integration
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentSessionForComparison, setCurrentSessionForComparison] = useState<Session | null>(null);
-  
+
   // Value Metrics Tracking - Timestamps
   const [sessionStartTime] = useState<Date>(new Date());
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<Date | null>(null);
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
-  
+
   // Patient Consent - PHIPA s. 18 compliance (SMS-based approach)
   const [isFirstSession, setIsFirstSession] = useState<boolean | null>(null); // null = checking, true/false = result
   const [checkingFirstSession, setCheckingFirstSession] = useState(true);
@@ -250,23 +252,23 @@ const ProfessionalWorkflowPage = () => {
   const [consentToken, setConsentToken] = useState<string | null>(null);
   const [smsError, setSmsError] = useState<string | null>(null);
   const [copyConsentFeedback, setCopyConsentFeedback] = useState<'idle' | 'success' | 'error'>('idle');
-  
+
   const { sharedState, updatePhysicalEvaluation } = useSharedWorkflowState();
   const { user } = useAuth(); // Must be called before useEffect that uses it
   const { profile: professionalProfile } = useProfessionalProfileContext();
-  
+
   // Professional profile loaded (debug logs removed to reduce re-renders)
-  
+
   // ✅ CRITICAL FIX: Get professional display info early for header
-  
+
   // Get patient ID for hooks
   const patientId = patientIdFromUrl || demoPatient.id;
-  
+
   // Hooks for data fetching - called at component level
   const lastEncounter = useLastEncounter(patientId);
   const activeEpisode = useActiveEpisode(patientId);
   const visitCount = usePatientVisitCount(patientId);
-  
+
   // Get session type from URL or default to visitType
   const currentSessionType = sessionTypeFromUrl || (visitType === 'initial' ? 'initial' : 'followup');
   const sessionTypeConfig = SessionTypeService.getSessionTypeConfig(currentSessionType);
@@ -274,8 +276,8 @@ const ProfessionalWorkflowPage = () => {
   // ✅ CRITICAL: Initialize hooks BEFORE using their values in useMemo
   // These hooks must be called before detectedCaseRegion which depends on them
   const {
-    transcript, 
-    isRecording, 
+    transcript,
+    isRecording,
     isTranscribing,
     error: transcriptError,
     languagePreference,
@@ -284,7 +286,7 @@ const ProfessionalWorkflowPage = () => {
     setMode,
     meta: transcriptMeta,
     audioStream,
-    startRecording, 
+    startRecording,
     stopRecording,
     setTranscript,
   } = useTranscript();
@@ -349,52 +351,61 @@ const ProfessionalWorkflowPage = () => {
     return `pilot-session-${patientId}-${user.uid}`;
   }, [patientId, user?.uid]);
   const trackedSessionsRef = useRef<Set<string>>(new Set());
-  
+
+  // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events in dev
+  const trackedOnceRef = useRef<Set<string>>(new Set());
+  const trackOnce = useCallback((key: string, fn: () => void | Promise<void>) => {
+    if (trackedOnceRef.current.has(key)) return;
+    trackedOnceRef.current.add(key); // Mark as tracked BEFORE executing (synchronous)
+    fn(); // Execute async function (fire and forget)
+  }, []);
+
   useEffect(() => {
     // Only track once per unique session key
     if (!sessionTrackingKey || !patientId || !user?.uid) return;
-    if (trackedSessionsRef.current.has(sessionTrackingKey)) {
-      return; // Already tracked
-    }
-    
-    const trackSessionStart = async () => {
-      try {
-        // Check if user is pilot user (from registration date)
-        const pilotStartDate = new Date('2024-12-19T00:00:00Z');
-        const isPilotUser = new Date() >= pilotStartDate;
-        
-        if (isPilotUser) {
-          // Mark as tracked BEFORE making the call to prevent duplicate calls
-          trackedSessionsRef.current.add(sessionTrackingKey);
-          
-          // ✅ CRITICAL FIX: Use explicit URL parameter for visitType in tracking
-          const trackingVisitType = sessionTypeFromUrl === 'followup' ? 'follow-up' : visitType;
-          console.log('[WORKFLOW] 📊 Analytics tracking:', {
-            sessionTypeFromUrl,
-            visitType,
-            trackingVisitType,
-            isExplicitFollowUp: sessionTypeFromUrl === 'followup'
-          });
-          await AnalyticsService.trackEvent('pilot_session_started', {
-            patientId,
-            userId: user.uid,
-            sessionStartTime: sessionStartTime.toISOString(),
-            visitType: trackingVisitType,
-            isPilotUser: true
-          });
-          console.log('✅ [PILOT METRICS] Session start tracked:', patientId, 'with visitType:', trackingVisitType);
-        }
-      } catch (error) {
-        console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
-        // Remove from tracked set on error so it can retry if needed
-        trackedSessionsRef.current.delete(sessionTrackingKey);
-        // Non-blocking: don't fail session if analytics fails
-      }
-    };
 
-    trackSessionStart();
-     
-  }, [sessionTrackingKey]); // Only depend on sessionTrackingKey - patientId, user.uid, sessionStartTime, visitType are stable or captured in closure
+    // ✅ STRICTMODE FIX: Use trackOnce at the top level to prevent duplicate execution
+    trackOnce(`pilot_session_started_effect:${sessionTrackingKey}`, () => {
+      const trackSessionStart = async () => {
+        try {
+          // Check if user is pilot user (from registration date)
+          const pilotStartDate = new Date('2024-12-19T00:00:00Z');
+          const isPilotUser = new Date() >= pilotStartDate;
+
+          if (isPilotUser) {
+            // ✅ CRITICAL FIX: Use explicit URL parameter for visitType in tracking
+            const trackingVisitType = sessionTypeFromUrl === 'followup' ? 'follow-up' : visitType;
+            console.log('[WORKFLOW] 📊 Analytics tracking:', {
+              sessionTypeFromUrl,
+              visitType,
+              trackingVisitType,
+              isExplicitFollowUp: sessionTypeFromUrl === 'followup'
+            });
+
+            // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events
+            trackOnce(`pilot_session_started:${patientId}:${trackingVisitType}`, () => {
+              AnalyticsService.trackEvent('pilot_session_started', {
+                patientId,
+                userId: user.uid,
+                sessionStartTime: sessionStartTime.toISOString(),
+                visitType: trackingVisitType,
+                isPilotUser: true
+              }).catch((error) => {
+                console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
+              });
+              console.log('✅ [PILOT METRICS] Session start tracked:', patientId, 'with visitType:', trackingVisitType);
+            });
+          }
+        } catch (error) {
+          console.error('⚠️ [PILOT METRICS] Error tracking session start:', error);
+          // Non-blocking: don't fail session if analytics fails
+        }
+      };
+
+      trackSessionStart();
+    });
+
+  }, [sessionTrackingKey, trackOnce, patientId, user?.uid, sessionTypeFromUrl, visitType, sessionStartTime]); // Include all dependencies
 
   // Load patient data from Firestore
   useEffect(() => {
@@ -433,7 +444,7 @@ const ProfessionalWorkflowPage = () => {
       try {
         // ✅ CRITICAL FIX: If sessionTypeFromUrl is 'followup', use it as explicit follow-up
         const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-        
+
         const input: FollowUpDetectionInput = {
           patientId,
           // TODO: Add chief complaint from transcript or form when available
@@ -455,23 +466,30 @@ const ProfessionalWorkflowPage = () => {
 
         // Navigate to initial tab based on workflow
         // ✅ CRITICAL FIX: For follow-up, skip analysis tab and go directly to SOAP
-        const initialTab = isExplicitFollowUp || route.type === 'follow-up' 
-          ? 'soap' 
+        const initialTab = isExplicitFollowUp || route.type === 'follow-up'
+          ? 'soap'
           : getInitialTab(route);
-        
+
         if (['analysis', 'evaluation', 'soap'].includes(initialTab)) {
           setActiveTab(initialTab as ActiveTab);
         }
 
         // ✅ WORKFLOW OPTIMIZATION: Track workflow session start
         const sessionIdForMetrics = sessionId || `${user.uid}-${Date.now()}`;
-        await trackWorkflowSessionStart(
-          sessionIdForMetrics,
-          patientId,
-          user.uid,
-          route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial',
-          route.skipTabs.length
-        );
+        const workflowTypeForTracking = route.type === 'follow-up' || isExplicitFollowUp ? 'follow-up' : 'initial';
+
+        // ✅ STRICTMODE FIX: Idempotent tracking to prevent duplicate events
+        trackOnce(`workflow_session_started:${patientId}:${workflowTypeForTracking}:${route.type}`, () => {
+          trackWorkflowSessionStart(
+            sessionIdForMetrics,
+            patientId,
+            user.uid,
+            workflowTypeForTracking,
+            route.skipTabs.length
+          ).catch((error) => {
+            console.error('[WORKFLOW] Error tracking workflow session start:', error);
+          });
+        });
 
         console.log('[WORKFLOW] Workflow detected:', {
           routeType: route.type,
@@ -498,7 +516,7 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
-    
+
     // If follow-up and Niagara analysis is complete, navigate to SOAP tab
     if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap') {
       console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
@@ -527,11 +545,11 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     const checkConsentVerification = async () => {
       const patientId = patientIdFromUrl || demoPatient.id;
-      
+
       try {
         // Check if consent is verified
         const isVerified = await ConsentVerificationService.isConsentVerified(patientId);
-        
+
         if (!isVerified) {
           // Only redirect if verification explicitly returns false
           // Don't redirect on errors - allow workflow to continue
@@ -558,13 +576,13 @@ const ProfessionalWorkflowPage = () => {
   const [customTestNotes, setCustomTestNotes] = useState("");
   const [isCustomFormOpen, setIsCustomFormOpen] = useState(false);
   const [dismissedSuggestionKeys, setDismissedSuggestionKeys] = useState<number[]>([]);
-  
+
   // ✅ P1.1: Detect case region from transcript/motivo consulta to filter tests
   const detectedCaseRegion = useMemo<MSKRegion | null>(() => {
     const motivo = niagaraResults?.motivo_consulta?.toLowerCase() || '';
     const transcriptLower = transcript?.toLowerCase() || '';
     const combined = `${motivo} ${transcriptLower}`;
-    
+
     // Detect region from combined text
     if (combined.includes('lumbar') || combined.includes('low back') || combined.includes('lower back') || combined.includes('espalda baja')) {
       return 'lumbar';
@@ -590,32 +608,32 @@ const ProfessionalWorkflowPage = () => {
     if (combined.includes('wrist') || combined.includes('muñeca')) {
       return 'wrist';
     }
-    
+
     return null; // No region detected
   }, [niagaraResults?.motivo_consulta, transcript]);
-  
+
   // ✅ P1.1: Filter evaluationTests by detected region (only show tests matching case region)
   const filteredEvaluationTests = useMemo(() => {
     if (!detectedCaseRegion) {
       // If no region detected, show all tests (backward compatibility)
       return evaluationTests;
     }
-    
+
     // Filter tests: only show tests that match the detected region OR have no region specified (custom tests)
     return evaluationTests.filter(test => {
       // Allow tests with no region (custom tests) or tests matching detected region
       return !test.region || test.region === detectedCaseRegion;
     });
   }, [evaluationTests, detectedCaseRegion]);
-  
+
   // ✅ Day 3: Build current session for comparison
   const buildCurrentSession = useCallback((): Session | null => {
     if (!currentPatient?.id && !patientIdFromUrl) return null;
     if (!localSoapNote) return null; // Only show comparison when SOAP is generated
 
     const patientId = currentPatient?.id || patientIdFromUrl || demoPatient.id;
-    const patientName = currentPatient?.fullName || 
-      `${currentPatient?.personalInfo?.firstName || ''} ${currentPatient?.personalInfo?.lastName || ''}`.trim() || 
+    const patientName = currentPatient?.fullName ||
+      `${currentPatient?.personalInfo?.firstName || ''} ${currentPatient?.personalInfo?.lastName || ''}`.trim() ||
       demoPatient.name;
 
     const currentSessionId = sessionId || `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
@@ -659,7 +677,7 @@ const ProfessionalWorkflowPage = () => {
     const session = buildCurrentSession();
     setCurrentSessionForComparison(session);
   }, [buildCurrentSession]);
-  
+
   // ✅ WORKFLOW PERSISTENCE: Restore workflow state from localStorage on mount
   // ✅ CRITICAL FIX: URL parameters take priority over localStorage
   useEffect(() => {
@@ -667,23 +685,23 @@ const ProfessionalWorkflowPage = () => {
     console.log('🔍 [DEBUG] useEffect - sessionTypeFromUrl:', sessionTypeFromUrl);
     console.log('🔍 [DEBUG] useEffect - patientId:', patientId);
     console.log('🔍 [DEBUG] useEffect - patientIdFromUrl:', patientIdFromUrl);
-    
+
     // ✅ AGGRESSIVE FIX: Clear localStorage for follow-up visits IMMEDIATELY
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     console.log('🔍 [DEBUG] useEffect - isExplicitFollowUp:', isExplicitFollowUp);
-    
+
     if (isExplicitFollowUp && patientId) {
       // Mark as processed FIRST to prevent infinite loops
       if (useEffectClearedRef.current) {
         // Already processed, don't do anything to avoid re-renders
         return;
       }
-      
+
       useEffectClearedRef.current = true;
-      
+
       // Clear localStorage for follow-up (fresh start)
       SessionStorage.clearSession(patientId);
-      
+
       // Set follow-up state only if not already set
       if (visitType !== 'follow-up') {
         setVisitType('follow-up');
@@ -691,14 +709,14 @@ const ProfessionalWorkflowPage = () => {
       if (activeTab !== 'soap') {
         setActiveTab('soap');
       }
-      
+
       return; // Don't restore anything else
     }
 
     const restoreWorkflowState = () => {
       try {
         const savedState = SessionStorage.getSession(patientId);
-        
+
         if (!savedState) {
           return;
         }
@@ -757,7 +775,7 @@ const ProfessionalWorkflowPage = () => {
   // ✅ WORKFLOW PERSISTENCE: Auto-save workflow state to localStorage
   // Use refs to track previous values and only save when there are actual changes
   const prevStateRef = useRef<string>('');
-  
+
   useEffect(() => {
     if (!patientId) return;
 
@@ -826,23 +844,23 @@ const ProfessionalWorkflowPage = () => {
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
   const lastSharedStateRef = useRef<string>(''); // Track last sharedState to prevent unnecessary updates
-  
+
   useEffect(() => {
     // ✅ PHASE 2: Skip if we're actively adding tests (to prevent overwriting)
     if (isAddingTestsRef.current) {
       console.log(`[PHASE2] useEffect - Skipping load (actively adding tests)`);
       return;
     }
-    
+
     // ✅ FIX: Create a stable reference to compare
     const currentSharedStateKey = JSON.stringify(sharedState.physicalEvaluation?.selectedTests?.map(t => t.id).sort() || []);
-    
+
     // ✅ FIX: Skip if sharedState hasn't actually changed
     if (lastSharedStateRef.current === currentSharedStateKey) {
       console.log(`[PHASE2] useEffect - SharedState unchanged, skipping update`);
       return;
     }
-    
+
     // ✅ PHASE 2: Enhanced logging for debugging
     console.log(`[PHASE2] useEffect - Loading from sharedState:`, {
       hasSelectedTests: !!sharedState.physicalEvaluation?.selectedTests,
@@ -850,14 +868,14 @@ const ProfessionalWorkflowPage = () => {
       selectedTests: sharedState.physicalEvaluation?.selectedTests,
       detectedCaseRegion: detectedCaseRegion,
     });
-    
+
     if (sharedState.physicalEvaluation?.selectedTests) {
       const sanitized = sharedState.physicalEvaluation.selectedTests.map(sanitizeEvaluationEntry);
       console.log(`[PHASE2] Sanitized tests from sharedState:`, sanitized.map(t => ({ name: t.name, id: t.id, region: t.region })));
-      
+
       // ✅ FIX: Update ref before setting state to prevent re-trigger
       lastSharedStateRef.current = currentSharedStateKey;
-      
+
       // ✅ PHASE 2 FIX: Use functional update to compare with latest state
       setEvaluationTests((currentTests) => {
         // ✅ PHASE 2: Only update if sharedState has more tests than current (to avoid overwriting new additions)
@@ -866,12 +884,12 @@ const ProfessionalWorkflowPage = () => {
         const sharedTestIds = new Set(sanitized.map(t => t.id));
         const hasNewTests = sanitized.some(t => !currentTestIds.has(t.id));
         const isInitialLoad = currentTests.length === 0;
-        
+
         if (!hasNewTests && !isInitialLoad) {
           console.log(`[PHASE2] No new tests in sharedState and not initial load, preserving current ${currentTests.length} tests`);
           return currentTests; // Return current state unchanged
         }
-        
+
         // ✅ PHASE 2 FIX: Don't filter AI-recommended tests by region - they're already validated
         // Only filter manual tests from wrong region
         let testsToSet = sanitized;
@@ -882,7 +900,7 @@ const ProfessionalWorkflowPage = () => {
             if (test.source === "ai") {
               return true; // Always allow AI-recommended tests
             }
-            
+
             // For manual/custom tests, check region match
             if (test.region && test.region !== detectedCaseRegion) {
               console.warn(`[PHASE2] Filtering out manual test "${test.name}" (${test.region}) - wrong region for case (${detectedCaseRegion})`);
@@ -892,7 +910,7 @@ const ProfessionalWorkflowPage = () => {
           });
           console.log(`[PHASE2] Filtered tests by region (${detectedCaseRegion}):`, testsToSet.map(t => ({ name: t.name, id: t.id, region: t.region, source: t.source })));
         }
-        
+
         console.log(`[PHASE2] Setting evaluationTests (${testsToSet.length} tests)`);
         return testsToSet;
       });
@@ -911,28 +929,28 @@ const ProfessionalWorkflowPage = () => {
   // Check if this is the first session and handle patient consent via SMS
   // Use ref to prevent multiple executions in React Strict Mode
   const consentCheckRef = useRef(false);
-  
+
   useEffect(() => {
     // Prevent multiple executions
     if (consentCheckRef.current) {
       return;
     }
-    
+
     const checkFirstSessionAndConsent = async () => {
       // Mark as executing
       consentCheckRef.current = true;
-      
+
       try {
         setCheckingFirstSession(true);
-        
+
         // Use real patient from URL or fallback to demo
         const patientId = patientIdFromUrl || demoPatient.id;
         const userId = user?.uid || TEMP_USER_ID;
-        
+
         // Get patient data (real or demo)
         // IMPORTANT: Always try to load patient from Firestore if we have patientIdFromUrl
         let patient = currentPatient;
-        
+
         // If currentPatient is not loaded yet but we have patientIdFromUrl, try to load it
         if (!patient && patientIdFromUrl && patientIdFromUrl !== demoPatient.id) {
           try {
@@ -945,7 +963,7 @@ const ProfessionalWorkflowPage = () => {
             console.warn('[WORKFLOW] Could not load patient, using demo:', error);
           }
         }
-        
+
         // Fallback to demo patient only if no real patient found
         if (!patient) {
           patient = {
@@ -957,19 +975,19 @@ const ProfessionalWorkflowPage = () => {
             phone: demoPatient.phone,
           };
         }
-        
+
         // Check if this is the first session
         const isFirst = await sessionService.isFirstSession(patientId, userId);
         setIsFirstSession(isFirst);
-        
+
         // Check if patient has consent
         const hasConsent = await PatientConsentService.hasConsent(patientId);
         setPatientHasConsent(hasConsent);
-        
+
         // Get consent status for display
         const status = await PatientConsentService.getConsentStatus(patientId);
         setConsentStatus(status);
-        
+
         // If first session and no consent, generate token and send SMS
         if (isFirst && !hasConsent) {
           try {
@@ -982,13 +1000,13 @@ const ProfessionalWorkflowPage = () => {
 
             setSmsError(null);
             setCopyConsentFeedback('idle');
-            
+
             // Format phone number for Twilio (ensure E.164 format)
             let formattedPhone = phoneNumber.trim();
-            
+
             // Remove all non-digit characters except +
             const cleanPhone = formattedPhone.replace(/[^\d+]/g, '');
-            
+
             // Validate and format
             if (cleanPhone.startsWith('+1') && cleanPhone.length === 12) {
               // Already in E.164 format: +1XXXXXXXXXX
@@ -1013,12 +1031,12 @@ const ProfessionalWorkflowPage = () => {
                 throw new Error(`Invalid phone number format: ${phoneNumber}. Expected E.164 format (e.g., +14161234567)`);
               }
             }
-            
+
             // Final validation: must be E.164 format
             if (!/^\+[1-9]\d{1,14}$/.test(formattedPhone)) {
               throw new Error(`Invalid phone number format: ${formattedPhone}. Must be E.164 format (e.g., +14161234567)`);
             }
-            
+
             // Generate consent token
             const token = await PatientConsentService.generateConsentToken(
               patientId,
@@ -1029,9 +1047,9 @@ const ProfessionalWorkflowPage = () => {
               userId,
               clinicianDisplayName
             );
-            
+
             setConsentToken(token);
-            
+
             // Send SMS with consent link
             await SMSService.sendConsentLink(
               formattedPhone,
@@ -1073,26 +1091,26 @@ const ProfessionalWorkflowPage = () => {
       nextCount: next.length,
       nextTests: next.map(t => ({ name: t.name, id: t.id, region: t.region })),
     });
-    
+
     const sanitized = next.map(sanitizeEvaluationEntry);
     console.log(`[PHASE2] Sanitized tests:`, sanitized.map(t => ({ name: t.name, id: t.id, region: t.region })));
-    
+
     // ✅ FIX: Use functional update to get current state and compare
     setEvaluationTests((currentTests) => {
       // ✅ FIX: Deep comparison - check IDs, values, notes, and result
       const currentTestIds = new Set(currentTests.map(t => t.id));
       const newTestIds = new Set(sanitized.map(t => t.id));
-      
+
       // Check for added/removed tests
-      const hasTestChanges = sanitized.length !== currentTests.length || 
-                             sanitized.some(t => !currentTestIds.has(t.id)) ||
-                             currentTests.some(t => !newTestIds.has(t.id));
-      
+      const hasTestChanges = sanitized.length !== currentTests.length ||
+        sanitized.some(t => !currentTestIds.has(t.id)) ||
+        currentTests.some(t => !newTestIds.has(t.id));
+
       // ✅ FIX: Check for value changes within existing tests
       const hasValueChanges = sanitized.some(newTest => {
         const currentTest = currentTests.find(t => t.id === newTest.id);
         if (!currentTest) return false; // New test, already detected above
-        
+
         // Compare values (deep comparison)
         const currentValuesStr = JSON.stringify(currentTest.values || {});
         const newValuesStr = JSON.stringify(newTest.values || {});
@@ -1103,31 +1121,31 @@ const ProfessionalWorkflowPage = () => {
           });
           return true;
         }
-        
+
         // Compare notes
         if ((currentTest.notes || '') !== (newTest.notes || '')) {
           console.log(`[PHASE2] Notes change detected in test ${newTest.id}`);
           return true;
         }
-        
+
         // Compare result
         if (currentTest.result !== newTest.result) {
           console.log(`[PHASE2] Result change detected in test ${newTest.id}: ${currentTest.result} -> ${newTest.result}`);
           return true;
         }
-        
+
         return false;
       });
-      
+
       const hasChanges = hasTestChanges || hasValueChanges;
-      
+
       if (!hasChanges) {
         console.log(`[PHASE2] No changes detected, skipping update`);
         return currentTests; // Return unchanged
       }
-      
+
       console.log(`[PHASE2] Changes detected (tests: ${hasTestChanges}, values: ${hasValueChanges}), updating evaluationTests...`);
-      
+
       // ✅ FIX: Update ref to prevent useEffect from re-triggering
       // Use a more comprehensive key that includes values to detect real changes
       const stateKey = JSON.stringify(sanitized.map(t => ({
@@ -1137,20 +1155,20 @@ const ProfessionalWorkflowPage = () => {
         result: t.result
       })).sort((a, b) => a.id.localeCompare(b.id)));
       lastSharedStateRef.current = stateKey;
-      
+
       // ✅ FIX: Set flag to prevent useEffect from overwriting
       isAddingTestsRef.current = true;
       setTimeout(() => {
         isAddingTestsRef.current = false;
       }, 100);
-      
+
       // ✅ FIX: Update sharedState AFTER state update
       setTimeout(() => {
         console.log(`[PHASE2] Calling updatePhysicalEvaluation...`);
-    updatePhysicalEvaluation(sanitized);
+        updatePhysicalEvaluation(sanitized);
         console.log(`[PHASE2] persistEvaluation completed`);
       }, 0);
-      
+
       return sanitized;
     });
   }, [updatePhysicalEvaluation]); // ✅ FIX: Removed evaluationTests from dependencies
@@ -1175,44 +1193,44 @@ const ProfessionalWorkflowPage = () => {
         detectedCaseRegion: detectedCaseRegion,
         currentTestsCount: evaluationTests.length
       });
-      
+
       // ✅ PHASE 1: Allow AI-recommended tests even if region doesn't match exactly
       // The AI has full context and may recommend related tests (e.g., hand/ankle tests
       // when patient reports pain in those areas during acute episodes)
       const isAIRecommended = entry.source === "ai";
-      
+
       // ✅ P1.1: Validate region match before adding test, but allow AI recommendations
       if (detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion && !isAIRecommended) {
         console.warn(`[PHASE2] Test "${entry.name}" region (${entry.region}) does not match case region (${detectedCaseRegion}). Skipping.`);
         setAnalysisError(`Test "${entry.name}" is for ${regionLabels[entry.region]}, but this case is for ${regionLabels[detectedCaseRegion]}. Please select tests appropriate for the current case.`);
         return; // Block adding test from different region (unless AI-recommended)
       }
-      
+
       // Log when AI-recommended test from different region is allowed
       if (isAIRecommended && detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion) {
         console.log(`[PHASE2] Allowing AI-recommended test "${entry.name}" (${entry.region}) for case region (${detectedCaseRegion}) - AI has full context`);
       }
-      
+
       // ✅ PHASE 2 FIX: Use functional update to ensure we have latest state
       setEvaluationTests((currentTests) => {
         const exists = currentTests.some(
-        (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
-      );
-        
+          (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
+        );
+
         if (exists) {
           console.log(`[PHASE2] Test "${entry.name}" already exists, skipping`);
           return currentTests; // Return current state unchanged
         }
-        
+
         console.log(`[PHASE2] ✅ Adding test "${entry.name}" to evaluationTests`);
         const newTests = [...currentTests, entry];
         console.log(`[PHASE2] New tests array (${newTests.length} tests):`, newTests.map(t => t.name));
-        
+
         // ✅ PHASE 2 FIX: Persist immediately with new state using setTimeout to avoid batching issues
         setTimeout(() => {
           persistEvaluation(newTests);
         }, 0);
-        
+
         return newTests;
       });
     },
@@ -1242,14 +1260,14 @@ const ProfessionalWorkflowPage = () => {
     ): EvaluationTestEntry => {
       const definition = getTestDefinition(test.id);
       const hasFields = definition && hasFieldDefinitions(definition);
-      
+
       // Initialize values for tests with fields - PREfill numeric values (ROM, Strength) with normal ranges
       // If physio changes these values, it means they don't match normal ranges
       // NOTE: Units (kg, etc.) will be subject to geolocation or physical practice location
       // to respect locally used measurement units (future enhancement)
       const initialValues: Record<string, number | string | boolean | null> = {};
       const prefillDefaults: Record<string, number | null> = {}; // Track pre-filled defaults
-      
+
       if (hasFields && definition.fields) {
         definition.fields.forEach((field) => {
           if (field.kind === 'angle_bilateral' || field.kind === 'angle_unilateral') {
@@ -1351,7 +1369,7 @@ const ProfessionalWorkflowPage = () => {
     console.log('[PHASE2] Clearing selectedEntityIds due to new motivo_consulta');
     setSelectedEntityIds([]);
   }, [niagaraResults?.motivo_consulta]);
-  
+
   // ✅ PHASE 2: Clear evaluation tests when patient changes or new session starts
   useEffect(() => {
     if (patientIdFromUrl && patientIdFromUrl !== currentPatient?.id) {
@@ -1367,7 +1385,7 @@ const ProfessionalWorkflowPage = () => {
     if ((isRecording || (transcript && transcript.trim().length > 0)) && !transcriptionStartTime) {
       setTranscriptionStartTime(new Date());
     }
-    
+
     // Capture end when transcript has content and recording stopped
     if (transcript && transcript.trim().length > 0 && !isRecording && !transcriptionEndTime && transcriptionStartTime) {
       setTranscriptionEndTime(new Date());
@@ -1396,34 +1414,34 @@ const ProfessionalWorkflowPage = () => {
       console.log('[WORKFLOW] ⚠️ Skipping physical test suggestions for follow-up visit');
       return [];
     }
-    
+
     if (!niagaraResults?.evaluaciones_fisicas_sugeridas) return [];
     // ✅ PHASE 2 FIX: Filter out null/undefined tests to match interactiveResults.physicalTests
     // This ensures indices match between selectedEntityIds and aiSuggestions
     return niagaraResults.evaluaciones_fisicas_sugeridas
       .map((test: any, originalIndex: number) => {
         if (!test) return null; // Mark null tests for filtering
-        
-      if (typeof test === "string") {
-        const trimmed = test.trim();
-        return {
+
+        if (typeof test === "string") {
+          const trimmed = test.trim();
+          return {
             key: originalIndex, // Keep original index for mapping
             originalIndex, // Store original index
-          rawName: trimmed,
-          displayName: trimmed,
-          match: matchTestName(trimmed),
-        };
-      }
+            rawName: trimmed,
+            displayName: trimmed,
+            match: matchTestName(trimmed),
+          };
+        }
         const name = test.test || test.name || `Suggested test ${originalIndex + 1}`;
-      const objective = test.objetivo || test.indicacion || "";
-      const description = objective || test.justificacion || "";
-      return {
+        const objective = test.objetivo || test.indicacion || "";
+        const description = objective || test.justificacion || "";
+        return {
           key: originalIndex, // Keep original index for mapping
           originalIndex, // Store original index
-        rawName: name,
-        displayName: description ? `${name} — ${description}` : name,
-        match: matchTestName(name),
-      };
+          rawName: name,
+          displayName: description ? `${name} — ${description}` : name,
+          match: matchTestName(name),
+        };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null); // Filter nulls but keep original indices
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type]);
@@ -1516,7 +1534,7 @@ const ProfessionalWorkflowPage = () => {
 
     const psychosocial = niagaraResults.contexto_psicosocial || [];
     const occupational = niagaraResults.contexto_ocupacional || [];
-    
+
     // Extract all biopsychosocial factors from the normalized results
     const biopsychosocial_psychological = niagaraResults.biopsychosocial_psychological || [];
     const biopsychosocial_social = niagaraResults.biopsychosocial_social || [];
@@ -1554,13 +1572,13 @@ const ProfessionalWorkflowPage = () => {
       filteredEvaluationTests.map((entry) => { // ✅ P1.1: Use filtered tests for SOAP generation
         const definition = getTestDefinition(entry.id);
         const hasFields = definition && hasFieldDefinitions(definition);
-        
+
         // Build rich notes from field values if available
         let enrichedNotes = entry.notes?.trim() || undefined;
         if (hasFields && entry.values && Object.keys(entry.values).length > 0) {
           const testDef = definition as MskTestDefinition;
           const valueParts: string[] = [];
-          
+
           testDef.fields?.forEach((field) => {
             const value = entry.values?.[field.id];
             if (value !== null && value !== undefined && value !== '') {
@@ -1577,7 +1595,7 @@ const ProfessionalWorkflowPage = () => {
               }
             }
           });
-          
+
           if (valueParts.length > 0) {
             enrichedNotes = valueParts.join('; ') + (entry.notes?.trim() ? ` — ${entry.notes.trim()}` : '');
           }
@@ -1619,7 +1637,7 @@ const ProfessionalWorkflowPage = () => {
       const message = error?.message || 'Unable to analyze transcript with our AI system.';
       setAnalysisError(message);
       console.error('[Workflow] Vertex analysis failed:', message);
-      
+
       // Submit error feedback automatically
       if (error instanceof Error) {
         FeedbackService.submitErrorFeedback(error, {
@@ -1629,7 +1647,7 @@ const ProfessionalWorkflowPage = () => {
           console.error('[Workflow] Failed to submit error feedback:', err);
         });
       }
-      
+
       // Suggest fallback for network errors
       if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
         setAnalysisError(
@@ -1655,7 +1673,7 @@ const ProfessionalWorkflowPage = () => {
       }
 
       setAttachments((prev) => [...prev, ...uploads]);
-      } catch (error) {
+    } catch (error) {
       console.error("Attachment upload failed", error);
       setAttachmentError(
         error instanceof Error
@@ -1695,10 +1713,10 @@ const ProfessionalWorkflowPage = () => {
     console.log('[PHASE2] interactiveResults.physicalTests:', interactiveResults?.physicalTests);
     console.log('[PHASE2] current evaluationTests:', evaluationTests);
     console.log('[PHASE2] detectedCaseRegion:', detectedCaseRegion);
-    
+
     // ✅ PHASE 2: Set flag to prevent useEffect from overwriting
     isAddingTestsRef.current = true;
-    
+
     const additions: EvaluationTestEntry[] = [];
     const entriesToAdd: EvaluationTestEntry[] = [];
 
@@ -1706,7 +1724,7 @@ const ProfessionalWorkflowPage = () => {
     // aiSuggestions has the correct key (originalIndex) and includes library matches
     console.log('[PHASE2] Using aiSuggestions directly for mapping');
     console.log('[PHASE2] aiSuggestions keys:', aiSuggestions.map(s => s.key));
-    
+
     // ✅ PHASE 2 FIX: Create a map from key (originalIndex) to suggestion
     const suggestionMap = new Map(aiSuggestions.map((item) => [item.key, item]));
     console.log('[PHASE2] suggestionMap created:', Array.from(suggestionMap.entries()).map(([k, v]) => [k, v.rawName]));
@@ -1714,12 +1732,12 @@ const ProfessionalWorkflowPage = () => {
     // ✅ PHASE 2 FIX: Get physical test IDs and map them correctly
     const physicalTestIds = selectedEntityIds.filter((id) => id.startsWith("physical-"));
     console.log('[PHASE2] physicalTestIds found:', physicalTestIds);
-    
+
     // ✅ PHASE 2 FIX: Collect all entries first, then add them all at once
     physicalTestIds.forEach((entityId) => {
       const originalIndex = parseInt(entityId.split("-")[1], 10);
       console.log(`[PHASE2] Processing physical test ID: ${entityId}, originalIndex: ${originalIndex}`);
-      
+
       // ✅ PHASE 2 FIX: Get suggestion directly by key (originalIndex)
       const suggestion = suggestionMap.get(originalIndex);
       if (!suggestion) {
@@ -1729,66 +1747,66 @@ const ProfessionalWorkflowPage = () => {
         console.error(`[PHASE2] niagaraResults.evaluaciones_fisicas_sugeridas length:`, niagaraResults?.evaluaciones_fisicas_sugeridas?.length);
         return;
       }
-      
+
       console.log(`[PHASE2] ✅ Found suggestion for originalIndex ${originalIndex}:`, {
         key: suggestion.key,
         rawName: suggestion.rawName,
         hasMatch: !!suggestion.match,
         matchName: suggestion.match?.name
       });
-      
+
       let entry: EvaluationTestEntry;
-        if (suggestion.match) {
+      if (suggestion.match) {
         // ✅ PHASE 2 FIX: Use library match if available (has region, fields, etc.)
         console.log(`[PHASE2] Creating entry from library match:`, suggestion.match.name);
         entry = createEntryFromLibrary(suggestion.match, "ai");
-        } else {
+      } else {
         // ✅ PHASE 2 FIX: Use suggestion rawName
         console.log(`[PHASE2] Creating custom entry for:`, suggestion.rawName);
         entry = createCustomEntry(suggestion.rawName, "ai");
       }
-      
+
       console.log(`[PHASE2] Created entry:`, {
         name: entry.name,
         id: entry.id,
         region: entry.region,
         source: entry.source
       });
-      
+
       additions.push(entry);
       entriesToAdd.push(entry);
     });
 
     console.log(`[PHASE2] Total entries collected: ${entriesToAdd.length}`, entriesToAdd.map(e => e.name));
-    
+
     // ✅ PHASE 2 FIX: Add all tests at once using functional update to avoid race conditions
     if (entriesToAdd.length > 0) {
       setEvaluationTests((currentTests) => {
         // Filter out duplicates
         const newTests = entriesToAdd.filter(entry => {
           const exists = currentTests.some(
-          (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
-        );
+            (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
+          );
           if (exists) {
             console.log(`[PHASE2] Test "${entry.name}" already exists, skipping`);
             return false;
           }
           return true;
         });
-        
+
         if (newTests.length === 0) {
           console.log(`[PHASE2] All tests already exist, no new tests to add`);
           return currentTests;
         }
-        
+
         const finalTests = [...currentTests, ...newTests];
         console.log(`[PHASE2] ✅ Adding ${newTests.length} new tests. Total: ${finalTests.length}`, finalTests.map(t => t.name));
-        
+
         // Persist all tests at once
         setTimeout(() => {
           persistEvaluation(finalTests);
         }, 0);
-        
+
         return finalTests;
       });
     }
@@ -1805,13 +1823,13 @@ const ProfessionalWorkflowPage = () => {
       setEvaluationTests((currentTests) => {
         console.log(`[PHASE2] Current evaluationTests:`, currentTests.map(t => t.name));
         console.log(`[PHASE2] Expected ${entriesToAdd.length} tests, current: ${currentTests.length}`);
-        
+
         // Clear flag after delay
         setTimeout(() => {
           isAddingTestsRef.current = false;
           console.log(`[PHASE2] ✅ Flag cleared - ${currentTests.length} tests in state`);
         }, 500);
-        
+
         return currentTests; // Return unchanged
       });
     }, 500);
@@ -1848,13 +1866,13 @@ const ProfessionalWorkflowPage = () => {
   // Treatment reminder state
   const [treatmentReminder, setTreatmentReminder] = useState<string | null>(null);
   const [previousTreatmentPlan, setPreviousTreatmentPlan] = useState<any>(null);
-  
+
   // Physio notes for TODAY'S PLAN section
   const [physioNotes, setPhysioNotes] = useState<string>('');
-  
+
   // Initial Plan Modal state (for existing patients without initial assessment)
   const [isInitialPlanModalOpen, setIsInitialPlanModalOpen] = useState(false);
-  
+
   // Universal Share Menu state
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
@@ -1871,21 +1889,20 @@ const ProfessionalWorkflowPage = () => {
     if (visitType === 'follow-up') {
       const loadTreatmentPlan = async () => {
         try {
-          const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
           const patientId = patientIdFromUrl || demoPatient.id;
-          
+
           // Load the most recent treatment plan
           const plan = await treatmentPlanService.getTreatmentPlan(patientId);
           if (plan) {
             setPreviousTreatmentPlan(plan);
-            
+
             // Also load reminder for backward compatibility
-          const reminder = await treatmentPlanService.getTreatmentReminder(
+            const reminder = await treatmentPlanService.getTreatmentReminder(
               patientId,
               visitCount.data ? visitCount.data + 1 : 2
-          );
-          if (reminder) {
-            setTreatmentReminder(reminder.reminderText);
+            );
+            if (reminder) {
+              setTreatmentReminder(reminder.reminderText);
             }
           } else {
             // No plan found - this could be an existing patient without initial assessment
@@ -1901,11 +1918,10 @@ const ProfessionalWorkflowPage = () => {
       setPreviousTreatmentPlan(null);
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
-  
+
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
     try {
-      const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
       const patientId = patientIdFromUrl || demoPatient.id;
       const plan = await treatmentPlanService.getTreatmentPlan(patientId);
       if (plan) {
@@ -1925,7 +1941,7 @@ const ProfessionalWorkflowPage = () => {
     // ✅ Patient Consent Gate (PHIPA s. 18 compliance) - SMS-based approach
     const patientId = patientIdFromUrl || demoPatient.id;
     const hasConsent = await PatientConsentService.hasConsent(patientId);
-    
+
     if (!hasConsent) {
       // Show notification that consent is pending
       setAnalysisError(
@@ -1941,7 +1957,7 @@ const ProfessionalWorkflowPage = () => {
       if (!soapGenerationStartTime) {
         setSoapGenerationStartTime(new Date());
       }
-      
+
       setIsGeneratingSOAP(true);
       setAnalysisError(null);
 
@@ -1989,7 +2005,7 @@ const ProfessionalWorkflowPage = () => {
         analysisLevel,
         sessionType: currentSessionType,
       });
-      
+
       if (!response || !response.soap) {
         throw new Error('Failed to generate SOAP note: empty response from AI system');
       }
@@ -2001,7 +2017,7 @@ const ProfessionalWorkflowPage = () => {
         response.metadata.tokens,
         response.metadata.tokenOptimization
       );
-      
+
       // Store token optimization for display in SOAPEditor
       if (response.metadata.tokenOptimization) {
         setSoapTokenOptimization(response.metadata.tokenOptimization);
@@ -2013,7 +2029,7 @@ const ProfessionalWorkflowPage = () => {
         response.soap.objective || '',
         organized.structuredData.physicalExamResults
       );
-      
+
       if (!objectiveValidation.isValid) {
         console.warn('[SOAP Validation] Objective section violations:', objectiveValidation);
         // Log violations but don't block - flag for review
@@ -2067,7 +2083,7 @@ const ProfessionalWorkflowPage = () => {
       });
     } catch (error: any) {
       console.error('[Workflow] Clinical note generation failed:', error);
-      
+
       // Submit error feedback automatically
       if (error instanceof Error) {
         FeedbackService.submitErrorFeedback(error, {
@@ -2078,11 +2094,11 @@ const ProfessionalWorkflowPage = () => {
           console.error('[Workflow] Failed to submit error feedback:', err);
         });
       }
-      
+
       // Set user-friendly error message
       const errorMessage = error?.message || 'Failed to generate SOAP note. Please try again.';
       setAnalysisError(errorMessage);
-      
+
       // If error is network-related, suggest fallback
       if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
         setAnalysisError(
@@ -2119,17 +2135,17 @@ const ProfessionalWorkflowPage = () => {
       const transcriptionTime = transcriptionStartTime && transcriptionEndTime
         ? (transcriptionEndTime.getTime() - transcriptionStartTime.getTime()) / 1000 / 60
         : undefined;
-      
+
       const aiGenerationTime = soapGenerationStartTime && transcriptionEndTime
         ? (new Date().getTime() - soapGenerationStartTime.getTime()) / 1000 / 60
         : undefined;
-      
+
       const totalDocumentationTime = (finalizedAt.getTime() - sessionStartTime.getTime()) / 1000 / 60;
-      
+
       const manualEditingTime = aiGenerationTime && transcriptionTime
         ? totalDocumentationTime - aiGenerationTime - (transcriptionTime || 0)
         : undefined;
-      
+
       // Detect features used
       const featuresUsed = {
         transcription: !!(transcript && transcript.trim().length > 0),
@@ -2137,7 +2153,7 @@ const ProfessionalWorkflowPage = () => {
         aiSuggestions: !!(sharedState.clinicalAnalysis?.physicalTests && sharedState.clinicalAnalysis.physicalTests.length > 0),
         soapGeneration: !!localSoapNote,
       };
-      
+
       // Calculate quality metrics
       const soapSectionsCompleted = {
         subjective: !!(localSoapNote?.subjective && localSoapNote.subjective.trim().length > 0),
@@ -2145,20 +2161,20 @@ const ProfessionalWorkflowPage = () => {
         assessment: !!(localSoapNote?.assessment && localSoapNote.assessment.trim().length > 0),
         plan: !!(localSoapNote?.plan && localSoapNote.plan.trim().length > 0),
       };
-      
+
       // For now, estimate suggestions offered/accepted/rejected from available data
       // TODO: Track these in real-time during workflow for more accurate metrics
       const suggestionsOffered = sharedState.clinicalAnalysis?.physicalTests?.length || 0;
       const suggestionsAccepted = filteredEvaluationTests.filter(test => test.source === 'ai').length; // ✅ P1.1: Use filtered tests
       const suggestionsRejected = suggestionsOffered - suggestionsAccepted;
-      
+
       // Estimate edits made to SOAP (for now, just check if SOAP was modified)
       // TODO: Track actual edits in real-time for more accurate metrics
       const editsMadeToSOAP = localSoapNote ? 1 : 0; // Placeholder - would need to track actual edits
-      
+
       // Generate session ID (simple hash for now)
       const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-      
+
       // Prepare metrics event
       const metrics: Omit<ValueMetricsEvent, 'timestamp'> = {
         hashedUserId: TEMP_USER_ID, // Will be pseudonymized in AnalyticsService
@@ -2187,7 +2203,7 @@ const ProfessionalWorkflowPage = () => {
         sessionType: visitType,
         region: undefined, // TODO: Extract from patient data or session metadata
       };
-      
+
       // Track metrics
       await AnalyticsService.trackValueMetrics(metrics);
       console.log('[VALUE METRICS] Metrics tracked successfully:', {
@@ -2221,7 +2237,7 @@ const ProfessionalWorkflowPage = () => {
         );
         return; // Bloquear finalización
       }
-      
+
       // Si requiere review y fue reviewado, agregar metadata de review
       if (soap.requiresReview && soap.isReviewed && !soap.reviewed) {
         soap.reviewed = {
@@ -2231,10 +2247,10 @@ const ProfessionalWorkflowPage = () => {
         };
       }
     }
-    
+
     setLocalSoapNote(soap);
     setSoapStatus(status);
-    
+
     // Clean SOAP note: replace undefined with null for Firestore compatibility
     const cleanSoap: SOAPNote = {
       subjective: soap.subjective || '',
@@ -2253,7 +2269,7 @@ const ProfessionalWorkflowPage = () => {
       ...(soap.aiProcessor && { aiProcessor: soap.aiProcessor }),
       ...(soap.processedAt && { processedAt: soap.processedAt }),
     };
-    
+
     // Clean transcriptionMeta to remove undefined values
     const cleanTranscriptionMeta = {
       lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : null),
@@ -2263,13 +2279,13 @@ const ProfessionalWorkflowPage = () => {
       durationSeconds: transcriptMeta?.durationSeconds ?? null,
       recordedAt: new Date().toISOString(),
     };
-    
+
     // Remove undefined values from cleanTranscriptionMeta
     const finalTranscriptionMeta = cleanUndefined(cleanTranscriptionMeta);
-    
+
     // Clean SOAP note to remove undefined values before saving to Firestore
     const cleanedSoap = cleanUndefined(cleanSoap);
-    
+
     // Save to session
     try {
       const newSessionId = await sessionService.createSession({
@@ -2283,12 +2299,12 @@ const ProfessionalWorkflowPage = () => {
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
       });
-      
+
       // ✅ Day 3: Store sessionId for comparison
       if (newSessionId) {
         setSessionId(newSessionId);
       }
-      
+
       // Track value metrics when SOAP is finalized
       if (status === 'finalized') {
         await calculateAndTrackValueMetrics(new Date());
@@ -2307,46 +2323,46 @@ const ProfessionalWorkflowPage = () => {
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
-    
+
     // ✅ HOSPITAL PORTAL: Show share menu after finalization
     // The share menu will allow physiotherapists to share the note securely
     // This is especially important for hospital workflows
     // Note: Share menu will be opened via onShare callback in SOAPEditor
-    
-      // ✅ WORKFLOW OPTIMIZATION: Track workflow session end and show feedback
-      try {
-        const sessionIdForMetrics = sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-        if (user?.uid && workflowRoute) {
-          const metrics = await trackWorkflowSessionEnd(sessionIdForMetrics, user.uid, patientIdFromUrl || demoPatient.id);
-          if (metrics) {
-            console.log('[WORKFLOW] Workflow session metrics:', metrics);
-            // Build WorkflowMetrics from session metrics
-            const workflowMetricsData: WorkflowMetrics = {
-              workflowType: workflowRoute.type === 'follow-up' ? 'follow-up' : 'initial',
-              timeToSOAP: metrics.timeToSOAP || 0,
-              tokenUsage: metrics.tokenUsage || { input: 0, output: 0, total: 0 },
-              tokenOptimization: metrics.tokenOptimization,
-              userClicks: metrics.userClicks,
-              tabsSkipped: metrics.tabsSkipped,
-              timestamp: metrics.endTime || new Date(),
-            };
-            setWorkflowMetrics(workflowMetricsData);
-            // Show feedback after a short delay
-            setTimeout(() => {
-              setShowWorkflowFeedback(true);
-            }, 2000);
-          }
+
+    // ✅ WORKFLOW OPTIMIZATION: Track workflow session end and show feedback
+    try {
+      const sessionIdForMetrics = sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+      if (user?.uid && workflowRoute) {
+        const metrics = await trackWorkflowSessionEnd(sessionIdForMetrics, user.uid, patientIdFromUrl || demoPatient.id);
+        if (metrics) {
+          console.log('[WORKFLOW] Workflow session metrics:', metrics);
+          // Build WorkflowMetrics from session metrics
+          const workflowMetricsData: WorkflowMetrics = {
+            workflowType: workflowRoute.type === 'follow-up' ? 'follow-up' : 'initial',
+            timeToSOAP: metrics.timeToSOAP || 0,
+            tokenUsage: metrics.tokenUsage || { input: 0, output: 0, total: 0 },
+            tokenOptimization: metrics.tokenOptimization,
+            userClicks: metrics.userClicks,
+            tabsSkipped: metrics.tabsSkipped,
+            timestamp: metrics.endTime || new Date(),
+          };
+          setWorkflowMetrics(workflowMetricsData);
+          // Show feedback after a short delay
+          setTimeout(() => {
+            setShowWorkflowFeedback(true);
+          }, 2000);
         }
-      } catch (error) {
-        console.error('[WORKFLOW] Error tracking workflow session end:', error);
-        // Non-blocking
       }
-    
+    } catch (error) {
+      console.error('[WORKFLOW] Error tracking workflow session end:', error);
+      // Non-blocking
+    }
+
     // ✅ PILOT METRICS: Track session completion
     try {
       const pilotStartDate = new Date('2024-12-19T00:00:00Z');
       const isPilotUser = new Date() >= pilotStartDate;
-      
+
       if (isPilotUser && user?.uid) {
         const sessionDuration = Math.round((new Date().getTime() - sessionStartTime.getTime()) / 1000 / 60); // minutes
         await AnalyticsService.trackEvent('pilot_session_completed', {
@@ -2367,13 +2383,12 @@ const ProfessionalWorkflowPage = () => {
       console.error('⚠️ [PILOT METRICS] Error tracking session completion:', error);
       // Non-blocking: don't fail finalization if analytics fails
     }
-    
+
     // ✅ P1.3: Save finalized SOAP to Clinical Vault (Firestore)
     try {
-      const { PersistenceService } = await import('../services/PersistenceService');
       const patientId = patientIdFromUrl || demoPatient.id;
       const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-      
+
       // ✅ P1.3: Save finalized SOAP to Clinical Vault with detailed logging
       const soapDataToSave = {
         subjective: soap.subjective || '',
@@ -2383,7 +2398,7 @@ const ProfessionalWorkflowPage = () => {
         confidence: 0.85, // Default confidence for finalized notes
         timestamp: new Date().toISOString(),
       };
-      
+
       console.log('[Workflow] Saving SOAP to Clinical Vault:', {
         patientId,
         sessionId,
@@ -2394,7 +2409,7 @@ const ProfessionalWorkflowPage = () => {
           plan: soapDataToSave.plan.length,
         }
       });
-      
+
       // ✅ SPRINT 2 P2: Use enhanced persistence with retry and backup
       const { saveSOAPNoteWithRetry } = await import('../services/PersistenceServiceEnhanced');
       const result = await saveSOAPNoteWithRetry(
@@ -2432,11 +2447,10 @@ const ProfessionalWorkflowPage = () => {
         'Please check your connection and try again.'
       );
     }
-    
+
     // Save treatment plan for future reminders
     if (soap.plan) {
       try {
-        const { default: treatmentPlanService } = await import('../services/treatmentPlanService');
         await treatmentPlanService.saveTreatmentPlan(
           patientIdFromUrl || demoPatient.id,
           currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
@@ -2480,11 +2494,11 @@ const ProfessionalWorkflowPage = () => {
   // Format last session date helper
   const formatLastSessionDate = useCallback((encounter: any) => {
     if (!encounter?.encounterDate) return null;
-    const date = encounter.encounterDate instanceof Timestamp 
-      ? encounter.encounterDate.toDate() 
-      : encounter.encounterDate instanceof Date 
-      ? encounter.encounterDate 
-      : new Date(encounter.encounterDate);
+    const date = encounter.encounterDate instanceof Timestamp
+      ? encounter.encounterDate.toDate()
+      : encounter.encounterDate instanceof Date
+        ? encounter.encounterDate
+        : new Date(encounter.encounterDate);
     return date.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
   }, []);
 
@@ -2538,19 +2552,19 @@ const ProfessionalWorkflowPage = () => {
         medicalHistory.forEach((item: string) => {
           const lower = item.toLowerCase();
           // Look for conditions that might contraindicate certain treatments
-          if (lower.includes('contraindic') || 
-              lower.includes('no debe') || 
-              lower.includes('evitar') ||
-              lower.includes('precaución') ||
-              lower.includes('riesgo') ||
-              lower.includes('cardiac') ||
-              lower.includes('cardíac') ||
-              lower.includes('hipertensión') ||
-              lower.includes('diabetes') ||
-              lower.includes('osteoporosis') ||
-              lower.includes('fractura') ||
-              lower.includes('cirugía') ||
-              lower.includes('surgery')) {
+          if (lower.includes('contraindic') ||
+            lower.includes('no debe') ||
+            lower.includes('evitar') ||
+            lower.includes('precaución') ||
+            lower.includes('riesgo') ||
+            lower.includes('cardiac') ||
+            lower.includes('cardíac') ||
+            lower.includes('hipertensión') ||
+            lower.includes('diabetes') ||
+            lower.includes('osteoporosis') ||
+            lower.includes('fractura') ||
+            lower.includes('cirugía') ||
+            lower.includes('surgery')) {
             contraindications.push(item);
           }
         });
@@ -2582,20 +2596,20 @@ const ProfessionalWorkflowPage = () => {
               <Users className="w-4 h-4" />
               Command Center
             </Link>
-          <div className="flex items-center gap-3 text-sm">
-            {/* ✅ CRITICAL FIX: Show professional information */}
-            {clinicianDisplayName && (
-              <div className="flex items-center gap-2 text-slate-700">
-                <Users className="w-4 h-4 text-slate-500" />
-                <span className="font-medium">{clinicianDisplayName}</span>
-                {clinicName && <span className="text-slate-500">· {clinicName}</span>}
+            <div className="flex items-center gap-3 text-sm">
+              {/* ✅ CRITICAL FIX: Show professional information */}
+              {clinicianDisplayName && (
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Users className="w-4 h-4 text-slate-500" />
+                  <span className="font-medium">{clinicianDisplayName}</span>
+                  {clinicName && <span className="text-slate-500">· {clinicName}</span>}
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-slate-500">
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                Email verified · Access granted
               </div>
-            )}
-            <div className="flex items-center gap-2 text-slate-500">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            Email verified · Access granted
             </div>
-          </div>
           </div>
         </div>
       </div>
@@ -2614,7 +2628,7 @@ const ProfessionalWorkflowPage = () => {
             }}
           />
         )}
-        
+
         {/* ✅ FOLLOW-UP WORKFLOW: Show explicit follow-up indicator when URL has type=followup */}
         {isExplicitFollowUp && workflowRoute && (
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-4 mb-4">
@@ -2649,35 +2663,34 @@ const ProfessionalWorkflowPage = () => {
             { id: "evaluation", label: "2 · Physical Evaluation" },
             { id: "soap", label: "3 · SOAP Report" },
           ]
-          .filter((tab) => {
-            // ✅ WORKFLOW OPTIMIZATION: Hide tabs that should be skipped
-            // ✅ CRITICAL FIX: Also check if explicit followup from URL
-            const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-            const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
-            
-            // Skip analysis tab for follow-ups
-            if (isFollowUpWorkflow && tab.id === 'analysis') {
-              return false;
-            }
-            
-            if (workflowRoute) {
-              return !shouldSkipTab(workflowRoute, tab.id);
-            }
-            return true; // Show all tabs if no route detected yet
-          })
-          .map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as ActiveTab)}
-              className={`rounded-full px-4 py-2 text-sm transition ${
-                activeTab === tab.id
+            .filter((tab) => {
+              // ✅ WORKFLOW OPTIMIZATION: Hide tabs that should be skipped
+              // ✅ CRITICAL FIX: Also check if explicit followup from URL
+              const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
+              const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
+
+              // Skip analysis tab for follow-ups
+              if (isFollowUpWorkflow && tab.id === 'analysis') {
+                return false;
+              }
+
+              if (workflowRoute) {
+                return !shouldSkipTab(workflowRoute, tab.id);
+              }
+              return true; // Show all tabs if no route detected yet
+            })
+            .map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as ActiveTab)}
+                className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
                   ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
                   : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
         </nav>
 
         {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups */}
@@ -2835,7 +2848,7 @@ const ProfessionalWorkflowPage = () => {
 
       {/* Feedback Widget - Always visible for beta testing */}
       <FeedbackWidget />
-      
+
       {/* Initial Plan Modal for existing patients without initial assessment */}
       {currentPatient && (
         <InitialPlanModal
@@ -2894,8 +2907,8 @@ const ProfessionalWorkflowPage = () => {
                 result.method === 'portal'
                   ? `Secure portal created! Code: ${result.data?.code}. Share the URL with hospital staff.`
                   : result.method === 'clipboard'
-                  ? 'Note copied to clipboard. Will auto-clear in 60 seconds.'
-                  : 'Note shared successfully.'
+                    ? 'Note copied to clipboard. Will auto-clear in 60 seconds.'
+                    : 'Note shared successfully.'
               );
             }
           }}

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext";
+import { useProfessionalProfile } from "../context/ProfessionalProfileContext";
 import { emailActivationService } from "../services/emailActivationService";
 import Button from "../components/ui/button";
 
@@ -18,6 +19,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { profile, loading: profileLoading, error: profileError } = useProfessionalProfile();
 
   useEffect(() => {
     if (location.state?.message) {
@@ -25,6 +27,30 @@ const LoginPage: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
+
+  // WO-AUTH-GATE-LOOP-06 ToDo 3: Función para manejar redirección post-login
+  const handlePostLoginRedirect = () => {
+    // Si hay error de Firestore (adblock, etc.), NO navegar - AuthGuard mostrará soft-fail
+    if (profileError) {
+      logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
+      // No navegar - dejar que AuthGuard maneje el error
+      return;
+    }
+
+    // Si profile.registrationStatus === 'complete' → /command-center
+    if (profile?.registrationStatus === 'complete') {
+      navigate("/command-center", {
+        replace: true,
+        state: { from: "login" },
+      });
+    } else {
+      // Si 'incomplete' o no existe → /professional-onboarding
+      navigate("/professional-onboarding", {
+        replace: true,
+        state: { from: "login" },
+      });
+    }
+  };
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -48,10 +74,17 @@ const LoginPage: React.FC = () => {
       }
 
       await emailActivationService.updateLastLogin(email);
-      navigate("/command-center", {
-        replace: true,
-        state: { from: "login" },
-      });
+      
+      // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
+      // Esperar a que el perfil se cargue (si está cargando)
+      if (profileLoading) {
+        // Esperar un momento para que el perfil se cargue
+        setTimeout(() => {
+          handlePostLoginRedirect();
+        }, 500);
+      } else {
+        handlePostLoginRedirect();
+      }
     } catch (err) {
       logger.error("[LOGIN] Authentication error", err);
       setError("We couldn't validate your credentials. Please try again.");
@@ -170,7 +203,7 @@ const LoginPage: React.FC = () => {
             <Button
               variant="outline"
               className="w-full h-11 text-[15px] font-medium transition-all duration-200 font-apple"
-              onClick={() => navigate('/onboarding')}
+              onClick={() => navigate('/professional-onboarding')}
             >
               Sign Up Here
             </Button>

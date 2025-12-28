@@ -46,26 +46,24 @@ describe('retryWrapper', () => {
   });
 
   it('should fail after max retries', async () => {
+    // Use real timers for this test to avoid unhandled rejection issues
+    vi.useRealTimers();
+    
     const error = new Error('persistent error');
     const fn = vi.fn().mockRejectedValue(error);
     
-    const resultPromise = withRetry(fn, { 
-      maxRetries: 3,
-      initialDelay: 100 
-    });
+    // Await the rejection explicitly to prevent unhandled rejection
+    await expect(
+      withRetry(fn, { 
+        maxRetries: 3,
+        initialDelay: 10 // Use small delay for faster test
+      })
+    ).rejects.toBe(error);
     
-    // Fast-forward through delays
-    await vi.advanceTimersByTimeAsync(100); // First retry delay
-    await vi.advanceTimersByTimeAsync(300); // Second retry delay
-    await vi.advanceTimersByTimeAsync(900); // Third retry delay
+    expect(fn).toHaveBeenCalledTimes(4); // Initial + 3 retries
     
-    try {
-      await resultPromise;
-      expect.fail('Should have thrown error');
-    } catch (e) {
-      expect(e).toBe(error);
-      expect(fn).toHaveBeenCalledTimes(4); // Initial + 3 retries
-    }
+    // Restore fake timers for other tests
+    vi.useFakeTimers();
   });
 
   it('should use exponential backoff timing', async () => {

@@ -5,7 +5,8 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { SpendCapServiceClass as SpendCapService } from '../spendCapService';
+import { SpendCapService } from "../spendCapService";
+const spendCapService = new SpendCapService();
 
 // Mock Firestore
 vi.mock('../../lib/firebase', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../lib/firebase', () => ({
 }));
 
 vi.mock('firebase/firestore', () => ({
-  doc: vi.fn(),
+  doc: vi.fn(() => ({ __ref: 'docref' })),
   getDoc: vi.fn(),
   updateDoc: vi.fn(),
   serverTimestamp: vi.fn(() => new Date())
@@ -35,7 +36,7 @@ describe('SpendCapService', () => {
     test('sets spend cap for user', async () => {
       const { updateDoc } = await import('firebase/firestore');
 
-      await SpendCapService.setMonthlySpendCap('user123', 100.00);
+      await spendCapService.setMonthlySpendCap('user123', 100.00);
 
       expect(updateDoc).toHaveBeenCalledWith(
         expect.anything(),
@@ -62,7 +63,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const cap = await SpendCapService.getMonthlySpendCap('user123');
+      const cap = await spendCapService.getMonthlySpendCap('user123');
 
       expect(cap).toBe(100.00);
     });
@@ -80,7 +81,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const cap = await SpendCapService.getMonthlySpendCap('user123');
+      const cap = await spendCapService.getMonthlySpendCap('user123');
 
       expect(cap).toBeNull();
     });
@@ -92,15 +93,14 @@ describe('SpendCapService', () => {
         subscription: {
           tokenPurchases: [
             {
-              purchaseDate: { toDate: () => new Date('2025-01-15') },
+              purchaseDate: { toDate: () => new Date() },
               priceCAD: 15.00
             },
             {
-              purchaseDate: { toDate: () => new Date('2025-01-20') },
+              purchaseDate: { toDate: () => new Date() },
               priceCAD: 27.00
             }
-          ]
-        }
+          ]}
       };
 
       const { getDoc } = await import('firebase/firestore');
@@ -109,7 +109,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const spend = await SpendCapService.getCurrentMonthSpend('user123');
+      const spend = await spendCapService.getCurrentMonthSpend('user123');
 
       // Base subscription: $34.99 + Purchases: $15 + $27 = $76.99
       expect(spend).toBeCloseTo(76.99, 2);
@@ -120,15 +120,16 @@ describe('SpendCapService', () => {
         subscription: {
           tokenPurchases: [
             {
-              purchaseDate: { toDate: () => new Date('2024-12-15') },
+              // Previous month
+              purchaseDate: { toDate: () => new Date(Date.now() - 35 * 24 * 60 * 60 * 1000) },
               priceCAD: 15.00
             },
             {
-              purchaseDate: { toDate: () => new Date('2025-01-20') },
+              // Current month
+              purchaseDate: { toDate: () => new Date() },
               priceCAD: 27.00
             }
-          ]
-        }
+          ]}
       };
 
       const { getDoc } = await import('firebase/firestore');
@@ -137,7 +138,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const spend = await SpendCapService.getCurrentMonthSpend('user123');
+      const spend = await spendCapService.getCurrentMonthSpend('user123');
 
       // Base subscription: $34.99 + Current month purchase: $27 = $61.99
       expect(spend).toBeCloseTo(61.99, 2);
@@ -167,7 +168,7 @@ describe('SpendCapService', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2025-01-15'));
 
-      const projected = await SpendCapService.projectMonthlySpend('user123');
+      const projected = await spendCapService.projectMonthlySpend('user123');
 
       // Base: $34.99, Purchase: $15, Total: $49.99
       // Projected: $49.99 * (31/15) ≈ $103.31
@@ -195,7 +196,7 @@ describe('SpendCapService', () => {
       } as any);
 
       // Current spend: $34.99 (base), Additional: $27.00, Total: $61.99 > $50.00
-      const wouldExceed = await SpendCapService.wouldExceedSpendCap('user123', 27.00);
+      const wouldExceed = await spendCapService.wouldExceedSpendCap('user123', 27.00);
 
       expect(wouldExceed).toBe(true);
     });
@@ -217,7 +218,7 @@ describe('SpendCapService', () => {
       } as any);
 
       // Current spend: $34.99 (base), Additional: $15.00, Total: $49.99 < $100.00
-      const wouldExceed = await SpendCapService.wouldExceedSpendCap('user123', 15.00);
+      const wouldExceed = await spendCapService.wouldExceedSpendCap('user123', 15.00);
 
       expect(wouldExceed).toBe(false);
     });
@@ -236,7 +237,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const wouldExceed = await SpendCapService.wouldExceedSpendCap('user123', 1000.00);
+      const wouldExceed = await spendCapService.wouldExceedSpendCap('user123', 1000.00);
 
       expect(wouldExceed).toBe(false);
     });
@@ -262,7 +263,7 @@ describe('SpendCapService', () => {
       const { TokenTrackingService } = await import('../tokenTrackingService');
       vi.mocked(TokenTrackingService.canUseTokens).mockResolvedValue(false);
 
-      const shouldAuto = await SpendCapService.shouldAutoPurchase('user123', 100);
+      const shouldAuto = await spendCapService.shouldAutoPurchase('user123', 100);
 
       expect(shouldAuto).toBe(true);
     });
@@ -282,7 +283,7 @@ describe('SpendCapService', () => {
         data: () => mockUserData
       } as any);
 
-      const shouldAuto = await SpendCapService.shouldAutoPurchase('user123', 100);
+      const shouldAuto = await spendCapService.shouldAutoPurchase('user123', 100);
 
       expect(shouldAuto).toBe(false);
     });
@@ -305,7 +306,7 @@ describe('SpendCapService', () => {
       const { TokenTrackingService } = await import('../tokenTrackingService');
       vi.mocked(TokenTrackingService.canUseTokens).mockResolvedValue(true);
 
-      const shouldAuto = await SpendCapService.shouldAutoPurchase('user123', 100);
+      const shouldAuto = await spendCapService.shouldAutoPurchase('user123', 100);
 
       expect(shouldAuto).toBe(false);
     });

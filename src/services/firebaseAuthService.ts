@@ -21,6 +21,7 @@ import {
 import { auth } from '../lib/firebase';
 
 import logger from '@/shared/utils/logger';
+import { getPublicBaseUrl } from '@/utils/urlHelpers';
 
 export interface AuthResult {
   success: boolean;
@@ -260,8 +261,9 @@ export class FirebaseAuthService {
    */
   public static async sendEmailVerification(user: FirebaseUser): Promise<AuthResult> {
     try {
+      const baseUrl = getPublicBaseUrl();
       const actionCodeSettings: ActionCodeSettings = {
-        url: `${window.location.origin}/email-verified`,
+        url: baseUrl + "/auth/action",
         handleCodeInApp: true,
       };
       
@@ -296,8 +298,10 @@ export class FirebaseAuthService {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
+      const baseUrl = getPublicBaseUrl();
       await sendPasswordResetEmail(auth, normalizedEmail, {
-        url: `${window.location.origin}/reset-complete`
+        url: baseUrl + "/auth/action",
+        handleCodeInApp: true,
       });
       
       return {

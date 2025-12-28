@@ -1,115 +1,314 @@
-import logger from '@/shared/utils/logger';
-type Regulation = { id: string; name: string; description?: string; countries: string[]; officialUrl?: string };
-type ComplianceConfig = { regulations: Regulation[]; showAllRegulations?: boolean };
-
-
 /**
- * 🏥 Professional Onboarding Page - Formulario Limpio de Captura Profesional
- * Cumple HIPAA/GDPR: Consentimiento explícito, auditoría completa, cifrado de datos sensibles
+ * 🏥 Professional Onboarding Page - CTO Canonical Structure (3 Wizards)
+ * 
+ * CTO SPEC: Exact structure as specified in CTO documentation
+ * - WIZARD 1: Professional Identity
+ * - WIZARD 2: Clinical Practice & Style
+ * - WIZARD 3: Data Use & Consent
+ * 
+ * DoD: All fields persist in users/{uid} only
  */
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAuth, sendEmailVerification } from 'firebase/auth';
+import { useNavigate, Link } from 'react-router-dom';
+import { getAuth, signOut } from 'firebase/auth';
 
 import { app } from '../core/firebase/firebaseClient';
-import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
-import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
+import { firebaseAuthService } from '@/services/firebaseAuthService';
+import { useAuth } from '../hooks/useAuth';
+
+import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
 import Button from '../components/ui/button';
+import { Select } from '../components/ui/Select';
+import { PRIMARY_SPECIALTIES, MSK_SKILLS } from '../components/wizard/onboardingConstants';
+
+import logger from '@/shared/utils/logger';
 
 interface OnboardingStep {
   id: string;
   title: string;
   description: string;
-  isCompleted: boolean;
-  isRequired: boolean;
 }
 
 export const ProfessionalOnboardingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { updateProfile, profile, loading: profileLoading } = useProfessionalProfile();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [emailValidation, setEmailValidation] = useState<{ isValid: boolean; message: string; checking: boolean }>({ isValid: true, message: '', checking: false });
 
-  const [complianceConfig, setComplianceConfig] = useState<ComplianceConfig | null>(null);
+  // WO-ONB-UNIFY-01: Si usuario ya está autenticado y tiene perfil completo, redirigir a command-center
+  // NO hay usuarios antiguos que necesiten upgrade - todos usan el mismo formulario
+  // WO-ONB-SIGNUP-01: NO redirigir si estamos mostrando la pantalla de éxito
+  useEffect(() => {
+    // No redirigir si estamos en estado de éxito (mostrando pantalla de éxito)
+    if (isSuccess) {
+      return;
+    }
+    
+    if (user && !profileLoading) {
+      // Si el usuario está autenticado y tiene perfil completo, redirigir a command-center
+      if (profile?.registrationStatus === 'complete') {
+        logger.info("[PROFESSIONAL_ONBOARDING] User already has complete profile, redirecting to command-center", {
+          uid: user.uid,
+          registrationStatus: profile.registrationStatus
+        });
+        navigate('/command-center', { replace: true });
+        return;
+      }
+      // Si el usuario está autenticado pero no tiene email verificado, redirigir a verificación
+      // PERO solo si no acabamos de completar el onboarding (para evitar loops)
+      if (user.email && !user.emailVerified && !isSuccess) {
+        logger.info("[PROFESSIONAL_ONBOARDING] User email not verified, redirecting to verify-email", {
+          uid: user.uid,
+          email: user.email
+        });
+        navigate(`/verify-email?email=${encodeURIComponent(user.email)}`, { replace: true });
+        return;
+      }
+    }
+  }, [user, profile, profileLoading, navigate, isSuccess]);
 
-  // Datos del formulario
+  // CTO SPEC: Exact form structure as specified
   const [formData, setFormData] = useState({
-    // Paso 1: Información Personal
+    // WIZARD 1 — Identidad profesional (CTO Spec)
     firstName: '',
-    secondName: '',
     lastName: '',
-    secondLastName: '',
-    email: '',
+    preferredName: '', // Opcional
+    email: user?.email || '', // Readonly si viene de auth
+    password: '', // Para nuevos usuarios (solo si no está autenticado)
+    confirmPassword: '', // Para nuevos usuarios (solo si no está autenticado)
     phone: '',
-    licenseNumber: '',
-    licenseIssueDate: '',
-    licenseRenewalType: 'annual' as 'annual' | 'biennial' | 'other',
-    licenseRenewalPeriod: 12, // meses
+    phoneCountryCode: '+1', // E.164 format
     country: '',
-    state: '',
+    province: '', // province/state
     city: '',
-    licenseExpiryNotification: false,
+    profession: '', // physiotherapist, etc.
+    licenseNumber: '',
+    licenseCountry: '', // issuingBody
 
-    // Paso 2: Información Profesional (SIMPLIFICADO)
-    profession: '', // Dropdown con todas las profesiones de la salud
-    specialty: '', // Campo de texto libre para especialidad
-    certifications: '', // Campo de texto libre para certificaciones
+    // WIZARD 2 — Práctica clínica y estilo (CTO Spec)
     yearsOfExperience: 0,
+    specialty: '', // specialty/focus
+    practiceSetting: '' as '' | 'clinic' | 'hospital' | 'home-care' | 'mixed',
+    practicePreferences: {
+      noteVerbosity: 'standard' as 'concise' | 'standard' | 'detailed',
+      tone: 'formal' as 'formal' | 'friendly' | 'educational',
+      preferredTreatments: [] as string[],
+      doNotSuggest: [] as string[],
+    },
 
-    // Paso 3: Compliance y Seguridad
-    hipaaConsent: false,
-    gdprConsent: false,
-    dataProcessingConsent: false,
-    auditTrailEnabled: true,
-    mfaEnabled: true,
-    licenseNotifications: true,
-    latamConsent: false, // Nuevo campo para el consentimiento de regulaciones latinoamericanas
-    canadaConsent: false, // Nuevo campo para el consentimiento de regulaciones canadienses
-    pipedaConsent: false // Nuevo campo para el consentimiento de PIPEDA
+    // WIZARD 3 — Uso de datos y consentimiento (CTO Spec)
+    dataUseConsent: {
+      personalizationFromClinicianInputs: true, // default true
+      personalizationFromPatientData: false, // default false
+      allowAssistantMemoryAcrossSessions: true, // default true
+      useDeidentifiedDataForProductImprovement: false, // default false
+      phipaConsent: false, // PHIPA consent - default false (must be explicitly granted)
+      pipedaConsent: false, // PIPEDA consent - default false (must be explicitly granted)
+    },
   });
 
-  // Pasos del onboarding
+  // CTO SPEC: 3 wizards canónicos
   const steps: OnboardingStep[] = [
     {
-      id: 'personal',
-      title: 'Información Personal',
-      description: 'Datos básicos y licencia profesional',
-      isCompleted: false,
-      isRequired: true
+      id: 'identity',
+      title: 'Professional Identity',
+      description: 'Who you are within AiDuxCare',
     },
     {
-      id: 'professional',
-      title: 'Información Profesional',
-      description: 'Profesión, especialidad y certificaciones',
-      isCompleted: false,
-      isRequired: true
+      id: 'practice',
+      title: 'Clinical Practice & Style',
+      description: 'How you work and how AiDuxCare helps you',
     },
     {
-      id: 'compliance',
-      title: 'Compliance y Seguridad',
-      description: 'Consentimientos y configuración de seguridad',
-      isCompleted: false,
-      isRequired: true
+      id: 'consent',
+      title: 'Data Use & Consent',
+      description: 'What you allow your assistant to do',
     }
   ];
 
-  // Verificar si el usuario ya tiene un perfil
+  // CTO SPEC: Email readonly si viene de auth
   useEffect(() => {
-  (async () => {
-    try {
-      const config: ComplianceConfig = { regulations: [], showAllRegulations: true };
-      setComplianceConfig(config as ComplianceConfig);
-      logger.info("📋 Regulaciones relevantes:", (config as ComplianceConfig).regulations.map((r: Regulation) => r.name));
-    } catch (error) {
-      logger.error("Error cargando configuración de cumplimiento:", error);
+    if (user?.email && !formData.email) {
+      setFormData(prev => ({ ...prev, email: user.email || '' }));
     }
-  })();
-}, []);
-
+  }, [user?.email]);
    
   const handleInputChange = (field: string, value: any) => {
+    // CTO SPEC: Manejar nested objects (practicePreferences, dataUseConsent)
+    if (field.startsWith('practicePreferences.')) {
+      const subField = field.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        practicePreferences: {
+          ...prev.practicePreferences,
+          [subField]: value
+        }
+      }));
+    } else if (field.startsWith('dataUseConsent.')) {
+      const subField = field.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        dataUseConsent: {
+          ...prev.dataUseConsent,
+          [subField]: value
+        }
+      }));
+    } else {
     setFormData(prev => ({ ...prev, [field]: value }));
+    }
+    
+    // Validación inmediata de email
+    if (field === 'email' && value) {
+      validateEmailImmediate(value);
+    }
+    
+    // Validación inmediata de teléfono
+    if (field === 'phone' || field === 'phoneCountryCode') {
+      const phone = field === 'phone' ? value : formData.phone;
+      const countryCode = field === 'phoneCountryCode' ? value : formData.phoneCountryCode;
+      if (phone && countryCode) {
+        validatePhoneImmediate(countryCode + phone);
+      }
+    }
+  };
+
+  // Handle specialty toggle (multi-select checkboxes)
+  const handleSpecialtyToggle = (specialtyValue: string) => {
+    const currentSpecialties = Array.isArray(formData.specialties) ? formData.specialties : [];
+    const newSpecialties = currentSpecialties.includes(specialtyValue)
+      ? currentSpecialties.filter((s: string) => s !== specialtyValue)
+      : [...currentSpecialties, specialtyValue];
+    
+    setFormData(prev => ({
+      ...prev,
+      specialties: newSpecialties,
+      specialty: newSpecialties.length > 0 ? newSpecialties[0] : '', // Legacy compatibility
+    }));
+  };
+
+  // Handle practice setting toggle (multi-select checkboxes)
+  const handlePracticeSettingToggle = (settingValue: string) => {
+    const currentSettings = Array.isArray(formData.practiceSettings) ? formData.practiceSettings : [];
+    const newSettings = currentSettings.includes(settingValue)
+      ? currentSettings.filter((s: string) => s !== settingValue)
+      : [...currentSettings, settingValue];
+    
+    setFormData(prev => ({
+      ...prev,
+      practiceSettings: newSettings,
+      practiceSetting: newSettings.length > 0 ? newSettings[0] as any : '', // Legacy compatibility
+    }));
+  };
+
+  // Handle treatment toggle (for preferredTreatments and doNotSuggest)
+  const handleTreatmentToggle = (treatmentValue: string, field: 'preferredTreatments' | 'doNotSuggest') => {
+    const currentArray = Array.isArray(formData.practicePreferences[field]) 
+      ? formData.practicePreferences[field] 
+      : [];
+    
+    const newArray = currentArray.includes(treatmentValue)
+      ? currentArray.filter((item: string) => item !== treatmentValue)
+      : [...currentArray, treatmentValue];
+    
+    setFormData(prev => ({
+      ...prev,
+      practicePreferences: {
+        ...prev.practicePreferences,
+        [field]: newArray,
+      },
+    }));
+  };
+
+  // WO-AUTH-ONB-FLOW-FIX-04 A: Validación inmediata de email (solo formato local si no hay auth)
+  const validateEmailImmediate = async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setEmailValidation({ isValid: true, message: '', checking: false });
+      return;
+    }
+
+    // WO-AUTH-ONB-FLOW-FIX-04 A: Si NO hay auth, solo validar formato localmente
+    // NO consultar Firestore sin auth (evita permissions error)
+    const { getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (!currentUser?.uid) {
+      // Usuario no autenticado - solo validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isValidFormat = emailRegex.test(email);
+      
+      setEmailValidation({ 
+        isValid: isValidFormat, 
+        message: isValidFormat ? '' : 'Please enter a valid email address',
+        checking: false 
+      });
+      return;
+    }
+
+    // Si hay auth, verificar duplicados por uid (no por email)
+    // Pero en onboarding, el usuario puede estar creando cuenta nueva
+    // Firebase Auth manejará duplicados automáticamente al crear cuenta
+    // Por ahora, solo validar formato
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isValidFormat = emailRegex.test(email);
+    
+    setEmailValidation({ 
+      isValid: isValidFormat, 
+      message: isValidFormat ? '' : 'Please enter a valid email address',
+      checking: false 
+    });
+    
+    // WO-AUTH-ONB-FLOW-FIX-04: NO llamar getProfessional(email) sin auth
+    // Firebase Auth validará duplicados cuando se cree la cuenta
+  };
+
+  // Validación inmediata de teléfono (formato E.164)
+  const validatePhoneImmediate = async (fullPhone: string) => {
+    if (!fullPhone || !fullPhone.startsWith('+')) {
+      return;
+    }
+
+    // Validar formato E.164
+    if (!/^\+[1-9]\d{1,14}$/.test(fullPhone)) {
+      // Invalid format - handled by UI
+      return;
+    }
+  };
+
+  // CTO SPEC: Validación visual en tiempo real
+  const getFieldValidationClass = (value: any, isRequired: boolean = true): string => {
+    const baseClass = "w-full h-9 px-3 border rounded-lg focus:ring-2 transition-all text-sm bg-white font-apple font-light";
+    
+    if (!isRequired) {
+      return `${baseClass} border-gray-300 focus:ring-primary-blue focus:border-primary-blue`;
+    }
+    
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      return `${baseClass} border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50/30`;
+    }
+    
+    return `${baseClass} border-green-300 focus:ring-green-500 focus:border-green-500 bg-green-50/20`;
+  };
+
+  const getFieldValidationIcon = (value: any, isRequired: boolean = true): React.ReactNode => {
+    if (!isRequired) return null;
+    
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      return <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-500 text-xs font-bold">*</span>;
+    }
+    
+    return (
+      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-green-500">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+    );
   };
 
   const handleNextStep = () => {
@@ -124,6 +323,52 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     }
   };
 
+  // CTO SPEC: Validación de campos obligatorios según estructura canónica
+  const canProceed = () => {
+    switch (steps[currentStep].id) {
+      case 'identity':
+        // WIZARD 1: Identidad profesional - campos obligatorios según CTO
+        const hasBasicFields = !!(
+          formData.firstName?.trim() && 
+          formData.lastName?.trim() && 
+          formData.email?.trim() && 
+          emailValidation.isValid && 
+          !emailValidation.checking && 
+          formData.country && 
+          formData.province && 
+          formData.city && 
+          formData.profession && 
+          formData.licenseNumber?.trim() && 
+          formData.licenseCountry
+        );
+        // Si el usuario NO está autenticado, también requiere password
+        if (!user) {
+          return hasBasicFields && !!(
+            formData.password?.trim() &&
+            formData.password.length >= 6 &&
+            formData.password === formData.confirmPassword
+          );
+        }
+        return hasBasicFields;
+      case 'practice':
+        // WIZARD 2: Práctica clínica - campos obligatorios según CTO
+        return !!(
+          formData.yearsOfExperience && 
+          formData.yearsOfExperience > 0 &&
+          formData.specialty?.trim() && 
+          formData.practiceSetting
+        );
+      case 'consent':
+        // WIZARD 3: Consentimiento - PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
+        return !!(
+          formData.dataUseConsent.phipaConsent === true &&
+          formData.dataUseConsent.pipedaConsent === true
+        );
+      default:
+        return false;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canProceed()) return;
 
@@ -131,593 +376,1042 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     setError('');
 
     try {
-      const user = getAuth(app).currentUser;
-      if (!user) {
-        setError('Usuario no autenticado');
+      let authUser = getAuth(app).currentUser;
+      
+      // WO-ONB-SIGNUP-01: Si el usuario NO está autenticado, crear cuenta primero
+      if (!authUser) {
+        if (!formData.password || formData.password.length < 6) {
+          setError('Password must be at least 6 characters long');
+          setIsLoading(false);
         return;
       }
 
-      // Mapear los datos del formulario a la estructura esperada por ProfessionalProfileService
-      const mappedProfileData = {
-        license: formData.licenseNumber,
-        country: formData.country,
-        city: formData.city,
-        state: formData.state,
-        specialties: formData.specialty ? [formData.specialty] : [],
-        certifications: formData.certifications ? formData.certifications.split(',').map((c: string) => c.trim()) : [],
-        practiceType: 'clínica' as 'clínica' | 'hospital' | 'consultorio' | 'domicilio',
-        licenseExpiry: new Date(), // O ajustar según lógica de negocio
-        isActive: true,
-        complianceSettings: {
-          country: formData.country,
-          regulations: [],
-          allowedTechniques: [],
-          forbiddenTechniques: [],
-          medicationRestrictions: [],
-          referralRequirements: [],
-          documentationStandards: [],
-          dataRetentionPolicy: ''
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+
+        // Crear usuario en Firebase Auth
+        const { createUserWithEmailAndPassword } = await import('firebase/auth');
+        const userCredential = await createUserWithEmailAndPassword(
+          getAuth(app),
+          formData.email.trim().toLowerCase(),
+          formData.password
+        );
+        
+        authUser = userCredential.user;
+        logger.info('[ONBOARDING] New user account created', { uid: authUser.uid, email: authUser.email });
+        
+        // Enviar email de verificación (no bloquea)
+        const { sendEmailVerification } = await import('firebase/auth');
+        sendEmailVerification(authUser).catch((err) => {
+          logger.warn('[ONBOARDING] Failed to send verification email', err);
+        });
+      }
+      
+      if (!authUser) {
+        setError('Unable to authenticate user. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // CTO SPEC: Construir practicePreferences según estructura
+      // preferredTreatments y doNotSuggest ya son arrays desde el handleInputChange
+      const practicePreferences = {
+        noteVerbosity: formData.practicePreferences.noteVerbosity,
+        tone: formData.practicePreferences.tone,
+        preferredTreatments: Array.isArray(formData.practicePreferences.preferredTreatments) 
+          ? formData.practicePreferences.preferredTreatments 
+          : [],
+        doNotSuggest: Array.isArray(formData.practicePreferences.doNotSuggest) 
+          ? formData.practicePreferences.doNotSuggest 
+          : [],
       };
-      await ProfessionalProfileService.getInstance().createProfile(mappedProfileData);
-      
-      logger.info('Perfil profesional guardado exitosamente en Firebase Firestore');
 
-      // Enviar email de verificación de forma asíncrona (no bloquea la navegación)
-      sendEmailVerification(user).catch((error) => {
-        logger.error('Error enviando email de verificación:', error);
+      // CTO SPEC: Combinar código de país + teléfono en formato E.164
+      const fullPhone = formData.phone && formData.phoneCountryCode 
+        ? `${formData.phoneCountryCode}${formData.phone.replace(/\D/g, '')}` 
+        : undefined;
+
+      // CTO SPEC: Persistir EXCLUSIVAMENTE en users/{uid}
+      // CTO SPEC: Todos los campos del onboarding deben cumplir una de estas 3:
+      // - Afecta UI (firstName, lastName, preferredName → displayName, fullName)
+      // - Afecta prompting (specialty, practicePreferences, dataUseConsent)
+      // - Afecta compliance/legal (licenseNumber, country, province, city)
+      await updateProfile({
+        // WIZARD 1: Identidad profesional
+        // UI: Saludo, firma automática, identidad clínica en prompts
+        displayName: formData.preferredName || formData.firstName, // Para saludo en UI
+        fullName: `${formData.firstName} ${formData.lastName}`, // Para firma automática
+        preferredSalutation: formData.preferredName || undefined, // Para saludo personalizado
+        lastNamePreferred: formData.lastName, // Para identidad clínica
+        email: formData.email, // Readonly desde auth - identidad técnica
+        phone: fullPhone, // E.164 format - para SMS
+        country: formData.country, // Compliance: selección automática de regulación
+        province: formData.province, // Compliance: guardrails clínico-legales
+        city: formData.city, // Compliance: copy dinámico
+        profession: formData.profession, // Prompting: lenguaje clínico específico
+        professionalTitle: formData.profession, // Alias para compatibilidad
+        licenseNumber: formData.licenseNumber, // Compliance: guardrails clínico-legales
+        // licenseCountry: formData.licenseCountry, // Se puede almacenar como metadata si es necesario
+        
+        // WIZARD 2: Práctica clínica
+        // Prompting: seniority, nivel de explicación, lenguaje clínico, prioridad en hipótesis
+        specialty: formData.specialty, // Prompting: lenguaje clínico específico
+        experienceYears: formData.yearsOfExperience.toString(), // Prompting: seniority
+        practicePreferences, // Prompting: reduce fricción cognitiva, evita sugerencias no usadas
+        
+        // WIZARD 3: Consentimiento
+        // Prompting: filtrado de datos antes de construir prompt
+        // Compliance: PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
+        dataUseConsent: {
+          ...formData.dataUseConsent,
+          phipaConsent: formData.dataUseConsent.phipaConsent, // Required for PHIPA compliance
+          pipedaConsent: formData.dataUseConsent.pipedaConsent, // Required for PIPEDA compliance
+        },
+        
+        // CTO SPEC: registrationStatus pasa a 'complete' cuando se completa todo
+        registrationStatus: 'complete',
       });
-      
-      // Redirigir inmediatamente (no esperar el email)
-      navigate('/verify-email');
 
-    } catch (error) {
-      logger.error('Error creando perfil:', error);
-      setError('Error al crear el perfil profesional. Por favor, inténtalo de nuevo.');
+      logger.info('Professional profile saved successfully in users/{uid}');
+
+      // Enviar verificación de email
+      const verifyRes = await firebaseAuthService.sendEmailVerification(authUser);
+      if (!verifyRes.success) {
+        logger.warn("[ONBOARDING] sendEmailVerification failed", { message: verifyRes.message });
+      }
+
+      // WO-ONB-SIGNUP-01: Mostrar estado de éxito antes de redirigir
+      setIsSuccess(true);
+      setIsLoading(false);
+
+      // Esperar 3 segundos para que el usuario vea el mensaje de éxito
+      setTimeout(async () => {
+        // Forzar re-login post verification (solo si el usuario fue creado en este flujo)
+        if (!user) {
+      await signOut(getAuth());
+        }
+        
+        // Redirigir a login con mensaje de éxito
+        navigate("/login", {
+          replace: true,
+          state: {
+            message: 'Registration completed successfully! Please check your email to verify your account.',
+            type: 'success'
+          }
+        });
+      }, 3000);
+
+} catch (error) {
+      logger.error('Error saving profile:', error);
+      setError('Error saving professional profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const canProceed = () => {
-    switch (steps[currentStep].id) {
-      case 'personal':
-        return !!(formData.firstName && formData.lastName && formData.email && 
-                 formData.licenseNumber && formData.country && 
-                 formData.licenseRenewalType);
-      case 'professional':
-        return !!(formData.profession && formData.yearsOfExperience && formData.yearsOfExperience.toString().trim() !== '');
-      case 'compliance':
-        return !!(formData.gdprConsent && formData.dataProcessingConsent);
-      default:
-        return false;
-    }
-  };
-
   const healthProfessions: string[] = [
-    'Fisioterapia',
-    'Medicina General',
-    'Enfermería',
-    'Psicología',
-    'Odontología',
-    'Nutrición',
-    'Terapia Ocupacional',
-    'Logopedia',
-    'Podología',
-    'Farmacia',
-    'Trabajo Social',
-    'Otro'
+    'Physiotherapist',
+    'Physical Therapist',
+    'Occupational Therapist',
+    'Speech Therapist',
+    'Registered Nurse',
+    'Nurse Practitioner',
+    'Physician',
+    'Psychologist',
+    'Social Worker',
+    'Other'
   ];
 
+  // CTO SPEC: Layout optimizado para pantalla 13" sin scroll
+  // WO-ONB-SIGNUP-01: Mostrar pantalla de éxito si el proceso se completó
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-3 py-2">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+              <svg className="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2 font-apple">
+              Registration Successful!
+            </h2>
+            <p className="text-sm text-gray-600 mb-4 font-apple font-light">
+              Your professional profile has been created successfully.
+            </p>
+            <p className="text-xs text-gray-500 mb-4 font-apple font-light">
+              Please check your email ({formData.email}) to verify your account. You will be redirected to the login page shortly.
+            </p>
+            <div className="flex items-center justify-center space-x-1 text-xs text-gray-400 font-apple">
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Redirecting to login...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fdfc] px-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-10 mt-12 border border-gray-100">
-        <div className="flex flex-col items-center mb-8">
-          <img src={AiduxcareLogo} alt="AiDuxCare Logo" className="h-14 w-14 mb-4" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 bg-clip-text text-transparent mb-2 text-center">
-            Registro Profesional AiDuxCare
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-3 py-2">
+      <div className="w-full max-w-4xl">
+        {/* Header - Ultra compacto */}
+        <div className="text-center mb-2">
+          <p className="text-[9px] font-light text-gray-500 uppercase tracking-[0.02em] mb-1 font-apple">
+            SECURE PROFESSIONAL ACCESS • PHIPA COMPLIANT
+          </p>
+          <h1 className="text-xl sm:text-2xl font-light mb-1 tracking-[-0.02em] leading-tight font-apple">
+            Welcome to{' '}
+            <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
+              AiduxCare
+            </span>
+            <span className="ml-1 text-lg">🍁</span>
           </h1>
-          <p className="text-lg text-slate-700 text-center">
-            Completa tu perfil profesional para acceder a la plataforma líder en documentación clínica segura y personalizada.
+          <p className="text-sm text-gray-600 font-light font-apple">
+            Complete Your Professional Profile
           </p>
         </div>
-        {/* Sección: Datos Personales */}
-        <div className="bg-[#f8fdfc] rounded-lg shadow p-6 mb-8">
-          <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 bg-clip-text text-transparent mb-4">Datos Personales</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nombres */}
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                Primer Nombre *
+
+        {/* Card principal - Compacto */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-2">
+          <h2 className="text-base font-medium text-gray-900 mb-3 text-center font-apple">
+            Professional Onboarding
+          </h2>
+
+          {/* Progress Indicator - Compacto */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <React.Fragment key={step.id}>
+                  <div className="flex items-center">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
+                        index === currentStep
+                          ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white'
+                          : index < currentStep
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {index < currentStep ? '✓' : index + 1}
+                    </div>
+                    <span
+                      className={`ml-1.5 text-xs font-apple ${
+                        index === currentStep ? 'text-gray-900 font-medium' : 'text-gray-500'
+                      }`}
+                    >
+                      {step.title}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-1.5 ${
+                        index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {/* WIZARD 1 — Identidad profesional (CTO Spec) */}
+          {currentStep === 0 && (
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50/20 rounded-lg border border-blue-200/60 p-4 mb-2 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
+                Professional Identity
+              </h3>
+              <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
+                Who you are within AiDuxCare
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {/* First Name - Required */}
+                <div className="relative">
+                  <label htmlFor="firstName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    First Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getFieldValidationClass(formData.firstName, true)}
                 required
               />
+                  {getFieldValidationIcon(formData.firstName, true)}
             </div>
 
-            <div>
-              <label htmlFor="secondName" className="block text-sm font-medium text-gray-700 mb-2">
-                Segundo Nombre
-              </label>
-              <input
-                type="text"
-                id="secondName"
-                value={formData.secondName}
-                onChange={(e) => handleInputChange('secondName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Apellidos */}
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                Primer Apellido *
+                {/* Last Name - Required */}
+                <div className="relative">
+                  <label htmlFor="lastName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Last Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getFieldValidationClass(formData.lastName, true)}
                 required
               />
+                  {getFieldValidationIcon(formData.lastName, true)}
             </div>
 
-            <div>
-              <label htmlFor="secondLastName" className="block text-sm font-medium text-gray-700 mb-2">
-                Segundo Apellido
+                {/* Preferred Name - Optional */}
+                <div className="relative">
+                  <label htmlFor="preferredName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Preferred Name
               </label>
               <input
                 type="text"
-                id="secondLastName"
-                value={formData.secondLastName}
-                onChange={(e) => handleInputChange('secondLastName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    id="preferredName"
+                    value={formData.preferredName}
+                    onChange={(e) => handleInputChange('preferredName', e.target.value)}
+                    className={getFieldValidationClass(formData.preferredName, false)}
               />
             </div>
 
-            {/* Contacto */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
+                {/* Email - Required, Readonly */}
+                <div className="relative">
+                  <label htmlFor="email" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
                 id="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    readOnly={!!user?.email}
+                    className={`${getFieldValidationClass(formData.email, true)} ${user?.email ? 'bg-gray-50 cursor-not-allowed' : ''} ${!emailValidation.isValid ? 'border-red-400 bg-red-50/40' : ''}`}
                 required
               />
+                  {emailValidation.checking ? (
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                      <svg className="w-3 h-3 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                  ) : emailValidation.isValid && formData.email ? (
+                    getFieldValidationIcon(formData.email, true)
+                  ) : !emailValidation.isValid ? (
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-500">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </span>
+                  ) : null}
+                  {emailValidation.message && (
+                    <p className={`text-[10px] mt-0.5 font-apple font-light ${!emailValidation.isValid ? 'text-red-600' : 'text-amber-600'}`}>
+                      {emailValidation.message}
+                    </p>
+                  )}
             </div>
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono
+                {/* Password - Required only for new users (not authenticated) */}
+                {!user && (
+                  <>
+                    <div className="relative">
+                      <label htmlFor="password" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                        Password <span className="text-red-500">*</span>
               </label>
               <input
-                type="tel"
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+                        type="password"
+                        id="password"
+                        value={formData.password}
+                        onChange={(e) => handleInputChange('password', e.target.value)}
+                        className={getFieldValidationClass(formData.password, true)}
+                        required
+                        minLength={6}
+                      />
+                      {formData.password && formData.password.length >= 6 && getFieldValidationIcon(formData.password, true)}
             </div>
 
-            {/* Licencia */}
-            <div>
-              <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Número de Licencia/Colegiado *
+                    <div className="relative">
+                      <label htmlFor="confirmPassword" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                        Confirm Password <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
-                id="licenseNumber"
-                value={formData.licenseNumber}
-                onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ej: 12345-67890 o COL-12345"
+                        type="password"
+                        id="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                        className={`${getFieldValidationClass(formData.confirmPassword, true)} ${formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-400 bg-red-50/40' : ''}`}
                 required
-              />
+                        minLength={6}
+                      />
+                      {formData.confirmPassword && formData.password === formData.confirmPassword && formData.password.length >= 6 && getFieldValidationIcon(formData.confirmPassword, true)}
+                      {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-500">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </span>
+                      )}
             </div>
+                  </>
+                )}
 
-            <div>
-              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
-                País de Licencia *
+                {/* Phone with Country Code - Optional */}
+                <div className="relative col-span-2">
+                  <label htmlFor="phone" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Phone <span className="text-gray-400 text-[10px]">(for SMS notifications)</span>
+                  </label>
+                  <div className="flex gap-1.5">
+                    <select
+                      id="phoneCountryCode"
+                      value={formData.phoneCountryCode}
+                      onChange={(e) => handleInputChange('phoneCountryCode', e.target.value)}
+                      className="w-20 h-9 px-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
+                    >
+                      <option value="+1">🇨🇦 +1</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+52">🇲🇽 +52</option>
+                      <option value="+34">🇪🇸 +34</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+39">🇮🇹 +39</option>
+                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+64">🇳🇿 +64</option>
+                      <option value="+55">🇧🇷 +55</option>
+                      <option value="+54">🇦🇷 +54</option>
+                      <option value="+57">🇨🇴 +57</option>
+                      <option value="+51">🇵🇪 +51</option>
+                      <option value="+56">🇨🇱 +56</option>
+                    </select>
+                    <input
+                      type="tel"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, ''))}
+                      className={`flex-1 ${getFieldValidationClass(formData.phone, false)}`}
+                      placeholder="5551234567"
+                    />
+                  </div>
+                </div>
+
+                {/* Country - Required */}
+                <div className="relative">
+                  <label htmlFor="country" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Country <span className="text-red-500">*</span>
               </label>
               <select
                 id="country"
                 value={formData.country}
                 onChange={(e) => handleInputChange('country', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getFieldValidationClass(formData.country, true)}
                 required
               >
-                <option value="">Selecciona un país</option>
-                <option value="ES">España</option>
-                <option value="MX">México</option>
+                    <option value="">Select</option>
+                    <option value="CA">Canada</option>
+                    <option value="US">United States</option>
+                    <option value="MX">Mexico</option>
+                    <option value="ES">Spain</option>
                 <option value="AR">Argentina</option>
                 <option value="CO">Colombia</option>
-                <option value="PE">Perú</option>
+                    <option value="PE">Peru</option>
                 <option value="CL">Chile</option>
-                <option value="VE">Venezuela</option>
-                <option value="EC">Ecuador</option>
-                <option value="BO">Bolivia</option>
-                <option value="PY">Paraguay</option>
-                <option value="UY">Uruguay</option>
-                <option value="GT">Guatemala</option>
-                <option value="SV">El Salvador</option>
-                <option value="HN">Honduras</option>
-                <option value="NI">Nicaragua</option>
-                <option value="CR">Costa Rica</option>
-                <option value="PA">Panamá</option>
-                <option value="CU">Cuba</option>
-                <option value="DO">República Dominicana</option>
-                <option value="PR">Puerto Rico</option>
-                <option value="US">Estados Unidos</option>
-                <option value="CA">Canadá</option>
-                <option value="OTHER">Otro</option>
+                    <option value="OTHER">Other</option>
               </select>
+                  {getFieldValidationIcon(formData.country, true)}
             </div>
 
-
-
-            {/* Tipo de Renovación */}
-            <div>
-              <label htmlFor="licenseRenewalType" className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Renovación de Licencia *
+                {/* Province/State - Required */}
+                <div className="relative">
+                  <label htmlFor="province" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Province/State <span className="text-red-500">*</span>
               </label>
-              <select
-                id="licenseRenewalType"
-                value={formData.licenseRenewalType}
-                onChange={(e) => handleInputChange('licenseRenewalType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  <input
+                    type="text"
+                    id="province"
+                    value={formData.province}
+                    onChange={(e) => handleInputChange('province', e.target.value)}
+                    className={getFieldValidationClass(formData.province, true)}
                 required
-              >
-                <option value="annual">Anual</option>
-                <option value="biennial">Bienal</option>
-                <option value="other">Otro</option>
-              </select>
+                  />
+                  {getFieldValidationIcon(formData.province, true)}
             </div>
 
-            {/* Notificación de Vencimiento */}
-            <div className="col-span-2">
-              <div className="flex items-center">
+                {/* City - Required */}
+                <div className="relative">
+                  <label htmlFor="city" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    City <span className="text-red-500">*</span>
+                  </label>
                 <input
-                  type="checkbox"
-                  id="licenseExpiryNotification"
-                  checked={formData.licenseExpiryNotification}
-                  onChange={(e) => handleInputChange('licenseExpiryNotification', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="licenseExpiryNotification" className="ml-2 block text-sm text-gray-700">
-                  Recibir notificaciones cuando mi licencia esté próxima a vencer
-                </label>
-              </div>
-            </div>
-          </div>
+                    type="text"
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    className={getFieldValidationClass(formData.city, true)}
+                    required
+                  />
+                  {getFieldValidationIcon(formData.city, true)}
         </div>
 
-        {/* Sección: Datos Profesionales */}
-        <div className="bg-[#f8fdfc] rounded-lg shadow p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <svg className="h-6 w-6 bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 mr-2" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-              <path d="M7 12l5 5 5-5H7z" fill="currentColor"/>
-            </svg>
-            <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 bg-clip-text text-transparent">Datos Profesionales</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="profession" className="block text-sm font-medium text-gray-700 mb-2">
-                Profesión de la Salud *
+                {/* Profession - Required */}
+                <div className="relative">
+                  <label htmlFor="profession" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Profession <span className="text-red-500">*</span>
               </label>
               <select
                 id="profession"
                 value={formData.profession}
                 onChange={(e) => handleInputChange('profession', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={getFieldValidationClass(formData.profession, true)}
                 required
               >
-                <option value="">Selecciona tu profesión</option>
+                    <option value="">Select</option>
                 {healthProfessions.map((profession) => (
                   <option key={profession} value={profession}>
                     {profession}
                   </option>
                 ))}
               </select>
+                  {getFieldValidationIcon(formData.profession, true)}
             </div>
 
-            <div>
-              <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-2">
-                Especialidad
+                {/* License Number - Required */}
+                <div className="relative">
+                  <label htmlFor="licenseNumber" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    License Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                id="specialty"
-                value={formData.specialty}
-                onChange={(e) => handleInputChange('specialty', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ej: Cardiología, Pediatría, Fisioterapia Deportiva, Psicología Clínica..."
-              />
+                    id="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                    className={getFieldValidationClass(formData.licenseNumber, true)}
+                    required
+                  />
+                  {getFieldValidationIcon(formData.licenseNumber, true)}
             </div>
 
-            <div>
-              <label htmlFor="certifications" className="block text-sm font-medium text-gray-700 mb-2">
-                Certificaciones
+                {/* License Country - Required */}
+                <div className="relative">
+                  <label htmlFor="licenseCountry" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    License Country <span className="text-red-500">*</span>
               </label>
-              <textarea
-                id="certifications"
-                value={formData.certifications}
-                onChange={(e) => handleInputChange('certifications', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
-                placeholder="Lista tus certificaciones, cursos especializados, o credenciales relevantes..."
-              />
+                  <select
+                    id="licenseCountry"
+                    value={formData.licenseCountry}
+                    onChange={(e) => handleInputChange('licenseCountry', e.target.value)}
+                    className={getFieldValidationClass(formData.licenseCountry, true)}
+                    required
+                  >
+                    <option value="">Select</option>
+                    <option value="CA">Canada</option>
+                    <option value="US">United States</option>
+                    <option value="MX">Mexico</option>
+                    <option value="ES">Spain</option>
+                    <option value="AR">Argentina</option>
+                    <option value="CO">Colombia</option>
+                    <option value="PE">Peru</option>
+                    <option value="CL">Chile</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  {getFieldValidationIcon(formData.licenseCountry, true)}
             </div>
+              </div>
+            </div>
+          )}
 
-            <div>
-              <label htmlFor="yearsOfExperience" className="block text-sm font-medium text-gray-700 mb-2">
-                Años de Experiencia *
+          {/* WIZARD 2 — Práctica clínica y estilo (CTO Spec) */}
+          {currentStep === 1 && (
+            <div className="bg-gradient-to-br from-gray-50 to-purple-50/20 rounded-lg border border-purple-200/60 p-4 mb-2 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
+                Clinical Practice & Style
+              </h3>
+              <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
+                How you work and how AiDuxCare helps you
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {/* Years of Experience - Required */}
+                <div className="relative">
+                  <label htmlFor="yearsOfExperience" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Years of Experience <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
+                    type="number"
                 id="yearsOfExperience"
-                value={formData.yearsOfExperience}
-                onChange={(e) => handleInputChange('yearsOfExperience', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ej: 5 años, 10+ años, 2 años en pediatría..."
+                    value={formData.yearsOfExperience || ''}
+                    onChange={(e) => handleInputChange('yearsOfExperience', parseInt(e.target.value) || 0)}
+                    className={getFieldValidationClass(formData.yearsOfExperience, true)}
                 required
+                    min="0"
               />
+                  {getFieldValidationIcon(formData.yearsOfExperience, true)}
             </div>
 
-
+                {/* Specialty - Multi-select checkboxes */}
+                <div className="relative col-span-2">
+                  <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Specialty / Focus <span className="text-red-500">*</span>
+                    <span className="text-gray-400 text-[10px] ml-1">(select all that apply)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 p-2 border border-gray-300 rounded-lg bg-gray-50">
+                    {PRIMARY_SPECIALTIES.map((specialty) => {
+                      const selectedSpecialties = Array.isArray(formData.specialties) ? formData.specialties : [];
+                      const isSelected = selectedSpecialties.includes(specialty.value);
+                      return (
+                        <label
+                          key={specialty.value}
+                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
+                            isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSpecialtyToggle(specialty.value)}
+                            className="w-3.5 h-3.5 cursor-pointer accent-blue-600"
+                          />
+                          <span className={`${isSelected ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                            {specialty.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    <label
+                      className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
+                        Array.isArray(formData.specialties) && formData.specialties.includes('other')
+                          ? 'bg-blue-100'
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Array.isArray(formData.specialties) && formData.specialties.includes('other')}
+                        onChange={() => handleSpecialtyToggle('other')}
+                        className="w-3.5 h-3.5 cursor-pointer accent-blue-600"
+                      />
+                      <span className={`${
+                        Array.isArray(formData.specialties) && formData.specialties.includes('other')
+                          ? 'font-medium text-gray-900'
+                          : 'text-gray-700'
+                      }`}>
+                        Other (specify below)
+                      </span>
+                    </label>
           </div>
+                  {Array.isArray(formData.specialties) && formData.specialties.length > 0 && (
+                    <p className="text-[10px] text-green-600 mt-0.5 font-apple">
+                      {formData.specialties.length} specialt{formData.specialties.length !== 1 ? 'ies' : 'y'} selected
+                    </p>
+                  )}
+                  {Array.isArray(formData.specialties) && formData.specialties.includes('other') && (
+                    <input
+                      type="text"
+                      value={formData.specialtyOther || ''}
+                      onChange={(e) => handleInputChange('specialtyOther', e.target.value)}
+                      className="w-full h-9 px-3 mt-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
+                      placeholder="e.g., Sports Medicine, Pain Management..."
+                    />
+                  )}
         </div>
 
-        {/* Sección: Compliance y Seguridad */}
-        <div className="bg-[#f8fdfc] rounded-lg shadow p-6 mb-8">
-          <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 bg-clip-text text-transparent mb-4">Consentimientos y Seguridad</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Información de ubicación detectada */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-blue-600 text-sm">🌍</span>
+                {/* Practice Setting - Multi-select checkboxes */}
+                <div className="relative col-span-2">
+                  <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Practice Setting <span className="text-red-500">*</span>
+                    <span className="text-gray-400 text-[10px] ml-1">(select all that apply)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 p-2 border border-gray-300 rounded-lg bg-gray-50">
+                    {[
+                      { value: 'clinic', label: 'Clinic' },
+                      { value: 'hospital', label: 'Hospital' },
+                      { value: 'home-care', label: 'Home Care' },
+                      { value: 'mixed', label: 'Mixed' },
+                    ].map((setting) => {
+                      const selectedSettings = Array.isArray(formData.practiceSettings) ? formData.practiceSettings : [];
+                      const isSelected = selectedSettings.includes(setting.value);
+                      return (
+                        <label
+                          key={setting.value}
+                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
+                            isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handlePracticeSettingToggle(setting.value)}
+                            className="w-3.5 h-3.5 cursor-pointer accent-blue-600"
+                          />
+                          <span className={`${isSelected ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                            {setting.label}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-900">
-                    </h4>
-                    <p className="text-xs text-blue-700">
+                  {Array.isArray(formData.practiceSettings) && formData.practiceSettings.length > 0 && (
+                    <p className="text-[10px] text-green-600 mt-0.5 font-apple">
+                      {formData.practiceSettings.length} setting{formData.practiceSettings.length !== 1 ? 's' : ''} selected
                     </p>
+                  )}
                   </div>
+
+                {/* Practice Preferences */}
+                <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">Practice Preferences</h4>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Note Verbosity */}
+                    <div>
+                      <label htmlFor="noteVerbosity" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                        Note Verbosity
+                      </label>
+                      <select
+                        id="noteVerbosity"
+                        value={formData.practicePreferences.noteVerbosity}
+                        onChange={(e) => handleInputChange('practicePreferences.noteVerbosity', e.target.value)}
+                        className="w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
+                      >
+                        <option value="concise">Concise</option>
+                        <option value="standard">Standard</option>
+                        <option value="detailed">Detailed</option>
+                      </select>
                 </div>
+
+                    {/* Tone */}
+                    <div>
+                      <label htmlFor="tone" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                        Tone
+                      </label>
+                      <select
+                        id="tone"
+                        value={formData.practicePreferences.tone}
+                        onChange={(e) => handleInputChange('practicePreferences.tone', e.target.value)}
+                        className="w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
+                      >
+                        <option value="formal">Formal</option>
+                        <option value="friendly">Friendly</option>
+                        <option value="educational">Educational</option>
+                      </select>
               </div>
 
-            {/* Regulaciones relevantes */}
-            {complianceConfig?.regulations.map((regulation: Regulation) => (
-              <div key={regulation.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-green-600 text-sm font-bold">
-                      {regulation.countries[0]}
-                    </span>
+                    {/* MSK Treatment Preferences - Only show when MSK is selected */}
+                    {Array.isArray(formData.specialties) && formData.specialties.includes('msk') && (
+                      <>
+                        {/* Preferred Treatments (MSK) */}
+                        <div>
+                          <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                            Preferred Treatments (MSK) <span className="text-gray-400 text-[10px]">(optional)</span>
+                          </label>
+                          <div className="max-h-32 overflow-y-auto p-2 border border-gray-300 rounded-lg bg-gray-50">
+                            {MSK_SKILLS.map((skill) => {
+                              const preferredTreatments = Array.isArray(formData.practicePreferences.preferredTreatments)
+                                ? formData.practicePreferences.preferredTreatments
+                                : [];
+                              const isSelected = preferredTreatments.includes(skill.value);
+                              return (
+                                <label
+                                  key={skill.value}
+                                  className="flex items-center gap-1.5 p-1 cursor-pointer rounded transition-colors text-xs hover:bg-gray-100"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleTreatmentToggle(skill.value, 'preferredTreatments')}
+                                    className="w-3.5 h-3.5 cursor-pointer accent-blue-600"
+                                  />
+                                  <span className="text-gray-700">{skill.label}</span>
+                                </label>
+                              );
+                            })}
                   </div>
-                  <h4 className="text-base font-semibold text-gray-900">{regulation.name}</h4>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  {regulation.description}
-                </p>
-                <div className="flex items-center mb-3">
+                          {Array.isArray(formData.practicePreferences.preferredTreatments) && formData.practicePreferences.preferredTreatments.length > 0 && (
+                            <p className="text-[10px] text-green-600 mt-0.5 font-apple">
+                              {formData.practicePreferences.preferredTreatments.length} selected
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Do Not Suggest (MSK) */}
+                        <div>
+                          <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                            Do Not Suggest (MSK) <span className="text-gray-400 text-[10px]">(optional)</span>
+                          </label>
+                          <div className="max-h-32 overflow-y-auto p-2 border border-gray-300 rounded-lg bg-gray-50">
+                            {MSK_SKILLS.map((skill) => {
+                              const doNotSuggest = Array.isArray(formData.practicePreferences.doNotSuggest)
+                                ? formData.practicePreferences.doNotSuggest
+                                : [];
+                              const isSelected = doNotSuggest.includes(skill.value);
+                              return (
+                                <label
+                                  key={skill.value}
+                                  className="flex items-center gap-1.5 p-1 cursor-pointer rounded transition-colors text-xs hover:bg-gray-100"
+                                >
                   <input
                     type="checkbox"
-                    id={`${regulation.id}Consent`}
-                    checked={formData[`${regulation.id}Consent` as keyof typeof formData] as boolean}
-                    onChange={(e) => handleInputChange(`${regulation.id}Consent`, e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor={`${regulation.id}Consent`} className="ml-2 text-sm text-gray-700">
-                    Acepto cumplir con {regulation.name} para el manejo de información médica
+                                    checked={isSelected}
+                                    onChange={() => handleTreatmentToggle(skill.value, 'doNotSuggest')}
+                                    className="w-3.5 h-3.5 cursor-pointer accent-red-600"
+                                  />
+                                  <span className="text-gray-700">{skill.label}</span>
                   </label>
+                              );
+                            })}
                 </div>
-                <a 
-                  href={regulation.officialUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 text-sm underline"
-                >
-                  📋 Leer regulación oficial
-                </a>
+                          {Array.isArray(formData.practicePreferences.doNotSuggest) && formData.practicePreferences.doNotSuggest.length > 0 && (
+                            <p className="text-[10px] text-red-600 mt-0.5 font-apple">
+                              {formData.practicePreferences.doNotSuggest.length} excluded
+                            </p>
+                          )}
               </div>
-            ))}
-
-            {/* Opción para ver todas las regulaciones si no se detectó ubicación */}
-            {complianceConfig?.showAllRegulations && (
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-gray-600 text-sm font-bold">🌐</span>
-                  </div>
-                  <h4 className="text-base font-semibold text-gray-900">Regulaciones Generales</h4>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  No se pudo detectar tu ubicación específica. Por favor, selecciona las regulaciones que aplican a tu región:
-                </p>
-                
-                {/* HIPAA - Estados Unidos */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id="hipaaConsent"
-                      checked={formData.hipaaConsent}
-                      onChange={(e) => handleInputChange('hipaaConsent', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="hipaaConsent" className="ml-2 text-sm text-gray-700">
-                      HIPAA - Estados Unidos
-                    </label>
-                  </div>
-                </div>
-
-                {/* GDPR - Unión Europea */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id="gdprConsent"
-                      checked={formData.gdprConsent}
-                      onChange={(e) => handleInputChange('gdprConsent', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="gdprConsent" className="ml-2 text-sm text-gray-700">
-                      GDPR - Unión Europea
-                    </label>
-                  </div>
-                </div>
-
-                {/* PIPEDA - Canadá */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id="pipedaConsent"
-                      checked={formData.pipedaConsent}
-                      onChange={(e) => handleInputChange('pipedaConsent', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="pipedaConsent" className="ml-2 text-sm text-gray-700">
-                      PIPEDA - Canadá
-                    </label>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Consentimiento de procesamiento de datos */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-purple-600 text-sm">🔒</span>
-                </div>
-                <h4 className="text-base font-semibold text-gray-900">Procesamiento de Datos</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Consentimiento para el procesamiento de datos personales según nuestra política de privacidad.
+          {/* WIZARD 3 — Uso de datos y consentimiento (CTO Spec) */}
+          {currentStep === 2 && (
+            <div className="bg-gradient-to-br from-gray-50 to-indigo-50/20 rounded-lg border border-indigo-200/60 p-4 mb-2 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
+                Data Use & Privacy Consent
+              </h3>
+              <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
+                Your informed consent for data use and compliance with Canadian privacy legislation
               </p>
-              <div className="flex items-center mb-3">
-                <input
-                  type="checkbox"
-                  id="dataProcessingConsent"
-                  checked={formData.dataProcessingConsent}
-                  onChange={(e) => handleInputChange('dataProcessingConsent', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="dataProcessingConsent" className="ml-2 text-sm text-gray-700">
-                  Acepto el procesamiento de mis datos personales según la política de privacidad
-                </label>
-              </div>
-              <a 
-                href="/privacy-policy" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 text-sm underline"
-              >
-                📋 Leer política de privacidad
-              </a>
-            </div>
-
-            {/* MFA Opcional */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                  <span className="text-orange-600 text-sm">🔐</span>
+              
+              <div className="space-y-3">
+                {/* SECTION 1: Canadian Privacy Legislation Compliance (Required) */}
+                <div className="border-t border-indigo-200 pt-2">
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                    Canadian Privacy Legislation Compliance <span className="text-red-500">*</span>
+                  </h4>
+                  <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
+                    As a healthcare professional in Canada, you must consent to our privacy practices in accordance with applicable legislation.
+                  </p>
+                  
+                  {/* PHIPA Consent */}
+                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200 mb-2">
+                    <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                        id="phipaConsent"
+                        checked={formData.dataUseConsent.phipaConsent}
+                        onChange={(e) => handleInputChange('dataUseConsent.phipaConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                        required
+                      />
+                      <div className="ml-2.5 flex-1">
+                        <label htmlFor="phipaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                          Personal Health Information Protection Act (PHIPA) Consent
+                    </label>
+                        <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
+                          I acknowledge that I have read and understood the{' '}
+                          <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
+                            Privacy Policy
+                          </Link>
+                          {' '}and consent to the collection, use, and disclosure of my personal health information in accordance with the Personal Health Information Protection Act, 2004 (PHIPA). I understand that my information will be used solely for the purposes of providing and improving healthcare services, and that I may withdraw this consent at any time.
+                        </p>
+                      </div>
+                  </div>
                 </div>
-                <h4 className="text-base font-semibold text-gray-900">Autenticación Multi-Factor (MFA)</h4>
+
+                  {/* PIPEDA Consent */}
+                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
+                    <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                        id="pipedaConsent"
+                        checked={formData.dataUseConsent.pipedaConsent}
+                        onChange={(e) => handleInputChange('dataUseConsent.pipedaConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                        required
+                      />
+                      <div className="ml-2.5 flex-1">
+                        <label htmlFor="pipedaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                          Personal Information Protection and Electronic Documents Act (PIPEDA) Consent
+                    </label>
+                        <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
+                          I acknowledge that I have read and understood the{' '}
+                          <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
+                            Privacy Policy
+                          </Link>
+                          {' '}and consent to the collection, use, and disclosure of my personal information in accordance with the Personal Information Protection and Electronic Documents Act (PIPEDA). I understand that my information will be protected by appropriate safeguards and that I have the right to access, correct, or request deletion of my personal information.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: AI Assistant Personalization Preferences (Optional) */}
+                <div className="border-t border-indigo-200 pt-2">
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                    AI Assistant Personalization Preferences
+                    <span className="text-gray-400 text-[10px] ml-1 font-normal">(optional)</span>
+                  </h4>
+                  <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
+                    Customize how your AI assistant uses information to provide personalized clinical support.
+                  </p>
+
+                  {/* 1. Personalize with your professional style */}
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                    <div className="flex items-start">
+                    <input
+                      type="checkbox"
+                        id="personalizationFromClinicianInputs"
+                        checked={formData.dataUseConsent.personalizationFromClinicianInputs}
+                        onChange={(e) => handleInputChange('dataUseConsent.personalizationFromClinicianInputs', e.target.checked)}
+                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                      />
+                      <div className="ml-2 flex-1">
+                        <label htmlFor="personalizationFromClinicianInputs" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                          Personalize with your professional style
+                    </label>
+                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                          Allow the AI assistant to use your professional information (specialty, experience, practice preferences) to tailor clinical notes and treatment suggestions to your practice style.
+                        </p>
+                  </div>
+                </div>
               </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
-                <p className="text-sm text-orange-800">
-                  <strong>⚠️ Importante:</strong> MFA agrega un paso adicional de seguridad pero también de complejidad al login. 
-                  Es completamente opcional y puedes activarlo más tarde desde tu perfil.
-                </p>
-              </div>
-              <div className="flex items-center mb-3">
+
+                  {/* 2. Personalize with patient data */}
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                    <div className="flex items-start">
                 <input
                   type="checkbox"
-                  id="mfaEnabled"
-                  checked={formData.mfaEnabled}
-                  onChange={(e) => handleInputChange('mfaEnabled', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="mfaEnabled" className="ml-2 text-sm text-gray-700">
-                  Quiero configurar autenticación multi-factor para mayor seguridad
+                        id="personalizationFromPatientData"
+                        checked={formData.dataUseConsent.personalizationFromPatientData}
+                        onChange={(e) => handleInputChange('dataUseConsent.personalizationFromPatientData', e.target.checked)}
+                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                      />
+                      <div className="ml-2 flex-1">
+                        <label htmlFor="personalizationFromPatientData" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                          Personalize with patient data
                 </label>
+                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                          Allow the AI assistant to use patient clinical data (current and historical) to enrich clinical reasoning and treatment planning. This enables more contextually relevant suggestions based on patient history.
+                        </p>
               </div>
-              <a 
-                href="/mfa-guide" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 text-sm underline"
-              >
-                📋 Guía de configuración MFA
-              </a>
+                    </div>
             </div>
 
-            {/* Enlace a la política de privacidad de AiDuxCare */}
-            <div className="mt-8 text-center">
-              <a
-                href="/privacy-policy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-700 underline text-sm font-medium hover:text-blue-900"
-              >
-                📄 Leer la Política de Privacidad de AiDuxCare (España)
-              </a>
-              <p className="text-xs text-gray-500 mt-2">
-                Al continuar, aceptas nuestra <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline">Política de Privacidad</a>.
+                  {/* 3. Assistant memory across sessions */}
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                    <div className="flex items-start">
+                      <input
+                        type="checkbox"
+                        id="allowAssistantMemoryAcrossSessions"
+                        checked={formData.dataUseConsent.allowAssistantMemoryAcrossSessions}
+                        onChange={(e) => handleInputChange('dataUseConsent.allowAssistantMemoryAcrossSessions', e.target.checked)}
+                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                      />
+                      <div className="ml-2 flex-1">
+                        <label htmlFor="allowAssistantMemoryAcrossSessions" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                          Assistant memory across sessions
+                        </label>
+                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                          Enable the AI assistant to remember your preferences and clinical context between sessions, providing continuity and reducing repetitive input.
+                        </p>
+                </div>
+              </div>
+              </div>
+
+                  {/* 4. Product improvement with deidentified data */}
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start">
+                <input
+                  type="checkbox"
+                        id="useDeidentifiedDataForProductImprovement"
+                        checked={formData.dataUseConsent.useDeidentifiedDataForProductImprovement}
+                        onChange={(e) => handleInputChange('dataUseConsent.useDeidentifiedDataForProductImprovement', e.target.checked)}
+                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                      />
+                      <div className="ml-2 flex-1">
+                        <label htmlFor="useDeidentifiedDataForProductImprovement" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                          Product improvement with deidentified data
+                </label>
+                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                          Allow AiduxCare to use deidentified and aggregated data (with all personal identifiers removed) to improve system quality, accuracy, and clinical outcomes. This data cannot be linked back to you or your patients.
+                        </p>
+              </div>
+                    </div>
+                  </div>
+            </div>
+
+                {/* Information Notice */}
+                <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-[10px] text-amber-800 font-apple font-light leading-relaxed">
+                    <strong className="font-semibold">Important:</strong> You may withdraw any of these consents at any time by updating your preferences in your account settings. Withdrawing consent may limit certain features of the service. For detailed information about how we collect, use, and protect your information, please review our{' '}
+                    <Link to="/privacy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                      Privacy Policy
+                    </Link>
+                    {' '}and{' '}
+                    <Link to="/terms" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                      Terms of Service
+                    </Link>
+                    .
               </p>
             </div>
           </div>
         </div>
+          )}
 
-        {/* Botones de navegación */}
-        <div className="flex justify-between mt-8">
+          {/* Botones - Siempre visibles */}
+          <div className="flex justify-between mt-3 pt-3 border-t border-gray-200">
           <Button
             onClick={handlePreviousStep}
             disabled={currentStep === 0}
             variant="outline"
+              className="h-9 text-xs font-medium transition-all duration-200 font-apple"
           >
-            Anterior
+              Back
           </Button>
 
           {currentStep === steps.length - 1 ? (
             <Button
               onClick={handleSubmit}
               disabled={!canProceed() || isLoading}
-              variant="primary"
+                variant="gradient"
               loading={isLoading}
+                className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
             >
-              {isLoading ? 'Completando...' : 'Completar Configuración'}
+                {isLoading ? 'Completing...' : 'Complete Setup'}
             </Button>
           ) : (
             <Button
               onClick={handleNextStep}
               disabled={!canProceed()}
-              variant="primary"
+                variant="gradient"
+                className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
             >
-              Siguiente
+                Next
             </Button>
           )}
         </div>
 
-        {/* Mensajes de error y éxito */}
-        {error && <div className="text-red-600 text-sm mt-4">{error}</div>}
+          {/* Mensajes de error */}
+          {error && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-800 text-xs">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer - Compacto */}
+        <div className="text-center mt-1">
+          <p className="text-[10px] text-gray-500 font-apple font-light flex items-center justify-center gap-1">
+            <span>🍁</span>
+            <span>PHIPA Compliant • SSL Secured • 100% Canadian Data</span>
+          </p>
+        </div>
       </div>
     </div>
   );

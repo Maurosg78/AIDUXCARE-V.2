@@ -9,9 +9,10 @@
  */
 
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { CheckCircle, Users } from 'lucide-react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { CheckCircle, Users, LogOut } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
+import { getAuth, signOut } from 'firebase/auth';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
 
 export interface CommandCenterHeaderProps {
@@ -24,8 +25,19 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   tokenUsageLoading,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isCommandCenter = location.pathname === '/command-center';
+
+  // WO-AUTH-ONB-FLOW-FIX-04 E: Botón Logout para cortar loops rápido en QA
+  const handleLogout = async () => {
+    try {
+      await signOut(getAuth());
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
 
   return (
     <header className="border-b border-slate-200 bg-white">
@@ -58,6 +70,16 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             <CheckCircle className="w-4 h-4 text-emerald-500" />
             Email verified · Access granted
           </div>
+
+          {/* WO-AUTH-ONB-FLOW-FIX-04 E: Logout button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-apple"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </header>

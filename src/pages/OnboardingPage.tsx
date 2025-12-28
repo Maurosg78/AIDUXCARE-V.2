@@ -1,14 +1,12 @@
-// ✅ CANONICAL ONBOARDING PAGE
-// This is the ONE canonical onboarding page for AiduxCare
-// - Language: English
-// - Structure: 3-step wizard (Personal → Professional → Location)
-// - Compliance: PHIPA/PIPEDA compliant
-// - Brand: AiduxCare (not AiDuxCare)
-// See docs/CANONICAL_ONBOARDING_IDENTIFICATION.md for verification
-// DO NOT REPLACE WITH ProfessionalOnboardingPage.tsx (deprecated Spanish version)
+// ⚠️ DEPRECATED: This page is being phased out in favor of ProfessionalOnboardingPage.tsx
+// WO-ONB-UNIFY-01: OnboardingPage.tsx is deprecated. All onboarding now uses ProfessionalOnboardingPage.tsx
+// The route /onboarding now redirects to /professional-onboarding in router.tsx
+// This file is kept for backward compatibility but should not be used for new registrations.
+// See ProfessionalOnboardingPage.tsx for the canonical onboarding experience.
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
 
 import type { PersonalData, ProfessionalData, LocationData, WizardStep, ValidationResult } from "../types/wizard";
 import { PersonalDataStep } from "../components/wizard/PersonalDataStep";
@@ -44,39 +42,77 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const currentStep = stepsOrder[currentStepIndex];
 
+  // WO-AUTH-ONB-UNIFY-03 A1: Bloquear onboarding legacy si hay sesión activa
+  useEffect(() => {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (currentUser?.uid) {
+      // Usuario ya autenticado - redirigir a professional onboarding
+      logger.info("[ONBOARDING] User already authenticated, redirecting to professional onboarding", {
+        uid: currentUser.uid,
+        email: currentUser.email
+      });
+      navigate('/professional-onboarding', { replace: true });
+      return;
+    }
+  }, [navigate]);
+
+  // Inicializar valores por defecto para practicePreferences cuando se entra al step professional
+  useEffect(() => {
+    if (currentStep === 'professional') {
+      const currentPrefs = (data.professional as any).practicePreferences || {};
+      if (!currentPrefs.noteVerbosity || !currentPrefs.tone) {
+        setData(prev => ({
+          ...prev,
+          professional: {
+            ...prev.professional,
+            practicePreferences: {
+              ...currentPrefs,
+              noteVerbosity: currentPrefs.noteVerbosity || 'standard',
+              tone: currentPrefs.tone || 'formal',
+            },
+          },
+        }));
+      }
+    }
+  }, [currentStep]);
+
   const validate = (step: WizardStep): ValidationResult => {
     const errs: Record<string, string> = {};
 
     if (step === "personal") {
+      // CTO SPEC: WIZARD 1 — Identidad profesional - campos obligatorios
+      // IMPORTANTE: Onboarding ≠ Registro - NO validar password aquí
       const p = data.personal;
       if (!p.firstName?.trim()) errs.firstName = "Required";
       if (!p.lastName?.trim()) errs.lastName = "Required";
       if (!p.email?.trim()) errs.email = "Required";
-      // Phone validation: check if phoneCountryCode and phone are both filled
-      const phoneCountryCode = (p as any).phoneCountryCode?.trim() || '';
-      const phoneNumber = p.phone?.trim() || '';
-      if (!phoneCountryCode || !phoneNumber) {
-        errs.phone = "Phone number is required";
-      }
-      if (!p.password?.trim()) errs.password = "Create a password";
-      if (!p.confirmPassword?.trim()) {
-        errs.confirmPassword = "Confirm your password";
-      } else if (p.password !== p.confirmPassword) {
-        errs.confirmPassword = "Passwords do not match";
-      }
+      // Phone is optional per CTO spec
       if (!p.country?.trim()) errs.country = "Required";
       if (!p.province?.trim()) errs.province = "Required";
       if (!p.city?.trim()) errs.city = "Required";
+      if (!(p as any).profession?.trim()) errs.profession = "Required";
+      if (!(p as any).licenseNumber?.trim()) errs.licenseNumber = "Required";
+      if (!(p as any).licenseCountry?.trim()) errs.licenseCountry = "Required";
+      // Password/confirmPassword NO van aquí - son para REGISTRO, no para ONBOARDING
     }
 
     if (step === "professional") {
+      // CTO SPEC: WIZARD 2 — Práctica clínica y estilo de trabajo - campos obligatorios
       const pr = data.professional;
-      if (!pr.professionalTitle?.trim()) errs.professionalTitle = "Required";
+      const yearsOfExp = (pr as any).yearsOfExperience ?? pr.experienceYears ?? '';
+      if (!yearsOfExp || yearsOfExp === '' || Number(yearsOfExp) <= 0) errs.experienceYears = "Enter your years of experience";
       if (!pr.specialty?.trim()) errs.specialty = "Required";
-      if (!pr.university?.trim()) errs.university = "Required";
-      if (!pr.licenseNumber?.trim()) errs.licenseNumber = "Required";
-      if (!pr.workplace?.trim()) errs.workplace = "Required";
-      if (!pr.experienceYears || Number(pr.experienceYears) <= 0) errs.experienceYears = "Enter your years of experience";
+      // Si specialty es "other", specialtyOther es requerido
+      if (pr.specialty === 'other' && !(pr as any).specialtyOther?.trim()) {
+        errs.specialtyOther = "Please specify your specialty";
+      }
+      if (!(pr as any).practiceSetting) errs.practiceSetting = "Required";
+      const prefs = (pr as any).practicePreferences || {};
+      if (!prefs.noteVerbosity) errs.noteVerbosity = "Required";
+      if (!prefs.tone) errs.tone = "Required";
+      // preferredTreatments y doNotSuggest son opcionales
     }
 
     if (step === "location") {
@@ -95,39 +131,56 @@ export default function OnboardingPage() {
   useEffect(() => {
     // Evitar que validate cause setState extra cuando sólo evaluamos canGoNext
     setErrors({});
-     
+
   }, []);
 
   const canGoNext = useMemo(() => {
     const errs: Record<string, string> = {};
 
     if (currentStep === "personal") {
+      // CTO SPEC: WIZARD 1 — Identidad profesional - campos obligatorios
+      // IMPORTANTE: Onboarding ≠ Registro - NO validar password aquí
       const p = data.personal;
       if (!p.firstName?.trim()) errs.firstName = "Required";
       if (!p.lastName?.trim()) errs.lastName = "Required";
       if (!p.email?.trim()) errs.email = "Required";
-      // Phone validation: check if phoneCountryCode and phone are both filled
-      const phoneCountryCode = (p as any).phoneCountryCode?.trim() || '';
-      const phoneNumber = p.phone?.trim() || '';
-      if (!phoneCountryCode || !phoneNumber) {
-        errs.phone = "Phone number is required";
-      }
-      if (!p.password?.trim()) errs.password = "Create a password";
-      if (!p.confirmPassword?.trim()) errs.confirmPassword = "Confirm your password";
-      if (p.password && p.confirmPassword && p.password !== p.confirmPassword) errs.confirmPassword = "Passwords do not match";
+      // Phone is optional per CTO spec
       if (!p.country?.trim()) errs.country = "Required";
       if (!p.province?.trim()) errs.province = "Required";
       if (!p.city?.trim()) errs.city = "Required";
+      if (!(p as any).profession?.trim()) errs.profession = "Required";
+      if (!(p as any).licenseNumber?.trim()) errs.licenseNumber = "Required";
+      if (!(p as any).licenseCountry?.trim()) errs.licenseCountry = "Required";
+      // Password/confirmPassword NO van aquí - son para REGISTRO, no para ONBOARDING
     }
 
     if (currentStep === "professional") {
+      // CTO SPEC: WIZARD 2 — Práctica clínica y estilo de trabajo - campos obligatorios
       const pr = data.professional;
-      if (!pr.professionalTitle?.trim()) errs.professionalTitle = "Required";
-      if (!pr.specialty?.trim()) errs.specialty = "Required";
-      if (!pr.university?.trim()) errs.university = "Required";
-      if (!pr.licenseNumber?.trim()) errs.licenseNumber = "Required";
-      if (!pr.workplace?.trim()) errs.workplace = "Required";
-      if (!pr.experienceYears || Number(pr.experienceYears) <= 0) errs.experienceYears = "Enter your years of experience";
+      const yearsOfExp = (pr as any).yearsOfExperience ?? pr.experienceYears ?? '';
+      if (!yearsOfExp || yearsOfExp === '' || Number(yearsOfExp) <= 0) errs.experienceYears = "Enter your years of experience";
+      
+      // Validar especialidades (multi-select)
+      const specialties = Array.isArray((pr as any).specialties) ? (pr as any).specialties : [];
+      const legacySpecialty = pr.specialty?.trim();
+      if (specialties.length === 0 && !legacySpecialty) {
+        errs.specialty = "Select at least one specialty";
+      }
+      // Si "other" está seleccionado, specialtyOther es requerido
+      if ((specialties.includes('other') || legacySpecialty === 'other') && !(pr as any).specialtyOther?.trim()) {
+        errs.specialtyOther = "Please specify your specialty";
+      }
+      
+      // Validar practice settings (multi-select)
+      const practiceSettings = Array.isArray((pr as any).practiceSettings) ? (pr as any).practiceSettings : [];
+      const legacyPracticeSetting = (pr as any).practiceSetting;
+      if (practiceSettings.length === 0 && !legacyPracticeSetting) {
+        errs.practiceSetting = "Select at least one practice setting";
+      }
+      const prefs = (pr as any).practicePreferences || {};
+      if (!prefs.noteVerbosity) errs.noteVerbosity = "Required";
+      if (!prefs.tone) errs.tone = "Required";
+      // preferredTreatments y doNotSuggest son opcionales
     }
 
     if (currentStep === "location") {
@@ -137,6 +190,13 @@ export default function OnboardingPage() {
       if (!l.city?.trim()) errs.city = "Required";
       if (!l.phipaConsent) errs.phipaConsent = "Accept PHIPA";
       if (!l.pipedaConsent) errs.pipedaConsent = "Accept PIPEDA";
+      // Password requerido para registro (permite login con email + password)
+      if (!(l as any).password?.trim()) errs.password = "Create a password";
+      if (!(l as any).confirmPassword?.trim()) {
+        errs.confirmPassword = "Confirm your password";
+      } else if ((l as any).password && (l as any).confirmPassword && (l as any).password !== (l as any).confirmPassword) {
+        errs.confirmPassword = "Passwords do not match";
+      }
     }
 
     return Object.keys(errs).length === 0;
@@ -166,28 +226,66 @@ export default function OnboardingPage() {
     const lastValidation = validate("location");
     if (!lastValidation.isValid) return;
 
+    // WO-AUTH-ONB-UNIFY-03 A1: NO llamar registerProfessional si ya hay sesión activa
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (currentUser?.uid) {
+      logger.warn("[ONBOARDING] Attempted registration with active session, redirecting", {
+        uid: currentUser.uid
+      });
+      navigate('/professional-onboarding', { replace: true });
+      return;
+    }
+
     setSubmitting(true);
     setSubmissionError(null);
 
     try {
       // Combine phoneCountryCode and phone into full phone number
+      // Ensure proper format: +[country code][area code][number] (no spaces, no dashes)
       const phoneCountryCode = (data.personal as any).phoneCountryCode?.trim() || '+1';
       const phoneNumber = data.personal.phone?.trim() || '';
-      const fullPhone = phoneCountryCode && phoneNumber ? `${phoneCountryCode}${phoneNumber}` : '';
-      
+      // Remove all non-digit characters from phone number, then combine
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      const fullPhone = phoneCountryCode && cleanPhoneNumber
+        ? `${phoneCountryCode}${cleanPhoneNumber}`
+        : '';
+
+      // CTO SPEC: Construir payload según estructura canónica
+      // IMPORTANTE: password viene de location (registro), no de personal (onboarding)
       const payload = {
         email: data.personal.email ?? "",
-        password: data.personal.password ?? "",
+        password: (data.location as any).password ?? "", // Password va en location (registro)
         firstName: data.personal.firstName ?? "",
         lastName: data.personal.lastName ?? "",
+        preferredName: (data.personal as any).preferredName ?? undefined,
         phone: fullPhone,
-        professionalTitle: data.professional.professionalTitle ?? "",
-        specialty: data.professional.specialty ?? "",
-        licenseNumber: data.professional.licenseNumber ?? "",
+        country: data.personal.country ?? data.location.country ?? "",
+        province: data.personal.province ?? data.location.province ?? "",
+        city: data.personal.city ?? data.location.city ?? "",
+        profession: (data.personal as any).profession ?? "",
+        professionalTitle: (data.personal as any).profession ?? "",
+        licenseNumber: (data.personal as any).licenseNumber ?? "",
+        licenseCountry: (data.personal as any).licenseCountry ?? "",
+        // CTO SPEC: Soporte para múltiples especialidades
+        specialty: Array.isArray((data.professional as any).specialties) && (data.professional as any).specialties.length > 0
+          ? (data.professional as any).specialties[0] // Primera especialidad para compatibilidad
+          : (data.professional.specialty ?? ""),
+        specialties: Array.isArray((data.professional as any).specialties) 
+          ? (data.professional as any).specialties 
+          : (data.professional.specialty ? [data.professional.specialty] : []),
+        specialtyOther: (data.professional as any).specialtyOther ?? undefined,
+        // CTO SPEC: Wizard 2 fields
+        yearsOfExperience: (data.professional as any).yearsOfExperience ?? data.professional.experienceYears ?? 0,
+        practiceSetting: (data.professional as any).practiceSetting ?? '',
+        practicePreferences: (data.professional as any).practicePreferences ?? {},
+        // Legacy fields for backward compatibility with registerProfessional service
         workplace: data.professional.workplace ?? "",
-        country: data.location.country ?? "",
-        province: data.location.province ?? "",
-        city: data.location.city ?? "",
+        university: data.professional.university ?? "",
+        experienceYears: (data.professional as any).yearsOfExperience ?? data.professional.experienceYears ?? 0,
+        mskSkills: (data.professional as any).mskSkills ?? "",
+        mskSkillsOther: (data.professional as any).mskSkillsOther ?? "",
       };
 
       const result = await emailActivationService.registerProfessional({
@@ -195,6 +293,11 @@ export default function OnboardingPage() {
         displayName: `${payload.firstName} ${payload.lastName}`.trim(),
         professionalTitle: payload.professionalTitle || 'Healthcare Professional',
         specialty: payload.specialty || 'General Practice',
+        university: payload.university || undefined,
+        experienceYears: Number.isFinite(payload.experienceYears) ? payload.experienceYears : undefined,
+        workplace: payload.workplace || undefined,
+        mskSkills: payload.mskSkills || undefined,
+        mskSkillsOther: payload.mskSkillsOther || undefined,
         country: payload.country || 'Canada',
         city: payload.city || undefined,
         province: payload.province || undefined,
@@ -256,8 +359,8 @@ export default function OnboardingPage() {
             const badgeClass = isCompleted
               ? `${styles.progressBadge} ${styles.progressBadgeCompleted}`
               : isActive
-              ? `${styles.progressBadge} ${styles.progressBadgeActive}`
-              : `${styles.progressBadge} ${styles.progressBadgeIdle}`;
+                ? `${styles.progressBadge} ${styles.progressBadgeActive}`
+                : `${styles.progressBadge} ${styles.progressBadgeIdle}`;
 
             return (
               <React.Fragment key={step}>
@@ -338,6 +441,11 @@ export default function OnboardingPage() {
                 data={data.location as LocationData}
                 errors={errors}
                 onFieldChange={onFieldChange}
+                personalData={{
+                  country: data.personal.country,
+                  province: data.personal.province,
+                  city: data.personal.city,
+                }}
               />
             )}
           </>

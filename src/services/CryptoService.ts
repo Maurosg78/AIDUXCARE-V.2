@@ -61,8 +61,19 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 /**
  * Converts base64 string to ArrayBuffer
+ * 
+ * Uses Buffer in Node.js for compatibility with webcrypto API in test environment.
+ * In browser, uses standard atob() which is available via polyfill in test/setup.ts.
+ * This ensures the returned ArrayBuffer is compatible with both Node.js webcrypto
+ * and browser Web Crypto API.
  */
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  // Use Buffer in Node.js for better compatibility with webcrypto
+  if (typeof Buffer !== 'undefined') {
+    const buf = Buffer.from(base64, 'base64');
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+  // Fallback for browser
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getDocs, getFirestore, limit, orderBy, query, collection, startAt, endAt } from 'firebase/firestore';
+import { getDocs, limit, orderBy, query, collection, startAt, endAt } from 'firebase/firestore';
+import { db as sharedDb } from "@/lib/firebase";
 
 type QuickRow = { id: string; name: string; email?: string };
 
@@ -15,7 +16,7 @@ export function usePatientQuickSearch(term: string) {
       if (!debounced) { setResults([]); return; }
       setLoading(true);
       try {
-        const db = getFirestore();
+        const db = sharedDb;
         const col = collection(db, 'patients');
         const q = query(
           col,

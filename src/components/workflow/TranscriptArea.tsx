@@ -52,7 +52,7 @@ export interface TranscriptAreaProps {
   isRecording: boolean;
   startRecording: () => void;
   stopRecording: () => void;
-  
+
   // Transcript state
   transcript: string;
   setTranscript: (value: string) => void;
@@ -62,21 +62,21 @@ export interface TranscriptAreaProps {
     averageLogProb?: number;
     durationSeconds?: number;
   } | null;
-  
+
   // Language and mode
   languagePreference: WhisperSupportedLanguage;
   setLanguagePreference: (lang: WhisperSupportedLanguage) => void;
   mode: 'live' | 'dictation';
   setMode: (mode: 'live' | 'dictation') => void;
-  
+
   // Processing state
   isTranscribing: boolean;
   isProcessing: boolean;
   audioStream: MediaStream | null;
-  
+
   // Analysis handler
   handleAnalyzeWithVertex: () => Promise<void>;
-  
+
   // Attachments
   attachments: ClinicalAttachment[];
   isUploadingAttachment: boolean;
@@ -113,6 +113,16 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   // Local state for immediate UI updates
   const [localTranscript, setLocalTranscript] = useState(transcript);
   const isPastingRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   // Sync local state with prop when it changes externally
   useEffect(() => {
@@ -134,17 +144,35 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     debouncedSetTranscript(newValue);
   }, [debouncedSetTranscript]);
 
+  // Safe read function for textarea value
+  const readTranscriptSafe = useCallback((textarea: HTMLTextAreaElement | null): string => {
+    return textarea?.value ?? "";
+  }, []);
+
   // Handle paste events
   const handlePaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     isPastingRef.current = true;
+
+    // Capture textarea reference before setTimeout (avoids event pooling issues)
+    const textarea = event.currentTarget;
+
+    // Clear any existing timeout
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+    }
+
     // Let the default paste behavior happen, then update state
-    setTimeout(() => {
-      const textarea = event.currentTarget;
-      const newValue = textarea.value;
-      setLocalTranscript(newValue);
-      debouncedSetTranscript(newValue);
+    timerRef.current = window.setTimeout(() => {
+      const newValue = readTranscriptSafe(textarea);
+
+      // Only update if we got a valid value
+      if (newValue !== "") {
+        setLocalTranscript(newValue);
+        debouncedSetTranscript(newValue);
+      }
+      isPastingRef.current = false;
     }, 0);
-  }, [debouncedSetTranscript]);
+  }, [debouncedSetTranscript, readTranscriptSafe]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -251,11 +279,10 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
                 key={key}
                 type="button"
                 onClick={() => setMode(key)}
-                className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-apple transition ${
-                  mode === key
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm hover:from-indigo-700 hover:to-purple-700'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
+                className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-apple transition ${mode === key
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm hover:from-indigo-700 hover:to-purple-700'
+                  : 'text-slate-600 hover:bg-slate-100'
+                  }`}
               >
                 {MODE_LABELS[key]}
               </button>

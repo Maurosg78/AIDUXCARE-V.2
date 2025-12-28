@@ -68,9 +68,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       : <Navigate to="/login" replace />;
   }
 
-  // Si está autenticado pero no ha verificado su email, redirigir a /verify-email
+  // Pilot Firebase-only: if email not verified, send back to login (avoid loops)
   if (user && user.emailVerified === false) {
-    return <Navigate to="/verify-email" replace />;
+    return <Navigate to="/login?reason=email_not_verified" replace />;
   }
 
   // Si está autorizado, mostramos los hijos

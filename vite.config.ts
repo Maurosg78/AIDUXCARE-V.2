@@ -6,9 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src")
-    },
-    // Optimizar resolución de dependencias de Firebase
-    dedupe: ['@firebase/util']
+    }
   },
   plugins: [react()],
   css: {
@@ -52,6 +50,11 @@ export default defineConfig({
       'Pragma': 'no-cache',
       'Expires': '0',
     },
+    // Asegurar que los archivos estáticos se sirvan correctamente
+    fs: {
+      strict: false,
+      allow: ['..'],
+    },
   },
   optimizeDeps: {
     include: [
@@ -62,7 +65,7 @@ export default defineConfig({
       "firebase/auth",
       "firebase/firestore",
     ],
-    // No excluir @firebase/util - dejar que Vite lo optimice automáticamente
+    exclude: ["@firebase/util"],
     // Forzar re-optimización cuando cambien los módulos
     force: false,
   },
@@ -94,4 +97,3 @@ export default defineConfig({
   // Copiar archivos públicos (incluyendo sw.js)
   publicDir: 'public',
 });
-

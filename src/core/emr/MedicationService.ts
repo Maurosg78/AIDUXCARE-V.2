@@ -1,9 +1,10 @@
-import { addDoc, collection, getFirestore, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 import { MedicationEntity } from '../assistant/entities';
+import { db as sharedDb } from "@/lib/firebase";
 
 export async function addMedicationToVisit(encounterId: string, med: MedicationEntity): Promise<string> {
-  const db = getFirestore();
+  const db = sharedDb;
   const ref = collection(db, 'encounters', encounterId, 'medications');
   const docRef = await addDoc(ref, {
     name: med.name,

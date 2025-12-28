@@ -19,6 +19,8 @@ export const AccountActivationPage: React.FC = () => {
   const [activationStatus, setActivationStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [professionalData, setProfessionalData] = useState<ProfessionalRegistration | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendEmail, setResendEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const activateAccount = async () => {
@@ -46,12 +48,28 @@ export const AccountActivationPage: React.FC = () => {
           }
         } else {
           setActivationStatus('error');
-          setMessage(result.message);
+          // ✅ WO-P0.2: Distinguish between invalid/expired token and server errors
+          const isTokenError = result.message.includes('inválido') || 
+                               result.message.includes('expirado') ||
+                               result.message.includes('invalid') ||
+                               result.message.includes('expired');
+          
+          if (isTokenError) {
+            // Token invalid/expired - show friendly message
+            setMessage('Invalid or expired activation link. Please request a new activation link.');
+            // Try to extract email from token or prompt user
+            // For now, we'll show a form to enter email for resend
+          } else {
+            // Server error - show technical message
+            setMessage(result.message || 'Internal server error. Please contact support.');
+          }
         }
       } catch (error) {
         logger.error('Error en activación:', error);
         setActivationStatus('error');
-        setMessage('Error interno del sistema. Contacta soporte técnico.');
+        // ✅ WO-P0.2: Only show "internal error" for actual server errors (500s)
+        // Network errors, etc. should be caught and handled appropriately
+        setMessage('Internal server error. Please contact support if the problem persists.');
       }
     };
 
@@ -155,6 +173,16 @@ export const AccountActivationPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
+              {/* ✅ Resend activation link button - only show for token errors */}
+              {(message.includes('Invalid') || message.includes('expired') || message.includes('inválido') || message.includes('expirado')) && (
+                <button
+                  onClick={handleResendActivation}
+                  disabled={resending}
+                  className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resending ? 'Sending...' : '📱 Resend Activation Link (SMS)'}
+                </button>
+              )}
               <button
                 onClick={handleGoToLogin}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"

@@ -1,7 +1,8 @@
 // @ts-nocheck
 import React from 'react';
-import { createBrowserRouter, useParams } from 'react-router-dom';
+import { createBrowserRouter, useParams, Navigate } from 'react-router-dom';
 import { AuthGuard } from '../components/AuthGuard';
+import { AuthOnlyGuard } from '../components/AuthOnlyGuard';
 import { CommandCenterPageSprint3 } from '../features/command-center/CommandCenterPageSprint3';
 import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
@@ -15,6 +16,7 @@ import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
 import { ConsentVerificationPage } from '../pages/ConsentVerificationPage';
 import OnboardingPage from '../pages/OnboardingPage';
+import { ProfessionalOnboardingPage } from '../pages/ProfessionalOnboardingPage';
 import { EmailVerifiedPage } from '../pages/EmailVerifiedPage';
 import HospitalPortalPage from '../pages/HospitalPortalPage';
 import HospitalPortalLandingPage from '../pages/HospitalPortalLandingPage';
@@ -22,6 +24,7 @@ import InpatientPortalPage from '../pages/InpatientPortalPage';
 import PublicLandingPage from '../pages/PublicLandingPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
+import AuthActionPage from '../pages/AuthActionPage';
 
 // LayoutWrapper simple
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -49,12 +52,20 @@ function NoteDetailWrapper() {
   return <NoteDetailPage id={id || ''} />;
 }
 
-const router = createBrowserRouter([
+export const createRouter = () => createBrowserRouter([
   { path: '/', element: <HospitalPortalLandingPage /> }, // Main landing page - Hospital Portal
   { path: '/login', element: <LoginPage /> }, // Login page
   { path: '/register', element: <RegisterPage /> },
-  { path: '/onboarding', element: <OnboardingPage /> },
+  // WO-ONB-UNIFY-01: Redirigir /onboarding a /professional-onboarding (único proceso de onboarding)
+  // Todos los usuarios (nuevos y existentes) usan el mismo formulario ProfessionalOnboardingPage
+  { path: '/onboarding', element: <Navigate to="/professional-onboarding" replace /> },
+  // WO-ONB-SIGNUP-01: /professional-onboarding permite acceso sin autenticación para nuevos usuarios
+  // Si el usuario no está autenticado, puede crear cuenta durante el onboarding
+  // WO-UX-AUTH-SHELL-01: ProfessionalOnboardingPage tiene su propio shell (igual que LoginPage), no necesita LayoutWrapper
+  { path: '/professional-onboarding', element: <ProfessionalOnboardingPage /> },
+  { path: '/verify-email', element: <EmailVerifiedPage /> },
   { path: '/email-verified', element: <EmailVerifiedPage /> },
+  { path: '/auth/action', element: <AuthActionPage /> },
   {
     path: '/command-center',
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>
@@ -68,6 +79,8 @@ const router = createBrowserRouter([
   { path: '/workflow', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
+  { path: '/consent/:token', element: <ConsentVerificationPage /> }, // Public consent link (no auth required)
+  { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number
   { path: '/hospital/note', element: <HospitalPortalPage /> }, // Original note code portal (legacy)
@@ -76,4 +89,6 @@ const router = createBrowserRouter([
   { path: '/public', element: <PublicLandingPage /> },
 ]);
 
+// Mantener exportación por defecto para compatibilidad
+const router = createRouter();
 export default router; 

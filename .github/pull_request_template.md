@@ -1,6 +1,11 @@
-    # ✅ Aidux North — Pull Request Template (Audio Multilingual Module)
+    # ✅ Aidux North — Pull Request Template
 
     Market: CA | Language: en-CA | Compliance: PHIPA/PIPEDA | SoT lineage: validated
+
+    ## 🔍 Canonical Gate
+
+    - [ ] Ran `./scripts/canonical-gate.sh` locally and it passed
+    - [ ] No protected areas touched (or WO referenced below)
 
     ## 🧾 PR Title
 
@@ -9,6 +14,21 @@
     ## 📌 Summary (What This PR Does)
 
     Describe exactly what the PR introduces.
+
+    ## 🔒 Protected Areas (if touched, WO required)
+
+    - [ ] No protected areas touched
+    - [ ] If touched: WO referenced below
+
+    **WO reference (if applicable):** WO: 
+
+    Protected areas:
+    - src/core/soap/**
+    - src/services/vertex-ai-soap-service.ts
+    - src/services/PersistenceService*
+    - ClinicalVault schema-related files
+    - Crypto/encryption services
+    - Firestore rules (if applicable)
 
     Identify whether it touches:
     - `OpenAIWhisperService`

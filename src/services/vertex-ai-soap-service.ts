@@ -7,12 +7,17 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import { buildSOAPPrompt, type SOAPPromptOptions } from '../core/soap/SOAPPromptFactory';
+import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
+import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
 import type { SOAPNote } from '../types/vertex-ai';
 import type { SessionType } from './sessionTypeService';
 import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
+// ✅ WO-03: Prompt Brain v3 integration
+import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
+import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
+import { enforceContractOrBuildRepair } from "../core/prompts/v3/validators/contractRuntime";
 
 // ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
 const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
@@ -75,6 +80,18 @@ export async function generateSOAPNote(
       transcript: deidentifiedText,
     };
     
+    // ✅ WO-03: Resolve Prompt Brain version (v2 or v3)
+    const pbVersion = resolvePromptBrainVersion({
+      search: typeof window !== "undefined" ? window.location.search : "",
+      envVersion: import.meta.env.VITE_PROMPT_BRAIN_VERSION,
+    });
+
+    // ✅ WO-03: Determine if v3 path should be used
+    const isV3Path =
+      pbVersion === "v3" &&
+      context.visitType === "follow-up" &&
+      options?.analysisLevel === "optimized";
+
     // ✅ WORKFLOW OPTIMIZATION: Use optimized prompt if analysisLevel is 'optimized'
     const useOptimized = options?.analysisLevel === 'optimized';
     const promptOptions: SOAPPromptOptions = {
@@ -82,16 +99,39 @@ export async function generateSOAPNote(
       useOptimizedPrompt: useOptimized,
     };
     
-    // ✅ Sprint 2A: Build appropriate prompt based on visit type and session type
-    const prompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
+    // ✅ WO-03: Build prompt (v3 or v2)
+    let prompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
+    
+    if (isV3Path) {
+      // Extract context for v3 prompt
+      const chiefComplaint = context.transcript?.slice(0, 200) || deidentifiedContext.transcript?.slice(0, 200) || "";
+      const keyFindings: string[] = [];
+      // Extract key findings from context if available
+      if (context.physicalExamResults) {
+        keyFindings.push(...context.physicalExamResults.slice(0, 3).map((r: any) => String(r).slice(0, 50)));
+      }
+      const painScale = context.patientContext?.painScale || "";
+
+      prompt = buildPromptV3({
+        flags: {
+          intent: "DECIDE",
+          visitType: "follow-up",
+          analysisLevel: "optimized",
+          promptBrainVersion: "v3",
+        },
+        context: {
+          chiefComplaint,
+          keyFindings,
+          painScale,
+        },
+      });
+    }
     
     // ✅ WORKFLOW OPTIMIZATION: Calculate token optimization if using optimized prompt
     let tokenOptimization;
     if (useOptimized && context.visitType === 'follow-up') {
       // Compare with standard follow-up prompt
-      const { buildFollowUpPrompt } = await import('../core/soap/SOAPPromptFactory');
       const standardPrompt = buildFollowUpPrompt(deidentifiedContext, options);
-      const { compareTokenUsage } = await import('../core/soap/FollowUpSOAPPromptBuilder');
       tokenOptimization = compareTokenUsage(prompt, standardPrompt);
     }
 
@@ -115,6 +155,123 @@ export async function generateSOAPNote(
     }
 
     const data = await response.json();
+    
+    // ✅ WO-03: Extract raw text for contract validation (v3 path only)
+    let rawText = "";
+    if (isV3Path) {
+      // Extract raw text from response
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        rawText = data.candidates[0].content.parts[0].text;
+      } else if (data.text) {
+        rawText = data.text;
+      } else if (data.soap) {
+        rawText = JSON.stringify(data.soap);
+      }
+
+      // Enforce contract with retry (max 1 retry)
+      const firstCheck = enforceContractOrBuildRepair({
+        intent: "DECIDE",
+        outputText: rawText,
+        retriesSoFar: 0,
+      });
+
+      if (firstCheck.ok) {
+        rawText = firstCheck.text;
+        // Update data with validated text for parsing
+        if (data.candidates?.[0]?.content?.parts?.[0]) {
+          data.candidates[0].content.parts[0].text = rawText;
+        } else {
+          data.text = rawText;
+        }
+      } else {
+        // Retry once with repair prompt
+        const repairPrompt = firstCheck.repairPrompt;
+        
+        const repairResponse = await fetch(VERTEX_PROXY_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: repairPrompt,
+            action: 'generate_soap',
+            traceId: `${traceId}-repair`,
+            model: 'gemini-2.0-flash-exp',
+          }),
+        });
+
+        if (repairResponse.ok) {
+          const repairData = await repairResponse.json();
+          let repairedText = "";
+          if (repairData.candidates?.[0]?.content?.parts?.[0]?.text) {
+            repairedText = repairData.candidates[0].content.parts[0].text;
+          } else if (repairData.text) {
+            repairedText = repairData.text;
+          }
+
+          const secondCheck = enforceContractOrBuildRepair({
+            intent: "DECIDE",
+            outputText: repairedText,
+            retriesSoFar: 1,
+          });
+
+          if (secondCheck.ok) {
+            rawText = secondCheck.text;
+            // Update data with repaired text
+            if (data.candidates?.[0]?.content?.parts?.[0]) {
+              data.candidates[0].content.parts[0].text = rawText;
+            } else {
+              data.text = rawText;
+            }
+          } else {
+            // Fallback to v2: rebuild prompt and call once
+            console.warn('[SOAP Service] v3 contract enforcement failed after retry, falling back to v2');
+            const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
+            
+            const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                prompt: fallbackPrompt,
+                action: 'generate_soap',
+                traceId: `${traceId}-fallback`,
+                model: 'gemini-2.0-flash-exp',
+              }),
+            });
+
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json();
+              // Use fallback response
+              Object.assign(data, fallbackData);
+            }
+          }
+        } else {
+          // Repair request failed, fallback to v2
+          console.warn('[SOAP Service] v3 repair request failed, falling back to v2');
+          const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
+          
+          const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: fallbackPrompt,
+              action: 'generate_soap',
+              traceId: `${traceId}-fallback`,
+              model: 'gemini-2.0-flash-exp',
+            }),
+          });
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            Object.assign(data, fallbackData);
+          }
+        }
+      }
+    }
     
     // Parse Vertex AI response
     let soapNote = parseSOAPResponse(data, context.visitType);

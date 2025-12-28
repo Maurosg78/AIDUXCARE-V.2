@@ -8,6 +8,9 @@
   justify-content: center;
   align-items: flex-start;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Asegurar que los dropdowns se muestren correctamente */
+  overflow: visible;
+  position: relative;
 }
 
 .container {
@@ -20,6 +23,8 @@
   flex-direction: column;
   gap: 36px;
   position: relative;
+  /* Asegurar que los dropdowns se muestren correctamente */
+  overflow: visible;
 }
 
 .container::before {
@@ -159,6 +164,9 @@
   display: flex;
   flex-direction: column;
   gap: 26px;
+  /* Asegurar que los elementos dentro puedan tener z-index adecuado */
+  position: relative;
+  overflow: visible;
 }
 
 .sectionHeader {
@@ -192,6 +200,14 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* Asegurar que los selects dentro puedan mostrar sus opciones */
+  position: relative;
+  z-index: 1;
+}
+
+/* Cuando un select está abierto, aumentar z-index */
+.fieldGroup:has(select:focus) {
+  z-index: 10;
 }
 
 .fieldLabel {
@@ -212,6 +228,23 @@
   font-size: 0.88rem;
   color: #0f172a;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  /* Asegurar que los selects muestren sus opciones correctamente */
+  position: relative;
+  z-index: 1;
+}
+
+/* Asegurar que los selects dentro de fieldGroup tengan z-index adecuado y puedan mostrar opciones */
+.fieldGroup select {
+  position: relative;
+  z-index: 10;
+  /* Forzar que el menú nativo se muestre correctamente */
+  isolation: isolate;
+}
+
+/* Cuando un select está enfocado, asegurar que esté por encima */
+.fieldGroup select:focus {
+  z-index: 100;
+  position: relative;
 }
 
 .textInput:focus,

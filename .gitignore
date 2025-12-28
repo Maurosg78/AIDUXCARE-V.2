@@ -76,3 +76,22 @@ docs/_archive/mirror/**/.DS_Store
 
 # npm lockfile (pnpm is source of truth)
 package-lock.json
+
+# Build
+dist/
+*.log
+
+# Tooling outputs
+eslint-*.json
+*.patch
+
+# Accidental CLI artifacts
+--*
+auth:
+firebase
+
+# Local backups (never commit)
+backups/
+
+**/.pnpm-store/
+**/.pnpm-debug.log*

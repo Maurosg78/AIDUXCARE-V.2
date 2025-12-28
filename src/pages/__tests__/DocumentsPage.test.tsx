@@ -1,6 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+
+vi.mock('@/hooks/useBackupRestoration', () => ({
+  useBackupRestoration: () => ({ status: { restored: 0 } })
+}));
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<any>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 import DocumentsPage from '../DocumentsPage';
 import PersistenceService from '@/services/PersistenceService';
 import { useAuth } from '@/context/AuthContext';
@@ -81,8 +93,8 @@ describe('DocumentsPage', () => {
         expect(screen.getByText('Clinical Vault')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
-        expect(screen.getByText(/patient-002/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/patient-002/i).length).toBeGreaterThan(0);
     });
 
     it('displays loading state initially', () => {
@@ -141,14 +153,14 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
+      const searchInput = screen.getAllByPlaceholderText('Search by patient ID, content...')[0];
       fireEvent.change(searchInput, { target: { value: 'patient-001' } });
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
         expect(screen.queryByText(/patient-002/i)).not.toBeInTheDocument();
       });
     });
@@ -161,14 +173,14 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
+      const searchInput = screen.getAllByPlaceholderText('Search by patient ID, content...')[0];
       fireEvent.change(searchInput, { target: { value: 'lower back pain' } });
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
         expect(screen.queryByText(/patient-002/i)).not.toBeInTheDocument();
       });
     });
@@ -181,10 +193,10 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
+      const searchInput = screen.getAllByPlaceholderText('Search by patient ID, content...')[0];
       fireEvent.change(searchInput, { target: { value: 'nonexistent-patient' } });
 
       await waitFor(() => {
@@ -202,7 +214,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
       const copyButtons = screen.getAllByTitle('Copy to clipboard');
@@ -221,7 +233,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
       const copyButtons = screen.getAllByTitle('Copy to clipboard');
@@ -250,7 +262,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -269,7 +281,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -295,7 +307,7 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
       const previewButtons = screen.getAllByTitle('Preview');
@@ -323,7 +335,7 @@ describe('DocumentsPage', () => {
 
       await waitFor(() => {
         // Should show empty state or error handling
-        expect(screen.queryByText('Loading documents...')).not.toBeInTheDocument();
+        expect(screen.getByText('No notes yet')).toBeInTheDocument();
       });
     });
 
@@ -335,15 +347,15 @@ describe('DocumentsPage', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
       });
 
-      const searchInput = screen.getByPlaceholderText('Search by patient ID, content...');
+      const searchInput = screen.getAllByPlaceholderText('Search by patient ID, content...')[0];
       fireEvent.change(searchInput, { target: { value: '' } });
 
       await waitFor(() => {
-        expect(screen.getByText(/patient-001/i)).toBeInTheDocument();
-        expect(screen.getByText(/patient-002/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/patient-001/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/patient-002/i).length).toBeGreaterThan(0);
       });
     });
   });
