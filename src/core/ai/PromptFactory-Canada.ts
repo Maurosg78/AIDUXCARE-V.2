@@ -20,7 +20,7 @@ export interface CanadianPromptParams {
 
 const PROMPT_HEADER = `AiDuxCare copilot for Canadian PTs. CPO scope. PHIPA/PIPEDA compliant.
 CORE: Expose clinical variables. Never diagnose. Present differential considerations. Highlight when medical referral needed.
-Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]},treatment_plan:{short_term_goals:[],long_term_goals:[],interventions:[{type:"",description:"",rationale:"",frequency:"",duration:"",evidence_level:"strong|moderate|emerging"}],patient_education:[],home_exercise_program:[],follow_up_recommendations:[]}}
+Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 Rules: EN-CA. CONCISE: Target 8-12 words/item, max 15 words. Exposure lang ("suggest/consider", NOT "is/has"). Cite provincial (WSIB). No fabrication.
 
@@ -48,14 +48,32 @@ Each fact appears in ONE primary location only:
 - alert_notes: Synthesis of red flags ONLY if critical. Do NOT repeat every red flag.
 - summary: Brief 1-sentence overview. Do NOT repeat everything above.
 
-EMPTY FIELD RULES (NEW):
-- If no information provided for a field → OMIT that field entirely from JSON
-- Do NOT add speculative statements like "Not specified, but..."
-- Examples:
-  ❌ "occupational": ["Not specified, but chronic pain may impact work capacity."]
-  ✅ // Field omitted entirely
-  ❌ "legal_or_employment_context": ["Not specified."]
-  ✅ // Field omitted entirely
+PHYSICAL TESTS SCORING REQUIREMENT (CRITICAL - ANTI-HALLUCINATION ENFORCED):
+For each recommended physical test, ALWAYS attempt to provide sensitivity and specificity values from reliable sources. This is essential for clinical prioritization and evidence-based practice.
+
+CRITICAL ANTI-HALLUCINATION RULES (MUST FOLLOW):
+- ONLY provide values if you have a reliable source (PhysioTutor, Cochrane Review with year, systematic review, meta-analysis, clinical guideline with organization name)
+- If no reliable source is available, respond with: "sensitivity": "unknown", "specificity": "unknown"
+- NEVER estimate, invent, or fabricate values without a verifiable source
+- NEVER create fake citations or invent study references
+- Qualitative values ("high", "moderate", "low") are acceptable ONLY if from a reliable source (not estimated by you)
+- ALWAYS include source attribution when providing values: "source": "PhysioTutor - [specific section/topic]", "source": "Cochrane Review 2023", "source": "systematic_review_[author/year]", "source": "CPA_guideline_2022"
+- If source is not available, use: "source": "unknown"
+- If you provide values without a source, the system will flag them as potential hallucinations and discard them
+
+Preferred sources (in order of reliability):
+1. PhysioTutor (trauma/orthopedic tests) - highest priority for MSK tests
+2. Cochrane Reviews (include year: "Cochrane Review 2023")
+3. Systematic reviews and meta-analyses (include author/year when possible: "Smith et al. 2022 systematic review")
+4. Clinical guidelines (CPA, CPO, CAPR) - include organization and year: "CPA_guideline_2022"
+5. Peer-reviewed journal articles (include year: "Journal of Physiotherapy 2023")
+
+Fallback strategy (MUST FOLLOW IN ORDER):
+1. Search PhysioTutor first (for trauma/orthopedic tests)
+2. Search Cochrane Reviews (include year if found)
+3. Search systematic reviews/meta-analyses (include citation when possible)
+4. Search clinical guidelines (CPA, CPO, CAPR)
+5. If no data found in any reliable source → use "unknown" (DO NOT estimate)
 
 CRITICAL INSTRUCTIONS:
 - Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). Include clinical concern and referral urgency.
@@ -63,12 +81,18 @@ CRITICAL INSTRUCTIONS:
 - Chief complaint: Capture precise anatomical location, quality, radiation, temporal evolution (onset/progression/triggers), aggravating/relieving factors, functional impact. Include intensity scales and active symptoms.
 - Physical tests: Consider anatomical structures, neural involvement (specify relevant spinal/neural levels when indicated by presentation, e.g., dermatomes, myotomes, specific spinal segments), joint integrity, functional capacity. Frame as "Consider assessing..." not "Perform...".
 - Temporal info: Capture when symptoms started, evolution over time, medication duration, intervention timelines, progression patterns.
-- Biopsychosocial: Comprehensive capture of psychological, social, occupational, functional limitations, protective factors, patient strengths, legal/employment context.
-- Treatment plan (REQUIRED): ALWAYS include a comprehensive treatment plan with: (1) Short-term goals (1-2 weeks, measurable, functional), (2) Long-term goals (4-6 weeks, functional outcomes), (3) Evidence-based interventions (type, description, rationale, frequency, duration, evidence level), (4) Patient education topics, (5) Home exercise program components, (6) Follow-up recommendations. Treatment plan is CORE to physiotherapy practice and must be included in every response.`;
+- Biopsychosocial: Comprehensive capture of psychological, social, occupational, functional limitations, protective factors, patient strengths, legal/employment context.`;
+
+EMPTY FIELD RULES (NEW):
+- If no information provided for a field → OMIT that field entirely from JSON
+- Do NOT add speculative statements like "Not specified, but..."
+- Examples:
+  ❌ "occupational": ["Not specified, but chronic pain may impact work capacity."]
+  ✅ // Field omitted entirely
+  ❌ "legal_or_employment_context": ["Not specified."]
+  ✅ // Field omitted entirely`;
 
 const DEFAULT_INSTRUCTIONS_INITIAL = `Analyse the transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Expose clinical variables, patterns, and correlations from the patient presentation. Present comprehensive clinical considerations including observable patterns, literature correlations (with evidence levels), potential blind spots, risk factors requiring documentation, and alternative explanations. Recommend evidence-based physiotherapy assessments as considerations, not prescriptions. Summarise biopsychosocial factors comprehensively. Note when medical imaging or physician follow-up is required because findings exceed physiotherapy scope or pose safety risks. 
-
-CRITICAL: ALWAYS include a comprehensive treatment plan. The treatment plan is the core deliverable of physiotherapy practice and must include: evidence-based interventions with rationale, measurable short-term and long-term goals, patient education components, home exercise program recommendations, and follow-up scheduling. 
 
 CRITICAL DISTRIBUTION RULES:
 - chief_complaint: Current presenting symptoms with full detail
@@ -353,4 +377,4 @@ export const CanadianPromptFactory = {
   },
 };
 
-console.log("[OK] PromptFactory-Canada ready (OPTIMIZED v2)");
+console.log("[OK] PromptFactory-Canada ready");
