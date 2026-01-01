@@ -1,0 +1,45 @@
+{
+  "motivo_consulta": "Dolor en el cuello desde hace tres semanas, empeoró ayer al levantar una caja, con hormigueo leve hacia el brazo derecho y adormecimiento ocasional del pulgar. El dolor aumenta al mirar hacia arriba y al girar a la derecha.",
+  "hallazgos_relevantes": [
+    "Dolor cervical de tres semanas de evolución, agudizado ayer tras levantar una caja.",
+    "Hormigueo leve en brazo derecho.",
+    "Adormecimiento ocasional del pulgar derecho.",
+    "No pérdida de fuerza.",
+    "Niega traumatismo, fiebre, pérdida de peso, cáncer previo, dolor nocturno que despierte, disfagia o incoordinación.",
+    "Uso ocasional de ibuprofeno con alivio parcial.",
+    "Trabajo de oficina (ordenador) 8 horas/día.",
+    "Estrés reciente.",
+    "Dolor exacerbado con extensión cervical y rotación derecha.",
+    "Preocupación por la práctica deportiva (pádel)."
+  ],
+  "diagnosticos_probables": [
+    "Cervicalgia mecánica aguda/subaguda.",
+    "Radiculopatía cervical leve (posiblemente C6) por compresión o irritación nerviosa.",
+    "Síndrome facetario cervical.",
+    "Contractura muscular cervical y/o trapecio superior."
+  ],
+  "red_flags": [],
+  "evaluaciones_fisicas_sugeridas": [
+    "Anamnesis detallada (historia del dolor, factores agravantes/atenuantes, antecedentes).",
+    "Examen postural y observación de la columna cervical y dorsal alta.",
+    "Palpación de la musculatura cervical, trapecio superior y paravertebral.",
+    "Evaluación del rango de movimiento cervical activo y pasivo (flexión, extensión, rotaciones, inclinaciones).",
+    "Pruebas de provocación radicular (Test de Spurling, Test de distracción cervical).",
+    "Evaluación neurológica: dermatomas (especialmente C6 para el pulgar), miotomas (fuerza muscular) y reflejos osteotendinosos (bicipital, tricipital).",
+    "Evaluación de la movilidad de la cintura escapular y escápula.",
+    "Evaluación de la articulación temporomandibular (ATM) si hay síntomas asociados.",
+    "Evaluación ergonómica del puesto de trabajo (si es posible)."
+  ],
+  "plan_tratamiento_sugerido": [
+    "Educación sobre la condición, manejo del dolor y estrategias de autocuidado.",
+    "Modificación de actividades: evitar movimientos que exacerben el dolor (extensión cervical, levantar objetos pesados).",
+    "Recomendaciones ergonómicas para el puesto de trabajo (altura de pantalla, silla, pausas activas).",
+    "Terapia manual: movilizaciones articulares cervicales, técnicas de liberación miofascial para la musculatura cervical y trapecio.",
+    "Ejercicios terapéuticos: movilidad cervical suave y progresiva, fortalecimiento de la musculatura cervical profunda y estabilizadores escapulares.",
+    "Manejo del estrés y técnicas de relajación.",
+    "Recomendaciones para la práctica de pádel (posiblemente posponer o adaptar inicialmente).",
+    "Aplicación de termoterapia o crioterapia local según preferencia del paciente.",
+    "Reevaluación periódica y progresión del tratamiento."
+  ],
+  "riesgo_legal": "bajo"
+}

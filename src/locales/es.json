@@ -1,0 +1,17 @@
+{
+  "workflow": {
+    "title": "Flujo Profesional",
+    "initialAnalysis": "Análisis Inicial",
+    "physicalEvaluation": "Evaluación Física",
+    "soapReport": "Informe SOAP",
+    "consultationContent": "Contenido de la Consulta",
+    "analyzeWithAI": "Analizar con IA",
+    "record": "Grabar"
+  },
+  "soap": {
+    "subjective": "Subjetivo",
+    "objective": "Objetivo",
+    "assessment": "Evaluación",
+    "plan": "Plan"
+  }
+}

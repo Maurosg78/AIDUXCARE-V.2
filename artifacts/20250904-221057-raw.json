@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-221050",
+  "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo de 3 días de evolución con irradiación y hormigueo en pierna derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente de 45 años, adulto activo, sin comorbilidades conocidas\",\n    \"Dolor lumbar agudo\",\n    \"3 días de evolución\",\n    \"Irradiación hacia pierna derecha\",\n    \"Hormigueo en pierna derecha\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posiblemente por hernia discal)\",\n    \"Lumbalgia aguda\",\n    \"Ciática\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (historia del dolor, factores agravantes/atenuantes, síntomas neurológicos adicionales)\",\n    \"Examen neurológico completo (fuerza muscular, sensibilidad, reflejos osteotendinosos en extremidades inferiores)\",\n    \"Evaluación de la marcha y postura\",\n    \"Rango de movimiento lumbar (activo y pasivo)\",\n    \"Palpación de la columna lumbar y musculatura paravertebral\",\n    \"Pruebas especiales para radiculopatía (ej. Test de elevación de la pierna recta - SLR, Test de Slump)\",\n    \"Evaluación de la función y estabilidad del core\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación del paciente sobre el manejo del dolor, posturas adecuadas y actividad modificada\",\n    \"Manejo del dolor agudo (posibles modalidades físicas, movilización suave)\",\n    \"Ejercicios de movilización neural (si indicados y tolerados)\",\n    \"Ejercicios de estabilización del core y fortalecimiento progresivo\",\n    \"Terapia manual (movilizaciones articulares o técnicas de tejidos blandos, si apropiado)\",\n    \"Reeducación postural y de patrones de movimiento\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo de 3 días de evolución con irradiación y hormigueo en pierna derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Paciente de 45 años, adulto activo, sin comorbilidades conocidas\",\n    \"Dolor lumbar agudo\",\n    \"3 días de evolución\",\n    \"Irradiación hacia pierna derecha\",\n    \"Hormigueo en pierna derecha\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posiblemente por hernia discal)\",\n    \"Lumbalgia aguda\",\n    \"Ciática\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Anamnesis detallada (historia del dolor, factores agravantes/atenuantes, síntomas neurológicos adicionales)\",\n    \"Examen neurológico completo (fuerza muscular, sensibilidad, reflejos osteotendinosos en extremidades inferiores)\",\n    \"Evaluación de la marcha y postura\",\n    \"Rango de movimiento lumbar (activo y pasivo)\",\n    \"Palpación de la columna lumbar y musculatura paravertebral\",\n    \"Pruebas especiales para radiculopatía (ej. Test de elevación de la pierna recta - SLR, Test de Slump)\",\n    \"Evaluación de la función y estabilidad del core\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación del paciente sobre el manejo del dolor, posturas adecuadas y actividad modificada\",\n    \"Manejo del dolor agudo (posibles modalidades físicas, movilización suave)\",\n    \"Ejercicios de movilización neural (si indicados y tolerados)\",\n    \"Ejercicios de estabilización del core y fortalecimiento progresivo\",\n    \"Terapia manual (movilizaciones articulares o técnicas de tejidos blandos, si apropiado)\",\n    \"Reeducación postural y de patrones de movimiento\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.5913789078995988
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 232,
+      "candidatesTokenCount": 444,
+      "totalTokenCount": 1579,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 232
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 444
+        }
+      ],
+      "thoughtsTokenCount": 903
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T20:10:50.659937Z",
+    "responseId": "SvK5aOGjKLaWgLUP6e7DoQs"
+  }
+}

@@ -1,0 +1,7 @@
+echo "🔎 Running data validation (Zod)…"
+
+# Run Zod validation tests (cross-platform)
+npm run -s validate:data:zod || exit $?
+
+# SoT trailers check runs in pre-push hook, not pre-commit
+# This allows faster commits while maintaining compliance checks

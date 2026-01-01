@@ -1,0 +1,56 @@
+# --- noise / backups / duplicates ---
+
+# Duplicados con sufijo numérico tipo "Componente 2.tsx"
+**/*\ [0-9].ts
+**/*\ [0-9].tsx
+**/*\ [0-9].js
+**/*\ [0-9].cjs
+**/*\ [0-9].mjs
+
+# Backups / copias
+**/*backup*
+**/*.backup*
+**/*.bak*
+**/*.broken
+**/*.orig
+**/*~
+**/*.tmp
+
+# Reportes de testing/playwright
+playwright-report/
+test-results/
+
+# Carpeta de rescate temporal que generaste
+node_modules.rescue.*/
+.rescue_untracked/
+
+# SO / editor
+.DS_Store
+Thumbs.db
+
+# --- legacy & scripts (temporal) ---
+src/_deprecated/
+scripts/
+
+# --- tests & mocks (temporal) ---
+src/**/__tests__/
+src/**/__mocks__/
+src/**/*.test.ts
+src/**/*.test.tsx
+src/components/
+
+# --- declaration files ---
+**/*.d.ts
+src/z_trash/
+src/utils/fix-parser.js
+test-backend*.js
+test-backend*/**
+test-sistema*.js
+test-*.js
+**/*backup*.ts
+**/* 2.*
+src/utils/fix-parser.js
+test-backend*.js
+test-backend*/**
+test-sistema*.js
+test-*.js

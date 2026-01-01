@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "signature": "vertexAIProxy@v1",
+  "project": "aiduxcare-v2-uat-dev",
+  "location": "us-central1",
+  "model": "gemini-2.5-flash",
+  "traceId": "cli-20250904-220425",
+  "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo con irradiación y hormigueo en pierna derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar agudo\",\n    \"3 días de evolución\",\n    \"Irradiación hacia pierna derecha\",\n    \"Hormigueo en pierna derecha\",\n    \"Paciente de 45 años\",\n    \"Adulto activo, sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia aguda con componente neuropático\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación neurológica (reflejos, fuerza muscular, sensibilidad en dermatomas L4, L5, S1)\",\n    \"Pruebas de tensión neural (ej. Lasègue, Bragard)\",\n    \"Palpación de la columna lumbar y musculatura paravertebral\",\n    \"Evaluación de la movilidad lumbar (flexión, extensión, lateralización, rotación)\",\n    \"Evaluación de la marcha y postura\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y actividad\",\n    \"Movilización suave y ejercicios de control motor lumbar\",\n    \"Técnicas de neurodinamia si aplica\",\n    \"Manejo del dolor (ej. termoterapia/crioterapia)\",\n    \"Recomendación de mantener actividad modificada\",\n    \"Derivación médica si hay progresión de síntomas neurológicos o sospecha de patología grave\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}",
+  "vertexRaw": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "{\n  \"motivo_consulta\": \"Dolor lumbar agudo con irradiación y hormigueo en pierna derecha.\",\n  \"hallazgos_relevantes\": [\n    \"Dolor lumbar agudo\",\n    \"3 días de evolución\",\n    \"Irradiación hacia pierna derecha\",\n    \"Hormigueo en pierna derecha\",\n    \"Paciente de 45 años\",\n    \"Adulto activo, sin comorbilidades conocidas\"\n  ],\n  \"diagnosticos_probables\": [\n    \"Radiculopatía lumbar (posible ciática)\",\n    \"Lumbalgia aguda con componente neuropático\",\n    \"Hernia discal lumbar\"\n  ],\n  \"red_flags\": [],\n  \"evaluaciones_fisicas_sugeridas\": [\n    \"Evaluación neurológica (reflejos, fuerza muscular, sensibilidad en dermatomas L4, L5, S1)\",\n    \"Pruebas de tensión neural (ej. Lasègue, Bragard)\",\n    \"Palpación de la columna lumbar y musculatura paravertebral\",\n    \"Evaluación de la movilidad lumbar (flexión, extensión, lateralización, rotación)\",\n    \"Evaluación de la marcha y postura\"\n  ],\n  \"plan_tratamiento_sugerido\": [\n    \"Educación sobre manejo del dolor y actividad\",\n    \"Movilización suave y ejercicios de control motor lumbar\",\n    \"Técnicas de neurodinamia si aplica\",\n    \"Manejo del dolor (ej. termoterapia/crioterapia)\",\n    \"Recomendación de mantener actividad modificada\",\n    \"Derivación médica si hay progresión de síntomas neurológicos o sospecha de patología grave\"\n  ],\n  \"riesgo_legal\": \"medio\"\n}"
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "avgLogprobs": -0.3007272267154863
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 232,
+      "candidatesTokenCount": 383,
+      "totalTokenCount": 1246,
+      "trafficType": "ON_DEMAND",
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 232
+        }
+      ],
+      "candidatesTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 383
+        }
+      ],
+      "thoughtsTokenCount": 631
+    },
+    "modelVersion": "gemini-2.5-flash",
+    "createTime": "2025-09-04T20:04:25.934018Z",
+    "responseId": "yfC5aIKBOe6C1dkP7ZiDyQU"
+  }
+}

@@ -1,0 +1,145 @@
+// src/core/ai/PromptFactory.ts
+import type { ClinicalAnalysisResponse, PhysicalExamResult } from '../../types/vertex-ai';
+
+export class PromptFactory {
+  static createClinicalAnalysisPrompt(transcript: string): string {
+    return `Eres un asistente clínico especializado en fisioterapia musculoesquelética, siguiendo estándares del College of Physiotherapists of Ontario (CPO).
+
+CONTEXTO CRÍTICO:
+Debes distinguir entre síntomas que requieren derivación urgente versus efectos secundarios esperados de condiciones/tratamientos conocidos.
+
+RED FLAGS VERDADEROS (Requieren derivación URGENTE):
+1. SÍNDROME DE CAUDA EQUINA (Emergencia quirúrgica):
+   - Incontinencia urinaria/fecal DE INICIO RECIENTE (< 48 horas)
+   - Anestesia en silla de montar DE INICIO SÚBITO
+   - Debilidad bilateral progresiva AGUDA en MMII
+   - Pérdida de reflejos aquíleos bilateral NUEVA
+
+2. FRACTURA VERTEBRAL:
+   - Trauma significativo + dolor severo
+   - Edad > 70 años con trauma menor
+   - Uso prolongado de corticoides
+   - Dolor que empeora con carga axial
+
+3. INFECCIÓN (Discitis/Osteomielitis):
+   - Fiebre + dolor lumbar
+   - Uso de drogas IV
+   - Infección reciente (urinaria, piel)
+   - Inmunosupresión
+
+4. CÁNCER NO CONOCIDO PREVIAMENTE:
+   - Pérdida de peso inexplicable (>10% en 3 meses)
+   - Dolor nocturno que no mejora con reposo
+   - Historia previa de cáncer SIN seguimiento actual
+   - Edad > 50 con dolor lumbar nuevo sin causa mecánica
+
+NO SON RED FLAGS (Efectos secundarios esperados):
+- Debilidad por quimioterapia/radioterapia EN PACIENTE ONCOLÓGICO CONOCIDO
+- Fatiga post-tratamiento oncológico
+- Dolor articular por medicamentos oncológicos
+- Neuropatía periférica por quimioterapia
+- Efectos secundarios conocidos de medicamentos (pregabalina, gabapentina)
+
+YELLOW FLAGS (Factores psicosociales - NO urgentes):
+- Kinesiofobia
+- Catastrofización del dolor
+- Depresión/ansiedad
+- Creencias erróneas sobre el dolor
+- Expectativas irreales de recuperación
+
+TRANSCRIPCIÓN:
+${transcript}
+
+INSTRUCCIONES ESPECÍFICAS:
+1. Si el paciente tiene CÁNCER CONOCIDO Y EN TRATAMIENTO: La debilidad/fatiga NO es red flag
+2. Si hay medicamentos con efectos secundarios conocidos: NO marcar como red flag
+3. Solo marcar RED FLAG si cumple criterios ESPECÍFICOS listados arriba
+4. Extraer TODAS las entidades mencionadas
+5. Sugerir tests apropiados para fisioterapia
+
+Responde en JSON:
+{
+  "entities": [
+    {
+      "id": "string",
+      "text": "texto de la entidad",
+      "type": "symptom|condition|medication|history|other",
+      "clinicalRelevance": "critical|high|medium|low"
+    }
+  ],
+  "redFlags": [
+    {
+      "pattern": "SOLO si cumple criterios específicos arriba",
+      "action": "Derivación específica requerida",
+      "urgency": "urgent|high|medium",
+      "reference": "Criterio clínico basado en evidencia"
+    }
+  ],
+  "yellowFlags": ["factores psicosociales identificados"],
+  "otherFlags": {
+    "orange": ["factores psiquiátricos"],
+    "blue": ["factores laborales"],
+    "black": ["factores del sistema"]
+  },
+  "physicalTests": [
+    {
+      "name": "nombre del test",
+      "rationale": "por qué es apropiado",
+      "sensitivity": null,
+      "specificity": null,
+      "reference": ""
+    }
+  ],
+  "standardizedMeasures": ["escalas apropiadas"],
+  "additionalNotes": "contexto clínico importante"
+}`;
+  }
+
+  static createSOAPFromAnalysis(
+    analysis: ClinicalAnalysisResponse,
+    selectedEntityIds: string[],
+    physicalExamResults: PhysicalExamResult[]
+  ): string {
+    const selectedEntities = analysis.entities.filter(e => selectedEntityIds.includes(e.id));
+    
+    return `Genera una nota SOAP de fisioterapia profesional para Ontario, Canadá.
+
+HALLAZGOS SELECCIONADOS:
+${JSON.stringify(selectedEntities, null, 2)}
+
+BANDERAS:
+- Rojas: ${JSON.stringify(analysis.redFlags, null, 2)}
+- Amarillas: ${JSON.stringify(analysis.yellowFlags, null, 2)}
+
+EXAMEN FÍSICO:
+${JSON.stringify(physicalExamResults, null, 2)}
+
+Genera SOAP en JSON:
+{
+  "subjective": "Historia y síntomas reportados por el paciente",
+  "objective": "Hallazgos medibles, tests, observaciones",
+  "assessment": "Impresión clínica y diagnóstico fisioterapéutico",
+  "plan": "Tratamiento, frecuencia, objetivos SMART",
+  "additionalNotes": "Precauciones y consideraciones",
+  "followUp": "Plan de seguimiento",
+  "precautions": "Basadas en condición del paciente",
+  "referrals": "Solo si hay RED FLAGS verdaderos"
+}`;
+  }
+}
+
+export enum CaseComplexity {
+  SIMPLE = 'simple',
+  MODERATE = 'moderate',
+  COMPLEX = 'complex',
+  CRITICAL = 'critical'
+}
+
+export enum MedicalSpecialty {
+  GENERAL = "general",
+  CARDIOLOGY = "cardiology",
+  NEUROLOGY = "neurology",
+  ORTHOPEDICS = "orthopedics",
+  PHYSIOTHERAPY = "physiotherapy",
+  FISIOTERAPIA = "fisioterapia"
+}

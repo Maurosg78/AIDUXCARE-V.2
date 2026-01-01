@@ -1,0 +1,17 @@
+{
+  "workflow": {
+    "title": "Professional Workflow",
+    "initialAnalysis": "Initial Analysis",
+    "physicalEvaluation": "Physical Evaluation",
+    "soapReport": "SOAP Report",
+    "consultationContent": "Consultation Content",
+    "analyzeWithAI": "Analyze with AI",
+    "record": "Record"
+  },
+  "soap": {
+    "subjective": "Subjective",
+    "objective": "Objective",
+    "assessment": "Assessment",
+    "plan": "Plan"
+  }
+}

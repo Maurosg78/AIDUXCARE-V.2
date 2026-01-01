@@ -1,0 +1,32 @@
+{
+  "motivo_consulta": "Dolor lumbar agudo con irradiación a pierna derecha",
+  "hallazgos_relevantes": [
+    "Dolor lumbar agudo de 3 días de evolución",
+    "Irradiación a pierna derecha",
+    "Paciente adulto activo",
+    "Sin comorbilidades conocidas"
+  ],
+  "diagnosticos_probables": [
+    "Radiculopatía lumbar",
+    "Lumbago agudo con componente radicular",
+    "Posible hernia discal lumbar"
+  ],
+  "red_flags": [],
+  "evaluaciones_fisicas_sugeridas": [
+    "Screening de signos de alarma (red flags)",
+    "Examen neurológico completo de extremidad inferior (fuerza, sensibilidad, reflejos)",
+    "Pruebas de tensión neural (ej. Lasègue, Slump test)",
+    "Evaluación de la movilidad lumbar y sacroilíaca",
+    "Palpación y evaluación de la musculatura lumbar y glútea",
+    "Análisis de la postura y marcha"
+  ],
+  "plan_tratamiento_sugerido": [
+    "Educación sobre el dolor y manejo de la actividad",
+    "Manejo del dolor agudo (ej. termoterapia/crioterapia, técnicas de descarga)",
+    "Movilización temprana y ejercicios de bajo impacto",
+    "Ejercicios de estabilización del core y fortalecimiento progresivo",
+    "Técnicas de neurodinamia (si aplica)",
+    "Reevaluación constante y derivación médica si hay progresión de síntomas o aparición de red flags"
+  ],
+  "riesgo_legal": "medio"
+}

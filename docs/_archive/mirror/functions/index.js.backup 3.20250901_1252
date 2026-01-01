@@ -1,0 +1,324 @@
+const functions = require('firebase-functions');
+const { GoogleAuth } = require('google-auth-library');
+const auth = new GoogleAuth({
+  scopes: ['https://www.googleapis.com/auth/cloud-platform']
+});
+
+exports.processWithVertexAI = functions.https.onCall(async (data, context) => {
+  const { prompt } = data;
+  
+  if (!prompt) {
+    throw new functions.https.HttpsError('invalid-argument', 'Prompt requerido');
+  }
+  
+  try {
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+    
+    const response = await fetch(
+      'https://us-central1-aiplatform.googleapis.com/v1/projects/aiduxcare-v2-uat-dev/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2048,
+            topP: 0.8
+          }
+        })
+      }
+    );
+    
+    const result = await response.json();
+    return {
+      text: result.candidates?.[0]?.content?.parts?.[0]?.text || '',
+      usage: result.usageMetadata
+    };
+  } catch (error) {
+    console.error('Error:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+exports.vertexAIProxy = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  
+  try {
+    const { text, prompt } = req.body;
+    
+    // PROMPT ESPECIALIZADO PARA FISIOTERAPIA/MSK CON RED FLAGS
+    const fullPrompt = `Eres un asistente clínico especializado en fisioterapia y terapia musculoesquelética. 
+Analiza esta transcripción y PRIMERO identifica cualquier RED FLAG que requiera derivación médica urgente.
+
+TRANSCRIPCIÓN: ${text}
+
+INSTRUCCIONES CRÍTICAS:
+1. PRIMERO busca RED FLAGS MSK que requieran derivación médica
+2. DESPUÉS extrae las entidades clínicas para documentación SOAP
+
+RED FLAGS MSK CRÍTICOS (FISIOTERAPIA):
+
+🚨 EMERGENCIAS (Derivar a urgencias INMEDIATAMENTE):
+- SÍNDROME DE CAUDA EQUINA: incontinencia urinaria/fecal nueva, anestesia en silla de montar, debilidad bilateral MMII, disfunción sexual súbita
+- MIELOPATÍA CERVICAL: alteración de la marcha, pérdida de destreza manual, signo de Hoffman/Babinski positivo
+- DVT: dolor/edema unilateral en pantorrilla, signo de Homans positivo, calor local + eritema
+- FRACTURA NO DIAGNOSTICADA: trauma + incapacidad para soportar peso, deformidad visible, crepitación
+
+⚠️ URGENTES (Derivar en <24-48h):
+- CÁNCER/METÁSTASIS: pérdida de peso inexplicable >5kg/mes, dolor nocturno que no mejora con reposo, historia previa de cáncer
+- INFECCIÓN (OSTEOMIELITIS/DISCITIS): fiebre >38°C persistente, dolor constante progresivo, uso de drogas IV, inmunosupresión
+- INESTABILIDAD VERTEBRAL: dolor con movimientos mínimos, signo de Lhermitte, historia de trauma significativo
+
+⚡ BANDERAS AMARILLAS (Factores psicosociales - documentar pero no derivación urgente):
+- Catastrofización del dolor
+- Kinesiofobia (miedo al movimiento)
+- Expectativas de recuperación negativas
+- Factores laborales/compensación
+
+FORMATO DE RESPUESTA EXACTO:
+
+**Red Flags Detectados:**
+* **[TIPO_RED_FLAG]:** descripción específica del hallazgo - URGENCIA: [EMERGENCY/URGENT/MODERATE]
+(Si no hay: "No se detectaron red flags")
+
+**Banderas Amarillas:**
+* **[Factor psicosocial]:** descripción
+(Si no hay: "No se detectaron banderas amarillas")
+
+**Condiciones/Diagnóstico:**
+* **Condición principal:** descripción con localización anatómica
+* **Condición secundaria:** si aplica
+
+**Síntomas:**
+* **Síntoma principal:** descripción, localización, intensidad (EVA si mencionado)
+* **Síntomas asociados:** lista
+
+**Medicamentos:**
+* **Medicamento:** dosis, frecuencia, efectividad reportada
+
+**Tests/Evaluación Física Sugerida:**
+* **Test ortopédico:** indicación específica (ej: Test de Lasègue para radiculopatía L4-S1)
+* **Test neurológico:** si aplica
+* **Medidas funcionales:** (ej: NPRS, Oswestry, DASH según región)
+
+**Plan de Tratamiento Sugerido:**
+* **Técnicas manuales:** especificar región y técnica
+* **Ejercicio terapéutico:** tipo y progresión
+* **Modalidades:** si aplica
+* **Educación del paciente:** puntos clave`;
+    
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+    
+    const response = await fetch(
+      'https://us-central1-aiplatform.googleapis.com/v1/projects/aiduxcare-v2-uat-dev/locations/us-central1/publishers/google/models/gemini-2.0-flash-exp:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: fullPrompt }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2048,
+            topP: 0.8
+          }
+        })
+      }
+    );
+    
+    const result = await response.json();
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // PARSING MEJORADO CON DETECCIÓN DE RED FLAGS Y BANDERAS AMARILLAS
+    const entities = [];
+    const redFlags = [];
+    const yellowFlags = [];
+    let idCounter = 1;
+    
+    // Tracking de tiempo ahorrado (métrica para el dashboard)
+    const startTime = Date.now();
+    
+    // Dividir el texto en secciones
+    const sections = {
+      redflags: [],
+      yellowflags: [],
+      conditions: [],
+      symptoms: [],
+      medications: [],
+      tests: [],
+      plan: []
+    };
+    
+    let currentSection = null;
+    const lines = responseText.split('\n');
+    
+    lines.forEach(line => {
+      // Detectar sección actual
+      if (line.includes('**Red Flags')) {
+        currentSection = 'redflags';
+        return;
+      } else if (line.includes('**Banderas Amarillas')) {
+        currentSection = 'yellowflags';
+        return;
+      } else if (line.includes('**Condiciones') || line.includes('**Diagnóstico')) {
+        currentSection = 'conditions';
+        return;
+      } else if (line.includes('**Síntomas:**')) {
+        currentSection = 'symptoms';
+        return;
+      } else if (line.includes('**Medicamentos:**')) {
+        currentSection = 'medications';
+        return;
+      } else if (line.includes('**Tests') || line.includes('**Evaluac')) {
+        currentSection = 'tests';
+        return;
+      } else if (line.includes('**Plan')) {
+        currentSection = 'plan';
+        return;
+      }
+      
+      // Extraer RED FLAGS
+      if (currentSection === 'redflags' && line.includes('URGENCIA:')) {
+        const urgencyMatch = line.match(/URGENCIA:\s*(EMERGENCY|URGENT|MODERATE)/i);
+        const typeMatch = line.match(/\*\*\[?([^\]]+)\]?\*\*/);
+        
+        if (urgencyMatch && typeMatch) {
+          const urgencyLevel = urgencyMatch[1].toUpperCase();
+          const flagType = typeMatch[1].replace(/[\[\]]/g, '').trim();
+          const description = line.split(':').slice(1).join(':').split('-')[0].trim();
+          
+          redFlags.push({
+            pattern: flagType,
+            action: urgencyLevel === 'EMERGENCY' ? 
+              '🚨 DERIVAR A URGENCIAS INMEDIATAMENTE - Documentar hora y método de derivación' : 
+              urgencyLevel === 'URGENT' ? 
+              '⚠️ Derivar a médico en <24-48h - Documentar comunicación con paciente' : 
+              '⚡ Evaluar y considerar derivación según evolución',
+            urgency: urgencyLevel === 'EMERGENCY' ? 'urgent' : 
+                     urgencyLevel === 'URGENT' ? 'high' : 'medium',
+            description: description,
+            reference: 'CPG MSK 2024'
+          });
+          
+          // Añadir también como entidad crítica para visualización
+          entities.push({
+            id: String(idCounter++),
+            text: `🚨 RED FLAG: ${flagType}`,
+            type: 'condition',
+            clinicalRelevance: 'critical'
+          });
+        }
+      }
+      
+      // Extraer BANDERAS AMARILLAS
+      if (currentSection === 'yellowflags' && line.includes('**') && line.includes('*')) {
+        const match = line.match(/\*\*([^*:]+)/);
+        if (match && match[1] && !match[1].includes('No se detectaron')) {
+          const yellowFlag = match[1].trim();
+          yellowFlags.push(yellowFlag);
+          
+          // Añadir como entidad para tracking
+          entities.push({
+            id: String(idCounter++),
+            text: `⚡ Bandera Amarilla: ${yellowFlag}`,
+            type: 'other',
+            clinicalRelevance: 'medium'
+          });
+        }
+      }
+      
+      // Extraer entidades normales de las otras secciones
+      if (currentSection && !['redflags', 'yellowflags'].includes(currentSection) && 
+          line.includes('**') && line.includes('*')) {
+        const match = line.match(/\*\*([^*:]+)/);
+        if (match && match[1]) {
+          const text = match[1].trim();
+          if (text.length > 2 && !text.includes('No se detectaron')) {
+            const types = {
+              conditions: { type: 'condition', icon: '🔍', relevance: 'high' },
+              symptoms: { type: 'symptom', icon: '⚠️', relevance: 'high' },
+              medications: { type: 'medication', icon: '💊', relevance: 'medium' },
+              tests: { type: 'other', icon: '📋', relevance: 'high' }, // Cambiado a 'other' por compatibilidad
+              plan: { type: 'other', icon: '📝', relevance: 'medium' }
+            };
+            
+            const config = types[currentSection] || { type: 'other', icon: '📌', relevance: 'medium' };
+            
+            entities.push({
+              id: String(idCounter++),
+              text: config.icon + ' ' + text,
+              type: config.type,
+              clinicalRelevance: config.relevance
+            });
+          }
+        }
+      }
+    });
+
+    // Calcular tiempo ahorrado estimado (15-20 min por nota bien documentada)
+    const processingTime = (Date.now() - startTime) / 1000; // en segundos
+    const estimatedTimeSaved = 15; // minutos promedio ahorrados
+    
+    // Preparar resumen con alertas prioritarias
+    let summary = responseText.substring(0, 200);
+    if (redFlags.length > 0) {
+      summary = `⚠️ ALERTA: ${redFlags.length} RED FLAG(S) DETECTADO(S) - Requiere acción inmediata. ` + summary;
+    } else if (yellowFlags.length > 0) {
+      summary = `⚡ ${yellowFlags.length} bandera(s) amarilla(s) detectada(s) - Factores psicosociales presentes. ` + summary;
+    }
+
+    // Respuesta estructurada compatible con tipos existentes
+    res.json({
+      entities: entities,
+      redFlags: redFlags,
+      yellowFlags: yellowFlags,
+      otherFlags: {
+        orange: [], // Factores psiquiátricos (para futuro)
+        blue: [],   // Factores laborales (para futuro)
+        black: []   // Factores del sistema (para futuro)
+      },
+      physicalTests: entities.filter(e => e.text.includes('📋')).map(e => ({
+        name: e.text.replace('📋 ', ''),
+        rationale: 'Evaluación clínica indicada',
+        sensitivity: null,
+        specificity: null
+      })),
+      standardizedMeasures: [], // NPRS, Oswestry, etc (para futuro)
+      summary: summary,
+      rawResponse: responseText,
+      modelUsed: 'flash',
+      requiresSelection: true,
+      metadata: {
+        processingTime: processingTime,
+        estimatedTimeSaved: estimatedTimeSaved,
+        timestamp: new Date().toISOString(),
+        specialty: 'physiotherapy_msk'
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
