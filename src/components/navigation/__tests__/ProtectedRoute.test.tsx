@@ -49,6 +49,7 @@ vi.mock('../../../hooks/useAuth', () => ({
 }));
 vi.mock('../../../utils/sessionPersistence', () => ({
   loadSessionState: vi.fn(),
+  getCurrentSessionId: vi.fn(),
 }));
 
 import { useAuth } from '../../../hooks/useAuth';
