@@ -143,7 +143,7 @@ export async function generateSOAPNote(
       },
       body: JSON.stringify({
         prompt,
-        action: 'generate_soap',
+        action: 'analyze',
         traceId,
         model: 'gemini-2.0-flash-exp', // Use same model as clinical analysis
       }),
@@ -194,7 +194,7 @@ export async function generateSOAPNote(
           },
           body: JSON.stringify({
             prompt: repairPrompt,
-            action: 'generate_soap',
+            action: 'analyze',
             traceId: `${traceId}-repair`,
             model: 'gemini-2.0-flash-exp',
           }),
@@ -235,7 +235,7 @@ export async function generateSOAPNote(
               },
               body: JSON.stringify({
                 prompt: fallbackPrompt,
-                action: 'generate_soap',
+                action: 'analyze',
                 traceId: `${traceId}-fallback`,
                 model: 'gemini-2.0-flash-exp',
               }),
@@ -259,7 +259,7 @@ export async function generateSOAPNote(
             },
             body: JSON.stringify({
               prompt: fallbackPrompt,
-              action: 'generate_soap',
+              action: 'analyze',
               traceId: `${traceId}-fallback`,
               model: 'gemini-2.0-flash-exp',
             }),
