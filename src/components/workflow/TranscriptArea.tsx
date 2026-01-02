@@ -180,12 +180,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         <div className="space-y-2">
           <h2 className="text-xl font-medium text-slate-900 font-apple mb-2">Clinical Conversation Capture</h2>
           <p className="text-[15px] text-slate-500 font-light font-apple">
-            Use the built-in recorder or paste a transcript from your recording.
+            Paste your transcript below or use the text area to enter clinical notes.
           </p>
-          <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 max-w-md">
-            <AlertCircle className="mt-0.5 h-4 w-4 text-slate-400" />
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 max-w-md">
+            <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
             <p>
-              AiDuxCare automatically detects English, Canadian French, or Spanish. Accents are supported, but clarity helps the medico-legal record.
+              <span className="font-medium">Voice recording is currently being improved.</span> Please paste your transcript in the text area below. AiDuxCare automatically detects English, Canadian French, or Spanish.
             </p>
           </div>
         </div>
@@ -205,10 +205,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           ) : (
             <button
               onClick={startRecording}
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 font-apple text-[15px]"
+              disabled={true}
+              title="Voice recording is temporarily unavailable. Please paste your transcript in the text area below."
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 text-white font-medium shadow-sm cursor-not-allowed opacity-60 transition-all duration-200 font-apple text-[15px]"
             >
               <Play className="w-4 h-4" />
-              Start Recording
+              Start Recording (Coming Soon)
             </button>
           )}
         </div>
