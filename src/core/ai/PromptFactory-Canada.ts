@@ -75,6 +75,15 @@ Fallback strategy (MUST FOLLOW IN ORDER):
 4. Search clinical guidelines (CPA, CPO, CAPR)
 5. If no data found in any reliable source → use "unknown" (DO NOT estimate)
 
+EMPTY FIELD RULES (NEW):
+- If no information provided for a field → OMIT that field entirely from JSON
+- Do NOT add speculative statements like "Not specified, but..."
+- Examples:
+  ❌ "occupational": ["Not specified, but chronic pain may impact work capacity."]
+  ✅ // Field omitted entirely
+  ❌ "legal_or_employment_context": ["Not specified."]
+  ✅ // Field omitted entirely
+
 CRITICAL INSTRUCTIONS:
 - Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). Include clinical concern and referral urgency.
 - Medications: Format as "name, dosage (units), frequency, duration". Correct dosage errors (oral meds are mg, not g). Flag interactions (NSAIDs+SSRIs/SNRIs = red flag).
@@ -83,16 +92,7 @@ CRITICAL INSTRUCTIONS:
 - Temporal info: Capture when symptoms started, evolution over time, medication duration, intervention timelines, progression patterns.
 - Biopsychosocial: Comprehensive capture of psychological, social, occupational, functional limitations, protective factors, patient strengths, legal/employment context.`;
 
-EMPTY FIELD RULES (NEW):
-- If no information provided for a field → OMIT that field entirely from JSON
-- Do NOT add speculative statements like "Not specified, but..."
-- Examples:
-  ❌ "occupational": ["Not specified, but chronic pain may impact work capacity."]
-  ✅ // Field omitted entirely
-  ❌ "legal_or_employment_context": ["Not specified."]
-  ✅ // Field omitted entirely`;
-
-const DEFAULT_INSTRUCTIONS_INITIAL = `Analyse the transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Expose clinical variables, patterns, and correlations from the patient presentation. Present comprehensive clinical considerations including observable patterns, literature correlations (with evidence levels), potential blind spots, risk factors requiring documentation, and alternative explanations. Recommend evidence-based physiotherapy assessments as considerations, not prescriptions. Summarise biopsychosocial factors comprehensively. Note when medical imaging or physician follow-up is required because findings exceed physiotherapy scope or pose safety risks. 
+const DEFAULT_INSTRUCTIONS_INITIAL = `Analyse the transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Expose clinical variables, patterns, and correlations from the patient presentation. Present comprehensive clinical considerations including observable patterns, literature correlations (with evidence levels), potential blind spots, risk factors requiring documentation, and alternative explanations. Recommend evidence-based physiotherapy assessments as considerations, not prescriptions. Summarise biopsychosocial factors comprehensively. Note when medical imaging or physician follow-up is required because findings exceed physiotherapy scope or pose safety risks.
 
 CRITICAL DISTRIBUTION RULES:
 - chief_complaint: Current presenting symptoms with full detail
@@ -377,4 +377,4 @@ export const CanadianPromptFactory = {
   },
 };
 
-console.log("[OK] PromptFactory-Canada ready");
+console.log("[OK] PromptFactory-Canada ready (OPTIMIZED v2)");
