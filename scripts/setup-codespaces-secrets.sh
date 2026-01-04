@@ -61,10 +61,14 @@ set_secret "VITE_FIREBASE_APP_ID" "1:935285025887:web:prod-uatsim-2e34b1"
 set_secret "VITE_FIREBASE_MEASUREMENT_ID" "G-UATDEV2025"
 set_secret "VITE_SUPABASE_URL" "https://aiduxcare-v2.supabase.co"
 <<<<<<< HEAD
+<<<<<<< HEAD
 set_secret "VITE_OPENAI_API_KEY" "YOUR_OPENAI_API_KEY_HERE"
 =======
 set_secret "VITE_OPENAI_API_KEY" "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"
 >>>>>>> 9e08e1e (feat(pdf): PDF processing MVP complete - piloto ready)
+=======
+set_secret "VITE_OPENAI_API_KEY" "YOUR_OPENAI_API_KEY_HERE"
+>>>>>>> 59143c6 (fix(security): remove exposed OpenAI API key from setup script)
 set_secret "VITE_OPENAI_MODEL" "gpt-4o-mini"
 set_secret "VITE_OPENAI_TRANSCRIPT_URL" "https://api.openai.com/v1/audio/transcriptions"
 set_secret "VITE_WHISPER_MODEL" "gpt-4o-mini-transcribe"
