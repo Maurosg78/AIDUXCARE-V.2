@@ -13,6 +13,7 @@ import type { WhisperSupportedLanguage } from '../../services/OpenAIWhisperServi
 import { AudioWaveform } from '../AudioWaveform';
 import type { ClinicalAttachment } from '../../services/clinicalAttachmentService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
+import { ClinicalAttachmentCard } from '../ClinicalAttachmentCard';
 
 const LANGUAGE_OPTIONS: Array<{ value: WhisperSupportedLanguage; label: string }> = [
   { value: "auto", label: "Auto-detect" },
@@ -385,41 +386,16 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             Attach lab work, imaging reports, or patient-provided photos. Files stay in encrypted Firebase Storage.
           </p>
         ) : (
-          <ul className="space-y-2">
+          <div className="space-y-3">
             {attachments.map((attachment) => (
-              <li
+              <ClinicalAttachmentCard
                 key={attachment.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-slate-700">{attachment.name}</span>
-                  <span className="text-xs text-slate-500">
-                    {formatFileSize(attachment.size)} · Uploaded {new Date(attachment.uploadedAt).toLocaleString("en-CA")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={attachment.downloadURL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 transition"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    View
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => handleAttachmentRemove(attachment)}
-                    disabled={removingAttachmentId === attachment.id}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50 font-apple"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    {removingAttachmentId === attachment.id ? 'Removing…' : 'Remove'}
-                  </button>
-                </div>
-              </li>
+                attachment={attachment}
+                onDelete={() => handleAttachmentRemove(attachment)}
+                isRemoving={removingAttachmentId === attachment.id}
+              />
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

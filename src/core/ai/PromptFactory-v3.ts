@@ -1,6 +1,8 @@
 import { CanadianPromptFactory } from "./PromptFactory-Canada";
 import type { ProfessionalProfile } from "@/context/ProfessionalProfileContext";
 
+import type { ClinicalAttachment } from "./PromptFactory-Canada";
+
 export const PromptFactory = {
   create: (params: {
     contextoPaciente: string;
@@ -9,6 +11,7 @@ export const PromptFactory = {
     especialidad?: string;
     professionalProfile?: ProfessionalProfile | null;
     visitType?: 'initial' | 'follow-up';
+    attachments?: ClinicalAttachment[];
   }) => {
     return CanadianPromptFactory.create({
       contextoPaciente: params.contextoPaciente,
@@ -16,6 +19,7 @@ export const PromptFactory = {
       instrucciones: params.instrucciones,
       professionalProfile: params.professionalProfile,
       visitType: params.visitType,
+      attachments: params.attachments,
     });
   },
 };

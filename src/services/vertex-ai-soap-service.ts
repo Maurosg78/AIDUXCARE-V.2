@@ -382,13 +382,99 @@ function parseSOAPResponse(
     }
   }
 
+  // ✅ WO-PDF-004: Serialize treatment plan if it's an object
+  const formatTreatmentPlan = (plan: any): string => {
+    if (!plan) return 'Not documented.';
+    
+    // If already a string, return it
+    if (typeof plan === 'string') return plan;
+    
+    // If it's an object, serialize it
+    if (typeof plan === 'object') {
+      let planText = '';
+      
+      // Short-term goals
+      if (plan.short_term_goals?.length > 0) {
+        planText += 'Short-term Goals:\n';
+        plan.short_term_goals.forEach((goal: string) => {
+          planText += `- ${goal}\n`;
+        });
+        planText += '\n';
+      }
+      
+      // Long-term goals
+      if (plan.long_term_goals?.length > 0) {
+        planText += 'Long-term Goals:\n';
+        plan.long_term_goals.forEach((goal: string) => {
+          planText += `- ${goal}\n`;
+        });
+        planText += '\n';
+      }
+      
+      // Interventions
+      if (plan.interventions?.length > 0) {
+        planText += 'Interventions:\n';
+        plan.interventions.forEach((intervention: any) => {
+          if (typeof intervention === 'string') {
+            planText += `- ${intervention}\n`;
+          } else {
+            planText += `- ${intervention.type || intervention.description || JSON.stringify(intervention)}\n`;
+            if (intervention.frequency) {
+              planText += `  Frequency: ${intervention.frequency}\n`;
+            }
+          }
+        });
+        planText += '\n';
+      }
+      
+      // Patient education
+      if (plan.patient_education?.length > 0) {
+        planText += 'Patient Education:\n';
+        plan.patient_education.forEach((edu: string) => {
+          planText += `- ${edu}\n`;
+        });
+        planText += '\n';
+      }
+      
+      // Home exercise program
+      if (plan.home_exercise_program?.length > 0) {
+        planText += 'Home Exercise Program:\n';
+        plan.home_exercise_program.forEach((exercise: string) => {
+          planText += `- ${exercise}\n`;
+        });
+        planText += '\n';
+      }
+      
+      // Follow-up
+      if (plan.follow_up_recommendations?.length > 0) {
+        planText += 'Follow-up:\n';
+        plan.follow_up_recommendations.forEach((rec: string) => {
+          planText += `- ${rec}\n`;
+        });
+      }
+      
+      return planText.trim() || 'Not documented.';
+    }
+    
+    return String(plan);
+  };
+
+  // ✅ WO-PDF-004: Add logging for debugging
+  console.log('[SOAP Builder] Parsing SOAP response...');
+  console.log('[SOAP Builder] Treatment plan type:', typeof soapData?.plan);
+  if (typeof soapData?.plan === 'object') {
+    console.log('[SOAP Builder] Treatment plan is object, will serialize');
+  }
+  console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
+  console.log('[SOAP Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
+
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {
     return {
       subjective: String(soapData.subjective || 'Not documented.'),
       objective: String(soapData.objective || 'Not documented.'),
       assessment: String(soapData.assessment || 'Not documented.'),
-      plan: String(soapData.plan || 'Not documented.'),
+      plan: formatTreatmentPlan(soapData.plan),
       additionalNotes: soapData.additionalNotes ? String(soapData.additionalNotes) : undefined,
       followUp: soapData.followUp ? String(soapData.followUp) : undefined,
       precautions: soapData.precautions ? String(soapData.precautions) : undefined,

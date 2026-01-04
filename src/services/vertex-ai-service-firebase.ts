@@ -9,6 +9,7 @@ type NiagaraProxyPayload = {
   mode?: "live" | "dictation";
   timestamp?: number;
   visitType?: 'initial' | 'follow-up';
+  attachments?: ClinicalAttachment[];
 };
 
 type VoiceClinicalCategory =
@@ -145,6 +146,7 @@ Query: ${queryText.trim()}`;
 };
 
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import type { ClinicalAttachment } from '../core/ai/PromptFactory-Canada';
 
 export async function analyzeWithVertexProxy(payload: {
   action: 'analyze';
@@ -153,6 +155,7 @@ export async function analyzeWithVertexProxy(payload: {
   traceId?: string;
   professionalProfile?: ProfessionalProfile | null;
   visitType?: 'initial' | 'follow-up';
+  attachments?: ClinicalAttachment[];
 }) {
   // ✅ PHIPA COMPLIANCE: De-identify transcript before sending to AI
   let finalPrompt = payload.prompt;
@@ -187,7 +190,8 @@ export async function analyzeWithVertexProxy(payload: {
         : "Analyze the following transcript and extract relevant clinical information.",
       transcript: deidentifiedText, // Use de-identified transcript
       professionalProfile: payload.professionalProfile, // Pass professional profile
-      visitType: payload.visitType || 'initial' // Pass visit type for prompt customization
+      visitType: payload.visitType || 'initial', // Pass visit type for prompt customization
+      attachments: payload.attachments // Pass clinical attachments (PDFs, images, etc.)
     });
     finalPrompt = structuredPrompt;
   }
@@ -242,7 +246,8 @@ export class VertexAIServiceViaFirebase {
       transcript: sanitizedTranscript,
       traceId: traceIdParts.join('|'),
       professionalProfile: payload.professionalProfile, // Pass professional profile
-      visitType: payload.visitType || 'initial' // Pass visit type for follow-up specific prompts
+      visitType: payload.visitType || 'initial', // Pass visit type for follow-up specific prompts
+      attachments: payload.attachments // Pass clinical attachments
     });
 
     if (response?.error) {

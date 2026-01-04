@@ -1175,6 +1175,55 @@ const ProfessionalWorkflowPage = () => {
 
   const normalizeName = (value: string) => value.toLowerCase().trim();
 
+  /**
+   * Normalize test name for deduplication
+   * Removes common prefixes and normalizes formatting
+   * WO-FIX-TESTS-DUPLICADOS-03
+   */
+  const normalizeTestName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/^consider assessing\s+/i, '')
+      .replace(/\s*\(.*?\)\s*/g, '') // Remove parenthetical content
+      .replace(/[^\w\s]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  };
+
+  /**
+   * Check if a test with similar name already exists
+   * Uses normalized comparison to catch duplicates with different formatting
+   * WO-FIX-TESTS-DUPLICADOS-03
+   */
+  const testAlreadyExists = (
+    testName: string,
+    existingTests: EvaluationTestEntry[]
+  ): boolean => {
+    const normalizedNew = normalizeTestName(testName);
+
+    return existingTests.some(test => {
+      const normalizedExisting = normalizeTestName(test.name);
+
+      // Exact match after normalization
+      if (normalizedNew === normalizedExisting) {
+        console.log(`[DEDUP] Exact match found: "${testName}" = "${test.name}"`);
+        return true;
+      }
+
+      // One contains the other (fuzzy match) - only for reasonably long names
+      const minLength = Math.min(normalizedNew.length, normalizedExisting.length);
+      if (minLength > 10) {
+        if (normalizedNew.includes(normalizedExisting) ||
+          normalizedExisting.includes(normalizedNew)) {
+          console.log(`[DEDUP] Fuzzy match found: "${testName}" ≈ "${test.name}"`);
+          return true;
+        }
+      }
+
+      return false;
+    });
+  };
+
   const resetCustomForm = useCallback(() => {
     setCustomTestName("");
     setCustomTestNotes("");
@@ -1378,6 +1427,33 @@ const ProfessionalWorkflowPage = () => {
       isAddingTestsRef.current = false;
     }
   }, [patientIdFromUrl, currentPatient?.id]);
+
+  // ✅ WO-FIX-TESTS-DUPLICADOS-03: Clean up old test names with "Consider assessing" prefix
+  // Run once on mount to clean up legacy test names
+  useEffect(() => {
+    setEvaluationTests(prev => {
+      let cleaned = false;
+      const cleanedTests = prev.map(test => {
+        if (test.name.toLowerCase().startsWith('consider assessing')) {
+          cleaned = true;
+          const newName = test.name.replace(/^consider assessing\s+/i, '');
+          console.log(`[CLEANUP] Renaming: "${test.name}" → "${newName}"`);
+          return { ...test, name: newName };
+        }
+        return test;
+      });
+
+      if (cleaned) {
+        console.log(`[CLEANUP] Cleaned up old test names`);
+        // Persist cleaned names
+        setTimeout(() => {
+          persistEvaluation(cleanedTests);
+        }, 0);
+        return cleanedTests;
+      }
+      return prev;
+    });
+  }, []); // Run once on mount
 
   // Track transcription timestamps
   useEffect(() => {
@@ -1621,12 +1697,22 @@ const ProfessionalWorkflowPage = () => {
     const transcriptText = typeof transcript === 'string' ? transcript : String(transcript || '');
     if (!transcriptText.trim()) return;
     try {
+      // Map ClinicalAttachment to prompt format (extract only needed fields)
+      const promptAttachments = attachments.map(att => ({
+        fileName: att.name,
+        fileType: att.contentType || 'unknown',
+        extractedText: att.extractedText,
+        pageCount: att.pageCount,
+        error: att.error,
+      }));
+
       const payload = {
         text: transcriptText,
         lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : undefined),
         mode,
         timestamp: Date.now(),
-        visitType: visitType === 'follow-up' ? 'follow-up' : 'initial' // Pass visit type for follow-up specific prompts
+        visitType: visitType === 'follow-up' ? 'follow-up' : 'initial', // Pass visit type for follow-up specific prompts
+        attachments: promptAttachments.length > 0 ? promptAttachments : undefined
       };
       await processText({
         ...payload,
@@ -1780,27 +1866,28 @@ const ProfessionalWorkflowPage = () => {
     console.log(`[PHASE2] Total entries collected: ${entriesToAdd.length}`, entriesToAdd.map(e => e.name));
 
     // ✅ PHASE 2 FIX: Add all tests at once using functional update to avoid race conditions
+    // ✅ WO-FIX-TESTS-DUPLICADOS-03: Enhanced deduplication
     if (entriesToAdd.length > 0) {
       setEvaluationTests((currentTests) => {
-        // Filter out duplicates
-        const newTests = entriesToAdd.filter(entry => {
-          const exists = currentTests.some(
-            (test) => test.id === entry.id || normalizeName(test.name) === normalizeName(entry.name)
-          );
+        // Deduplicate: only add tests that don't already exist (using improved matching)
+        const uniqueNewTests = entriesToAdd.filter(newTest => {
+          const exists = testAlreadyExists(newTest.name, currentTests);
           if (exists) {
-            console.log(`[PHASE2] Test "${entry.name}" already exists, skipping`);
-            return false;
+            console.log(`[PHASE2] ⏭️ Skipping duplicate test: "${newTest.name}"`);
           }
-          return true;
+          return !exists;
         });
 
-        if (newTests.length === 0) {
+        if (uniqueNewTests.length === 0) {
           console.log(`[PHASE2] All tests already exist, no new tests to add`);
           return currentTests;
         }
 
-        const finalTests = [...currentTests, ...newTests];
-        console.log(`[PHASE2] ✅ Adding ${newTests.length} new tests. Total: ${finalTests.length}`, finalTests.map(t => t.name));
+        const finalTests = [...currentTests, ...uniqueNewTests];
+        const duplicatesSkipped = entriesToAdd.length - uniqueNewTests.length;
+
+        console.log(`[PHASE2] ✅ Adding ${uniqueNewTests.length} unique tests (${duplicatesSkipped} duplicates skipped). Total: ${finalTests.length}`);
+        console.log(`[PHASE2] Final test list:`, finalTests.map(t => t.name));
 
         // Persist all tests at once
         setTimeout(() => {
