@@ -13,6 +13,7 @@ import type { WhisperSupportedLanguage } from '../../services/OpenAIWhisperServi
 import { AudioWaveform } from '../AudioWaveform';
 import type { ClinicalAttachment } from '../../services/clinicalAttachmentService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
+import { ClinicalAttachmentCard } from '../ClinicalAttachmentCard';
 
 const LANGUAGE_OPTIONS: Array<{ value: WhisperSupportedLanguage; label: string }> = [
   { value: "auto", label: "Auto-detect" },
@@ -180,12 +181,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         <div className="space-y-2">
           <h2 className="text-xl font-medium text-slate-900 font-apple mb-2">Clinical Conversation Capture</h2>
           <p className="text-[15px] text-slate-500 font-light font-apple">
-            Use the built-in recorder or paste a transcript from your recording.
+            Paste your transcript below or use the text area to enter clinical notes.
           </p>
-          <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 max-w-md">
-            <AlertCircle className="mt-0.5 h-4 w-4 text-slate-400" />
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 max-w-md">
+            <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
             <p>
-              AiDuxCare automatically detects English, Canadian French, or Spanish. Accents are supported, but clarity helps the medico-legal record.
+              <span className="font-medium">Voice recording is currently being improved.</span> Please paste your transcript in the text area below. AiDuxCare automatically detects English, Canadian French, or Spanish.
             </p>
           </div>
         </div>
@@ -205,10 +206,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           ) : (
             <button
               onClick={startRecording}
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 font-apple text-[15px]"
+              disabled={true}
+              title="Voice recording is temporarily unavailable. Please paste your transcript in the text area below."
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 text-white font-medium shadow-sm cursor-not-allowed opacity-60 transition-all duration-200 font-apple text-[15px]"
             >
               <Play className="w-4 h-4" />
-              Start Recording
+              Start Recording (Coming Soon)
             </button>
           )}
         </div>
@@ -383,41 +386,16 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             Attach lab work, imaging reports, or patient-provided photos. Files stay in encrypted Firebase Storage.
           </p>
         ) : (
-          <ul className="space-y-2">
+          <div className="space-y-3">
             {attachments.map((attachment) => (
-              <li
+              <ClinicalAttachmentCard
                 key={attachment.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-slate-700">{attachment.name}</span>
-                  <span className="text-xs text-slate-500">
-                    {formatFileSize(attachment.size)} · Uploaded {new Date(attachment.uploadedAt).toLocaleString("en-CA")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={attachment.downloadURL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 transition"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    View
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => handleAttachmentRemove(attachment)}
-                    disabled={removingAttachmentId === attachment.id}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50 font-apple"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    {removingAttachmentId === attachment.id ? 'Removing…' : 'Remove'}
-                  </button>
-                </div>
-              </li>
+                attachment={attachment}
+                onDelete={() => handleAttachmentRemove(attachment)}
+                isRemoving={removingAttachmentId === attachment.id}
+              />
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

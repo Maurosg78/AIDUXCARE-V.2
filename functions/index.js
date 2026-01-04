@@ -338,7 +338,7 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 
     const payload = {
       contents: [{ role: 'user', parts: [{ text: inputText }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 4096, response_mime_type: 'application/json' }
+      generationConfig: { temperature: 0.3, maxOutputTokens: 16384, response_mime_type: 'application/json' }
     };
 
     const r = await fetch(ENDPOINT, {

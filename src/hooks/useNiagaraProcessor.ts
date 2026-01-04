@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
 import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import type { ClinicalAttachment } from '../core/ai/PromptFactory-Canada';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -10,6 +11,7 @@ type NiagaraProxyPayload = {
   timestamp?: number;
   professionalProfile?: ProfessionalProfile | null;
   visitType?: 'initial' | 'follow-up';
+  attachments?: ClinicalAttachment[];
 };
 
 export const useNiagaraProcessor = () => {
@@ -41,13 +43,24 @@ export const useNiagaraProcessor = () => {
 
     setIsAnalyzing(true);
     try {
+      const attachments = typeof payload === 'object' ? payload.attachments : undefined;
+      
+      // Log attachments for debugging
+      if (attachments && attachments.length > 0) {
+        console.log(`[NiagaraProcessor] Including ${attachments.length} attachments in prompt`);
+        attachments.forEach(att => {
+          console.log(`  - ${att.fileName}: ${att.extractedText ? `${att.extractedText.length} chars` : 'no text'}`);
+        });
+      }
+      
       const response = await VertexAIServiceViaFirebase.processWithNiagara({
         text: textString,
         lang,
         mode,
         timestamp,
         professionalProfile: typeof payload === 'object' ? payload.professionalProfile : undefined,
-        visitType: typeof payload === 'object' ? payload.visitType : undefined
+        visitType: typeof payload === 'object' ? payload.visitType : undefined,
+        attachments: attachments
       });
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);

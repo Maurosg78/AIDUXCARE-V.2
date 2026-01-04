@@ -1,0 +1,47 @@
+LUMBAR SPINE MRI REPORT
+
+Patient: Matt Proctor
+Date: December 2024
+Referring Physician: Dr. Smith
+MRI Study: Lumbar Spine with and without contrast
+
+CLINICAL HISTORY:
+45-year-old male with chronic low back pain radiating to left leg. 
+History of progressive symptoms over 6 months. Patient reports numbness 
+in left foot and weakness in left leg.
+
+TECHNIQUE:
+Multiplanar, multisequence MRI of the lumbar spine was performed 
+using 1.5 Tesla magnet. Sagittal T1, T2, and STIR sequences, as well 
+as axial T1 and T2 sequences were obtained through the lumbar spine.
+
+FINDINGS:
+
+L4-L5:
+- Severe central canal stenosis (8mm → 5mm)
+- Large posterior disc extrusion with inferior migration
+- Moderate bilateral foraminal stenosis
+- Thecal sac compression
+- Mass effect on descending nerve roots
+- Facet joint hypertrophy contributing to stenosis
+
+L5-S1:
+- Mild degenerative changes
+- No significant stenosis
+- Small disc bulge without neural compression
+
+L3-L4:
+- Mild disc desiccation
+- No significant pathology
+
+IMPRESSION:
+1. Severe L4-L5 central canal stenosis with disc extrusion
+2. Thecal sac compression requiring urgent evaluation
+3. Recommend neurosurgical consultation
+4. Findings correlate with patient's left leg symptoms
+
+Critical findings communicated to referring physician.
+
+RADIOLOGIST: Dr. Johnson, MD
+DATE REPORTED: December 15, 2024
+

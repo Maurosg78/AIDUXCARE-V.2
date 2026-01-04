@@ -8,7 +8,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src")
     }
   },
-  plugins: [react()],
+  plugins: [react({
+    jsxRuntime: 'automatic',
+    fastRefresh: true,
+  })],
   css: {
     postcss: './postcss.config.cjs',
   },
@@ -42,7 +45,7 @@ export default defineConfig({
     hmr: {
       overlay: true,
       // Forzar recarga completa en cambios de módulos críticos
-      fullReload: true,
+      fullReload: false,
     },
     // Deshabilitar caché del servidor para desarrollo
     headers: {

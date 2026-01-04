@@ -69,6 +69,7 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Significant test findings (positive/negative)
 - Measurable data (ROM degrees, strength grades, pain scales)
 - Observable functional limitations
+- **CRITICAL: Include KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**
 - DO NOT repeat patient's complaints from Subjective
 
 **ASSESSMENT:** Clinical reasoning and diagnosis
@@ -121,7 +122,7 @@ P:
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history. MAX 200 chars. Be concise and focused on what patient reports. Use abbreviations when appropriate.",
-  "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM degrees, strength grades, pain scales). MAX 350 chars. Use numbers and abbreviations. Focus on clinical significance.",
+  "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM degrees, strength grades, pain scales). **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations. Focus on clinical significance.",
   "assessment": "Clinical reasoning: working diagnosis based on S+O findings, brief rationale, key impairments, prognosis. MAX 250 chars. Focus on clinical significance and pattern identification.",
   "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [specific list]\n- Modalities: [TENS/Tecar/US/etc or None]\n- Home Exercises: [specific exercises or None]\n- Patient Education: [topics or None]\n- Goals: [measurable objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
 }
@@ -305,7 +306,7 @@ P:
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: changes since last visit, treatment response, progress, new concerns. MAX 200 chars. Focus on changes and patient-reported outcomes.",
-  "objective": "Measurable clinical findings: re-assessment findings, progress measures, comparison to baseline. MAX 350 chars. Use numbers to show change. Focus on quantifiable progress.",
+  "objective": "Measurable clinical findings: re-assessment findings, progress measures, comparison to baseline. **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers to show change. Focus on quantifiable progress.",
   "assessment": "Clinical reasoning: progress assessment, treatment effectiveness, plan modifications needed. MAX 250 chars. Compare to previous visit and assess response.",
   "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [modifications/progression]\n- Modalities: [TENS/Tecar/US/etc or Continue/None]\n- Home Exercises: [exercises/modifications or None]\n- Patient Education: [topics or None]\n- Goals: [updated objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
 }
@@ -474,6 +475,7 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Significant test findings (positive/negative)
 - Measurable data (ROM degrees, strength grades, pain scales)
 - Observable functional limitations
+- **CRITICAL: Include KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**
 - DO NOT repeat patient's complaints from Subjective
 
 **ASSESSMENT:** Clinical reasoning and diagnosis
@@ -508,7 +510,7 @@ AVOID:
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history. MAX 200 chars. Be concise and focused on what patient reports.",
-  "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM, strength, pain scales), observable limitations. MAX 350 chars. Use numbers and abbreviations.",
+  "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM, strength, pain scales), observable limitations. **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations.",
   "assessment": "Clinical reasoning: working diagnosis based on S+O, brief rationale, key impairments, prognosis. MAX 250 chars. Focus on clinical significance.",
   "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [specific list]\n- Modalities: [TENS/Tecar/US/etc or None]\n- Home Exercises: [specific exercises or None]\n- Patient Education: [topics or None]\n- Goals: [measurable objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
 }
@@ -661,7 +663,7 @@ AVOID:
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: functional limitations, work/activity restrictions, impact. MAX 200 chars. Be concise and focused on certificate-relevant information.",
-  "objective": "Measurable clinical findings: objective findings, measurements, functional capacity. MAX 350 chars. Use numbers and abbreviations.",
+  "objective": "Measurable clinical findings: objective findings, measurements, functional capacity. **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations.",
   "assessment": "Clinical reasoning: focused on certificate purpose, functional capacity, limitations. MAX 250 chars. Focus on clinical significance.",
   "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [if applicable]\n- Modalities: [if applicable or None]\n- Home Exercises: [if applicable or None]\n- Patient Education: [topics or None]\n- Goals: [measurable objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
 }
