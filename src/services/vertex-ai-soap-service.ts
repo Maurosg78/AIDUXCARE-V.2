@@ -462,8 +462,7 @@ function parseSOAPResponse(
   // ✅ WO-PDF-004: Debug logging removed to comply with check-no-soap-logs policy
   // console.log('[Note Builder] Parsing response...');
   // console.log('[Note Builder] Treatment plan type:', typeof soapData?.plan);
-    // console.log('[Note Builder] Treatment plan is object, will serialize');
-  }
+  // console.log('[Note Builder] Treatment plan is object, will serialize');
   // console.log('[Note Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
   // console.log('[Note Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
 

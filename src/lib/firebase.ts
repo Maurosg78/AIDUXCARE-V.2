@@ -5,6 +5,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 import {
   initializeAuth,
   connectAuthEmulator,
@@ -43,6 +44,7 @@ let _app: any;
 let _auth: any;
 let _db: any;
 let _storage: any;
+let _functions: any;
 
 function initFirebaseOnce() {
   if (__IS_TEST__) return; // NO inicializar en tests
@@ -119,6 +121,7 @@ if (!__IS_TEST__) {
   _auth = initAuthWithPersistence();
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
+  _functions = getFunctions(_app, 'northamerica-northeast1');
 
   // eslint-disable-next-line no-console
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
@@ -149,3 +152,4 @@ if (!__IS_TEST__) {
 export const auth = _auth;
 export const db = _db;
 export const storage = _storage;
+export const functions = _functions;
