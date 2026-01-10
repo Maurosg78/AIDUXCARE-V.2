@@ -46,6 +46,7 @@ import {
   hasFieldDefinitions,
   getTestDefinition,
 } from "@/core/msk-tests/library/mskTestLibrary";
+import { sortPhysicalTestsByImportance, getTopPhysicalTests } from "@/utils/sortPhysicalTestsByImportance";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
@@ -57,7 +58,8 @@ import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePat
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
 import { SessionStorage } from "../services/session-storage";
-import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
+// FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
+// import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
 import type { FollowUpDetectionInput } from "../services/followUpDetectionService";
 import {
@@ -296,11 +298,10 @@ const ProfessionalWorkflowPage = () => {
   const {
     processText,
     generateSOAPNote,
-    runVoiceSummary,
-    runVoiceClinicalInfoQuery,
     niagaraResults,
     soapNote,
     isProcessing,
+    reset: resetNiagaraProcessor,
   } = useNiagaraProcessor();
 
   const clinicName = useMemo(
@@ -715,10 +716,31 @@ const ProfessionalWorkflowPage = () => {
 
     const restoreWorkflowState = () => {
       try {
-        const savedState = SessionStorage.getSession(patientId);
+        // ✅ FIX: For initial evaluations (type=initial or no type), DON'T restore ANY state
+        // Everything should start fresh and empty for initial evaluations
+        const isInitialSession = sessionTypeFromUrl === 'initial' || !sessionTypeFromUrl;
 
-        if (!savedState) {
-          return;
+        if (isInitialSession) {
+          // Clear ALL saved state from localStorage for initial evaluations
+          // This ensures a completely fresh start with empty transcript, tests, SOAP, etc.
+          SessionStorage.clearSession(patientId);
+          console.log('[WORKFLOW] ✅ Cleared ALL saved state for initial evaluation - starting completely fresh');
+
+          // Explicitly reset ALL state to empty/initial values for initial evaluations
+          setTranscript('');
+          setEvaluationTests([]);
+          setSelectedEntityIds([]);
+          setLocalSoapNote(null);
+          setActiveTab('analysis'); // Always start at analysis tab for initial evaluations
+          setPhysioNotes(''); // Clear physio notes
+          setAttachments([]); // Clear clinical attachments
+          setAnalysisError(null); // Clear any previous errors
+          setSuccessMessage(null); // Clear any previous success messages
+          setAttachmentError(null); // Clear attachment errors
+          resetNiagaraProcessor(); // Clear niagaraResults and soapNote from previous sessions
+
+          console.log('[WORKFLOW] ✅ All state reset to empty for initial evaluation');
+          return; // Don't restore anything for initial sessions - everything starts empty
         }
 
         // ✅ CRITICAL FIX: Don't restore if URL explicitly specifies followup
@@ -726,16 +748,18 @@ const ProfessionalWorkflowPage = () => {
           return;
         }
 
-        // Restore transcript ONLY if current transcript is empty (don't overwrite user input)
-        if (savedState.transcript && typeof savedState.transcript === 'string' && !transcript?.trim()) {
-          setTranscript(savedState.transcript);
+        // For other session types (wsib, mva, certificate), restore state normally
+        const savedState = SessionStorage.getSession(patientId);
+
+        if (!savedState) {
+          return;
         }
 
         // Restore analysis results (niagaraResults)
         // Note: niagaraResults is managed by useNiagaraProcessor hook, so we need to check if there's a way to restore it
         // For now, we'll restore it through the sharedState if available
 
-        // Restore evaluation tests
+        // Restore evaluation tests (only for non-initial sessions)
         if (savedState.evaluationTests && Array.isArray(savedState.evaluationTests) && savedState.evaluationTests.length > 0) {
           const sanitized = savedState.evaluationTests.map(sanitizeEvaluationEntry);
           setEvaluationTests(sanitized);
@@ -743,23 +767,28 @@ const ProfessionalWorkflowPage = () => {
           console.log('[WORKFLOW] ✅ Restored evaluation tests:', sanitized.length);
         }
 
-        // ✅ CRITICAL FIX: Only restore active tab if URL doesn't specify a type
-        // If URL has type=followup, we already set it to 'soap' in initial state
-        if (!sessionTypeFromUrl && savedState.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedState.activeTab)) {
+        // Restore active tab (only for non-initial sessions)
+        if (savedState.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedState.activeTab)) {
           setActiveTab(savedState.activeTab as ActiveTab);
           console.log('[WORKFLOW] ✅ Restored active tab:', savedState.activeTab);
         }
 
-        // Restore SOAP note if exists
+        // Restore SOAP note if exists (only for non-initial sessions)
         if (savedState.localSoapNote) {
           setLocalSoapNote(savedState.localSoapNote);
           console.log('[WORKFLOW] ✅ Restored SOAP note');
         }
 
-        // Restore selected entity IDs
+        // Restore selected entity IDs (only for non-initial sessions)
         if (savedState.selectedEntityIds && Array.isArray(savedState.selectedEntityIds)) {
           setSelectedEntityIds(savedState.selectedEntityIds);
           console.log('[WORKFLOW] ✅ Restored selected entity IDs:', savedState.selectedEntityIds.length);
+        }
+
+        // Restore transcript (only for non-initial sessions)
+        if (savedState.transcript && typeof savedState.transcript === 'string' && !transcript?.trim()) {
+          setTranscript(savedState.transcript);
+          console.log('[WORKFLOW] ✅ Restored transcript');
         }
       } catch (error) {
         console.error('[WORKFLOW] Error restoring workflow state:', error);
@@ -1505,7 +1534,7 @@ const ProfessionalWorkflowPage = () => {
             originalIndex, // Store original index
             rawName: trimmed,
             displayName: trimmed,
-            match: matchTestName(trimmed),
+            match: matchTestName(trimmed, detectedCaseRegion), // ✅ FIX: Pass detectedCaseRegion for region filtering
           };
         }
         const name = test.test || test.name || `Suggested test ${originalIndex + 1}`;
@@ -1516,11 +1545,11 @@ const ProfessionalWorkflowPage = () => {
           originalIndex, // Store original index
           rawName: name,
           displayName: description ? `${name} — ${description}` : name,
-          match: matchTestName(name),
+          match: matchTestName(name, detectedCaseRegion), // ✅ FIX: Pass detectedCaseRegion for region filtering
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null); // Filter nulls but keep original indices
-  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type]);
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion]); // ✅ FIX: Add detectedCaseRegion to dependencies
 
   const pendingAiSuggestions = useMemo(() => {
     const toKey = (value: string) => value?.toLowerCase().trim() ?? "";
@@ -1551,41 +1580,107 @@ const ProfessionalWorkflowPage = () => {
 
     const rawTests = niagaraResults.evaluaciones_fisicas_sugeridas || [];
     // ✅ PHASE 2 FIX: Keep original index in physicalTests to match aiSuggestions
-    const physicalTests = rawTests
+    // ✅ FASE 1 FIX: Only show top 5 tests in Phase 1 (AnalysisTab)
+    // Tests 6+ will be available in sidebar during Phase 2 (EvaluationTab)
+    const allPhysicalTests = rawTests
       .map((test: any, originalIndex: number) => {
         if (!test) return null;
+
+        const testName = typeof test === "string" ? test : (test.test || test.name || "Physical test");
+        // ✅ FIX: Match with library to get sensitivity/specificity values for score calculation
+        // ✅ FIX: Pass detectedCaseRegion for region filtering (prevents wrist tests in lumbar cases)
+        const libraryMatch = matchTestName(testName, detectedCaseRegion);
 
         if (typeof test === "string") {
           return {
             originalIndex, // ✅ PHASE 2: Store original index for ID mapping
-            name: test,
-            sensitivity: undefined,
-            specificity: undefined,
+            name: testName,
+            test: testName, // Add test field for compatibility
+            // ✅ FIX: Use library match values for score calculation if available
+            sensitivity: libraryMatch?.sensitivity ? Number(libraryMatch.sensitivity) : undefined,
+            specificity: libraryMatch?.specificity ? Number(libraryMatch.specificity) : undefined,
+            sensitivityQualitative: (libraryMatch as any)?.sensitivityQualitative || undefined,
+            specificityQualitative: (libraryMatch as any)?.specificityQualitative || undefined,
+            evidence_level: (libraryMatch as any)?.evidence_level || test.evidence_level || test.evidencia,
+            evidencia: test.evidencia || test.evidence_level || (libraryMatch as any)?.evidence_level,
             indication: "",
-            justification: ""
+            justification: "",
+            libraryMatch: libraryMatch // Store match for reference
           };
         }
 
         return {
           originalIndex, // ✅ PHASE 2: Store original index for ID mapping
-          name: test.test || test.name || "Physical test",
+          name: testName,
+          test: testName, // Add test field for compatibility
+          // ✅ FIX: Priority: Library match values > Vertex AI values > undefined
           sensitivity:
-            test.sensibilidad !== undefined
-              ? Number(test.sensibilidad)
-              : test.sensitivity !== undefined
-                ? Number(test.sensitivity)
-                : undefined,
+            libraryMatch?.sensitivity !== undefined
+              ? Number(libraryMatch.sensitivity)
+              : test.sensibilidad !== undefined
+                ? Number(test.sensibilidad)
+                : test.sensitivity !== undefined
+                  ? Number(test.sensitivity)
+                  : undefined,
           specificity:
-            test.especificidad !== undefined
-              ? Number(test.especificidad)
-              : test.specificity !== undefined
-                ? Number(test.specificity)
-                : undefined,
+            libraryMatch?.specificity !== undefined
+              ? Number(libraryMatch.specificity)
+              : test.especificidad !== undefined
+                ? Number(test.especificidad)
+                : test.specificity !== undefined
+                  ? Number(test.specificity)
+                  : undefined,
+          sensitivityQualitative: (libraryMatch as any)?.sensitivityQualitative || test.sensitivityQualitative || undefined,
+          specificityQualitative: (libraryMatch as any)?.specificityQualitative || test.specificityQualitative || undefined,
+          evidence_level: test.evidence_level || test.evidencia || (libraryMatch as any)?.evidence_level,
+          evidencia: test.evidencia || test.evidence_level || (libraryMatch as any)?.evidence_level,
           indication: test.objetivo || test.indicacion || "",
-          justification: test.justificacion || ""
+          justification: test.justificacion || test.rationale || "",
+          libraryMatch: libraryMatch // Store match for reference
         };
       })
       .filter(Boolean) ?? [];
+
+    // ✅ FASE 1 FIX: Sort by importance using average score (sensitivity + specificity) / 2
+    // Then limit to top 5 for Phase 1 display
+    // Tests 6+ will be shown in sidebar during Phase 2 (EvaluationTab)
+    const sortedTests = sortPhysicalTestsByImportance(allPhysicalTests);
+    const { topTests: physicalTests, remainingTests: additionalPhysicalTests } = getTopPhysicalTests(sortedTests, 5);
+
+    // ✅ CRITICAL: Ensure physicalTests only contains top 5 for Phase 1
+    // Use slice to guarantee exactly 5 tests, even if getTopPhysicalTests returns more
+    const finalPhysicalTests = Array.isArray(physicalTests) ? physicalTests.slice(0, 5) : [];
+
+    // ✅ VALIDATION: Ensure we have exactly 5 or fewer tests
+    if (finalPhysicalTests.length > 5) {
+      console.error('[interactiveResults] ❌ ERROR: finalPhysicalTests has more than 5 tests, forcing to exactly 5');
+      finalPhysicalTests.splice(5); // Force to exactly 5
+    }
+
+    console.log('[interactiveResults] Physical tests calculation:', {
+      totalTestsFromVertex: allPhysicalTests.length,
+      topTestsCount: physicalTests.length,
+      finalPhysicalTestsCount: finalPhysicalTests.length,
+      remainingTestsCount: additionalPhysicalTests.length,
+      topTestsNames: finalPhysicalTests.map((t: any) => ({
+        name: t.name || t.test,
+        originalIndex: t.originalIndex,
+        sensitivity: t.sensitivity !== undefined ? t.sensitivity : (t.sensitivityQualitative || 'N/A'),
+        specificity: t.specificity !== undefined ? t.specificity : (t.specificityQualitative || 'N/A'),
+        avgScore: t.sensitivity !== undefined && t.specificity !== undefined ?
+          ((t.sensitivity + t.specificity) / 2).toFixed(2) :
+          (t.sensitivityQualitative && t.specificityQualitative ? 'calculated' : 'N/A')
+      })),
+      remainingTestsNames: additionalPhysicalTests.map((t: any) => ({
+        name: t.name || t.test,
+        originalIndex: t.originalIndex
+      }))
+    });
+
+    // ✅ ASSERTION: Final validation before returning
+    if (finalPhysicalTests.length > 5) {
+      console.error('[interactiveResults] ❌ CRITICAL ERROR: finalPhysicalTests still has more than 5 tests after all validations!');
+    }
 
     const symptomEntities =
       (niagaraResults.hallazgos_clinicos || []).map((text: string, index: number) => ({
@@ -1619,10 +1714,17 @@ const ProfessionalWorkflowPage = () => {
     const biopsychosocial_functional_limitations = niagaraResults.biopsychosocial_functional_limitations || [];
     const biopsychosocial_patient_strengths = niagaraResults.biopsychosocial_patient_strengths || [];
 
+    // ✅ FASE 1 FIX: Build interactiveResults with ONLY top 5 tests for Phase 1 display
+    // Tests 6+ will be shown in sidebar during Phase 2 (EvaluationTab)
+    const { evaluaciones_fisicas_sugeridas: _, ...niagaraResultsWithoutTests } = niagaraResults;
+
+    // ✅ CRITICAL: Return interactiveResults with ONLY top 5 tests for Phase 1
     return {
-      ...niagaraResults,
+      ...niagaraResultsWithoutTests, // Spread without evaluaciones_fisicas_sugeridas to avoid confusion
       entities: [...symptomEntities, ...medicationEntities, ...historyEntities],
-      physicalTests,
+      physicalTests: finalPhysicalTests, // ✅ FASE 1 FIX: ONLY top 5 tests (limited above, sorted by average score)
+      // ✅ IMPORTANT: evaluaciones_fisicas_sugeridas is NOT included here - we use physicalTests instead
+      // Tests 6+ are available via aiSuggestions in EvaluationTab sidebar
       yellowFlags: [
         ...(niagaraResults.yellow_flags || []),
         ...psychosocial,
@@ -1641,7 +1743,7 @@ const ProfessionalWorkflowPage = () => {
       biopsychosocial_functional_limitations,
       biopsychosocial_patient_strengths
     };
-  }, [niagaraResults]);
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion]); // ✅ FIX: Add detectedCaseRegion to dependencies for region filtering
 
   const physicalExamResults = useMemo(
     () =>
@@ -1921,17 +2023,46 @@ const ProfessionalWorkflowPage = () => {
       });
     }, 500);
 
+    // ✅ FIX: Only dismiss top 5 tests that were NOT selected (don't dismiss tests 6+)
+    // Tests 6+ should remain available in sidebar as additional options for the physio
     const selectedKeys = new Set(
       selectedEntityIds
         .filter((id) => id.startsWith("physical-"))
         .map((id) => parseInt(id.split("-")[1], 10))
     );
-    const newlyDismissed = aiSuggestions
+
+    // ✅ CRITICAL: Only dismiss tests from top 5 (indices 0-4) that were NOT selected
+    // Tests 6+ (indices 5+) should NOT be dismissed - they should appear in sidebar
+    const top5Tests = aiSuggestions.filter(item => item.key < 5); // Top 5 tests (indices 0-4)
+    const top5NotSelected = top5Tests
       .filter((item) => !selectedKeys.has(item.key))
       .map((item) => item.key);
 
-    console.log(`[PHASE2] Dismissing ${newlyDismissed.length} suggestions:`, newlyDismissed);
-    setDismissedSuggestionKeys((prev) => Array.from(new Set([...prev, ...newlyDismissed])));
+    // Tests 6+ (indices 5+) are NEVER dismissed - they remain available in sidebar
+    const tests6Plus = aiSuggestions.filter(item => item.key >= 5);
+
+    console.log(`[PHASE2] Top 5 tests status:`, {
+      totalTop5: top5Tests.length,
+      selected: Array.from(selectedKeys).filter(k => k < 5).length,
+      notSelected: top5NotSelected.length,
+      notSelectedIndices: top5NotSelected,
+      tests6PlusCount: tests6Plus.length,
+      tests6PlusIndices: tests6Plus.map(t => t.key),
+      tests6PlusNames: tests6Plus.map(t => t.rawName)
+    });
+
+    // ✅ FIX: Only dismiss top 5 tests that were NOT selected
+    // Tests 6+ will remain available in sidebar (not dismissed)
+    if (top5NotSelected.length > 0) {
+      console.log(`[PHASE2] Dismissing ${top5NotSelected.length} top 5 tests that were NOT selected:`, top5NotSelected);
+      setDismissedSuggestionKeys((prev) => Array.from(new Set([...prev, ...top5NotSelected])));
+    } else {
+      console.log(`[PHASE2] ✅ All top 5 tests were selected - nothing to dismiss`);
+    }
+
+    if (tests6Plus.length > 0) {
+      console.log(`[PHASE2] ✅ Keeping ${tests6Plus.length} additional tests (6+) available in sidebar:`, tests6Plus.map(t => ({ index: t.key, name: t.rawName })));
+    }
 
     console.log(`[PHASE2] Switching to evaluation tab`);
     setActiveTab("evaluation");
@@ -2703,8 +2834,8 @@ const ProfessionalWorkflowPage = () => {
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-10">
         {/* ✅ WORKFLOW OPTIMIZATION: Workflow Selector */}
-        {/* Only show selector if not explicitly follow-up in URL (to avoid confusion) */}
-        {workflowDetected && currentPatient && user?.uid && !isExplicitFollowUp && (
+        {/* WO-002: Removed manual session type selector - system auto-detects Initial vs Follow-up */}
+        {/* {workflowDetected && currentPatient && user?.uid && !isExplicitFollowUp && (
           <WorkflowSelector
             patientId={patientId}
             userId={user.uid}
@@ -2714,7 +2845,7 @@ const ProfessionalWorkflowPage = () => {
               // Manual override handled by WorkflowSelector
             }}
           />
-        )}
+        )} */}
 
         {/* ✅ FOLLOW-UP WORKFLOW: Show explicit follow-up indicator when URL has type=followup */}
         {isExplicitFollowUp && workflowRoute && (
@@ -2852,6 +2983,7 @@ const ProfessionalWorkflowPage = () => {
               completedCount={completedCount}
               detectedCaseRegion={detectedCaseRegion}
               pendingAiSuggestions={pendingAiSuggestions}
+              allAiSuggestions={aiSuggestions} // ✅ NEW: Pass ALL suggestions (not filtered) for top 5 calculation
               isTestAlreadySelected={isTestAlreadySelected}
               addEvaluationTest={addEvaluationTest}
               removeEvaluationTest={removeEvaluationTest}

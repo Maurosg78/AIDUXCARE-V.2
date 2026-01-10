@@ -4,6 +4,7 @@ import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react
 import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
 import { useEditableResults } from '../hooks/useEditableResults';
+import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sortPhysicalTestsByImportance';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -18,10 +19,63 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 }) => {
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
   
-  const physicalTests = useMemo(() => 
-    editedResults?.physicalTests || [], 
-    [editedResults?.physicalTests]
-  );
+  // ✅ FASE 1: Sort physical tests by importance and show ONLY top 5 in Phase 1
+  // Tests 6+ will appear in sidebar in Phase 2 (EvaluationTab)
+  const physicalTests = useMemo(() => {
+    // ✅ CRITICAL: Use results.physicalTests (from interactiveResults) which is already limited to top 5
+    // NOT results.evaluaciones_fisicas_sugeridas which contains all tests
+    const rawTests = editedResults?.physicalTests || [];
+    
+    console.log('[ClinicalAnalysisResults] Raw physicalTests from editedResults:', {
+      count: rawTests.length,
+      tests: rawTests.map((t: any) => ({ 
+        name: t.name || t.test, 
+        originalIndex: t.originalIndex,
+        sensitivity: t.sensitivity,
+        specificity: t.specificity,
+        sensitivityQualitative: t.sensitivityQualitative,
+        specificityQualitative: t.specificityQualitative,
+        evidence_level: t.evidence_level || t.evidencia
+      }))
+    });
+    
+    // ✅ NOTE: interactiveResults.physicalTests is already limited to top 5 in ProfessionalWorkflowPage
+    // But we still need to sort them by importance (average score) in case they weren't sorted correctly
+    const sorted = sortPhysicalTestsByImportance(rawTests);
+    
+    // ✅ FASE 1 FIX: Limit to top 5 tests for Phase 1 display
+    // Tests 6+ will be available in sidebar during Phase 2 (EvaluationTab)
+    const { topTests, remainingTests } = getTopPhysicalTests(sorted, 5);
+    
+    // ✅ CRITICAL: Ensure we have exactly 5 or fewer tests
+    // Use slice to guarantee exactly 5 tests, even if getTopPhysicalTests returns more
+    const finalTests = Array.isArray(topTests) ? topTests.slice(0, 5) : [];
+    
+    // ✅ VALIDATION: Ensure we have exactly 5 or fewer tests
+    if (finalTests.length > 5) {
+      console.error('[ClinicalAnalysisResults] ❌ ERROR: finalTests has more than 5 tests, forcing to exactly 5');
+      finalTests.splice(5); // Force to exactly 5
+    }
+    
+    console.log('[ClinicalAnalysisResults] Limited to top 5:', {
+      totalTestsFromEditedResults: rawTests.length,
+      topTestsCount: topTests.length,
+      finalTestsCount: finalTests.length,
+      remainingTestsCount: remainingTests.length,
+      topTestsNames: finalTests.map((t: any) => ({ 
+        name: t.name || t.test, 
+        originalIndex: t.originalIndex,
+        avgScore: t.sensitivity && t.specificity ? ((t.sensitivity + t.specificity) / 2).toFixed(2) : 'N/A'
+      }))
+    });
+    
+    // ✅ ASSERTION: Final validation before returning
+    if (finalTests.length > 5) {
+      console.error('[ClinicalAnalysisResults] ❌ CRITICAL ERROR: finalTests still has more than 5 tests after all validations!');
+    }
+    
+    return finalTests;
+  }, [editedResults?.physicalTests]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -48,12 +102,18 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         break;
         
       case 'physical':
-        // ✅ PHASE 2 FIX: Use originalIndex if available, otherwise fallback to i
-        idsToSelect = physicalTests.map((test, i) => {
+        // ✅ FIX: physicalTests already contains only top 5 (from useMemo above)
+        // So we can directly map all physicalTests - they're already the top 5
+        idsToSelect = physicalTests.map((test) => {
           if (typeof test === "object" && test.originalIndex !== undefined) {
             return `physical-${test.originalIndex}`;
           }
-          return `physical-${i}`;
+          // Fallback: find index if originalIndex not available
+          const index = physicalTests.findIndex(t => 
+            (typeof t === 'string' && typeof test === 'string' && t === test) ||
+            (typeof t === 'object' && typeof test === 'object' && t.name === test.name)
+          );
+          return `physical-${index >= 0 ? index : 0}`;
         });
         break;
         
@@ -299,12 +359,28 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             if (typeof test === "object") {
               const evidenceParts: string[] = [];
 
-              if (test.sensitivity != null) {
-                evidenceParts.push(`Sensitivity ${Math.round(test.sensitivity * 100)}%`);
+              // ✅ FIX: Solo mostrar sensitivity si es un número válido (no NaN, no undefined, no null, no "unknown")
+              const sensitivity = test.sensitivity || test.sensibilidad;
+              if (sensitivity != null && 
+                  typeof sensitivity === 'number' && 
+                  !isNaN(sensitivity) && 
+                  sensitivity !== "unknown" &&
+                  sensitivity >= 0 && 
+                  sensitivity <= 1) {
+                evidenceParts.push(`Sensitivity ${Math.round(sensitivity * 100)}%`);
               }
-              if (test.specificity != null) {
-                evidenceParts.push(`Specificity ${Math.round(test.specificity * 100)}%`);
+              
+              // ✅ FIX: Solo mostrar specificity si es un número válido (no NaN, no undefined, no null, no "unknown")
+              const specificity = test.specificity || test.especificidad;
+              if (specificity != null && 
+                  typeof specificity === 'number' && 
+                  !isNaN(specificity) && 
+                  specificity !== "unknown" &&
+                  specificity >= 0 && 
+                  specificity <= 1) {
+                evidenceParts.push(`Specificity ${Math.round(specificity * 100)}%`);
               }
+              
               if (test.evidencia || test.evidence || test.evidence_level) {
                 const level = test.evidencia || test.evidence || test.evidence_level;
                 evidenceParts.push(`Evidence level: ${String(level)}`);
