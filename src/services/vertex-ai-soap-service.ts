@@ -311,7 +311,7 @@ export async function generateSOAPNote(
     
     // Log warnings for quality issues (guidelines exceeded, repetition)
     if (validation.warnings.length > 0) {
-      console.log('[SOAP Service] Quality guidelines:', validation.warnings);
+      // console.log('[SOAP Service] Quality guidelines:', validation.warnings);
     }
     
     if (validation.repetitionCheck.hasRepetition) {
