@@ -4,10 +4,41 @@ import { BrowserRouter } from 'react-router-dom';
 import { FeedbackWidget } from '../FeedbackWidget';
 import { FeedbackService } from '@/services/feedbackService';
 
+// Mock logger FIRST (before any imports that use it)
+vi.mock('@/shared/utils/logger', () => ({
+  default: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
+// Mock useAuth
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { uid: 'test-user-123' },
+  }),
+}));
+
 // Mock FeedbackService
 vi.mock('@/services/feedbackService', () => ({
   FeedbackService: {
-    submitFeedback: vi.fn()
+    submitFeedback: vi.fn(),
+    getAutoContext: vi.fn().mockReturnValue({
+      url: 'http://localhost:5173/workflow',
+      userAgent: 'test-agent',
+      context: {
+        currentPage: '/workflow',
+      },
+    }),
+    getEnrichedContext: vi.fn().mockReturnValue({
+      url: 'http://localhost:5173/workflow',
+      userAgent: 'test-agent',
+      context: {
+        currentPage: '/workflow',
+      },
+      timestamp: new Date().toISOString(),
+    }),
   }
 }));
 
@@ -44,20 +75,20 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       // Fill form and submit
-      const messageInput = screen.getByPlaceholderText(/describe/i);
-      fireEvent.change(messageInput, { target: { value: 'Test feedback message' } });
+      const descriptionInput = screen.getByLabelText(/description/i);
+      fireEvent.change(descriptionInput, { target: { value: 'Test feedback message' } });
 
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole('button', { name: /submit|enviar/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(FeedbackService.submitFeedback).toHaveBeenCalledWith(
           expect.objectContaining({
-            message: 'Test feedback message'
+            description: 'Test feedback message'
           })
         );
       });
@@ -78,13 +109,13 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/describe/i);
-      fireEvent.change(messageInput, { target: { value: 'Test' } });
+      const descriptionInput = screen.getByLabelText(/description/i);
+      fireEvent.change(descriptionInput, { target: { value: 'Test' } });
 
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole('button', { name: /submit|enviar/i });
       fireEvent.click(submitButton);
 
       // Should show loading state
@@ -104,13 +135,13 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/describe/i);
-      fireEvent.change(messageInput, { target: { value: 'Test feedback' } });
+      const descriptionInput = screen.getByLabelText(/description/i);
+      fireEvent.change(descriptionInput, { target: { value: 'Test feedback' } });
 
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole('button', { name: /submit|enviar/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
@@ -131,13 +162,13 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/describe/i);
-      fireEvent.change(messageInput, { target: { value: 'Test feedback' } });
+      const descriptionInput = screen.getByLabelText(/description/i);
+      fireEvent.change(descriptionInput, { target: { value: 'Test feedback' } });
 
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole('button', { name: /submit|enviar/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
@@ -162,13 +193,13 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
-      const messageInput = screen.getByPlaceholderText(/describe/i);
-      fireEvent.change(messageInput, { target: { value: 'Test' } });
+      const descriptionInput = screen.getByLabelText(/description/i);
+      fireEvent.change(descriptionInput, { target: { value: 'Test' } });
 
-      const submitButton = screen.getByRole('button', { name: /submit/i });
+      const submitButton = screen.getByRole('button', { name: /submit|enviar/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
