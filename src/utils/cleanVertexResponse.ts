@@ -14,7 +14,7 @@ export interface ClinicalAnalysis {
   red_flags: string[];
   yellow_flags: string[];
   evaluaciones_fisicas_sugeridas: any[];
-  plan_tratamiento_sugerido: string[];
+  plan_tratamiento_sugerido?: string[]; // WO-ELIMINATE-PREMATURE-PLAN: Optional - not generated in first call (requires objective findings)
   derivacion_recomendada: string;
   pronostico_estimado: string;
   notas_seguridad: string;
@@ -93,24 +93,90 @@ const mapPhysicalTests = (tests: unknown): any[] => {
 
           if (typeof item === "object") {
             const name = item.name || item.test || "Physical test";
+            
+            // ✅ FIX: Handle both numeric and qualitative sensitivity/specificity values
+            // Vertex AI may provide numeric (0-1) or qualitative ("high"/"moderate"/"low") values
+            const sensitivityValue = item.sensibilidad !== undefined
+              ? item.sensibilidad
+              : item.sensitivity !== undefined
+                ? item.sensitivity
+                : undefined;
+            const specificityValue = item.especificidad !== undefined
+              ? item.especificidad
+              : item.specificity !== undefined
+                ? item.specificity
+                : undefined;
+            
+            // ✅ CTO RECOMMENDATION: Convert numeric strings to numbers, preserve qualitative strings, handle "unknown"
+            // Handle "unknown" values explicitly (Vertex AI will use "unknown" when no source available)
+            const sensitivityIsUnknown = sensitivityValue === "unknown" || sensitivityValue === null || sensitivityValue === undefined;
+            const specificityIsUnknown = specificityValue === "unknown" || specificityValue === null || specificityValue === undefined;
+            
+            // Convert numeric strings to numbers, preserve qualitative strings ("high"/"moderate"/"low"), preserve "unknown"
+            const sensitivity = sensitivityIsUnknown
+              ? undefined // "unknown" becomes undefined for calculation purposes
+              : typeof sensitivityValue === 'string' && !isNaN(Number(sensitivityValue))
+                ? Number(sensitivityValue)
+                : typeof sensitivityValue === 'string' && (sensitivityValue.toLowerCase() === 'high' || sensitivityValue.toLowerCase() === 'moderate' || sensitivityValue.toLowerCase() === 'low')
+                  ? sensitivityValue.toLowerCase() // Preserve qualitative values
+                  : typeof sensitivityValue === 'number'
+                    ? sensitivityValue
+                    : undefined;
+            
+            const specificity = specificityIsUnknown
+              ? undefined // "unknown" becomes undefined for calculation purposes
+              : typeof specificityValue === 'string' && !isNaN(Number(specificityValue))
+                ? Number(specificityValue)
+                : typeof specificityValue === 'string' && (specificityValue.toLowerCase() === 'high' || specificityValue.toLowerCase() === 'moderate' || specificityValue.toLowerCase() === 'low')
+                  ? specificityValue.toLowerCase() // Preserve qualitative values
+                  : typeof specificityValue === 'number'
+                    ? specificityValue
+                    : undefined;
+            
+            // ✅ CTO RECOMMENDATION: Validate for hallucinations - test has sensitivity/specificity but no source
+            const hasSource = item.source && item.source !== "unknown" && item.source !== "clinical_reasoning";
+            const hasScores = (sensitivity !== undefined && sensitivity !== "unknown") || (specificity !== undefined && specificity !== "unknown");
+            
+            if (hasScores && !hasSource) {
+              // ✅ CTO RECOMMENDATION: Flag potential hallucination - test has scores but no valid source
+              console.warn(`[Test Scoring] ⚠️ POTENTIAL HALLUCINATION: "${name}" has sensitivity/specificity values but no valid source. Source provided: "${item.source}". Discarding scores.`);
+              // Discard suspicious scores - set to undefined to use evidence level instead
+              const sanitizedTest = {
+                test: name,
+                sensibilidad: undefined,
+                especificidad: undefined,
+                sensitivity: undefined,
+                specificity: undefined,
+                sensitivityQualitative: undefined,
+                specificityQualitative: undefined,
+                objetivo: item.objective || item.objetivo || item.indicacion || "",
+                contraindicado_si: item.contraindicado_si || item.contraindications || "",
+                justificacion: buildTestJustification(item),
+                evidencia: item.evidence_level || item.evidencia,
+                evidence_level: item.evidence_level || item.evidencia,
+                source: "unknown", // Mark source as unknown (scores discarded)
+                rationale: item.rationale || item.justificacion || buildTestJustification(item),
+                region: item.region || undefined
+              };
+              return sanitizedTest;
+            }
+            
             return {
               test: name,
-              sensibilidad:
-                item.sensibilidad !== undefined
-                  ? Number(item.sensibilidad)
-                  : item.sensitivity !== undefined
-                    ? Number(item.sensitivity)
-                    : undefined,
-              especificidad:
-                item.especificidad !== undefined
-                  ? Number(item.especificidad)
-                  : item.specificity !== undefined
-                    ? Number(item.specificity)
-                    : undefined,
+              sensibilidad: sensitivity,
+              especificidad: specificity,
+              sensitivity: sensitivity, // Add English field for compatibility
+              specificity: specificity, // Add English field for compatibility
+              sensitivityQualitative: typeof sensitivity === 'string' && sensitivity !== 'unknown' ? sensitivity : undefined, // Preserve qualitative values (not "unknown")
+              specificityQualitative: typeof specificity === 'string' && specificity !== 'unknown' ? specificity : undefined, // Preserve qualitative values (not "unknown")
               objetivo: item.objective || item.objetivo || item.indicacion || "",
               contraindicado_si: item.contraindicado_si || item.contraindications || "",
               justificacion: buildTestJustification(item),
-              evidencia: item.evidence_level || item.evidencia
+              evidencia: item.evidence_level || item.evidencia,
+              evidence_level: item.evidence_level || item.evidencia,
+              source: item.source || "unknown", // ✅ CTO: Default to "unknown" if no source provided
+              rationale: item.rationale || item.justificacion || buildTestJustification(item),
+              region: item.region || undefined
             };
           }
 
@@ -135,7 +201,7 @@ const DEFAULT_RESULT: ClinicalAnalysis = {
   red_flags: [],
   yellow_flags: [],
   evaluaciones_fisicas_sugeridas: DEFAULT_TESTS,
-  plan_tratamiento_sugerido: [],
+  // plan_tratamiento_sugerido: [], // WO-ELIMINATE-PREMATURE-PLAN: Not generated in first call - treatment plan requires objective findings
   derivacion_recomendada: "",
   pronostico_estimado: "",
   notas_seguridad: "",
@@ -209,7 +275,7 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
     red_flags: redFlags,
     yellow_flags: combinedYellow,
     evaluaciones_fisicas_sugeridas: mapPhysicalTests(payload.recommended_physical_tests),
-    plan_tratamiento_sugerido: [],
+    // plan_tratamiento_sugerido: [], // WO-ELIMINATE-PREMATURE-PLAN: Not generated in first call - treatment plan requires objective findings
     derivacion_recomendada: "",
     pronostico_estimado: "",
     notas_seguridad: alertNotes.join(" • "),
@@ -238,7 +304,7 @@ const mapLegacyPayload = (payload: any): ClinicalAnalysis => {
   clone.red_flags = cleanFlags(ensureStringArray(payload?.red_flags));
   clone.yellow_flags = cleanFlags(ensureStringArray(payload?.yellow_flags));
   clone.evaluaciones_fisicas_sugeridas = mapPhysicalTests(payload?.evaluaciones_fisicas_sugeridas);
-  clone.plan_tratamiento_sugerido = [];
+  // clone.plan_tratamiento_sugerido = []; // WO-ELIMINATE-PREMATURE-PLAN: Not generated in first call - treatment plan requires objective findings
   clone.derivacion_recomendada = String(payload?.derivacion_recomendada || "");
   clone.pronostico_estimado = String(payload?.pronostico_estimado || "");
   clone.notas_seguridad = String(payload?.notas_seguridad || "");

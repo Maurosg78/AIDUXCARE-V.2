@@ -7,11 +7,12 @@
  * @compliance PHIPA compliant, ISO 27001 auditable
  */
 
-import React from 'react';
-import { Stethoscope, Loader2, FileText } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Stethoscope, Loader2, FileText, ChevronRight } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
 import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDefinitions } from '../../../core/msk-tests/library/mskTestLibrary';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
+import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 
@@ -146,6 +147,12 @@ export interface EvaluationTabProps {
     rawName: string;
     match?: MskTestDefinition | null;
   }>;
+  // ✅ NEW: All AI suggestions (not filtered by "already selected") for calculating top 5
+  allAiSuggestions?: Array<{
+    key: number;
+    rawName: string;
+    match?: MskTestDefinition | null;
+  }>;
   
   // Test library
   isTestAlreadySelected: (id: string, name: string) => boolean;
@@ -185,6 +192,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   completedCount,
   detectedCaseRegion,
   pendingAiSuggestions,
+  allAiSuggestions, // ✅ NEW: All suggestions (not filtered) for top 5 calculation
   isTestAlreadySelected,
   addEvaluationTest,
   removeEvaluationTest,
@@ -212,6 +220,127 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
 
+  // ✅ FIX: Separate ALL AI suggestions into top 5 (phase 1) and additional tests (sidebar)
+  // IMPORTANT: Calculate top 5 based on ALL suggestions (not filtered), then filter only top 5 for display
+  // This ensures sidebar always shows additional tests even if top 5 are already added
+  const { topTests: topAiSuggestions, remainingTests: additionalAiSuggestions } = useMemo(() => {
+    // ✅ CRITICAL: Use allAiSuggestions (ALL suggestions, not filtered) if available
+    // This ensures we calculate top 5 from ALL tests, not just pending ones
+    const allSuggestions = allAiSuggestions && allAiSuggestions.length > 0 
+      ? allAiSuggestions 
+      : pendingAiSuggestions;
+    
+    console.log('[EvaluationTab] Calculating top 5:', {
+      allAiSuggestionsCount: allAiSuggestions?.length || 0,
+      pendingAiSuggestionsCount: pendingAiSuggestions.length,
+      usingAll: !!(allAiSuggestions && allAiSuggestions.length > 0),
+      allSuggestionsCount: allSuggestions.length
+    });
+    
+    if (allSuggestions.length === 0) {
+      return { topTests: [], remainingTests: [] };
+    }
+
+    // Convert to format compatible with sortPhysicalTestsByImportance
+    // Include sensitivityQualitative and specificityQualitative from match for score calculation
+    const formattedSuggestions = allSuggestions.map((item) => {
+      const match = item.match;
+      const sensitivity = match?.sensitivity;
+      const specificity = match?.specificity;
+      const sensitivityQual = (match as any)?.sensitivityQualitative;
+      const specificityQual = (match as any)?.specificityQualitative;
+      
+      return {
+        name: match?.name || item.rawName,
+        test: match?.name || item.rawName,
+        evidence_level: match?.evidence_level,
+        sensitivity: typeof sensitivity === 'number' ? sensitivity : undefined,
+        specificity: typeof specificity === 'number' ? specificity : undefined,
+        sensitivityQualitative: sensitivityQual || (typeof sensitivity === 'string' ? sensitivity : undefined),
+        specificityQualitative: specificityQual || (typeof specificity === 'string' ? specificity : undefined),
+        justification: match?.description || (match as any)?.rationale,
+        originalIndex: item.key,
+        match: match,
+        rawName: item.rawName,
+      };
+    });
+
+    // ✅ Sort by importance using average score (sensitivity + specificity) / 2
+    // This determines the top 5 best tests based on clinical value
+    const sortedAndSeparated = getTopPhysicalTests(formattedSuggestions, 5);
+    
+    console.log('[EvaluationTab] Top 5 calculated:', {
+      topTestsCount: sortedAndSeparated.topTests.length,
+      remainingTestsCount: sortedAndSeparated.remainingTests.length,
+      topTests: sortedAndSeparated.topTests.map((t: any) => t.name || t.rawName),
+      remainingTests: sortedAndSeparated.remainingTests.map((t: any) => t.name || t.rawName)
+    });
+    
+    // ✅ FIX: Filter top 5 by "already selected" ONLY for phase 1 display
+    // Phase 1 should only show top 5 tests that are NOT already added
+    const topTestsFiltered = sortedAndSeparated.topTests.filter((test: any) => {
+      const candidateName = test.match?.name || test.rawName || test.name || '';
+      const candidateId = test.match?.id || `ai-${candidateName.toLowerCase().trim()}`;
+      const alreadySelected = filteredEvaluationTests.some(
+        (evaluationTest) => evaluationTest.id === candidateId || 
+        evaluationTest.name.toLowerCase().trim() === candidateName.toLowerCase().trim()
+      );
+      return !alreadySelected;
+    });
+    
+    // ✅ CRITICAL: Ensure remainingTests have the correct format (match, rawName, originalIndex) for sidebar rendering
+    const remainingTestsFormatted = sortedAndSeparated.remainingTests.map((test: any) => {
+      // Find the original suggestion from allSuggestions to preserve rawName, match, originalIndex
+      const originalSuggestion = allSuggestions.find((item: any) => item.key === test.originalIndex);
+      if (originalSuggestion) {
+        // Return original format with additional formatted fields for sorting
+        return {
+          ...originalSuggestion, // Preserve original format (rawName, match, key, displayName)
+          ...test, // Add formatted fields (name, test, evidence_level, sensitivity, etc.)
+        };
+      }
+      // Fallback: return formatted test with required fields
+      return {
+        ...test,
+        rawName: test.rawName || test.name || test.test,
+        originalIndex: test.originalIndex,
+        key: test.originalIndex,
+        match: test.match,
+      };
+    });
+    
+    // ✅ FIX: Filter additional tests (6+) to exclude tests that are already selected
+    // If a test from the sidebar is selected, it should disappear from the sidebar because it's now in Selected Tests
+    const additionalTestsFiltered = remainingTestsFormatted.filter((test: any) => {
+      const candidateName = test.match?.name || test.rawName || test.name || '';
+      const candidateId = test.match?.id || `ai-${candidateName.toLowerCase().trim()}`;
+      const alreadySelected = filteredEvaluationTests.some(
+        (evaluationTest) => evaluationTest.id === candidateId || 
+        evaluationTest.name.toLowerCase().trim() === candidateName.toLowerCase().trim()
+      );
+      return !alreadySelected; // Only show tests that are NOT already selected
+    });
+    
+    const finalResult = {
+      topTests: topTestsFiltered,
+      remainingTests: additionalTestsFiltered, // ✅ FIX: Filtered to exclude already selected tests
+    };
+    
+    console.log('[EvaluationTab] Final result:', {
+      topTestsCount: finalResult.topTests.length,
+      remainingTestsCount: finalResult.remainingTests.length,
+      sidebarShouldShow: finalResult.remainingTests.length > 0,
+      remainingTestsDetails: finalResult.remainingTests.map((t: any) => ({
+        originalIndex: t.originalIndex || t.key,
+        rawName: t.rawName || t.name,
+        hasMatch: !!t.match,
+        matchName: t.match?.name
+      }))
+    });
+    
+    return finalResult;
+  }, [allAiSuggestions, pendingAiSuggestions, filteredEvaluationTests]);
+
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-3">
@@ -226,44 +355,50 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-6">
-          {/* ✅ WORKFLOW OPTIMIZATION: Hide AI-suggested tests for follow-up visits */}
-          {pendingAiSuggestions.length > 0 && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+          {/* FASE 2: Additional AI-suggested tests (6+) in sidebar for deeper exploration */}
+          {additionalAiSuggestions.length > 0 && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
             <section className="rounded-3xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-800">Suggested Tests (AI)</h3>
+              <h3 className="text-sm font-semibold text-slate-800">Additional Tests</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Matches from Vertex analysis. Click to add to your evaluation.
+                Additional tests for deeper exploration. Click to add to your evaluation.
               </p>
-              <div className="mt-3 space-y-2">
-                {pendingAiSuggestions.map((item) => {
-                  const matched = item.match;
-                  const displayName = matched ? matched.name : item.rawName;
-                  return (
-                    <div
-                      key={`ai-${item.key}`}
-                      className="flex items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold text-slate-700">{displayName}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {matched ? matched.description : 'Custom entry sourced from transcript.'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (matched) {
-                            addEvaluationTest(createEntryFromLibrary(matched, "ai"));
-                          } else {
-                            addEvaluationTest(createCustomEntry(item.rawName, "ai"));
-                          }
-                        }}
-                        className="ml-2 rounded-full bg-[#8b5cf6] px-3 py-1 text-xs text-white transition hover:bg-[#7c3aed]"
+              <div className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
+                {additionalAiSuggestions.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 text-center py-2">
+                    All additional tests have been added to your evaluation.
+                  </p>
+                ) : (
+                  additionalAiSuggestions.map((item: any) => {
+                    const matched = item.match;
+                    const displayName = matched ? matched.name : item.rawName;
+                    return (
+                      <div
+                        key={`ai-additional-${item.originalIndex || item.key}`}
+                        className="flex items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
                       >
-                        Add to evaluation
-                      </button>
-                    </div>
-                  );
-                })}
+                        <div className="flex-1">
+                          <p className="font-semibold text-slate-700">{displayName}</p>
+                          <p className="text-[11px] text-slate-500">
+                            {matched ? matched.description : 'Custom entry sourced from transcript.'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (matched) {
+                              addEvaluationTest(createEntryFromLibrary(matched, "ai"));
+                            } else {
+                              addEvaluationTest(createCustomEntry(item.rawName || item.name, "ai"));
+                            }
+                          }}
+                          className="ml-2 rounded-full bg-[#8b5cf6] px-3 py-1 text-xs text-white transition hover:bg-[#7c3aed]"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </section>
           )}
@@ -400,6 +535,9 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
         </div>
 
         <div className="space-y-4">
+          {/* ✅ NOTE: Top 5 Recommended Tests are shown in Phase 1 (AnalysisTab), not here in Phase 2 */}
+          {/* Phase 2 (EvaluationTab) only shows "Selected Tests" for documentation */}
+
           <div className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-slate-800">Selected Tests</p>

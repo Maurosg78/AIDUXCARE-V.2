@@ -1,0 +1,12 @@
+# WORKSPACE ROOT CONFIGURATION
+# This file indicates that the correct workspace root is:
+# /Users/mauriciosobarzo/Projects/AIDUXCARE-V.2-clean
+
+# DO NOT WORK IN:
+# /Users/mauriciosobarzo/Desktop/AIDUXCARE-V.2-clean
+
+# ALL changes must be made in Projects directory only.
+# The dev server runs from Projects, not Desktop.
+
+WORKSPACE_ROOT=/Users/mauriciosobarzo/Projects/AIDUXCARE-V.2-clean
+
