@@ -44,7 +44,9 @@ vi.mock('firebase/auth', () => ({
 }));
 
 // Mock dependencies ANTES de importar
-vi.mock('../../../hooks/useAuth', () => ({}));
+vi.mock('../../../hooks/useAuth', () => ({
+  useAuth: vi.fn(),
+}));
 vi.mock('../../../utils/sessionPersistence', () => ({}));
 
 import { useAuth } from '../../../hooks/useAuth';
