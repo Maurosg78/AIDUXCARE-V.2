@@ -47,7 +47,10 @@ vi.mock('firebase/auth', () => ({
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: vi.fn(),
 }));
-vi.mock('../../../utils/sessionPersistence', () => ({}));
+vi.mock('../../../utils/sessionPersistence', () => ({
+  loadSessionState: vi.fn(),
+  getCurrentSessionId: vi.fn(),
+}));
 
 import { useAuth } from '../../../hooks/useAuth';
 import * as sessionPersistence from '../../../utils/sessionPersistence';

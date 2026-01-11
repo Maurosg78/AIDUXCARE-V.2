@@ -31,6 +31,14 @@ vi.mock('@/services/feedbackService', () => ({
         currentPage: '/workflow',
       },
     }),
+    getEnrichedContext: vi.fn().mockReturnValue({
+      url: 'http://localhost:5173/workflow',
+      userAgent: 'test-agent',
+      context: {
+        currentPage: '/workflow',
+      },
+      timestamp: new Date().toISOString(),
+    }),
   },
 }));
 
@@ -43,16 +51,16 @@ describe('✅ FASE 1: FeedbackModal', () => {
   it('✅ should render modal when isOpen is true', () => {
     render(<FeedbackModal isOpen={true} onClose={vi.fn()} />);
     
-    expect(screen.getByText(/Reportar Feedback/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Tipo de feedback/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Severidad/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Descripción/i)).toBeInTheDocument();
+    expect(screen.getByText(/Report Feedback/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Feedback Type/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Severity/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
   });
 
   it('✅ should not render modal when isOpen is false', () => {
     render(<FeedbackModal isOpen={false} onClose={vi.fn()} />);
     
-    expect(screen.queryByText(/Reportar Feedback/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Report Feedback/i)).not.toBeInTheDocument();
   });
 
   it('✅ should submit feedback with correct data', async () => {
@@ -62,19 +70,19 @@ describe('✅ FASE 1: FeedbackModal', () => {
     render(<FeedbackModal isOpen={true} onClose={vi.fn()} />);
     
     // Fill form
-    const description = screen.getByLabelText(/Descripción/i);
+    const description = screen.getByLabelText(/Description/i);
     await user.type(description, 'Test bug description');
     
     // Select type
-    const typeSelect = screen.getByLabelText(/Tipo de feedback/i);
+    const typeSelect = screen.getByLabelText(/Feedback Type/i);
     await user.selectOptions(typeSelect, 'bug');
     
     // Select severity
-    const severitySelect = screen.getByLabelText(/Severidad/i);
+    const severitySelect = screen.getByLabelText(/Severity/i);
     await user.selectOptions(severitySelect, 'critical');
     
     // Submit
-    const submitButton = screen.getByRole('button', { name: /Enviar Feedback/i });
+    const submitButton = screen.getByRole('button', { name: /Submit Feedback/i });
     await user.click(submitButton);
     
     await waitFor(() => {
@@ -94,28 +102,22 @@ describe('✅ FASE 1: FeedbackModal', () => {
     
     render(<FeedbackModal isOpen={true} onClose={vi.fn()} />);
     
-    const description = screen.getByLabelText(/Descripción/i);
+    const description = screen.getByLabelText(/Description/i);
     await user.type(description, 'Test feedback');
     
-    const submitButton = screen.getByRole('button', { name: /Enviar Feedback/i });
+    const submitButton = screen.getByRole('button', { name: /Submit Feedback/i });
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/¡Feedback enviado exitosamente!/i)).toBeInTheDocument();
+      expect(screen.getByText(/Feedback submitted successfully/i)).toBeInTheDocument();
     });
   });
 
-  it('✅ should show error if description is empty', async () => {
-    const user = userEvent.setup();
-    
+  it('✅ should disable submit button if description is empty', () => {
     render(<FeedbackModal isOpen={true} onClose={vi.fn()} />);
     
-    const submitButton = screen.getByRole('button', { name: /Enviar Feedback/i });
-    await user.click(submitButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/Por favor describe el problema/i)).toBeInTheDocument();
-    });
+    const submitButton = screen.getByRole('button', { name: /Submit Feedback/i });
+    expect(submitButton).toBeDisabled();
   });
 
   it('✅ should disable submit button when submitting', async () => {
@@ -125,15 +127,15 @@ describe('✅ FASE 1: FeedbackModal', () => {
     
     render(<FeedbackModal isOpen={true} onClose={vi.fn()} />);
     
-    const description = screen.getByLabelText(/Descripción/i);
+    const description = screen.getByLabelText(/Description/i);
     await user.type(description, 'Test feedback');
     
-    const submitButton = screen.getByRole('button', { name: /Enviar Feedback/i });
+    const submitButton = screen.getByRole('button', { name: /Submit Feedback/i });
     await user.click(submitButton);
     
     await waitFor(() => {
       expect(submitButton).toBeDisabled();
-      expect(screen.getByText(/Enviando/i)).toBeInTheDocument();
+      expect(screen.getByText(/Submitting/i)).toBeInTheDocument();
     });
   });
 });
