@@ -39,9 +39,14 @@ export class OpenAIWhisperService {
 
   private static ensureConfigured() {
     if (!this.API_KEY) {
-      console.error("OpenAI API key no configurada");
+      console.error("[Whisper] ❌ OpenAI API key no configurada");
+      console.error("[Whisper] OPENAI_API_KEY value:", this.API_KEY ? "EXISTS" : "MISSING");
+      console.error("[Whisper] OPENAI_API_KEY length:", this.API_KEY?.length || 0);
       throw new Error("Servicio de transcripción no configurado. Contacte al administrador.");
     }
+    // Log first 10 chars for debugging (safe, doesn't expose full key)
+    const keyPreview = this.API_KEY.substring(0, 10);
+    console.log(`[Whisper] ✅ API Key configured (starts with: ${keyPreview}...)`);
   }
 
   private static sanitizeLanguageHint(languageHint?: WhisperSupportedLanguage): WhisperSupportedLanguage {
@@ -201,6 +206,11 @@ export class OpenAIWhisperService {
 
       // ✅ PHASE 1: Enhanced logging for Whisper API request
       const requestStartTime = performance.now();
+      // Verify API key before making request
+      if (!this.API_KEY) {
+        throw new Error("OpenAI API key no configurada. Verifica VITE_OPENAI_API_KEY en .env.local");
+      }
+      
       console.log(`[Whisper] 🚀 Starting transcription:`, {
         fileSizeMB: fileSizeMB.toFixed(2),
         fileSizeBytes: audioBlob.size,
@@ -208,14 +218,27 @@ export class OpenAIWhisperService {
         mimeType: audioBlob.type,
         languageHint: options?.languageHint || 'auto',
         mode: options?.mode || 'live',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        apiKeyConfigured: !!this.API_KEY,
+        apiKeyLength: this.API_KEY?.length || 0
       });
       console.log(`[Whisper] Starting transcription: ${fileSizeMB.toFixed(2)} MB, timeout: ${TIMEOUT_MS / 1000}s`);
+
+      // Log header info (safe - doesn't expose full key)
+      const authHeader = `Bearer ${this.API_KEY}`;
+      console.log(`[Whisper] 🔐 Auth header info:`, {
+        hasKey: !!this.API_KEY,
+        keyLength: this.API_KEY?.length || 0,
+        keyStartsWith: this.API_KEY?.substring(0, 10) || 'MISSING',
+        keyEndsWith: this.API_KEY?.substring(this.API_KEY.length - 4) || 'MISSING',
+        headerLength: authHeader.length,
+        url: this.API_URL
+      });
 
       const response = await fetch(this.API_URL, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.API_KEY}`
+          Authorization: authHeader
         },
         body: formData,
         signal: controller.signal
@@ -238,6 +261,21 @@ export class OpenAIWhisperService {
           errorBody: errorBody.substring(0, 500), // Limit log size
           timestamp: new Date().toISOString()
         });
+        
+        // Log full error response for 401 to help diagnose
+        if (response.status === 401) {
+          try {
+            const errorJson = JSON.parse(errorBody);
+            console.error("[Whisper] 🔐 401 Unauthorized - Full error:", errorJson);
+            console.error("[Whisper] 💡 Possible causes:");
+            console.error("   1. API key is invalid or expired");
+            console.error("   2. API key was revoked");
+            console.error("   3. API key doesn't have Whisper API permissions");
+            console.error("   4. Check OpenAI Dashboard: https://platform.openai.com/api-keys");
+          } catch (e) {
+            console.error("[Whisper] Could not parse error response:", errorBody);
+          }
+        }
         
         console.error("Whisper API error:", response.status, errorBody);
         console.error("Audio blob details:", {

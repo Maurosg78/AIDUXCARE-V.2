@@ -76,16 +76,25 @@ export const useNiagaraProcessor = () => {
     }
   };
 
+  // WO-ELIMINATE-PREMATURE-PLAN: DEPRECATED - This function is NOT used in current flow
+  // Treatment plan is now generated only after physical examination (second Vertex call in SOAP generation)
   const generateSOAPNote = async () => {
     if (!niagaraResults) return null;
     const s = niagaraResults;
-    const soap = `SOAP Note
+    const soap = `SOAP Note (DEPRECATED - Use SOAP generation in Tab 3 instead)
 S: ${s.motivo_consulta || 'N/A'}
 O: Hallazgos: ${s.hallazgos_relevantes?.join(', ') || 'N/A'}
 A: ${s.diagnosticos_probables?.join(', ') || 'N/A'}
-P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
+P: Treatment plan requires objective findings from physical examination. Please complete physical evaluation and generate SOAP in Tab 3.`;
     setSoapNote(soap);
     return soap;
+  };
+
+  // Function to reset/clear all state (useful for new sessions)
+  const reset = () => {
+    setNiagaraResults(null);
+    setSoapNote(null);
+    setIsAnalyzing(false);
   };
 
   return {
@@ -93,7 +102,8 @@ P: ${s.plan_tratamiento_sugerido?.join(', ') || 'N/A'}`;
     generateSOAPNote,
     niagaraResults,
     soapNote,
-    isProcessing: isAnalyzing
+    isProcessing: isAnalyzing,
+    reset // Export reset function
   };
 };
 

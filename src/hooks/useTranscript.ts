@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { OpenAIWhisperService, WhisperMode, WhisperSupportedLanguage, WhisperTranscriptionResult } from '../services/OpenAIWhisperService';
+import { firebaseWhisperService, WhisperTranscriptionResult } from '../services/FirebaseWhisperService';
+import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
 
 type TranscriptMeta = {
   detectedLanguage: string | null;
@@ -223,11 +224,15 @@ export const useTranscript = () => {
         setIsTranscribing(true);
         
         try {
-          // Attempt full transcription with timeout (handled by OpenAIWhisperService)
-          const result = await OpenAIWhisperService.transcribe(largeBlob, {
-            languageHint: languagePreference,
-            mode
-          });
+          // Attempt full transcription with timeout (handled by FirebaseWhisperService)
+          const result = await firebaseWhisperService.transcribe(
+            largeBlob,
+            largeBlob.type || mimeType,
+            {
+              language: languagePreference === 'auto' ? undefined : languagePreference,
+              timeout: 300000 // 5 minutes
+            }
+          );
           
           if (result.text?.trim()) {
             appendTranscript(result.text);
@@ -314,10 +319,14 @@ export const useTranscript = () => {
         console.log(`[useTranscript] Transcribing chunk: ${chunkBlob.size} bytes, type: ${chunkBlob.type}`);
 
         try {
-          const result = await OpenAIWhisperService.transcribe(normalizedBlob, {
-            languageHint: languagePreference,
-            mode
-          });
+          const result = await firebaseWhisperService.transcribe(
+            normalizedBlob,
+            normalizedType,
+            {
+              language: languagePreference === 'auto' ? undefined : languagePreference,
+              timeout: 300000 // 5 minutes
+            }
+          );
           
           console.log(`[useTranscript] Transcription success: "${result.text?.substring(0, 50)}..."`);
           
@@ -328,33 +337,47 @@ export const useTranscript = () => {
           
           // Update meta with latest result
           setMeta({
-            detectedLanguage: result.detectedLanguage ?? null,
-            averageLogProb: result.averageLogProb ?? null,
-            durationSeconds: result.durationSeconds
+            detectedLanguage: result.language ?? null,
+            averageLogProb: null, // FirebaseWhisperService doesn't provide this
+            durationSeconds: result.duration
           });
           setError(null);
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
           console.error('[useTranscript] Error transcribiendo chunk:', errorMessage, err);
           
-          // ✅ SPRINT 2 P3: Show error for ALL failures (user needs to know)
-          // Previously errors were hidden, causing confusion
-          if (errorMessage.includes('no configurado') || errorMessage.includes('API key')) {
-            setError('Transcription service not configured. Please contact support.');
-          } else if (errorMessage.includes('timeout')) {
-            setError('Transcription timeout. Please check your connection and try again.');
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            setError('Network error during transcription. Please check your connection.');
+          // ✅ FALLBACK: Show helpful message when Whisper fails with auth errors
+          const isAuthError = errorMessage.includes('401') || 
+                             errorMessage.includes('Unauthorized') || 
+                             errorMessage.includes('no configurado') || 
+                             errorMessage.includes('API key');
+          
+          if (isAuthError) {
+            console.warn('[useTranscript] Whisper failed with auth error. Web Speech API fallback not available for blob transcription.');
+            console.warn('[useTranscript] NOTE: Web Speech API only works in real-time, not with recorded blobs.');
+            // Web Speech API cannot transcribe blobs - it only works in real-time
+            // The fallback would require a complete rewrite to use Web Speech from the start
+            setError('OpenAI API key error. Please check your API key configuration in .env.local or paste your transcript manually.');
+          } else {
+            // ✅ SPRINT 2 P3: Show error for ALL failures (user needs to know)
+            // Previously errors were hidden, causing confusion
+            if (errorMessage.includes('no configurado') || errorMessage.includes('API key')) {
+              setError('Transcription service not configured. Please contact support or paste your transcript manually.');
+            } else if (errorMessage.includes('timeout')) {
+              setError('Transcription timeout. Please check your connection and try again.');
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+              setError('Network error during transcription. Please check your connection.');
           } else if (errorMessage.includes('corrupted') || errorMessage.includes('corrupt') || errorMessage.includes('unsupported')) {
             // Audio format/corruption errors - provide helpful guidance
-            setError(errorMessage); // Already user-friendly from OpenAIWhisperService
-          } else {
-            // Show all other errors to user with context
-            setError(`Transcription error: ${errorMessage}. Recording continues, but transcription may be incomplete.`);
+            setError(errorMessage); // Already user-friendly from FirebaseWhisperService
+            } else {
+              // Show all other errors to user with context
+              setError(`Transcription error: ${errorMessage}. Recording continues, but transcription may be incomplete.`);
+            }
+            
+            // Log for debugging
+            console.warn('[useTranscript] Chunk transcription failed, but recording continues...');
           }
-          
-          // Log for debugging
-          console.warn('[useTranscript] Chunk transcription failed, but recording continues...');
         } finally {
           isTranscribingChunkRef.current = false;
 
@@ -398,16 +421,12 @@ export const useTranscript = () => {
           // Store chunk for final transcription if needed
           audioChunksRef.current.push(normalizedBlob);
           
-          // ✅ SPRINT 2 P3: Only transcribe FIRST chunk for real-time feedback
-          // Subsequent chunks may be incomplete/corrupted in webm format
-          // We'll transcribe the complete audio when recording stops
-          if (audioChunksRef.current.length === 1 && normalizedBlob.size >= 2000) {
-            console.log('[useTranscript] Transcribing first chunk for real-time feedback...');
-            await transcribeChunk(normalizedBlob);
-          } else if (audioChunksRef.current.length > 1) {
+          // WO-FIX-PRE-ANALYSIS: Disabled first chunk transcription - it's confusing to users
+          // Only transcribe complete audio when recording stops (no intermediate transcriptions)
+          if (audioChunksRef.current.length > 1) {
             console.log(`[useTranscript] Skipping intermediate chunk ${audioChunksRef.current.length} - will transcribe complete audio on stop`);
           } else {
-            console.log(`[useTranscript] Chunk too small for transcription: ${normalizedBlob.size} bytes`);
+            console.log(`[useTranscript] Chunk ${audioChunksRef.current.length} stored - will transcribe complete audio when recording stops`);
           }
         } else {
           console.warn('[useTranscript] Received empty or invalid audio chunk');
