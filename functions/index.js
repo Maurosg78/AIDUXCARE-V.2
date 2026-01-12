@@ -367,6 +367,11 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 
 console.log("[OK] functions/index.js: vertexAIProxy@v1 ready");
 
+// ===== Whisper Proxy =====
+const { whisperProxy } = require('./src/whisperProxy');
+exports.whisperProxy = whisperProxy;
+console.log("[OK] functions/index.js: whisperProxy ready");
+
 // ===== Validation Wiring v2 (ESM-friendly) =====
 // TEMPORARILY DISABLED - Commented out to fix deploy issues
 // Will be re-enabled once validation module is properly set up

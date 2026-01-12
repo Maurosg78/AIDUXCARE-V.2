@@ -183,12 +183,6 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           <p className="text-[15px] text-slate-500 font-light font-apple">
             Paste your transcript below or use the text area to enter clinical notes.
           </p>
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 max-w-md">
-            <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
-            <p>
-              <span className="font-medium">Voice recording is currently being improved.</span> Please paste your transcript in the text area below. AiDuxCare automatically detects English, Canadian French, or Spanish.
-            </p>
-          </div>
         </div>
         <div className="flex flex-col items-end gap-3">
           <span className="inline-flex items-center gap-2 text-sm text-slate-500">
@@ -206,12 +200,10 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           ) : (
             <button
               onClick={startRecording}
-              disabled={true}
-              title="Voice recording is temporarily unavailable. Please paste your transcript in the text area below."
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 text-white font-medium shadow-sm cursor-not-allowed opacity-60 transition-all duration-200 font-apple text-[15px]"
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 font-apple text-[15px]"
             >
               <Play className="w-4 h-4" />
-              Start Recording (Coming Soon)
+              Start Recording
             </button>
           )}
         </div>
@@ -228,18 +220,15 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
       )}
 
-      {/* Processing Audio Indicator */}
-      {isTranscribing && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      {/* FIX 3: Processing Audio Indicator - Only show AFTER recording stops */}
+      {isTranscribing && !isRecording && (
+        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
           <div className="flex items-center gap-3">
-            <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+            <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 font-apple">Processing audio...</p>
-              <p className="text-xs text-amber-600 mt-0.5 font-apple font-light">
-                Transcribing audio. This may take a few moments for longer recordings.
-              </p>
-              <p className="text-xs text-amber-500 mt-1 font-apple font-light">
-                💡 Tip: For best results, keep recordings under 15 minutes
+              <p className="text-sm font-medium text-blue-900 font-apple">Transcribing your recording...</p>
+              <p className="text-xs text-blue-700 mt-0.5 font-apple font-light">
+                This typically takes just a few seconds
               </p>
             </div>
           </div>
@@ -332,29 +321,6 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">
-          Audio is captured locally. No data is transmitted until you trigger the analysis.
-        </p>
-        <button
-          onClick={handleAnalyzeWithVertex}
-          disabled={isProcessing || !transcript?.trim()}
-          className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 transition font-apple text-[15px] font-medium"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Brain className="w-4 h-4" />
-              Analyze with AiduxCare AI
-            </>
-          )}
-        </button>
-      </div>
-
       <div className="mt-6 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -397,6 +363,30 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             ))}
           </div>
         )}
+      </div>
+
+      {/* WO-003: "Analyze with AiduxCare AI" button moved here (after PDF upload area) */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-slate-500">
+          Audio is captured locally. No data is transmitted until you trigger the analysis.
+        </p>
+        <button
+          onClick={handleAnalyzeWithVertex}
+          disabled={isProcessing || !transcript?.trim()}
+          className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 transition font-apple text-[15px] font-medium"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Brain className="w-4 h-4" />
+              Analyze with AiduxCare AI
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
