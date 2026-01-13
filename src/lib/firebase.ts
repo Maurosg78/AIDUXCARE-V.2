@@ -5,6 +5,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAnalytics, Analytics } from "firebase/analytics";
 import {
   initializeAuth,
   connectAuthEmulator,
@@ -15,11 +16,9 @@ import {
   type Auth,
 } from "firebase/auth";
 
-// ✅ Detectar ambiente de test
 const __IS_TEST__ =
   typeof process !== 'undefined' && process?.env && !!process.env.VITEST;
 
-// ✅ Firebase configuración real (CLOUD)
 interface FirebaseConfig {
   apiKey: string | undefined;
   authDomain: string | undefined;
@@ -38,23 +37,18 @@ const firebaseConfig: FirebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// 🚀 Lazy initialization: NO inicializar en tests
 let _app: any;
 let _auth: any;
 let _db: any;
 let _storage: any;
+let _analytics: Analytics | null = null;
 
 function initFirebaseOnce() {
-  if (__IS_TEST__) return; // NO inicializar en tests
-  if (_app) return; // Ya inicializado
-
+  if (__IS_TEST__) return;
+  if (_app) return;
   _app = initializeApp(firebaseConfig);
 }
 
-/**
- * ✅ HARDENING: si cambió el proyecto, limpiamos credenciales viejas (evita 400 accounts:lookup)
- * Firebase Auth persiste usuarios en IndexedDB/localStorage; si hay mismatch/corrupción => 400.
- */
 function cleanupStaleAuthStateIfProjectChanged(projectId: string) {
   if (typeof window === "undefined") return;
 
@@ -67,7 +61,6 @@ function cleanupStaleAuthStateIfProjectChanged(projectId: string) {
         now: projectId,
       });
 
-      // 1) localStorage keys usadas por Firebase Auth
       const toDelete: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
         const k = window.localStorage.key(i);
@@ -78,7 +71,6 @@ function cleanupStaleAuthStateIfProjectChanged(projectId: string) {
       }
       toDelete.forEach((k) => window.localStorage.removeItem(k));
 
-      // 2) IndexedDB donde Firebase guarda el usuario
       if (window.indexedDB?.deleteDatabase) {
         try {
           window.indexedDB.deleteDatabase("firebaseLocalStorageDb");
@@ -94,15 +86,10 @@ function cleanupStaleAuthStateIfProjectChanged(projectId: string) {
   }
 }
 
-/**
- * ✅ Auth con persistencia explícita (reduce loops / estados raros)
- */
 function initAuthWithPersistence(): Auth {
   const projectId = firebaseConfig.projectId || "unknown";
   cleanupStaleAuthStateIfProjectChanged(projectId);
 
-  // Try in order: indexedDB -> localStorage -> session -> memory
-  // (initializeAuth acepta array de persistencias)
   return initializeAuth(_app, {
     persistence: [
       indexedDBLocalPersistence,
@@ -113,17 +100,23 @@ function initAuthWithPersistence(): Auth {
   });
 }
 
-// ✅ Inicializar solo si NO es test (lazy init)
 if (!__IS_TEST__) {
   initFirebaseOnce();
   _auth = initAuthWithPersistence();
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
 
-  // eslint-disable-next-line no-console
+  if (typeof window !== 'undefined') {
+    try {
+      _analytics = getAnalytics(_app);
+      console.info("✅ Firebase Analytics initialized");
+    } catch (error: any) {
+      console.warn("⚠️ Firebase Analytics initialization failed:", error?.message || error);
+    }
+  }
+
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
 
-  // ✅ Configuración de emulators para desarrollo local
   if (import.meta.env.VITE_FIREBASE_USE_EMULATOR === "true") {
     try {
       const emulatorHost = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST;
@@ -132,20 +125,18 @@ if (!__IS_TEST__) {
       }
       connectFirestoreEmulator(_db, "127.0.0.1", 8080);
 
-      // eslint-disable-next-line no-console
       console.info(
         "✅ Firebase inicializado en modo EMULATOR. Auth:",
         emulatorHost,
         "Firestore: 127.0.0.1:8080"
-      );
-    } catch (error: any) {
-      // eslint-disable-next-line no-console
+);
+   } catch (error: any) {
       console.warn("⚠️ Error conectando emulators (normal si ya conectados):", error?.message || error);
     }
   }
 }
 
-// Exportar: en tests serán undefined (mockeados), en producción serán los valores reales
 export const auth = _auth;
 export const db = _db;
 export const storage = _storage;
+export const analytics = _analytics;

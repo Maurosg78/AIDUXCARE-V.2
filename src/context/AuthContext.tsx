@@ -10,6 +10,7 @@ import {
 
 import { auth } from '../lib/firebase';
 
+import { trackUserLogin, trackUserLogout, trackUserSignup } from "@/services/analytics/AnalyticsEvents";
 import logger from '@/shared/utils/logger';
 import { firebaseAuthService } from '@/services/firebaseAuthService';
 
@@ -65,6 +66,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userCredential.user);
       
       logger.info('Login exitoso:', userCredential.user.email);
+      
+      // Track login
+      await trackUserLogin({
+        userId: userCredential.user.uid,
+        loginMethod: "email",
+      });
+      
+      // Track login
+      await trackUserLogin({
+        userId: userCredential.user.uid,
+        loginMethod: "email",
+      });
+      
+      // Track login
+      await trackUserLogin({
+        userId: userCredential.user.uid,
+        loginMethod: "email",
+      });
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
@@ -85,6 +104,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       
       logger.info('Logout exitoso');
+      
+      // Track logout
+      await trackUserLogout({
+        userId: user?.uid,
+      });
+      
+      // Track logout
+      await trackUserLogout({
+        userId: user?.uid,
+      });
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
@@ -105,6 +134,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userCredential.user);
       
       logger.info('Registro exitoso:', userCredential.user.email);
+      
+      // Track signup
+      await trackUserSignup({
+        userId: userCredential.user.uid,
+        registrationType: "email",
+      });
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);

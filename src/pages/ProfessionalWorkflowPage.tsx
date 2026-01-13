@@ -62,6 +62,7 @@ import { SessionStorage } from "../services/session-storage";
 // import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
 import type { FollowUpDetectionInput } from "../services/followUpDetectionService";
+import WorkflowFeedback from "../components/workflow/WorkflowFeedback";
 import {
   trackWorkflowSessionStart,
   trackSOAPGeneration,
@@ -70,7 +71,12 @@ import {
   getWorkflowEfficiencySummary,
   type WorkflowMetrics
 } from "../services/workflowMetricsService";
-import WorkflowFeedback from "../components/workflow/WorkflowFeedback";
+import {
+  trackSessionStarted,
+  trackSessionCompleted,
+  trackSOAPGenerationStarted,
+  trackSOAPGenerationCompleted,
+} from "@/services/analytics/AnalyticsEvents";
 import WorkflowMetricsDisplay from "../components/workflow/WorkflowMetricsDisplay";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { lazy, Suspense } from "react";
@@ -183,6 +189,8 @@ const ProfessionalWorkflowPage = () => {
   // ✅ FIX: Use refs to track if localStorage was already cleared (only clear once)
   const localStorageClearedRef = useRef(false);
   const useEffectClearedRef = useRef(false);
+  // ✅ WO-FIX-DATA-PERSISTENCE: Track if we've cleaned for this specific initial session
+  const hasCleanedForInitial = useRef<string | null>(null);
 
   // ✅ FIX: Clear localStorage ONLY ONCE on initial mount for follow-up (not on every render)
   if (isExplicitFollowUp && patientIdFromUrl && typeof window !== 'undefined' && !localStorageClearedRef.current) {
@@ -721,10 +729,47 @@ const ProfessionalWorkflowPage = () => {
         const isInitialSession = sessionTypeFromUrl === 'initial' || !sessionTypeFromUrl;
 
         if (isInitialSession) {
+          // ✅ WO-FIX-DATA-PERSISTENCE: Only clean ONCE per initial session
+          const cleanupKey = `${patientId}-${sessionTypeFromUrl || 'initial'}`;
+          
+          // ✅ Verificar si ya limpiamos para esta combinación
+          if (hasCleanedForInitial.current === cleanupKey) {
+            console.log('[WORKFLOW] ⏭️ Already cleaned for this initial session, skipping cleanup');
+            return; // Don't clean again
+          }
+          
+          // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
+          const shouldClearData = () => {
+            // Check if there's important data that shouldn't be cleared
+            const hasTranscript = transcript && transcript.length > 100;
+            const hasAnalysis = niagaraResults !== null; // Use niagaraResults which is available from useNiagaraProcessor
+            const hasTests = evaluationTests.length > 0;
+            const hasAttachments = attachments.length > 0;
+            
+            if (hasTranscript || hasAnalysis || hasTests || hasAttachments) {
+              console.log('[WORKFLOW] ⚠️ Data exists, preventing cleanup to preserve user work', {
+                hasTranscript: !!hasTranscript,
+                hasAnalysis: !!hasAnalysis,
+                hasTests: hasTests,
+                hasAttachments: hasAttachments
+              });
+              return false; // Don't clear if user has data
+            }
+            
+            return true; // Safe to clear
+          };
+          
+          // Only clear if no important data exists
+          if (!shouldClearData()) {
+            // Mark as cleaned anyway to prevent repeated checks
+            hasCleanedForInitial.current = cleanupKey;
+            return; // Don't clear, preserve user data
+          }
+          
           // Clear ALL saved state from localStorage for initial evaluations
           // This ensures a completely fresh start with empty transcript, tests, SOAP, etc.
           SessionStorage.clearSession(patientId);
-          console.log('[WORKFLOW] ✅ Cleared ALL saved state for initial evaluation - starting completely fresh');
+          console.log('[WORKFLOW] ✅ Clearing saved state for initial evaluation (ONCE)');
 
           // Explicitly reset ALL state to empty/initial values for initial evaluations
           setTranscript('');
@@ -739,6 +784,8 @@ const ProfessionalWorkflowPage = () => {
           setAttachmentError(null); // Clear attachment errors
           resetNiagaraProcessor(); // Clear niagaraResults and soapNote from previous sessions
 
+          // ✅ Mark as cleaned for this session
+          hasCleanedForInitial.current = cleanupKey;
           console.log('[WORKFLOW] ✅ All state reset to empty for initial evaluation');
           return; // Don't restore anything for initial sessions - everything starts empty
         }
@@ -1797,24 +1844,35 @@ const ProfessionalWorkflowPage = () => {
   const handleAnalyzeWithVertex = async () => {
     // Ensure transcript is always a string
     const transcriptText = typeof transcript === 'string' ? transcript : String(transcript || '');
-    if (!transcriptText.trim()) return;
+
+    // ✅ FIX: Allow analysis with attachments only (no transcript required)
+    const hasTranscript = transcriptText.trim().length > 0;
+    const hasAttachments = attachments && attachments.length > 0 && attachments.some(att => att.extractedText);
+
+    if (!hasTranscript && !hasAttachments) {
+      console.warn('[Workflow] Cannot analyze: no transcript and no attachments with extracted text');
+      return;
+    }
+
     try {
       // Map ClinicalAttachment to prompt format (extract only needed fields)
-      const promptAttachments = attachments.map(att => ({
-        fileName: att.name,
-        fileType: att.contentType || 'unknown',
-        extractedText: att.extractedText,
-        pageCount: att.pageCount,
-        error: att.error,
-      }));
+      const promptAttachments = attachments && attachments.length > 0
+        ? attachments.map(att => ({
+          fileName: att.name,
+          fileType: att.contentType || 'unknown',
+          extractedText: att.extractedText,
+          pageCount: att.pageCount,
+          error: att.error,
+        }))
+        : undefined;
 
       const payload = {
-        text: transcriptText,
+        text: transcriptText, // Can be empty if only analyzing attachments
         lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : undefined),
         mode,
         timestamp: Date.now(),
         visitType: visitType === 'follow-up' ? 'follow-up' : 'initial', // Pass visit type for follow-up specific prompts
-        attachments: promptAttachments.length > 0 ? promptAttachments : undefined
+        attachments: promptAttachments && promptAttachments.length > 0 ? promptAttachments : undefined
       };
       await processText({
         ...payload,
@@ -1949,9 +2007,10 @@ const ProfessionalWorkflowPage = () => {
         console.log(`[PHASE2] Creating entry from library match:`, suggestion.match.name);
         entry = createEntryFromLibrary(suggestion.match, "ai");
       } else {
-        // ✅ PHASE 2 FIX: Use suggestion rawName
-        console.log(`[PHASE2] Creating custom entry for:`, suggestion.rawName);
-        entry = createCustomEntry(suggestion.rawName, "ai");
+        // ✅ PHASE 2 FIX: Clean "Consider assessing" prefix from rawName
+        const cleanName = suggestion.rawName.replace(/^Consider assessing\s+/i, '').trim();
+        console.log(`[PHASE2] Creating custom entry for:`, cleanName);
+        entry = createCustomEntry(cleanName, "ai");
       }
 
       console.log(`[PHASE2] Created entry:`, {
@@ -2393,7 +2452,8 @@ const ProfessionalWorkflowPage = () => {
       // Generate session ID (simple hash for now)
       const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
 
-      // Prepare metrics event
+      // ✅ WO-PHASE3-CRITICAL-FIXES: PHI Protection - Only send metadata, NEVER content
+      // Prepare metrics event (NO PHI content - only metadata)
       const metrics: Omit<ValueMetricsEvent, 'timestamp'> = {
         hashedUserId: TEMP_USER_ID, // Will be pseudonymized in AnalyticsService
         hashedSessionId: sessionId,
@@ -2420,6 +2480,8 @@ const ProfessionalWorkflowPage = () => {
         },
         sessionType: visitType,
         region: undefined, // TODO: Extract from patient data or session metadata
+        // ✅ CRITICAL: NO transcript content, NO SOAP content, NO PHI
+        // Only metadata (counts, booleans, timestamps) are sent
       };
 
       // Track metrics
@@ -2901,10 +2963,11 @@ const ProfessionalWorkflowPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as ActiveTab)}
-                className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
-                  ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-                  }`}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-blue-600 text-white shadow-md" // ✅ WO-PHASE3-CRITICAL-FIXES: Same color (blue) for active
+                    : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" // ✅ Same style for inactive
+                }`}
               >
                 {tab.label}
               </button>
