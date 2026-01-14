@@ -76,9 +76,19 @@ import {
   trackSessionCompleted,
   trackSOAPGenerationStarted,
   trackSOAPGenerationCompleted,
+  trackRecordingStarted,
+  trackRecordingStopped,
+  trackTranscriptionStarted,
+  trackTranscriptionCompleted,
+  trackTranscriptionFailed,
+  trackAnalysisRequested,
+  trackAnalysisCompleted,
+  trackAnalysisFailed,
+  trackEvaluationPhaseEntered,
+  trackEvaluationTestSelected,
+  trackEvaluationTestCompleted,
+  trackError,
 } from "@/services/analytics/AnalyticsEvents";
-import WorkflowMetricsDisplay from "../components/workflow/WorkflowMetricsDisplay";
-import TranscriptArea from "../components/workflow/TranscriptArea";
 import { lazy, Suspense } from "react";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
@@ -296,10 +306,81 @@ const ProfessionalWorkflowPage = () => {
     setMode,
     meta: transcriptMeta,
     audioStream,
-    startRecording,
-    stopRecording,
+    startRecording: _startRecording,
+    stopRecording: _stopRecording,
     setTranscript,
   } = useTranscript();
+
+  // ✅ WO-04: Recording events tracking
+  const recordingStartTimeRef = useRef<number | null>(null);
+  const transcriptionStartTimeRef = useRef<number | null>(null);
+
+  const startRecording = useCallback(() => {
+    try {
+      trackRecordingStarted();
+      recordingStartTimeRef.current = Date.now();
+      _startRecording();
+    } catch (error) {
+      trackError('recording_failed', {
+        errorType: error instanceof Error ? error.message : 'unknown',
+        phase: 'start'
+      });
+      throw error;
+    }
+  }, [_startRecording]);
+
+  const stopRecording = useCallback(() => {
+    try {
+      if (recordingStartTimeRef.current) {
+        const duration = Date.now() - recordingStartTimeRef.current;
+        trackRecordingStopped({ 
+          duration,
+          mode: mode || 'live'
+        });
+        recordingStartTimeRef.current = null;
+      }
+      _stopRecording();
+    } catch (error) {
+      trackError('recording_failed', {
+        errorType: error instanceof Error ? error.message : 'unknown',
+        phase: 'stop'
+      });
+      throw error;
+    }
+  }, [_stopRecording, mode]);
+
+  // ✅ WO-04: Transcription events tracking
+  useEffect(() => {
+    if (isTranscribing && !transcriptionStartTimeRef.current) {
+      // Transcription started
+      transcriptionStartTimeRef.current = Date.now();
+      trackTranscriptionStarted({ 
+        service: 'gpt-4o-audio',
+        mode: mode || 'live',
+        languagePreference: languagePreference || 'auto'
+      });
+    } else if (!isTranscribing && transcriptionStartTimeRef.current) {
+      // Transcription completed
+      const duration = Date.now() - transcriptionStartTimeRef.current;
+      trackTranscriptionCompleted({ 
+        duration,
+        transcriptLength: transcript?.length || 0,
+        service: 'gpt-4o-audio',
+        detectedLanguage: transcriptMeta?.detectedLanguage || null
+      });
+      transcriptionStartTimeRef.current = null;
+    }
+  }, [isTranscribing, transcript, transcriptMeta, mode, languagePreference]);
+
+  // ✅ WO-04: Track transcription errors
+  useEffect(() => {
+    if (transcriptError) {
+      trackTranscriptionFailed({ 
+        errorType: transcriptError,
+        service: 'gpt-4o-audio'
+      });
+    }
+  }, [transcriptError]);
 
   const { time: recordingTime } = useTimer(isRecording);
 
@@ -1854,6 +1935,15 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
+    // ✅ WO-04: Track analysis requested
+    trackAnalysisRequested({ 
+      transcriptLength: transcriptText.length,
+      hasAttachments: hasAttachments,
+      attachmentCount: attachments?.length || 0
+    });
+    
+    const analysisStartTime = Date.now();
+
     try {
       // Map ClinicalAttachment to prompt format (extract only needed fields)
       const promptAttachments = attachments && attachments.length > 0
@@ -1879,10 +1969,25 @@ const ProfessionalWorkflowPage = () => {
         professionalProfile: professionalProfile || undefined
       });
       setAnalysisError(null);
+      
+      // ✅ WO-04: Track analysis completed (use niagaraResults from next render or wait)
+      // We'll track this in a useEffect that watches niagaraResults
+      setTimeout(() => {
+        trackAnalysisCompleted({ 
+          duration: Date.now() - analysisStartTime,
+          testsIdentified: niagaraResults?.evaluaciones_fisicas_sugeridas?.length || 0,
+          hasFindings: Boolean(niagaraResults?.hallazgos_clinicos?.length)
+        });
+      }, 100); // Small delay to allow state update
     } catch (error: any) {
       const message = error?.message || 'Unable to analyze transcript with our AI system.';
       setAnalysisError(message);
       console.error('[Workflow] Vertex analysis failed:', message);
+
+      // ✅ WO-04: Track analysis failed
+      trackAnalysisFailed({ 
+        errorType: error instanceof Error ? error.message : 'unknown'
+      });
 
       // Submit error feedback automatically
       if (error instanceof Error) {

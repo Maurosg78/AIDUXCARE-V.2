@@ -242,6 +242,10 @@ export class PHIPAAnalytics {
     return this.track({ category: 'user', action, metadata });
   }
 
+  public trackAuthEvent(action: string, metadata?: Record<string, any>) {
+    return this.track({ category: 'auth', action, metadata });
+  }
+
   public trackSessionEvent(action: string, metadata?: Record<string, any>) {
     return this.track({ category: 'session', action, metadata });
   }
