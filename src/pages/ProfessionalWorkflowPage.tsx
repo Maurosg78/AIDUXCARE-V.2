@@ -2278,6 +2278,12 @@ const ProfessionalWorkflowPage = () => {
       // Step 4: Generate SOAP using organized context
       // ✅ WORKFLOW OPTIMIZATION: Pass analysisLevel from workflowRoute
       const analysisLevel = workflowRoute?.analysisLevel || 'full';
+
+      // Track SOAP generation started
+      await trackSOAPGenerationStarted({
+        hasEvaluationData: (organized.structuredData?.physicalExamResults?.length || 0) > 0,
+        testsCount: organized.structuredData?.physicalExamResults?.length || 0,
+      });
       const response = await generateSOAPNoteFromService(organized.context, {
         analysisLevel,
         sessionType: currentSessionType,
@@ -2293,7 +2299,14 @@ const ProfessionalWorkflowPage = () => {
         sessionIdForMetrics,
         response.metadata.tokens,
         response.metadata.tokenOptimization
+
       );
+      // Track SOAP generation completed
+      await trackSOAPGenerationCompleted({
+        duration: Date.now() - sessionStartTime.getTime(),
+        soapLength: JSON.stringify(response.soap).length,
+        sectionsGenerated: Object.keys(response.soap || {}),
+      });
 
       // Store token optimization for display in SOAPEditor
       if (response.metadata.tokenOptimization) {
@@ -2357,6 +2370,12 @@ const ProfessionalWorkflowPage = () => {
           metadata: organized.metadata,
           physicalEvaluationStructured: organized.structuredData.physicalEvaluationStructured,
         },
+      });
+      // Track session started
+      await trackSessionStarted({
+        userId: TEMP_USER_ID,
+        patientId: patientIdFromUrl || demoPatient.id,
+        sessionType: "initial",
       });
     } catch (error: any) {
       console.error('[Workflow] Clinical note generation failed:', error);
@@ -2578,6 +2597,13 @@ const ProfessionalWorkflowPage = () => {
         status: status === 'finalized' ? 'completed' : 'draft',
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
+      });
+
+      // Track session started
+      await trackSessionStarted({
+        userId: TEMP_USER_ID,
+        patientId: patientIdFromUrl || demoPatient.id,
+        sessionType: "initial",
       });
 
       // ✅ Day 3: Store sessionId for comparison
