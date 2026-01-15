@@ -706,3 +706,7 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
     });
   }
 });
+
+// Export whisperProxy function
+const whisperProxy = require('./src/whisperProxy');
+exports.whisperProxy = whisperProxy.whisperProxy;

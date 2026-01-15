@@ -1,116 +1,82 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ---- helpers ----
-    
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    // ============================================
-    // WO-SEC-001: Hardening de Activación
-    // Estándar: ISO/IEC 27001 · PHIPA · PIPEDA
-    // ============================================
-    
-    // ✅ Users Collection - PROTEGIDA (WO-SEC-001)
-    // Solo accesible por el usuario autenticado o para creación (onboarding)
+
+    // ----------------------------
+    // Users / Professional Profiles
+    // ----------------------------
     match /users/{userId} {
-      // Lectura: Solo el propio usuario autenticado
-      allow read: if 
-        request.auth != null &&
-        request.auth.uid == userId;
-      
-      // Escritura: Solo el propio usuario autenticado
-      allow update: if 
-        request.auth != null &&
-        request.auth.uid == userId;
-      
-      // Creación: Permitir sin autenticación (onboarding)
-      allow create: if true;
-      
-      // Eliminación: Prohibida (requiere proceso de borrado de datos)
+      // The owner can read their own profile
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      // Profile creation / updates (onboarding)
+      allow create, update: if request.auth != null
+                             && request.auth.uid == userId;
+
+      // No deletes from client
       allow delete: if false;
     }
-    
-    // ✅ Activation Tokens Collection - CONTROLADA (WO-SEC-001)
-    // Tokens de activación separados de users para cumplir compliance
-    match /activation_tokens/{token} {
-      // GET: Permitir lectura de token específico si no expirado y no usado
-      allow get: if 
-        resource.data.expiresAt > request.time &&
-        !('usedAt' in resource.data);
-      
-      // LIST: Prohibido (evita enumeración de tokens)
-      allow list: if false;
-      
-      // UPDATE: Solo para marcar como usado (single-use)
-      allow update: if 
-        resource.data.expiresAt > request.time &&
-        !('usedAt' in resource.data) &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['usedAt']) &&
-        request.resource.data.usedAt == request.time;
-      
-      // CREATE: Permitir desde frontend (registro/resend) - TODO: Migrar a Cloud Function
-      // NOTA: Frontend actualmente crea tokens con setDoc (líneas 168, 652 en emailActivationService.ts)
-      // Para producción, migrar creación a Cloud Function y cambiar a: allow create: if false;
-      allow create: if true;
-      
-      // DELETE: Prohibida (requiere auditoría)
+
+    // ----------------------------
+    // Professional Profiles (alias, if used)
+    // ----------------------------
+    match /professional_profiles/{userId} {
+      // The owner can read their own profile
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      // Profile creation / updates (onboarding)
+      allow create, update: if request.auth != null
+                             && request.auth.uid == userId;
+
+      // No deletes from client
       allow delete: if false;
     }
-    
-    // Professionals
-    match /professionals/{professionalId} {
-      allow read, write: if isSignedIn();
-    }
-    
-    // Patients
-    match /patients/{patientId} {
-      allow read, write: if isSignedIn();
-    }
-    
-    // Episodes (Episode Treatment Plan, Clinical Vault, etc.)
-    match /episodes/{episodeId} {
-      allow read, write: if isSignedIn();
-    }
-    
-    // Sessions (clinic notes, daily notes)
-    match /sessions/{sessionId} {
-      allow read, write: if isSignedIn();
-    }
-    
-    // Analytics simplificado (eventos agregados, counters, etc.)
-    match /analytics/{docId} {
-      allow read, write: if isSignedIn();
-    }
-    
-    // Value Analytics Collection - PHIPA Compliant
-    match /value_analytics/{document} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+
+    // ----------------------------
+    // Analytics Events
+    // ----------------------------
+    match /analytics_events/{eventId} {
+      // App can create events
+      allow create: if request.auth != null;
+
+      // Only admins (internal / debugging) can read
+      allow read: if request.auth != null
+                  && request.auth.token.admin == true;
+
+      // Immutable events
+      allow update, delete: if false;
     }
 
-    // User Feedback Collection - Beta Testing
-    match /user_feedback/{document} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+    // ----------------------------
+    // Metrics Tech (written by CF)
+    // ----------------------------
+    match /metrics_tech/{docId} {
+      // Any authenticated user can read
+      allow read: if request.auth != null;
+
+      // Only backend (Cloud Functions / admin)
+      allow write: if request.auth != null
+                   && request.auth.token.admin == true;
     }
 
-    // Consent Verifications Collection - PHIPA Compliance
-    match /consent_verifications/{document} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
+    // ----------------------------
+    // Metrics Growth
+    // ----------------------------
+    match /metrics_growth/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.token.admin == true;
     }
-    
-    // Fallback: Solo para colecciones autenticadas
-    // IMPORTANTE: Revisar antes de producción
-    match /{document=**} {
-      allow read, write: if isSignedIn();
+
+    // ----------------------------
+    // Metrics Realtime
+    // ----------------------------
+    match /metrics_realtime/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.token.admin == true;
     }
-    
   }
 }
-
