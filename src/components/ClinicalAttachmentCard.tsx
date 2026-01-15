@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import type { ClinicalAttachment } from '../services/clinicalAttachmentService';
 
 interface ClinicalAttachmentCardProps {
@@ -88,10 +88,22 @@ export function ClinicalAttachmentCard({
       )}
 
       {!attachment.extractedText && !attachment.error && (
-        <div className="mt-3 p-2 bg-slate-50 rounded-md border border-slate-200">
-          <p className="text-xs text-slate-600 font-apple font-light">
-            Processing...
-          </p>
+        <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-blue-800 font-apple">
+                Processing file...
+              </p>
+              <p className="text-xs text-blue-700 mt-0.5 font-apple font-light">
+                {attachment.contentType?.includes('pdf') 
+                  ? 'Extracting text from PDF'
+                  : attachment.contentType?.startsWith('image/')
+                  ? 'Analyzing image content'
+                  : 'Reading file content'}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

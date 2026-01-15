@@ -290,3 +290,5 @@ Estos pueden agregarse después si se necesita más granularidad en Phase 2.
 **Revisado por**: Pendiente  
 **Aprobado por**: Pendiente
 
+
+

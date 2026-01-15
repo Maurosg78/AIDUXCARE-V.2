@@ -20,11 +20,14 @@ import { ProfessionalOnboardingPage } from '../pages/ProfessionalOnboardingPage'
 import { EmailVerifiedPage } from '../pages/EmailVerifiedPage';
 import HospitalPortalPage from '../pages/HospitalPortalPage';
 import HospitalPortalLandingPage from '../pages/HospitalPortalLandingPage';
+import UnifiedLandingPage from '../pages/UnifiedLandingPage';
 import InpatientPortalPage from '../pages/InpatientPortalPage';
 import PublicLandingPage from '../pages/PublicLandingPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
 import AuthActionPage from '../pages/AuthActionPage';
+import TechDashboard from '../pages/Dashboard/TechDashboard';
+import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
 
 // LayoutWrapper simple
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -53,7 +56,7 @@ function NoteDetailWrapper() {
 }
 
 export const createRouter = () => createBrowserRouter([
-  { path: '/', element: <HospitalPortalLandingPage /> }, // Main landing page - Hospital Portal
+  { path: '/', element: <UnifiedLandingPage /> }, // Main landing page - Unified (Hospital, Private Practice, Get Started)
   { path: '/login', element: <LoginPage /> }, // Login page
   { path: '/register', element: <RegisterPage /> },
   // WO-ONB-UNIFY-01: Redirigir /onboarding a /professional-onboarding (único proceso de onboarding)
@@ -78,6 +81,8 @@ export const createRouter = () => createBrowserRouter([
   { path: '/notes/:id', element: <AuthGuard><LayoutWrapper><NoteDetailWrapper /></LayoutWrapper></AuthGuard> },
   { path: '/workflow', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
+  { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
+  { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent/:token', element: <ConsentVerificationPage /> }, // Public consent link (no auth required)
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)

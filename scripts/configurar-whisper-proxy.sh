@@ -46,3 +46,6 @@ echo "2. Probar grabación de audio en /workflow?type=initial"
 echo "3. Verificar que la transcripción funciona sin errores de CORS"
 
 
+
+
+

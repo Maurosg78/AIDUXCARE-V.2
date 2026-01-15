@@ -175,3 +175,5 @@ firebase firestore:get metrics_realtime/counters
 
 **Próximo**: WO-06 — Firestore Security Rules (después de completar deploy)
 
+
+

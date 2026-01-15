@@ -54,6 +54,56 @@ export interface SOAPGenerationError {
 }
 
 /**
+ * ✅ WO-PHASE3-CRITICAL-FIXES: Anti-Hallucination Validation
+ * 
+ * IMPORTANT: Phase 2 (Physical Evaluation) does NOT document modalities.
+ * Modalities are added manually by the user in Phase 3 (SOAP Plan).
+ * 
+ * This validation ONLY:
+ * - Logs warnings if AI suggests specific modalities without clinical context
+ * - Does NOT remove content (user can add modalities manually)
+ * - Does NOT validate against Phase 2 (modalities aren't documented there)
+ * 
+ * The user is free to add any modalities manually in the SOAP Plan editor.
+ */
+function validateSOAPAgainstDocumentation(
+  generatedSOAP: SOAPNote,
+  context: SOAPContext
+): { warnings: string[]; cleanedPlan: string } {
+  const warnings: string[] = [];
+  // ✅ CRITICAL: Do NOT modify the plan - user can add modalities manually
+  const cleanedPlan = generatedSOAP.plan || '';
+
+  // ✅ IMPORTANT: Phase 2 does NOT document modalities
+  // Physical evaluation tests are for assessment, not treatment documentation
+  // Modalities are added manually by the clinician in Phase 3
+
+  // Only log warnings for very specific hallucinations (e.g., mentioning specific
+  // modality parameters or brand names that AI shouldn't invent)
+  const suspiciousPatterns = [
+    /\d+\s*(hz|mhz|watts?|joules?|minutes?)\s*(of|for)\s*(ultrasound|tens|laser)/i,
+    /(brand|model|manufacturer)\s+(ultrasound|tens|laser)/i,
+  ];
+
+  const planText = cleanedPlan;
+  suspiciousPatterns.forEach(pattern => {
+    if (pattern.test(planText)) {
+      warnings.push(
+        `⚠️ AI may have suggested specific modality parameters. Please verify and adjust as needed.`
+      );
+    }
+  });
+
+  // ✅ DO NOT remove any content - user can edit and add modalities manually
+  // ✅ DO NOT validate against Phase 2 - modalities aren't documented there
+
+  return {
+    warnings,
+    cleanedPlan: cleanedPlan.trim()
+  };
+}
+
+/**
  * Generates SOAP note using Vertex AI
  */
 export async function generateSOAPNote(
@@ -292,6 +342,16 @@ export async function generateSOAPNote(
       });
     }
     
+    // ✅ WO-PHASE3-CRITICAL-FIXES: Anti-Hallucination Validation
+    // NOTE: Only logs warnings for debugging, does NOT modify plan
+    // Phase 2 does NOT document modalities - user can add them manually in Phase 3
+    const hallucinationValidation = validateSOAPAgainstDocumentation(soapNote, context);
+    if (hallucinationValidation.warnings.length > 0) {
+      console.warn('[SOAP Service] Anti-Hallucination warnings (for debugging only):', hallucinationValidation.warnings);
+      // ✅ CRITICAL: Do NOT modify plan - user can add modalities manually in Phase 3
+      // Plan remains as generated - user has full control to edit and add modalities
+    }
+    
     // ✅ REFINED: Validate for quality (guidelines, not strict limits)
     const validation = validateSOAP(soapNote);
     
@@ -391,34 +451,30 @@ function parseSOAPResponse(
     
     // If it's an object, serialize it
     if (typeof plan === 'object') {
+      // ✅ FIX: Log the actual structure for debugging
+      console.log('[SOAP Builder] Plan object structure:', JSON.stringify(plan, null, 2));
+      console.log('[SOAP Builder] Plan object keys:', Object.keys(plan));
+      
       let planText = '';
       
-      // Short-term goals
-      if (plan.short_term_goals?.length > 0) {
-        planText += 'Short-term Goals:\n';
-        plan.short_term_goals.forEach((goal: string) => {
-          planText += `- ${goal}\n`;
-        });
-        planText += '\n';
-      }
-      
-      // Long-term goals
-      if (plan.long_term_goals?.length > 0) {
-        planText += 'Long-term Goals:\n';
-        plan.long_term_goals.forEach((goal: string) => {
-          planText += `- ${goal}\n`;
-        });
-        planText += '\n';
-      }
+      // Try different possible property names
+      // Some AI models might use different naming conventions
+      const interventions = plan.interventions || plan.intervention || plan.treatment_interventions || plan.treatments || [];
+      const modalities = plan.modalities || plan.modality || plan.electrotherapy || [];
+      const exercises = plan.home_exercise_program || plan.exercises || plan.home_exercises || plan.HEP || [];
+      const education = plan.patient_education || plan.education || plan.patient_teaching || [];
+      const goals = plan.goals || plan.short_term_goals || [];
+      const longTermGoals = plan.long_term_goals || plan.longTermGoals || [];
+      const followUp = plan.follow_up_recommendations || plan.follow_up || plan.followUp || plan.followup || [];
       
       // Interventions
-      if (plan.interventions?.length > 0) {
+      if (Array.isArray(interventions) && interventions.length > 0) {
         planText += 'Interventions:\n';
-        plan.interventions.forEach((intervention: any) => {
+        interventions.forEach((intervention: any) => {
           if (typeof intervention === 'string') {
             planText += `- ${intervention}\n`;
           } else {
-            planText += `- ${intervention.type || intervention.description || JSON.stringify(intervention)}\n`;
+            planText += `- ${intervention.type || intervention.name || intervention.description || JSON.stringify(intervention)}\n`;
             if (intervention.frequency) {
               planText += `  Frequency: ${intervention.frequency}\n`;
             }
@@ -427,33 +483,87 @@ function parseSOAPResponse(
         planText += '\n';
       }
       
+      // Modalities
+      if (Array.isArray(modalities) && modalities.length > 0) {
+        planText += 'Modalities:\n';
+        modalities.forEach((modality: any) => {
+          if (typeof modality === 'string') {
+            planText += `- ${modality}\n`;
+          } else {
+            planText += `- ${modality.type || modality.name || modality.description || JSON.stringify(modality)}\n`;
+          }
+        });
+        planText += '\n';
+      }
+      
+      // Short-term goals
+      if (Array.isArray(goals) && goals.length > 0) {
+        planText += 'Short-term Goals:\n';
+        goals.forEach((goal: string) => {
+          planText += `- ${goal}\n`;
+        });
+        planText += '\n';
+      }
+      
+      // Long-term goals
+      if (Array.isArray(longTermGoals) && longTermGoals.length > 0) {
+        planText += 'Long-term Goals:\n';
+        longTermGoals.forEach((goal: string) => {
+          planText += `- ${goal}\n`;
+        });
+        planText += '\n';
+      }
+      
       // Patient education
-      if (plan.patient_education?.length > 0) {
+      if (Array.isArray(education) && education.length > 0) {
         planText += 'Patient Education:\n';
-        plan.patient_education.forEach((edu: string) => {
+        education.forEach((edu: string) => {
           planText += `- ${edu}\n`;
         });
         planText += '\n';
       }
       
       // Home exercise program
-      if (plan.home_exercise_program?.length > 0) {
+      if (Array.isArray(exercises) && exercises.length > 0) {
         planText += 'Home Exercise Program:\n';
-        plan.home_exercise_program.forEach((exercise: string) => {
+        exercises.forEach((exercise: string) => {
           planText += `- ${exercise}\n`;
         });
         planText += '\n';
       }
       
       // Follow-up
-      if (plan.follow_up_recommendations?.length > 0) {
+      if (Array.isArray(followUp) && followUp.length > 0) {
         planText += 'Follow-up:\n';
-        plan.follow_up_recommendations.forEach((rec: string) => {
+        followUp.forEach((rec: string) => {
           planText += `- ${rec}\n`;
         });
       }
       
-      return planText.trim() || 'Not documented.';
+      // ✅ FIX: If object has a 'text' or 'description' property, use it
+      if (!planText.trim() && (plan.text || plan.description || plan.plan_text)) {
+        planText = plan.text || plan.description || plan.plan_text || '';
+      }
+      
+      // ✅ FIX: If still empty, try to extract any string values from the object
+      if (!planText.trim()) {
+        const stringValues: string[] = [];
+        Object.keys(plan).forEach(key => {
+          const value = plan[key];
+          if (typeof value === 'string' && value.trim().length > 0) {
+            stringValues.push(`${key}: ${value}`);
+          } else if (Array.isArray(value) && value.length > 0) {
+            stringValues.push(`${key}: ${value.join(', ')}`);
+          }
+        });
+        if (stringValues.length > 0) {
+          planText = stringValues.join('\n');
+        }
+      }
+      
+      const result = planText.trim() || 'Not documented.';
+      console.log('[SOAP Builder] Serialized plan length:', result.length, 'chars');
+      return result;
     }
     
     return String(plan);
@@ -462,11 +572,13 @@ function parseSOAPResponse(
   // ✅ WO-PDF-004: Add logging for debugging
   console.log('[SOAP Builder] Parsing SOAP response...');
   console.log('[SOAP Builder] Treatment plan type:', typeof soapData?.plan);
-  if (typeof soapData?.plan === 'object') {
+  if (typeof soapData?.plan === 'object' && soapData?.plan !== null) {
     console.log('[SOAP Builder] Treatment plan is object, will serialize');
+    console.log('[SOAP Builder] Plan object preview:', JSON.stringify(soapData.plan).substring(0, 200));
   }
   console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
-  console.log('[SOAP Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
+  const formattedPlan = formatTreatmentPlan(soapData?.plan);
+  console.log('[SOAP Builder] Plan length after formatting:', formattedPlan.length, 'chars');
 
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {

@@ -89,6 +89,18 @@ CRITICAL INSTRUCTIONS:
 - Medications: Format as "name, dosage (units), frequency, duration". Correct dosage errors (oral meds are mg, not g). Flag interactions (NSAIDs+SSRIs/SNRIs = red flag).
 - Chief complaint: Capture precise anatomical location, quality, radiation, temporal evolution (onset/progression/triggers), aggravating/relieving factors, functional impact. Include intensity scales and active symptoms.
 - Physical tests: Consider anatomical structures, neural involvement (specify relevant spinal/neural levels when indicated by presentation, e.g., dermatomes, myotomes, specific spinal segments), joint integrity, functional capacity. Frame as "Consider assessing..." not "Perform...". CRITICAL: For EACH recommended physical test, attempt to search for and provide sensitivity/specificity values from reliable sources. See PHYSICAL TESTS SCORING REQUIREMENT below for detailed instructions. ANTI-HALLUCINATION: If no reliable source is available, use "unknown" rather than estimating or inventing values.
+
+PHYSICAL TESTS QUANTITY AND ORDERING REQUIREMENTS:
+- NO LIMIT on number of tests: Recommend ALL clinically relevant tests based on the presentation. Do not restrict yourself to 5 tests. If the case warrants 6, 7, 8, or more tests, include them all.
+- CRITICAL ORDERING: When recommending 6 or more tests, order them by clinical priority/importance:
+  * Tests 1-5: The MOST clinically important tests (highest priority based on evidence level, sensitivity/specificity, and clinical relevance)
+  * Tests 6+: Additional relevant tests that provide valuable clinical information but are of secondary priority
+- Ordering criteria (in priority order):
+  1. Evidence level: "strong" > "moderate" > "emerging"
+  2. Sensitivity/specificity scores: Higher scores indicate better diagnostic value
+  3. Clinical relevance: Tests that directly address the chief complaint and key findings
+  4. Safety/red flag assessment: Tests that help rule out serious pathology
+- Example: If recommending 8 tests, the first 5 should be the most critical for diagnosis and safety, while tests 6-8 are valuable but secondary considerations.
 - Temporal info: Capture when symptoms started, evolution over time, medication duration, intervention timelines, progression patterns.
 - Biopsychosocial: Comprehensive capture of psychological, social, occupational, functional limitations, protective factors, patient strengths, legal/employment context.`;
 
@@ -165,6 +177,18 @@ Example INCORRECT format (DO NOT DO THIS - will be flagged as hallucination):
 
 Neurological tests (dermatome, myotome, deep tendon reflexes) used by trauma physios: Attempt to find scores from neurological examination literature. If found, include source. If not found, use "unknown" rather than estimating.
 
+PHYSICAL TESTS QUANTITY AND ORDERING REQUIREMENTS:
+- NO LIMIT on number of tests: Recommend ALL clinically relevant tests based on the presentation. Do not restrict yourself to 5 tests. If the case warrants 6, 7, 8, or more tests, include them all.
+- CRITICAL ORDERING: When recommending 6 or more tests, order them by clinical priority/importance:
+  * Tests 1-5: The MOST clinically important tests (highest priority based on evidence level, sensitivity/specificity, and clinical relevance)
+  * Tests 6+: Additional relevant tests that provide valuable clinical information but are of secondary priority
+- Ordering criteria (in priority order):
+  1. Evidence level: "strong" > "moderate" > "emerging"
+  2. Sensitivity/specificity scores: Higher scores indicate better diagnostic value
+  3. Clinical relevance: Tests that directly address the chief complaint and key findings
+  4. Safety/red flag assessment: Tests that help rule out serious pathology
+- Example: If recommending 8 tests, the first 5 should be the most critical for diagnosis and safety, while tests 6-8 are valuable but secondary considerations.
+
 Use full words, avoid abbreviations per CAPR/CPO standards. Remember: you are exposing information to support clinical reasoning, not making clinical decisions.`;
 
 const DEFAULT_INSTRUCTIONS_FOLLOWUP = `Analyse this FOLLOW-UP visit transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Focus on PROGRESS ASSESSMENT and CLINICAL CONTINUITY rather than initial evaluation. Expose clinical variables related to: treatment response, symptom progression (improvement/worsening/stability), functional gains or limitations, adherence to previous treatment plan, new concerns or complications, and changes in biopsychosocial factors since the last visit. Present progress-focused clinical considerations including: comparison to baseline, treatment effectiveness indicators, functional improvements or setbacks, adherence patterns, and any new clinical considerations. Recommend evidence-based physiotherapy assessments ONLY if new concerns arise or if progress monitoring requires specific tests. Summarise biopsychosocial factors with emphasis on changes since last visit. Note when medical imaging or physician follow-up is required because findings exceed physiotherapy scope or pose safety risks. 
@@ -231,6 +255,18 @@ Example CORRECT format (no source available):
 }
 
 Neurological tests (dermatome, myotome, deep tendon reflexes) used by trauma physios: Attempt to find scores from neurological examination literature. If found, include source. If not found, use "unknown" rather than estimating.
+
+PHYSICAL TESTS QUANTITY AND ORDERING REQUIREMENTS:
+- NO LIMIT on number of tests: Recommend ALL clinically relevant tests based on the presentation. Do not restrict yourself to 5 tests. If the case warrants 6, 7, 8, or more tests, include them all.
+- CRITICAL ORDERING: When recommending 6 or more tests, order them by clinical priority/importance:
+  * Tests 1-5: The MOST clinically important tests (highest priority based on evidence level, sensitivity/specificity, and clinical relevance)
+  * Tests 6+: Additional relevant tests that provide valuable clinical information but are of secondary priority
+- Ordering criteria (in priority order):
+  1. Evidence level: "strong" > "moderate" > "emerging"
+  2. Sensitivity/specificity scores: Higher scores indicate better diagnostic value
+  3. Clinical relevance: Tests that directly address the chief complaint and key findings
+  4. Safety/red flag assessment: Tests that help rule out serious pathology
+- Example: If recommending 8 tests, the first 5 should be the most critical for diagnosis and safety, while tests 6-8 are valuable but secondary considerations.
 
 Use full words, avoid abbreviations per CAPR/CPO standards. Remember: you are exposing information to support clinical reasoning focused on progress assessment, not making clinical decisions.`;
 

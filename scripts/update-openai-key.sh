@@ -76,3 +76,6 @@ echo "--- .env.local.bak ---"
 grep "^VITE_OPENAI_API_KEY=" .env.local.bak | head -1 | sed 's/\(.\{20\}\).*\(.\{20\}\)/\1...\2/'
 
 
+
+
+

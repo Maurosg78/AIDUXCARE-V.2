@@ -31,3 +31,6 @@ export interface SanitizedPayload {
   patientIdHash?: string;
   sessionIdHash?: string;
 }
+
+
+

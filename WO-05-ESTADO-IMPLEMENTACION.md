@@ -287,3 +287,5 @@ firebase functions:log --only updateRealTimeMetrics --lines 30
 
 **Próximo paso**: Ejecutar `npm install` en `functions/` y continuar con build & deploy.
 
+
+

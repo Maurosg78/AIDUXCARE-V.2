@@ -133,3 +133,5 @@ Abrir: `https://pilot.aiduxcare.com`
 
 **WO-09: Configuración lista, pendiente DNS y ejecución** ⏳
 
+
+ 

@@ -183,10 +183,10 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           <p className="text-[15px] text-slate-500 font-light font-apple">
             Paste your transcript below or use the text area to enter clinical notes.
           </p>
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 max-w-md">
-            <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
+          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 max-w-md">
+            <AlertCircle className="mt-0.5 h-4 w-4 text-blue-600" />
             <p>
-              <span className="font-medium">Voice recording is currently being improved.</span> Please paste your transcript in the text area below. AiDuxCare automatically detects English, Canadian French, or Spanish.
+              <span className="font-medium">Voice recording is now available.</span> Click "Start Recording" to capture audio, or paste your transcript in the text area below. AiDuxCare automatically detects English, Canadian French, or Spanish.
             </p>
           </div>
         </div>
@@ -206,12 +206,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           ) : (
             <button
               onClick={startRecording}
-              disabled={true}
-              title="Voice recording is temporarily unavailable. Please paste your transcript in the text area below."
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 text-white font-medium shadow-sm cursor-not-allowed opacity-60 transition-all duration-200 font-apple text-[15px]"
+              disabled={isProcessing || isTranscribing}
+              title="Start voice recording to capture clinical conversation"
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-sm hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-apple text-[15px]"
             >
               <Play className="w-4 h-4" />
-              Start Recording (Coming Soon)
+              Start Recording
             </button>
           )}
         </div>
@@ -332,27 +332,10 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-4">
         <p className="text-xs text-slate-500">
           Audio is captured locally. No data is transmitted until you trigger the analysis.
         </p>
-        <button
-          onClick={handleAnalyzeWithVertex}
-          disabled={isProcessing || !transcript?.trim()}
-          className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 transition font-apple text-[15px] font-medium"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Brain className="w-4 h-4" />
-              Analyze with AiduxCare AI
-            </>
-          )}
-        </button>
       </div>
 
       <div className="mt-6 space-y-3">
@@ -381,7 +364,24 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           </div>
         )}
 
-        {attachments.length === 0 ? (
+        {/* ✅ Indicador de carga mientras se sube archivo */}
+        {isUploadingAttachment && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900 font-apple">
+                  Uploading file...
+                </p>
+                <p className="text-xs text-blue-700 mt-0.5 font-apple font-light">
+                  Please wait while we upload and process your file
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {attachments.length === 0 && !isUploadingAttachment ? (
           <p className="text-xs text-slate-500">
             Attach lab work, imaging reports, or patient-provided photos. Files stay in encrypted Firebase Storage.
           </p>
@@ -397,6 +397,36 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             ))}
           </div>
         )}
+        
+        {/* ✅ Botón "Analyze with AI" siempre aparece después de la sección de attachments */}
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <button
+            onClick={handleAnalyzeWithVertex}
+            disabled={isProcessing || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
+            className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4" />
+                Analyze with AiduxCare AI
+              </>
+            )}
+          </button>
+          <p className="mt-2 text-xs text-slate-500">
+            {transcript?.trim() && attachments.some(att => att.extractedText)
+              ? 'Analyze transcript and attachments together'
+              : transcript?.trim()
+              ? 'Analyze transcript with AI'
+              : attachments.some(att => att.extractedText)
+              ? 'Analyze uploaded attachments with AI'
+              : 'Enter a transcript or upload attachments to analyze'}
+          </p>
+        </div>
       </div>
     </div>
   );

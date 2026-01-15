@@ -21,6 +21,7 @@ import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
 import Button from '../components/ui/button';
 import { Select } from '../components/ui/Select';
 import { PRIMARY_SPECIALTIES, MSK_SKILLS } from '../components/wizard/onboardingConstants';
+import { getPilotConsentContent, getLanguageFromCountry } from '../utils/pilotConsent';
 
 import logger from '@/shared/utils/logger';
 
@@ -94,6 +95,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     yearsOfExperience: 0,
     specialty: '', // specialty/focus
     practiceSetting: '' as '' | 'clinic' | 'hospital' | 'home-care' | 'mixed',
+    practiceCountry: '', // País donde se ejercerá como profesional
     practicePreferences: {
       noteVerbosity: 'standard' as 'concise' | 'standard' | 'detailed',
       tone: 'formal' as 'formal' | 'friendly' | 'educational',
@@ -110,6 +112,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       phipaConsent: false, // PHIPA consent - default false (must be explicitly granted)
       pipedaConsent: false, // PIPEDA consent - default false (must be explicitly granted)
     },
+    pilotConsent: false, // WO-12: Pilot consent - required for all countries
   });
 
   // CTO SPEC: 3 wizards canónicos
@@ -356,14 +359,27 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           formData.yearsOfExperience && 
           formData.yearsOfExperience > 0 &&
           formData.specialty?.trim() && 
-          formData.practiceSetting
+          formData.practiceSetting &&
+          formData.practiceCountry?.trim()
         );
       case 'consent':
-        // WIZARD 3: Consentimiento - PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
-        return !!(
-          formData.dataUseConsent.phipaConsent === true &&
-          formData.dataUseConsent.pipedaConsent === true
-        );
+        // WIZARD 3: Consentimiento
+        // WO-12: Pilot consent is required for all countries
+        const hasPilotConsent = formData.pilotConsent === true;
+        
+        // PHIPA y PIPEDA son obligatorios SOLO para Canadá
+        const practiceCountry = formData.practiceCountry || formData.country || '';
+        const isCanada = practiceCountry.toUpperCase() === 'CA';
+        
+        if (isCanada) {
+          return hasPilotConsent && !!(
+            formData.dataUseConsent.phipaConsent === true &&
+            formData.dataUseConsent.pipedaConsent === true
+          );
+        }
+        
+        // Para otros países, solo se requiere pilot consent
+        return hasPilotConsent;
       default:
         return false;
     }
@@ -460,6 +476,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         // Prompting: seniority, nivel de explicación, lenguaje clínico, prioridad en hipótesis
         specialty: formData.specialty, // Prompting: lenguaje clínico específico
         experienceYears: formData.yearsOfExperience.toString(), // Prompting: seniority
+        practiceCountry: formData.practiceCountry || formData.country, // Compliance: país donde se ejercerá (fallback a country si no existe)
         practicePreferences, // Prompting: reduce fricción cognitiva, evita sugerencias no usadas
         
         // WIZARD 3: Consentimiento
@@ -467,8 +484,15 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         // Compliance: PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
         dataUseConsent: {
           ...formData.dataUseConsent,
-          phipaConsent: formData.dataUseConsent.phipaConsent, // Required for PHIPA compliance
-          pipedaConsent: formData.dataUseConsent.pipedaConsent, // Required for PIPEDA compliance
+          phipaConsent: formData.dataUseConsent.phipaConsent, // Required for PHIPA compliance (Canada only)
+          pipedaConsent: formData.dataUseConsent.pipedaConsent, // Required for PIPEDA compliance (Canada only)
+        },
+        // WO-12: Pilot consent - required for all countries
+        pilotConsent: {
+          accepted: formData.pilotConsent,
+          acceptedAt: new Date(),
+          version: 'pilot-v1',
+          practiceCountry: formData.practiceCountry || formData.country || '',
         },
         
         // CTO SPEC: registrationStatus pasa a 'complete' cuando se completa todo
@@ -1061,6 +1085,26 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   )}
                   </div>
 
+                {/* Practice Country - Required */}
+                <div className="relative">
+                  <label htmlFor="practiceCountry" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Country of Practice <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="practiceCountry"
+                    value={formData.practiceCountry}
+                    onChange={(e) => handleInputChange('practiceCountry', e.target.value)}
+                    className={getFieldValidationClass(formData.practiceCountry, true)}
+                    required
+                  >
+                    <option value="">Select</option>
+                    <option value="CA">Canadá</option>
+                    <option value="CL">Chile</option>
+                    <option value="ES">España</option>
+                  </select>
+                  {getFieldValidationIcon(formData.practiceCountry, true)}
+                </div>
+
                 {/* Practice Preferences */}
                 <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
                   <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">Practice Preferences</h4>
@@ -1179,17 +1223,55 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           )}
 
           {/* WIZARD 3 — Uso de datos y consentimiento (CTO Spec) */}
-          {currentStep === 2 && (
+          {currentStep === 2 && (() => {
+            // WO-12: Get practice country with fallback
+            const practiceCountry = formData.practiceCountry || formData.country || '';
+            const isCanada = practiceCountry.toUpperCase() === 'CA';
+            const consentContent = getPilotConsentContent(practiceCountry);
+            
+            return (
             <div className="bg-gradient-to-br from-gray-50 to-indigo-50/20 rounded-lg border border-indigo-200/60 p-4 mb-2 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
                 Data Use & Privacy Consent
               </h3>
               <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
-                Your informed consent for data use and compliance with Canadian privacy legislation
+                Your informed consent for data use and compliance with privacy legislation
               </p>
               
               <div className="space-y-3">
-                {/* SECTION 1: Canadian Privacy Legislation Compliance (Required) */}
+                {/* WO-12: SECTION 1: Pilot Consent (Required for all countries) */}
+                <div className="border-t border-indigo-200 pt-2">
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                    {consentContent.title} <span className="text-red-500">*</span>
+                  </h4>
+                  
+                  {/* Scrollable consent text */}
+                  <div className="max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200 mb-3 text-[10px] text-gray-700 font-apple font-light leading-relaxed">
+                    <div className="whitespace-pre-line">{consentContent.body}</div>
+                  </div>
+                  
+                  {/* Pilot Consent Checkbox */}
+                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
+                    <div className="flex items-start">
+                      <input
+                        type="checkbox"
+                        id="pilotConsent"
+                        checked={formData.pilotConsent}
+                        onChange={(e) => handleInputChange('pilotConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                        required
+                      />
+                      <div className="ml-2.5 flex-1">
+                        <label htmlFor="pilotConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                          {consentContent.checkboxLabel}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: Canadian Privacy Legislation Compliance (Required only for Canada) */}
+                {isCanada && (
                 <div className="border-t border-indigo-200 pt-2">
                   <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
                     Canadian Privacy Legislation Compliance <span className="text-red-500">*</span>
@@ -1250,6 +1332,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* SECTION 2: AI Assistant Personalization Preferences (Optional) */}
                 <div className="border-t border-indigo-200 pt-2">
@@ -1361,8 +1444,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-          )}
+            </div>
+          )})()}
 
           {/* Botones - Siempre visibles */}
           <div className="flex justify-between mt-3 pt-3 border-t border-gray-200">

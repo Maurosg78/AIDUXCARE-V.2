@@ -510,8 +510,78 @@ ${'='.repeat(60)}`;
     setHasChanges(true);
   };
 
+  // ✅ WO-PHASE3-CRITICAL-FIXES: Calculate SOAP completeness
+  const calculateCompleteness = (soap: SOAPNote): {
+    overall: number;
+    sections: Record<keyof SOAPNote, number>;
+  } => {
+    const sections = {
+      subjective: Math.min((soap.subjective?.length || 0) / 200, 1), // Target 200 chars
+      objective: Math.min((soap.objective?.length || 0) / 300, 1),   // Target 300 chars
+      assessment: Math.min((soap.assessment?.length || 0) / 250, 1), // Target 250 chars
+      plan: Math.min((soap.plan?.length || 0) / 400, 1),            // Target 400 chars
+    };
+    
+    const overall = (sections.subjective + sections.objective + sections.assessment + sections.plan) / 4;
+    
+    return { overall, sections };
+  };
+
+  const completeness = currentSOAP ? calculateCompleteness(currentSOAP) : { overall: 0, sections: { subjective: 0, objective: 0, assessment: 0, plan: 0 } };
+
   return (
     <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
+      {/* ✅ WO-PHASE3-CRITICAL-FIXES: Progress Indicator */}
+      {currentSOAP && (
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+          <div className="px-6 py-3">
+            {/* Overall progress */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-700">
+                SOAP Note Progress
+              </span>
+              <span className="text-sm text-gray-500">
+                {Math.round(completeness.overall * 100)}% complete
+              </span>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+              <div
+                className={
+                  completeness.overall >= 0.9 ? 'h-full bg-green-500 transition-all duration-500' :
+                  completeness.overall >= 0.5 ? 'h-full bg-yellow-500 transition-all duration-500' :
+                  'h-full bg-red-500 transition-all duration-500'
+                }
+                style={{ width: `${completeness.overall * 100}%` }}
+              />
+            </div>
+            
+            {/* Section indicators */}
+            <div className="grid grid-cols-4 gap-2">
+              {(['subjective', 'objective', 'assessment', 'plan'] as const).map((section) => {
+                const sectionCompleteness = completeness.sections[section];
+                const Icon = sectionCompleteness >= 0.8 ? CheckCircle : 
+                            sectionCompleteness >= 0.3 ? AlertCircle : 
+                            X;
+                const iconColor = sectionCompleteness >= 0.8 ? 'text-green-500' :
+                                 sectionCompleteness >= 0.3 ? 'text-yellow-500' :
+                                 'text-gray-300';
+                
+                return (
+                  <div key={section} className="text-center">
+                    <div className="text-xs text-gray-500 uppercase mb-1">
+                      {section[0]}
+                    </div>
+                    <Icon className={`w-5 h-5 mx-auto ${iconColor}`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b border-slate-200 bg-gray-50 px-6 py-4 rounded-t-2xl">
         <div className="flex items-center justify-between">
@@ -588,17 +658,19 @@ ${'='.repeat(60)}`;
               <>
                 {!isEditingFinalized ? (
                   <>
+                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Secondary action - Outline, same size */}
                     <button
                       onClick={handleUnfinalize}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg bg-gradient-warning hover:bg-gradient-warning-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors min-w-[120px] justify-center"
                       title="Unfinalize to edit this note (creates edit history)"
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      Edit Note
+                      <FileText className="w-4 h-4" />
+                      <span>Edit</span>
                     </button>
+                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Primary actions - Blue, same size */}
                     <button
                       onClick={handleCopyToClipboard}
-                      className="inline-flex flex-col items-center gap-1 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
                       title="Copy to clipboard for pasting into your EMR"
                     >
                       {copied ? (
@@ -610,30 +682,19 @@ ${'='.repeat(60)}`;
                         <>
                           <Copy className="w-4 h-4" />
                           <span>Copy to Clipboard</span>
-                          <span className="text-[10px] font-normal opacity-90">Paste into your EMR</span>
                         </>
                       )}
                     </button>
                     <button
                       onClick={handleDownloadAsText}
-                      className="inline-flex flex-col items-center gap-1 px-3 py-1.5 min-h-[48px] rounded-lg bg-gradient-secondary hover:bg-gradient-secondary-hover text-white text-xs font-medium shadow-sm transition font-apple"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
                       title="Download as text file"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                       <span>Download .txt</span>
-                      <span className="text-[10px] font-normal opacity-90">Save as text file</span>
                     </button>
-                    {onShare && (
-                      <button
-                        onClick={onShare}
-                        className="inline-flex flex-col items-center gap-1 px-3 py-1.5 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white text-xs font-medium shadow-sm transition font-apple"
-                        title="Share securely via hospital portal or other methods"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span>Share</span>
-                        <span className="text-[10px] font-normal opacity-90">Secure sharing</span>
-                      </button>
-                    )}
+                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Secondary action - Outline, same size */}
+                    {/* Share button removed per plan - Copy/Download are sufficient */}
                   </>
                 ) : (
                   <>

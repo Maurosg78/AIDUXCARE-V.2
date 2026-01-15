@@ -18,6 +18,9 @@ export default defineConfig({
   server: {
     port: 5174,
     host: true,
+    allowedHosts: [
+      'pilot.aiduxcare.com',
+    ],
     strictPort: false,
     watch: {
       ignored: [

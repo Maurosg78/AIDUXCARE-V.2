@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { OpenAIWhisperService, WhisperMode, WhisperSupportedLanguage, WhisperTranscriptionResult } from '../services/OpenAIWhisperService';
+import { FirebaseWhisperService, WhisperTranscriptionResult } from '../services/FirebaseWhisperService';
+import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
 
 type TranscriptMeta = {
   detectedLanguage: string | null;
@@ -223,8 +224,8 @@ export const useTranscript = () => {
         setIsTranscribing(true);
         
         try {
-          // Attempt full transcription with timeout (handled by OpenAIWhisperService)
-          const result = await OpenAIWhisperService.transcribe(largeBlob, {
+          // Attempt full transcription with timeout (handled by FirebaseWhisperService)
+          const result = await FirebaseWhisperService.transcribe(largeBlob, {
             languageHint: languagePreference,
             mode
           });
@@ -314,7 +315,7 @@ export const useTranscript = () => {
         console.log(`[useTranscript] Transcribing chunk: ${chunkBlob.size} bytes, type: ${chunkBlob.type}`);
 
         try {
-          const result = await OpenAIWhisperService.transcribe(normalizedBlob, {
+          const result = await FirebaseWhisperService.transcribe(normalizedBlob, {
             languageHint: languagePreference,
             mode
           });
@@ -347,7 +348,7 @@ export const useTranscript = () => {
             setError('Network error during transcription. Please check your connection.');
           } else if (errorMessage.includes('corrupted') || errorMessage.includes('corrupt') || errorMessage.includes('unsupported')) {
             // Audio format/corruption errors - provide helpful guidance
-            setError(errorMessage); // Already user-friendly from OpenAIWhisperService
+            setError(errorMessage); // Already user-friendly from FirebaseWhisperService
           } else {
             // Show all other errors to user with context
             setError(`Transcription error: ${errorMessage}. Recording continues, but transcription may be incomplete.`);
@@ -398,16 +399,16 @@ export const useTranscript = () => {
           // Store chunk for final transcription if needed
           audioChunksRef.current.push(normalizedBlob);
           
-          // ✅ SPRINT 2 P3: Only transcribe FIRST chunk for real-time feedback
-          // Subsequent chunks may be incomplete/corrupted in webm format
-          // We'll transcribe the complete audio when recording stops
-          if (audioChunksRef.current.length === 1 && normalizedBlob.size >= 2000) {
-            console.log('[useTranscript] Transcribing first chunk for real-time feedback...');
-            await transcribeChunk(normalizedBlob);
+          // ✅ FIX UX: NO transcribir primer chunk para evitar confusión
+          // El usuario ve texto parcial y luego silencio, pensando que se rompió
+          // Mejor esperar hasta el final y transcribir todo de una vez
+          if (audioChunksRef.current.length === 1) {
+            console.log('[useTranscript] First chunk captured, continuing recording... Will transcribe complete audio on stop');
+            // NO transcribir - esperar hasta el final para mejor UX
           } else if (audioChunksRef.current.length > 1) {
             console.log(`[useTranscript] Skipping intermediate chunk ${audioChunksRef.current.length} - will transcribe complete audio on stop`);
           } else {
-            console.log(`[useTranscript] Chunk too small for transcription: ${normalizedBlob.size} bytes`);
+            console.log(`[useTranscript] Chunk too small: ${normalizedBlob.size} bytes`);
           }
         } else {
           console.warn('[useTranscript] Received empty or invalid audio chunk');

@@ -230,7 +230,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       ? allAiSuggestions 
       : pendingAiSuggestions;
     
-    console.log('[EvaluationTab] Calculating top 5:', {
+    console.log('[EvaluationTab] Calculating top 5 (memoized):', {
       allAiSuggestionsCount: allAiSuggestions?.length || 0,
       pendingAiSuggestionsCount: pendingAiSuggestions.length,
       usingAll: !!(allAiSuggestions && allAiSuggestions.length > 0),
@@ -269,7 +269,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
     // This determines the top 5 best tests based on clinical value
     const sortedAndSeparated = getTopPhysicalTests(formattedSuggestions, 5);
     
-    console.log('[EvaluationTab] Top 5 calculated:', {
+    console.log('[EvaluationTab] Top 5 calculated (memoized):', {
       topTestsCount: sortedAndSeparated.topTests.length,
       remainingTestsCount: sortedAndSeparated.remainingTests.length,
       topTests: sortedAndSeparated.topTests.map((t: any) => t.name || t.rawName),
@@ -311,25 +311,46 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
     
     // ✅ FIX: Filter additional tests (6+) to exclude tests that are already selected
     // If a test from the sidebar is selected, it should disappear from the sidebar because it's now in Selected Tests
+    // Use the same logic as isTestAlreadySelected: compare by id OR normalized name
+    // IMPORTANT: Clean "Consider assessing" prefix from names to match how tests are created in continueToEvaluation
+    const normalizeName = (value: string) => value.toLowerCase().trim();
+    const cleanTestName = (name: string) => name.replace(/^Consider assessing\s+/i, '').trim();
+    
     const additionalTestsFiltered = remainingTestsFormatted.filter((test: any) => {
-      const candidateName = test.match?.name || test.rawName || test.name || '';
-      const candidateId = test.match?.id || `ai-${candidateName.toLowerCase().trim()}`;
-      const alreadySelected = filteredEvaluationTests.some(
-        (evaluationTest) => evaluationTest.id === candidateId || 
-        evaluationTest.name.toLowerCase().trim() === candidateName.toLowerCase().trim()
+      const rawCandidateName = test.match?.name || test.rawName || test.name || '';
+      const candidateName = cleanTestName(rawCandidateName); // Clean prefix to match how tests are created
+      const candidateId = test.match?.id || `ai-${normalizeName(candidateName)}`;
+      
+      // Use the same comparison logic as isTestAlreadySelected
+      // Use evaluationTests (not filteredEvaluationTests) to match isTestAlreadySelected behavior
+      const alreadySelected = evaluationTests.some(
+        (evaluationTest) => {
+          const testIdMatches = evaluationTest.id === candidateId;
+          // Compare cleaned names to ensure consistency
+          const testNameMatches = normalizeName(evaluationTest.name) === normalizeName(candidateName);
+          return testIdMatches || testNameMatches;
+        }
       );
+      
       return !alreadySelected; // Only show tests that are NOT already selected
     });
     
     const finalResult = {
       topTests: topTestsFiltered,
-      remainingTests: additionalTestsFiltered, // ✅ FIX: Filtered to exclude already selected tests
+      remainingTests: additionalTestsFiltered, // ✅ FIX: Filter out tests that are already in the main list
     };
+    
+    const sidebarShouldShow = finalResult.remainingTests.length > 0;
+    const remainingTestsCount = finalResult.remainingTests.length;
     
     console.log('[EvaluationTab] Final result:', {
       topTestsCount: finalResult.topTests.length,
-      remainingTestsCount: finalResult.remainingTests.length,
-      sidebarShouldShow: finalResult.remainingTests.length > 0,
+      remainingTestsCount,
+      sidebarShouldShow,
+      totalSuggestionsFromVertex: allSuggestions.length,
+      reason: remainingTestsCount === 0 
+        ? 'No sidebar: Vertex only suggested 5 tests (or fewer). Sidebar only shows tests 6+.' 
+        : `Sidebar will show ${remainingTestsCount} additional test(s)`,
       remainingTestsDetails: finalResult.remainingTests.map((t: any) => ({
         originalIndex: t.originalIndex || t.key,
         rawName: t.rawName || t.name,
