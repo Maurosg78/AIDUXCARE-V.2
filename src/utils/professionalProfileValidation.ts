@@ -40,3 +40,54 @@ export function isProfessionalProfileReady(
   return false;
 }
 
+/**
+ * WO-13: Check if a professional profile is complete according to pilot requirements
+ * 
+ * Single source of truth for profile completeness in pilot mode.
+ * A profile is considered "complete" if it has:
+ * - firstName
+ * - professionalTitle (or profession)
+ * - specialty
+ * - practiceCountry (or country as fallback)
+ * - pilotConsent?.accepted === true
+ * 
+ * This criterion must be used consistently throughout the app for routing decisions.
+ * 
+ * @param profile - The professional profile to check
+ * @returns true if the profile is complete, false otherwise
+ */
+export function isProfileComplete(
+  profile: ProfessionalProfile | null | undefined
+): boolean {
+  if (!profile) {
+    return false;
+  }
+
+  // Extract firstName from fullName or displayName if not directly available
+  const firstName = profile.fullName?.split(' ')[0] || 
+                    profile.displayName?.split(' ')[0] || 
+                    '';
+  
+  const hasFirstName = firstName.trim() !== '';
+  
+  // professionalTitle can be in professionalTitle or profession field
+  const hasProfessionalTitle = !!(
+    (profile.professionalTitle && profile.professionalTitle.trim() !== '') ||
+    (profile.profession && profile.profession.trim() !== '')
+  );
+  
+  const hasSpecialty = !!(profile.specialty && profile.specialty.trim() !== '');
+  
+  // practiceCountry with fallback to country
+  const practiceCountry = profile.practiceCountry || profile.country || '';
+  const hasPracticeCountry = practiceCountry.trim() !== '';
+  
+  // pilotConsent is required and must be accepted
+  const hasPilotConsent = profile.pilotConsent?.accepted === true;
+
+  return hasFirstName && 
+         hasProfessionalTitle && 
+         hasSpecialty && 
+         hasPracticeCountry && 
+         hasPilotConsent;
+}

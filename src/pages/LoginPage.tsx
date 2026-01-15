@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useProfessionalProfile } from "../context/ProfessionalProfileContext";
 import { emailActivationService } from "../services/emailActivationService";
+import { isProfileComplete } from "../utils/professionalProfileValidation";
 import Button from "../components/ui/button";
 
 import logger from "@/shared/utils/logger";
@@ -28,7 +29,7 @@ const LoginPage: React.FC = () => {
     }
   }, [location, navigate]);
 
-  // WO-AUTH-GATE-LOOP-06 ToDo 3: Función para manejar redirección post-login
+  // WO-13: Función para manejar redirección post-login usando isProfileComplete como fuente única de verdad
   const handlePostLoginRedirect = () => {
     // Si hay error de Firestore (adblock, etc.), NO navegar - AuthGuard mostrará soft-fail
     if (profileError) {
@@ -37,14 +38,18 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    // Si profile.registrationStatus === 'complete' → /command-center
-    if (profile?.registrationStatus === 'complete') {
+    // WO-13: Usar isProfileComplete (criterio unificado) en lugar de registrationStatus
+    // NO usar emailVerified para routing en piloto
+    if (isProfileComplete(profile)) {
+      // Perfil completo → Command Center
+      logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center");
       navigate("/command-center", {
         replace: true,
         state: { from: "login" },
       });
     } else {
-      // Si 'incomplete' o no existe → /professional-onboarding
+      // Perfil incompleto → Onboarding
+      logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding");
       navigate("/professional-onboarding", {
         replace: true,
         state: { from: "login" },

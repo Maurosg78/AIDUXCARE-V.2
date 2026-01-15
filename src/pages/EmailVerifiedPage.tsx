@@ -3,11 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { getAuth, applyActionCode } from 'firebase/auth';
 import { useAuth } from '../hooks/useAuth';
+import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
+import { isProfileComplete } from '../utils/professionalProfileValidation';
 
 export const EmailVerifiedPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth(); // WO-AUTH-VERIFYEMAIL-ROUTE-05: Verificar si usuario ya está autenticado
+  const { profile, loading: profileLoading } = useProfessionalProfile(); // WO-13: Obtener perfil para re-evaluar después de verificación
   const [countdown, setCountdown] = useState(2); // Reducido a 2 segundos
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
@@ -67,8 +70,8 @@ export const EmailVerifiedPage: React.FC = () => {
     }
   };
 
-  // Countdown y redirección - solo se ejecuta una vez cuando la verificación termina
-  // WO-AUTH-VERIFYEMAIL-ROUTE-05: Arreglar warning de React Router (navigate durante render)
+  // WO-13: Countdown y redirección - re-evaluar perfil después de verificación
+  // NO redirigir a /login ciegamente, aplicar regla de perfil completo
   useEffect(() => {
     // Solo iniciar countdown si ya no está verificando, no hay error, y no se ha iniciado antes
     if (!isVerifying && !verificationError && !hasStartedCountdownRef.current && !isRedirecting) {
@@ -83,13 +86,32 @@ export const EmailVerifiedPage: React.FC = () => {
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            // WO-AUTH-VERIFYEMAIL-ROUTE-05: Si usuario ya está autenticado, redirigir a command-center
-            // Si no está autenticado, redirigir a login
+            // WO-13: Re-evaluar sesión activa y aplicar regla de perfil completo
             setTimeout(() => {
               if (user) {
-                // WO-ONB-UNIFY-01: Usuario autenticado - AuthGuard redirigirá a /professional-onboarding si profile incomplete
-                // o a /command-center si profile completo
-                navigate('/command-center', { replace: true });
+                // Usuario autenticado - re-evaluar perfil después de verificación
+                // Esperar un momento si el perfil aún se está cargando
+                if (profileLoading) {
+                  // Esperar 500ms más para que el perfil se cargue
+                  setTimeout(() => {
+                    if (isProfileComplete(profile)) {
+                      // Perfil completo → Command Center
+                      navigate('/command-center', { replace: true });
+                    } else {
+                      // Perfil incompleto → Onboarding
+                      navigate('/professional-onboarding', { replace: true });
+                    }
+                  }, 500);
+                } else {
+                  // Perfil ya cargado, aplicar regla inmediatamente
+                  if (isProfileComplete(profile)) {
+                    // Perfil completo → Command Center
+                    navigate('/command-center', { replace: true });
+                  } else {
+                    // Perfil incompleto → Onboarding
+                    navigate('/professional-onboarding', { replace: true });
+                  }
+                }
               } else {
                 // Usuario no autenticado - redirigir a login
                 navigate('/login', { 
@@ -114,13 +136,20 @@ export const EmailVerifiedPage: React.FC = () => {
         timerRef.current = null;
       }
     };
-  }, [isVerifying, verificationError, isRedirecting]); // Removed navigate from dependencies to avoid re-renders
+  }, [isVerifying, verificationError, isRedirecting, user, profile, profileLoading]); // WO-13: Incluir profile y profileLoading en dependencias
 
+  // WO-13: Re-evaluar perfil antes de redirigir manualmente
   const handleGoToLogin = () => {
     setIsRedirecting(true);
-    // WO-AUTH-VERIFYEMAIL-ROUTE-05: Si usuario ya está autenticado, redirigir a command-center
+    // WO-13: Si usuario ya está autenticado, re-evaluar perfil antes de redirigir
     if (user) {
-      navigate('/command-center', { replace: true });
+      if (isProfileComplete(profile)) {
+        // Perfil completo → Command Center
+        navigate('/command-center', { replace: true });
+      } else {
+        // Perfil incompleto → Onboarding
+        navigate('/professional-onboarding', { replace: true });
+      }
     } else {
       navigate('/login', { 
         replace: true,

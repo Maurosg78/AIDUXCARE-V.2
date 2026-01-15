@@ -18,6 +18,7 @@ import { firebaseAuthService } from '@/services/firebaseAuthService';
 import { useAuth } from '../hooks/useAuth';
 
 import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
+import { isProfileComplete } from '../utils/professionalProfileValidation';
 import Button from '../components/ui/button';
 import { Select } from '../components/ui/Select';
 import { PRIMARY_SPECIALTIES, MSK_SKILLS } from '../components/wizard/onboardingConstants';
@@ -41,8 +42,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [emailValidation, setEmailValidation] = useState<{ isValid: boolean; message: string; checking: boolean }>({ isValid: true, message: '', checking: false });
 
-  // WO-ONB-UNIFY-01: Si usuario ya está autenticado y tiene perfil completo, redirigir a command-center
-  // NO hay usuarios antiguos que necesiten upgrade - todos usan el mismo formulario
+  // WO-13: Si usuario ya está autenticado y tiene perfil completo (según criterio WO-13), redirigir a command-center
+  // NO usar emailVerified para routing en modo piloto
   // WO-ONB-SIGNUP-01: NO redirigir si estamos mostrando la pantalla de éxito
   useEffect(() => {
     // No redirigir si estamos en estado de éxito (mostrando pantalla de éxito)
@@ -51,25 +52,18 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     }
     
     if (user && !profileLoading) {
-      // Si el usuario está autenticado y tiene perfil completo, redirigir a command-center
-      if (profile?.registrationStatus === 'complete') {
-        logger.info("[PROFESSIONAL_ONBOARDING] User already has complete profile, redirecting to command-center", {
+      // WO-13: Usar isProfileComplete como fuente única de verdad (NO usar registrationStatus directamente)
+      if (isProfileComplete(profile)) {
+        logger.info("[PROFESSIONAL_ONBOARDING] User already has complete profile (WO-13 criteria), redirecting to command-center", {
           uid: user.uid,
-          registrationStatus: profile.registrationStatus
+          registrationStatus: profile?.registrationStatus
         });
         navigate('/command-center', { replace: true });
         return;
       }
-      // Si el usuario está autenticado pero no tiene email verificado, redirigir a verificación
-      // PERO solo si no acabamos de completar el onboarding (para evitar loops)
-      if (user.email && !user.emailVerified && !isSuccess) {
-        logger.info("[PROFESSIONAL_ONBOARDING] User email not verified, redirecting to verify-email", {
-          uid: user.uid,
-          email: user.email
-        });
-        navigate(`/verify-email?email=${encodeURIComponent(user.email)}`, { replace: true });
-        return;
-      }
+      // WO-13: NO usar emailVerified para routing en modo piloto
+      // Cloudflare Access valida identidad, perfil manda, no el email
+      // Removido: verificación de emailVerified para routing
     }
   }, [user, profile, profileLoading, navigate, isSuccess]);
 

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { useProfessionalProfile } from '../context/ProfessionalProfileContext';
-import { isProfessionalProfileReady } from '../utils/professionalProfileValidation';
+import { isProfessionalProfileReady, isProfileComplete } from '../utils/professionalProfileValidation';
 
 import logger from '@/shared/utils/logger';
 
@@ -137,8 +137,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Si requiere verificación de email y no está verificado
+  // WO-13: En modo piloto, NO usar emailVerified para routing
+  // Cloudflare Access valida identidad, perfil manda, no el email
+  // Solo verificar email si NO es modo piloto (cuando requireEmailVerification es explícitamente true y no es piloto)
+  // En piloto, requireEmailVerification debería ser false
   if (requireEmailVerification && emailVerified === false && user.email) {
+    // WO-13: En piloto, esto NO debería ejecutarse, pero lo mantenemos por compatibilidad
     return <Navigate to={`/verify-email?email=${encodeURIComponent(user.email)}`} replace />;
   }
 
@@ -187,14 +191,25 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       hasRedirectedRef.current = true; // Marcar que ya redirigimos
       logger.info("[AUTHGUARD] No profile found (confirmed 'not found'), redirecting to professional onboarding");
       return <Navigate to="/professional-onboarding" replace />;
-    } else if (profile.registrationStatus !== 'complete') {
-      // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 3: Solo redirigir si profile existe y registrationStatus !== 'complete'
-      // Esto significa que confirmamos que el perfil existe pero está incompleto
-      hasRedirectedRef.current = true; // Marcar que ya redirigimos
-      logger.info("[AUTHGUARD] Profile incomplete (confirmed), redirecting to professional onboarding", {
-        registrationStatus: profile.registrationStatus
-      });
-      return <Navigate to="/professional-onboarding" replace />;
+    } else {
+      // WO-13: Usar isProfileComplete como fuente única de verdad
+      // NO usar registrationStatus directamente, usar el criterio unificado
+      const profileIsComplete = isProfileComplete(profile);
+      
+      if (!profileIsComplete) {
+        // Perfil incompleto según criterio WO-13
+        hasRedirectedRef.current = true; // Marcar que ya redirigimos
+        logger.info("[AUTHGUARD] Profile incomplete (WO-13 criteria), redirecting to professional onboarding", {
+          registrationStatus: profile.registrationStatus,
+          hasFirstName: !!(profile.fullName?.split(' ')[0] || profile.displayName?.split(' ')[0]),
+          hasProfessionalTitle: !!(profile.professionalTitle || profile.profession),
+          hasSpecialty: !!profile.specialty,
+          hasPracticeCountry: !!(profile.practiceCountry || profile.country),
+          hasPilotConsent: profile.pilotConsent?.accepted === true
+        });
+        return <Navigate to="/professional-onboarding" replace />;
+      }
+      // Si profileIsComplete === true, permitir acceso (no redirigir)
     }
     // Si registrationStatus === 'complete', permitir acceso (no redirigir)
   }
