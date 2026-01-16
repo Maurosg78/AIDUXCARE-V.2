@@ -1,0 +1,42 @@
+name: security-docs-ci
+on:
+  pull_request_target:
+    branches: [ main, ci/bootstrap-workflows ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - name: Checkout PR HEAD
+        uses: actions/checkout@v4
+        with:
+          # repo y SHA del PR (funciona tanto si es mismo repo como fork)
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Debug workspace
+        run: |
+          echo "HEAD SHA:" $(git rev-parse HEAD)
+          echo "pwd:" $(pwd)
+          ls -la
+          ls -la scripts || true
+
+      - name: Setup ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Make docs-sec
+        run: |
+          chmod +x scripts/security_doc_extractor.sh scripts/security_doc_extractor_supabase.sh
+          make docs-sec
+
+      - name: Ensure section is committed (no drift)
+        run: |
+          git add -N docs/architecture/section4_security_documented.md
+          if ! git diff --exit-code -- docs/architecture/section4_security_documented.md; then
+            echo "::error file=docs/architecture/section4_security_documented.md::El documento no está sincronizado. Ejecuta 'make docs-sec' y commitea el resultado."
+            exit 1
+          fi
