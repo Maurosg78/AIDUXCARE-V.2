@@ -1,3 +1,4 @@
+// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -5,22 +6,22 @@ import path from "path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src")
-    }
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
-  plugins: [react({
-    jsxRuntime: 'automatic',
-    fastRefresh: true,
-  })],
+  plugins: [
+    react({
+      jsxRuntime: "automatic",
+      // fastRefresh: true, // ❌ no existe en @vitejs/plugin-react v4
+    }),
+  ],
   css: {
-    postcss: './postcss.config.cjs',
+    postcss: "./postcss.config.cjs",
   },
   server: {
     port: 5174,
     host: true,
-    allowedHosts: [
-      'pilot.aiduxcare.com',
-    ],
+    allowedHosts: ["pilot.aiduxcare.com"],
     strictPort: false,
     watch: {
       ignored: [
@@ -47,19 +48,16 @@ export default defineConfig({
     },
     hmr: {
       overlay: true,
-      // Forzar recarga completa en cambios de módulos críticos
-      fullReload: false,
+      // fullReload: false, // ❌ no existe en Vite 5
     },
-    // Deshabilitar caché del servidor para desarrollo
     headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
-    // Asegurar que los archivos estáticos se sirvan correctamente
     fs: {
       strict: false,
-      allow: ['..'],
+      allow: [".."],
     },
   },
   optimizeDeps: {
@@ -72,34 +70,31 @@ export default defineConfig({
       "firebase/firestore",
     ],
     exclude: ["@firebase/util"],
-    // Forzar re-optimización cuando cambien los módulos
     force: false,
   },
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
+    outDir: "dist",
+    assetsDir: "assets",
     rollupOptions: {
       output: {
         manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'react-router': ['react-router-dom'],
+          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+          "react-router": ["react-router-dom"],
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
       },
     },
     chunkSizeWarningLimit: 1000,
-    target: 'es2020',
+    target: "es2020",
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
     },
-    // Mejorar manejo de errores en módulos dinámicos
     dynamicImportVarsOptions: {
       warnOnError: false,
     },
   },
-  // Copiar archivos públicos (incluyendo sw.js)
-  publicDir: 'public',
+  publicDir: "public",
 });
