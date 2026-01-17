@@ -311,7 +311,7 @@ export async function generateSOAPNote(
     
     // Log warnings for quality issues (guidelines exceeded, repetition)
     if (validation.warnings.length > 0) {
-      console.log('[SOAP Service] Quality guidelines:', validation.warnings);
+      // console.log('[SOAP Service] Quality guidelines:', validation.warnings);
     }
     
     if (validation.repetitionCheck.hasRepetition) {
@@ -459,14 +459,7 @@ function parseSOAPResponse(
     return String(plan);
   };
 
-  // ✅ WO-PDF-004: Add logging for debugging
-  console.log('[SOAP Builder] Parsing SOAP response...');
-  console.log('[SOAP Builder] Treatment plan type:', typeof soapData?.plan);
-  if (typeof soapData?.plan === 'object') {
-    console.log('[SOAP Builder] Treatment plan is object, will serialize');
-  }
-  console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
-  console.log('[SOAP Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
+  // ✅ WO-PDF-004: Debug logging removed to comply with check-no-soap-logs policy
 
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {
