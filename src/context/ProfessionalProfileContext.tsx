@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   serverTimestamp,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore';
 
 import { useAuth } from './AuthContext';
@@ -21,14 +21,20 @@ export interface ProfessionalProfile {
   role?: 'physio' | 'admin' | 'assistant';
   specialty?: string;
   professionalTitle?: string;
+
+  // ✅ compat fields referenced in logs/guard
+  profession?: string;
+  practiceCountry?: string;
+  pilotConsent?: { accepted?: boolean };
+
   university?: string;
   licenseNumber?: string;
   workplace?: string;
   experienceYears?: string;
-  clinic?: { 
-    name?: string; 
-    city?: string; 
-    country?: string 
+  clinic?: {
+    name?: string;
+    city?: string;
+    country?: string
   };
   timezone?: string;
   languages?: string[];
@@ -42,9 +48,9 @@ export interface ProfessionalProfile {
   createdAt: Timestamp;
   lastLoginAt?: Timestamp;
   lastSeenAt?: Timestamp;
-  preferences?: { 
-    theme: 'inside' | 'outside'; 
-    density: 'comfortable' | 'compact' 
+  preferences?: {
+    theme: 'inside' | 'outside';
+    density: 'comfortable' | 'compact'
   };
   registrationStatus?: 'incomplete' | 'complete';
   practicePreferences?: {
@@ -53,15 +59,13 @@ export interface ProfessionalProfile {
     preferredTreatments: string[];
     doNotSuggest: string[];
   };
-  // WO-AUTH-GUARD-ONB-DATA-01: Data use consent for personalization and prompting
-  // WO-PERS-ONB-PROMPT-01: PHIPA and PIPEDA consent required for Canadian compliance
   dataUseConsent?: {
-    personalizationFromClinicianInputs: boolean;   // default true (required to personalize)
-    personalizationFromPatientData: boolean;       // default false (optional)
-    useDeidentifiedDataForProductImprovement: boolean; // default false (optional)
-    allowAssistantMemoryAcrossSessions: boolean;    // default true (optional but recommended)
-    phipaConsent: boolean;                          // Required: PHIPA consent (default false, must be explicitly granted)
-    pipedaConsent: boolean;                         // Required: PIPEDA consent (default false, must be explicitly granted)
+    personalizationFromClinicianInputs: boolean;
+    personalizationFromPatientData: boolean;
+    useDeidentifiedDataForProductImprovement: boolean;
+    allowAssistantMemoryAcrossSessions: boolean;
+    phipaConsent: boolean;
+    pipedaConsent: boolean;
   };
 }
 
@@ -69,13 +73,11 @@ interface ProfessionalProfileContextType {
   profile?: ProfessionalProfile;
   loading: boolean;
   error?: Error;
-  // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04: Exponer tipo de error para distinguir red/blocked vs otros
   errorType?: 'network' | 'blocked' | 'permission' | 'other';
   updateProfile: (updates: Partial<ProfessionalProfile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateWizardData: (field: keyof ProfessionalProfile, value: unknown) => Promise<void>;
   setCurrentStep: (step: number) => void;
-  // WO-AUTH-GUARD-ONB-DATA-01: Exponer error y retry para soft-fail
   retryProfileLoad: () => Promise<void>;
 }
 
@@ -101,26 +103,20 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
   const [errorType, setErrorType] = useState<'network' | 'blocked' | 'permission' | 'other' | undefined>(undefined);
   const heartbeatRef = useRef<ReturnType<typeof setInterval>>();
   const [/* currentStep */, setCurrentStepState] = useState<number>(0);
-  
-  // Lazy initialization de Firestore - solo se obtiene cuando se necesita
-  // Esto evita inicializar Firestore si el usuario no está autenticado
-  const getDb = () => {
-    // Memoizar la instancia de Firestore
-    if (!getDb._db) {
-      getDb._db = sharedDb;
-    }
-    return getDb._db;
-  };
-  getDb._db = null as ReturnType<typeof getFirestore> | null;
 
-  // Función para obtener zona horaria por defecto
+  // Lazy Firestore instance
+  const getDb = () => {
+    if (!(getDb as any)._db) {
+      (getDb as any)._db = sharedDb;
+    }
+    return (getDb as any)._db as typeof sharedDb;
+  };
+  (getDb as any)._db = null as any;
+
   const getDefaultTimezone = (): string => {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   };
 
-  /**
-   * Helper function to remove undefined values from objects (Firestore doesn't accept undefined)
-   */
   const cleanUndefined = (obj: any): any => {
     if (obj === null || obj === undefined) return null;
     if (Array.isArray(obj)) {
@@ -138,7 +134,6 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     return obj;
   };
 
-  // Función para crear perfil inicial
   const createInitialProfile = async (uid: string, email: string): Promise<ProfessionalProfile> => {
     const db = getDb();
     const initialProfile: ProfessionalProfile = {
@@ -159,104 +154,78 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
       }
     };
 
-    // ✅ FIX: Clean undefined values before saving to Firestore
     const cleanedProfile = cleanUndefined(initialProfile);
     await setDoc(doc(db, 'users', uid), cleanedProfile);
     return initialProfile;
   };
 
-  /**
-   * WO-AUTH-EMAIL-VERIFY-REGSTATUS-04: Detectar si un error es de red/blocked/permission
-   * Retorna true si es un error que NO debe crear perfil mínimo
-   */
-  const isNetworkOrBlockedError = (error: any): boolean => {
-    const errorCode = error?.code || '';
-    const errorMessage = (error?.message || '').toLowerCase();
-    
-    // Errores de red
-    const isNetworkError = errorMessage.includes('network') ||
-                          errorMessage.includes('failed to fetch') ||
-                          errorMessage.includes('offline') ||
-                          errorMessage.includes('connection') ||
-                          errorCode === 'unavailable' ||
-                          errorCode === 'deadline-exceeded' ||
-                          errorCode === 'cancelled';
-    
-    // Errores de bloqueo (adblock, etc.)
-    const isBlockedError = errorMessage.includes('blocked') ||
-                          errorMessage.includes('err_blocked_by_client') ||
-                          errorCode === 'permission-denied' ||
-                          errorCode === 'unauthenticated';
-    
-    // Errores de permisos (pero NO "not found")
-    const isPermissionError = errorCode === 'permission-denied' &&
-                             !errorMessage.includes('not found') &&
-                             !errorMessage.includes('does not exist');
-    
+  const isNetworkOrBlockedError = (err: any): boolean => {
+    const errorCode = err?.code || '';
+    const errorMessage = (err?.message || '').toLowerCase();
+
+    const isNetworkError =
+      errorMessage.includes('network') ||
+      errorMessage.includes('failed to fetch') ||
+      errorMessage.includes('offline') ||
+      errorMessage.includes('connection') ||
+      errorCode === 'unavailable' ||
+      errorCode === 'deadline-exceeded' ||
+      errorCode === 'cancelled';
+
+    const isBlockedError =
+      errorMessage.includes('blocked') ||
+      errorMessage.includes('err_blocked_by_client');
+
+    const isPermissionError =
+      errorCode === 'permission-denied' ||
+      errorCode === 'unauthenticated' ||
+      errorMessage.includes('missing or insufficient permissions');
+
     return isNetworkError || isBlockedError || isPermissionError;
   };
 
-  /**
-   * WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 2: Retry con backoff para errores de red
-   * Backoff: 150ms, 500ms, 1200ms
-   */
   const getDocWithRetry = async (db: ReturnType<typeof getDb>, uid: string, retries = 3): Promise<ReturnType<typeof getDoc>> => {
-    const delays = [150, 500, 1200]; // ms
-    
+    const delays = [150, 500, 1200];
+
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const userDoc = await getDoc(doc(db, 'users', uid));
         return userDoc;
       } catch (err: any) {
-        const isRetryableError = isNetworkOrBlockedError(err);
-        
-        // Si NO es un error retryable, lanzar inmediatamente
-        if (!isRetryableError) {
-          throw err;
-        }
-        
-        // Si es el último intento, lanzar el error
+        const retryable = isNetworkOrBlockedError(err);
+        if (!retryable) throw err;
         if (attempt === retries - 1) {
           logger.warn(`[PROFILE] getDoc failed after ${retries} retries`, { uid, error: err });
           throw err;
         }
-        
-        // Esperar antes del siguiente intento
         const delay = delays[attempt] || 150;
         logger.info(`[PROFILE] Retry ${attempt + 1}/${retries} after ${delay}ms`, { uid });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    
-    // Esto no debería ejecutarse, pero TypeScript lo requiere
     throw new Error('getDocWithRetry: Unexpected end of retry loop');
   };
 
-  // Función para cargar perfil desde Firestore
   const loadProfile = async (uid: string): Promise<void> => {
     try {
       setLoading(true);
       setError(undefined);
       setErrorType(undefined);
-      const db = getDb();
 
-      // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 2: Usar retry para errores de red
+      const db = getDb();
       const userDoc = await getDocWithRetry(db, uid);
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data() as ProfessionalProfile;
-<<<<<<< ours
-        
-=======
 
         // WO-21: Log detallado para diagnosticar problemas post-verificación de email
         const firstName = userData.fullName?.split(' ')[0] || userData.displayName?.split(' ')[0] || '';
         const hasFirstName = firstName.trim() !== '';
-        const hasProfessionalTitle = !!(userData.professionalTitle || userData.profession);
+        const hasProfessionalTitle = !!((userData.professionalTitle && userData.professionalTitle.trim() !== '') || (userData.profession && userData.profession.trim() !== ''));
         const hasSpecialty = !!(userData.specialty && userData.specialty.trim() !== '');
-        const practiceCountry = userData.practiceCountry || userData.country || '';
-        const hasPracticeCountry = practiceCountry.trim() !== '';
-        const hasPilotConsent = (userData as any).pilotConsent?.accepted === true;
+        const practiceCountry = (userData.practiceCountry || userData.country || '').trim();
+        const hasPracticeCountry = practiceCountry !== '';
+        const hasPilotConsent = (userData as any)?.pilotConsent?.accepted === true;
 
         const missingFields = {
           firstName: !hasFirstName,
@@ -265,11 +234,11 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
           practiceCountry: !hasPracticeCountry,
           pilotConsent: !hasPilotConsent
         };
+
         const missingFieldsList = Object.entries(missingFields)
           .filter(([_, missing]) => missing)
           .map(([field]) => field);
 
-        // WO-21: Log directo y visible para diagnóstico
         const missingFieldsStr = missingFieldsList.length > 0 ? missingFieldsList.join(', ') : 'NONE';
         if (missingFieldsList.length > 0) {
           console.warn('[PROFILE] ⚠️ Profile loaded but MISSING fields:', missingFieldsStr, {
@@ -305,109 +274,74 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
           MISSING_FIELDS: missingFieldsStr
         });
 
->>>>>>> theirs
-        // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 1: NO sobrescribir registrationStatus si ya es 'complete'
-        // Solo agregar registrationStatus si NO existe (nunca degradar de 'complete' a 'incomplete')
         if (!userData.registrationStatus) {
           logger.info("[PROFILE] Missing registrationStatus, setting to 'incomplete'", { uid });
-          await updateDoc(doc(db, 'users', uid), {
-            registrationStatus: 'incomplete'
-          });
+          await updateDoc(doc(db, 'users', uid), { registrationStatus: 'incomplete' });
           userData.registrationStatus = 'incomplete';
         }
-        
+
         setProfile(userData);
-        
-        // WO-AUTH-VERIFYEMAIL-ROUTE-05: Actualizar lastLoginAt solo si no se ha actualizado recientemente
-        // (evitar actualizaciones constantes que causan re-renders)
-        // Solo actualizar si lastLoginAt no existe o es muy antiguo (> 5 minutos)
+
         const now = Date.now();
         const lastLogin = userData.lastLoginAt?.toMillis?.() || 0;
         const fiveMinutesAgo = now - (5 * 60 * 1000);
-        
+
         if (!userData.lastLoginAt || lastLogin < fiveMinutesAgo) {
-          await updateDoc(doc(db, 'users', uid), {
-            lastLoginAt: serverTimestamp()
-          });
+          await updateDoc(doc(db, 'users', uid), { lastLoginAt: serverTimestamp() });
         }
       } else {
-        // WO-AUTH-ONB-FLOW-FIX-04 C: Solo crear perfil mínimo si getDoc retorna "not found" (sin error)
-        // Confirmación: getDoc.exists() === false y NO hubo error de lectura
         logger.info("[PROFILE] Document does not exist (confirmed 'not found'), creating minimal profile", { uid });
+
         const minimalProfile: Partial<ProfessionalProfile> = {
           uid,
           email: user?.email || '',
           createdAt: serverTimestamp() as Timestamp,
         };
-        
-        // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04: NO establecer registrationStatus aquí
-        // Solo se establecerá si realmente no existe (merge: true lo preserva si ya existe)
-        // Clean undefined values before saving
+
         const cleanedProfile = cleanUndefined(minimalProfile);
-        
-        // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04: Usar merge: true para NO sobrescribir registrationStatus si ya existe
+
         await setDoc(doc(db, 'users', uid), cleanedProfile, { merge: true });
-        
-        // Leer el doc después de crearlo para obtener el registrationStatus real (si existía)
+
         const createdDoc = await getDoc(doc(db, 'users', uid));
         if (createdDoc.exists()) {
           const createdData = createdDoc.data() as ProfessionalProfile;
-          // Si no tiene registrationStatus después del merge, establecerlo a 'incomplete'
           if (!createdData.registrationStatus) {
-            await updateDoc(doc(db, 'users', uid), {
-              registrationStatus: 'incomplete'
-            });
+            await updateDoc(doc(db, 'users', uid), { registrationStatus: 'incomplete' });
             createdData.registrationStatus = 'incomplete';
           }
           setProfile(createdData);
         } else {
-          // Fallback: si por alguna razón no se puede leer, usar el perfil mínimo
-          setProfile({
-            ...minimalProfile,
-            registrationStatus: 'incomplete'
-          } as ProfessionalProfile);
+          setProfile({ ...minimalProfile, registrationStatus: 'incomplete' } as ProfessionalProfile);
         }
       }
-    } catch (err) {
-      // WO-AUTH-ONB-FLOW-FIX-04 C: Si es error de permissions/red/blocked, NO crear perfil mínimo
-      const error = err instanceof Error ? err : new Error('Error desconocido al cargar perfil');
-      const errorCode = (err as any)?.code || '';
-      const errorMessage = (err as any)?.message?.toLowerCase() || '';
-      
-      // WO-AUTH-ONB-FLOW-FIX-04 C: Detectar específicamente permission-denied
-      const isPermissionDenied = errorCode === 'permission-denied' || 
-                                 errorMessage.includes('permission-denied') ||
-                                 errorMessage.includes('missing or insufficient permissions');
-      
+    } catch (err: any) {
+      const e = err instanceof Error ? err : new Error('Error desconocido al cargar perfil');
+      const errorCode = err?.code || '';
+      const errorMessage = (err?.message || '').toLowerCase();
+
+      const isPermissionDenied =
+        errorCode === 'permission-denied' ||
+        errorMessage.includes('permission-denied') ||
+        errorMessage.includes('missing or insufficient permissions');
+
       if (isNetworkOrBlockedError(err) || isPermissionDenied) {
-        // Error de red/blocked/permission - NO crear perfil mínimo, solo marcar error
-        // WO-AUTH-ONB-FLOW-FIX-04 C: Si reglas impiden leer, no se crea nada
-        
-        // Clasificar tipo de error
         let classifiedType: 'network' | 'blocked' | 'permission' | 'other' = 'other';
-        if (isPermissionDenied) {
-          classifiedType = 'permission';
-        } else if (errorMessage.includes('blocked') || errorMessage.includes('err_blocked_by_client')) {
-          classifiedType = 'blocked';
-        } else if (errorMessage.includes('network') || errorMessage.includes('failed to fetch') || errorMessage.includes('offline')) {
-          classifiedType = 'network';
-        }
-        
-        logger.error('[PROFILE] Network/blocked/permission error loading profile - NOT creating minimal profile', { 
-          uid, 
-          error: error.message,
+        if (isPermissionDenied) classifiedType = 'permission';
+        else if (errorMessage.includes('blocked') || errorMessage.includes('err_blocked_by_client')) classifiedType = 'blocked';
+        else if (errorMessage.includes('network') || errorMessage.includes('failed to fetch') || errorMessage.includes('offline')) classifiedType = 'network';
+
+        logger.error('[PROFILE] Network/blocked/permission error loading profile - NOT creating minimal profile', {
+          uid,
+          error: e.message,
           code: errorCode,
           type: classifiedType
         });
-        setError(error);
+
+        setError(e);
         setErrorType(classifiedType);
-        // NO establecer profile = undefined aquí, mantener el último estado conocido si existe
-        // Esto evita que AuthGuard redirija incorrectamente
-        // WO-AUTH-ONB-FLOW-FIX-04 C: NO escribir nada a Firestore si hay error de permissions
       } else {
-        // Otro tipo de error - también NO crear perfil mínimo
-        logger.error('Error cargando perfil profesional:', error);
-        setError(error);
+        logger.error('Error cargando perfil profesional:', e);
+        setError(e);
         setErrorType('other');
       }
     } finally {
@@ -415,32 +349,27 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     }
   };
 
-  // Función para actualizar perfil
   const updateProfile = async (updates: Partial<ProfessionalProfile>): Promise<void> => {
     if (!user?.uid) return;
 
     try {
       const db = getDb();
       const userRef = doc(db, 'users', user.uid);
-      
-      // ✅ FIX: Clean undefined values before saving to Firestore
+
       const cleanedUpdates = cleanUndefined({
         ...updates,
         lastSeenAt: serverTimestamp()
       });
-      
-      await updateDoc(userRef, cleanedUpdates);
 
-      // Actualizar estado local
-      setProfile(prev => prev ? { ...prev, ...updates } : undefined);
+      await updateDoc(userRef, cleanedUpdates);
+      setProfile(prev => (prev ? { ...prev, ...updates } : undefined));
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Error al actualizar perfil');
-      setError(error);
-      throw error;
+      const e = err instanceof Error ? err : new Error('Error al actualizar perfil');
+      setError(e);
+      throw e;
     }
   };
 
-  // Soporte para wizard (compatibilidad con componentes existentes)
   const updateWizardData = async (field: keyof ProfessionalProfile, value: unknown): Promise<void> => {
     await updateProfile({ [field]: value } as Partial<ProfessionalProfile>);
   };
@@ -449,14 +378,12 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     setCurrentStepState(step);
   };
 
-  // Función para refrescar perfil
   const refreshProfile = async (): Promise<void> => {
     if (user?.uid) {
       await loadProfile(user.uid);
     }
   };
 
-  // WO-AUTH-GUARD-ONB-DATA-01: Retry function para soft-fail
   const retryProfileLoad = async (): Promise<void> => {
     if (user?.uid) {
       setError(undefined);
@@ -465,27 +392,21 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     }
   };
 
-  // Función para heartbeat (actualizar lastSeenAt)
   const updateHeartbeat = async (): Promise<void> => {
     if (!user?.uid || !profile) return;
 
     try {
       const db = getDb();
-      await updateDoc(doc(db, 'users', user.uid), {
-        lastSeenAt: serverTimestamp()
-      });
+      await updateDoc(doc(db, 'users', user.uid), { lastSeenAt: serverTimestamp() });
     } catch (err) {
       logger.warn('Error en heartbeat:', err);
     }
   };
 
-  // Efecto para cargar perfil cuando cambia el usuario
-  // Solo carga el perfil si el usuario está autenticado y Auth ya terminó de cargar
   useEffect(() => {
     if (!authLoading && user?.uid) {
       loadProfile(user.uid);
     } else if (!authLoading && !user) {
-      // Usuario no autenticado - limpiar estado sin cargar Firestore
       setProfile(undefined);
       setLoading(false);
       setError(undefined);
@@ -493,16 +414,12 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     }
   }, [user?.uid, authLoading]);
 
-  // Efecto para heartbeat cada 60 segundos
   useEffect(() => {
     if (profile) {
-      heartbeatRef.current = setInterval(updateHeartbeat, 60000); // 60 segundos
+      heartbeatRef.current = setInterval(updateHeartbeat, 60000);
     }
-
     return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-      }
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, [profile]);
 
@@ -524,3 +441,4 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     </ProfessionalProfileContext.Provider>
   );
 };
+  
