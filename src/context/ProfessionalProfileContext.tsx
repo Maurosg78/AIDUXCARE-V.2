@@ -245,7 +245,67 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
       
       if (userDoc.exists()) {
         const userData = userDoc.data() as ProfessionalProfile;
+<<<<<<< ours
         
+=======
+
+        // WO-21: Log detallado para diagnosticar problemas post-verificación de email
+        const firstName = userData.fullName?.split(' ')[0] || userData.displayName?.split(' ')[0] || '';
+        const hasFirstName = firstName.trim() !== '';
+        const hasProfessionalTitle = !!(userData.professionalTitle || userData.profession);
+        const hasSpecialty = !!(userData.specialty && userData.specialty.trim() !== '');
+        const practiceCountry = userData.practiceCountry || userData.country || '';
+        const hasPracticeCountry = practiceCountry.trim() !== '';
+        const hasPilotConsent = (userData as any).pilotConsent?.accepted === true;
+
+        const missingFields = {
+          firstName: !hasFirstName,
+          professionalTitle: !hasProfessionalTitle,
+          specialty: !hasSpecialty,
+          practiceCountry: !hasPracticeCountry,
+          pilotConsent: !hasPilotConsent
+        };
+        const missingFieldsList = Object.entries(missingFields)
+          .filter(([_, missing]) => missing)
+          .map(([field]) => field);
+
+        // WO-21: Log directo y visible para diagnóstico
+        const missingFieldsStr = missingFieldsList.length > 0 ? missingFieldsList.join(', ') : 'NONE';
+        if (missingFieldsList.length > 0) {
+          console.warn('[PROFILE] ⚠️ Profile loaded but MISSING fields:', missingFieldsStr, {
+            hasFirstName,
+            hasProfessionalTitle,
+            hasSpecialty,
+            hasPracticeCountry,
+            hasPilotConsent,
+            practiceCountry: practiceCountry || 'EMPTY',
+            country: userData.country || 'EMPTY',
+            pilotConsent: (userData as any).pilotConsent || 'MISSING'
+          });
+        }
+
+        logger.info('[PROFILE] Profile loaded from Firestore', {
+          uid,
+          email: userData.email,
+          registrationStatus: userData.registrationStatus,
+          hasFirstName,
+          firstName,
+          hasProfessionalTitle,
+          professionalTitle: userData.professionalTitle,
+          profession: userData.profession,
+          hasSpecialty,
+          specialty: userData.specialty,
+          hasPracticeCountry,
+          practiceCountry,
+          country: userData.country,
+          hasPilotConsent,
+          pilotConsentRaw: (userData as any).pilotConsent,
+          pilotConsentAccepted: (userData as any).pilotConsent?.accepted,
+          missingFields,
+          MISSING_FIELDS: missingFieldsStr
+        });
+
+>>>>>>> theirs
         // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 1: NO sobrescribir registrationStatus si ya es 'complete'
         // Solo agregar registrationStatus si NO existe (nunca degradar de 'complete' a 'incomplete')
         if (!userData.registrationStatus) {

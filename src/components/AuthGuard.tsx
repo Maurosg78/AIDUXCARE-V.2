@@ -189,6 +189,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       // WO-AUTH-EMAIL-VERIFY-REGSTATUS-04 ToDo 3: Solo redirigir si confirmamos "not found" (no error de red)
       // Si llegamos aquí sin profileError, significa que getDoc retornó "not found" (no error)
       hasRedirectedRef.current = true; // Marcar que ya redirigimos
+<<<<<<< ours
       logger.info("[AUTHGUARD] No profile found (confirmed 'not found'), redirecting to professional onboarding");
       return <Navigate to="/professional-onboarding" replace />;
     } else {
@@ -206,6 +207,65 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
           hasSpecialty: !!profile.specialty,
           hasPracticeCountry: !!(profile.practiceCountry || profile.country),
           hasPilotConsent: profile.pilotConsent?.accepted === true
+=======
+
+      if (!profile) {
+        logger.info("[AUTHGUARD] No profile found (confirmed 'not found'), redirecting to professional onboarding");
+      } else {
+        // WO-21: DEBUG - Log detallado de por qué el perfil se considera incompleto
+        const firstName = profile.fullName?.split(' ')[0] || profile.displayName?.split(' ')[0] || '';
+        const hasFirstName = firstName.trim() !== '';
+        const hasProfessionalTitle = !!((profile.professionalTitle && profile.professionalTitle.trim() !== '') || (profile.profession && profile.profession.trim() !== ''));
+        const hasSpecialty = !!(profile.specialty && profile.specialty.trim() !== '');
+        const practiceCountry = profile.practiceCountry || profile.country || '';
+        const hasPracticeCountry = practiceCountry.trim() !== '';
+        const hasPilotConsent = (profile as any).pilotConsent?.accepted === true;
+
+        // WO-21: Calcular qué campos faltan explícitamente
+        const missingFields = {
+          firstName: !hasFirstName,
+          professionalTitle: !hasProfessionalTitle,
+          specialty: !hasSpecialty,
+          practiceCountry: !hasPracticeCountry,
+          pilotConsent: !hasPilotConsent
+        };
+        const missingFieldsList = Object.entries(missingFields)
+          .filter(([_, missing]) => missing)
+          .map(([field]) => field);
+
+        // WO-21: Log directo y visible para diagnóstico
+        const missingFieldsStr = missingFieldsList.length > 0 ? missingFieldsList.join(', ') : 'NONE';
+        console.error('[AUTHGUARD] ❌ Profile INCOMPLETE - Missing fields:', missingFieldsStr, {
+          hasFirstName,
+          hasProfessionalTitle,
+          hasSpecialty,
+          hasPracticeCountry,
+          hasPilotConsent,
+          practiceCountry: practiceCountry || 'EMPTY',
+          country: profile.country || 'EMPTY',
+          pilotConsent: (profile as any).pilotConsent || 'MISSING'
+        });
+
+        logger.info("[AUTHGUARD] Profile incomplete (WO-13 criteria), redirecting to professional onboarding", {
+          uid: user?.uid,
+          email: user?.email,
+          registrationStatus: profile.registrationStatus,
+          firstName,
+          hasFirstName,
+          professionalTitle: profile.professionalTitle,
+          profession: profile.profession,
+          hasProfessionalTitle,
+          specialty: profile.specialty,
+          hasSpecialty,
+          practiceCountry,
+          country: profile.country,
+          hasPracticeCountry,
+          pilotConsent: (profile as any).pilotConsent,
+          pilotConsentAccepted: (profile as any).pilotConsent?.accepted,
+          hasPilotConsent,
+          missingFields,
+          MISSING_FIELDS: missingFieldsStr
+>>>>>>> theirs
         });
         return <Navigate to="/professional-onboarding" replace />;
       }
