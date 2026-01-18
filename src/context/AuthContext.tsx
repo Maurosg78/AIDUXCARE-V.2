@@ -176,6 +176,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    // Hardening: Validar auth antes de onAuthStateChanged (test-safe)
+    if (!auth || typeof auth !== 'object' || !('_delegate' in auth)) {
+      logger.warn('[AUTH] Auth instance invalid or undefined, skipping onAuthStateChanged (test-safe)');
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, 
       (currentUser) => {
         setUser(currentUser);

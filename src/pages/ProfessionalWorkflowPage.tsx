@@ -51,7 +51,10 @@ import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProf
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
-import { Timestamp } from "firebase/firestore";
+import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../lib/firebase";
+import tokenTrackingService from "../services/tokenTrackingService";
+import logger from "@/shared/utils/logger";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
 import { useActiveEpisode } from "../features/patient-dashboard/hooks/useActiveEpisode";
 import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePatientVisitCount";
@@ -333,7 +336,7 @@ const ProfessionalWorkflowPage = () => {
     try {
       if (recordingStartTimeRef.current) {
         const duration = Date.now() - recordingStartTimeRef.current;
-        trackRecordingStopped({ 
+        trackRecordingStopped({
           duration,
           mode: mode || 'live'
         });
@@ -354,7 +357,7 @@ const ProfessionalWorkflowPage = () => {
     if (isTranscribing && !transcriptionStartTimeRef.current) {
       // Transcription started
       transcriptionStartTimeRef.current = Date.now();
-      trackTranscriptionStarted({ 
+      trackTranscriptionStarted({
         service: 'gpt-4o-audio',
         mode: mode || 'live',
         languagePreference: languagePreference || 'auto'
@@ -362,7 +365,7 @@ const ProfessionalWorkflowPage = () => {
     } else if (!isTranscribing && transcriptionStartTimeRef.current) {
       // Transcription completed
       const duration = Date.now() - transcriptionStartTimeRef.current;
-      trackTranscriptionCompleted({ 
+      trackTranscriptionCompleted({
         duration,
         transcriptLength: transcript?.length || 0,
         service: 'gpt-4o-audio',
@@ -375,7 +378,7 @@ const ProfessionalWorkflowPage = () => {
   // ✅ WO-04: Track transcription errors
   useEffect(() => {
     if (transcriptError) {
-      trackTranscriptionFailed({ 
+      trackTranscriptionFailed({
         errorType: transcriptError,
         service: 'gpt-4o-audio'
       });
@@ -398,9 +401,15 @@ const ProfessionalWorkflowPage = () => {
     [professionalProfile]
   );
 
+  // Prioridad 1.1: Hardening extra - validar que el profile pertenece al user.uid
+  const safeProfile = useMemo(
+    () => (professionalProfile?.uid === user?.uid ? professionalProfile : null),
+    [professionalProfile, user?.uid]
+  );
+
   const clinicianDisplayName = useMemo(
-    () => deriveClinicianDisplayName(professionalProfile, user),
-    [professionalProfile, user]
+    () => deriveClinicianDisplayName(safeProfile, user),
+    [safeProfile, user]
   );
 
   // ✅ P2.1: Use getPublicBaseUrl for mobile-accessible links
@@ -812,13 +821,13 @@ const ProfessionalWorkflowPage = () => {
         if (isInitialSession) {
           // ✅ WO-FIX-DATA-PERSISTENCE: Only clean ONCE per initial session
           const cleanupKey = `${patientId}-${sessionTypeFromUrl || 'initial'}`;
-          
+
           // ✅ Verificar si ya limpiamos para esta combinación
           if (hasCleanedForInitial.current === cleanupKey) {
             console.log('[WORKFLOW] ⏭️ Already cleaned for this initial session, skipping cleanup');
             return; // Don't clean again
           }
-          
+
           // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
           const shouldClearData = () => {
             // Check if there's important data that shouldn't be cleared
@@ -826,7 +835,7 @@ const ProfessionalWorkflowPage = () => {
             const hasAnalysis = niagaraResults !== null; // Use niagaraResults which is available from useNiagaraProcessor
             const hasTests = evaluationTests.length > 0;
             const hasAttachments = attachments.length > 0;
-            
+
             if (hasTranscript || hasAnalysis || hasTests || hasAttachments) {
               console.log('[WORKFLOW] ⚠️ Data exists, preventing cleanup to preserve user work', {
                 hasTranscript: !!hasTranscript,
@@ -836,17 +845,17 @@ const ProfessionalWorkflowPage = () => {
               });
               return false; // Don't clear if user has data
             }
-            
+
             return true; // Safe to clear
           };
-          
+
           // Only clear if no important data exists
           if (!shouldClearData()) {
             // Mark as cleaned anyway to prevent repeated checks
             hasCleanedForInitial.current = cleanupKey;
             return; // Don't clear, preserve user data
           }
-          
+
           // Clear ALL saved state from localStorage for initial evaluations
           // This ensures a completely fresh start with empty transcript, tests, SOAP, etc.
           SessionStorage.clearSession(patientId);
@@ -1207,12 +1216,27 @@ const ProfessionalWorkflowPage = () => {
 
             setConsentToken(token);
 
-            // Send SMS with consent link
+            // Prioridad 1: Blindar el nombre del fisio en el SMS (snapshot del token)
+            // Leer el token doc recién creado y usar el snapshot del nombre
+            const tokenDoc = await PatientConsentService.getConsentByToken(token);
+            const physioNameForSms =
+              tokenDoc?.physiotherapistName?.trim() || clinicianDisplayName;
+
+            // Log mínimo: token + requestedByUid + requestedByName al momento de enviar
+            logger.info('[WORKFLOW] Sending consent SMS with snapshot name', {
+              token,
+              requestedByUid: userId,
+              requestedByName: physioNameForSms,
+              tokenDocName: tokenDoc?.physiotherapistName,
+              clinicianDisplayName,
+            });
+
+            // Send SMS with consent link (usando snapshot del token)
             await SMSService.sendConsentLink(
               formattedPhone,
               patient.fullName || `${patient.firstName} ${patient.lastName}`.trim(),
               clinicName,
-              clinicianDisplayName,
+              physioNameForSms, // ← Usar snapshot del token, no el nombre actual
               token
             );
             setConsentPending(true);
@@ -1936,12 +1960,12 @@ const ProfessionalWorkflowPage = () => {
     }
 
     // ✅ WO-04: Track analysis requested
-    trackAnalysisRequested({ 
+    trackAnalysisRequested({
       transcriptLength: transcriptText.length,
       hasAttachments: hasAttachments,
       attachmentCount: attachments?.length || 0
     });
-    
+
     const analysisStartTime = Date.now();
 
     try {
@@ -1969,11 +1993,11 @@ const ProfessionalWorkflowPage = () => {
         professionalProfile: professionalProfile || undefined
       });
       setAnalysisError(null);
-      
+
       // ✅ WO-04: Track analysis completed (use niagaraResults from next render or wait)
       // We'll track this in a useEffect that watches niagaraResults
       setTimeout(() => {
-        trackAnalysisCompleted({ 
+        trackAnalysisCompleted({
           duration: Date.now() - analysisStartTime,
           testsIdentified: niagaraResults?.evaluaciones_fisicas_sugeridas?.length || 0,
           hasFindings: Boolean(niagaraResults?.hallazgos_clinicos?.length)
@@ -1985,7 +2009,7 @@ const ProfessionalWorkflowPage = () => {
       console.error('[Workflow] Vertex analysis failed:', message);
 
       // ✅ WO-04: Track analysis failed
-      trackAnalysisFailed({ 
+      trackAnalysisFailed({
         errorType: error instanceof Error ? error.message : 'unknown'
       });
 
@@ -2412,6 +2436,61 @@ const ProfessionalWorkflowPage = () => {
         soapLength: JSON.stringify(response.soap).length,
         sectionsGenerated: Object.keys(response.soap || {}),
       });
+
+      // P2: Token accounting - cobrar al completar SOAP (1 vez con flag anti-doble-cobro)
+      const userIdForCharging = user?.uid || TEMP_USER_ID;
+      const sessionRef = doc(db, 'sessions', sessionIdForMetrics);
+
+      try {
+        // Leer doc de sesión para verificar si ya se cobró
+        const sessionSnap = await getDoc(sessionRef);
+        const sessionData = sessionSnap.exists() ? sessionSnap.data() : null;
+        const tokensCharged = sessionData?.tokensCharged === true;
+
+        if (!tokensCharged) {
+          // Obtener token budget del session type
+          const tokensToCharge = SessionTypeService.getTokenBudget(currentSessionType);
+
+          // Cobrar tokens
+          await tokenTrackingService.recordTokenUsage(
+            userIdForCharging,
+            sessionIdForMetrics,
+            tokensToCharge
+          );
+
+          // Marcar como cobrado en el doc de sesión
+          await setDoc(sessionRef, {
+            tokensCharged: true,
+            tokensChargedAmount: tokensToCharge,
+            tokensChargedAt: serverTimestamp(),
+            tokensChargedUserId: userIdForCharging,
+          }, { merge: true });
+
+          logger.info('[TOKENS] Charged', {
+            userId: userIdForCharging,
+            sessionId: sessionIdForMetrics,
+            tokensToCharge
+          });
+        } else {
+          logger.info('[TOKENS] Already charged', {
+            userId: userIdForCharging,
+            sessionId: sessionIdForMetrics
+          });
+        }
+      } catch (tokenError: any) {
+        // Si falla el cobro, no crashear la app pero loggear
+        logger.error('[TOKENS] Charge failed', {
+          userId: userIdForCharging,
+          sessionId: sessionIdForMetrics,
+          error: tokenError.message || tokenError
+        });
+
+        // Si el error es por falta de tokens, mostrar mensaje al usuario
+        if (tokenError.message?.includes('insufficient') || tokenError.message?.includes('not enough')) {
+          setError('Insufficient tokens to generate SOAP. Please purchase more tokens or contact support.');
+        }
+        // No marcar como cobrado si falló
+      }
 
       // Store token optimization for display in SOAPEditor
       if (response.metadata.tokenOptimization) {
@@ -3094,11 +3173,10 @@ const ProfessionalWorkflowPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as ActiveTab)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
                     ? "bg-blue-600 text-white shadow-md" // ✅ WO-PHASE3-CRITICAL-FIXES: Same color (blue) for active
                     : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" // ✅ Same style for inactive
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>

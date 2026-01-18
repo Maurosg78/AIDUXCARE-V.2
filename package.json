@@ -40,6 +40,9 @@
     "test:gate": "pnpm test:lowmem:file src/__tests__/smoke.test.ts && pnpm test:lowmem:file src/components/navigation/__tests__/ProtectedRoute.test.tsx && pnpm test:lowmem:file test/tests/enterprise/CryptoService.spec.ts",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:smoke:pilot": "vitest run src/components/feedback/__tests__/FeedbackWidget.integration.test.tsx test/ai/translationReviewer.spec.ts test/validation/localeValidator.spec.ts",
+    "test:smoke:pilot:core": "vitest run test/ai/translationReviewer.spec.ts test/validation/localeValidator.spec.ts",
+    "test:smoke:pilot:firebase": "vitest run --reporter=verbose --bail 1",
     "test:sms": "tsx scripts/test-twilio-sms.ts",
     "test:consent-flow": "tsx scripts/test-consent-flow.ts",
     "test:e2e": "playwright test",
@@ -65,6 +68,7 @@
     "script:createSecondVisit": "tsx scripts/createSecondVisitAndrea.ts",
     "test:rag": "tsx scripts/test-rag-pubmed.ts",
     "check:env": "node scripts/check-env.cjs",
+    "verify:locales": "node scripts/verify-locales-json.mjs",
     "postinstall": "npm run check:env"
   },
   "dependencies": {

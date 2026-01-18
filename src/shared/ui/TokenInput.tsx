@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SessionTypeService } from '@/services/sessionTypeService';
 
 export interface TokenInputProps {
   label: string;
@@ -16,7 +17,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
   suggestions = [],
   value = [],
   onChange,
-  maxTokens = 10,
+  maxTokens = SessionTypeService.getMaxTokenBudget(),
   className = '',
 }) => {
   const [inputValue, setInputValue] = useState('');

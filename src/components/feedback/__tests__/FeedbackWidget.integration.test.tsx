@@ -1,15 +1,40 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { FeedbackWidget } from '../FeedbackWidget';
 import { FeedbackService } from '@/services/feedbackService';
 
-// Mock FeedbackService
+// Mock FeedbackService (service externo - permitido para tests)
 vi.mock('@/services/feedbackService', () => ({
   FeedbackService: {
-    submitFeedback: vi.fn()
+    submitFeedback: vi.fn(),
+    getAutoContext: vi.fn().mockReturnValue({
+      url: 'http://localhost:5173/workflow',
+      userAgent: 'test-agent',
+      context: {
+        currentPage: '/workflow',
+      },
+    }),
+    getEnrichedContext: vi.fn().mockReturnValue({}),
   }
 }));
+
+// Mock useAuth (UI test - no requiere Firebase Auth real)
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { uid: 'test-user-123', email: 'test@example.com' },
+    loading: false,
+    error: null,
+  }),
+}));
+
+// Test wrapper mínimo (solo BrowserRouter - no AuthProvider real)
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <BrowserRouter>
+    {children}
+  </BrowserRouter>
+);
 
 describe('FeedbackWidget Integration', () => {
   beforeEach(() => {
@@ -19,9 +44,9 @@ describe('FeedbackWidget Integration', () => {
   describe('Rendering', () => {
     it('renders correctly', () => {
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       const button = screen.getByLabelText('Report feedback');
@@ -34,9 +59,9 @@ describe('FeedbackWidget Integration', () => {
       vi.mocked(FeedbackService.submitFeedback).mockResolvedValue({ success: true });
 
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       // Open modal
@@ -44,20 +69,25 @@ describe('FeedbackWidget Integration', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       // Fill form and submit
       const messageInput = screen.getByPlaceholderText(/describe/i);
       fireEvent.change(messageInput, { target: { value: 'Test feedback message' } });
 
+      // Wait for submit button to be enabled (state observable)
       const submitButton = screen.getByRole('button', { name: /submit/i });
+      await waitFor(() => {
+        expect(submitButton).toBeEnabled();
+      });
+
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(FeedbackService.submitFeedback).toHaveBeenCalledWith(
           expect.objectContaining({
-            message: 'Test feedback message'
+            description: 'Test feedback message'
           })
         );
       });
@@ -69,16 +99,16 @@ describe('FeedbackWidget Integration', () => {
       );
 
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       const button = screen.getByLabelText('Report feedback');
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       const messageInput = screen.getByPlaceholderText(/describe/i);
@@ -95,16 +125,16 @@ describe('FeedbackWidget Integration', () => {
       vi.mocked(FeedbackService.submitFeedback).mockResolvedValue({ success: true });
 
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       const button = screen.getByLabelText('Report feedback');
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       const messageInput = screen.getByPlaceholderText(/describe/i);
@@ -122,16 +152,16 @@ describe('FeedbackWidget Integration', () => {
       vi.mocked(FeedbackService.submitFeedback).mockRejectedValue(new Error('Submission failed'));
 
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       const button = screen.getByLabelText('Report feedback');
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       const messageInput = screen.getByPlaceholderText(/describe/i);
@@ -153,16 +183,16 @@ describe('FeedbackWidget Integration', () => {
       );
 
       render(
-        <BrowserRouter>
+        <TestWrapper>
           <FeedbackWidget />
-        </BrowserRouter>
+        </TestWrapper>
       );
 
       const button = screen.getByLabelText('Report feedback');
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(screen.getByText(/feedback/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /report feedback/i })).toBeInTheDocument();
       });
 
       const messageInput = screen.getByPlaceholderText(/describe/i);

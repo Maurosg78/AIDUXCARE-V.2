@@ -12,33 +12,10 @@
 import { vi, afterAll } from 'vitest';
 import type { NodeProcess, NodeHandle } from './types/node-handles';
 
-// ✅ Mock global de Firebase ANTES de cualquier otro import
-// Mock tanto el alias como la ruta relativa
-vi.mock('@/lib/firebase', () => {
-  return {
-    app: {},
-    auth: {
-      onAuthStateChanged: vi.fn(() => vi.fn()), // devuelve unsubscribe
-      signOut: vi.fn(),
-      currentUser: null,
-    },
-    db: {},
-    storage: {},
-  };
-});
-
-vi.mock('../lib/firebase', () => {
-  return {
-    app: {},
-    auth: {
-      onAuthStateChanged: vi.fn(() => vi.fn()), // devuelve unsubscribe
-      signOut: vi.fn(),
-      currentUser: null,
-    },
-    db: {},
-    storage: {},
-  };
-});
+// ✅ PHIPA/PIPEDA compliant: No mocks de Firebase Auth (usa Firebase real)
+// Los mocks de Firebase Auth están deshabilitados para permitir tests de integración
+// con Firebase real (Emulator o configuración mínima)
+// Si necesitas mocks específicos, úsalos en tests individuales
 
 import '@testing-library/jest-dom/vitest';
 

@@ -13,6 +13,7 @@ export interface SessionTypeConfig {
   label: string;
   description: string;
   tokenBudget: number;
+  pilotAvailable: boolean;
   icon?: string;
 }
 
@@ -35,30 +36,35 @@ const SESSION_TYPE_CONFIG: Record<SessionType, SessionTypeConfig> = {
     label: 'Initial Assessment',
     description: 'Comprehensive initial evaluation (8-12 tokens)',
     tokenBudget: 10,
+    pilotAvailable: true,
     icon: '📋'
   },
   'followup': {
     label: 'Follow-up',
     description: 'Progress check and treatment continuation (3-5 tokens)',
     tokenBudget: 4,
+    pilotAvailable: true,
     icon: '🔄'
   },
   'wsib': {
     label: 'WSIB',
     description: 'Workplace Safety and Insurance Board assessment (10-15 tokens)',
     tokenBudget: 13,
+    pilotAvailable: false,
     icon: '🏭'
   },
   'mva': {
     label: 'MVA',
     description: 'Motor Vehicle Accident assessment (12-18 tokens)',
     tokenBudget: 15,
+    pilotAvailable: false,
     icon: '🚗'
   },
   'certificate': {
     label: 'Medical Certificate',
     description: 'Specific assessment for certification (5-8 tokens)',
     tokenBudget: 6,
+    pilotAvailable: false,
     icon: '📜'
   }
 };
@@ -160,6 +166,26 @@ export class SessionTypeService {
    */
   static getSessionTypeLabel(sessionType: SessionType): string {
     return SESSION_TYPE_CONFIG[sessionType]?.label || 'Follow-up';
+  }
+
+  /**
+   * Check if session type is available during pilot
+   * 
+   * @param sessionType - The type of session
+   * @returns True if available during pilot, false otherwise
+   */
+  static isPilotAvailable(sessionType: SessionType): boolean {
+    return SESSION_TYPE_CONFIG[sessionType]?.pilotAvailable ?? false;
+  }
+
+  /**
+   * Get maximum token budget across all session types
+   * Used for TokenInput maxTokens default value
+   * 
+   * @returns Maximum token budget
+   */
+  static getMaxTokenBudget(): number {
+    return Math.max(...Object.values(TOKEN_BUDGETS));
   }
 }
 

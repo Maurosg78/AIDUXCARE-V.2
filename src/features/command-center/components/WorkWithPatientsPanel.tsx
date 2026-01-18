@@ -23,9 +23,10 @@ import {
   Search
 } from 'lucide-react';
 import { Patient } from '@/services/patientService';
-import { SessionType } from '@/services/sessionTypeService';
+import { SessionType, SessionTypeService } from '@/services/sessionTypeService';
 import { usePatientHistory } from '../hooks/usePatientHistory';
 import { usePatientsList } from '../hooks/usePatientsList';
+import { useToast } from '@/hooks/useToast';
 
 export interface WorkWithPatientsPanelProps {
   selectedPatient: Patient | null;
@@ -82,6 +83,9 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
   const patientHistory = usePatientHistory(selectedPatient?.id || null);
   const hasHistory = patientHistory.data || false;
 
+  // Toast for showing messages
+  const { notify } = useToast();
+
   // Filter patients by search query - prioritize last name search
   const filteredPatients = React.useMemo(() => {
     if (!patientSearchQuery.trim()) return []; // No mostrar pacientes hasta que el usuario escriba
@@ -112,13 +116,14 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
       });
   }, [allPatients, patientSearchQuery]);
 
+  // P1: Centralizar budgets - obtener desde SessionTypeService (source of truth)
   // Session types for "Start Clinical Session" card
   const sessionTypes: Array<{ type: SessionType; label: string; tokens: number }> = [
-    { type: 'initial', label: 'Initial Assessment', tokens: 10 },
-    { type: 'followup', label: 'Follow-up', tokens: 4 },
-    { type: 'wsib', label: 'WSIB session', tokens: 13 },
-    { type: 'mva', label: 'MVA session', tokens: 15 },
-    { type: 'certificate', label: 'Certificate-only session', tokens: 6 },
+    { type: 'initial', label: 'Initial Assessment', tokens: SessionTypeService.getTokenBudget('initial') },
+    { type: 'followup', label: 'Follow-up', tokens: SessionTypeService.getTokenBudget('followup') },
+    { type: 'wsib', label: 'WSIB session', tokens: SessionTypeService.getTokenBudget('wsib') },
+    { type: 'mva', label: 'MVA session', tokens: SessionTypeService.getTokenBudget('mva') },
+    { type: 'certificate', label: 'Certificate-only session', tokens: SessionTypeService.getTokenBudget('certificate') },
   ];
 
   const handlePatientSelect = (patient: Patient) => {
@@ -192,7 +197,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                         Initial Assessment • Where Aidux shines
                       </p>
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white font-apple">
-                        <span>10 tokens</span>
+                        <span>{SessionTypeService.getTokenBudget('initial')} tokens</span>
                       </div>
                     </div>
                   </div>
@@ -214,7 +219,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                           Select from list below
                         </p>
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-full text-xs font-semibold text-gray-700 font-apple">
-                          <span>4 tokens</span>
+                          <span>{SessionTypeService.getTokenBudget('followup')} tokens</span>
                         </div>
                       </div>
                     </div>
@@ -323,30 +328,54 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                       {sessionTypes.map((session) => {
                         const isInitialAssessment = session.type === 'initial';
                         const isHighlighted = isNewlyCreated && isInitialAssessment && !hasHistory;
+                        const isPilotAvailable = SessionTypeService.isPilotAvailable(session.type);
                         
+                        const handleClick = () => {
+                          if (!isPilotAvailable) {
+                            notify('Feature not available during pilot. We\'ll email you when it becomes available.');
+                            return;
+                          }
+                          onStartSession(session.type);
+                        };
+
                         return (
                           <button
                             key={session.type}
-                            onClick={() => onStartSession(session.type)}
+                            onClick={handleClick}
+                            disabled={!isPilotAvailable}
+                            aria-disabled={!isPilotAvailable}
                             className={`w-full p-3 rounded-xl transition-all duration-200 text-left group ${
-                              isHighlighted
+                              !isPilotAvailable
+                                ? 'opacity-50 cursor-not-allowed bg-gray-50/30 border border-gray-200/30'
+                                : isHighlighted
                                 ? 'bg-gradient-to-r from-primary-blue/10 to-primary-purple/10 border-2 border-primary-blue/40 hover:border-primary-blue/60 shadow-sm'
                                 : 'bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30'
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className={`text-sm font-medium font-apple ${
-                                isHighlighted
-                                  ? 'text-primary-blue font-semibold'
-                                  : 'text-gray-900 group-hover:text-primary-blue'
-                              }`}>
-                                {session.label}
-                                {isHighlighted && (
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium font-apple ${
+                                  !isPilotAvailable
+                                    ? 'text-gray-500'
+                                    : isHighlighted
+                                    ? 'text-primary-blue font-semibold'
+                                    : 'text-gray-900 group-hover:text-primary-blue'
+                                }`}>
+                                  {session.label}
+                                </span>
+                                {!isPilotAvailable && (
+                                  <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded font-apple">
+                                    Coming soon
+                                  </span>
+                                )}
+                                {isHighlighted && isPilotAvailable && (
                                   <span className="ml-2 text-xs text-primary-purple font-medium">⭐ Recommended</span>
                                 )}
-                              </span>
+                              </div>
                               <span className={`text-xs font-medium rounded-full px-3 py-1 font-apple ${
-                                isHighlighted
+                                !isPilotAvailable
+                                  ? 'bg-gray-100 text-gray-400'
+                                  : isHighlighted
                                   ? 'bg-primary-blue/20 text-primary-blue'
                                   : 'bg-white text-gray-500'
                               }`}>

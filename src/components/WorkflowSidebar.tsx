@@ -19,6 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import { SessionType, SessionTypeService } from '../services/sessionTypeService';
+import { useToast } from '../hooks/useToast';
 
 export interface WorkflowSidebarProps {
   activeSessionType: SessionType;
@@ -35,40 +36,41 @@ interface SessionTypeItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+// P1: Centralizar budgets - obtener desde SessionTypeService (source of truth)
 const sessionTypeItems: SessionTypeItem[] = [
   {
     type: 'initial',
     label: 'Initial Assessment',
     description: 'Comprehensive initial evaluation',
-    tokenBudget: 10,
+    tokenBudget: SessionTypeService.getTokenBudget('initial'),
     icon: FileText,
   },
   {
     type: 'followup',
     label: 'Follow-up',
     description: 'Progress check and treatment continuation',
-    tokenBudget: 4,
+    tokenBudget: SessionTypeService.getTokenBudget('followup'),
     icon: RefreshCw,
   },
   {
     type: 'wsib',
     label: 'WSIB',
     description: 'Workplace Safety and Insurance Board assessment',
-    tokenBudget: 13,
+    tokenBudget: SessionTypeService.getTokenBudget('wsib'),
     icon: Building2,
   },
   {
     type: 'mva',
     label: 'MVA',
     description: 'Motor Vehicle Accident assessment',
-    tokenBudget: 15,
+    tokenBudget: SessionTypeService.getTokenBudget('mva'),
     icon: Car,
   },
   {
     type: 'certificate',
     label: 'Medical Certificate',
     description: 'Specific assessment for certification',
-    tokenBudget: 6,
+    tokenBudget: SessionTypeService.getTokenBudget('certificate'),
     icon: Scroll,
   },
 ];
@@ -79,6 +81,9 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
   patientName,
   className = '',
 }) => {
+  // Toast for showing messages
+  const { notify } = useToast();
+
   return (
     <aside
       className={`
@@ -112,16 +117,29 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
           {sessionTypeItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSessionType === item.type;
+            const isPilotAvailable = SessionTypeService.isPilotAvailable(item.type);
+
+            const handleClick = () => {
+              if (!isPilotAvailable) {
+                notify('Feature not available during pilot. We\'ll email you when it becomes available.');
+                return;
+              }
+              onSessionTypeChange(item.type);
+            };
 
             return (
               <li key={item.type}>
                 <button
-                  onClick={() => onSessionTypeChange(item.type)}
+                  onClick={handleClick}
+                  disabled={!isPilotAvailable}
+                  aria-disabled={!isPilotAvailable}
                   className={`
                     w-full flex flex-col gap-2 px-3 py-3 rounded-lg border-2 transition-all duration-150
                     text-left
                     ${
-                      isActive
+                      !isPilotAvailable
+                        ? 'opacity-50 cursor-not-allowed border-slate-200/50 bg-slate-50/30'
+                        : isActive
                         ? 'border-primary-blue bg-primary-blue/5 shadow-sm'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                     }
@@ -133,14 +151,21 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                       <Icon
                         className={`
                           w-5 h-5 flex-shrink-0
-                          ${isActive ? 'text-primary-blue' : 'text-slate-500'}
+                          ${!isPilotAvailable ? 'text-slate-400' : isActive ? 'text-primary-blue' : 'text-slate-500'}
                         `}
                       />
-                      <span className={`text-sm font-semibold ${
-                        isActive ? 'text-primary-blue' : 'text-slate-900'
-                      }`}>
-                        {item.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold ${
+                          !isPilotAvailable ? 'text-slate-500' : isActive ? 'text-primary-blue' : 'text-slate-900'
+                        }`}>
+                          {item.label}
+                        </span>
+                        {!isPilotAvailable && (
+                          <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded font-apple">
+                            Coming soon
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {isActive && (
                       <div className="w-5 h-5 rounded-full bg-primary-blue flex items-center justify-center flex-shrink-0">
@@ -152,17 +177,19 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                   </div>
                   
                   <p className={`text-xs ${
-                    isActive ? 'text-slate-600' : 'text-slate-500'
+                    !isPilotAvailable ? 'text-slate-400' : isActive ? 'text-slate-600' : 'text-slate-500'
                   }`}>
                     {item.description}
                   </p>
                   
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className={`text-xs font-medium ${
+                      !isPilotAvailable ? 'text-slate-400' : 'text-slate-500'
+                    }`}>
                       Token Budget:
                     </span>
                     <span className={`text-xs font-semibold ${
-                      isActive ? 'text-primary-blue' : 'text-slate-700'
+                      !isPilotAvailable ? 'text-slate-400' : isActive ? 'text-primary-blue' : 'text-slate-700'
                     }`}>
                       {item.tokenBudget} tokens
                     </span>

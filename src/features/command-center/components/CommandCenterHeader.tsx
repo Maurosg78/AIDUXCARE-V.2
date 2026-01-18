@@ -8,10 +8,12 @@
  * - Token counter (optional, can be shown elsewhere)
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, Users, LogOut } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
+import { useProfessionalProfile as useProfessionalProfileContext } from '../../../context/ProfessionalProfileContext';
+import { deriveClinicianDisplayName } from '../../../utils/clinicProfile';
 import { getAuth, signOut } from 'firebase/auth';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
 
@@ -27,7 +29,14 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile: professionalProfile } = useProfessionalProfileContext();
   const isCommandCenter = location.pathname === '/command-center';
+
+  // P3: Command Center greeting - usar nombre del fisio logueado
+  const clinicianDisplayName = useMemo(
+    () => deriveClinicianDisplayName(professionalProfile, user),
+    [professionalProfile, user]
+  );
 
   // WO-AUTH-ONB-FLOW-FIX-04 E: Botón Logout para cortar loops rápido en QA
   const handleLogout = async () => {
@@ -42,14 +51,21 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        {/* Left: Brand + Page Title */}
+        {/* Left: Brand + Page Title + Greeting */}
         <div>
           <p className="text-[10px] uppercase tracking-[0.02em] text-slate-400 font-apple font-light">
             AIDUXCARE <span className="ml-1">🍁</span>
           </p>
-          <p className="text-[15px] font-medium text-slate-800 font-apple">
-            Command Center — Canada
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[15px] font-medium text-slate-800 font-apple">
+              Command Center — Canada
+            </p>
+            {clinicianDisplayName && (
+              <p className="text-[13px] text-slate-600 font-apple font-light">
+                · Welcome, {clinicianDisplayName}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Right: Actions + Status */}

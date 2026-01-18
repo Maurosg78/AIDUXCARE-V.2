@@ -115,7 +115,7 @@ describe('WSIBTemplateService', () => {
       const soapNote = createMockSOAPNote();
       const session = createMockSession();
       const patientData = createMockPatientData();
-      const professionalData = { name: 'Dr. Smith' }; // Minimal data
+      const professionalData = { name: 'Test Physio' }; // Minimal data
 
       const result = WSIBTemplateService.extractWSIBData(
         soapNote,
@@ -124,7 +124,7 @@ describe('WSIBTemplateService', () => {
         professionalData
       );
 
-      expect(result.professional.name).toBe('Dr. Smith');
+      expect(result.professional.name).toBe('Test Physio');
       expect(result.professional.clinicProvince).toBe('ON'); // Default value
       expect(result.professional.registrationNumber).toBe(''); // Empty string fallback
     });

@@ -11,12 +11,8 @@ console.warn = (...args: any[]) => {
 
 const dbs = new Set<any>();
 
-// Prevent real Firebase initialization during tests
-vi.mock("@/lib/firebase", async () => {
-  return { db: {}, auth: {} };
-});
-
-
+// ✅ PHIPA/PIPEDA compliant: No mock de Firebase (usa Firebase real)
+// Firebase se inicializa en test/setupTests.ts antes de este setup
 
 afterEach(() => cleanup());
 

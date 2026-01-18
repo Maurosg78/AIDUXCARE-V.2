@@ -1,4 +1,4 @@
-import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import type { ProfessionalProfile } from "@/context/ProfessionalProfileContext";
 
 /**
  * Returns the clinic name configured for the professional profile.
@@ -8,48 +8,38 @@ export const deriveClinicName = (profile?: ProfessionalProfile | null): string =
   const clinicName = profile?.clinic?.name?.trim();
   const workplaceName = profile?.workplace?.trim();
 
-  if (clinicName) {
-    return clinicName;
-  }
+  if (clinicName) return clinicName;
+  if (workplaceName) return workplaceName;
 
-  if (workplaceName) {
-    return workplaceName;
-  }
-
-  return 'AiduxCare Clinic';
+  return "AiduxCare Clinic";
 };
 
 /**
  * Returns the display name for the physiotherapist based on the profile or auth user.
+ * IMPORTANT: Never returns a fake person name (pilot-safe).
  */
 export const deriveClinicianDisplayName = (
   profile?: ProfessionalProfile | null,
   user?: { displayName?: string | null; email?: string | null }
 ): string => {
-  if (profile?.preferredSalutation && profile?.lastNamePreferred) {
-    return `${profile.preferredSalutation} ${profile.lastNamePreferred}`.trim();
-  }
+  const salutation = profile?.preferredSalutation?.trim();
+  const lastNamePreferred = profile?.lastNamePreferred?.trim();
+  if (salutation && lastNamePreferred) return `${salutation} ${lastNamePreferred}`.trim();
 
-  if (profile?.fullName?.trim()) {
-    return profile.fullName.trim();
-  }
+  const fullName = profile?.fullName?.trim();
+  if (fullName) return fullName;
 
-  if (profile?.displayName?.trim()) {
-    return profile.displayName.trim();
-  }
+  const displayName = profile?.displayName?.trim();
+  if (displayName) return displayName;
 
-  if (user?.displayName?.trim()) {
-    return user.displayName.trim();
-  }
+  const userDisplayName = user?.displayName?.trim();
+  if (userDisplayName) return userDisplayName;
 
-  if (profile?.email) {
-    return profile.email.split('@')[0] || 'Dr. Smith';
-  }
+  const profileEmail = profile?.email?.trim();
+  if (profileEmail && profileEmail.includes("@")) return profileEmail.split("@")[0] || "Your physiotherapist";
 
-  if (user?.email) {
-    return user.email.split('@')[0] || 'Dr. Smith';
-  }
+  const userEmail = user?.email?.trim();
+  if (userEmail && userEmail.includes("@")) return userEmail.split("@")[0] || "Your physiotherapist";
 
-  return 'Dr. Smith';
+  return "Your physiotherapist";
 };
-

@@ -15,6 +15,7 @@ import { NoteDetailPage } from '../pages/NotesPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
 import { ConsentVerificationPage } from '../pages/ConsentVerificationPage';
+import { PatientConsentPortalPage } from '../pages/PatientConsentPortalPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import { ProfessionalOnboardingPage } from '../pages/ProfessionalOnboardingPage';
 import { EmailVerifiedPage } from '../pages/EmailVerifiedPage';
@@ -84,7 +85,7 @@ export const createRouter = () => createBrowserRouter([
   { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
-  { path: '/consent/:token', element: <ConsentVerificationPage /> }, // Public consent link (no auth required)
+  { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // Public consent link (no auth required) - Prioridad 2: Implementado
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number

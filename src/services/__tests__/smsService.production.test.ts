@@ -21,7 +21,7 @@ describe('SMS Service - Production Readiness', () => {
       // Test template directly (faster than mocking entire service)
       const message = SMS_TEMPLATES.consent.en_CA(
         'John Doe',
-        'Dr. Smith',
+        'Test Physio',
         'https://aiduxcare.web.app/consent/test-token',
         'https://aiduxcare.web.app/privacy-policy'
       );
@@ -50,7 +50,7 @@ describe('SMS Service - Production Readiness', () => {
     it('should not contain Spanish words in activation SMS', () => {
       // Test template directly
       const message = SMS_TEMPLATES.activation.en_CA(
-        'Dr. Smith',
+        'Test Physio',
         'https://aiduxcare.web.app/activate?token=test-token',
         'https://aiduxcare.web.app/privacy-policy',
         'https://aiduxcare.web.app/privacy-policy#data-usage'
@@ -121,7 +121,7 @@ describe('SMS Service - Production Readiness', () => {
     it('should accept valid English templates', () => {
       const englishMessage = SMS_TEMPLATES.consent.en_CA(
         'John Doe',
-        'Dr. Smith',
+        'Test Physio',
         'https://aiduxcare.web.app/consent/token',
         'https://aiduxcare.web.app/privacy'
       );

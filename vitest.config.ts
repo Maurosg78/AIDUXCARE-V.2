@@ -71,7 +71,7 @@ export default defineConfig({
 
     environment: 'jsdom', // Use jsdom for React component tests
     globals: false, // Desactivado: causa hang con --pool=forks
-    setupFiles: ['src/test-watchdog.js', './src/test-port-mocks.ts', './src/test-setup.ts', './test/vitest.setup.ts'],
+    setupFiles: ['src/test-watchdog.js', './test/setupTests.ts', './src/test-port-mocks.ts', './src/test-setup.ts', './test/vitest.setup.ts'],
     // @ts-expect-error - globalTeardown is supported in runtime but not in type definitions for this Vitest version
     globalTeardown: './src/test-teardown.ts',
     testTimeout: 10_000, // 10 seconds max per test (timeout corto para diagnóstico)

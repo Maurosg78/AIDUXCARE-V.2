@@ -98,17 +98,20 @@ export class PatientConsentService {
     patientEmail?: string,
     clinicName: string = 'AiduxCare Clinic',
     physiotherapistId: string = 'temp-user',
-    physiotherapistName: string = 'Dr. Smith',
+    physiotherapistName: string = 'Your physiotherapist',
     sessionId?: string
   ): Promise<string> {
     try {
+      // Prioridad 1.1: Hardening - asegurar nombre seguro con fallback
+      const safePhysioName = (physiotherapistName || '').trim() || 'Your physiotherapist';
+
       // Generate unique token
       const token = generateUUID();
-      
+
       // Calculate expiration (7 days from now)
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + TOKEN_EXPIRATION_DAYS);
-      
+
       // Create token document
       const tokenData: Omit<PatientConsentToken, 'createdAt' | 'expiresAt'> & {
         createdAt: any;
@@ -121,24 +124,24 @@ export class PatientConsentService {
         patientEmail: patientEmail || null,
         clinicName,
         physiotherapistId,
-        physiotherapistName,
+        physiotherapistName: safePhysioName,
         sessionId: sessionId || null,
         createdAt: serverTimestamp(),
         expiresAt: Timestamp.fromDate(expiresAt),
         used: false,
       };
-      
+
       // Save to Firestore
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
       await setDoc(tokenRef, tokenData);
-      
+
       console.log('[PATIENT CONSENT] Token generated:', {
         token,
         patientId,
         patientName,
         expiresAt: expiresAt.toISOString(),
       });
-      
+
       return token;
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error generating token:', error);
@@ -156,26 +159,26 @@ export class PatientConsentService {
     try {
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
       const tokenSnap = await getDoc(tokenRef);
-      
+
       if (!tokenSnap.exists()) {
         return null;
       }
-      
+
       const data = tokenSnap.data();
-      
+
       // Check if token is expired
       const expiresAt = data.expiresAt?.toDate();
       if (expiresAt && new Date() > expiresAt) {
         console.warn('[PATIENT CONSENT] Token expired:', token);
         return null;
       }
-      
+
       // Check if token is already used
       if (data.used) {
         console.warn('[PATIENT CONSENT] Token already used:', token);
         return null;
       }
-      
+
       return {
         token: data.token,
         patientId: data.patientId,
@@ -226,11 +229,13 @@ export class PatientConsentService {
       if (!tokenData) {
         throw new Error('Invalid or expired token');
       }
-      
+
       // Mark token as used
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
+      const usedAt = new Date();
       await setDoc(tokenRef, {
         used: true,
+        usedAt: serverTimestamp(),
         consentGiven: {
           scope,
           timestamp: serverTimestamp(),
@@ -239,10 +244,18 @@ export class PatientConsentService {
           ...(digitalSignature && digitalSignature.trim() ? { digitalSignature: digitalSignature.trim() } : {}),
         },
       }, { merge: true });
-      
+
+      console.log('[PATIENT CONSENT] Token marked as used:', {
+        token,
+        patientId: tokenData.patientId,
+        requestedByUid: tokenData.physiotherapistId,
+        requestedByName: tokenData.physiotherapistName,
+        usedAt: usedAt.toISOString(),
+      });
+
       // Create consent record
       const consented = scope !== 'declined';
-      
+
       // Build consent record - only include optional fields if provided (Firestore doesn't accept undefined)
       const consentRecord: any = {
         patientId: tokenData.patientId,
@@ -258,24 +271,24 @@ export class PatientConsentService {
         ipAddress: 'client-side', // TODO: Get from backend
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       };
-      
+
       // Only add optional fields if they exist
       if (digitalSignature && digitalSignature.trim()) {
         consentRecord.digitalSignature = digitalSignature.trim();
       }
-      
+
       // ✅ Phase 2: Add language and method fields
       if (languageUsed) {
         consentRecord.languageUsed = languageUsed;
       }
-      
+
       if (obtainmentMethod) {
         consentRecord.obtainmentMethod = obtainmentMethod;
       }
-      
+
       const consentRef = doc(db, CONSENT_COLLECTION, `${tokenData.patientId}_${Date.now()}`);
       await setDoc(consentRef, consentRecord);
-      
+
       console.log('[PATIENT CONSENT] Consent recorded:', {
         patientId: tokenData.patientId,
         scope,
@@ -302,19 +315,19 @@ export class PatientConsentService {
         where('consented', '==', true),
         where('consentScope', '==', 'ongoing')
       );
-      
+
       const snapshot = await getDocs(q);
-      
+
       if (snapshot.empty) {
         return false;
       }
-      
+
       // Check if consent is still valid (not expired, correct version)
       const consents = snapshot.docs.map(doc => doc.data());
       const validConsent = consents.find(
         consent => consent.consentVersion === CONSENT_VERSION
       );
-      
+
       return !!validConsent;
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error checking consent:', error);
@@ -336,13 +349,13 @@ export class PatientConsentService {
         where('patientId', '==', patientId),
         where('consented', '==', true)
       );
-      
+
       const snapshot = await getDocs(q);
-      
+
       if (snapshot.empty) {
         return null;
       }
-      
+
       // Get the most recent consent
       const consents = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -352,11 +365,11 @@ export class PatientConsentService {
           const bDate = b.consentDate?.toDate?.() || new Date(0);
           return bDate.getTime() - aDate.getTime();
         });
-      
+
       if (consents.length === 0) {
         return null;
       }
-      
+
       const latestConsent = consents[0];
       return latestConsent.consentScope || null;
     } catch (error) {
@@ -390,7 +403,7 @@ export class PatientConsentService {
       if (tokenData.physiotherapistId !== physiotherapistId) {
         throw new Error('Unauthorized: Physiotherapist mismatch');
       }
-      
+
       // Mark token as used
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
       await setDoc(tokenRef, {
@@ -403,7 +416,7 @@ export class PatientConsentService {
           digitalSignature: `Authorized by ${physiotherapistId}`,
         },
       }, { merge: true });
-      
+
       // Create consent record
       const consentRecord: any = {
         patientId: tokenData.patientId,
@@ -421,10 +434,10 @@ export class PatientConsentService {
         digitalSignature: `Authorized by ${physiotherapistId}`,
         authorizedByPhysiotherapist: true,
       };
-      
+
       const consentRef = doc(db, CONSENT_COLLECTION, `${tokenData.patientId}_${Date.now()}`);
       await setDoc(consentRef, consentRecord);
-      
+
       console.log('[PATIENT CONSENT] Consent authorized manually:', {
         patientId: tokenData.patientId,
         scope,

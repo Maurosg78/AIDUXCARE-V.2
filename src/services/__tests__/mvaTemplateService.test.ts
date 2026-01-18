@@ -198,7 +198,7 @@ describe('MVATemplateService', () => {
           dateOfAccident: new Date(),
         },
         professional: {
-          name: 'Dr. Smith',
+          name: 'Test Physio',
           registrationNumber: 'ON-12345',
           clinicName: 'Clinic',
           clinicAddress: '123 St',

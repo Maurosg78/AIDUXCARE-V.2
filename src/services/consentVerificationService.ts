@@ -72,7 +72,7 @@ export class ConsentVerificationService {
     patientPhone?: string,
     clinicName: string = 'AiduxCare Clinic',
     physiotherapistId: string = 'temp-user',
-    physiotherapistName: string = 'Dr. Smith'
+    physiotherapistName: string = 'Your physiotherapist'
   ): Promise<ConsentVerificationState> {
     try {
       // Check if patient already has consent
