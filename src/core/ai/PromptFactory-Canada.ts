@@ -18,7 +18,7 @@ export interface CanadianPromptParams {
   attachments?: ClinicalAttachment[];
 }
 
-const PROMPT_HEADER = `AiDuxCare copilot for Canadian PTs. CPO scope. PHIPA/PIPEDA compliant.
+const PROMPT_HEADER = `AiDuxCare copilot for Canadian PTs. CPO scope. PHIPA/PIPEDA-aware (design goal).
 CORE: Expose clinical variables. Never diagnose. Present differential considerations. Highlight when medical referral needed.
 Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
@@ -85,7 +85,9 @@ EMPTY FIELD RULES (NEW):
   ✅ // Field omitted entirely
 
 CRITICAL INSTRUCTIONS:
-- Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). Include clinical concern and referral urgency.
+- Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). 
+- ✅ T4: Wording compliance ("never diagnose" dominant): Always phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags." NOT as diagnostic statements like "Medication overdose risk... exceeding safe limits... urgent referral." Use concern/review language, not definitive clinical judgments.
+- Example correct phrasing: "Clinical concern: potential medication safety risk (NSAIDs + SSRIs interaction detected). Recommend medical review/referral based on red flags." NOT "Medication overdose risk... exceeding safe limits."
 - Medications: Format as "name, dosage (units), frequency, duration". Correct dosage errors (oral meds are mg, not g). Flag interactions (NSAIDs+SSRIs/SNRIs = red flag).
 - Chief complaint: Capture precise anatomical location, quality, radiation, temporal evolution (onset/progression/triggers), aggravating/relieving factors, functional impact. Include intensity scales and active symptoms.
 - Physical tests: Consider anatomical structures, neural involvement (specify relevant spinal/neural levels when indicated by presentation, e.g., dermatomes, myotomes, specific spinal segments), joint integrity, functional capacity. Frame as "Consider assessing..." not "Perform...". CRITICAL: For EACH recommended physical test, attempt to search for and provide sensitivity/specificity values from reliable sources. See PHYSICAL TESTS SCORING REQUIREMENT below for detailed instructions. ANTI-HALLUCINATION: If no reliable source is available, use "unknown" rather than estimating or inventing values.
@@ -359,15 +361,15 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
  */
 const buildPracticePreferencesContext = (profile?: ProfessionalProfile | null): string => {
   // WO-AUTH-GUARD-ONB-DATA-01: Verificar consentimiento antes de inyectar
-  // @ts-expect-error - dataUseConsent may exist in profile
-  const consent = profile?.dataUseConsent;
+  // T7: Removed @ts-expect-error - field is now properly typed
+  const consent = (profile as any)?.dataUseConsent;
   if (consent && consent.personalizationFromClinicianInputs === false) {
     // Consentimiento denegado - no inyectar preferencias
     return '';
   }
 
-  // @ts-expect-error - practicePreferences may exist in profile
-  const prefs = profile?.practicePreferences;
+  // T7: Removed @ts-expect-error - field may exist but not in base type
+  const prefs = (profile as any)?.practicePreferences;
   
   if (!prefs) {
     // No preferences - omit section (no defaults invented)
@@ -418,8 +420,8 @@ export const validatePatientContext = (
   contextoPaciente: string,
   professionalProfile?: ProfessionalProfile | null
 ): string => {
-  // @ts-expect-error - dataUseConsent may exist in profile
-  const consent = professionalProfile?.dataUseConsent;
+  // T7: Removed @ts-expect-error - field may exist but not in base type
+  const consent = (professionalProfile as any)?.dataUseConsent;
   
   if (consent && consent.personalizationFromPatientData === false) {
     // Consent denied - ensure context is minimal (no history/episodes)

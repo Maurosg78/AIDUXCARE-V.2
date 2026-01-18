@@ -799,7 +799,10 @@ const ProfessionalWorkflowPage = () => {
       useEffectClearedRef.current = true;
 
       // Clear localStorage for follow-up (fresh start)
-      SessionStorage.clearSession(patientId);
+      // ✅ T1: Use v2 key structure with userId, visitType, sessionId
+      const userId = user?.uid || TEMP_USER_ID;
+      const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+      SessionStorage.clearSession(patientId, userId, 'follow-up', currentSessionId);
 
       // Set follow-up state only if not already set
       if (visitType !== 'follow-up') {
@@ -858,7 +861,10 @@ const ProfessionalWorkflowPage = () => {
 
           // Clear ALL saved state from localStorage for initial evaluations
           // This ensures a completely fresh start with empty transcript, tests, SOAP, etc.
-          SessionStorage.clearSession(patientId);
+          // ✅ T1: Use v2 key structure with userId, visitType, sessionId
+          const userId = user?.uid || TEMP_USER_ID;
+          const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+          SessionStorage.clearSession(patientId, userId, 'initial', currentSessionId);
           console.log('[WORKFLOW] ✅ Clearing saved state for initial evaluation (ONCE)');
 
           // Explicitly reset ALL state to empty/initial values for initial evaluations
@@ -886,7 +892,10 @@ const ProfessionalWorkflowPage = () => {
         }
 
         // For other session types (wsib, mva, certificate), restore state normally
-        const savedState = SessionStorage.getSession(patientId);
+        // ✅ T1: Use v2 key structure with userId, visitType, sessionId (with legacy fallback)
+        const userId = user?.uid || TEMP_USER_ID;
+        const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+        const savedState = SessionStorage.getSession(patientId, userId, visitType || 'initial', currentSessionId);
 
         if (!savedState) {
           return;
@@ -976,7 +985,10 @@ const ProfessionalWorkflowPage = () => {
         }
 
         prevStateRef.current = stateKey;
-        SessionStorage.saveSession(patientId, workflowState);
+        // ✅ T1: Use v2 key structure with userId, visitType, sessionId
+        const userId = user?.uid || TEMP_USER_ID;
+        const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+        SessionStorage.saveSession(patientId, workflowState, userId, visitType || 'initial', currentSessionId);
         console.log('[WORKFLOW] 💾 Auto-saved workflow state:', {
           transcriptLength: transcript?.length || 0,
           testCount: evaluationTests.length,
@@ -3174,8 +3186,8 @@ const ProfessionalWorkflowPage = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as ActiveTab)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                    ? "bg-blue-600 text-white shadow-md" // ✅ WO-PHASE3-CRITICAL-FIXES: Same color (blue) for active
-                    : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" // ✅ Same style for inactive
+                  ? "bg-blue-600 text-white shadow-md" // ✅ WO-PHASE3-CRITICAL-FIXES: Same color (blue) for active
+                  : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" // ✅ Same style for inactive
                   }`}
               >
                 {tab.label}

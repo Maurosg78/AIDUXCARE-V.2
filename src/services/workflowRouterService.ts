@@ -4,13 +4,13 @@
  * Routes workflow based on follow-up detection, providing optimized paths
  * for follow-up visits vs initial evaluations.
  * 
- * @compliance PHIPA compliant (no data handling changes)
- * @audit ISO 27001 A.8.2.3 (Handling of assets)
+ * @compliance PHIPA-aware (design goal, no data handling changes)
+ * @audit Security control reference (internal) - Handling of assets
  */
 
 import { detectFollowUp, type FollowUpDetectionResult, type FollowUpDetectionInput } from './followUpDetectionService';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -52,13 +52,30 @@ export function determineWorkflowRoute(
   userId: string,
   patientId: string
 ): WorkflowRoute {
-  const workflowType: WorkflowType = detectionResult.isFollowUp 
+  // ✅ T2: Guard "zona gris" (60-79) - Don't apply aggressive auto-follow-up
+  // Policy: Treat gray zone as initial (don't skip analysis), but keep recommendedWorkflow for logging
+  const isGrayZone = detectionResult.confidence >= 60 && detectionResult.confidence < 80;
+  const shouldTreatAsInitial = isGrayZone || !detectionResult.isFollowUp;
+  
+  const workflowType: WorkflowType = (!shouldTreatAsInitial && detectionResult.isFollowUp)
     ? 'follow-up' 
     : detectionResult.manualOverride 
       ? 'manual-override'
       : 'initial';
   
+  // ✅ T2: Logging for gray zone decisions
+  if (isGrayZone) {
+    console.log('[Workflow Router] Gray zone detected (60-79% confidence), treating as initial evaluation:', {
+      confidence: detectionResult.confidence,
+      recommendedWorkflow: detectionResult.recommendedWorkflow,
+      finalWorkflowType: workflowType,
+      rationale: detectionResult.rationale,
+      patientId
+    });
+  }
+  
   // Follow-up workflow: Skip analysis tab, go directly to SOAP
+  // Only applies if confidence >= 80% (AUTO_FOLLOW_UP threshold)
   if (workflowType === 'follow-up') {
     return {
       type: 'follow-up',
@@ -75,10 +92,10 @@ export function determineWorkflowRoute(
     };
   }
   
-  // Initial evaluation: Full workflow
+  // Initial evaluation: Full workflow (including gray zone 60-79)
   return {
     type: 'initial',
-    skipTabs: [], // Don't skip any tabs
+    skipTabs: [], // Don't skip any tabs (including for gray zone)
     directToTab: 'analysis', // Start with analysis
     analysisLevel: 'full', // Use full analysis
     auditLog: {

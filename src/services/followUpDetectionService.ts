@@ -4,15 +4,15 @@
  * Intelligent detection algorithm to differentiate follow-up visits from initial evaluations.
  * Uses multi-factor analysis: patient history, keywords, and metadata.
  * 
- * @compliance PHIPA compliant (no data handling changes)
- * @audit ISO 27001 A.8.2.3 (Handling of assets)
+ * @compliance PHIPA-aware (design goal, no data handling changes)
+ * @audit Security control reference (internal) - Handling of assets
  */
 
 import { EpisodeService } from './episodeService';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -423,6 +423,17 @@ export async function detectFollowUp(
     recommendedWorkflow,
   };
   
+  // ✅ T2: Structured logging (without PHI) - log once per detection
+  console.log('[Workflow Detection]', {
+    confidence: result.confidence,
+    recommendedWorkflow: result.recommendedWorkflow,
+    rationale: result.rationale, // Generic reasons only, no transcript
+    isFollowUp: result.isFollowUp,
+    isGrayZone: confidence >= CONFIDENCE_THRESHOLDS.SUGGEST_FOLLOW_UP && confidence < CONFIDENCE_THRESHOLDS.AUTO_FOLLOW_UP,
+    patientId: input.patientId, // Safe to log (not PHI)
+    timestamp: new Date().toISOString()
+  });
+  
   // Log detection event for audit
   const logger = await getAuditLogger();
   await logger.logEvent({
@@ -434,6 +445,7 @@ export async function detectFollowUp(
       confidence,
       recommendedWorkflow,
       rationale,
+      isGrayZone: confidence >= CONFIDENCE_THRESHOLDS.SUGGEST_FOLLOW_UP && confidence < CONFIDENCE_THRESHOLDS.AUTO_FOLLOW_UP,
       timestamp: new Date().toISOString(),
     },
   });

@@ -235,7 +235,8 @@ export async function generateSOAPNote(
         }
       } else {
         // Retry once with repair prompt
-        const repairPrompt = firstCheck.repairPrompt;
+        // Bloque 4: Type narrowing - repairPrompt solo existe cuando ok: false
+        const repairPrompt = (firstCheck as { ok: false; repairPrompt: string }).repairPrompt;
         
         const repairResponse = await fetch(VERTEX_PROXY_URL, {
           method: 'POST',
@@ -577,7 +578,31 @@ function parseSOAPResponse(
     console.log('[SOAP Builder] Plan object preview:', JSON.stringify(soapData.plan).substring(0, 200));
   }
   console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
-  const formattedPlan = formatTreatmentPlan(soapData?.plan);
+  const formattedPlanRaw = formatTreatmentPlan(soapData?.plan);
+  
+  // ✅ T3: Validate and limit plan size (max 2000 chars)
+  const MAX_PLAN_LENGTH = 2000;
+  const TRUNCATE_MARKER = '… [truncated]';
+  let formattedPlan: string;
+  
+  if (formattedPlanRaw.length > MAX_PLAN_LENGTH) {
+    // Truncate and add marker
+    const truncateAt = MAX_PLAN_LENGTH - TRUNCATE_MARKER.length;
+    formattedPlan = formattedPlanRaw.substring(0, truncateAt) + TRUNCATE_MARKER;
+    console.warn('[SOAP Builder] Plan truncated:', {
+      originalLength: formattedPlanRaw.length,
+      truncatedLength: formattedPlan.length,
+      maxLength: MAX_PLAN_LENGTH
+    });
+  } else {
+    formattedPlan = formattedPlanRaw;
+  }
+  
+  // ✅ T3: Validate plan is not empty/invalid
+  if (!formattedPlan || formattedPlan.trim().length === 0 || formattedPlan === 'Not documented.') {
+    formattedPlan = 'Not documented.';
+  }
+  
   console.log('[SOAP Builder] Plan length after formatting:', formattedPlan.length, 'chars');
 
   // Validate and return structured SOAP note
@@ -586,7 +611,7 @@ function parseSOAPResponse(
       subjective: String(soapData.subjective || 'Not documented.'),
       objective: String(soapData.objective || 'Not documented.'),
       assessment: String(soapData.assessment || 'Not documented.'),
-      plan: formatTreatmentPlan(soapData.plan),
+      plan: formattedPlan, // ✅ T3: Use validated and capped plan
       additionalNotes: soapData.additionalNotes ? String(soapData.additionalNotes) : undefined,
       followUp: soapData.followUp ? String(soapData.followUp) : undefined,
       precautions: soapData.precautions ? String(soapData.precautions) : undefined,
