@@ -7,9 +7,9 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, Timestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { TokenTrackingService } from './tokenTrackingService';
+import { tokenTrackingService } from './tokenTrackingService';
 import { CANONICAL_PRICING } from './tokenTrackingService';
 
 export interface TokenPackage {
@@ -67,8 +67,8 @@ export class TokenPackageService {
     paymentMethodId?: string // For future Stripe integration
   ): Promise<any> {
     try {
-      // Use TokenTrackingService for purchase
-      const result = await TokenTrackingService.purchaseTokenPackage(userId, packageType);
+      // Use tokenTrackingService for purchase
+      const result = await tokenTrackingService.purchaseTokenPackage(userId, packageType);
       
       if (!result.success) {
         throw new Error(result.error || 'Purchase failed');
@@ -155,8 +155,9 @@ export class TokenPackageService {
       const snapshot = await getDocs(q);
       
       // Update expired purchases
+      // Bloque 5E: Usar updateDoc del SDK modular (doc.ref.update no existe en v9)
       const updates = snapshot.docs.map(doc => {
-        return doc.ref.update({ status: 'expired' });
+        return updateDoc(doc.ref, { status: 'expired' });
       });
 
       await Promise.all(updates);
@@ -171,7 +172,7 @@ export class TokenPackageService {
    */
   async getPackageRecommendation(userId: string): Promise<string> {
     try {
-      const usage = await TokenTrackingService.getCurrentTokenUsage(userId);
+      const usage = await tokenTrackingService.getCurrentTokenUsage(userId);
       const projectedUsage = usage.projectedMonthlyUsage;
       const baseTokens = CANONICAL_PRICING.tokensIncluded;
 

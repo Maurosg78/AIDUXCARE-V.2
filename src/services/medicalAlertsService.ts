@@ -1,9 +1,9 @@
 /**
- * Medical Alerts Service - ISO 27001 Compliant
+ * Medical Alerts Service - Security audit logging
  * 
  * Detects medical alerts in transcriptions and integrates with SOAP generation
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.12.4.1: Event logging (all detections logged)
  * - A.12.4.2: Protection of log information (encrypted metadata)
  * 
@@ -15,7 +15,7 @@
 
 import { detectVitalSigns, generateAlertsFromVitalSigns, detectPostSurgicalAlerts, MedicalAlert, VitalSign } from '../utils/vitalSignsDetector';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -45,7 +45,7 @@ export interface SOAPWithAlerts {
 export class MedicalAlertsService {
   /**
    * Detect all medical alerts in transcription
-   * ✅ ISO 27001 AUDIT: All detections are logged
+   * ✅ Security audit: All detections are logged
    */
   static async detectAlerts(
     transcription: string,
@@ -73,7 +73,7 @@ export class MedicalAlertsService {
 
       const processingTime = Date.now() - startTime;
 
-      // ✅ ISO 27001 AUDIT: Log alert detection
+      // ✅ Security audit: Log alert detection
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'medical_alerts_detected',
@@ -99,7 +99,7 @@ export class MedicalAlertsService {
     } catch (error) {
       console.error('[MedicalAlerts] Error detecting alerts:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'medical_alerts_detection_failed',
@@ -233,7 +233,7 @@ export class MedicalAlertsService {
       detectionResult.alerts
     );
 
-    // ✅ ISO 27001 AUDIT: Log SOAP generation with alerts
+    // ✅ Security audit: Log SOAP generation with alerts
     const AuditLogger = await getAuditLogger();
     await AuditLogger.logEvent({
       type: 'soap_generated_with_alerts',

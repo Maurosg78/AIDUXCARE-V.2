@@ -5,7 +5,7 @@
  * Subtle Canadian references without being explicit
  * English language for professional audience
  * 
- * ISO 27001 Compliant - No sensitive data exposure
+ * Security-first architecture - No sensitive data exposure
  */
 
 import React from 'react';
@@ -60,7 +60,7 @@ const PublicLandingPage: React.FC = () => {
           {/* Subtle Canadian reference - maple leaf colors in gradient */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-[#A8E6CF]/20 to-[#C4F1DE]/20 border border-[#A8E6CF]/30 rounded-full text-xs font-medium text-[#2C3E50] mb-8">
             <MapPin className="w-3.5 h-3.5" />
-            <span>Canadian Infrastructure • PHIPA Compliant</span>
+            <span>Canadian Infrastructure • Built for Canadian privacy workflows</span>
           </div>
           
           <h1 className="text-5xl lg:text-6xl font-light text-[#2C3E50] mb-6 tracking-tight leading-tight">
@@ -99,7 +99,7 @@ const PublicLandingPage: React.FC = () => {
                 <Shield className="w-5 h-5 text-[#5DA5A3]" />
               </div>
               <div className="text-3xl font-light text-[#2C3E50] mb-1">100%</div>
-              <div className="text-xs text-[#95A5A6] font-medium">PHIPA compliant</div>
+              <div className="text-xs text-[#95A5A6] font-medium">Built for Canadian privacy workflows</div>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ const PublicLandingPage: React.FC = () => {
             </p>
             <div className="flex items-center gap-2 text-xs text-[#5DA5A3]">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>PHIPA compliant</span>
+              <span>Built for Canadian privacy workflows</span>
             </div>
           </div>
 
@@ -168,7 +168,7 @@ const PublicLandingPage: React.FC = () => {
             </p>
             <div className="flex items-center gap-2 text-xs text-[#5DA5A3]">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>ISO 27001 compliant</span>
+              <span>Security-first architecture</span>
             </div>
           </div>
 

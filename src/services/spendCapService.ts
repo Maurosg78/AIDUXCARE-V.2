@@ -9,7 +9,7 @@
 
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { TokenTrackingService } from './tokenTrackingService';
+import { tokenTrackingService } from './tokenTrackingService';
 
 // Canonical Pricing Configuration (shared)
 const CANONICAL_PRICING = {
@@ -185,7 +185,7 @@ export class SpendCapService {
       }
 
       // Check token availability
-      const canUse = await TokenTrackingService.canUseTokens(userId, tokensNeeded);
+      const canUse = await tokenTrackingService.canUseTokens(userId, tokensNeeded);
       if (canUse) {
         return false; // Don't auto-purchase if tokens available
       }
@@ -221,8 +221,8 @@ export class SpendCapService {
       const spendControl = userData.subscription?.spendControl || {};
       const preferredPackage = spendControl.preferredPackageSize || 'medium';
 
-      // Execute purchase via TokenTrackingService
-      return await TokenTrackingService.purchaseTokenPackage(userId, preferredPackage);
+      // Execute purchase via tokenTrackingService
+      return await tokenTrackingService.purchaseTokenPackage(userId, preferredPackage);
     } catch (error) {
       console.error('[SpendCapService] Error executing auto-purchase:', error);
       throw error;

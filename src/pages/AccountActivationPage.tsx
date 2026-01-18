@@ -22,6 +22,21 @@ export const AccountActivationPage: React.FC = () => {
   const [resending, setResending] = useState(false);
   const [resendEmail, setResendEmail] = useState<string | null>(null);
 
+  // Bloque 6: Handler para resend activation - placeholder para futura implementación
+  const handleResendActivation = async () => {
+    setResending(true);
+    try {
+      // TODO: Implementar resend activation si es necesario para el pilot
+      // Por ahora, solo loguear para no romper la UI
+      logger.warn('[AccountActivation] Resend activation requested but not yet implemented');
+      alert('Resend activation feature coming soon');
+    } catch (error) {
+      logger.error('[AccountActivation] Error resending activation:', error);
+    } finally {
+      setResending(false);
+    }
+  };
+
   useEffect(() => {
     const activateAccount = async () => {
       const token = searchParams.get('token');

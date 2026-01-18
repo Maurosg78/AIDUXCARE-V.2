@@ -2,7 +2,7 @@
  * useVerbalConsent Hook
  * 
  * React hook for managing verbal consent verification and obtaining
- * ISO 27001 Compliant - All operations are logged
+ * Security audit logging - All operations are logged
  */
 
 import { useState, useEffect, useCallback } from 'react';

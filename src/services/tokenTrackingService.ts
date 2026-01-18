@@ -66,6 +66,15 @@ export interface PurchaseResult {
   error?: string;
 }
 
+// Bloque 1: Tipo de documento Firestore para TokenPurchase
+type TokenPurchaseDoc = {
+  purchaseDate?: Timestamp | { toDate(): Date };
+  tokensRemaining?: number;
+  tokensAdded?: number;
+  userId?: string;
+  [key: string]: any; // Para campos adicionales que puedan existir
+};
+
 /**
  * Token Tracking Service
  * 
@@ -380,8 +389,12 @@ export class TokenTrackingService {
       );
       
       const snapshot = await getDocs(q);
+      // Bloque 1: Mapeo con tipo correcto para Firestore docs
       const purchases = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => {
+          const data = doc.data() as TokenPurchaseDoc;
+          return { id: doc.id, ...data };
+        })
         .sort((a, b) => {
           const aDate = a.purchaseDate?.toDate?.() || new Date(0);
           const bDate = b.purchaseDate?.toDate?.() || new Date(0);
@@ -457,8 +470,10 @@ export class TokenTrackingService {
   }
 }
 
-// Export singleton instance
-export default new TokenTrackingService();
+// T4: Export singleton instance with explicit name
+const tokenTrackingService = new TokenTrackingService();
+export default tokenTrackingService;
+export { tokenTrackingService };
 // Export class for testing
 export { TokenTrackingService as TokenTrackingServiceClass };
 

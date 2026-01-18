@@ -20,7 +20,7 @@ import {
 const __IS_TEST__ =
   typeof process !== 'undefined' && process?.env && (
     !!process.env.VITEST ||
-    !!process.env.NODE_ENV === 'test' ||
+    process.env.NODE_ENV === 'test' ||
     import.meta.env?.MODE === 'test' ||
     import.meta.env?.VITEST === true
   );
@@ -150,7 +150,7 @@ if (!__IS_TEST__) {
     }
   }
 } else {
-  // ✅ PHIPA/PIPEDA compliant: Inicializar Firebase real en tests (sin mocks)
+  // ✅ PHIPA/PIPEDA-aware: Inicializar Firebase real en tests (sin mocks)
   initFirebaseOnce();
   // Inicializar Auth en tests - se ejecuta inmediatamente al cargar el módulo
   if (!_auth) {
@@ -238,3 +238,6 @@ export const auth = _auth;
 export const db = _db;
 export const storage = _storage;
 export const analytics = _analytics;
+// Bloque 6: Export app para compatibilidad con VertexAIServiceViaFirebase
+export { _app as app };
+export default _app; // Default export para compatibilidad

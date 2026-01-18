@@ -4,7 +4,7 @@
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles physical evaluation test selection and documentation.
  * 
- * @compliance PHIPA compliant, ISO 27001 auditable
+ * @compliance PHIPA-aware (design goal), security audit logging
  */
 
 import React, { useMemo } from 'react';
@@ -38,12 +38,14 @@ const RESULT_LABELS: Record<EvaluationResult, string> = {
 const RESULT_OPTIONS: EvaluationResult[] = ["normal", "positive", "negative", "inconclusive"];
 
 // Render field input based on field kind
+// Bloque 6: Firma actualizada para aceptar testDefinition como parámetro opcional adicional
 const renderFieldInput = (
   field: TestFieldDefinition,
   value: number | string | boolean | null,
   onChange: (newValue: number | string | boolean | null) => void,
   entry?: EvaluationTestEntry,
-  updateTest?: (id: string, updates: Partial<EvaluationTestEntry>) => void
+  updateTest?: (id: string, updates: Partial<EvaluationTestEntry>) => void,
+  testDefinition?: MskTestDefinition | null
 ) => {
   switch (field.kind) {
     case 'angle_bilateral':
@@ -253,7 +255,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       return {
         name: match?.name || item.rawName,
         test: match?.name || item.rawName,
-        evidence_level: match?.evidence_level,
+        // Bloque 6: evidence_level removido - no existe en MskTestDefinition, usar sensitivityQualitative/specificityQualitative si es necesario
         sensitivity: typeof sensitivity === 'number' ? sensitivity : undefined,
         specificity: typeof specificity === 'number' ? specificity : undefined,
         sensitivityQualitative: sensitivityQual || (typeof sensitivity === 'string' ? sensitivity : undefined),
@@ -683,7 +685,8 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                                 <input
                                   type="checkbox"
-                                  checked={entry.result === "positive" || entry.result === "abnormal"}
+                                  // Bloque 6: Corregido - "abnormal" no existe en el tipo, solo "positive"
+                                  checked={entry.result === "positive"}
                                   onChange={(event) =>
                                     updateEvaluationTest(entry.id, {
                                       result: event.target.checked ? "positive" : "normal",

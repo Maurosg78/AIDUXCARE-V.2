@@ -4,7 +4,7 @@
  * Manages patient episodes (inpatient admissions, outpatient visits)
  * Handles virtual transfer by changing access permissions, not moving data
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (episode lifecycle)
  * - A.12.4.1: Event logging (all episode operations logged)
  * 
@@ -18,7 +18,7 @@ import { db } from '../lib/firebase';
 import { collection, doc, setDoc, getDoc, query, where, getDocs, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import TraceabilityService from './traceabilityService';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -166,7 +166,7 @@ export class EpisodeService {
       const episodeRef = doc(db, this.COLLECTION_NAME, episodeId);
       await setDoc(episodeRef, episode);
 
-      // ✅ ISO 27001 AUDIT: Log episode creation
+      // ✅ Security audit: Log episode creation
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'episode_created',
@@ -313,7 +313,7 @@ export class EpisodeService {
         );
       }
 
-      // ✅ ISO 27001 AUDIT: Log virtual transfer
+      // ✅ Security audit: Log virtual transfer
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'episode_virtual_transfer',
@@ -347,7 +347,7 @@ export class EpisodeService {
     } catch (error) {
       console.error('[Episode] Error in virtual transfer:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'episode_transfer_failed',
@@ -388,7 +388,7 @@ export class EpisodeService {
         ],
       });
 
-      // ✅ ISO 27001 AUDIT: Log discharge
+      // ✅ Security audit: Log discharge
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'episode_discharged',

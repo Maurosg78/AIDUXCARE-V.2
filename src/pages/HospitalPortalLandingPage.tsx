@@ -5,7 +5,7 @@
  * - IN-PATIENT: Direct access with visit code (leads to clinical notes for copy-paste)
  * - OUT-PATIENT: Login button (leads to existing login page with registration)
  * 
- * PHIPA/PIPEDA/CPO Compliant - ISO Hospital Standards
+ * Designed for Canadian clinical privacy workflows (PHIPA/PIPEDA-aware)
  * All content in English for professional audience
  */
 
@@ -107,7 +107,7 @@ const HospitalPortalLandingPage: React.FC = () => {
           {/* Compliance Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#A8E6CF]/20 to-[#C4F1DE]/20 border border-[#A8E6CF]/30 rounded-full text-xs font-medium text-[#2C3E50]">
             <Shield className="w-3.5 h-3.5" />
-            <span>PHIPA • PIPEDA • CPO Compliant • Built under Strict ISO Hospital Standards</span>
+            <span>Designed for Canadian privacy workflows • Audit logging • Encryption in transit and at rest</span>
           </div>
         </div>
 

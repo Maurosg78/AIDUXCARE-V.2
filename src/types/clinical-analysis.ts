@@ -2,7 +2,7 @@
  * @fileoverview Clinical Analysis Types - Enterprise Medical Documentation
  * @version 1.0.0
  * @author AiDuxCare Development Team
- * @compliance HIPAA + GDPR + SOC 2 Type II
+ * @security Privacy-focused; avoid PHI in logs/telemetry; audit logging supported.
  */
 
 // Core SOAP Structure as specified in prompt

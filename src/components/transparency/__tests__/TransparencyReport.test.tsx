@@ -121,16 +121,16 @@ describe('✅ DÍA 3: TransparencyReport Component', () => {
       renderWithRouter(<TransparencyReport />);
       
       // Text may appear multiple times, use getAllByText and verify at least one exists
-      const compliances = screen.getAllByText(/PHIPA, PIPEDA, HIPAA BAA, SOC 2 Type II/i);
+      const compliances = screen.getAllByText(/PHIPA|PIPEDA/i);
       expect(compliances.length).toBeGreaterThan(0);
       expect(compliances[0]).toBeInTheDocument();
     });
 
-    it('✅ should render link to Google Cloud SOC 2', () => {
+    it('✅ should render link to Google Cloud SOC 2 report', () => {
       renderWithRouter(<TransparencyReport />);
       
       // Use getAllByRole to find links, then verify at least one has the correct href
-      const links = screen.getAllByRole('link', { name: /View Google Cloud SOC 2 Certification/i });
+      const links = screen.getAllByRole('link', { name: /View Google Cloud SOC 2 report \(provider\)/i });
       expect(links.length).toBeGreaterThan(0);
       const validLink = links.find(link => link.getAttribute('href') === 'https://cloud.google.com/security/compliance/soc2');
       expect(validLink).toBeInTheDocument();
@@ -182,67 +182,47 @@ describe('✅ DÍA 3: TransparencyReport Component', () => {
     });
   });
 
-  describe('Security Certifications Section', () => {
-    it('✅ should render Security & Compliance heading', () => {
+  describe('Security Practices Section', () => {
+    it('✅ should render Security Practices heading', () => {
       renderWithRouter(<TransparencyReport />);
       
       // Multiple H2 headings may contain this text, use getAllByRole and verify at least one exists
-      const headings = screen.getAllByRole('heading', { level: 2, name: /Security & Compliance Certifications/i });
+      const headings = screen.getAllByRole('heading', { level: 2, name: /Security Practices/i });
       expect(headings.length).toBeGreaterThan(0);
       expect(headings[0].tagName).toBe('H2');
     });
 
-    it('✅ should render SOC 2 Type II certification', () => {
+    it('✅ should render security practices section', () => {
       renderWithRouter(<TransparencyReport />);
       
-      // SOC 2 Type II appears in multiple places, use getAllByText and find the heading (h3)
-      const soc2Texts = screen.getAllByText(/SOC 2 Type II/i);
-      expect(soc2Texts.length).toBeGreaterThan(0);
+      // Verify security practices section exists
+      const securityHeading = screen.getByText(/Security Practices/i);
+      expect(securityHeading).toBeInTheDocument();
       
-      // Find the certification heading (should be h3)
-      const soc2Heading = soc2Texts.find(el => el.tagName === 'H3');
-      expect(soc2Heading).toBeInTheDocument();
-      
-      // CERTIFIED appears multiple times (SOC 2 and ISO 27001), use getAllByText
-      const certifiedTexts = screen.getAllByText(/CERTIFIED/i);
-      expect(certifiedTexts.length).toBeGreaterThan(0);
+      // Verify audit logging is mentioned
+      const auditText = screen.getByText(/audit logging/i);
+      expect(auditText).toBeInTheDocument();
     });
 
-    it('✅ should render ISO 27001 certification', () => {
+    it('✅ should render PHIPA Compliance section', () => {
       renderWithRouter(<TransparencyReport />);
       
-      // Text may appear multiple times, use getAllByText and verify at least one exists
-      const isos = screen.getAllByText(/ISO 27001/i);
-      expect(isos.length).toBeGreaterThan(0);
-      expect(isos[0]).toBeInTheDocument();
-    });
-
-    it('✅ should render HIPAA BAA certification', () => {
-      renderWithRouter(<TransparencyReport />);
-      
-      // HIPAA BAA appears multiple times as heading, use getAllByRole and verify at least one exists
-      const hipaas = screen.getAllByRole('heading', { level: 3, name: /HIPAA BAA/i });
-      expect(hipaas.length).toBeGreaterThan(0);
-      expect(hipaas[0]).toBeInTheDocument();
-      
-      // SIGNED appears multiple times, use getAllByText and verify at least one exists
-      const signeds = screen.getAllByText(/SIGNED/i);
-      expect(signeds.length).toBeGreaterThan(0);
-      expect(signeds[0]).toBeInTheDocument();
-    });
-
-    it('✅ should render PHIPA Compliant badge', () => {
-      renderWithRouter(<TransparencyReport />);
-      
-      // PHIPA Compliant appears multiple times as heading, use getAllByRole and verify at least one exists
-      const phipas = screen.getAllByRole('heading', { level: 3, name: /PHIPA Compliant/i });
+      // PHIPA Compliance appears as heading, use getAllByRole and verify at least one exists
+      const phipas = screen.getAllByRole('heading', { level: 3, name: /PHIPA Compliance/i });
       expect(phipas.length).toBeGreaterThan(0);
       expect(phipas[0]).toBeInTheDocument();
+    });
+
+    it('✅ should render Security Approach section', () => {
+      renderWithRouter(<TransparencyReport />);
       
-      // VERIFIED appears multiple times, use getAllByText and verify at least one exists
-      const verifieds = screen.getAllByText(/VERIFIED/i);
-      expect(verifieds.length).toBeGreaterThan(0);
-      expect(verifieds[0]).toBeInTheDocument();
+      // Security Approach appears as heading, verify it exists
+      const approachHeadings = screen.getAllByText(/Security Approach/i);
+      expect(approachHeadings.length).toBeGreaterThan(0);
+      
+      // Verify text about cloud providers and security controls
+      const cloudProviderText = screen.getByText(/We rely on major cloud providers' security programs/i);
+      expect(cloudProviderText).toBeInTheDocument();
     });
 
     it('✅ should render link to Legal Framework', () => {

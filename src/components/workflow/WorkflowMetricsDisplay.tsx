@@ -3,7 +3,7 @@
  * 
  * Displays efficiency metrics for workflow optimization.
  * 
- * @compliance PHIPA compliant
+ * @compliance PHIPA-aware (design goal)
  */
 
 import React from 'react';

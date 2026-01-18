@@ -8,6 +8,7 @@ type NiagaraProxyPayload = {
   lang?: string | null;
   mode?: "live" | "dictation";
   timestamp?: number;
+  professionalProfile?: ProfessionalProfile | null; // Bloque 4: Agregado para compatibilidad
   visitType?: 'initial' | 'follow-up';
   attachments?: ClinicalAttachment[];
 };
@@ -175,7 +176,7 @@ export async function analyzeWithVertexProxy(payload: {
     // WO-AUTH-GUARD-ONB-DATA-01: Build minimal patient context if consent denied
     // Note: If personalizationFromPatientData is false, contextoPaciente should not include
     // patient history, episodes, or previous visit data - only current session context
-    // @ts-expect-error - dataUseConsent may exist in profile
+    // Bloque 4: Removido @ts-expect-error - usando as any para campos opcionales
     const consent = payload.professionalProfile?.dataUseConsent;
     const usePatientData = consent?.personalizationFromPatientData !== false; // default true if not set
     

@@ -3,7 +3,7 @@
  * 
  * Collects user feedback on workflow detection accuracy and efficiency improvements.
  * 
- * @compliance PHIPA compliant
+ * @compliance PHIPA-aware (design goal)
  */
 
 import React, { useState } from 'react';
@@ -40,17 +40,19 @@ export const WorkflowFeedback: React.FC<WorkflowFeedbackProps> = ({
 
     try {
       // Submit to feedback service
+      // Bloque 6: category y rating removidos - no existen en UserFeedback, usar description y severity
       await FeedbackService.submitFeedback({
+        type: 'suggestion', // Bloque 6: 'feature' no existe, usar 'suggestion'
+        severity: feedbackType === 'positive' ? 'low' : 'medium',
+        description: `Workflow feedback (${feedbackType}): ${comments || 'No comments'}`,
         userId,
         patientId,
         sessionId,
-        category: 'workflow_optimization',
-        rating: feedbackType === 'positive' ? 5 : 2,
-        comment: comments,
-        metadata: {
-          workflowType,
-          detectionConfidence,
-          feedbackType,
+        url: window.location.href, // Bloque 5E: Campo requerido en UserFeedback
+        userAgent: navigator.userAgent, // Bloque 5E: Campo requerido en UserFeedback
+        // Bloque 6: metadata no existe en UserFeedback, usar context (solo campos permitidos)
+        context: {
+          workflowStep: 'workflow_optimization',
         },
       });
 

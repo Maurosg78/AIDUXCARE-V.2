@@ -5,7 +5,7 @@
  * instead of moving data. This ensures compliance with PHIPA/PIPEDA
  * by maintaining a single Canadian database with multiple access views.
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (transfer process)
  * - A.12.4.1: Event logging (all transfers logged)
  * 
@@ -19,7 +19,7 @@
 import EpisodeService, { EpisodeTransferResult } from './episodeService';
 import TraceabilityService from './traceabilityService';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -78,7 +78,7 @@ export class VirtualTransferService {
         patientId
       );
 
-      // ✅ ISO 27001 AUDIT: Log transfer initiation
+      // ✅ Security audit: Log transfer initiation
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'virtual_transfer_initiated',
@@ -104,7 +104,7 @@ export class VirtualTransferService {
     } catch (error) {
       console.error('[VirtualTransfer] Error initiating transfer:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'virtual_transfer_failed',

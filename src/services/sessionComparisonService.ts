@@ -29,6 +29,7 @@ export interface Session {
   soapNote: SOAPNote | null;
   physicalTests?: EvaluationTestEntry[];
   timestamp: Timestamp | Date;
+  createdAt?: Date; // Bloque 5E: Alias/conveniencia para timestamp (usado en DocumentsFormsModal)
   status: 'draft' | 'completed';
   // ✅ Sprint 2A: Session Type Integration
   sessionType?: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate';
@@ -116,6 +117,7 @@ export interface SessionComparison {
 
 /**
  * Formatted data ready for UI display
+ * T6: Also exported as SessionComparisonView for backward compatibility
  */
 export interface ComparisonDisplayData {
   hasComparison: boolean;
@@ -148,6 +150,9 @@ export interface ComparisonDisplayData {
   alerts: RegressionAlert[];
   summary: string;
 }
+
+// T6: Export alias for backward compatibility
+export type SessionComparisonView = ComparisonDisplayData;
 
 // ============================================================================
 // SERVICE CLASS
@@ -206,7 +211,8 @@ export class SessionComparisonService {
       // Find first session that is not the current one
       for (const doc of snapshot.docs) {
         if (doc.id !== currentSessionId) {
-          const data = doc.data();
+          // T6: Tipar data para evitar unknown spread
+          const data = doc.data() as any;
           return {
             id: doc.id,
             ...data,
@@ -588,10 +594,18 @@ export class SessionComparisonService {
         : 'stable';
 
     // Format ROM data
-    const romData = Object.entries(deltas.rangeOfMotion).map(([region, delta]) => {
+    // T6: Asegurar que trend sea union type específico
+    const romData: Array<{
+      region: string;
+      previous: number | null;
+      current: number | null;
+      delta: number;
+      trend: 'improved' | 'stable' | 'worsened' | 'no_data';
+    }> = Object.entries(deltas.rangeOfMotion).map(([region, delta]) => {
       const prev = previousSession.metrics.rangeOfMotion?.[region] || null;
       const curr = currentSession.metrics.rangeOfMotion?.[region] || null;
-      const trend = delta < -5 ? 'improved' : delta > 5 ? 'worsened' : 'stable';
+      const trend: 'improved' | 'stable' | 'worsened' | 'no_data' = 
+        delta < -5 ? 'improved' : delta > 5 ? 'worsened' : 'stable';
       
       return {
         region,

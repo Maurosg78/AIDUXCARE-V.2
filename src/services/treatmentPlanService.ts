@@ -25,6 +25,7 @@ export interface TreatmentPlan {
   goals?: string[]; // Treatment goals
   interventions?: string[]; // Specific interventions
   nextAppointment?: string; // Next appointment date
+  nextSessionFocus?: string; // Bloque 5E: Focus for next session (usado en treatmentPlanService)
   createdAt: any; // Firestore timestamp
   updatedAt: any; // Firestore timestamp
 }

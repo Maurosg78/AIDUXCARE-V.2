@@ -3,6 +3,10 @@ import { getApp } from 'firebase/app';
 import { WHISPER_MODEL } from '../config/env';
 
 export interface WhisperTranscriptionResult {
+  // Bloque 3B: Campos opcionales agregados para compatibilidad
+  detectedLanguage?: string | null;
+  averageLogProb?: number | null;
+  durationSeconds?: number | null;
     text: string;
     language?: string;
     duration?: number;

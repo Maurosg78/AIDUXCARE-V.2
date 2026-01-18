@@ -4,7 +4,7 @@
  * Provides UI for workflow selection (Initial vs Follow-up) with
  * auto-detection indicators and manual override options.
  * 
- * @compliance PHIPA compliant
+ * @compliance PHIPA-aware (design goal)
  */
 
 import React, { useState, useEffect } from 'react';

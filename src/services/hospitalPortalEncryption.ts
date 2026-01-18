@@ -3,7 +3,7 @@
  * 
  * AES-256-GCM encryption for hospital portal note content
  * Uses Web Crypto API for secure encryption/decryption
- * PHIPA/PIPEDA compliant
+ * PHIPA/PIPEDA-aware (design goal)
  */
 
 /**
@@ -49,8 +49,9 @@ export async function encryptNoteContent(content: string): Promise<{ encrypted: 
     );
     
     // Convert to base64 for storage
+    // Bloque 2: Convertir Uint8Array (iv) a ArrayBuffer usando .buffer; encrypted ya es ArrayBuffer
     const encryptedBase64 = arrayBufferToBase64(encrypted);
-    const ivBase64 = arrayBufferToBase64(iv);
+    const ivBase64 = arrayBufferToBase64(iv.buffer);
     
     return {
       encrypted: encryptedBase64,

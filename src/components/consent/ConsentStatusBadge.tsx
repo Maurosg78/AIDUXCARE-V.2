@@ -2,7 +2,7 @@
  * Consent Status Badge Component
  * 
  * Displays current consent status for a patient
- * ISO 27001 Compliant - All status checks are logged
+ * Security audit logging - All status checks are logged
  */
 
 import React, { useEffect, useState } from 'react';

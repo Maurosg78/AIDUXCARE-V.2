@@ -4,7 +4,7 @@
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles patient information display, consent management, and clinical analysis.
  * 
- * @compliance PHIPA compliant, ISO 27001 auditable
+ * @compliance PHIPA-aware (design goal), security audit logging
  */
 
 import React from 'react';

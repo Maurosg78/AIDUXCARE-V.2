@@ -4,8 +4,8 @@
  * Streamlined prompt builder for follow-up visits targeting 70% token reduction
  * while maintaining clinical quality standards.
  * 
- * @compliance PHIPA compliant
- * @audit ISO 27001 A.8.2.3 (Handling of assets)
+ * @compliance PHIPA-aware (design goal)
+ * @audit Security control reference (internal) - Handling of assets
  */
 
 import type { SOAPContext } from './SOAPContextBuilder';

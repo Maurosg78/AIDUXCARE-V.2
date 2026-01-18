@@ -1,19 +1,19 @@
 /**
- * Hospital Portal ISO 27001 Audit Service
+ * Hospital Portal Security Audit Service
  * 
- * Comprehensive audit logging for ISO 27001 compliance
- * Implements controls:
- * - A.12.4.1: Event logging
- * - A.12.4.2: Protection of log information
- * - A.12.4.3: Administrator and operator logs
- * - A.9.4.2: Secure log-on procedures
- * - A.9.4.4: Use of privileged utility programs
+ * Comprehensive audit logging for security and compliance
+ * Implements security controls:
+ * - Event logging
+ * - Protection of log information
+ * - Administrator and operator logs
+ * - Secure log-on procedures
+ * - Use of privileged utility programs
  */
 
 import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
 
 export interface ISOAuditEvent {
-  // ISO 27001 Required Fields
+  // Security audit required fields
   eventId: string;
   timestamp: Date;
   userId: string;
@@ -23,7 +23,7 @@ export interface ISOAuditEvent {
   resourceId: string;
   success: boolean;
   
-  // ISO 27001 Additional Context
+  // Additional security context
   ipAddress?: string;
   userAgent?: string;
   sessionId?: string;
@@ -44,7 +44,7 @@ export interface ISOAuditEvent {
 
 export class HospitalPortalISOAudit {
   /**
-   * Log authentication event (ISO 27001 A.9.4.2)
+   * Log authentication event (security control reference: secure log-on procedures)
    */
   static async logAuthentication(
     event: 'success' | 'failed' | 'rate_limited',
@@ -78,7 +78,7 @@ export class HospitalPortalISOAudit {
   }
 
   /**
-   * Log data access event (ISO 27001 A.12.4.1)
+   * Log data access event (security control reference: event logging)
    */
   static async logDataAccess(
     action: 'view' | 'copy' | 'download',
@@ -111,7 +111,7 @@ export class HospitalPortalISOAudit {
   }
 
   /**
-   * Log security event (ISO 27001 A.12.4.3)
+   * Log security event (security control reference: administrator and operator logs)
    */
   static async logSecurityEvent(
     eventType: 'rate_limit' | 'encryption_error' | 'session_timeout' | 'unauthorized_access',
@@ -143,7 +143,7 @@ export class HospitalPortalISOAudit {
   }
 
   /**
-   * Log data lifecycle event (ISO 27001 A.8.2.3)
+   * Log data lifecycle event (security control reference: handling of assets)
    */
   static async logDataLifecycle(
     event: 'created' | 'deleted' | 'expired',
@@ -171,7 +171,7 @@ export class HospitalPortalISOAudit {
   }
 
   /**
-   * Generate ISO 27001 compliance report
+   * Generate security audit compliance report
    */
   static async generateComplianceReport(
     physiotherapistId: string,

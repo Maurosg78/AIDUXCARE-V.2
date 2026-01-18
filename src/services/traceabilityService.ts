@@ -4,7 +4,7 @@
  * Generates unique traceability numbers for patients, episodes, and notes
  * Ensures complete audit trail and compliance with Canadian healthcare regulations
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (unique identifiers)
  * - A.12.4.1: Event logging (all number generations logged)
  * 
@@ -17,7 +17,7 @@
 import { db } from '../lib/firebase';
 import { collection, doc, setDoc, getDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -164,7 +164,7 @@ export class TraceabilityService {
       const traceRef = doc(db, this.COLLECTION_NAME, patientTraceNumber);
       await setDoc(traceRef, traceRecord);
 
-      // ✅ ISO 27001 AUDIT: Log trace number generation
+      // ✅ Security audit: Log trace number generation
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'trace_number_generated',
@@ -251,7 +251,7 @@ export class TraceabilityService {
         ],
       }, { merge: true });
 
-      // ✅ ISO 27001 AUDIT: Log linking
+      // ✅ Security audit: Log linking
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'trace_number_linked',

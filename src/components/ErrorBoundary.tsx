@@ -4,7 +4,7 @@
  * Catches React errors in child components and displays a fallback UI
  * Prevents application crashes from propagating to the entire app
  * 
- * @compliance PHIPA compliant - errors logged but no patient data exposed
+ * @compliance PHIPA-aware (design goal) - errors logged but no patient data exposed
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';

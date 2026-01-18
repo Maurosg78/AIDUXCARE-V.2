@@ -54,7 +54,8 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 
       lastUpdateTime = currentTime;
 
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      // Bloque 2: TypeScript strictness - getByteFrequencyData acepta Uint8Array en runtime
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
 
       // Normalize and create visual bars (20 bars from frequency data)
       const levels: number[] = [];

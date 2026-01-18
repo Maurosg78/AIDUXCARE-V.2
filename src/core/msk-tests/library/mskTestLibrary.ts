@@ -11,7 +11,7 @@ export interface TestFieldDefinition {
   id: string;                      // 'right_angle', 'left_angle', 'radicular_pain', etc.
   kind: TestFieldKind;
   label: string;                   // text the physio will see
-  unit?: 'deg' | 'cm' | 'score' | 'text';
+  unit?: 'deg' | 'cm' | 'score' | 'text' | 'kg'; // Bloque 3A: Agregado 'kg' para tests de fuerza/peso
   normalRange?: { min: number; max: number }; // only if applicable (angles, score)
   notesPlaceholder?: string;       // suggestion of what to note, optional
 }

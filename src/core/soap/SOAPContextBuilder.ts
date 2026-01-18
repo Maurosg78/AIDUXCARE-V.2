@@ -39,7 +39,9 @@ export interface SOAPContext {
     previousVisits?: number;
     lastVisitDate?: string;
     ongoingTreatment?: string;
+    painScale?: string; // Bloque 4: Agregado para uso en prompts
   };
+  physicalExamResults?: unknown[]; // Bloque 4: Agregado para compatibilidad con código existente
 }
 
 export interface VisitTypeDetectionResult {

@@ -12,7 +12,7 @@
 import { vi, afterAll } from 'vitest';
 import type { NodeProcess, NodeHandle } from './types/node-handles';
 
-// ✅ PHIPA/PIPEDA compliant: No mocks de Firebase Auth (usa Firebase real)
+// ✅ PHIPA/PIPEDA-aware: No mocks de Firebase Auth (usa Firebase real)
 // Los mocks de Firebase Auth están deshabilitados para permitir tests de integración
 // con Firebase real (Emulator o configuración mínima)
 // Si necesitas mocks específicos, úsalos en tests individuales

@@ -2,7 +2,7 @@
  * Legal Consent Document Content
  * Plain text format - no formatting, no emphasis
  * English language for Canadian patients
- * PHIPA/PIPEDA compliant
+ * PHIPA/PIPEDA-aware (design goal)
  * 
  * IMPORTANT: This document MUST include specific third-party processor names
  * as required by PHIPA Section 18 (knowledgeable consent)

@@ -513,7 +513,7 @@ ${'='.repeat(60)}`;
   // ✅ WO-PHASE3-CRITICAL-FIXES: Calculate SOAP completeness
   const calculateCompleteness = (soap: SOAPNote): {
     overall: number;
-    sections: Record<keyof SOAPNote, number>;
+    sections: Partial<Record<keyof SOAPNote, number>>;
   } => {
     const sections = {
       subjective: Math.min((soap.subjective?.length || 0) / 200, 1), // Target 200 chars

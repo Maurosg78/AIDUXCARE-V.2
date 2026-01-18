@@ -79,6 +79,15 @@ const HospitalPortalPage: React.FC = () => {
      
   }, []); // Only run once on mount - searchParams is stable
   
+  // ✅ FIX: Memoize getClientInfo BEFORE loadNoteContent - Bloque 6
+  const getClientInfo = useCallback(async () => {
+    const ipAddress = await HospitalPortalService.getClientIpAddress();
+    return {
+      ipAddress,
+      userAgent: navigator.userAgent,
+    };
+  }, []);
+
   // Helper function to load note content (for pre-authenticated sessions)
   const loadNoteContent = useCallback(async (code: string, token: string) => {
     setLoading(true);
@@ -112,7 +121,7 @@ const HospitalPortalPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [getClientInfo]);
+  }, [getClientInfo]); // Bloque 6: getClientInfo ahora está disponible
 
   // ✅ FIX: Memoize handleSessionTimeout to prevent infinite loops
   const handleSessionTimeout = useCallback(() => {
@@ -178,16 +187,7 @@ const HospitalPortalPage: React.FC = () => {
         }
       };
     }
-  }, [step, sessionExpiresAt, handleSessionTimeout]); // ✅ FIX: Added handleSessionTimeout to deps
-
-  // ✅ FIX: Memoize getClientInfo to prevent recreating on every render
-  const getClientInfo = useCallback(async () => {
-    const ipAddress = await HospitalPortalService.getClientIpAddress();
-    return {
-      ipAddress,
-      userAgent: navigator.userAgent,
-    };
-  }, []); // Empty deps - navigator.userAgent is stable
+  }, [step, sessionExpiresAt, handleSessionTimeout]); // ✅ FIX: Added handleSessionTimeout to deps // Empty deps - navigator.userAgent is stable
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

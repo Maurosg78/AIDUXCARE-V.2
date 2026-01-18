@@ -65,9 +65,9 @@ export const PrivacyContent: React.FC = () => (
       </div>
       <p className="mb-2">We implement:</p>
       <ul className="list-disc list-inside mb-4 space-y-1 text-gray-700">
-        <li>Encryption at rest (AES-256) and in transit (TLS 1.3)</li>
+        <li>Encryption in transit and at rest (where supported by our infrastructure providers)</li>
         <li>Multi-factor authentication (MFA) for account access</li>
-        <li>Regular security audits and monitoring</li>
+        <li>Security audits and monitoring</li>
         <li>Access controls (only authorized personnel)</li>
       </ul>
     </section>

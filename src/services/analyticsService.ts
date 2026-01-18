@@ -738,7 +738,7 @@ export class AnalyticsService {
    * Track value metrics for MVP - Kaizen reinvestment intelligence
    * 
    * REQUIREMENTS:
-   * - PHIPA compliant (no PHI)
+   * - No PHI (privacy-safe)
    * - Pseudonymized identifiers
    * - Validated before saving
    * 

@@ -3,7 +3,7 @@
  * 
  * Detects abnormal vital signs in transcriptions and generates medical alerts
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.12.4.1: Event logging (all detections logged)
  * - A.12.4.2: Protection of log information (encrypted metadata)
  * 
@@ -45,7 +45,7 @@ export const VITAL_SIGNS_PATTERNS = {
   },
   painScale: {
     // Patterns: EVA 6/10, EVA: 8/10, escala 7 de 10, etc.
-    regex: /(?:EVA|escala\s*(?:visual\s*)?anal[óo]gica)[:\s]*([0-9]|10)/10/gi,
+    regex: /(?:EVA|escala\s*(?:visual\s*)?anal[óo]gica)[:\s]*([0-9]|10)\s*\/\s*10/gi,
     unit: '/10',
   },
   oxygenSaturation: {

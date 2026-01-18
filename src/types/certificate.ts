@@ -72,6 +72,7 @@ export interface CertificateConditionInfo {
 export interface CertificateWorkInfo {
   occupation: string; // Patient's occupation
   employerName?: string;
+  employerAddress?: string; // Bloque 5E: Agregado para certificatePdfGenerator
   workStartDate?: Date; // When patient started at this job
   lastWorkDate?: Date; // Last day patient worked
   expectedReturnDate?: Date; // Expected return to work date

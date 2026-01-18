@@ -50,7 +50,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     if (isSuccess) {
       return;
     }
-    
+
     if (user && !profileLoading) {
       // WO-13: Usar isProfileComplete como fuente única de verdad (NO usar registrationStatus directamente)
       if (isProfileComplete(profile)) {
@@ -87,8 +87,11 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
     // WIZARD 2 — Práctica clínica y estilo (CTO Spec)
     yearsOfExperience: 0,
-    specialty: '', // specialty/focus
-    practiceSetting: '' as '' | 'clinic' | 'hospital' | 'home-care' | 'mixed',
+    specialty: '', // specialty/focus (legacy, single value)
+    specialties: [] as string[], // Multi-select specialties
+    specialtyOther: '', // Free-text for 'other' specialty
+    practiceSetting: '' as '' | 'clinic' | 'hospital' | 'home-care' | 'mixed', // Legacy, single value
+    practiceSettings: [] as string[], // Multi-select practice settings
     practiceCountry: '', // País donde se ejercerá como profesional
     practicePreferences: {
       noteVerbosity: 'standard' as 'concise' | 'standard' | 'detailed',
@@ -134,7 +137,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       setFormData(prev => ({ ...prev, email: user.email || '' }));
     }
   }, [user?.email]);
-   
+
   const handleInputChange = (field: string, value: any) => {
     // CTO SPEC: Manejar nested objects (practicePreferences, dataUseConsent)
     if (field.startsWith('practicePreferences.')) {
@@ -156,14 +159,14 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         }
       }));
     } else {
-    setFormData(prev => ({ ...prev, [field]: value }));
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
-    
+
     // Validación inmediata de email
     if (field === 'email' && value) {
       validateEmailImmediate(value);
     }
-    
+
     // Validación inmediata de teléfono
     if (field === 'phone' || field === 'phoneCountryCode') {
       const phone = field === 'phone' ? value : formData.phone;
@@ -180,7 +183,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     const newSpecialties = currentSpecialties.includes(specialtyValue)
       ? currentSpecialties.filter((s: string) => s !== specialtyValue)
       : [...currentSpecialties, specialtyValue];
-    
+
     setFormData(prev => ({
       ...prev,
       specialties: newSpecialties,
@@ -194,7 +197,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     const newSettings = currentSettings.includes(settingValue)
       ? currentSettings.filter((s: string) => s !== settingValue)
       : [...currentSettings, settingValue];
-    
+
     setFormData(prev => ({
       ...prev,
       practiceSettings: newSettings,
@@ -204,14 +207,14 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
   // Handle treatment toggle (for preferredTreatments and doNotSuggest)
   const handleTreatmentToggle = (treatmentValue: string, field: 'preferredTreatments' | 'doNotSuggest') => {
-    const currentArray = Array.isArray(formData.practicePreferences[field]) 
-      ? formData.practicePreferences[field] 
+    const currentArray = Array.isArray(formData.practicePreferences[field])
+      ? formData.practicePreferences[field]
       : [];
-    
+
     const newArray = currentArray.includes(treatmentValue)
       ? currentArray.filter((item: string) => item !== treatmentValue)
       : [...currentArray, treatmentValue];
-    
+
     setFormData(prev => ({
       ...prev,
       practicePreferences: {
@@ -233,16 +236,16 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     const { getAuth } = await import('firebase/auth');
     const auth = getAuth();
     const currentUser = auth.currentUser;
-    
+
     if (!currentUser?.uid) {
       // Usuario no autenticado - solo validar formato de email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const isValidFormat = emailRegex.test(email);
-      
-      setEmailValidation({ 
-        isValid: isValidFormat, 
+
+      setEmailValidation({
+        isValid: isValidFormat,
         message: isValidFormat ? '' : 'Please enter a valid email address',
-        checking: false 
+        checking: false
       });
       return;
     }
@@ -253,13 +256,13 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     // Por ahora, solo validar formato
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidFormat = emailRegex.test(email);
-    
-    setEmailValidation({ 
-      isValid: isValidFormat, 
+
+    setEmailValidation({
+      isValid: isValidFormat,
       message: isValidFormat ? '' : 'Please enter a valid email address',
-      checking: false 
+      checking: false
     });
-    
+
     // WO-AUTH-ONB-FLOW-FIX-04: NO llamar getProfessional(email) sin auth
     // Firebase Auth validará duplicados cuando se cree la cuenta
   };
@@ -280,25 +283,25 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   // CTO SPEC: Validación visual en tiempo real
   const getFieldValidationClass = (value: any, isRequired: boolean = true): string => {
     const baseClass = "w-full h-9 px-3 border rounded-lg focus:ring-2 transition-all text-sm bg-white font-apple font-light";
-    
+
     if (!isRequired) {
       return `${baseClass} border-gray-300 focus:ring-primary-blue focus:border-primary-blue`;
     }
-    
+
     if (!value || (typeof value === 'string' && value.trim() === '')) {
       return `${baseClass} border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50/30`;
     }
-    
+
     return `${baseClass} border-green-300 focus:ring-green-500 focus:border-green-500 bg-green-50/20`;
   };
 
   const getFieldValidationIcon = (value: any, isRequired: boolean = true): React.ReactNode => {
     if (!isRequired) return null;
-    
+
     if (!value || (typeof value === 'string' && value.trim() === '')) {
       return <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-500 text-xs font-bold">*</span>;
     }
-    
+
     return (
       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-green-500">
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,19 +326,19 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   // CTO SPEC: Validación de campos obligatorios según estructura canónica
   const canProceed = () => {
     switch (steps[currentStep].id) {
-      case 'identity':
+      case 'identity': {
         // WIZARD 1: Identidad profesional - campos obligatorios según CTO
         const hasBasicFields = !!(
-          formData.firstName?.trim() && 
-          formData.lastName?.trim() && 
-          formData.email?.trim() && 
-          emailValidation.isValid && 
-          !emailValidation.checking && 
-          formData.country && 
-          formData.province && 
-          formData.city && 
-          formData.profession && 
-          formData.licenseNumber?.trim() && 
+          formData.firstName?.trim() &&
+          formData.lastName?.trim() &&
+          formData.email?.trim() &&
+          emailValidation.isValid &&
+          !emailValidation.checking &&
+          formData.country &&
+          formData.province &&
+          formData.city &&
+          formData.profession &&
+          formData.licenseNumber?.trim() &&
           formData.licenseCountry
         );
         // Si el usuario NO está autenticado, también requiere password
@@ -347,33 +350,36 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           );
         }
         return hasBasicFields;
-      case 'practice':
+      }
+      case 'practice': {
         // WIZARD 2: Práctica clínica - campos obligatorios según CTO
         return !!(
-          formData.yearsOfExperience && 
+          formData.yearsOfExperience &&
           formData.yearsOfExperience > 0 &&
-          formData.specialty?.trim() && 
+          formData.specialty?.trim() &&
           formData.practiceSetting &&
           formData.practiceCountry?.trim()
         );
-      case 'consent':
+      }
+      case 'consent': {
         // WIZARD 3: Consentimiento
         // WO-12: Pilot consent is required for all countries
         const hasPilotConsent = formData.pilotConsent === true;
-        
+
         // PHIPA y PIPEDA son obligatorios SOLO para Canadá
         const practiceCountry = formData.practiceCountry || formData.country || '';
         const isCanada = practiceCountry.toUpperCase() === 'CA';
-        
+
         if (isCanada) {
           return hasPilotConsent && !!(
             formData.dataUseConsent.phipaConsent === true &&
             formData.dataUseConsent.pipedaConsent === true
           );
         }
-        
+
         // Para otros países, solo se requiere pilot consent
         return hasPilotConsent;
+      }
       default:
         return false;
     }
@@ -387,14 +393,14 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
     try {
       let authUser = getAuth(app).currentUser;
-      
+
       // WO-ONB-SIGNUP-01: Si el usuario NO está autenticado, crear cuenta primero
       if (!authUser) {
         if (!formData.password || formData.password.length < 6) {
           setError('Password must be at least 6 characters long');
           setIsLoading(false);
-        return;
-      }
+          return;
+        }
 
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
@@ -409,17 +415,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           formData.email.trim().toLowerCase(),
           formData.password
         );
-        
+
         authUser = userCredential.user;
         logger.info('[ONBOARDING] New user account created', { uid: authUser.uid, email: authUser.email });
-        
+
         // Enviar email de verificación (no bloquea)
         const { sendEmailVerification } = await import('firebase/auth');
         sendEmailVerification(authUser).catch((err) => {
           logger.warn('[ONBOARDING] Failed to send verification email', err);
         });
       }
-      
+
       if (!authUser) {
         setError('Unable to authenticate user. Please try again.');
         setIsLoading(false);
@@ -431,17 +437,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       const practicePreferences = {
         noteVerbosity: formData.practicePreferences.noteVerbosity,
         tone: formData.practicePreferences.tone,
-        preferredTreatments: Array.isArray(formData.practicePreferences.preferredTreatments) 
-          ? formData.practicePreferences.preferredTreatments 
+        preferredTreatments: Array.isArray(formData.practicePreferences.preferredTreatments)
+          ? formData.practicePreferences.preferredTreatments
           : [],
-        doNotSuggest: Array.isArray(formData.practicePreferences.doNotSuggest) 
-          ? formData.practicePreferences.doNotSuggest 
+        doNotSuggest: Array.isArray(formData.practicePreferences.doNotSuggest)
+          ? formData.practicePreferences.doNotSuggest
           : [],
       };
 
       // CTO SPEC: Combinar código de país + teléfono en formato E.164
-      const fullPhone = formData.phone && formData.phoneCountryCode 
-        ? `${formData.phoneCountryCode}${formData.phone.replace(/\D/g, '')}` 
+      const fullPhone = formData.phone && formData.phoneCountryCode
+        ? `${formData.phoneCountryCode}${formData.phone.replace(/\D/g, '')}`
         : undefined;
 
       // CTO SPEC: Persistir EXCLUSIVAMENTE en users/{uid}
@@ -465,14 +471,14 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         professionalTitle: formData.profession, // Alias para compatibilidad
         licenseNumber: formData.licenseNumber, // Compliance: guardrails clínico-legales
         // licenseCountry: formData.licenseCountry, // Se puede almacenar como metadata si es necesario
-        
+
         // WIZARD 2: Práctica clínica
         // Prompting: seniority, nivel de explicación, lenguaje clínico, prioridad en hipótesis
         specialty: formData.specialty, // Prompting: lenguaje clínico específico
         experienceYears: formData.yearsOfExperience.toString(), // Prompting: seniority
         practiceCountry: formData.practiceCountry || formData.country, // Compliance: país donde se ejercerá (fallback a country si no existe)
         practicePreferences, // Prompting: reduce fricción cognitiva, evita sugerencias no usadas
-        
+
         // WIZARD 3: Consentimiento
         // Prompting: filtrado de datos antes de construir prompt
         // Compliance: PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
@@ -488,7 +494,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           version: 'pilot-v1',
           practiceCountry: formData.practiceCountry || formData.country || '',
         },
-        
+
         // CTO SPEC: registrationStatus pasa a 'complete' cuando se completa todo
         registrationStatus: 'complete',
       });
@@ -509,9 +515,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       setTimeout(async () => {
         // Forzar re-login post verification (solo si el usuario fue creado en este flujo)
         if (!user) {
-      await signOut(getAuth());
+          await signOut(getAuth());
         }
-        
+
         // Redirigir a login con mensaje de éxito
         navigate("/login", {
           replace: true,
@@ -522,7 +528,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         });
       }, 3000);
 
-} catch (error) {
+    } catch (error) {
       logger.error('Error saving profile:', error);
       setError('Error saving professional profile. Please try again.');
     } finally {
@@ -610,29 +616,26 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 <React.Fragment key={step.id}>
                   <div className="flex items-center">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                        index === currentStep
-                          ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white'
-                          : index < currentStep
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${index === currentStep
+                        ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white'
+                        : index < currentStep
                           ? 'bg-green-100 text-green-700'
                           : 'bg-gray-100 text-gray-400'
-                      }`}
+                        }`}
                     >
                       {index < currentStep ? '✓' : index + 1}
                     </div>
                     <span
-                      className={`ml-1.5 text-xs font-apple ${
-                        index === currentStep ? 'text-gray-900 font-medium' : 'text-gray-500'
-                      }`}
+                      className={`ml-1.5 text-xs font-apple ${index === currentStep ? 'text-gray-900 font-medium' : 'text-gray-500'
+                        }`}
                     >
                       {step.title}
                     </span>
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`flex-1 h-0.5 mx-1.5 ${
-                        index < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
+                      className={`flex-1 h-0.5 mx-1.5 ${index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                        }`}
                     />
                   )}
                 </React.Fragment>
@@ -649,68 +652,68 @@ export const ProfessionalOnboardingPage: React.FC = () => {
               <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
                 Who you are within AiDuxCare
               </p>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 {/* First Name - Required */}
                 <div className="relative">
                   <label htmlFor="firstName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     First Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  </label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
                     className={getFieldValidationClass(formData.firstName, true)}
-                required
-              />
+                    required
+                  />
                   {getFieldValidationIcon(formData.firstName, true)}
-            </div>
+                </div>
 
                 {/* Last Name - Required */}
                 <div className="relative">
                   <label htmlFor="lastName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Last Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  </label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
                     className={getFieldValidationClass(formData.lastName, true)}
-                required
-              />
+                    required
+                  />
                   {getFieldValidationIcon(formData.lastName, true)}
-            </div>
+                </div>
 
                 {/* Preferred Name - Optional */}
                 <div className="relative">
                   <label htmlFor="preferredName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Preferred Name
-              </label>
-              <input
-                type="text"
+                  </label>
+                  <input
+                    type="text"
                     id="preferredName"
                     value={formData.preferredName}
                     onChange={(e) => handleInputChange('preferredName', e.target.value)}
                     className={getFieldValidationClass(formData.preferredName, false)}
-              />
-            </div>
+                  />
+                </div>
 
                 {/* Email - Required, Readonly */}
                 <div className="relative">
                   <label htmlFor="email" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     readOnly={!!user?.email}
                     className={`${getFieldValidationClass(formData.email, true)} ${user?.email ? 'bg-gray-50 cursor-not-allowed' : ''} ${!emailValidation.isValid ? 'border-red-400 bg-red-50/40' : ''}`}
-                required
-              />
+                    required
+                  />
                   {emailValidation.checking ? (
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
                       <svg className="w-3 h-3 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
@@ -732,7 +735,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       {emailValidation.message}
                     </p>
                   )}
-            </div>
+                </div>
 
                 {/* Password - Required only for new users (not authenticated) */}
                 {!user && (
@@ -740,8 +743,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     <div className="relative">
                       <label htmlFor="password" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                         Password <span className="text-red-500">*</span>
-              </label>
-              <input
+                      </label>
+                      <input
                         type="password"
                         id="password"
                         value={formData.password}
@@ -751,19 +754,19 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         minLength={6}
                       />
                       {formData.password && formData.password.length >= 6 && getFieldValidationIcon(formData.password, true)}
-            </div>
+                    </div>
 
                     <div className="relative">
                       <label htmlFor="confirmPassword" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                         Confirm Password <span className="text-red-500">*</span>
-              </label>
-              <input
+                      </label>
+                      <input
                         type="password"
                         id="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                         className={`${getFieldValidationClass(formData.confirmPassword, true)} ${formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-400 bg-red-50/40' : ''}`}
-                required
+                        required
                         minLength={6}
                       />
                       {formData.confirmPassword && formData.password === formData.confirmPassword && formData.password.length >= 6 && getFieldValidationIcon(formData.confirmPassword, true)}
@@ -774,7 +777,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                           </svg>
                         </span>
                       )}
-            </div>
+                    </div>
                   </>
                 )}
 
@@ -821,50 +824,50 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 <div className="relative">
                   <label htmlFor="country" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Country <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="country"
-                value={formData.country}
-                onChange={(e) => handleInputChange('country', e.target.value)}
+                  </label>
+                  <select
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
                     className={getFieldValidationClass(formData.country, true)}
-                required
-              >
+                    required
+                  >
                     <option value="">Select</option>
                     <option value="CA">Canada</option>
                     <option value="US">United States</option>
                     <option value="MX">Mexico</option>
                     <option value="ES">Spain</option>
-                <option value="AR">Argentina</option>
-                <option value="CO">Colombia</option>
+                    <option value="AR">Argentina</option>
+                    <option value="CO">Colombia</option>
                     <option value="PE">Peru</option>
-                <option value="CL">Chile</option>
+                    <option value="CL">Chile</option>
                     <option value="OTHER">Other</option>
-              </select>
+                  </select>
                   {getFieldValidationIcon(formData.country, true)}
-            </div>
+                </div>
 
                 {/* Province/State - Required */}
                 <div className="relative">
                   <label htmlFor="province" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Province/State <span className="text-red-500">*</span>
-              </label>
+                  </label>
                   <input
                     type="text"
                     id="province"
                     value={formData.province}
                     onChange={(e) => handleInputChange('province', e.target.value)}
                     className={getFieldValidationClass(formData.province, true)}
-                required
+                    required
                   />
                   {getFieldValidationIcon(formData.province, true)}
-            </div>
+                </div>
 
                 {/* City - Required */}
                 <div className="relative">
                   <label htmlFor="city" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     City <span className="text-red-500">*</span>
                   </label>
-                <input
+                  <input
                     type="text"
                     id="city"
                     value={formData.city}
@@ -873,37 +876,37 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     required
                   />
                   {getFieldValidationIcon(formData.city, true)}
-        </div>
+                </div>
 
                 {/* Profession - Required */}
                 <div className="relative">
                   <label htmlFor="profession" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Profession <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="profession"
-                value={formData.profession}
-                onChange={(e) => handleInputChange('profession', e.target.value)}
+                  </label>
+                  <select
+                    id="profession"
+                    value={formData.profession}
+                    onChange={(e) => handleInputChange('profession', e.target.value)}
                     className={getFieldValidationClass(formData.profession, true)}
-                required
-              >
+                    required
+                  >
                     <option value="">Select</option>
-                {healthProfessions.map((profession) => (
-                  <option key={profession} value={profession}>
-                    {profession}
-                  </option>
-                ))}
-              </select>
+                    {healthProfessions.map((profession) => (
+                      <option key={profession} value={profession}>
+                        {profession}
+                      </option>
+                    ))}
+                  </select>
                   {getFieldValidationIcon(formData.profession, true)}
-            </div>
+                </div>
 
                 {/* License Number - Required */}
                 <div className="relative">
                   <label htmlFor="licenseNumber" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     License Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
+                  </label>
+                  <input
+                    type="text"
                     id="licenseNumber"
                     value={formData.licenseNumber}
                     onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
@@ -911,13 +914,13 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     required
                   />
                   {getFieldValidationIcon(formData.licenseNumber, true)}
-            </div>
+                </div>
 
                 {/* License Country - Required */}
                 <div className="relative">
                   <label htmlFor="licenseCountry" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     License Country <span className="text-red-500">*</span>
-              </label>
+                  </label>
                   <select
                     id="licenseCountry"
                     value={formData.licenseCountry}
@@ -937,7 +940,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     <option value="OTHER">Other</option>
                   </select>
                   {getFieldValidationIcon(formData.licenseCountry, true)}
-            </div>
+                </div>
               </div>
             </div>
           )}
@@ -951,24 +954,24 @@ export const ProfessionalOnboardingPage: React.FC = () => {
               <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
                 How you work and how AiDuxCare helps you
               </p>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 {/* Years of Experience - Required */}
                 <div className="relative">
                   <label htmlFor="yearsOfExperience" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
                     Years of Experience <span className="text-red-500">*</span>
-              </label>
-              <input
+                  </label>
+                  <input
                     type="number"
-                id="yearsOfExperience"
+                    id="yearsOfExperience"
                     value={formData.yearsOfExperience || ''}
                     onChange={(e) => handleInputChange('yearsOfExperience', parseInt(e.target.value) || 0)}
                     className={getFieldValidationClass(formData.yearsOfExperience, true)}
-                required
+                    required
                     min="0"
-              />
+                  />
                   {getFieldValidationIcon(formData.yearsOfExperience, true)}
-            </div>
+                </div>
 
                 {/* Specialty - Multi-select checkboxes */}
                 <div className="relative col-span-2">
@@ -983,9 +986,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       return (
                         <label
                           key={specialty.value}
-                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
-                            isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
-                          }`}
+                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
+                            }`}
                         >
                           <input
                             type="checkbox"
@@ -1000,11 +1002,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       );
                     })}
                     <label
-                      className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
-                        Array.isArray(formData.specialties) && formData.specialties.includes('other')
-                          ? 'bg-blue-100'
-                          : 'hover:bg-gray-100'
-                      }`}
+                      className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${Array.isArray(formData.specialties) && formData.specialties.includes('other')
+                        ? 'bg-blue-100'
+                        : 'hover:bg-gray-100'
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -1012,15 +1013,14 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         onChange={() => handleSpecialtyToggle('other')}
                         className="w-3.5 h-3.5 cursor-pointer accent-blue-600"
                       />
-                      <span className={`${
-                        Array.isArray(formData.specialties) && formData.specialties.includes('other')
-                          ? 'font-medium text-gray-900'
-                          : 'text-gray-700'
-                      }`}>
+                      <span className={`${Array.isArray(formData.specialties) && formData.specialties.includes('other')
+                        ? 'font-medium text-gray-900'
+                        : 'text-gray-700'
+                        }`}>
                         Other (specify below)
                       </span>
                     </label>
-          </div>
+                  </div>
                   {Array.isArray(formData.specialties) && formData.specialties.length > 0 && (
                     <p className="text-[10px] text-green-600 mt-0.5 font-apple">
                       {formData.specialties.length} specialt{formData.specialties.length !== 1 ? 'ies' : 'y'} selected
@@ -1035,7 +1035,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       placeholder="e.g., Sports Medicine, Pain Management..."
                     />
                   )}
-        </div>
+                </div>
 
                 {/* Practice Setting - Multi-select checkboxes */}
                 <div className="relative col-span-2">
@@ -1055,9 +1055,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       return (
                         <label
                           key={setting.value}
-                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${
-                            isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
-                          }`}
+                          className={`flex items-center gap-1.5 p-1.5 cursor-pointer rounded transition-colors text-xs ${isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
+                            }`}
                         >
                           <input
                             type="checkbox"
@@ -1077,7 +1076,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                       {formData.practiceSettings.length} setting{formData.practiceSettings.length !== 1 ? 's' : ''} selected
                     </p>
                   )}
-                  </div>
+                </div>
 
                 {/* Practice Country - Required */}
                 <div className="relative">
@@ -1102,7 +1101,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Practice Preferences */}
                 <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
                   <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">Practice Preferences</h4>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     {/* Note Verbosity */}
                     <div>
@@ -1119,7 +1118,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         <option value="standard">Standard</option>
                         <option value="detailed">Detailed</option>
                       </select>
-                </div>
+                    </div>
 
                     {/* Tone */}
                     <div>
@@ -1136,7 +1135,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         <option value="friendly">Friendly</option>
                         <option value="educational">Educational</option>
                       </select>
-              </div>
+                    </div>
 
                     {/* MSK Treatment Preferences - Only show when MSK is selected */}
                     {Array.isArray(formData.specialties) && formData.specialties.includes('msk') && (
@@ -1167,7 +1166,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                                 </label>
                               );
                             })}
-                  </div>
+                          </div>
                           {Array.isArray(formData.practicePreferences.preferredTreatments) && formData.practicePreferences.preferredTreatments.length > 0 && (
                             <p className="text-[10px] text-green-600 mt-0.5 font-apple">
                               {formData.practicePreferences.preferredTreatments.length} selected
@@ -1191,23 +1190,23 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                                   key={skill.value}
                                   className="flex items-center gap-1.5 p-1 cursor-pointer rounded transition-colors text-xs hover:bg-gray-100"
                                 >
-                  <input
-                    type="checkbox"
+                                  <input
+                                    type="checkbox"
                                     checked={isSelected}
                                     onChange={() => handleTreatmentToggle(skill.value, 'doNotSuggest')}
                                     className="w-3.5 h-3.5 cursor-pointer accent-red-600"
                                   />
                                   <span className="text-gray-700">{skill.label}</span>
-                  </label>
+                                </label>
                               );
                             })}
-                </div>
+                          </div>
                           {Array.isArray(formData.practicePreferences.doNotSuggest) && formData.practicePreferences.doNotSuggest.length > 0 && (
                             <p className="text-[10px] text-red-600 mt-0.5 font-apple">
                               {formData.practicePreferences.doNotSuggest.length} excluded
                             </p>
                           )}
-              </div>
+                        </div>
                       </>
                     )}
                   </div>
@@ -1222,257 +1221,258 @@ export const ProfessionalOnboardingPage: React.FC = () => {
             const practiceCountry = formData.practiceCountry || formData.country || '';
             const isCanada = practiceCountry.toUpperCase() === 'CA';
             const consentContent = getPilotConsentContent(practiceCountry);
-            
+
             return (
-            <div className="bg-gradient-to-br from-gray-50 to-indigo-50/20 rounded-lg border border-indigo-200/60 p-4 mb-2 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
-                Data Use & Privacy Consent
-              </h3>
-              <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
-                Your informed consent for data use and compliance with privacy legislation
-              </p>
-              
-              <div className="space-y-3">
-                {/* WO-12: SECTION 1: Pilot Consent (Required for all countries) */}
-                <div className="border-t border-indigo-200 pt-2">
-                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
-                    {consentContent.title} <span className="text-red-500">*</span>
-                  </h4>
-                  
-                  {/* Scrollable consent text */}
-                  <div className="max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200 mb-3 text-[10px] text-gray-700 font-apple font-light leading-relaxed">
-                    <div className="whitespace-pre-line">{consentContent.body}</div>
-                  </div>
-                  
-                  {/* Pilot Consent Checkbox */}
-                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
-                    <div className="flex items-start">
-                      <input
-                        type="checkbox"
-                        id="pilotConsent"
-                        checked={formData.pilotConsent}
-                        onChange={(e) => handleInputChange('pilotConsent', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                        required
-                      />
-                      <div className="ml-2.5 flex-1">
-                        <label htmlFor="pilotConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
-                          {consentContent.checkboxLabel}
-                        </label>
+              <div className="bg-gradient-to-br from-gray-50 to-indigo-50/20 rounded-lg border border-indigo-200/60 p-4 mb-2 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
+                  Data Use & Privacy Consent
+                </h3>
+                <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
+                  Your informed consent for data use and compliance with privacy legislation
+                </p>
+
+                <div className="space-y-3">
+                  {/* WO-12: SECTION 1: Pilot Consent (Required for all countries) */}
+                  <div className="border-t border-indigo-200 pt-2">
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                      {consentContent.title} <span className="text-red-500">*</span>
+                    </h4>
+
+                    {/* Scrollable consent text */}
+                    <div className="max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200 mb-3 text-[10px] text-gray-700 font-apple font-light leading-relaxed">
+                      <div className="whitespace-pre-line">{consentContent.body}</div>
+                    </div>
+
+                    {/* Pilot Consent Checkbox */}
+                    <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="pilotConsent"
+                          checked={formData.pilotConsent}
+                          onChange={(e) => handleInputChange('pilotConsent', e.target.checked)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                          required
+                        />
+                        <div className="ml-2.5 flex-1">
+                          <label htmlFor="pilotConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                            {consentContent.checkboxLabel}
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* SECTION 2: Canadian Privacy Legislation Compliance (Required only for Canada) */}
-                {isCanada && (
-                <div className="border-t border-indigo-200 pt-2">
-                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
-                    Canadian Privacy Legislation Compliance <span className="text-red-500">*</span>
-                  </h4>
-                  <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
-                    As a healthcare professional in Canada, you must consent to our privacy practices in accordance with applicable legislation.
-                  </p>
-                  
-                  {/* PHIPA Consent */}
-                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200 mb-2">
-                    <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                        id="phipaConsent"
-                        checked={formData.dataUseConsent.phipaConsent}
-                        onChange={(e) => handleInputChange('dataUseConsent.phipaConsent', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                        required
-                      />
-                      <div className="ml-2.5 flex-1">
-                        <label htmlFor="phipaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
-                          Personal Health Information Protection Act (PHIPA) Consent
-                    </label>
-                        <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
-                          I acknowledge that I have read and understood the{' '}
-                          <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
-                            Privacy Policy
-                          </Link>
-                          {' '}and consent to the collection, use, and disclosure of my personal health information in accordance with the Personal Health Information Protection Act, 2004 (PHIPA). I understand that my information will be used solely for the purposes of providing and improving healthcare services, and that I may withdraw this consent at any time.
-                        </p>
+                  {/* SECTION 2: Canadian Privacy Legislation Compliance (Required only for Canada) */}
+                  {isCanada && (
+                    <div className="border-t border-indigo-200 pt-2">
+                      <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                        Canadian Privacy Legislation Compliance <span className="text-red-500">*</span>
+                      </h4>
+                      <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
+                        As a healthcare professional in Canada, you must consent to our privacy practices in accordance with applicable legislation.
+                      </p>
+
+                      {/* PHIPA Consent */}
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200 mb-2">
+                        <div className="flex items-start">
+                          <input
+                            type="checkbox"
+                            id="phipaConsent"
+                            checked={formData.dataUseConsent.phipaConsent}
+                            onChange={(e) => handleInputChange('dataUseConsent.phipaConsent', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                            required
+                          />
+                          <div className="ml-2.5 flex-1">
+                            <label htmlFor="phipaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                              Personal Health Information Protection Act (PHIPA) Consent
+                            </label>
+                            <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
+                              I acknowledge that I have read and understood the{' '}
+                              <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
+                                Privacy Policy
+                              </Link>
+                              {' '}and consent to the collection, use, and disclosure of my personal health information in accordance with the Personal Health Information Protection Act, 2004 (PHIPA). I understand that my information will be used solely for the purposes of providing and improving healthcare services, and that I may withdraw this consent at any time.
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                  </div>
-                </div>
 
-                  {/* PIPEDA Consent */}
-                  <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
-                    <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                        id="pipedaConsent"
-                        checked={formData.dataUseConsent.pipedaConsent}
-                        onChange={(e) => handleInputChange('dataUseConsent.pipedaConsent', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                        required
-                      />
-                      <div className="ml-2.5 flex-1">
-                        <label htmlFor="pipedaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
-                          Personal Information Protection and Electronic Documents Act (PIPEDA) Consent
-                    </label>
-                        <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
-                          I acknowledge that I have read and understood the{' '}
-                          <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
-                            Privacy Policy
-                          </Link>
-                          {' '}and consent to the collection, use, and disclosure of my personal information in accordance with the Personal Information Protection and Electronic Documents Act (PIPEDA). I understand that my information will be protected by appropriate safeguards and that I have the right to access, correct, or request deletion of my personal information.
-                        </p>
+                      {/* PIPEDA Consent */}
+                      <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-200">
+                        <div className="flex items-start">
+                          <input
+                            type="checkbox"
+                            id="pipedaConsent"
+                            checked={formData.dataUseConsent.pipedaConsent}
+                            onChange={(e) => handleInputChange('dataUseConsent.pipedaConsent', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 flex-shrink-0"
+                            required
+                          />
+                          <div className="ml-2.5 flex-1">
+                            <label htmlFor="pipedaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
+                              Personal Information Protection and Electronic Documents Act (PIPEDA) Consent
+                            </label>
+                            <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
+                              I acknowledge that I have read and understood the{' '}
+                              <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
+                                Privacy Policy
+                              </Link>
+                              {' '}and consent to the collection, use, and disclosure of my personal information in accordance with the Personal Information Protection and Electronic Documents Act (PIPEDA). I understand that my information will be protected by appropriate safeguards and that I have the right to access, correct, or request deletion of my personal information.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SECTION 2: AI Assistant Personalization Preferences (Optional) */}
+                  <div className="border-t border-indigo-200 pt-2">
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                      AI Assistant Personalization Preferences
+                      <span className="text-gray-400 text-[10px] ml-1 font-normal">(optional)</span>
+                    </h4>
+                    <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
+                      Customize how your AI assistant uses information to provide personalized clinical support.
+                    </p>
+
+                    {/* 1. Personalize with your professional style */}
+                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="personalizationFromClinicianInputs"
+                          checked={formData.dataUseConsent.personalizationFromClinicianInputs}
+                          onChange={(e) => handleInputChange('dataUseConsent.personalizationFromClinicianInputs', e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                        />
+                        <div className="ml-2 flex-1">
+                          <label htmlFor="personalizationFromClinicianInputs" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                            Personalize with your professional style
+                          </label>
+                          <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                            Allow the AI assistant to use your professional information (specialty, experience, practice preferences) to tailor clinical notes and treatment suggestions to your practice style.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Personalize with patient data */}
+                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="personalizationFromPatientData"
+                          checked={formData.dataUseConsent.personalizationFromPatientData}
+                          onChange={(e) => handleInputChange('dataUseConsent.personalizationFromPatientData', e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                        />
+                        <div className="ml-2 flex-1">
+                          <label htmlFor="personalizationFromPatientData" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                            Personalize with patient data
+                          </label>
+                          <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                            Allow the AI assistant to use patient clinical data (current and historical) to enrich clinical reasoning and treatment planning. This enables more contextually relevant suggestions based on patient history.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Assistant memory across sessions */}
+                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="allowAssistantMemoryAcrossSessions"
+                          checked={formData.dataUseConsent.allowAssistantMemoryAcrossSessions}
+                          onChange={(e) => handleInputChange('dataUseConsent.allowAssistantMemoryAcrossSessions', e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                        />
+                        <div className="ml-2 flex-1">
+                          <label htmlFor="allowAssistantMemoryAcrossSessions" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                            Assistant memory across sessions
+                          </label>
+                          <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                            Enable the AI assistant to remember your preferences and clinical context between sessions, providing continuity and reducing repetitive input.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Product improvement with deidentified data */}
+                    <div className="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="useDeidentifiedDataForProductImprovement"
+                          checked={formData.dataUseConsent.useDeidentifiedDataForProductImprovement}
+                          onChange={(e) => handleInputChange('dataUseConsent.useDeidentifiedDataForProductImprovement', e.target.checked)}
+                          className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                        />
+                        <div className="ml-2 flex-1">
+                          <label htmlFor="useDeidentifiedDataForProductImprovement" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
+                            Product improvement with deidentified data
+                          </label>
+                          <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
+                            Allow AiduxCare to use deidentified and aggregated data (with all personal identifiers removed) to improve system quality, accuracy, and clinical outcomes. This data cannot be linked back to you or your patients.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                )}
 
-                {/* SECTION 2: AI Assistant Personalization Preferences (Optional) */}
-                <div className="border-t border-indigo-200 pt-2">
-                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
-                    AI Assistant Personalization Preferences
-                    <span className="text-gray-400 text-[10px] ml-1 font-normal">(optional)</span>
-                  </h4>
-                  <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
-                    Customize how your AI assistant uses information to provide personalized clinical support.
-                  </p>
-
-                  {/* 1. Personalize with your professional style */}
-                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
-                    <div className="flex items-start">
-                    <input
-                      type="checkbox"
-                        id="personalizationFromClinicianInputs"
-                        checked={formData.dataUseConsent.personalizationFromClinicianInputs}
-                        onChange={(e) => handleInputChange('dataUseConsent.personalizationFromClinicianInputs', e.target.checked)}
-                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
-                      />
-                      <div className="ml-2 flex-1">
-                        <label htmlFor="personalizationFromClinicianInputs" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                          Personalize with your professional style
-                    </label>
-                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                          Allow the AI assistant to use your professional information (specialty, experience, practice preferences) to tailor clinical notes and treatment suggestions to your practice style.
-                        </p>
+                  {/* Information Notice */}
+                  <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-[10px] text-amber-800 font-apple font-light leading-relaxed">
+                      <strong className="font-semibold">Important:</strong> You may withdraw any of these consents at any time by updating your preferences in your account settings. Withdrawing consent may limit certain features of the service. For detailed information about how we collect, use, and protect your information, please review our{' '}
+                      <Link to="/privacy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                        Privacy Policy
+                      </Link>
+                      {' '}and{' '}
+                      <Link to="/terms" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                        Terms of Service
+                      </Link>
+                      .
+                    </p>
                   </div>
                 </div>
               </div>
-
-                  {/* 2. Personalize with patient data */}
-                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
-                    <div className="flex items-start">
-                <input
-                  type="checkbox"
-                        id="personalizationFromPatientData"
-                        checked={formData.dataUseConsent.personalizationFromPatientData}
-                        onChange={(e) => handleInputChange('dataUseConsent.personalizationFromPatientData', e.target.checked)}
-                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
-                      />
-                      <div className="ml-2 flex-1">
-                        <label htmlFor="personalizationFromPatientData" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                          Personalize with patient data
-                </label>
-                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                          Allow the AI assistant to use patient clinical data (current and historical) to enrich clinical reasoning and treatment planning. This enables more contextually relevant suggestions based on patient history.
-                        </p>
-              </div>
-                    </div>
-            </div>
-
-                  {/* 3. Assistant memory across sessions */}
-                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 mb-2">
-                    <div className="flex items-start">
-                      <input
-                        type="checkbox"
-                        id="allowAssistantMemoryAcrossSessions"
-                        checked={formData.dataUseConsent.allowAssistantMemoryAcrossSessions}
-                        onChange={(e) => handleInputChange('dataUseConsent.allowAssistantMemoryAcrossSessions', e.target.checked)}
-                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
-                      />
-                      <div className="ml-2 flex-1">
-                        <label htmlFor="allowAssistantMemoryAcrossSessions" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                          Assistant memory across sessions
-                        </label>
-                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                          Enable the AI assistant to remember your preferences and clinical context between sessions, providing continuity and reducing repetitive input.
-                        </p>
-                </div>
-              </div>
-              </div>
-
-                  {/* 4. Product improvement with deidentified data */}
-                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-start">
-                <input
-                  type="checkbox"
-                        id="useDeidentifiedDataForProductImprovement"
-                        checked={formData.dataUseConsent.useDeidentifiedDataForProductImprovement}
-                        onChange={(e) => handleInputChange('dataUseConsent.useDeidentifiedDataForProductImprovement', e.target.checked)}
-                        className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
-                      />
-                      <div className="ml-2 flex-1">
-                        <label htmlFor="useDeidentifiedDataForProductImprovement" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                          Product improvement with deidentified data
-                </label>
-                        <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                          Allow AiduxCare to use deidentified and aggregated data (with all personal identifiers removed) to improve system quality, accuracy, and clinical outcomes. This data cannot be linked back to you or your patients.
-                        </p>
-              </div>
-                    </div>
-                  </div>
-            </div>
-
-                {/* Information Notice */}
-                <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-[10px] text-amber-800 font-apple font-light leading-relaxed">
-                    <strong className="font-semibold">Important:</strong> You may withdraw any of these consents at any time by updating your preferences in your account settings. Withdrawing consent may limit certain features of the service. For detailed information about how we collect, use, and protect your information, please review our{' '}
-                    <Link to="/privacy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
-                      Privacy Policy
-                    </Link>
-                    {' '}and{' '}
-                    <Link to="/terms" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
-                      Terms of Service
-                    </Link>
-                    .
-              </p>
-            </div>
-          </div>
-            </div>
-          )})()}
+            )
+          })()}
 
           {/* Botones - Siempre visibles */}
           <div className="flex justify-between mt-3 pt-3 border-t border-gray-200">
-          <Button
-            onClick={handlePreviousStep}
-            disabled={currentStep === 0}
-            variant="outline"
+            <Button
+              onClick={handlePreviousStep}
+              disabled={currentStep === 0}
+              variant="outline"
               className="h-9 text-xs font-medium transition-all duration-200 font-apple"
-          >
+            >
               Back
-          </Button>
+            </Button>
 
-          {currentStep === steps.length - 1 ? (
-            <Button
-              onClick={handleSubmit}
-              disabled={!canProceed() || isLoading}
+            {currentStep === steps.length - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={!canProceed() || isLoading}
                 variant="gradient"
-              loading={isLoading}
+                loading={isLoading}
                 className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
-            >
+              >
                 {isLoading ? 'Completing...' : 'Complete Setup'}
-            </Button>
-          ) : (
-            <Button
-              onClick={handleNextStep}
-              disabled={!canProceed()}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleNextStep}
+                disabled={!canProceed()}
                 variant="gradient"
                 className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
-            >
+              >
                 Next
-            </Button>
-          )}
-        </div>
+              </Button>
+            )}
+          </div>
 
           {/* Mensajes de error */}
           {error && (

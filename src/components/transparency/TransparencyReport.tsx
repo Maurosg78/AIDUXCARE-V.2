@@ -9,7 +9,7 @@ import { DataSovereigntyBadge } from './DataSovereigntyBadge';
  * - Canadian data sovereignty
  * - Named AI processors (Google Vertex AI with region)
  * - Data infrastructure (Firestore, Storage, Auth regions)
- * - Security certifications (SOC 2, ISO 27001, HIPAA BAA, PHIPA)
+ * - Security practices and audit logging
  * 
  * This is a key competitive advantage vs Jane.app's opacity.
  * CPO and PHIPA compliance requirement for transparency.
@@ -30,7 +30,7 @@ export const TransparencyReport: React.FC = () => {
             Supply Chain Transparency
           </h1>
           <p className="text-gray-600">
-            Complete transparency about our AI processors, data infrastructure, and security certifications.
+            Complete transparency about our AI processors, data infrastructure, and security practices.
             Compliant with CPO, PHIPA, and PIPEDA requirements.
           </p>
         </div>
@@ -93,7 +93,7 @@ export const TransparencyReport: React.FC = () => {
                 </div>
                 <div className="flex items-center text-gray-700">
                   <span className="font-medium w-24">Compliance:</span>
-                  <span className="text-gray-900">PHIPA, PIPEDA, HIPAA BAA, SOC 2 Type II</span>
+                  <span className="text-gray-900">PHIPA, PIPEDA</span>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-200">
@@ -103,7 +103,7 @@ export const TransparencyReport: React.FC = () => {
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  View Google Cloud SOC 2 Certification →
+                  View Google Cloud SOC 2 report (provider) →
                 </a>
               </div>
             </div>
@@ -144,77 +144,18 @@ export const TransparencyReport: React.FC = () => {
           </div>
         </section>
 
-        {/* Security Certifications */}
+        {/* Security Practices */}
         <section className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-            Security & Compliance Certifications
+            Security Practices & Audit Logging
           </h2>
           <p className="text-gray-600 mb-4 text-sm">
-            We maintain industry-leading security certifications to ensure
-            the highest standards of data protection and regulatory compliance.
+            We implement security practices guided by industry standards to ensure
+            appropriate data protection and regulatory compliance.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900">SOC 2 Type II</h3>
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                  CERTIFIED
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Annual third-party audit of security, availability, processing integrity,
-                confidentiality, and privacy controls.
-              </p>
-              <a 
-                href="#" 
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View Report →
-              </a>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900">ISO 27001</h3>
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                  CERTIFIED
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                International standard for information security management systems.
-                Comprehensive security controls and risk management.
-              </p>
-              <a 
-                href="#" 
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View Certificate →
-              </a>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900">HIPAA BAA</h3>
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                  SIGNED
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Business Associate Agreement with Google Cloud Platform ensuring
-                HIPAA compliance for PHI processing and storage.
-              </p>
-              <a 
-                href="#" 
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View Agreement →
-              </a>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900">PHIPA Compliant</h3>
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                  VERIFIED
-                </span>
-              </div>
+          <div className="space-y-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">PHIPA Compliance</h3>
               <p className="text-sm text-gray-600 mb-3">
                 Full compliance with Ontario's Personal Health Information Protection Act.
                 Comprehensive legal framework and technical safeguards implemented.
@@ -226,6 +167,21 @@ export const TransparencyReport: React.FC = () => {
               >
                 View Framework →
               </a>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-2">Audit Logging</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Comprehensive audit logging and security monitoring for all data access,
+                modifications, and transfers. Logs retained per regulatory requirements.
+              </p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <h3 className="font-medium text-gray-900 mb-2">Security Approach</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                We rely on major cloud providers' security programs and maintain internal security controls 
+                (access controls, audit logging, encryption, monitoring). We may pursue third-party assessments 
+                as the product matures.
+              </p>
             </div>
           </div>
         </section>

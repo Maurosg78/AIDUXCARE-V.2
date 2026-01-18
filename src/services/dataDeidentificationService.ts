@@ -6,7 +6,7 @@
  * from being processed outside Canadian borders.
  * 
  * @compliance PHIPA Section 18, PIPEDA Principle 4.1
- * @audit ISO 27001 A.8.2.1 (Data classification), A.8.2.3 (Handling of assets)
+ * @audit Security control reference (internal) - Data classification, Handling of assets
  */
 
 export interface IdentifierMap {

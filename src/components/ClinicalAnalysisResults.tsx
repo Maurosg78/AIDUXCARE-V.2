@@ -361,10 +361,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
               // ✅ FIX: Solo mostrar sensitivity si es un número válido (no NaN, no undefined, no null, no "unknown")
               const sensitivity = test.sensitivity || test.sensibilidad;
+              // Bloque 6: Comparación corregida - sensitivity es number, no comparar con "unknown"
               if (sensitivity != null && 
                   typeof sensitivity === 'number' && 
                   !isNaN(sensitivity) && 
-                  sensitivity !== "unknown" &&
                   sensitivity >= 0 && 
                   sensitivity <= 1) {
                 evidenceParts.push(`Sensitivity ${Math.round(sensitivity * 100)}%`);
@@ -372,10 +372,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               
               // ✅ FIX: Solo mostrar specificity si es un número válido (no NaN, no undefined, no null, no "unknown")
               const specificity = test.specificity || test.especificidad;
+              // Bloque 6: Comparación corregida - specificity es number, no comparar con "unknown"
               if (specificity != null && 
                   typeof specificity === 'number' && 
                   !isNaN(specificity) && 
-                  specificity !== "unknown" &&
                   specificity >= 0 && 
                   specificity <= 1) {
                 evidenceParts.push(`Specificity ${Math.round(specificity * 100)}%`);

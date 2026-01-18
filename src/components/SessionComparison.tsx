@@ -10,7 +10,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { SessionComparisonService } from '../services/sessionComparisonService';
-import type { ComparisonDisplayData, SessionComparisonView, Session } from '../services/sessionComparisonService';
+import type { ComparisonDisplayData, Session } from '../services/sessionComparisonService';
+
+// T6: Alias for backward compatibility
+export type SessionComparisonView = ComparisonDisplayData;
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { ErrorMessage } from './ui/ErrorMessage';
 import sessionService from '../services/sessionService';

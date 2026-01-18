@@ -6,7 +6,7 @@
  * while maintaining legal retention requirements and audit trails.
  * 
  * @compliance PIPEDA Principle 4.1.8 (Right to be Forgotten), PHIPA Section 52
- * @audit ISO 27001 A.8.2.3 (Handling of assets), A.12.4.1 (Management of technical vulnerabilities)
+ * @audit Security control reference (internal) - Handling of assets, Management of technical vulnerabilities
  */
 
 import { 

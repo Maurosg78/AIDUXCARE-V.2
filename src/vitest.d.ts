@@ -1,22 +1,7 @@
-// Declaraciones de tipos para vitest
-declare module 'vitest' {
-  export const describe: (name: string, fn: () => void) => void;
-  export const it: (name: string, fn: () => void | Promise<void>) => void;
-  export const test: (name: string, fn: () => void | Promise<void>) => void;
-  export const expect: any;
-  export const beforeEach: (fn: () => void | Promise<void>) => void;
-  export const afterEach: (fn: () => void | Promise<void>) => void;
-  export const beforeAll: (fn: () => void | Promise<void>) => void;
-  export const afterAll: (fn: () => void | Promise<void>) => void;
-  export const vi: {
-    fn: (implementation?: any) => any;
-    mock: (module: string, factory: () => any) => void;
-    clearAllMocks: () => void;
-    resetAllMocks: () => void;
-    restoreAllMocks: () => void;
-  };
-  export const expectTypeOf: any;
-}
+/// <reference types="vitest" />
+/// <reference types="vitest/globals" />
+
+export {};
 
 declare module '@testing-library/react' {
   export const render: any;

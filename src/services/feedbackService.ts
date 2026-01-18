@@ -48,6 +48,7 @@ export interface UserFeedback {
   description: string;
   userId?: string;
   sessionId?: string;
+  patientId?: string; // Bloque 6: Agregado para soportar feedback específico de paciente
   url: string;
   userAgent: string;
   timestamp: Date;

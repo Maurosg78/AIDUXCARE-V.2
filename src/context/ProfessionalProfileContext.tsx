@@ -25,7 +25,7 @@ export interface ProfessionalProfile {
   // ✅ compat fields referenced in logs/guard
   profession?: string;
   practiceCountry?: string;
-  pilotConsent?: { accepted?: boolean };
+  pilotConsent?: { accepted?: boolean; acceptedAt?: Date; version?: string; practiceCountry?: string };
 
   university?: string;
   licenseNumber?: string;
@@ -441,4 +441,3 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     </ProfessionalProfileContext.Provider>
   );
 };
-  

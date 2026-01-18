@@ -4,7 +4,7 @@
  * Manages verbal consent obtained by physiotherapists for voice recording
  * and AI processing of clinical notes.
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (consent lifecycle)
  * - A.12.4.1: Event logging (all consent operations)
  * - A.12.4.2: Protection of log information (encrypted metadata)
@@ -30,7 +30,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -98,7 +98,7 @@ export interface ConsentVerificationResult {
 }
 
 /**
- * Consent text that must be read to patient (PHIPA compliant)
+ * Consent text that must be read to patient (PHIPA-aware design goal)
  */
 export const VERBAL_CONSENT_TEXT = `
 Vamos a grabar nuestra sesión de fisioterapia para generar 
@@ -112,7 +112,7 @@ export class VerbalConsentService {
   
   /**
    * Check if patient has valid consent
-   * ✅ ISO 27001 AUDIT: All consent checks are logged
+   * ✅ Security audit: All consent checks are logged
    */
   static async hasConsent(
     patientId: string,
@@ -121,7 +121,7 @@ export class VerbalConsentService {
     try {
       const result = await this.verifyConsent(patientId, physiotherapistId);
       
-      // ✅ ISO 27001 AUDIT: Log consent verification
+      // ✅ Security audit: Log consent verification
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_verified',
@@ -141,7 +141,7 @@ export class VerbalConsentService {
     } catch (error) {
       console.error('[VerbalConsent] Error checking consent:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_verification_failed',
@@ -249,7 +249,7 @@ export class VerbalConsentService {
 
   /**
    * Obtain verbal consent from patient
-   * ✅ ISO 27001 AUDIT: All consent operations are logged
+   * ✅ Security audit: All consent operations are logged
    */
   static async obtainConsent(
     patientId: string,
@@ -328,7 +328,7 @@ export class VerbalConsentService {
       const consentRef = doc(db, this.COLLECTION_NAME, consentId);
       await setDoc(consentRef, consentRecord);
 
-      // ✅ ISO 27001 AUDIT: Log consent obtained
+      // ✅ Security audit: Log consent obtained
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_obtained',
@@ -355,7 +355,7 @@ export class VerbalConsentService {
     } catch (error) {
       console.error('[VerbalConsent] Error obtaining consent:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_obtain_failed',
@@ -375,7 +375,7 @@ export class VerbalConsentService {
 
   /**
    * Withdraw consent (patient right)
-   * ✅ ISO 27001 AUDIT: All withdrawals are logged
+   * ✅ Security audit: All withdrawals are logged
    */
   static async withdrawConsent(
     patientId: string,
@@ -417,7 +417,7 @@ export class VerbalConsentService {
         ],
       });
 
-      // ✅ ISO 27001 AUDIT: Log consent withdrawal
+      // ✅ Security audit: Log consent withdrawal
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_withdrawn',
@@ -440,7 +440,7 @@ export class VerbalConsentService {
     } catch (error) {
       console.error('[VerbalConsent] Error withdrawing consent:', error);
       
-      // ✅ ISO 27001 AUDIT: Log error
+      // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_withdrawal_failed',
@@ -486,7 +486,7 @@ export class VerbalConsentService {
         ],
       });
 
-      // ✅ ISO 27001 AUDIT: Log consent expiration
+      // ✅ Security audit: Log consent expiration
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'verbal_consent_expired',

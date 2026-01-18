@@ -4,7 +4,7 @@
  * Modal for obtaining verbal consent from patients for voice recording
  * and AI processing of clinical notes.
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (consent lifecycle)
  * - A.12.4.1: Event logging (all consent operations)
  * 

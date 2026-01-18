@@ -9,7 +9,8 @@ import CryptoService from './CryptoService';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 
-type SOAPData = {
+// Bloque 5E: Export SOAPData para uso en PersistenceServiceEnhanced
+export type SOAPData = {
   subjective: string;
   objective: string;
   assessment: string;
@@ -72,7 +73,8 @@ export class PersistenceService {
         soapData, // Mantener una copia sin cifrar para visualización
         encryptedData,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        ownerUid: userId, // Bloque 5E: Campo requerido para queries y compliance
       };
 
       // ✅ P1.3: Save to Firestore - Correct structure: consultations/{noteId} with ownerUid field

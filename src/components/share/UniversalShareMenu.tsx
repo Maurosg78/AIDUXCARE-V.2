@@ -2,7 +2,7 @@
  * Universal Share Menu Component
  * 
  * Provides multiple secure sharing options for clinical notes
- * PHIPA/PIPEDA compliant sharing methods
+ * PHIPA/PIPEDA-aware sharing methods (design goal)
  * 
  * Priority order:
  * 1. Secure Portal (highest security)
@@ -242,7 +242,7 @@ export const UniversalShareMenu: React.FC<UniversalShareMenuProps> = ({
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Share Clinical Note</h2>
             <p className="text-sm text-slate-500 mt-1">
-              Choose a secure sharing method (PHIPA/PIPEDA compliant)
+              Choose a secure sharing method (PHIPA/PIPEDA-aware)
             </p>
           </div>
           <button

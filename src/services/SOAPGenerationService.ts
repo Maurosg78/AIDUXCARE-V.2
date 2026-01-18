@@ -2,7 +2,7 @@
  * @fileoverview SOAP Generation Service - Enterprise Clinical Documentation
  * @version 1.0.0 Enterprise
  * @author AiDuxCare Development Team
- * @compliance HIPAA + GDPR + SOC 2 Type II
+ * @security Privacy-focused; avoid PHI in logs/telemetry; audit logging supported.
  */
 
 import { ClinicalEntity } from '../types/nlp';

@@ -7,13 +7,13 @@
  * - Efficiency metrics
  * - User experience metrics
  * 
- * @compliance PHIPA compliant
- * @audit ISO 27001 A.12.4.1 (Event logging)
+ * @compliance PHIPA-aware (design goal)
+ * @audit Security control reference (internal) - Event logging
  */
 
 import { AnalyticsService } from './analyticsService';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {

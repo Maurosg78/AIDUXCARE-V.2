@@ -112,7 +112,7 @@ const UnifiedLandingPage: React.FC = () => {
         <div className="flex justify-center mb-16">
           <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-50 via-blue-50 to-green-50 border border-green-300/50 rounded-full text-xs font-medium text-gray-700 shadow-sm">
             <Shield className="w-3.5 h-3.5 text-green-600" />
-            <span>PHIPA • PIPEDA • CPO Compliant • Built under Strict ISO Hospital Standards</span>
+            <span>Designed for Canadian privacy workflows • Audit logging • Encryption in transit and at rest</span>
           </div>
         </div>
 

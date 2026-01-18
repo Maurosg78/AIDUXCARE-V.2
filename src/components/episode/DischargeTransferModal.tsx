@@ -1,10 +1,10 @@
 /**
- * Discharge Transfer Modal - PHIPA Compliant
+ * Discharge Transfer Modal
  * 
  * Modal for marking patient discharge and initiating virtual transfer
- * Changes access permissions, not data location (PHIPA compliant)
+ * Changes access permissions, not data location (PHIPA-aware design goal)
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.8.2.3: Handling of assets (episode lifecycle)
  * - A.12.4.1: Event logging (all transfers logged)
  */

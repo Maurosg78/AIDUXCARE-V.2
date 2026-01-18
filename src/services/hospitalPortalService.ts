@@ -2,7 +2,7 @@
  * Hospital Portal Service
  * 
  * Secure portal for hospital staff to access physiotherapy notes
- * PHIPA/PIPEDA compliant with double authentication
+ * PHIPA/PIPEDA-aware with double authentication (design goal)
  * 
  * Features:
  * - 6-character alphanumeric note codes
@@ -163,6 +163,7 @@ export class HospitalPortalService {
     
     // Special characters: !@#$%^&*()_+-=[]{};':"|,.<>/?
     // Note: ] and [ must be escaped in character class, and - must be at start/end or escaped
+    // eslint-disable-next-line no-useless-escape
     const specialCharRegex = /[!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/;
     if (!specialCharRegex.test(password)) {
       return { valid: false, error: 'Password must contain at least one special character' };
@@ -299,7 +300,7 @@ export class HospitalPortalService {
         }
       }
 
-      // ✅ ISO 27001 AUDIT: Log secure note creation
+      // ✅ Security audit: Log secure note creation
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'hospital_portal_note_created',
@@ -354,7 +355,7 @@ export class HospitalPortalService {
           note: 'Note code not found',
         });
         
-        // ✅ ISO 27001 AUDIT: Log failed authentication attempt
+        // ✅ Security audit: Log failed authentication attempt
         const AuditLogger = await getAuditLogger();
         await AuditLogger.logEvent({
           type: 'hospital_portal_auth_failed',
@@ -391,7 +392,7 @@ export class HospitalPortalService {
           note: `Rate limit exceeded. Locked until ${rateLimitCheck.lockedUntil?.toLocaleString()}`,
         });
         
-        // ✅ ISO 27001 AUDIT: Log rate limit violation
+        // ✅ Security audit: Log rate limit violation
         const AuditLogger = await getAuditLogger();
         await AuditLogger.logEvent({
           type: 'hospital_portal_rate_limit_exceeded',
@@ -446,7 +447,7 @@ export class HospitalPortalService {
           note: 'Invalid password',
         });
         
-        // ✅ ISO 27001 AUDIT: Log failed password attempt
+        // ✅ Security audit: Log failed password attempt
         const AuditLogger = await getAuditLogger();
         await AuditLogger.logEvent({
           type: 'hospital_portal_auth_failed',
@@ -496,7 +497,7 @@ export class HospitalPortalService {
         note: 'Authentication successful - Note owner verified via password',
       });
 
-      // ✅ ISO 27001 AUDIT: Log successful authentication
+      // ✅ Security audit: Log successful authentication
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'hospital_portal_auth_success',
@@ -582,7 +583,7 @@ export class HospitalPortalService {
           success: true,
         });
 
-        // ✅ ISO 27001 AUDIT: Log note content access
+        // ✅ Security audit: Log note content access
         const AuditLogger = await getAuditLogger();
         await AuditLogger.logEvent({
           type: 'hospital_portal_note_accessed',
@@ -660,7 +661,7 @@ export class HospitalPortalService {
         note: 'Note copied - session terminated',
       });
 
-      // ✅ ISO 27001 AUDIT: Log note copy action (critical security event)
+      // ✅ Security audit: Log note copy action (critical security event)
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'hospital_portal_note_copied',
@@ -752,7 +753,7 @@ export class HospitalPortalService {
 
   /**
    * Delete note (manual or automatic)
-   * ✅ ISO 27001 AUDIT: All deletions are logged
+   * ✅ Security audit: All deletions are logged
    */
   static async deleteNote(noteCode: string, reason?: 'expired' | 'manual' | 'cleanup'): Promise<boolean> {
     try {
@@ -762,7 +763,7 @@ export class HospitalPortalService {
       const noteRef = doc(db, this.COLLECTION_NAME, noteCode.toUpperCase());
       await deleteDoc(noteRef);
       
-      // ✅ ISO 27001 AUDIT: Log note deletion
+      // ✅ Security audit: Log note deletion
       if (note) {
         const AuditLogger = await getAuditLogger();
         await AuditLogger.logEvent({
@@ -792,7 +793,7 @@ export class HospitalPortalService {
     } catch (error) {
       console.error('[HospitalPortal] Error deleting note:', error);
       
-      // ✅ ISO 27001 AUDIT: Log deletion failure
+      // ✅ Security audit: Log deletion failure
       const AuditLogger = await getAuditLogger();
       await AuditLogger.logEvent({
         type: 'hospital_portal_note_deletion_failed',

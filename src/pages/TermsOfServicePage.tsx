@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Terms of Service Page
  * Required legal document disclosing third-party processors
- * PHIPA/PIPEDA compliant
+ * PHIPA/PIPEDA-aware (design goal)
  */
 const TermsOfServicePage: React.FC = () => {
   return (

@@ -2,7 +2,10 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../lib/firebase';
 import type { ClinicalAnalysisResponse, SOAPNote, PhysicalExamResult } from '../types/vertex-ai';
 import type { ClinicalAnalysis } from '../utils/cleanVertexResponse';
-import { parseVertexResponse } from './vertexResponseParser';
+// Bloque 6: parseVertexResponse está en utils/responseParser, no en vertexResponseParser
+import { parseVertexResponse } from '../utils/responseParser';
+// Bloque 5E: normalizeVertexResponse para convertir ParsedResponse a ClinicalAnalysis
+import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
 
 const functions = getFunctions(app);
 const processWithVertexAI = httpsCallable(functions, 'processWithVertexAI');
@@ -99,12 +102,47 @@ EVALUACIÓN FÍSICA PROPUESTA:
       const parsed = parseVertexResponse(response);
       
       console.log('📊 Respuesta parseada:', parsed);
-      return parsed;
+      
+      // Bloque 5E: Mapear ParsedResponse a ClinicalAnalysisResponse
+      // Si parsed.success es false o no tiene data, retornar estructura vacía
+      if (!parsed.success || !parsed.data) {
+        return {
+          entities: [],
+          redFlags: [],
+          yellowFlags: [],
+          physicalTests: [],
+          standardizedMeasures: [],
+          error: parsed.error || 'Failed to parse response',
+        };
+      }
+      
+      // Normalizar a ClinicalAnalysis y luego mapear a ClinicalAnalysisResponse
+      const clinicalAnalysis = normalizeVertexResponse(parsed.data);
+      
+      // Mapear ClinicalAnalysis a ClinicalAnalysisResponse
+      return {
+        entities: [],
+        redFlags: clinicalAnalysis.red_flags.map(flag => ({ 
+          pattern: flag, // Bloque 5E: Campo requerido pattern en RedFlag
+          type: flag, 
+          action: '', 
+          urgency: 'high' 
+        })),
+        yellowFlags: clinicalAnalysis.yellow_flags,
+        physicalTests: clinicalAnalysis.evaluaciones_fisicas_sugeridas || [],
+        standardizedMeasures: [],
+      };
     } catch (error) {
       console.error('Error en processTranscript:', error);
-      // Usar el parser con respuesta por defecto
-      const fallbackText = generateFallbackResponse('');
-      return parseVertexResponse(fallbackText);
+      // Bloque 5E: Retornar estructura válida en caso de error
+      return {
+        entities: [],
+        redFlags: [],
+        yellowFlags: [],
+        physicalTests: [],
+        standardizedMeasures: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 

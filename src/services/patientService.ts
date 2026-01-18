@@ -7,6 +7,9 @@ import logger from '@/shared/utils/logger';
 export interface Patient {
   id: string;
   fullName: string;
+  // T3: Added firstName/lastName for pilot compatibility
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
   dateOfBirth: string;
@@ -295,11 +298,24 @@ export class PatientService {
           fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
         }
         
+        // T3: Extract firstName/lastName from fullName if not present
+        let firstName = data.firstName as string || '';
+        let lastName = data.lastName as string || '';
+        if (!firstName && !lastName && fullName) {
+          const nameParts = fullName.trim().split(/\s+/);
+          if (nameParts.length >= 2) {
+            firstName = nameParts[0] || '';
+            lastName = nameParts.slice(1).join(' ') || '';
+          } else if (nameParts.length === 1) {
+            firstName = nameParts[0] || '';
+          }
+        }
+        
         return {
           id: patientSnap.id,
           fullName: fullName || '',
-          firstName: data.firstName as string || '',
-          lastName: data.lastName as string || '',
+          firstName: firstName || '',
+          lastName: lastName || '',
           email: data.email as string || '',
           phone: data.phone as string || '',
           dateOfBirth: (data.dateOfBirth as string) || (data.birthDate as string) || '',

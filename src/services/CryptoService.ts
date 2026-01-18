@@ -84,6 +84,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 class CryptoService {
   private keyCache: CryptoKey | null = null;
+  private ready: boolean = false; // Bloque 6: Propiedad ready declarada
 
   constructor() {
     this.ready = false;
@@ -124,8 +125,9 @@ class CryptoService {
         dataBuffer
       );
       
+      // Bloque 2: Convertir Uint8Array (iv) a ArrayBuffer usando .buffer; encrypted ya es ArrayBuffer
       return {
-        iv: arrayBufferToBase64(iv),
+        iv: arrayBufferToBase64(iv.buffer),
         ciphertext: arrayBufferToBase64(encrypted)
       };
     } catch (error) {

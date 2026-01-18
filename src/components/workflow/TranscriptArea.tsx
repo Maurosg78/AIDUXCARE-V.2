@@ -4,7 +4,7 @@
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles transcript capture, recording, and attachment management.
  * 
- * @compliance PHIPA compliant
+ * @compliance PHIPA-aware (design goal)
  */
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';

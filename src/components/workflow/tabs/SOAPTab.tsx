@@ -4,12 +4,13 @@
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles SOAP note generation and editing.
  * 
- * @compliance PHIPA compliant, ISO 27001 auditable
+ * @compliance PHIPA-aware (design goal), security audit logging
  */
 
 import React from 'react';
 import { FileText, Loader2, ClipboardList } from 'lucide-react';
-import type { SOAPNote, SOAPStatus } from '../../../components/SOAPEditor';
+import type { SOAPNote } from '../../../types/vertex-ai';
+import type { SOAPStatus } from '../../../components/SOAPEditor';
 import { SOAPEditor } from '../../../components/SOAPEditor';
 import { ErrorMessage } from '../../ui/ErrorMessage';
 import { SuccessMessage } from '../../ui/SuccessMessage';
@@ -70,7 +71,6 @@ export interface SOAPTabProps {
   setVisitType: (type: VisitType) => void;
   
   // ✅ FOLLOW-UP WORKFLOW: Transcript input props for follow-up visits
-  workflowRoute?: WorkflowRoute | null;
   recordingTime?: string;
   isRecording?: boolean;
   startRecording?: () => void;

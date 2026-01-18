@@ -4,7 +4,7 @@
  * Wraps SOAP generation to automatically include medical alerts
  * ✅ CRITICAL: Ensures 100% of SOAPs include detected alerts
  * 
- * ISO 27001 Compliance:
+ * Security audit logging:
  * - A.12.4.1: Event logging (all SOAP generations with alerts logged)
  * - A.12.4.2: Protection of log information (encrypted metadata)
  */
@@ -12,7 +12,7 @@
 import MedicalAlertsService, { SOAPWithAlerts } from './medicalAlertsService';
 import { SOAPNotes } from '../types/nlp';
 
-// ✅ ISO 27001 AUDIT: Lazy import to prevent build issues
+// ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
 const getAuditLogger = async () => {
@@ -47,7 +47,7 @@ export async function includeAlertsInSOAP(
       detectionResult.alerts
     );
 
-    // ✅ ISO 27001 AUDIT: Log SOAP generation with alerts
+    // ✅ Security audit: Log SOAP generation with alerts
     const AuditLogger = await getAuditLogger();
     await AuditLogger.logEvent({
       type: 'soap_generated_with_alerts',
@@ -78,7 +78,7 @@ export async function includeAlertsInSOAP(
   } catch (error) {
     console.error('[SOAPWithAlerts] Error including alerts:', error);
     
-    // ✅ ISO 27001 AUDIT: Log error
+    // ✅ Security audit: Log error
     const AuditLogger = await getAuditLogger();
     await AuditLogger.logEvent({
       type: 'soap_alerts_inclusion_failed',
