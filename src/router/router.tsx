@@ -84,8 +84,9 @@ export const createRouter = () => createBrowserRouter([
   { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
+  // ✅ T2: Legacy/internal page — do not verify without token (redirects to /consent/:token if token provided)
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
-  { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // Public consent link (no auth required) - Prioridad 2: Implementado
+  { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // ✅ Public consent link (no auth required) - ÚNICA ruta de verificación real
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number

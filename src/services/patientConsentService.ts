@@ -67,6 +67,16 @@ export interface PatientConsent {
   obtainmentMethod?: 'SMS' | 'Portal' | 'Email' | 'Manual'; // ✅ Phase 2: Method used to obtain consent
 }
 
+// Bloque 1: Tipo de documento Firestore para PatientConsent
+type PatientConsentDoc = {
+  consentVersion?: string;
+  consentDate?: Timestamp | { toDate(): Date };
+  consentScope?: 'ongoing' | 'session-only' | 'declined';
+  patientId?: string;
+  patientName?: string;
+  [key: string]: any; // Para campos adicionales que puedan existir
+};
+
 const CONSENT_VERSION = '1.0.0';
 const TOKEN_EXPIRATION_DAYS = 7; // Token valid for 7 days
 const TOKEN_COLLECTION = 'patient_consent_tokens';
@@ -357,8 +367,12 @@ export class PatientConsentService {
       }
 
       // Get the most recent consent
+      // Bloque 1: Mapeo con tipo correcto para Firestore docs
       const consents = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(doc => {
+          const data = doc.data() as PatientConsentDoc;
+          return { id: doc.id, ...data };
+        })
         .filter(consent => consent.consentVersion === CONSENT_VERSION)
         .sort((a, b) => {
           const aDate = a.consentDate?.toDate?.() || new Date(0);

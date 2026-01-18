@@ -46,18 +46,17 @@ export const ConsentVerificationPage: React.FC = () => {
   // Initialize verification on mount
   useEffect(() => {
     const initialize = async () => {
-      // Support both /consent/:token (public) and /consent-verification/:patientId (auth required)
+      // ✅ T3: Opción B - Si viene token en querystring, redirigir a la ruta pública correcta
       if (token) {
-        // Handle public consent link with token
-        // TODO: Implement token-based consent verification
-        setError('Token-based consent verification not yet implemented');
-        setLoading(false);
+        // Handle public consent link with token - redirect to correct route
+        navigate(`/consent/${token}`, { replace: true });
         return;
       }
       
+      // ✅ T3: Si no hay patientId, mostrar página de ayuda (Opción A)
       if (!patientId) {
-        setError('Invalid patient ID or token');
         setLoading(false);
+        // No mostrar error, mostrar pantalla de ayuda (ver render más abajo)
         return;
       }
 
@@ -218,6 +217,39 @@ export const ConsentVerificationPage: React.FC = () => {
     );
   }
 
+  // ✅ T3: Página de ayuda si no hay patientId (Opción A)
+  if (!patientId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+          <div className="flex items-center gap-3 mb-4">
+            <Shield className="w-6 h-6 text-indigo-600" />
+            <h1 className="text-xl font-semibold text-gray-900">Consent Link Required</h1>
+          </div>
+          <p className="text-gray-700 mb-4">
+            Please use the SMS consent link we sent to the patient. This link is unique and required for consent verification.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => user ? navigate('/command-center') : navigate('/login')}
+              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              {user ? 'Return to Command Center' : 'Return to Login'}
+            </button>
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center text-sm text-indigo-600 hover:text-indigo-800 underline"
+            >
+              View Privacy Policy
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error && !verificationState) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -228,10 +260,10 @@ export const ConsentVerificationPage: React.FC = () => {
           </div>
           <p className="text-gray-700 mb-4">{error}</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => user ? navigate('/command-center') : navigate('/login')}
             className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            Return to Home
+            {user ? 'Return to Command Center' : 'Return to Login'}
           </button>
         </div>
       </div>

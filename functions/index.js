@@ -537,6 +537,36 @@ exports.apiConsent = exports.apiConsent || functions.region(LOCATION).https.onRe
   return res.status(501).json({ ok: false, error: "Validation API not enabled" });
 });
 
+/**
+ * GET/POST /api/referral - Null-safe endpoint to prevent 403 errors
+ * 
+ * This endpoint exists to handle legacy or phantom requests to /api/referral
+ * that may come from old bookmarks, scripts, or deployed rewrites not in repo.
+ * 
+ * Returns 404 (Not Found) consistently, never 403 (Forbidden).
+ * 
+ * Market: CA · en-CA · PHIPA/PIPEDA Ready
+ */
+exports.apiReferral = functions.region(LOCATION).https.onRequest(async (req, res) => {
+  // CORS - Handle preflight
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+  
+  // Return 404 (Not Found) instead of 403 (Forbidden)
+  // This is the canonical "null-safe" response: endpoint exists but is not implemented
+  return res.status(404).json({ 
+    ok: false, 
+    error: 'not_implemented',
+    message: 'The /api/referral endpoint is not implemented. This endpoint exists to prevent 403 errors from legacy requests.'
+  });
+});
+
 // Token reset functions are in separate file (monthlyTokenReset.js)
 // Firebase will discover them automatically during deployment
 
@@ -710,3 +740,114 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
 // Export whisperProxy function
 const whisperProxy = require('./src/whisperProxy');
 exports.whisperProxy = whisperProxy.whisperProxy;
+
+/**
+ * Consent verification endpoint (token-based)
+ * 
+ * Verifies consent token and marks consent as granted (idempotent)
+ * Market: CA · en-CA · PHIPA/PIPEDA Ready
+ * 
+ * Route: /api/consent/verify?token=...
+ */
+exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+
+  const token = (req.query?.token || req.body?.token);
+  if (!token || typeof token !== 'string' || token.trim().length < 10) {
+    return res.status(400).json({ ok: false, error: 'missing_or_invalid_token' });
+  }
+
+  try {
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) admin.initializeApp();
+    const db = admin.firestore();
+
+    // ✅ T3: Schema real - colección: patient_consent_tokens, campo: token (no consentToken)
+    const tokenRef = db.collection('patient_consent_tokens').doc(token.trim());
+    const tokenDoc = await tokenRef.get();
+
+    if (!tokenDoc.exists) {
+      // No revelar demasiado
+      return res.status(404).json({ ok: false, error: 'invalid_or_expired' });
+    }
+
+    const data = tokenDoc.data() || {};
+
+    // ✅ T3: Verificar expiry - campo: expiresAt
+    const expiresAt = data.expiresAt?.toDate?.() || (data.expiresAt ? new Date(data.expiresAt) : null);
+    if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+      return res.status(410).json({ ok: false, error: 'expired' });
+    }
+
+    // ✅ T3: Verificar si ya está usado - campo: used
+    if (data.used === true) {
+      // Idempotente: si ya está otorgado, responder ok
+      const consentGiven = data.consentGiven || {};
+      if (consentGiven.scope && consentGiven.scope !== 'declined') {
+        return res.status(200).json({ ok: true, alreadyGranted: true, scope: consentGiven.scope });
+      }
+    }
+
+    // Obtener IP y User-Agent
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || '').trim();
+    const ua = (req.get('user-agent') || '').slice(0, 200);
+
+    // ✅ T3: Marcar como usado y otorgar consent (scope: 'ongoing' por defecto)
+    await tokenRef.update({
+      used: true,
+      usedAt: admin.firestore.FieldValue.serverTimestamp(),
+      consentGiven: {
+        scope: 'ongoing', // Default scope for token-based verification
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        ipAddress: ip || null,
+        userAgent: ua || null,
+      },
+    });
+
+    // ✅ T3: Crear registro de consent en patient_consents
+    const consentRecord = {
+      patientId: data.patientId,
+      patientName: data.patientName,
+      clinicName: data.clinicName || 'AiduxCare Clinic',
+      physiotherapistId: data.physiotherapistId,
+      physiotherapistName: data.physiotherapistName || 'Your physiotherapist',
+      consentScope: 'ongoing',
+      consented: true,
+      consentDate: admin.firestore.FieldValue.serverTimestamp(),
+      consentVersion: '1.0.0',
+      tokenUsed: token.trim(),
+      ipAddress: ip || null,
+      userAgent: ua || null,
+      obtainmentMethod: 'SMS',
+    };
+
+    await db.collection('patient_consents').add(consentRecord);
+
+    // Log para audit
+    await db.collection('audit_logs').add({
+      type: 'consent_granted',
+      userId: data.physiotherapistId || 'system',
+      userRole: 'professional',
+      patientId: data.patientId,
+      metadata: {
+        token,
+        method: 'sms_token',
+        scope: 'ongoing',
+        ipAddress: ip || null,
+        userAgent: ua || null,
+      },
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return res.status(200).json({ ok: true, scope: 'ongoing' });
+  } catch (e) {
+    console.error('[apiConsentVerify] error:', e?.stack || e);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});

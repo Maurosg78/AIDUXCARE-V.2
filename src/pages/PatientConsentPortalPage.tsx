@@ -38,6 +38,39 @@ export const PatientConsentPortalPage: React.FC = () => {
       }
 
       try {
+        // ✅ T5: Auto-verify consent via backend endpoint (idempotent)
+        const verifyResponse = await fetch(`/api/consent/verify?token=${encodeURIComponent(token)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const verifyResult = await verifyResponse.json();
+
+        if (verifyResult.ok) {
+          // ✅ T5: Consent verified successfully
+          if (verifyResult.alreadyGranted) {
+            // Already granted, show success message
+            setSuccess(true);
+            setLoading(false);
+            return;
+          }
+
+          // Just verified, show success
+          setSuccess(true);
+          setLoading(false);
+          return;
+        }
+
+        // Handle errors from verification endpoint
+        if (verifyResponse.status === 404 || verifyResponse.status === 410) {
+          setError('This consent link is invalid or has expired. Please contact your clinic for a new link.');
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: try to fetch consent data for manual consent UI
         const data = await PatientConsentService.getConsentByToken(token);
         if (!data) {
           setError('This consent link is invalid or has expired. Please contact your clinic for a new link.');
@@ -47,7 +80,18 @@ export const PatientConsentPortalPage: React.FC = () => {
 
         setConsentData(data);
       } catch (err) {
-        console.error('[CONSENT PORTAL] Error fetching consent data:', err);
+        console.error('[CONSENT PORTAL] Error verifying/fetching consent:', err);
+        // Fallback: try to show manual consent UI if verification fails
+        try {
+          const data = await PatientConsentService.getConsentByToken(token);
+          if (data) {
+            setConsentData(data);
+            setLoading(false);
+            return;
+          }
+        } catch (fallbackErr) {
+          console.error('[CONSENT PORTAL] Fallback also failed:', fallbackErr);
+        }
         setError('Error loading consent information. Please try again or contact your clinic.');
       } finally {
         setLoading(false);

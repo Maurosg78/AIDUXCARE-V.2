@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/consent/verify",
+        "function": "apiConsentVerify"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
