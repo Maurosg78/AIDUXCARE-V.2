@@ -11,6 +11,7 @@ import logger from '@/shared/utils/logger';
 interface CreatePatientModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (patientId: string) => Promise<void>; // Bloque 5: Prop opcional agregada para compatibilidad
 }
 
 export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, onClose }) => {

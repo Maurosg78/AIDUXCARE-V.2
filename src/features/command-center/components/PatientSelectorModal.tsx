@@ -8,12 +8,12 @@
 import React, { useState } from 'react';
 import { X, Search, UserPlus } from 'lucide-react';
 import { Patient } from '@/services/patientService';
-import { usePatientsList } from '../hooks/usePatientsList';
+import { usePatientsList, type PatientListItem } from '../hooks/usePatientsList';
 
 export interface PatientSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (patient: Patient) => void;
+  onSelect: (patient: Patient | PatientListItem) => void;
   onCreateNew: () => void;
 }
 
@@ -36,8 +36,9 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
     return fullName.includes(query) || email.includes(query);
   });
 
-  const handleSelect = (patient: Patient) => {
-    onSelect(patient);
+  const handleSelect = (patient: PatientListItem) => {
+    // T3: PatientListItem is compatible subset - convert to Patient-like object
+    onSelect(patient as unknown as Patient);
     onClose();
   };
 

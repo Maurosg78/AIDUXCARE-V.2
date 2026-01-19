@@ -88,12 +88,18 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
       setSoapNote(soap);
       
       // Create a minimal session object
+      // Bloque 5E: Session requiere userId, patientName, transcript, status - completar campos requeridos
       const sessionData: Session = {
         id: note.sessionId || note.id,
+        userId: note.ownerUid || '', // Bloque 5E: Campo requerido
         patientId: note.patientId,
+        patientName: '', // Bloque 5E: Campo requerido (podría obtenerse de otra fuente si está disponible)
+        transcript: '', // Bloque 5E: Campo requerido
         createdAt: new Date(note.createdAt),
-        type: 'followup', // Default, could be improved
+        timestamp: new Date(note.createdAt), // Bloque 5E: Campo requerido
+        sessionType: 'followup', // Bloque 5E: Usar sessionType en lugar de type
         soapNote: soap,
+        status: 'completed', // Bloque 5E: Campo requerido
       };
       
       setSession(sessionData);

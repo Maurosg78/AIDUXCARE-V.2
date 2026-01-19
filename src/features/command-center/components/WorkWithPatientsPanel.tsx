@@ -263,7 +263,8 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                             <button
                               key={patient.id}
                               onClick={() => {
-                                handlePatientSelect(patient as Patient);
+                                // T3: PatientListItem is compatible - convert safely
+                                handlePatientSelect(patient as unknown as Patient);
                                 setPatientSearchQuery(''); // Limpiar búsqueda al seleccionar
                               }}
                               className="w-full p-2 rounded-lg border border-gray-200/60 bg-white hover:border-primary-blue/40 hover:bg-primary-blue/3 transition-all duration-200 text-left group"

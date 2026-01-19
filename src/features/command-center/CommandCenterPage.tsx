@@ -15,10 +15,12 @@ import { CommandCenterHeader } from './components/CommandCenterHeader';
 import { usePendingNotesCount } from './hooks/usePendingNotesCount';
 import { CreatePatientModal } from './components/CreatePatientModal';
 import { PatientsListDropdown } from './components/PatientsListDropdown';
+// NOTE: SessionTypeSelection and PrimaryActionCard are stubs - not currently used in pilot
 import { SessionTypeSelection } from './components/SessionTypeSelection';
 import { PrimaryActionCard } from './components/PrimaryActionCard';
 import { FeedbackWidget } from '../../components/feedback/FeedbackWidget';
 import { useCommandCenter } from './hooks/useCommandCenter';
+// NOTE: DashboardState and ContextualActions are stubs - minimal exports to satisfy TypeScript
 import { DashboardStateDisplay } from './components/DashboardState';
 import { ContextualActions } from './components/ContextualActions';
 import { usePatientsList } from './hooks/usePatientsList';
@@ -165,7 +167,8 @@ export const CommandCenterPage: React.FC = () => {
                       navigate(`/workflow?type=${dashboardContext.activeSession.sessionType}&patientId=${dashboardContext.activeSession.patientId}`);
                     } else {
                       // No patient selected → focus dropdown
-                      document.querySelector('[aria-haspopup="listbox"]')?.click();
+                      // Bloque 5: Type assertion para Element.click()
+                      (document.querySelector('[aria-haspopup="listbox"]') as HTMLElement)?.click();
                     }
                   } else if (actionType === 'next-appointment' && dashboardContext.nextAppointment) {
                     // Next appointment → select patient and go to session type
@@ -173,7 +176,8 @@ export const CommandCenterPage: React.FC = () => {
                     setFlowStep('session-type-selection');
                   } else {
                     // Select patient → focus dropdown
-                    document.querySelector('[aria-haspopup="listbox"]')?.click();
+                    // Bloque 5: Type assertion para Element.click()
+                    (document.querySelector('[aria-haspopup="listbox"]') as HTMLElement)?.click();
                   }
                 }}
               />
