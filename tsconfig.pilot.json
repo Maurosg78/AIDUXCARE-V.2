@@ -1,0 +1,47 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/pages/LoginPage.tsx",
+    "src/pages/ProfessionalOnboardingPage.tsx",
+    "src/pages/EmailVerifiedPage.tsx",
+    "src/pages/ProfessionalWorkflowPage.tsx",
+    "src/pages/**/*.tsx",
+    "src/features/command-center/**/*.tsx",
+    "src/components/AuthGuard.tsx",
+    "src/components/WorkflowSidebar.tsx",
+    "src/context/**/*.tsx",
+    "src/router/**/*.tsx",
+    "src/services/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/hooks/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "test/**",
+    "tests/**",
+    "src/_experimental/**",
+    "src/_deprecated/**",
+    "src/_quarantine/**",
+    "**/*.config.ts",
+    "src/i18n/**",
+    "src/ai/promptAdapter.ts",
+    "src/core/performance/**",
+    "src/components/SpendCapManager.tsx",
+    "src/components/TokenPackageStore.tsx",
+    "src/components/SessionComparison.tsx",
+    "src/components/navigation/ProtectedRoute.tsx"
+  ]
+}
