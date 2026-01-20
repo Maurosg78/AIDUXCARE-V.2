@@ -75,23 +75,21 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
                 </div>
               </div>
             </label>
-            {/* ✅ CRITICAL FIX: Signature field INSIDE ongoing option, always visible when ongoing is selected */}
-            {selectedScope === 'ongoing' && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Digital Signature (Type your full name):
-                </label>
-                <input
-                  type="text"
-                  value={signature}
-                  onChange={(e) => setSignature(e.target.value)}
-                  placeholder="Your full name"
-                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue text-base"
-                  autoFocus={true}
-                  required={selectedScope === 'ongoing'}
-                />
-              </div>
-            )}
+            {/* ✅ CRITICAL FIX: Signature field ALWAYS visible when ongoing is selected - NO conditional rendering issues */}
+            <div className={`mt-3 pt-3 border-t border-gray-200 transition-all ${selectedScope === 'ongoing' ? 'block' : 'hidden'}`}>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Digital Signature (Type your full name):
+              </label>
+              <input
+                type="text"
+                value={signature}
+                onChange={(e) => setSignature(e.target.value)}
+                placeholder="Your full name"
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue text-base"
+                autoFocus={selectedScope === 'ongoing'}
+                required={selectedScope === 'ongoing'}
+              />
+            </div>
           </div>
 
           <label className="flex items-start gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50">
