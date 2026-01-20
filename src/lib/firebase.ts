@@ -6,6 +6,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, Analytics } from "firebase/analytics";
+import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions";
 import {
   initializeAuth,
   getAuth,
@@ -48,6 +49,7 @@ let _auth: any;
 let _db: any;
 let _storage: any;
 let _analytics: Analytics | null = null;
+let _functions: Functions | null = null;
 
 function initFirebaseOnce() {
   if (_app) return;
@@ -121,6 +123,18 @@ if (!__IS_TEST__) {
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
   
+  // ✅ CRITICAL FIX: Initialize Firebase Functions
+  // Functions must be initialized before use, especially for regional functions
+  try {
+    // Initialize Functions with default region (us-central1)
+    // Individual services can override with specific regions (e.g., northamerica-northeast1)
+    _functions = getFunctions(_app);
+    console.info("✅ Firebase Functions initialized");
+  } catch (error: any) {
+    console.error("❌ Firebase Functions initialization failed:", error?.message || error);
+    // Don't throw - some features may not need Functions
+  }
+  
   // WO-FS-ENV-02: Log Firestore database instance info
   if (typeof window !== 'undefined' && _db) {
     console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);
@@ -154,11 +168,19 @@ if (!__IS_TEST__) {
         connectAuthEmulator(_auth, `http://${emulatorHost}`);
       }
       connectFirestoreEmulator(_db, "127.0.0.1", 8080);
+      
+      // Connect Functions emulator if configured
+      const functionsEmulatorHost = import.meta.env.VITE_FIREBASE_FUNCTIONS_EMULATOR_HOST;
+      if (functionsEmulatorHost && _functions) {
+        connectFunctionsEmulator(_functions, "127.0.0.1", 5001);
+      }
 
       console.info(
         "✅ Firebase inicializado en modo EMULATOR. Auth:",
         emulatorHost,
-        "Firestore: 127.0.0.1:8080"
+        "Firestore: 127.0.0.1:8080",
+        "Functions:",
+        functionsEmulatorHost ? "127.0.0.1:5001" : "not configured"
 );
    } catch (error: any) {
       console.warn("⚠️ Error conectando emulators (normal si ya conectados):", error?.message || error);
@@ -253,6 +275,7 @@ export const auth = _auth;
 export const db = _db;
 export const storage = _storage;
 export const analytics = _analytics;
+export const functions = _functions;
 // Bloque 6: Export app para compatibilidad con VertexAIServiceViaFirebase
 export { _app as app };
 export default _app; // Default export para compatibilidad
