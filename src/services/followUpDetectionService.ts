@@ -9,7 +9,7 @@
  */
 
 import { EpisodeService } from './episodeService';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
 
 // ✅ Security audit: Lazy import to prevent build issues
@@ -170,10 +170,18 @@ async function checkRecentEpisodes(patientId: string): Promise<{
     
     // 3. Check episodes collection (if exists)
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[FollowUpDetection] User not authenticated, skipping episodes check');
+        return;
+      }
+      
       const episodesRef = collection(db, 'episodes');
       const episodesQuery = query(
         episodesRef,
         where('patientId', '==', patientId),
+        where('ownerUid', '==', currentUser.uid),
         orderBy('dates.admissionDate', 'desc'),
         limit(1)
       );
@@ -221,13 +229,32 @@ async function checkRecentEpisodes(patientId: string): Promise<{
       };
     }
     
-    // No visits found
+    // WO-FS-DATA-03: No visits found - initial state (valid, not an error)
+    if (import.meta.env.DEV) {
+      console.info('[FS] No historical data found — initial state (follow-up detection)');
+    }
     return { 
       hasRecentEpisode: false,
       daysSinceLastVisit: undefined
     };
     
   } catch (error: any) {
+    // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
+    const isPermissionDenied = error?.code === 'permission-denied' || 
+                               error?.message?.includes('permission-denied') ||
+                               error?.message?.includes('Missing or insufficient permissions');
+    
+    if (isPermissionDenied) {
+      // Permission denied in empty state = no data yet, return initial state
+      if (import.meta.env.DEV) {
+        console.info('[FS] No historical data found — initial state (follow-up detection, permission-denied)');
+      }
+      return { 
+        hasRecentEpisode: false,
+        daysSinceLastVisit: undefined
+      };
+    }
+    
     console.error('[FollowUpDetection] Error checking recent visits:', error);
     return { 
       hasRecentEpisode: false,
@@ -304,6 +331,17 @@ export async function detectFollowUp(
   
   // 1. Recent episode check (40 points)
   const recentEpisodeInfo = await checkRecentEpisodes(input.patientId);
+  
+  // WO-FS-DATA-03: If no historical data found, return initial state (not an error)
+  if (!recentEpisodeInfo || (!recentEpisodeInfo.hasRecentEpisode && recentEpisodeInfo.daysSinceLastVisit === undefined)) {
+    return {
+      isFollowUp: false,
+      confidence: 0,
+      rationale: ['No prior clinical data found'],
+      recommendedWorkflow: 'initial',
+    };
+  }
+  
   if (recentEpisodeInfo) {
     if (recentEpisodeInfo.hasRecentEpisode && recentEpisodeInfo.daysSinceLastVisit !== undefined) {
       confidence += PRIMARY_WEIGHTS.RECENT_EPISODE;
