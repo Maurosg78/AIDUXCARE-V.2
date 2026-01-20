@@ -110,13 +110,18 @@ export const PatientConsentPortalPage: React.FC = () => {
     setSubmitting(true);
     setError(null);
 
+    console.log('[CONSENT PORTAL] handleConsent called:', { token, scope, hasSignature: !!signature, userAgent: navigator.userAgent });
+
     try {
       await PatientConsentService.recordConsent(
         token,
         scope,
-        signature
+        signature,
+        'en', // Language used (English for compliance)
+        'Portal' // Obtainment method
       );
 
+      console.log('[CONSENT PORTAL] ✅ Consent recorded successfully');
       setSuccess(true);
       logger.info('[CONSENT PORTAL] Consent recorded:', {
         token,
@@ -130,8 +135,20 @@ export const PatientConsentPortalPage: React.FC = () => {
         navigate('/');
       }, 3000);
     } catch (err: any) {
-      console.error('[CONSENT PORTAL] Error recording consent:', err);
-      setError(err.message || 'Error saving consent. Please try again.');
+      console.error('[CONSENT PORTAL] ❌ Error recording consent:', err);
+      console.error('[CONSENT PORTAL] Error details:', {
+        code: err?.code,
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+      });
+      
+      // ✅ FIX: Show detailed error message to user
+      const errorMessage = err?.message || 'Error saving consent. Please try again.';
+      setError(errorMessage);
+      
+      // ✅ FIX: Don't hide error immediately - let user see it
+      // Remove auto-close on error
     } finally {
       setSubmitting(false);
     }

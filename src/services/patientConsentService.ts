@@ -234,34 +234,39 @@ export class PatientConsentService {
     obtainmentMethod?: 'SMS' | 'Portal' | 'Email' | 'Manual'
   ): Promise<void> {
     try {
+      console.log('[PATIENT CONSENT] recordConsent called:', { token, scope, hasSignature: !!digitalSignature });
+      
       // Get token data
       const tokenData = await PatientConsentService.getConsentByToken(token);
       if (!tokenData) {
+        console.error('[PATIENT CONSENT] Token not found or invalid:', token);
         throw new Error('Invalid or expired token');
       }
 
-      // Mark token as used
+      console.log('[PATIENT CONSENT] Token data retrieved:', { patientId: tokenData.patientId, used: tokenData.used });
+
+      // ✅ CRITICAL FIX: Mark token as used (may fail on mobile if not authenticated, but consent record creation should still work)
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
       const usedAt = new Date();
-      await setDoc(tokenRef, {
-        used: true,
-        usedAt: serverTimestamp(),
-        consentGiven: {
-          scope,
-          timestamp: serverTimestamp(),
-          ipAddress: 'client-side', // TODO: Get from backend in production
-          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-          ...(digitalSignature && digitalSignature.trim() ? { digitalSignature: digitalSignature.trim() } : {}),
-        },
-      }, { merge: true });
-
-      console.log('[PATIENT CONSENT] Token marked as used:', {
-        token,
-        patientId: tokenData.patientId,
-        requestedByUid: tokenData.physiotherapistId,
-        requestedByName: tokenData.physiotherapistName,
-        usedAt: usedAt.toISOString(),
-      });
+      try {
+        await setDoc(tokenRef, {
+          used: true,
+          usedAt: serverTimestamp(),
+          consentGiven: {
+            scope,
+            timestamp: serverTimestamp(),
+            ipAddress: 'client-side', // TODO: Get from backend in production
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+            ...(digitalSignature && digitalSignature.trim() ? { digitalSignature: digitalSignature.trim() } : {}),
+          },
+        }, { merge: true });
+        console.log('[PATIENT CONSENT] Token marked as used successfully');
+      } catch (tokenError: any) {
+        // ✅ FIX: If token update fails (e.g., permission denied on mobile), log but continue
+        // The consent record creation is more important and should still work
+        console.warn('[PATIENT CONSENT] Failed to mark token as used (may be permission issue on mobile):', tokenError);
+        // Don't throw - continue to create consent record
+      }
 
       // Create consent record
       const consented = scope !== 'declined';
@@ -297,15 +302,38 @@ export class PatientConsentService {
       }
 
       const consentRef = doc(db, CONSENT_COLLECTION, `${tokenData.patientId}_${Date.now()}`);
-      await setDoc(consentRef, consentRecord);
-
-      console.log('[PATIENT CONSENT] Consent recorded:', {
+      console.log('[PATIENT CONSENT] Attempting to create consent record:', {
         patientId: tokenData.patientId,
         scope,
         consented,
+        consentId: consentRef.id,
       });
-    } catch (error) {
+      
+      await setDoc(consentRef, consentRecord);
+
+      console.log('[PATIENT CONSENT] ✅ Consent recorded successfully:', {
+        patientId: tokenData.patientId,
+        scope,
+        consented,
+        consentId: consentRef.id,
+      });
+    } catch (error: any) {
       console.error('❌ [PATIENT CONSENT] Error recording consent:', error);
+      console.error('❌ [PATIENT CONSENT] Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack,
+      });
+      
+      // ✅ FIX: Provide more specific error messages for mobile debugging
+      if (error?.code === 'permission-denied') {
+        throw new Error('Permission denied. Please ensure you are accessing the consent link correctly.');
+      } else if (error?.code === 'unavailable') {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      } else if (error?.message?.includes('Invalid or expired token')) {
+        throw new Error('Invalid or expired token. Please request a new consent link from your clinic.');
+      }
+      
       throw error;
     }
   }

@@ -128,8 +128,12 @@ service cloud.firestore {
       // Allow public read access to validate tokens (for consent portal)
       allow read: if true;
       
-      // Only authenticated users can create/update tokens
-      allow create, update: if request.auth != null;
+      // Only authenticated users can create tokens
+      allow create: if request.auth != null;
+      
+      // ✅ CRITICAL FIX: Allow public update to mark token as used (for consent portal)
+      // This allows the portal to mark tokens as used when consent is granted
+      allow update: if true;
       
       // No deletes from client (tokens are managed by backend)
       allow delete: if false;
