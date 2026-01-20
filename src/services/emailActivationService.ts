@@ -365,9 +365,23 @@ export class EmailActivationService {
 
   /**
    * Actualiza último login
+   * Enterprise-grade: Uses uid directly to avoid Firestore rules issues
+   * @param email - User email (for backward compatibility)
+   * @param uid - Optional user UID (preferred, avoids email query)
    */
-  public async updateLastLogin(email: string): Promise<void> {
+  public async updateLastLogin(email: string, uid?: string): Promise<void> {
     try {
+      // Enterprise-grade: Prefer uid-based update (more secure, avoids query)
+      if (uid) {
+        const docRef = doc(db, 'users', uid);
+        await updateDoc(docRef, {
+          lastLogin: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        return;
+      }
+
+      // Fallback: Email-based query (for backward compatibility)
       const usersRef = collection(db, 'users');
       const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
       const snapshot = await getDocs(emailQuery);

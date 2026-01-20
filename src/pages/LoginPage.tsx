@@ -6,6 +6,7 @@ import { useProfessionalProfile } from "../context/ProfessionalProfileContext";
 import { emailActivationService } from "../services/emailActivationService";
 import { isProfileComplete } from "../utils/professionalProfileValidation";
 import Button from "../components/ui/button";
+import { auth } from "../lib/firebase";
 
 import logger from "@/shared/utils/logger";
 import styles from '@/styles/wizard.module.css';
@@ -78,7 +79,9 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      await emailActivationService.updateLastLogin(email);
+      // Enterprise-grade: Use uid directly to avoid Firestore rules issues
+      const currentUser = auth.currentUser;
+      await emailActivationService.updateLastLogin(email, currentUser?.uid);
       
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
       // Esperar a que el perfil se cargue (si está cargando)

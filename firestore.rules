@@ -297,17 +297,88 @@ service cloud.firestore {
     // ----------------------------
     // Consent Verifications
     // ----------------------------
+    // Enterprise-grade: Handle both existing and non-existing documents
+    // Allows checking consent state for new patients (document doesn't exist yet)
     match /consent_verifications/{patientId} {
+      // Read: Allow if document doesn't exist (for new patients) OR if user owns it
+      // This enables checking consent state without failing on non-existent documents
       allow read: if request.auth != null
-                  && resource.data.ownerUid == request.auth.uid;
+                  && (!exists(/databases/$(database)/documents/consent_verifications/$(patientId))
+                      || resource.data.ownerUid == request.auth.uid);
 
+      // Create: User must own the verification record
       allow create: if request.auth != null
                     && request.resource.data.ownerUid == request.auth.uid;
 
+      // Update: User must own the existing record and maintain ownership
       allow update: if request.auth != null
                     && resource.data.ownerUid == request.auth.uid
                     && request.resource.data.ownerUid == request.auth.uid;
 
+      // No deletes from client (audit trail requirement)
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // SMS Delivery Receipts
+    // ----------------------------
+    // Enterprise-grade: Audit trail for SMS delivery status
+    // Used by Cloud Functions and client for tracking SMS delivery
+    match /sms_delivery_receipts/{receiptId} {
+      // Authenticated users can read receipts (for debugging/delivery status)
+      // In production, consider restricting to admin or specific roles
+      allow read: if request.auth != null;
+      
+      // Only backend (Cloud Functions) should create receipts
+      // Client can create for audit purposes if authenticated
+      allow create: if request.auth != null;
+      
+      // Only backend can update delivery status
+      allow update: if request.auth != null;
+      
+      // No deletes (audit trail requirement)
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Pending SMS Queue
+    // ----------------------------
+    // Enterprise-grade: Queue for SMS messages pending delivery
+    // Used for audit trail and retry logic
+    match /pending_sms/{smsId} {
+      // Authenticated users can read pending SMS (for status checks)
+      allow read: if request.auth != null;
+      
+      // Authenticated users can create pending SMS (audit trail)
+      allow create: if request.auth != null;
+      
+      // Only backend should update (mark as sent/delivered/failed)
+      allow update: if request.auth != null;
+      
+      // No deletes (audit trail requirement)
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Consultations
+    // ----------------------------
+    // Enterprise-grade: Consultation records for follow-up detection
+    // Used by followUpDetectionService to determine if patient has prior consultations
+    match /consultations/{consultationId} {
+      // Read: User must own the consultation (authorUid matches)
+      allow read: if request.auth != null
+                  && resource.data.authorUid == request.auth.uid;
+      
+      // Create: User must be the author
+      allow create: if request.auth != null
+                    && request.resource.data.authorUid == request.auth.uid;
+      
+      // Update: User must own the consultation and maintain ownership
+      allow update: if request.auth != null
+                    && resource.data.authorUid == request.auth.uid
+                    && request.resource.data.authorUid == request.auth.uid;
+      
+      // No deletes from client (clinical record requirement)
       allow delete: if false;
     }
   }

@@ -22,7 +22,9 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
   onScopeChange
 }) => {
   const [signature, setSignature] = useState('');
-  const [showSignatureField, setShowSignatureField] = useState(false);
+  // Enterprise-grade: Initialize signature field visibility based on selectedScope
+  // This ensures the field is visible immediately when "ongoing" is pre-selected
+  const [showSignatureField, setShowSignatureField] = useState(selectedScope === 'ongoing');
 
   const handleScopeChange = (scope: ConsentScope) => {
     onScopeChange(scope);
