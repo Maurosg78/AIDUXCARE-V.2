@@ -4,7 +4,7 @@
  * Always visible, no need to scroll to bottom
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 export type ConsentScope = 'ongoing' | 'session-only' | 'declined';
 
@@ -22,22 +22,15 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
   onScopeChange
 }) => {
   const [signature, setSignature] = useState('');
-  // Enterprise-grade: Initialize signature field visibility based on selectedScope
-  // This ensures the field is visible immediately when "ongoing" is pre-selected
-  // Use useEffect to sync with selectedScope changes (handles initial render)
-  const [showSignatureField, setShowSignatureField] = useState(selectedScope === 'ongoing');
   
-  // ✅ WO-CONSENT-UI-01: Sync showSignatureField when selectedScope changes
-  useEffect(() => {
-    setShowSignatureField(selectedScope === 'ongoing');
-  }, [selectedScope]);
+  // ✅ WO-CONSENT-UI-01: Eliminate friction - signature field visible immediately when ongoing is selected
+  // No need for separate state - use selectedScope directly for immediate visibility
+  const showSignatureField = selectedScope === 'ongoing';
 
   const handleScopeChange = (scope: ConsentScope) => {
     onScopeChange(scope);
-    if (scope === 'ongoing') {
-      setShowSignatureField(true);
-    } else {
-      setShowSignatureField(false);
+    // Clear signature when switching away from ongoing
+    if (scope !== 'ongoing') {
       setSignature('');
     }
   };
@@ -125,8 +118,8 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
           </label>
         </div>
 
-        {/* Digital Signature Field (for ongoing consent) */}
-        {showSignatureField && selectedScope === 'ongoing' && (
+        {/* Digital Signature Field (for ongoing consent) - Always visible when ongoing is selected */}
+        {showSignatureField && (
           <div className="mb-4">
             <label className="block text-sm text-gray-900 mb-2">
               Digital Signature (Type your full name):
@@ -137,6 +130,7 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
               onChange={(e) => setSignature(e.target.value)}
               placeholder="Your full name"
               className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-blue"
+              autoFocus={showSignatureField}
             />
           </div>
         )}
