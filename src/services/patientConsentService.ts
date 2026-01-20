@@ -464,6 +464,63 @@ export class PatientConsentService {
   }
 
   /**
+   * Record manual consent (without SMS token)
+   * Used when physiotherapist obtains consent verbally or in person
+   * 
+   * @param patientId - Patient ID
+   * @param physiotherapistId - Physiotherapist ID who obtained consent
+   * @param scope - Consent scope (default: 'ongoing')
+   * @returns Promise<void>
+   */
+  static async recordManualConsent(
+    patientId: string,
+    physiotherapistId: string,
+    scope: 'ongoing' | 'session-only' = 'ongoing'
+  ): Promise<void> {
+    try {
+      // Get patient data
+      const patientRef = doc(db, 'patients', patientId);
+      const patientSnap = await getDoc(patientRef);
+      const patientData = patientSnap.data();
+
+      // Get physiotherapist data
+      const physioRef = doc(db, 'professional_profiles', physiotherapistId);
+      const physioSnap = await getDoc(physioRef);
+      const physioData = physioSnap.data();
+
+      // Create consent record without token
+      const consentRecord: any = {
+        patientId,
+        patientName: patientData?.fullName || patientData?.firstName || 'Unknown',
+        clinicName: physioData?.clinicName || physioData?.practiceName || 'Unknown Clinic',
+        physiotherapistId,
+        physiotherapistName: physioData?.displayName || physioData?.firstName || 'Unknown',
+        consentScope: scope,
+        consented: true,
+        consentDate: serverTimestamp(),
+        consentVersion: CONSENT_VERSION,
+        obtainmentMethod: 'Manual',
+        ipAddress: 'manual-authorization',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+        digitalSignature: `Manual consent recorded by ${physiotherapistId}`,
+        authorizedByPhysiotherapist: true,
+      };
+
+      const consentRef = doc(db, CONSENT_COLLECTION, `${patientId}_${Date.now()}`);
+      await setDoc(consentRef, consentRecord);
+
+      console.log('[PATIENT CONSENT] Manual consent recorded:', {
+        patientId,
+        scope,
+        physiotherapistId,
+      });
+    } catch (error) {
+      console.error('❌ [PATIENT CONSENT] Error recording manual consent:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current consent version
    * 
    * @returns Current consent version string
