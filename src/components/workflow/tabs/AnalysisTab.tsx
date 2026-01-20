@@ -55,6 +55,7 @@ export interface AnalysisTabProps {
   setConsentPending: (pending: boolean) => void;
   setSmsError: (error: string | null) => void;
   handleCopyConsentLink: () => Promise<void>;
+  handleResendConsentSMS: () => Promise<void>;
   
   // Session data
   lastEncounter: {
@@ -141,6 +142,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setConsentPending,
   setSmsError,
   handleCopyConsentLink,
+  handleResendConsentSMS,
   lastEncounter,
   isFirstSession,
   formatLastSessionDate,
@@ -322,17 +324,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     </button>
                   </div>
                 )}
-                {consentPending && !consentLink && (
+                {(consentPending && !consentLink) || smsError ? (
                   <button
                     type="button"
-                    onClick={async () => {
-                      // Resend SMS logic would go here
-                    }}
-                    className="mt-2 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px]"
+                    onClick={handleResendConsentSMS}
+                    disabled={!currentPatient || !user}
+                    className="mt-2 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Resend SMS
+                    {smsError ? 'Re-send SMS' : 'Resend SMS'}
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           )}

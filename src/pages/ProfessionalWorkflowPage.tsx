@@ -443,6 +443,95 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [consentLink]);
 
+  // Enterprise-grade: Function to resend consent SMS
+  // Extracted from checkFirstSessionAndConsent for reusability
+  const handleResendConsentSMS = useCallback(async () => {
+    if (!currentPatient || !user?.uid) {
+      setSmsError('Patient or user information not available');
+      return;
+    }
+
+    const patientId = currentPatient.id || patientIdFromUrl;
+    if (!patientId) {
+      setSmsError('Patient ID not available');
+      return;
+    }
+
+    try {
+      setSmsError(null);
+      setConsentPending(true);
+
+      // Validate phone number format
+      const phoneNumber = currentPatient.phone?.trim();
+      if (!phoneNumber) {
+        throw new Error('Patient phone number not available');
+      }
+
+      // Format phone number for SMS (E.164 format)
+      let formattedPhone = phoneNumber.trim();
+      const cleanPhone = formattedPhone.replace(/[^\d+]/g, '');
+
+      if (cleanPhone.startsWith('+1') && cleanPhone.length === 12) {
+        formattedPhone = cleanPhone;
+      } else if (cleanPhone.startsWith('1') && cleanPhone.length === 11) {
+        formattedPhone = `+${cleanPhone}`;
+      } else if (cleanPhone.length === 10) {
+        formattedPhone = `+1${cleanPhone}`;
+      } else if (cleanPhone.startsWith('+') && cleanPhone.length >= 11) {
+        formattedPhone = cleanPhone;
+      } else {
+        const digits = cleanPhone.replace(/\D/g, '');
+        if (digits.length === 10) {
+          formattedPhone = `+1${digits}`;
+        } else if (digits.length === 11 && digits.startsWith('1')) {
+          formattedPhone = `+${digits}`;
+        } else {
+          throw new Error(`Invalid phone number format: ${phoneNumber}`);
+        }
+      }
+
+      // Final validation: must be E.164 format
+      if (!/^\+[1-9]\d{1,14}$/.test(formattedPhone)) {
+        throw new Error(`Invalid phone number format: ${formattedPhone}`);
+      }
+
+      // Generate new consent token
+      const token = await PatientConsentService.generateConsentToken(
+        patientId,
+        currentPatient.fullName || `${currentPatient.firstName} ${currentPatient.lastName}`.trim(),
+        formattedPhone,
+        currentPatient.email || undefined,
+        clinicName,
+        user.uid,
+        clinicianDisplayName
+      );
+
+      setConsentToken(token);
+
+      // Get physio name from token snapshot
+      const tokenDoc = await PatientConsentService.getConsentByToken(token);
+      const physioNameForSms = tokenDoc?.physiotherapistName?.trim() || clinicianDisplayName;
+
+      // Send SMS with consent link
+      await SMSService.sendConsentLink(
+        formattedPhone,
+        currentPatient.fullName || `${currentPatient.firstName} ${currentPatient.lastName}`.trim(),
+        clinicName,
+        physioNameForSms,
+        token
+      );
+
+      setConsentPending(true);
+      setSmsError(null);
+      console.log('[WORKFLOW] Consent SMS resent to patient:', formattedPhone);
+    } catch (error) {
+      console.error('[WORKFLOW] Error resending consent SMS:', error);
+      const message = error instanceof Error ? error.message : 'Failed to resend SMS consent link.';
+      setSmsError(message);
+      setConsentPending(false);
+    }
+  }, [currentPatient, user?.uid, patientIdFromUrl, clinicName, clinicianDisplayName]);
+
   // ✅ PILOT METRICS: Track session start (only once per session)
   // Use a stable session key based on patientId + user.uid to prevent duplicates
   const sessionTrackingKey = useMemo(() => {
@@ -3215,6 +3304,7 @@ const ProfessionalWorkflowPage = () => {
               setConsentPending={setConsentPending}
               setSmsError={setSmsError}
               handleCopyConsentLink={handleCopyConsentLink}
+              handleResendConsentSMS={handleResendConsentSMS}
               lastEncounter={lastEncounter}
               isFirstSession={isFirstSession}
               formatLastSessionDate={formatLastSessionDate}
