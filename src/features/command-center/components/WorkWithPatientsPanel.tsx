@@ -13,8 +13,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Play, 
   History, 
-  Scroll,
-  FileCheck,
   BarChart3,
   ChevronDown,
   ChevronUp,
@@ -32,9 +30,7 @@ export interface WorkWithPatientsPanelProps {
   selectedPatient: Patient | null;
   onSelectPatient: (patient: Patient) => void;
   onStartSession: (sessionType: SessionType) => void;
-  onViewCertificates: () => void;
   onViewHistory: () => void;
-  onViewDocuments: () => void;
   onViewAnalytics: () => void;
   onOpenPatientSelector: () => Promise<Patient | null>;
   onCreatePatient: () => void;
@@ -45,9 +41,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
   selectedPatient,
   onSelectPatient,
   onStartSession,
-  onViewCertificates,
   onViewHistory,
-  onViewDocuments,
   onViewAnalytics,
   onOpenPatientSelector,
   onCreatePatient,
@@ -390,51 +384,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                   )}
                 </div>
 
-                {/* 2. Certificates */}
-                <div className="bg-white border border-gray-200/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col min-h-[120px]">
-                  <button
-                    onClick={() => handleCardToggle('certificates')}
-                    className="w-full p-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors text-left flex-1"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-blue/10 to-primary-purple/10 rounded-xl flex items-center justify-center">
-                        <Scroll className="w-6 h-6 text-primary-blue" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                          Certificates
-                        </h3>
-                        <p className="text-sm text-gray-500 font-apple font-light">
-                          Generate after session
-                        </p>
-                      </div>
-                    </div>
-                    {expandedCard === 'certificates' ? (
-                      <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    )}
-                  </button>
-                  
-                  {expandedCard === 'certificates' && (
-                    <div className="px-5 pb-5 pt-3 border-t border-gray-100 space-y-2">
-                      <button
-                        onClick={() => onViewCertificates()}
-                        className="w-full p-3 bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-left group"
-                      >
-                        <span className="text-sm font-medium text-gray-900 font-apple group-hover:text-primary-blue">Return-to-work certificate</span>
-                      </button>
-                      <button
-                        onClick={() => onViewCertificates()}
-                        className="w-full p-3 bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-left group"
-                      >
-                        <span className="text-sm font-medium text-gray-900 font-apple group-hover:text-primary-blue">Activity restriction letter</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Patient History */}
+                {/* 2. Patient History */}
                 <div className="bg-white border border-gray-200/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col min-h-[120px]">
                   <button
                     onClick={() => handleCardToggle('history')}
@@ -467,44 +417,6 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                         className="w-full px-4 py-3 bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-medium text-gray-900 font-apple group hover:text-primary-blue"
                       >
                         View History
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 4. Documents & Forms */}
-                <div className="bg-white border border-gray-200/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col min-h-[120px]">
-                  <button
-                    onClick={() => handleCardToggle('documents')}
-                    className="w-full p-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors text-left flex-1"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-blue/10 to-primary-purple/10 rounded-xl flex items-center justify-center">
-                        <FileCheck className="w-6 h-6 text-primary-blue" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                          Documents & Forms
-                        </h3>
-                        <p className="text-sm text-gray-500 font-apple font-light">
-                          WSIB/MVA forms & certificates
-                        </p>
-                      </div>
-                    </div>
-                    {expandedCard === 'documents' ? (
-                      <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    )}
-                  </button>
-                  
-                  {expandedCard === 'documents' && (
-                    <div className="px-5 pb-5 pt-3 border-t border-gray-100">
-                      <button
-                        onClick={() => onViewDocuments()}
-                        className="w-full px-4 py-3 bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-medium text-gray-900 font-apple group hover:text-primary-blue"
-                      >
-                        Generate WSIB/MVA Forms
                       </button>
                     </div>
                   )}

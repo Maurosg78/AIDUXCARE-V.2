@@ -23,7 +23,6 @@ import { WorkWithPatientsPanel } from './components/WorkWithPatientsPanel';
 import { WorkQueuePanel, type WorkQueueSummary } from './components/WorkQueuePanel';
 import { PatientSelectorModal } from './components/PatientSelectorModal';
 import { CreatePatientModal } from './components/CreatePatientModal';
-import { DocumentsFormsModal } from './components/DocumentsFormsModal';
 import { FloatingAssistant } from '../../components/FloatingAssistant';
 
 import logger from '@/shared/utils/logger';
@@ -37,7 +36,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showPatientSelector, setShowPatientSelector] = useState(false);
   const [showCreatePatient, setShowCreatePatient] = useState(false);
-  const [showDocumentsForms, setShowDocumentsForms] = useState(false);
   const [isNewlyCreatedPatient, setIsNewlyCreatedPatient] = useState(false);
 
   // Token usage
@@ -173,25 +171,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
     });
   };
 
-  // Handle certificates
-  const handleCertificates = async () => {
-    await withPatientRequired(async (patient) => {
-      // Navigate to certificates workflow
-      navigate(`/workflow/certificates?patientId=${patient.id}`);
-    });
-  };
-
   // Handle view history
   const handleViewHistory = async () => {
     await withPatientRequired(async (patient) => {
       navigate(`/patients/${patient.id}/history`);
-    });
-  };
-
-  // Handle view documents - Open Documents & Forms modal
-  const handleViewDocuments = async () => {
-    await withPatientRequired(async (patient) => {
-      setShowDocumentsForms(true);
     });
   };
 
@@ -262,9 +245,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
               setIsNewlyCreatedPatient(false); // Reset flag when manually selecting
             }}
             onStartSession={handleStartSession}
-            onViewCertificates={handleCertificates}
             onViewHistory={handleViewHistory}
-            onViewDocuments={handleViewDocuments}
             onViewAnalytics={handleViewAnalytics}
             onOpenPatientSelector={openPatientSelector}
             onCreatePatient={() => setShowCreatePatient(true)}
@@ -298,13 +279,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
         />
       )}
 
-      {showDocumentsForms && selectedPatient && (
-        <DocumentsFormsModal
-          isOpen={showDocumentsForms}
-          onClose={() => setShowDocumentsForms(false)}
-          patient={selectedPatient}
-        />
-      )}
 
       {/* Floating Assistant */}
       <FloatingAssistant />
