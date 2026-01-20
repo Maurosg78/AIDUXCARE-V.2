@@ -24,7 +24,10 @@ export function useActiveEpisode(patientId: string): AsyncState<Episode> {
         const episode = await episodesRepo.getActiveEpisodeByPatient(patientId);
         
         if (!episode) {
-          // No hay episodio activo, no es un error
+          // WO-FS-DATA-03: No hay episodio activo, no es un error - initial state
+          if (import.meta.env.DEV) {
+            console.info('[FS] No historical data found — initial state (episodes)');
+          }
           setState({ loading: false, data: undefined });
           return;
         }
@@ -36,7 +39,21 @@ export function useActiveEpisode(patientId: string): AsyncState<Episode> {
         }
 
         setState({ loading: false, data: episode });
-      } catch (error) {
+      } catch (error: any) {
+        // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
+        const isPermissionDenied = error?.code === 'permission-denied' || 
+                                   error?.message?.includes('permission-denied') ||
+                                   error?.message?.includes('Missing or insufficient permissions');
+        
+        if (isPermissionDenied) {
+          // Permission denied in empty state = no data yet, not a fatal error
+          if (import.meta.env.DEV) {
+            console.info('[FS] No historical data found — initial state (episodes, permission-denied)');
+          }
+          setState({ loading: false, data: undefined });
+          return;
+        }
+        
         console.error('Error obteniendo episodio activo:', error);
         setState({ 
           loading: false, 

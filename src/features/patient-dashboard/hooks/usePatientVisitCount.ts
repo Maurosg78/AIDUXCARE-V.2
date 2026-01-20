@@ -40,6 +40,20 @@ export function usePatientVisitCount(patientId: string): AsyncState<number> {
         
         setState({ loading: false, data: completedEncounters.length });
       } catch (error: any) {
+        // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
+        const isPermissionDenied = error?.code === 'permission-denied' || 
+                                   error?.message?.includes('permission-denied') ||
+                                   error?.message?.includes('Missing or insufficient permissions');
+        
+        if (isPermissionDenied) {
+          // Permission denied in empty state = no data yet, return 0
+          if (import.meta.env.DEV) {
+            console.info('[FS] No historical data found — initial state (visit count, permission-denied)');
+          }
+          setState({ loading: false, data: 0 });
+          return;
+        }
+        
         // If index is building, return 0 instead of error
         if (error?.code === 'failed-precondition' && error?.message?.includes('index is currently building')) {
           console.warn('Índice de encounters en construcción, retornando 0 temporalmente');

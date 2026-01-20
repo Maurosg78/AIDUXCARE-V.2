@@ -24,13 +24,30 @@ export function useLastEncounter(patientId: string): AsyncState<Encounter> {
         const encounter = await encountersRepo.getLastEncounterByPatient(patientId);
         
         if (!encounter) {
-          // No hay encuentros previos, no es un error
+          // WO-FS-DATA-03: No hay encuentros previos, no es un error - initial state
+          if (import.meta.env.DEV) {
+            console.info('[FS] No historical data found — initial state (encounters)');
+          }
           setState({ loading: false, data: undefined });
           return;
         }
 
         setState({ loading: false, data: encounter });
-      } catch (error) {
+      } catch (error: any) {
+        // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
+        const isPermissionDenied = error?.code === 'permission-denied' || 
+                                   error?.message?.includes('permission-denied') ||
+                                   error?.message?.includes('Missing or insufficient permissions');
+        
+        if (isPermissionDenied) {
+          // Permission denied in empty state = no data yet, not a fatal error
+          if (import.meta.env.DEV) {
+            console.info('[FS] No historical data found — initial state (encounters, permission-denied)');
+          }
+          setState({ loading: false, data: undefined });
+          return;
+        }
+        
         console.error('Error obteniendo último encuentro:', error);
         setState({ 
           loading: false, 
