@@ -22,11 +22,6 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
   onScopeChange
 }) => {
   const [signature, setSignature] = useState('');
-  
-  // ✅ WO-CONSENT-UI-01: Debug - log selectedScope on every render
-  React.useEffect(() => {
-    console.log('[CONSENT ACTION BUTTONS] selectedScope:', selectedScope, 'should show field:', selectedScope === 'ongoing');
-  }, [selectedScope]);
 
   const handleScopeChange = (scope: ConsentScope) => {
     onScopeChange(scope);
