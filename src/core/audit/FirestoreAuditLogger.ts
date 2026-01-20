@@ -1,6 +1,7 @@
 import { collection, addDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 import { db } from '../firebase/firebaseClient';
+import { auth } from '@/lib/firebase';
 import { encryptMetadata, decryptMetadata, isEncrypted } from '../security/encryption';
 
 import logger from '@/shared/utils/logger';
@@ -36,6 +37,23 @@ export class FirestoreAuditLogger {
    */
   static async logEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<string> {
     try {
+      // WO-FS-DATA-03: Enforce ownership on all Firestore writes
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.uid) {
+        throw new Error('Missing authenticated user for ownership');
+      }
+      
+      // Ensure userId matches current user (security requirement)
+      const userId = event.userId || currentUser.uid;
+      if (userId !== currentUser.uid) {
+        throw new Error('Event userId must match current authenticated user');
+      }
+      
+      // WO-FS-DATA-03: Final validation - userId must be present
+      if (!userId) {
+        throw new Error('Missing userId: cannot log audit event without ownership');
+      }
+
       // Cifrar metadatos sensibles si existen
       let encryptedMetadata: string | undefined;
       if (event.metadata) {
@@ -44,6 +62,7 @@ export class FirestoreAuditLogger {
 
       const docRef = await addDoc(collection(db, this.collectionName), {
         ...event,
+        userId, // WO-FS-DATA-03: Always set from authenticated user
         metadata: encryptedMetadata, // Metadatos cifrados
         timestamp: Timestamp.now(),
       });
@@ -72,8 +91,19 @@ export class FirestoreAuditLogger {
     limit?: number;
   }): Promise<AuditEvent[]> {
     try {
-      let q = query(collection(db, this.collectionName));
-      if (userId) q = query(q, where('userId', '==', userId));
+      // WO-FS-QUERY-01: Always filter by current user's userId for security
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Use current user's UID, ignore provided userId if different (security)
+      const filterUserId = currentUser.uid;
+      
+      let q = query(
+        collection(db, this.collectionName),
+        where('userId', '==', filterUserId)
+      );
       if (patientId) q = query(q, where('patientId', '==', patientId));
       if (visitId) q = query(q, where('visitId', '==', visitId));
       if (type) q = query(q, where('type', '==', type));
@@ -116,7 +146,17 @@ export class FirestoreAuditLogger {
    */
   static async exportAllLogs(): Promise<AuditEvent[]> {
     try {
-      const snapshot = await getDocs(collection(db, this.collectionName));
+      // WO-FS-QUERY-01: Only export logs for current user
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      const q = query(
+        collection(db, this.collectionName),
+        where('userId', '==', currentUser.uid)
+      );
+      const snapshot = await getDocs(q);
       const events = await Promise.all(
         snapshot.docs.map(async (doc) => {
           const data = doc.data();

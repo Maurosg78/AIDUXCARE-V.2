@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';
-import { db as sharedDb } from "@/lib/firebase";
+import { db as sharedDb, auth } from "@/lib/firebase";
 
 export interface Encounter {
   id: string;
@@ -82,13 +82,28 @@ class EncountersRepository {
   private db = sharedDb;
   private collectionName = 'encounters';
 
+  // WO-FS-QUERY-01: Get current user UID for ownership filtering
+  private getCurrentUserId(): string {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return user.uid;
+  }
+
   async getEncounterById(id: string): Promise<Encounter | null> {
     try {
       const docRef = doc(this.db, this.collectionName, id);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Encounter;
+        const data = docSnap.data() as Encounter;
+        // WO-FS-QUERY-01: Verify ownership before returning
+        const currentUserId = this.getCurrentUserId();
+        if (data.authorUid !== currentUserId) {
+          return null; // Document doesn't belong to current user
+        }
+        return { id: docSnap.id, ...data };
       }
       
       return null;
@@ -100,11 +115,14 @@ class EncountersRepository {
 
   async getLastEncounterByPatient(patientId: string): Promise<Encounter | null> {
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUserId = this.getCurrentUserId();
       const encountersRef = collection(this.db, this.collectionName);
       const q = query(
         encountersRef,
         where('patientId', '==', patientId),
         where('status', 'in', ['completed', 'signed']),
+        where('authorUid', '==', currentUserId),
         orderBy('encounterDate', 'desc'),
         limit(1)
       );
@@ -130,10 +148,13 @@ class EncountersRepository {
 
   async getEncountersByPatient(patientId: string, limitCount: number = 10): Promise<Encounter[]> {
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUserId = this.getCurrentUserId();
       const encountersRef = collection(this.db, this.collectionName);
       const q = query(
         encountersRef,
         where('patientId', '==', patientId),
+        where('authorUid', '==', currentUserId),
         orderBy('encounterDate', 'desc'),
         limit(limitCount)
       );
@@ -151,10 +172,13 @@ class EncountersRepository {
 
   async getEncountersByEpisode(episodeId: string): Promise<Encounter[]> {
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUserId = this.getCurrentUserId();
       const encountersRef = collection(this.db, this.collectionName);
       const q = query(
         encountersRef,
         where('episodeId', '==', episodeId),
+        where('authorUid', '==', currentUserId),
         orderBy('encounterDate', 'desc')
       );
       
@@ -171,13 +195,26 @@ class EncountersRepository {
 
   async createEncounter(data: EncounterCreateData): Promise<string> {
     try {
+      // WO-FS-DATA-03: Enforce ownership on all Firestore writes
+      const currentUserId = this.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('Missing authenticated user for ownership');
+      }
+      
+      // Ensure authorUid is set from authenticated user (fail fast if missing)
       const encounterData = {
         ...data,
+        authorUid: data.authorUid || currentUserId, // Use provided or fallback to current user
         status: 'draft' as const,
         encounterDate: Timestamp.fromDate(data.encounterDate),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
+      
+      // WO-FS-DATA-03: Final validation - authorUid must be present
+      if (!encounterData.authorUid) {
+        throw new Error('Missing authorUid: cannot create encounter without ownership');
+      }
       
       const docRef = await addDoc(collection(this.db, this.collectionName), encounterData);
       return docRef.id;

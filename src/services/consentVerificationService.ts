@@ -289,6 +289,13 @@ export class ConsentVerificationService {
    */
   static async getVerificationState(patientId: string): Promise<ConsentVerificationState | null> {
     try {
+      // WO-FS-QUERY-01: Verify ownership before reading
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('❌ [CONSENT VERIFICATION] User not authenticated');
+        return null;
+      }
+
       const docRef = doc(db, CONSENT_VERIFICATION_COLLECTION, patientId);
       const docSnap = await getDoc(docRef);
 
@@ -297,6 +304,13 @@ export class ConsentVerificationService {
       }
 
       const data = docSnap.data();
+      
+      // WO-FS-QUERY-01: Verify ownership - do not return document if ownerUid doesn't match
+      if (data.ownerUid && data.ownerUid !== currentUser.uid) {
+        console.warn('❌ [CONSENT VERIFICATION] Document ownership mismatch');
+        return null;
+      }
+
       return {
         patientId: data.patientId,
         patientName: data.patientName,
@@ -324,16 +338,17 @@ export class ConsentVerificationService {
    */
   private static async saveVerificationState(state: ConsentVerificationState): Promise<string> {
     try {
-      const docRef = doc(db, CONSENT_VERIFICATION_COLLECTION, state.patientId);
-      
+      // WO-FS-DATA-03: Enforce ownership on all Firestore writes
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('User not authenticated');
+      if (!currentUser || !currentUser.uid) {
+        throw new Error('Missing authenticated user for ownership');
       }
+      
+      const docRef = doc(db, CONSENT_VERIFICATION_COLLECTION, state.patientId);
       
       const stateData = {
         ...state,
-        ownerUid: currentUser.uid,
+        ownerUid: currentUser.uid, // WO-FS-DATA-03: Always set from authenticated user
         consentTimestamp: state.consentTimestamp ? Timestamp.fromDate(state.consentTimestamp) : null,
         auditTrail: state.auditTrail.map(event => ({
           ...event,
@@ -341,6 +356,11 @@ export class ConsentVerificationService {
         })),
         updatedAt: serverTimestamp(),
       };
+      
+      // WO-FS-DATA-03: Final validation - ownerUid must be present
+      if (!stateData.ownerUid) {
+        throw new Error('Missing ownerUid: cannot save consent verification without ownership');
+      }
 
       await setDoc(docRef, stateData, { merge: true });
       return docRef.id;

@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 
 import logger from '@/shared/utils/logger';
-import { db as sharedDb } from "@/lib/firebase";
+import { db as sharedDb, auth } from "@/lib/firebase";
 
 export interface Episode {
   id: string;
@@ -65,13 +65,28 @@ class EpisodesRepository {
   private db = sharedDb;
   private collectionName = 'episodes';
 
+  // WO-FS-QUERY-01: Get current user UID for ownership filtering
+  private getCurrentUserId(): string {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return user.uid;
+  }
+
   async getEpisodeById(id: string): Promise<Episode | null> {
     try {
       const docRef = doc(this.db, this.collectionName, id);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Episode;
+        const data = docSnap.data() as Episode;
+        // WO-FS-QUERY-01: Verify ownership before returning
+        const currentUserId = this.getCurrentUserId();
+        if (data.ownerUid !== currentUserId) {
+          return null; // Document doesn't belong to current user
+        }
+        return { id: docSnap.id, ...data };
       }
       
       return null;
@@ -83,11 +98,14 @@ class EpisodesRepository {
 
   async getActiveEpisodeByPatient(patientId: string): Promise<Episode | null> {
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUserId = this.getCurrentUserId();
       const episodesRef = collection(this.db, this.collectionName);
       const q = query(
         episodesRef,
         where('patientId', '==', patientId),
         where('status', '==', 'active'),
+        where('ownerUid', '==', currentUserId),
         orderBy('startDate', 'desc'),
         limit(1)
       );
@@ -113,10 +131,13 @@ class EpisodesRepository {
 
   async getEpisodesByPatient(patientId: string): Promise<Episode[]> {
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUserId = this.getCurrentUserId();
       const episodesRef = collection(this.db, this.collectionName);
       const q = query(
         episodesRef,
         where('patientId', '==', patientId),
+        where('ownerUid', '==', currentUserId),
         orderBy('startDate', 'desc')
       );
       
@@ -133,8 +154,16 @@ class EpisodesRepository {
 
   async createEpisode(data: EpisodeCreateData): Promise<string> {
     try {
+      // WO-FS-DATA-03: Enforce ownership on all Firestore writes
+      const currentUserId = this.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('Missing authenticated user for ownership');
+      }
+      
+      // Ensure ownerUid is set from authenticated user (fail fast if missing)
       const episodeData = {
         ...data,
+        ownerUid: data.ownerUid || currentUserId, // Use provided or fallback to current user
         status: 'active' as const,
         startDate: Timestamp.fromDate(data.startDate),
         currentWeek: 1,
@@ -142,6 +171,11 @@ class EpisodesRepository {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
+      
+      // WO-FS-DATA-03: Final validation - ownerUid must be present
+      if (!episodeData.ownerUid) {
+        throw new Error('Missing ownerUid: cannot create episode without ownership');
+      }
       
       const docRef = await addDoc(collection(this.db, this.collectionName), episodeData);
       return docRef.id;
