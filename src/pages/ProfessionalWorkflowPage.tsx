@@ -51,7 +51,7 @@ import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProf
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
-import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { Timestamp, doc, setDoc, getDoc, serverTimestamp, collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import tokenTrackingService from "../services/tokenTrackingService";
 import logger from "@/shared/utils/logger";
@@ -1278,6 +1278,63 @@ const ProfessionalWorkflowPage = () => {
       checkFirstSessionAndConsent();
     }
   }, [user?.uid, patientIdFromUrl, currentPatient]); // Re-check if user or patient changes
+
+  // ✅ CRITICAL FIX: Real-time listener for consent status updates
+  // This updates the UI immediately when patient grants consent
+  useEffect(() => {
+    const patientId = patientIdFromUrl || (currentPatient?.id);
+    
+    // Skip if no patient ID or demo patient
+    if (!patientId || patientId === demoPatient.id) {
+      return;
+    }
+
+    console.log('[WORKFLOW] Setting up real-time consent listener for patient:', patientId);
+
+    // Set up real-time listener for patient_consents
+    const consentRef = collection(db, 'patient_consents');
+    const consentQuery = query(
+      consentRef,
+      where('patientId', '==', patientId),
+      where('consented', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(
+      consentQuery,
+      async (snapshot) => {
+        console.log('[WORKFLOW] Consent status changed:', {
+          patientId,
+          docCount: snapshot.docs.length,
+          hasChanges: !snapshot.metadata.fromCache,
+        });
+
+        // Check if patient has consent
+        const hasConsent = await PatientConsentService.hasConsent(patientId);
+        setPatientHasConsent(hasConsent);
+
+        // Get consent status for display
+        const status = await PatientConsentService.getConsentStatus(patientId);
+        setConsentStatus(status);
+
+        // If consent was granted, clear pending state
+        if (hasConsent) {
+          setConsentPending(false);
+          setSmsError(null);
+          console.log('[WORKFLOW] ✅ Consent granted! UI updated in real-time.');
+        }
+      },
+      (error) => {
+        console.error('[WORKFLOW] Error in consent listener:', error);
+        // Don't update state on error - keep current state
+      }
+    );
+
+    // Cleanup listener on unmount or patient change
+    return () => {
+      console.log('[WORKFLOW] Cleaning up consent listener for patient:', patientId);
+      unsubscribe();
+    };
+  }, [patientIdFromUrl, currentPatient?.id]);
 
   const persistEvaluation = useCallback((next: EvaluationTestEntry[]) => {
     // ✅ PHASE 2: Enhanced logging for debugging
