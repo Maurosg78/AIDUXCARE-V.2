@@ -142,10 +142,18 @@ async function checkRecentEpisodes(patientId: string): Promise<{
     
     // 2. Check consultations/notes collection (SOAP notes)
     try {
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[FollowUpDetection] User not authenticated, skipping consultations check');
+        return;
+      }
+      
       const consultationsRef = collection(db, 'consultations');
       const consultationsQuery = query(
         consultationsRef,
         where('patientId', '==', patientId),
+        where('authorUid', '==', currentUser.uid),
         orderBy('createdAt', 'desc'),
         limit(5)
       );

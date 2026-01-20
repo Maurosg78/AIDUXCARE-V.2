@@ -1,5 +1,5 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getApp } from 'firebase/app';
+import { app } from '../lib/firebase';
 import { WHISPER_MODEL } from '../config/env';
 
 export interface WhisperTranscriptionResult {
@@ -41,7 +41,8 @@ export class FirebaseWhisperService {
             // Obtener instancia de Firebase Functions
             // ✅ CANADÁ: Especificar región northamerica-northeast1 (Montreal)
             // La función está desplegada en esta región, no en us-central1 (default)
-            const app = getApp();
+            // ✅ CRITICAL FIX: Use the exported app instance from firebase.ts
+            // This ensures Functions service is available
             const functions = getFunctions(app, 'northamerica-northeast1');
 
             // Llamar al Cloud Function whisperProxy
