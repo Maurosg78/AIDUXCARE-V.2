@@ -45,20 +45,32 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   // WO-13: Si usuario ya está autenticado y tiene perfil completo (según criterio WO-13), redirigir a command-center
   // NO usar emailVerified para routing en modo piloto
   // WO-ONB-SIGNUP-01: NO redirigir si estamos mostrando la pantalla de éxito
+  // ✅ FIX: Agregar ref para evitar múltiples redirecciones y flash
+  const hasRedirectedRef = React.useRef(false);
+  
   useEffect(() => {
     // No redirigir si estamos en estado de éxito (mostrando pantalla de éxito)
     if (isSuccess) {
       return;
     }
 
-    if (user && !profileLoading) {
+    // ✅ FIX: Evitar redirección múltiple
+    if (hasRedirectedRef.current) {
+      return;
+    }
+
+    if (user && !profileLoading && profile) {
       // WO-13: Usar isProfileComplete como fuente única de verdad (NO usar registrationStatus directamente)
       if (isProfileComplete(profile)) {
+        hasRedirectedRef.current = true;
         logger.info("[PROFESSIONAL_ONBOARDING] User already has complete profile (WO-13 criteria), redirecting to command-center", {
           uid: user.uid,
           registrationStatus: profile?.registrationStatus
         });
-        navigate('/command-center', { replace: true });
+        // ✅ FIX: Usar setTimeout para evitar renderizado flash
+        setTimeout(() => {
+          navigate('/command-center', { replace: true });
+        }, 0);
         return;
       }
       // WO-13: NO usar emailVerified para routing en modo piloto
