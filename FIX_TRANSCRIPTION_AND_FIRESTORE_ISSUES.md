@@ -2,7 +2,10 @@
 
 **Date:** 2026-01-20  
 **Priority:** 🔴 CRITICAL - Production Blocking  
-**Status:** ✅ RESOLVED
+**Status:** ✅ RESOLVED + DEPLOYED
+
+**Deployment Date:** 2026-01-20  
+**Deployment Status:** ✅ Production
 
 ---
 
@@ -20,11 +23,18 @@
 
 **Fix Applied:**
 - Changed `FirebaseWhisperService.ts` to use the exported `app` instance from `firebase.ts`
-- This ensures Functions service is properly initialized before use
-- Functions are initialized with the correct region (`northamerica-northeast1`)
+- **CRITICAL:** Removed global Functions initialization from `firebase.ts` to avoid SDK timing issues
+- **ROOT CAUSE FIX:** Added `firebase/functions` to `vite.config.ts`:
+  - Added to `optimizeDeps.include` to prevent tree-shaking
+  - Added to `manualChunks.firebase` to ensure inclusion in bundle
+  - Bundle size increased from 488 KB to 549 KB (Functions SDK now included)
+- Functions now initialized on-demand by each service with correct region (`northamerica-northeast1`)
+- Prevents "Service functions is not available" error (SDK was missing from bundle)
 
 **Files Changed:**
 - `src/services/FirebaseWhisperService.ts`
+- `src/lib/firebase.ts` (deferred initialization)
+- `vite.config.ts` (added firebase/functions to prevent tree-shaking)
 
 ---
 

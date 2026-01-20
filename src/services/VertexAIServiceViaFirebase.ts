@@ -7,12 +7,36 @@ import { parseVertexResponse } from '../utils/responseParser';
 // Bloque 5E: normalizeVertexResponse para convertir ParsedResponse a ClinicalAnalysis
 import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
 
-const functions = getFunctions(app);
-const processWithVertexAI = httpsCallable(functions, 'processWithVertexAI');
+// ✅ CRITICAL FIX: Lazy initialization - create Functions when needed, not at module load
+// This prevents race conditions and ensures app is fully initialized
+let functionsInstance: ReturnType<typeof getFunctions> | null = null;
+let processWithVertexAIFn: ReturnType<typeof httpsCallable> | null = null;
+
+function getProcessWithVertexAI() {
+  if (!processWithVertexAIFn) {
+    if (!functionsInstance) {
+      // ✅ CRITICAL: Verify app is initialized
+      if (!app) {
+        throw new Error('Firebase app is not initialized');
+      }
+      if (!app.options || !app.options.projectId) {
+        throw new Error('Firebase app is not properly configured');
+      }
+      // ✅ CRITICAL: Specify region to match whisperProxy (northamerica-northeast1)
+      functionsInstance = getFunctions(app, 'northamerica-northeast1');
+      console.log('[VertexAI] Functions instance created for region: northamerica-northeast1');
+    }
+    processWithVertexAIFn = httpsCallable(functionsInstance, 'processWithVertexAI', {
+      timeout: 300000 // 5 minutos
+    });
+  }
+  return processWithVertexAIFn;
+}
 
 export async function callVertexAI(prompt: string): Promise<string> {
   try {
     console.log('📡 Llamando a Firebase Function...');
+    const processWithVertexAI = getProcessWithVertexAI();
     const result = await processWithVertexAI({ prompt });
     
     // Mejor logging para debug

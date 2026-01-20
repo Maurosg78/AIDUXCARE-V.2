@@ -38,12 +38,33 @@ export class FirebaseWhisperService {
         try {
             console.log('[FirebaseWhisper] Starting transcription via Cloud Function...');
 
+            // ✅ CRITICAL: Verify app is initialized
+            if (!app) {
+                throw new Error('Firebase app is not initialized');
+            }
+            
+            // ✅ CRITICAL: Verify app has required properties
+            if (!app.options || !app.options.projectId) {
+                throw new Error('Firebase app is not properly configured');
+            }
+
+            console.log('[FirebaseWhisper] App state verified:', {
+                appExists: !!app,
+                projectId: app.options.projectId,
+                appName: app.name,
+            });
+
             // Obtener instancia de Firebase Functions
             // ✅ CANADÁ: Especificar región northamerica-northeast1 (Montreal)
             // La función está desplegada en esta región, no en us-central1 (default)
             // ✅ CRITICAL FIX: Use the exported app instance from firebase.ts
             // This ensures Functions service is available
             const functions = getFunctions(app, 'northamerica-northeast1');
+            
+            console.log('[FirebaseWhisper] Functions instance created:', {
+                functionsExists: !!functions,
+                region: 'northamerica-northeast1',
+            });
 
             // Llamar al Cloud Function whisperProxy
             const whisperProxyFunction = httpsCallable(functions, 'whisperProxy', {
