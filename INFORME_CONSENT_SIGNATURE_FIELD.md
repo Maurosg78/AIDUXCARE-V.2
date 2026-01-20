@@ -1,4 +1,4 @@
-# INFORME: Campo de Firma en Portal de Consentimiento
+ # INFORME: Campo de Firma en Portal de Consentimiento
 
 **Fecha:** 2026-01-20  
 **Problema:** Campo de firma no aparece cuando "Ongoing Consent" está seleccionado por defecto  

@@ -120,6 +120,11 @@ if (!__IS_TEST__) {
   _auth = initAuthWithPersistence();
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
+  
+  // WO-FS-ENV-02: Log Firestore database instance info
+  if (typeof window !== 'undefined' && _db) {
+    console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);
+  }
 
   if (typeof window !== 'undefined') {
     try {
@@ -131,6 +136,16 @@ if (!__IS_TEST__) {
   }
 
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
+  
+  // WO-FS-ENV-02: Runtime Firestore Proof of Project - Log configuration evidence
+  if (typeof window !== 'undefined' && _app) {
+    console.info("[PROOF] Firebase runtime config:", {
+      projectId: _app.options.projectId,
+      apiKey: _app.options.apiKey ? `${_app.options.apiKey.substring(0, 10)}...` : 'undefined',
+      authDomain: _app.options.authDomain,
+      storageBucket: _app.options.storageBucket,
+    });
+  }
 
   if (import.meta.env.VITE_FIREBASE_USE_EMULATOR === "true") {
     try {

@@ -23,6 +23,44 @@
         { "fieldPath": "userIdHash", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "episodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "episodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "encounters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "encounterDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "encounters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "encounterDate", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
