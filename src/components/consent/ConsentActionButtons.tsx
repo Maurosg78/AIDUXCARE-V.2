@@ -23,15 +23,9 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
 }) => {
   const [signature, setSignature] = useState('');
   
-  // ✅ WO-CONSENT-UI-01: Eliminate friction - signature field visible immediately when ongoing is selected
-  // Use useMemo to ensure it's calculated correctly on every render
-  const showSignatureField = React.useMemo(() => {
-    const isVisible = selectedScope === 'ongoing';
-    // Debug log to verify calculation
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.log('[CONSENT] Signature field visibility:', { selectedScope, isVisible });
-    }
-    return isVisible;
+  // ✅ WO-CONSENT-UI-01: Debug - log selectedScope on every render
+  React.useEffect(() => {
+    console.log('[CONSENT ACTION BUTTONS] selectedScope:', selectedScope, 'should show field:', selectedScope === 'ongoing');
   }, [selectedScope]);
 
   const handleScopeChange = (scope: ConsentScope) => {
