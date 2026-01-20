@@ -68,6 +68,7 @@ export default defineConfig({
       "firebase/app",
       "firebase/auth",
       "firebase/firestore",
+      "firebase/functions",  // ✅ CRITICAL: Include Functions SDK to prevent tree-shaking
     ],
     exclude: ["@firebase/util"],
     force: false,
@@ -78,7 +79,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+          firebase: [
+            "firebase/app", 
+            "firebase/auth", 
+            "firebase/firestore",
+            "firebase/functions",  // ✅ CRITICAL: Include Functions SDK in bundle
+          ],
           "react-router": ["react-router-dom"],
         },
         chunkFileNames: "assets/[name]-[hash].js",
