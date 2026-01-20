@@ -61,24 +61,43 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Consent Options */}
         <div className="mb-4 space-y-3">
-          <label className="flex items-start gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50">
-            <input
-              type="radio"
-              name="consentScope"
-              value="ongoing"
-              checked={selectedScope === 'ongoing'}
-              onChange={() => handleScopeChange('ongoing')}
-              className="mt-1 w-4 h-4 border-gray-300 text-primary-blue focus:ring-primary-blue"
-            />
-            <div className="flex-1">
-              <div className="text-sm text-gray-900">
-                Ongoing Consent
+          <div className="p-3 border border-gray-300 rounded">
+            <label className="flex items-start gap-3 cursor-pointer hover:bg-gray-50 -m-3 p-3 rounded">
+              <input
+                type="radio"
+                name="consentScope"
+                value="ongoing"
+                checked={selectedScope === 'ongoing'}
+                onChange={() => handleScopeChange('ongoing')}
+                className="mt-1 w-4 h-4 border-gray-300 text-primary-blue focus:ring-primary-blue"
+              />
+              <div className="flex-1">
+                <div className="text-sm text-gray-900">
+                  Ongoing Consent
+                </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  Apply to this session and all future sessions. Requires digital signature.
+                </div>
               </div>
-              <div className="text-xs text-gray-600 mt-1">
-                Apply to this session and all future sessions. Requires digital signature.
+            </label>
+            {/* ✅ CRITICAL FIX: Signature field INSIDE ongoing option, always visible when ongoing is selected */}
+            {selectedScope === 'ongoing' && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Digital Signature (Type your full name):
+                </label>
+                <input
+                  type="text"
+                  value={signature}
+                  onChange={(e) => setSignature(e.target.value)}
+                  placeholder="Your full name"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue text-base"
+                  autoFocus={true}
+                  required={selectedScope === 'ongoing'}
+                />
               </div>
-            </div>
-          </label>
+            )}
+          </div>
 
           <label className="flex items-start gap-3 p-3 border border-gray-300 rounded cursor-pointer hover:bg-gray-50">
             <input
@@ -119,23 +138,6 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
           </label>
         </div>
 
-        {/* Digital Signature Field (for ongoing consent) - Always visible when ongoing is selected */}
-        {/* ✅ CRITICAL: Render field immediately when ongoing is selected, no conditional hiding */}
-        {selectedScope === 'ongoing' && (
-          <div className="mb-4">
-            <label className="block text-sm text-gray-900 mb-2">
-              Digital Signature (Type your full name):
-            </label>
-            <input
-              type="text"
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              placeholder="Your full name"
-              className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-blue"
-              autoFocus={true}
-            />
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
