@@ -748,6 +748,9 @@ exports.whisperProxy = whisperProxy.whisperProxy;
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  * 
  * Route: /api/consent/verify?token=...
+ * 
+ * ✅ CRITICAL: Public access required - patients must access without authentication
+ * Note: IAM permissions must be set separately via gcloud to allow public access
  */
 exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
