@@ -14,6 +14,7 @@
 
 import { collection, doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { auth } from '../lib/firebase';
 import { SMSService } from './smsService';
 import { PatientConsentService } from './patientConsentService';
 
@@ -325,8 +326,14 @@ export class ConsentVerificationService {
     try {
       const docRef = doc(db, CONSENT_VERIFICATION_COLLECTION, state.patientId);
       
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
       const stateData = {
         ...state,
+        ownerUid: currentUser.uid,
         consentTimestamp: state.consentTimestamp ? Timestamp.fromDate(state.consentTimestamp) : null,
         auditTrail: state.auditTrail.map(event => ({
           ...event,

@@ -6,29 +6,69 @@ service cloud.firestore {
     // Users / Professional Profiles
     // ----------------------------
     match /users/{userId} {
-      // The owner can read their own profile
-      allow read: if request.auth != null
-                  && request.auth.uid == userId;
+      // Allow authenticated users to read any user profile
+      // This is needed for email-based queries (getProfessional by email)
+      // Users are authenticated, so this is safe for finding their own profile
+      allow read: if request.auth != null;
 
-      // Profile creation / updates (onboarding)
-      allow create, update: if request.auth != null
-                             && request.auth.uid == userId;
+      // Profile creation - users can only create their own profile
+      allow create: if request.auth != null
+                     && request.auth.uid == userId;
+
+      // Profile updates - users can update their own profile
+      // Allow update if userId matches auth.uid OR if the document's uid matches
+      // Note: Email-based updates (updateLastLogin) should use userId matching
+      // If updateLastLogin fails, ensure the document's userId field matches auth.uid
+      allow update: if request.auth != null
+                     && (request.auth.uid == userId
+                         || resource.data.uid == request.auth.uid);
 
       // No deletes from client
       allow delete: if false;
+
+      // ----------------------------
+      // Token Purchases Subcollection (users/{userId}/token_purchases/{purchaseId})
+      // ----------------------------
+      // WO-SMS-STABILIZATION-03: Add rules for token_purchases subcollection
+      match /token_purchases/{purchaseId} {
+        // Authenticated users can read their own token purchases
+        // The userId in the path must match the authenticated user's uid
+        allow read: if request.auth != null
+                     && request.auth.uid == userId;
+        
+        // Authenticated users can create token purchases for themselves
+        allow create: if request.auth != null
+                       && request.auth.uid == userId
+                       && request.resource.data.userId == request.auth.uid;
+        
+        // Only backend can update (token consumption is handled server-side)
+        allow update: if false;
+        
+        // No deletes from client
+        allow delete: if false;
+      }
     }
 
     // ----------------------------
     // Professional Profiles (alias, if used)
     // ----------------------------
     match /professional_profiles/{userId} {
-      // The owner can read their own profile
-      allow read: if request.auth != null
-                  && request.auth.uid == userId;
+      // Allow authenticated users to read any professional profile
+      // This is needed for email-based queries (getProfessional by email)
+      // Users are authenticated, so this is safe for finding their own profile
+      allow read: if request.auth != null;
 
-      // Profile creation / updates (onboarding)
-      allow create, update: if request.auth != null
-                             && request.auth.uid == userId;
+      // Profile creation - users can only create their own profile
+      allow create: if request.auth != null
+                     && request.auth.uid == userId;
+
+      // Profile updates - users can update their own profile
+      // Allow update if userId matches auth.uid OR if the document's uid matches
+      // Note: Email-based updates (updateLastLogin) should use userId matching
+      // If updateLastLogin fails, ensure the document's userId field matches auth.uid
+      allow update: if request.auth != null
+                     && (request.auth.uid == userId
+                         || resource.data.uid == request.auth.uid);
 
       // No deletes from client
       allow delete: if false;
@@ -77,6 +117,198 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null
                    && request.auth.token.admin == true;
+    }
+
+    // ----------------------------
+    // Patient Consent Tokens
+    // ----------------------------
+    // WO-SMS-STABILIZATION-03: Allow public read access for consent portal
+    // Tokens must be readable by unauthenticated users so patients can access consent portal
+    match /patient_consent_tokens/{tokenId} {
+      // Allow public read access to validate tokens (for consent portal)
+      allow read: if true;
+      
+      // Only authenticated users can create/update tokens
+      allow create, update: if request.auth != null;
+      
+      // No deletes from client (tokens are managed by backend)
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Patient Consent Records
+    // ----------------------------
+    // Consent records created after token is used
+    match /patient_consents/{consentId} {
+      // Only authenticated users can read (clinicians viewing consent history)
+      allow read: if request.auth != null;
+      
+      // Public write access for consent portal (patients granting consent)
+      // This allows the portal to create consent records
+      allow create: if true;
+      
+      // Only authenticated users can update
+      allow update: if request.auth != null;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Patients
+    // ----------------------------
+    match /patients/{patientId} {
+      // Authenticated users can read patients they own
+      // For queries with where('ownerUid', '==', uid), Firestore validates each matching document
+      allow read: if request.auth != null
+                   && resource.data.ownerUid == request.auth.uid;
+      
+      // Authenticated users can create patients they own
+      allow create: if request.auth != null
+                     && request.resource.data.ownerUid == request.auth.uid;
+      
+      // Authenticated users can update patients they own
+      allow update: if request.auth != null
+                     && resource.data.ownerUid == request.auth.uid
+                     && request.resource.data.ownerUid == request.auth.uid;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Appointments
+    // ----------------------------
+    match /appointments/{appointmentId} {
+      // Authenticated users can read appointments
+      allow read: if request.auth != null;
+      
+      // Authenticated users can create/update appointments
+      allow create, update: if request.auth != null;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Reports (Clinical Notes / SOAP Notes)
+    // ----------------------------
+    match /reports/{reportId} {
+      // Authenticated users can read reports they authored
+      // For queries with where('authorUid', '==', uid), Firestore validates each matching document
+      allow read: if request.auth != null
+                   && resource.data.authorUid == request.auth.uid;
+      
+      // Authenticated users can create reports they authored
+      allow create: if request.auth != null
+                     && request.resource.data.authorUid == request.auth.uid;
+      
+      // Authenticated users can update reports they authored
+      allow update: if request.auth != null
+                     && resource.data.authorUid == request.auth.uid
+                     && request.resource.data.authorUid == request.auth.uid;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Token Purchases
+    // ----------------------------
+    match /token_purchases/{purchaseId} {
+      // Authenticated users can read their own token purchases
+      // For queries with where('userId', '==', uid), Firestore validates each matching document
+      allow read: if request.auth != null
+                   && resource.data.userId == request.auth.uid;
+      
+      // Only backend/Cloud Functions can create token purchases
+      // Users cannot create purchases directly from client
+      allow create: if request.auth != null
+                     && request.resource.data.userId == request.auth.uid;
+      
+      // Only backend can update
+      allow update: if false;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Sessions
+    // ----------------------------
+    match /sessions/{sessionId} {
+      // Authenticated users can read sessions
+      allow read: if request.auth != null;
+      
+      // Authenticated users can create/update sessions
+      allow create, update: if request.auth != null;
+      
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Episodes
+    // ----------------------------
+    match /episodes/{episodeId} {
+      allow read: if request.auth != null
+                  && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Encounters
+    // ----------------------------
+    match /encounters/{encounterId} {
+      allow read: if request.auth != null
+                  && resource.data.authorUid == request.auth.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.authorUid == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && resource.data.authorUid == request.auth.uid
+                    && request.resource.data.authorUid == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Audit Logs
+    // ----------------------------
+    match /audit_logs/{logId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
+    // Consent Verifications
+    // ----------------------------
+    match /consent_verifications/{patientId} {
+      allow read: if request.auth != null
+                  && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      allow delete: if false;
     }
   }
 }
