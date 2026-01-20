@@ -4,7 +4,7 @@
  * Always visible, no need to scroll to bottom
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export type ConsentScope = 'ongoing' | 'session-only' | 'declined';
 
@@ -24,7 +24,13 @@ export const ConsentActionButtons: React.FC<ConsentActionButtonsProps> = ({
   const [signature, setSignature] = useState('');
   // Enterprise-grade: Initialize signature field visibility based on selectedScope
   // This ensures the field is visible immediately when "ongoing" is pre-selected
+  // Use useEffect to sync with selectedScope changes (handles initial render)
   const [showSignatureField, setShowSignatureField] = useState(selectedScope === 'ongoing');
+  
+  // ✅ WO-CONSENT-UI-01: Sync showSignatureField when selectedScope changes
+  useEffect(() => {
+    setShowSignatureField(selectedScope === 'ongoing');
+  }, [selectedScope]);
 
   const handleScopeChange = (scope: ConsentScope) => {
     onScopeChange(scope);

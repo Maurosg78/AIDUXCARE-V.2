@@ -1255,101 +1255,13 @@ const ProfessionalWorkflowPage = () => {
         const status = await PatientConsentService.getConsentStatus(patientId);
         setConsentStatus(status);
 
-        // If first session and no consent, generate token and send SMS
+        // ✅ WO-CONSENT-01: DO NOT send SMS automatically
+        // The physiotherapist must explicitly click "Send Consent via SMS" button
+        // We only check consent status here, not send SMS
         if (isFirst && !hasConsent) {
-          try {
-            // Validate phone number format for Twilio
-            const phoneNumber = patient.phone?.trim();
-            if (!phoneNumber) {
-              console.warn('[WORKFLOW] Patient phone not available, cannot send SMS');
-              return;
-            }
-
-            setSmsError(null);
-            setCopyConsentFeedback('idle');
-
-            // Format phone number for Twilio (ensure E.164 format)
-            let formattedPhone = phoneNumber.trim();
-
-            // Remove all non-digit characters except +
-            const cleanPhone = formattedPhone.replace(/[^\d+]/g, '');
-
-            // Validate and format
-            if (cleanPhone.startsWith('+1') && cleanPhone.length === 12) {
-              // Already in E.164 format: +1XXXXXXXXXX
-              formattedPhone = cleanPhone;
-            } else if (cleanPhone.startsWith('1') && cleanPhone.length === 11) {
-              // North American without +: 1XXXXXXXXXX
-              formattedPhone = `+${cleanPhone}`;
-            } else if (cleanPhone.length === 10) {
-              // North American without country code: XXXXXXXXXX
-              formattedPhone = `+1${cleanPhone}`;
-            } else if (cleanPhone.startsWith('+') && cleanPhone.length >= 11) {
-              // Already has + and looks valid
-              formattedPhone = cleanPhone;
-            } else {
-              // Try to fix: assume North American
-              const digits = cleanPhone.replace(/\D/g, '');
-              if (digits.length === 10) {
-                formattedPhone = `+1${digits}`;
-              } else if (digits.length === 11 && digits.startsWith('1')) {
-                formattedPhone = `+${digits}`;
-              } else {
-                throw new Error(`Invalid phone number format: ${phoneNumber}. Expected E.164 format (e.g., +14161234567)`);
-              }
-            }
-
-            // Final validation: must be E.164 format
-            if (!/^\+[1-9]\d{1,14}$/.test(formattedPhone)) {
-              throw new Error(`Invalid phone number format: ${formattedPhone}. Must be E.164 format (e.g., +14161234567)`);
-            }
-
-            // Generate consent token
-            const token = await PatientConsentService.generateConsentToken(
-              patientId,
-              patient.fullName || `${patient.firstName} ${patient.lastName}`.trim(),
-              formattedPhone,
-              patient.email || undefined,
-              clinicName,
-              userId,
-              clinicianDisplayName
-            );
-
-            setConsentToken(token);
-
-            // Prioridad 1: Blindar el nombre del fisio en el SMS (snapshot del token)
-            // Leer el token doc recién creado y usar el snapshot del nombre
-            const tokenDoc = await PatientConsentService.getConsentByToken(token);
-            const physioNameForSms =
-              tokenDoc?.physiotherapistName?.trim() || clinicianDisplayName;
-
-            // Log mínimo: token + requestedByUid + requestedByName al momento de enviar
-            logger.info('[WORKFLOW] Sending consent SMS with snapshot name', {
-              token,
-              requestedByUid: userId,
-              requestedByName: physioNameForSms,
-              tokenDocName: tokenDoc?.physiotherapistName,
-              clinicianDisplayName,
-            });
-
-            // Send SMS with consent link (usando snapshot del token)
-            await SMSService.sendConsentLink(
-              formattedPhone,
-              patient.fullName || `${patient.firstName} ${patient.lastName}`.trim(),
-              clinicName,
-              physioNameForSms, // ← Usar snapshot del token, no el nombre actual
-              token
-            );
-            setConsentPending(true);
-            console.log('[WORKFLOW] Consent SMS sent to patient:', formattedPhone);
-            console.log('[WORKFLOW] ✅ SMS sent via Vonage. Check Firestore → sms_delivery_receipts for delivery status.');
-          } catch (error) {
-            console.error('[WORKFLOW] Error generating consent token or sending SMS:', error);
-            // Don't block workflow if SMS fails
-            const message = error instanceof Error ? error.message : 'Failed to send SMS consent link.';
-            setSmsError(message);
-            setConsentPending(false);
-          }
+          // Set consent as pending (will show UI buttons for manual action)
+          setConsentPending(true);
+          console.log('[WORKFLOW] Consent required for first session. Physiotherapist must send SMS manually.');
         }
       } catch (error) {
         console.error('[WORKFLOW] Error checking first session:', error);

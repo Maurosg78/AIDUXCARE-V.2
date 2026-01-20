@@ -272,13 +272,13 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     <p className="mt-1 text-xs text-red-700 font-apple font-light">
                       {smsError 
                         ? `SMS delivery failed: ${smsError}. Use the link below or mark as authorized manually.`
-                        : consentPending
-                        ? 'Link sent via SMS'
+                        : consentLink
+                        ? 'Consent link sent to patient via SMS'
                         : 'Send consent link to patient or mark as authorized manually.'}
                     </p>
                   </div>
                 </div>
-                {consentLink && (
+                {consentLink ? (
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -309,31 +309,55 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        window.open(consentLink, '_blank', 'noopener,noreferrer');
+                        window.open('/privacy-policy', '_blank', 'noopener,noreferrer');
                       }}
                       className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px]"
                     >
-                      Read Document
+                      Read Privacy Policy
                     </button>
                     <button
                       type="button"
-                      onClick={handleCopyConsentLink}
+                      onClick={handleResendConsentSMS}
+                      disabled={!currentPatient || !user}
+                      className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Re-send SMS
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResendConsentSMS}
+                      disabled={!currentPatient || !user}
+                      className="inline-flex items-center rounded-md border border-transparent bg-gradient-to-r from-primary-blue to-primary-purple px-3 py-1.5 text-xs font-medium text-white hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple min-h-[32px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Send Consent via SMS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!user?.uid) return;
+                        try {
+                          const patientId = patientIdFromUrl || demoPatient.id;
+                          await PatientConsentService.recordManualConsent(patientId, user.uid);
+                          const status = await PatientConsentService.getConsentStatus(patientId);
+                          setConsentStatus(status);
+                          const hasConsent = await PatientConsentService.hasConsent(patientId);
+                          setPatientHasConsent(hasConsent);
+                          setConsentPending(false);
+                          setSmsError(null);
+                        } catch (error) {
+                          console.error('[WORKFLOW] Error marking consent as authorized:', error);
+                          setSmsError('Failed to mark consent as authorized');
+                        }
+                      }}
                       className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px]"
                     >
-                      Copy Link
+                      Mark Manual Consent
                     </button>
                   </div>
                 )}
-                {(consentPending && !consentLink) || smsError ? (
-                  <button
-                    type="button"
-                    onClick={handleResendConsentSMS}
-                    disabled={!currentPatient || !user}
-                    className="mt-2 inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {smsError ? 'Re-send SMS' : 'Resend SMS'}
-                  </button>
-                ) : null}
               </div>
             </div>
           )}
