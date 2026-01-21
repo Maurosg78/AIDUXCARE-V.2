@@ -17,6 +17,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isWaitingForProfile, setIsWaitingForProfile] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,6 +30,46 @@ const LoginPage: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
+
+  // ✅ CRITICAL FIX: Handle redirect when profile finishes loading after login
+  useEffect(() => {
+    if (isWaitingForProfile && !profileLoading && user) {
+      setIsWaitingForProfile(false);
+      
+      // Re-check profile state before redirecting
+      if (profileError) {
+        logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
+        return;
+      }
+
+      if (!profile) {
+        logger.info("[LOGIN] Profile not loaded yet, AuthGuard will handle redirect");
+        return;
+      }
+
+      if (isProfileComplete(profile)) {
+        logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
+          uid: user?.uid,
+          hasProfile: !!profile,
+          profileComplete: true
+        });
+        navigate("/command-center", {
+          replace: true,
+          state: { from: "login" },
+        });
+      } else {
+        logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding", {
+          uid: user?.uid,
+          hasProfile: !!profile,
+          profileComplete: false
+        });
+        navigate("/professional-onboarding", {
+          replace: true,
+          state: { from: "login" },
+        });
+      }
+    }
+  }, [isWaitingForProfile, profileLoading, profile, user, profileError, navigate]);
 
   // WO-13: Función para manejar redirección post-login usando isProfileComplete como fuente única de verdad
   const handlePostLoginRedirect = () => {
@@ -80,8 +121,28 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    // ✅ CRITICAL FIX: Manual validation in English (compliance requirement)
+    if (!email.trim()) {
+      setError("Please enter your email address");
+      return;
+    }
+    
+    if (!password.trim()) {
+      setError("Please enter your password");
+      return;
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    
     setLoading(true);
     setError("");
+    setIsWaitingForProfile(false);
 
     try {
       logger.info("[LOGIN] Attempting sign-in", { email });
@@ -104,28 +165,12 @@ const LoginPage: React.FC = () => {
       await emailActivationService.updateLastLogin(email, currentUser?.uid);
       
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
-      // ✅ CRITICAL FIX: Wait for profile to finish loading before redirecting
-      // Use a more robust approach that waits for profileLoading to become false
-      const waitForProfile = async () => {
-        // Wait up to 3 seconds for profile to load
-        const maxWait = 3000;
-        const startTime = Date.now();
-        
-        while (profileLoading && (Date.now() - startTime) < maxWait) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // Only redirect if profile finished loading (not timeout)
-        if (!profileLoading) {
-          handlePostLoginRedirect();
-        } else {
-          // Timeout - profile still loading, let AuthGuard handle it
-          logger.warn("[LOGIN] Profile loading timeout, AuthGuard will handle redirect");
-        }
-      };
-
+      // ✅ CRITICAL FIX: Use useEffect to handle redirect when profile loads
+      // This avoids closure issues with profileLoading state
       if (profileLoading) {
-        waitForProfile();
+        setIsWaitingForProfile(true);
+        logger.info("[LOGIN] Profile loading, will redirect when ready");
+        // Don't call handlePostLoginRedirect here - useEffect will handle it
       } else {
         handlePostLoginRedirect();
       }
@@ -177,8 +222,19 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
+          {/* Profile Loading Indicator */}
+          {isWaitingForProfile && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading your profile...</span>
+            </div>
+          )}
+
           {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-4" data-testid="login-form">
+          <form onSubmit={handleLogin} className="space-y-4" data-testid="login-form" noValidate>
             <div>
               <label htmlFor="email-address" className="block text-sm font-normal text-gray-700 mb-2 font-apple">
                 Email Address
