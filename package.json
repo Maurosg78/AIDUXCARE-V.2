@@ -74,11 +74,6 @@
     "postinstall": "npm run check:env"
   },
   "dependencies": {
-    "@firebase/app": "^0.10.18",
-    "@firebase/auth": "^1.11.0",
-    "@firebase/firestore": "^4.8.2",
-    "@firebase/storage": "^0.12.2",
-    "@firebase/util": "^1.13.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-dialog": "^1.1.2",
