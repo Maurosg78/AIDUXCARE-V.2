@@ -8,7 +8,7 @@
  */
 
 import { collection, doc, setDoc, getDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { serverTimestamp } from 'firebase/firestore';
 
 export interface TreatmentPlan {
