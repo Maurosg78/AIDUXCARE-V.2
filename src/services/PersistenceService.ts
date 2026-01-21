@@ -74,14 +74,15 @@ export class PersistenceService {
         encryptedData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        ownerUid: userId, // Bloque 5E: Campo requerido para queries y compliance
+        ownerUid: userId, // Mantener para compatibilidad con SavedNote interface
       };
 
-      // ✅ P1.3: Save to Firestore - Correct structure: consultations/{noteId} with ownerUid field
+      // ✅ FIX 1.1: Save to Firestore - Use authorUid to match Firestore rules
       const noteRef = doc(db, this.COLLECTION_NAME, noteId);
       const dataToSave = {
         ...savedNote,
-        ownerUid: userId, // Add ownerUid for querying
+        authorUid: userId, // ✅ CRITICAL: Firestore rules expect authorUid, not ownerUid
+        ownerUid: userId, // Keep for backward compatibility
       };
       
       console.log(`[PersistenceService] Saving note to Firestore:`, {

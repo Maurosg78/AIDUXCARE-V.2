@@ -172,6 +172,13 @@ class TreatmentPlanService {
       const nextAppointment = this.extractNextAppointment(planText);
       const nextSessionFocus = this.extractNextSessionFocus(planText);
 
+      // ✅ FIX 1.2: Get current user ID for authorUid (required by Firestore rules)
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('User must be authenticated to save treatment plan');
+      }
+      const authorUid = currentUser.uid;
+
       // Clean undefined values for Firestore
       const treatmentPlan: TreatmentPlan = {
         id: planId,
@@ -195,7 +202,11 @@ class TreatmentPlanService {
       };
 
       const planRef = doc(db, this.COLLECTION_NAME, planId);
-      await setDoc(planRef, treatmentPlan);
+      // ✅ FIX 1.2: Add authorUid to match Firestore rules
+      await setDoc(planRef, {
+        ...treatmentPlan,
+        authorUid, // Required by Firestore rules
+      });
 
       console.log(`✅ Treatment plan saved: ${planId}`);
       return planId;

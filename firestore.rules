@@ -385,5 +385,27 @@ service cloud.firestore {
       // No deletes from client (clinical record requirement)
       allow delete: if false;
     }
+
+    // ----------------------------
+    // Treatment Plans
+    // ----------------------------
+    // Enterprise-grade: Treatment plan records for patient care continuity
+    match /treatment_plans/{planId} {
+      // Read: User must own the treatment plan (authorUid matches)
+      allow read: if request.auth != null
+                  && resource.data.authorUid == request.auth.uid;
+      
+      // Create: User must be the author
+      allow create: if request.auth != null
+                    && request.resource.data.authorUid == request.auth.uid;
+      
+      // Update: User must own the plan and maintain ownership
+      allow update: if request.auth != null
+                    && resource.data.authorUid == request.auth.uid
+                    && request.resource.data.authorUid == request.auth.uid;
+      
+      // No deletes from client (clinical record requirement)
+      allow delete: if false;
+    }
   }
 }
