@@ -67,10 +67,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           uid: user.uid,
           registrationStatus: profile?.registrationStatus
         });
-        // ✅ FIX: Usar setTimeout para evitar renderizado flash
-        setTimeout(() => {
-          navigate('/command-center', { replace: true });
-        }, 0);
+        // ✅ CRITICAL FIX: Redirect immediately without setTimeout to avoid flash
+        // The component will unmount before rendering, preventing flash
+        navigate('/command-center', { replace: true });
         return;
       }
       // WO-13: NO usar emailVerified para routing en modo piloto

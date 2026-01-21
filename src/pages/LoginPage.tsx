@@ -20,7 +20,7 @@ const LoginPage: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { profile, loading: profileLoading, error: profileError } = useProfessionalProfile();
 
   useEffect(() => {
@@ -32,6 +32,12 @@ const LoginPage: React.FC = () => {
 
   // WO-13: Función para manejar redirección post-login usando isProfileComplete como fuente única de verdad
   const handlePostLoginRedirect = () => {
+    // ✅ CRITICAL FIX: Don't redirect if profile is still loading
+    if (profileLoading) {
+      logger.info("[LOGIN] Profile still loading, deferring redirect decision");
+      return;
+    }
+
     // Si hay error de Firestore (adblock, etc.), NO navegar - AuthGuard mostrará soft-fail
     if (profileError) {
       logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
@@ -39,18 +45,32 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    // ✅ CRITICAL FIX: If profile is null, don't redirect - let AuthGuard handle it
+    if (!profile) {
+      logger.info("[LOGIN] Profile not loaded yet, AuthGuard will handle redirect");
+      return;
+    }
+
     // WO-13: Usar isProfileComplete (criterio unificado) en lugar de registrationStatus
     // NO usar emailVerified para routing en piloto
     if (isProfileComplete(profile)) {
       // Perfil completo → Command Center
-      logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center");
+      logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
+        uid: user?.uid,
+        hasProfile: !!profile,
+        profileComplete: true
+      });
       navigate("/command-center", {
         replace: true,
         state: { from: "login" },
       });
     } else {
       // Perfil incompleto → Onboarding
-      logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding");
+      logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding", {
+        uid: user?.uid,
+        hasProfile: !!profile,
+        profileComplete: false
+      });
       navigate("/professional-onboarding", {
         replace: true,
         state: { from: "login" },
@@ -84,12 +104,28 @@ const LoginPage: React.FC = () => {
       await emailActivationService.updateLastLogin(email, currentUser?.uid);
       
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
-      // Esperar a que el perfil se cargue (si está cargando)
-      if (profileLoading) {
-        // Esperar un momento para que el perfil se cargue
-        setTimeout(() => {
+      // ✅ CRITICAL FIX: Wait for profile to finish loading before redirecting
+      // Use a more robust approach that waits for profileLoading to become false
+      const waitForProfile = async () => {
+        // Wait up to 3 seconds for profile to load
+        const maxWait = 3000;
+        const startTime = Date.now();
+        
+        while (profileLoading && (Date.now() - startTime) < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Only redirect if profile finished loading (not timeout)
+        if (!profileLoading) {
           handlePostLoginRedirect();
-        }, 500);
+        } else {
+          // Timeout - profile still loading, let AuthGuard handle it
+          logger.warn("[LOGIN] Profile loading timeout, AuthGuard will handle redirect");
+        }
+      };
+
+      if (profileLoading) {
+        waitForProfile();
       } else {
         handlePostLoginRedirect();
       }
