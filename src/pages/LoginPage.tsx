@@ -40,18 +40,33 @@ const LoginPage: React.FC = () => {
       return;
     }
     
-    // ✅ CRITICAL: Only redirect if profile is actually loaded (not just loading === false)
-    if (isWaitingForProfile && !profileLoading && user && profile) {
-      hasRedirectedRef.current = true;
-      setIsWaitingForProfile(false);
+    // ✅ CRITICAL: Only redirect if we're waiting AND profile is actually loaded
+    // Check both: !profileLoading (finished loading) AND profile exists
+    if (isWaitingForProfile && user) {
+      // If still loading, wait
+      if (profileLoading) {
+        logger.info("[LOGIN] Profile still loading, waiting...");
+        return;
+      }
       
-      // Re-check profile state before redirecting
+      // If profile error, let AuthGuard handle it
       if (profileError) {
         logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
         hasRedirectedRef.current = false; // Allow retry on error
+        setIsWaitingForProfile(false);
         return;
       }
 
+      // If profile doesn't exist yet, wait for it
+      if (!profile) {
+        logger.info("[LOGIN] Profile not loaded yet, waiting for profile...");
+        return;
+      }
+
+      // Profile is loaded, proceed with redirect
+      hasRedirectedRef.current = true;
+      setIsWaitingForProfile(false);
+      
       if (isProfileComplete(profile)) {
         logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
           uid: user?.uid,
@@ -178,15 +193,15 @@ const LoginPage: React.FC = () => {
       await emailActivationService.updateLastLogin(email, currentUser?.uid);
       
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
-      // ✅ CRITICAL FIX: Use useEffect to handle redirect when profile loads
-      // This avoids closure issues with profileLoading state
-      if (profileLoading) {
-        setIsWaitingForProfile(true);
-        logger.info("[LOGIN] Profile loading, will redirect when ready");
-        // Don't call handlePostLoginRedirect here - useEffect will handle it
-      } else {
-        handlePostLoginRedirect();
-      }
+      // ✅ CRITICAL FIX: Always use useEffect to handle redirect
+      // This ensures we wait for profile to be fully loaded, not just profileLoading === false
+      setIsWaitingForProfile(true);
+      logger.info("[LOGIN] Login successful, waiting for profile to load before redirect", {
+        profileLoading,
+        hasProfile: !!profile,
+        hasUser: !!user
+      });
+      // useEffect will handle the redirect when profile is ready
     } catch (err) {
       logger.error("[LOGIN] Authentication error", err);
       setError("We couldn't validate your credentials. Please try again.");
@@ -238,7 +253,7 @@ const LoginPage: React.FC = () => {
           )}
 
           {/* Profile Loading Indicator */}
-          {isWaitingForProfile && (
+          {(isWaitingForProfile || profileLoading) && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm flex items-center gap-2">
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
