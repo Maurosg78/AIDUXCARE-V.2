@@ -159,8 +159,27 @@ if (!__IS_TEST__) {
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
 
-  // ✅ CRITICAL FIX: Do NOT initialize Functions at module load time
-  console.info("✅ Firebase Functions ready (will initialize on first use)");
+  // ✅ CRITICAL FIX: Initialize Functions EAGERLY at module load
+  try {
+    // ✅ CRITICAL: Verify getFunctions is available (SDK loaded)
+    if (typeof getFunctions === 'function') {
+      _functions = getFunctions(_app, 'northamerica-northeast1');
+      console.info("✅ Firebase Functions initialized eagerly:", {
+        projectId: _app.options.projectId,
+        region: 'northamerica-northeast1',
+        appName: _app.name
+      });
+    } else {
+      console.warn("⚠️ Firebase Functions SDK not available at module load, will retry on first use");
+    }
+  } catch (error: any) {
+    console.error("❌ Firebase Functions eager initialization failed:", {
+      error: error?.message || String(error),
+      projectId: _app.options.projectId,
+      appName: _app.name
+    });
+    // Don't throw - will retry on first use via getFirebaseFunctions()
+  }
 
   if (typeof window !== 'undefined' && _db) {
     console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);

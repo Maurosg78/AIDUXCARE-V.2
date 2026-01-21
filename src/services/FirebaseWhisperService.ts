@@ -57,7 +57,7 @@ export class FirebaseWhisperService {
                     throw new Error('Firebase Functions is not available after multiple retries. Please refresh the page.');
                 }
             }
-            
+
             if (!functions) { // Should not happen if loop completes without throwing
                 throw new Error('Firebase Functions instance could not be obtained.');
             }
