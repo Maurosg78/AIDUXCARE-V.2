@@ -1,7 +1,3 @@
-/// <reference types="node" />
-/// <reference lib="dom" />
-/// <reference path="../types/firebase-globals.d.ts" />
-
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -23,7 +19,7 @@ const __IS_TEST__ =
     !!process.env.VITEST ||
     process.env.NODE_ENV === 'test' ||
     import.meta.env?.MODE === 'test' ||
-    import.meta.env?.VITEST === true
+    import.meta.env?.VITEST === 'true'
   );
 
 interface FirebaseConfig {
@@ -53,14 +49,12 @@ let _functions: Functions | null = null;
 
 function initFirebaseOnce() {
   if (_app) return;
-  // Check if app already exists (e.g., initialized in test setup)
   const existingApps = getApps();
   if (existingApps.length > 0) {
     _app = existingApps[0];
     return;
   }
-  // In tests, use minimal config if env vars not available
-  const config = __IS_TEST__ && !firebaseConfig.projectId 
+  const config = __IS_TEST__ && !firebaseConfig.projectId
     ? { projectId: 'demo-notesrepo' }
     : firebaseConfig;
   _app = initializeApp(config);
@@ -117,27 +111,32 @@ function initAuthWithPersistence(): Auth {
   });
 }
 
+// ✅ CRITICAL FIX: Lazy initialization function for Functions
+function getFirebaseFunctions(): Functions {
+  if (!_functions) {
+    if (!_app) {
+      throw new Error('Firebase app is not initialized');
+    }
+    try {
+      _functions = getFunctions(_app, 'northamerica-northeast1');
+      console.info("✅ Firebase Functions initialized on-demand for region: northamerica-northeast1");
+    } catch (error: any) {
+      console.error("❌ Firebase Functions initialization failed:", error?.message || error);
+      throw new Error('Firebase Functions is not available. Please refresh the page.');
+    }
+  }
+  return _functions;
+}
+
 if (!__IS_TEST__) {
   initFirebaseOnce();
   _auth = initAuthWithPersistence();
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
-  
-  // ✅ CRITICAL FIX: Initialize Functions service for northamerica-northeast1 region
-  // This ensures Functions service is available when services need it
-  try {
-    _functions = getFunctions(_app, 'northamerica-northeast1');
-    console.info("✅ Firebase Functions initialized:", {
-      region: 'northamerica-northeast1',
-      appName: _app.name,
-      projectId: _app.options.projectId
-    });
-  } catch (error) {
-    console.warn("⚠️ Firebase Functions initialization failed (non-blocking):", error);
-    _functions = null;
-  }
-  
-  // WO-FS-ENV-02: Log Firestore database instance info
+
+  // ✅ CRITICAL FIX: Do NOT initialize Functions at module load time
+  console.info("✅ Firebase Functions ready (will initialize on first use)");
+
   if (typeof window !== 'undefined' && _db) {
     console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);
   }
@@ -152,8 +151,7 @@ if (!__IS_TEST__) {
   }
 
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
-  
-  // WO-FS-ENV-02: Runtime Firestore Proof of Project - Log configuration evidence
+
   if (typeof window !== 'undefined' && _app) {
     console.info("[PROOF] Firebase runtime config:", {
       projectId: _app.options.projectId,
@@ -170,11 +168,11 @@ if (!__IS_TEST__) {
         connectAuthEmulator(_auth, `http://${emulatorHost}`);
       }
       connectFirestoreEmulator(_db, "127.0.0.1", 8080);
-      
-      // Connect Functions emulator if configured
+
       const functionsEmulatorHost = import.meta.env.VITE_FIREBASE_FUNCTIONS_EMULATOR_HOST;
-      if (functionsEmulatorHost && _functions) {
-        connectFunctionsEmulator(_functions, "127.0.0.1", 5001);
+      if (functionsEmulatorHost) {
+        const funcs = getFirebaseFunctions();
+        connectFunctionsEmulator(funcs, "127.0.0.1", 5001);
       }
 
       console.info(
@@ -183,36 +181,29 @@ if (!__IS_TEST__) {
         "Firestore: 127.0.0.1:8080",
         "Functions:",
         functionsEmulatorHost ? "127.0.0.1:5001" : "not configured"
-);
-   } catch (error: any) {
+      );
+    } catch (error: any) {
       console.warn("⚠️ Error conectando emulators (normal si ya conectados):", error?.message || error);
     }
   }
 } else {
-  // ✅ PHIPA/PIPEDA-aware: Inicializar Firebase real en tests (sin mocks)
   initFirebaseOnce();
-  // Inicializar Auth en tests - se ejecuta inmediatamente al cargar el módulo
   if (!_auth) {
     try {
-      // First, try to get auth from test/setupTests.ts (if available)
       if (typeof global !== 'undefined' && (global as any).__TEST_AUTH__) {
         _auth = (global as any).__TEST_AUTH__;
       } else if (_app) {
-        // Try to get existing auth from app (initialized by test/setupTests.ts)
         try {
           _auth = getAuth(_app);
-          // Verify auth is actually valid (has _delegate)
           if (!_auth || !(_auth as any)._delegate) {
             throw new Error('Auth exists but is invalid');
           }
         } catch {
-          // If no auth exists, initialize it with minimal config (no API key required)
           _auth = initializeAuth(_app, {
             persistence: [indexedDBLocalPersistence, inMemoryPersistence],
           });
         }
       }
-      // Conectar a emulador si está configurado (para tests locales)
       const emulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || import.meta.env?.VITE_FIREBASE_AUTH_EMULATOR_HOST;
       if (emulatorHost && _auth && !(_auth as any)._delegate?._config?.emulator) {
         try {
@@ -227,33 +218,26 @@ if (!__IS_TEST__) {
   }
 }
 
-// Fallback: Si aún no hay auth en modo test, intentar obtenerlo del app o inicializar
 if (__IS_TEST__ && !_auth) {
   try {
-    // Try global test auth first (from test/setupTests.ts)
     if (typeof global !== 'undefined' && (global as any).__TEST_AUTH__) {
       _auth = (global as any).__TEST_AUTH__;
     } else {
-      // Ensure _app is initialized
       if (!_app) {
         initFirebaseOnce();
       }
       if (_app) {
-        // Try to get existing auth first
         try {
           _auth = getAuth(_app);
-          // Verify auth is actually valid
           if (!_auth || !(_auth as any)._delegate) {
             throw new Error('Auth exists but is invalid');
           }
         } catch {
-          // Initialize with minimal persistence (no API key needed for emulator mode)
           try {
             _auth = initializeAuth(_app, {
               persistence: [inMemoryPersistence],
             });
           } catch (initError) {
-            // If initialization fails, try to get from global again (maybe it was set after initFirebaseOnce)
             if (typeof global !== 'undefined' && (global as any).__TEST_AUTH__) {
               _auth = (global as any).__TEST_AUTH__;
             } else {
@@ -268,7 +252,6 @@ if (__IS_TEST__ && !_auth) {
   }
 }
 
-// Final check: in test mode, try to get auth from global if not yet initialized
 if (__IS_TEST__ && !_auth && typeof global !== 'undefined' && (global as any).__TEST_AUTH__) {
   _auth = (global as any).__TEST_AUTH__;
 }
@@ -277,7 +260,6 @@ export const auth = _auth;
 export const db = _db;
 export const storage = _storage;
 export const analytics = _analytics;
-export const functions = _functions;
-// Bloque 6: Export app para compatibilidad con VertexAIServiceViaFirebase
+export const getFunctionsInstance = getFirebaseFunctions;
 export { _app as app };
-export default _app; // Default export para compatibilidad
+export default _app;

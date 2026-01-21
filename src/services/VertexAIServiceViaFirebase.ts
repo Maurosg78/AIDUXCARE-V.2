@@ -1,32 +1,35 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import app from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { app, getFunctionsInstance } from '../lib/firebase';
 import type { ClinicalAnalysisResponse, SOAPNote, PhysicalExamResult } from '../types/vertex-ai';
 import type { ClinicalAnalysis } from '../utils/cleanVertexResponse';
-// Bloque 6: parseVertexResponse está en utils/responseParser, no en vertexResponseParser
 import { parseVertexResponse } from '../utils/responseParser';
 // Bloque 5E: normalizeVertexResponse para convertir ParsedResponse a ClinicalAnalysis
 import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
 
-// ✅ CRITICAL FIX: Lazy initialization - create Functions when needed, not at module load
-// This prevents race conditions and ensures app is fully initialized
-let functionsInstance: ReturnType<typeof getFunctions> | null = null;
+// ✅ CRITICAL FIX: Use shared functions instance from firebase.ts
 let processWithVertexAIFn: ReturnType<typeof httpsCallable> | null = null;
 
 function getProcessWithVertexAI() {
   if (!processWithVertexAIFn) {
-    if (!functionsInstance) {
-      // ✅ CRITICAL: Verify app is initialized
-      if (!app) {
-        throw new Error('Firebase app is not initialized');
-      }
-      if (!app.options || !app.options.projectId) {
-        throw new Error('Firebase app is not properly configured');
-      }
-      // ✅ CRITICAL: Specify region to match whisperProxy (northamerica-northeast1)
-      functionsInstance = getFunctions(app, 'northamerica-northeast1');
-      console.log('[VertexAI] Functions instance created for region: northamerica-northeast1');
+    // ✅ CRITICAL: Get Functions instance using getFunctionsInstance from firebase.ts
+    let functions;
+    try {
+      functions = getFunctionsInstance();
+    } catch (error) {
+
+      throw new Error('Firebase Functions is not initialized. Please refresh the page.');
     }
-    processWithVertexAIFn = httpsCallable(functionsInstance, 'processWithVertexAI', {
+
+    if (!functions) {
+      throw new Error('Firebase Functions is not available. Please refresh the page.');
+    }
+
+    console.log('[VertexAI] Using shared Functions instance from firebase.ts', {
+      region: 'northamerica-northeast1',
+      functionsExists: !!functions
+    });
+
+    processWithVertexAIFn = httpsCallable(functions, 'processWithVertexAI', {
       timeout: 300000 // 5 minutos
     });
   }
@@ -38,23 +41,23 @@ export async function callVertexAI(prompt: string): Promise<string> {
     console.log('📡 Llamando a Firebase Function...');
     const processWithVertexAI = getProcessWithVertexAI();
     const result = await processWithVertexAI({ prompt });
-    
+
     // Mejor logging para debug
     console.log('📦 Respuesta raw:', result);
-    
+
     const response = result.data as { text?: string; error?: string; usage?: any };
-    
+
     if (response.error) {
       console.error('❌ Error de Cloud Function:', response.error);
       throw new Error(response.error);
     }
-    
+
     if (!response.text) {
       console.warn('⚠️ Respuesta vacía, usando fallback...');
       // FALLBACK: Generar respuesta por defecto basada en el prompt
       return generateFallbackResponse(prompt);
     }
-    
+
     console.log('✅ Respuesta recibida de Firebase Function');
     console.log('📄 Texto:', response.text.substring(0, 200));
     return response.text;
@@ -67,7 +70,7 @@ export async function callVertexAI(prompt: string): Promise<string> {
 
 function generateFallbackResponse(prompt: string): string {
   console.log('🔄 Generando respuesta fallback...');
-  
+
   // Respuesta estructurada por defecto cuando Vertex AI falla
   return `SÍNTOMAS Y HALLAZGOS ACTUALES:
 - Dolor reportado por el paciente
@@ -99,7 +102,7 @@ export class VertexAIServiceViaFirebase {
   static async processTranscript(transcript: string): Promise<ClinicalAnalysisResponse> {
     try {
       console.log('🔄 Procesando transcripción...');
-      
+
       const prompt = `Eres un asistente especializado en fisioterapia. Analiza el siguiente contenido y extrae información en las categorías especificadas.
 
 CONTENIDO A ANALIZAR:
@@ -124,9 +127,9 @@ EVALUACIÓN FÍSICA PROPUESTA:
 
       const response = await callVertexAI(prompt);
       const parsed = parseVertexResponse(response);
-      
+
       console.log('📊 Respuesta parseada:', parsed);
-      
+
       // Bloque 5E: Mapear ParsedResponse a ClinicalAnalysisResponse
       // Si parsed.success es false o no tiene data, retornar estructura vacía
       if (!parsed.success || !parsed.data) {
@@ -139,18 +142,18 @@ EVALUACIÓN FÍSICA PROPUESTA:
           error: parsed.error || 'Failed to parse response',
         };
       }
-      
+
       // Normalizar a ClinicalAnalysis y luego mapear a ClinicalAnalysisResponse
       const clinicalAnalysis = normalizeVertexResponse(parsed.data);
-      
+
       // Mapear ClinicalAnalysis a ClinicalAnalysisResponse
       return {
         entities: [],
-        redFlags: clinicalAnalysis.red_flags.map(flag => ({ 
+        redFlags: clinicalAnalysis.red_flags.map(flag => ({
           pattern: flag, // Bloque 5E: Campo requerido pattern en RedFlag
-          type: flag, 
-          action: '', 
-          urgency: 'high' 
+          type: flag,
+          action: '',
+          urgency: 'high'
         })),
         yellowFlags: clinicalAnalysis.yellow_flags,
         physicalTests: clinicalAnalysis.evaluaciones_fisicas_sugeridas || [],
@@ -242,4 +245,4 @@ function parseSoapResponse(text: string): SOAPNote | null {
     console.error('Error parsing SOAP response:', err);
     return null;
   }
-}
+}    

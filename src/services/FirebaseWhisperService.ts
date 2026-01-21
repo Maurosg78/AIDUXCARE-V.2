@@ -1,12 +1,12 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { app, getFunctionsInstance } from '../lib/firebase';
 import { WHISPER_MODEL } from '../config/env';
 
 export interface WhisperTranscriptionResult {
-  // Bloque 3B: Campos opcionales agregados para compatibilidad
-  detectedLanguage?: string | null;
-  averageLogProb?: number | null;
-  durationSeconds?: number | null;
+    // Bloque 3B: Campos opcionales agregados para compatibilidad
+    detectedLanguage?: string | null;
+    averageLogProb?: number | null;
+    durationSeconds?: number | null;
     text: string;
     language?: string;
     duration?: number;
@@ -38,56 +38,14 @@ export class FirebaseWhisperService {
         try {
             console.log('[FirebaseWhisper] Starting transcription via Cloud Function...');
 
-            // ✅ CRITICAL: Verify app is initialized
-            if (!app) {
-                throw new Error('Firebase app is not initialized');
-            }
-            
-            // ✅ CRITICAL: Verify app has required properties
-            if (!app.options || !app.options.projectId) {
-                throw new Error('Firebase app is not properly configured');
-            }
+            // ✅ CRITICAL: Use lazy-initialized Functions instance
+            const functions = getFunctionsInstance();
 
-            console.log('[FirebaseWhisper] App state verified:', {
+            console.log('[FirebaseWhisper] Using Functions instance:', {
+                functionsExists: !!functions,
                 appExists: !!app,
-                projectId: app.options.projectId,
-                appName: app.name,
+                projectId: app?.options?.projectId || 'unknown'
             });
-
-            // Obtener instancia de Firebase Functions
-            // ✅ CANADÁ: Especificar región northamerica-northeast1 (Montreal)
-            // La función está desplegada en esta región, no en us-central1 (default)
-            // ✅ CRITICAL FIX: Try to get Functions instance with retry logic
-            let functions;
-            const maxRetries = 3;
-            let lastError;
-            
-            for (let attempt = 0; attempt < maxRetries; attempt++) {
-                try {
-                    functions = getFunctions(app, 'northamerica-northeast1');
-                    console.log('[FirebaseWhisper] Functions instance created:', {
-                        functionsExists: !!functions,
-                        region: 'northamerica-northeast1',
-                        attempt: attempt + 1
-                    });
-                    break; // Success, exit retry loop
-                } catch (error: any) {
-                    lastError = error;
-                    if (error.message?.includes('Service functions is not available')) {
-                        // Wait a bit and retry (may need time for service to initialize)
-                        if (attempt < maxRetries - 1) {
-                            console.warn(`[FirebaseWhisper] Functions not available, retrying in ${500 * (attempt + 1)}ms...`);
-                            await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                            continue;
-                        }
-                    }
-                    throw error; // Re-throw if not a retryable error
-                }
-            }
-            
-            if (!functions) {
-                throw new Error('Firebase Functions service is not available after retries. Please refresh the page.');
-            }
 
             // Llamar al Cloud Function whisperProxy
             const whisperProxyFunction = httpsCallable(functions, 'whisperProxy', {
