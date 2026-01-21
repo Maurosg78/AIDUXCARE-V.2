@@ -81,25 +81,53 @@ export function validateAnalyticsQuery(query: any, collection?: string): void {
     'clinical_findings',
   ];
   
-  // Check if query includes prohibited fields
-  const queryString = JSON.stringify(query).toLowerCase();
-  for (const field of prohibitedFields) {
-    const fieldLower = field.toLowerCase();
-    if (queryString.includes(fieldLower)) {
-      // Log violation attempt
-      logViolationAttempt({
-        query,
-        prohibitedField: field,
-        timestamp: new Date().toISOString(),
-        collection,
-      });
-      
-      throw new Error(
-        `PROHIBITED: Cannot query field '${field}' for analytics. ` +
-        `This field contains PHI and violates PHIPA/PIPEDA compliance. ` +
-        `Use analytics_events collection with hashed identifiers instead.`
-      );
+  // ✅ FIX 2.1: Check if query includes prohibited fields (exact field names only)
+  // Use recursive function to check for exact field names, not substring matches
+  const checkForProhibitedField = (obj: any, path: string = ''): string | null => {
+    if (obj === null || obj === undefined) return null;
+    
+    // Check if current object has prohibited field as direct key
+    for (const field of prohibitedFields) {
+      const fieldLower = field.toLowerCase();
+      // Check exact field name match (case-insensitive)
+      if (typeof obj === 'object' && !Array.isArray(obj)) {
+        for (const key in obj) {
+          const keyLower = key.toLowerCase();
+          // Exact match or nested path match
+          if (keyLower === fieldLower || keyLower.endsWith('.' + fieldLower)) {
+            return field;
+          }
+        }
+      }
     }
+    
+    // Recursively check nested objects
+    if (typeof obj === 'object' && !Array.isArray(obj)) {
+      for (const key in obj) {
+        const nestedPath = path ? `${path}.${key}` : key;
+        const result = checkForProhibitedField(obj[key], nestedPath);
+        if (result) return result;
+      }
+    }
+    
+    return null;
+  };
+  
+  const prohibitedFieldFound = checkForProhibitedField(query);
+  if (prohibitedFieldFound) {
+    // Log violation attempt
+    logViolationAttempt({
+      query,
+      prohibitedField: prohibitedFieldFound,
+      timestamp: new Date().toISOString(),
+      collection,
+    });
+    
+    throw new Error(
+      `PROHIBITED: Cannot query field '${prohibitedFieldFound}' for analytics. ` +
+      `This field contains PHI and violates PHIPA/PIPEDA compliance. ` +
+      `Use analytics_events collection with hashed identifiers instead.`
+    );
   }
   
   // Additional validation: Check if querying sessions collection directly
