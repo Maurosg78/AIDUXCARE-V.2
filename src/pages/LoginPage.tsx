@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
@@ -18,6 +18,8 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,17 +35,20 @@ const LoginPage: React.FC = () => {
 
   // ✅ CRITICAL FIX: Handle redirect when profile finishes loading after login
   useEffect(() => {
-    if (isWaitingForProfile && !profileLoading && user) {
+    // ✅ CRITICAL: Prevent multiple redirects
+    if (hasRedirectedRef.current) {
+      return;
+    }
+    
+    // ✅ CRITICAL: Only redirect if profile is actually loaded (not just loading === false)
+    if (isWaitingForProfile && !profileLoading && user && profile) {
+      hasRedirectedRef.current = true;
       setIsWaitingForProfile(false);
       
       // Re-check profile state before redirecting
       if (profileError) {
         logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
-        return;
-      }
-
-      if (!profile) {
-        logger.info("[LOGIN] Profile not loaded yet, AuthGuard will handle redirect");
+        hasRedirectedRef.current = false; // Allow retry on error
         return;
       }
 
@@ -122,6 +127,12 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     
+    // ✅ CRITICAL: Prevent duplicate login attempts
+    if (isLoggingIn) {
+      logger.warn("[LOGIN] Login already in progress, ignoring duplicate request");
+      return;
+    }
+    
     // ✅ CRITICAL FIX: Manual validation in English (compliance requirement)
     if (!email.trim()) {
       setError("Please enter your email address");
@@ -140,9 +151,11 @@ const LoginPage: React.FC = () => {
       return;
     }
     
+    setIsLoggingIn(true);
     setLoading(true);
     setError("");
     setIsWaitingForProfile(false);
+    hasRedirectedRef.current = false; // Reset redirect flag for new login attempt
 
     try {
       logger.info("[LOGIN] Attempting sign-in", { email });
@@ -177,8 +190,10 @@ const LoginPage: React.FC = () => {
     } catch (err) {
       logger.error("[LOGIN] Authentication error", err);
       setError("We couldn't validate your credentials. Please try again.");
+      hasRedirectedRef.current = false; // Reset on error to allow retry
     } finally {
       setLoading(false);
+      setIsLoggingIn(false);
     }
   };
 

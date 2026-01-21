@@ -123,11 +123,19 @@ if (!__IS_TEST__) {
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
   
-  // ✅ CRITICAL FIX: Functions will be initialized on-demand by services that need them
-  // Each service specifies its own region (e.g., northamerica-northeast1)
-  // This avoids SDK timing issues and circular dependencies
-  _functions = null;
-  console.info("✅ Firebase Functions ready (will initialize per-service)");
+  // ✅ CRITICAL FIX: Initialize Functions service for northamerica-northeast1 region
+  // This ensures Functions service is available when services need it
+  try {
+    _functions = getFunctions(_app, 'northamerica-northeast1');
+    console.info("✅ Firebase Functions initialized:", {
+      region: 'northamerica-northeast1',
+      appName: _app.name,
+      projectId: _app.options.projectId
+    });
+  } catch (error) {
+    console.warn("⚠️ Firebase Functions initialization failed (non-blocking):", error);
+    _functions = null;
+  }
   
   // WO-FS-ENV-02: Log Firestore database instance info
   if (typeof window !== 'undefined' && _db) {

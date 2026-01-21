@@ -57,14 +57,37 @@ export class FirebaseWhisperService {
             // Obtener instancia de Firebase Functions
             // ✅ CANADÁ: Especificar región northamerica-northeast1 (Montreal)
             // La función está desplegada en esta región, no en us-central1 (default)
-            // ✅ CRITICAL FIX: Use the exported app instance from firebase.ts
-            // This ensures Functions service is available
-            const functions = getFunctions(app, 'northamerica-northeast1');
+            // ✅ CRITICAL FIX: Try to get Functions instance with retry logic
+            let functions;
+            const maxRetries = 3;
+            let lastError;
             
-            console.log('[FirebaseWhisper] Functions instance created:', {
-                functionsExists: !!functions,
-                region: 'northamerica-northeast1',
-            });
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    functions = getFunctions(app, 'northamerica-northeast1');
+                    console.log('[FirebaseWhisper] Functions instance created:', {
+                        functionsExists: !!functions,
+                        region: 'northamerica-northeast1',
+                        attempt: attempt + 1
+                    });
+                    break; // Success, exit retry loop
+                } catch (error: any) {
+                    lastError = error;
+                    if (error.message?.includes('Service functions is not available')) {
+                        // Wait a bit and retry (may need time for service to initialize)
+                        if (attempt < maxRetries - 1) {
+                            console.warn(`[FirebaseWhisper] Functions not available, retrying in ${500 * (attempt + 1)}ms...`);
+                            await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                            continue;
+                        }
+                    }
+                    throw error; // Re-throw if not a retryable error
+                }
+            }
+            
+            if (!functions) {
+                throw new Error('Firebase Functions service is not available after retries. Please refresh the page.');
+            }
 
             // Llamar al Cloud Function whisperProxy
             const whisperProxyFunction = httpsCallable(functions, 'whisperProxy', {
