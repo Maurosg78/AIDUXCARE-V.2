@@ -38,8 +38,29 @@ export class FirebaseWhisperService {
         try {
             console.log('[FirebaseWhisper] Starting transcription via Cloud Function...');
 
-            // ✅ CRITICAL: Use lazy-initialized Functions instance
-            const functions = getFunctionsInstance();
+            // ✅ CRITICAL: Use lazy-initialized Functions instance with retry
+            let functions;
+            const maxRetries = 3;
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    functions = getFunctionsInstance();
+                    break; // Success, exit loop
+                } catch (error: any) {
+                    if (attempt < maxRetries - 1) {
+                        console.warn(`[FirebaseWhisper] Functions initialization failed, retrying in ${500 * (attempt + 1)}ms...`, {
+                            attempt: attempt + 1,
+                            error: error?.message || error
+                        });
+                        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                        continue;
+                    }
+                    throw new Error('Firebase Functions is not available after multiple retries. Please refresh the page.');
+                }
+            }
+            
+            if (!functions) { // Should not happen if loop completes without throwing
+                throw new Error('Firebase Functions instance could not be obtained.');
+            }
 
             console.log('[FirebaseWhisper] Using Functions instance:', {
                 functionsExists: !!functions,

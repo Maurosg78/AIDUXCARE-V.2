@@ -117,12 +117,37 @@ function getFirebaseFunctions(): Functions {
     if (!_app) {
       throw new Error('Firebase app is not initialized');
     }
+    
+    // ✅ CRITICAL: Verify getFunctions is available (SDK loaded)
+    if (typeof getFunctions !== 'function') {
+      const errorMsg = 'Firebase Functions SDK not loaded. Check vite.config.ts includes firebase/functions.';
+      console.error("❌ Firebase Functions SDK check failed:", errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     try {
       _functions = getFunctions(_app, 'northamerica-northeast1');
-      console.info("✅ Firebase Functions initialized on-demand for region: northamerica-northeast1");
+      
+      // ✅ CRITICAL: Verify Functions instance is valid
+      if (!_functions) {
+        throw new Error('getFunctions returned null/undefined');
+      }
+      
+      console.info("✅ Firebase Functions initialized on-demand for region: northamerica-northeast1", {
+        projectId: _app.options.projectId,
+        region: 'northamerica-northeast1',
+        appName: _app.name
+      });
     } catch (error: any) {
-      console.error("❌ Firebase Functions initialization failed:", error?.message || error);
-      throw new Error('Firebase Functions is not available. Please refresh the page.');
+      const errorMsg = error?.message || String(error);
+      console.error("❌ Firebase Functions initialization failed:", {
+        error: errorMsg,
+        projectId: _app.options.projectId,
+        appName: _app.name,
+        appExists: !!_app,
+        getFunctionsExists: typeof getFunctions === 'function'
+      });
+      throw new Error(`Firebase Functions is not available: ${errorMsg}. Please refresh the page.`);
     }
   }
   return _functions;
