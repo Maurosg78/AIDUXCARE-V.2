@@ -2,6 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, Analytics } from "firebase/analytics";
+import "firebase/functions"; // ✅ CRITICAL: Force full module import to register service
 import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions";
 import {
   initializeAuth,
@@ -117,22 +118,22 @@ function getFirebaseFunctions(): Functions {
     if (!_app) {
       throw new Error('Firebase app is not initialized');
     }
-    
+
     // ✅ CRITICAL: Verify getFunctions is available (SDK loaded)
     if (typeof getFunctions !== 'function') {
       const errorMsg = 'Firebase Functions SDK not loaded. Check vite.config.ts includes firebase/functions.';
       console.error("❌ Firebase Functions SDK check failed:", errorMsg);
       throw new Error(errorMsg);
     }
-    
+
     try {
       _functions = getFunctions(_app, 'northamerica-northeast1');
-      
+
       // ✅ CRITICAL: Verify Functions instance is valid
       if (!_functions) {
         throw new Error('getFunctions returned null/undefined');
       }
-      
+
       console.info("✅ Firebase Functions initialized on-demand for region: northamerica-northeast1", {
         projectId: _app.options.projectId,
         region: 'northamerica-northeast1',
