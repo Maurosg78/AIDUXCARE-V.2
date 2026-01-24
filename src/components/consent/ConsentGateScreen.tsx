@@ -31,11 +31,11 @@ function ConsentGateScreen({
   const [showVerbalModal, setShowVerbalModal] = useState(false);
   const [hasConsent, setHasConsent] = useState(false);
   const [smsRequested, setSmsRequested] = useState(false);
-  
+
   // ✅ WO-CONSENT-POLLING-FIX-04: Refs for polling control
   const consentPollingRef = useRef<NodeJS.Timeout | null>(null);
   const consentPollingAttemptsRef = useRef<number>(0);
-  
+
   // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Guard to prevent re-blocking once consent is granted
   const consentGrantedRef = useRef<boolean>(false);
 
@@ -122,7 +122,7 @@ function ConsentGateScreen({
         }
 
         const consentResult = await checkConsentViaServer(patientId);
-        
+
         // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
         if (consentResult.hasValidConsent) {
           // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted (irreversible)
@@ -138,12 +138,10 @@ function ConsentGateScreen({
             consentPollingAttemptsRef.current = 0;
           }
 
-          // Call callback and close modal after brief delay
-          setTimeout(() => {
-            if (onConsentVerified) {
-              onConsentVerified();
-            }
-          }, 1500);
+          // Call callback immediately to trigger redirect
+          if (onConsentVerified) {
+            onConsentVerified();
+          }
         }
       } catch (error: any) {
         console.warn('[ConsentGate] Error polling consent status:', error?.message || 'Unknown error');
@@ -228,7 +226,7 @@ function ConsentGateScreen({
     } catch (error) {
       console.error('[ConsentGate] Error sending SMS:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send SMS consent link.';
-      
+
       // Better UX when SMS service is not configured
       if (errorMessage.includes('SMS service is not configured')) {
         setSmsError('SMS service is not configured. Please read the consent verbally using the "Read & Record Verbal Consent" button above.');

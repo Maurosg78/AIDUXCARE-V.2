@@ -8,6 +8,7 @@ import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
 import { PatientListPage } from '../pages/PatientsPage';
 import { PatientDetailPage } from '../pages/PatientDetailPage';
+import { PatientDashboardPage } from '../features/patient-dashboard/PatientDashboardPage';
 import { AppointmentListPage } from '../pages/AppointmentsPage';
 import { AppointmentDetailPage } from '../pages/AppointmentsPage';
 import { NotesListPage } from '../pages/NotesPage';
@@ -16,6 +17,7 @@ import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
 import { ConsentVerificationPage } from '../pages/ConsentVerificationPage';
 import { PatientConsentPortalPage } from '../pages/PatientConsentPortalPage';
+import ConsentSuccessPage from '../pages/ConsentSuccessPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import { ProfessionalOnboardingPage } from '../pages/ProfessionalOnboardingPage';
 import { EmailVerifiedPage } from '../pages/EmailVerifiedPage';
@@ -75,6 +77,7 @@ export const createRouter = () => createBrowserRouter([
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>
   },
   { path: '/patients', element: <AuthGuard><LayoutWrapper><PatientListPage /></LayoutWrapper></AuthGuard> },
+  { path: '/patients/:id/history', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> }, // ✅ Must be before /patients/:id to match correctly
   { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDetailPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments', element: <AuthGuard><LayoutWrapper><AppointmentListPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments/:id', element: <AuthGuard><LayoutWrapper><AppointmentDetailPage /></LayoutWrapper></AuthGuard> },
@@ -87,6 +90,7 @@ export const createRouter = () => createBrowserRouter([
   // ✅ T2: Legacy/internal page — do not verify without token (redirects to /consent/:token if token provided)
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // ✅ Public consent link (no auth required) - ÚNICA ruta de verificación real
+  { path: '/consent/success', element: <ConsentSuccessPage /> }, // ✅ Terminal success page (prevents back navigation)
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number

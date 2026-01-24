@@ -88,9 +88,24 @@ export default function PatientConsentPortalPage() {
 
       const data = tokenSnap.data();
       
-      // Check if already used
+      // ✅ Check if already used - show success message instead of form
       if (data.used) {
-        setError('This consent link has already been used');
+        // Token was used - check what decision was made
+        const consentGiven = data.consentGiven || {};
+        const decision = consentGiven.scope === 'ongoing' ? 'accept' : 'decline';
+        
+        setTokenData({
+          patientId: data.patientId,
+          patientName: data.patientName,
+          professionalId: data.professionalId,
+          clinicName: data.clinicName,
+          expiresAt: data.expiresAt?.toDate() || new Date(),
+          used: true,
+        });
+        
+        // Show success message (already submitted)
+        setConsentDecision(decision);
+        setSubmitted(true);
         setLoading(false);
         return;
       }
@@ -168,10 +183,19 @@ export default function PatientConsentPortalPage() {
         setConsentDecision('accept');
         setSubmitted(true);
 
-        // Auto-close after 3 seconds
+        // ✅ Opción C: History lock - prevent back navigation after consent
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = () => {
+          // Prevent going back - push state again
+          window.history.pushState(null, '', window.location.href);
+        };
+
+        // ✅ Opción A: Redirect duro después de mostrar mensaje de éxito
+        // Esto previene que el usuario vuelva al formulario en móvil
         setTimeout(() => {
-          window.close();
-        }, 3000);
+          // Replace current URL to prevent back navigation
+          window.location.replace(`${window.location.origin}/consent/success?token=${token}`);
+        }, 2000); // Show success message for 2 seconds before redirect
       } else {
         setError('Failed to record consent. Please try again.');
       }
@@ -246,10 +270,18 @@ export default function PatientConsentPortalPage() {
         setConsentDecision('decline');
         setSubmitted(true);
 
-        // Auto-close after 5 seconds
+        // ✅ Opción C: History lock - prevent back navigation after consent
+        window.history.pushState(null, '', window.location.href);
+        window.onpopstate = () => {
+          // Prevent going back - push state again
+          window.history.pushState(null, '', window.location.href);
+        };
+
+        // ✅ Opción A: Redirect duro después de mostrar mensaje
         setTimeout(() => {
-          window.close();
-        }, 5000);
+          // Replace current URL to prevent back navigation
+          window.location.replace(`${window.location.origin}/consent/success?token=${token}&decision=declined`);
+        }, 3000); // Show decline message for 3 seconds before redirect
       } else {
         setError('Failed to record declined consent. Please try again.');
       }
@@ -303,6 +335,8 @@ export default function PatientConsentPortalPage() {
 
   // Success state (after submission)
   if (submitted) {
+    const isAlreadyUsed = tokenData?.used === true;
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -311,11 +345,17 @@ export default function PatientConsentPortalPage() {
               <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Recorded</h1>
               <p className="text-gray-600 mb-6">
-                Thank you for providing your consent. Your response has been recorded.
+                Thank you for providing your consent. Your response has been recorded successfully.
               </p>
-              <p className="text-sm text-gray-500">
-                This window will close automatically in a few seconds...
-              </p>
+              {isAlreadyUsed ? (
+                <p className="text-sm text-gray-500">
+                  This consent link has already been used. You can safely close this page.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  This window will close automatically in a few seconds...
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -324,9 +364,15 @@ export default function PatientConsentPortalPage() {
               <p className="text-gray-600 mb-6">
                 Your decision has been recorded. No AI-assisted documentation will be used for your care.
               </p>
-              <p className="text-sm text-gray-500">
-                This window will close automatically in a few seconds...
-              </p>
+              {isAlreadyUsed ? (
+                <p className="text-sm text-gray-500">
+                  This consent link has already been used. You can safely close this page.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  This window will close automatically in a few seconds...
+                </p>
+              )}
             </>
           )}
         </div>

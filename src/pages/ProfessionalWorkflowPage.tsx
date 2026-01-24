@@ -3267,14 +3267,11 @@ const ProfessionalWorkflowPage = () => {
         patientId={patientIdFromUrl}
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
-        physiotherapistId={user.uid}
-        physiotherapistName={clinicianDisplayName}
         clinicName={clinicName}
-        onConsentObtained={() => {
-          console.log('[WORKFLOW] ✅ Consent obtained - unlocking workflow');
-          setHasValidConsentForUI(null); // Reset to trigger re-check
-          setConsentCheckComplete(false); // Reset to re-check
-          setWorkflowBlocked(false);
+        onConsentVerified={() => {
+          console.log('[WORKFLOW] ✅ Consent obtained - redirecting to command-center');
+          // ✅ Redirect to command-center immediately after consent is granted
+          navigate('/command-center', { replace: true });
         }}
       />
     );
