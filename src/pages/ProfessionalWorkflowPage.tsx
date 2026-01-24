@@ -21,7 +21,8 @@ import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../cor
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
 import { AnalyticsService } from "../services/analyticsService";
 import type { ValueMetricsEvent } from "../services/analyticsService";
-import { PatientConsentService } from "../services/patientConsentService";
+import { checkConsentViaServer } from "../services/consentServerService";
+import { VerbalConsentService } from "../services/verbalConsentService";
 import { SMSService } from "../services/smsService";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
@@ -35,6 +36,8 @@ import { SuccessMessage } from "../components/ui/SuccessMessage";
 import { LoadingSpinner, InlineLoading } from "../components/ui/LoadingSpinner";
 import { InitialPlanModal } from "../components/treatment-plan/InitialPlanModal";
 import UniversalShareMenu, { ShareOptions } from "../components/share/UniversalShareMenu";
+import { VerbalConsentModal } from "../components/consent/VerbalConsentModal";
+import { ConsentGateScreen } from "../components/consent/ConsentGateScreen";
 import {
   MSK_TEST_LIBRARY,
   regions,
@@ -51,7 +54,7 @@ import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProf
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
-import { Timestamp, doc, setDoc, getDoc, serverTimestamp, collection, query, where, onSnapshot } from "firebase/firestore";
+import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import tokenTrackingService from "../services/tokenTrackingService";
 import logger from "@/shared/utils/logger";
@@ -228,6 +231,13 @@ const ProfessionalWorkflowPage = () => {
   // State for real patient data
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  
+  // ✅ WO-CONSENT-VERBAL-01: Gate state for verbal consent
+  const [workflowBlocked, setWorkflowBlocked] = useState(false);
+  const [showVerbalConsentModal, setShowVerbalConsentModal] = useState(false);
+  const [consentCheckComplete, setConsentCheckComplete] = useState(false);
+  // ✅ WO-CONSENT-GATE-UI-01: Track if consent is valid for UI gate
+  const [hasValidConsentForUI, setHasValidConsentForUI] = useState<boolean | null>(null);
 
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
@@ -653,9 +663,9 @@ const ProfessionalWorkflowPage = () => {
         }
 
         // Navigate to initial tab based on workflow
-        // ✅ CRITICAL FIX: For follow-up, skip analysis tab and go directly to SOAP
+        // ✅ CRITICAL FIX: For follow-up, start with analysis (for conversation recording)
         const initialTab = isExplicitFollowUp || route.type === 'follow-up'
-          ? 'soap'
+          ? 'analysis'  // ✅ FIX: Start with analysis for follow-up conversation
           : getInitialTab(route);
 
         if (['analysis', 'evaluation', 'soap'].includes(initialTab)) {
@@ -755,6 +765,49 @@ const ProfessionalWorkflowPage = () => {
       checkConsentVerification();
     }
   }, [patientIdFromUrl, navigate]);
+
+  // ✅ WO-CONSENT-GATE-UI-01: Gate - Check for valid consent (verbal OR digital) with jurisdiction validation
+  // This is the ABSOLUTE gate - if no consent, NO clinical UI is rendered
+  useEffect(() => {
+    const checkValidConsent = async () => {
+      if (!patientIdFromUrl || !user?.uid || !currentPatient) {
+        // Still loading, don't check yet
+        return;
+      }
+      
+      try {
+        // ✅ WO-CONSENT-VERBAL-01-LANG: Pass jurisdiction to validation
+        const { getCurrentJurisdiction } = await import('../core/consent/consentJurisdiction');
+        const jurisdiction = getCurrentJurisdiction();
+        const hasValid = await VerbalConsentService.hasValidConsent(patientIdFromUrl, user.uid, jurisdiction);
+        
+        if (!hasValid) {
+          console.log('[WORKFLOW] ❌ No valid consent (verbal or digital) - blocking ALL clinical UI', { jurisdiction });
+          setWorkflowBlocked(true);
+          setHasValidConsentForUI(false);
+          setShowVerbalConsentModal(false); // Don't show modal here - ConsentGateScreen handles it
+        } else {
+          console.log('[WORKFLOW] ✅ Valid consent found - workflow unlocked', { jurisdiction });
+          setWorkflowBlocked(false);
+          setHasValidConsentForUI(true);
+          setShowVerbalConsentModal(false);
+        }
+        
+        setConsentCheckComplete(true);
+      } catch (error) {
+        console.error('[WORKFLOW] Error checking valid consent:', error);
+        // Fail-safe: Block if check fails
+        setWorkflowBlocked(true);
+        setHasValidConsentForUI(false);
+        setShowVerbalConsentModal(false);
+        setConsentCheckComplete(true);
+      }
+    };
+
+    if (patientIdFromUrl && user?.uid && currentPatient && !consentCheckComplete) {
+      checkValidConsent();
+    }
+  }, [patientIdFromUrl, user?.uid, currentPatient, consentCheckComplete]);
   const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
     (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
   );
@@ -1247,13 +1300,24 @@ const ProfessionalWorkflowPage = () => {
         const isFirst = await sessionService.isFirstSession(patientId, userId);
         setIsFirstSession(isFirst);
 
-        // Check if patient has consent
-        const hasConsent = await PatientConsentService.hasConsent(patientId);
-        setPatientHasConsent(hasConsent);
+        // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
+        // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Never re-check if consent already granted
+        if (consentGrantedRef.current === true) {
+          console.log('[WORKFLOW] Consent already granted, skipping initial check');
+          setPatientHasConsent(true);
+          return;
+        }
 
-        // Get consent status for display
-        const status = await PatientConsentService.getConsentStatus(patientId);
-        setConsentStatus(status);
+        const consentResult = await checkConsentViaServer(patientId);
+        const hasConsent = consentResult.hasValidConsent;
+        
+        // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted if true (irreversible)
+        if (hasConsent) {
+          consentGrantedRef.current = true;
+        }
+        
+        setPatientHasConsent(hasConsent);
+        setConsentStatus(consentResult.status);
 
         // ✅ WO-CONSENT-01: DO NOT send SMS automatically
         // The physiotherapist must explicitly click "Send Consent via SMS" button
@@ -1279,62 +1343,115 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [user?.uid, patientIdFromUrl, currentPatient]); // Re-check if user or patient changes
 
-  // ✅ CRITICAL FIX: Real-time listener for consent status updates
-  // This updates the UI immediately when patient grants consent
+  // ✅ WO-CONSENT-POLLING-FIX-04: Polling with single instance guard and max attempts
+  // NO Firestore listeners - all checks go through Cloud Functions
+  const consentPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const consentPollingAttemptsRef = useRef<number>(0);
+  const consentPollingPatientIdRef = useRef<string | null>(null);
+  
+  // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Guard to prevent re-blocking once consent is granted
+  // Consent is IRREVERSIBLE in session (PHIPA/ISO compliance + clinical common sense)
+  const consentGrantedRef = useRef<boolean>(false);
+
   useEffect(() => {
     const patientId = patientIdFromUrl || (currentPatient?.id);
     
-    // Skip if no patient ID or demo patient
-    if (!patientId || patientId === demoPatient.id) {
+    // Skip if no patient ID or demo patient or no user
+    if (!patientId || patientId === demoPatient.id || !user?.uid) {
+      // Cleanup if patient/user invalid
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
       return;
     }
 
-    console.log('[WORKFLOW] Setting up real-time consent listener for patient:', patientId);
+    // ✅ Regla 1: Solo se inicia UNA vez por patientId
+    // Check if polling is already active for this patient
+    if (consentPollingRef.current !== null) {
+      if (consentPollingPatientIdRef.current === patientId) {
+        console.log('[WORKFLOW] Polling already active for patient:', patientId);
+        return;
+      } else {
+        // Patient changed, cleanup previous polling
+        console.log('[WORKFLOW] Patient changed, cleaning up previous polling');
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
+    }
 
-    // Set up real-time listener for patient_consents
-    const consentRef = collection(db, 'patient_consents');
-    const consentQuery = query(
-      consentRef,
-      where('patientId', '==', patientId),
-      where('consented', '==', true)
-    );
+    console.log('[WORKFLOW] Setting up consent polling for patient:', patientId);
+    consentPollingPatientIdRef.current = patientId;
+    consentPollingAttemptsRef.current = 0;
 
-    const unsubscribe = onSnapshot(
-      consentQuery,
-      async (snapshot) => {
-        console.log('[WORKFLOW] Consent status changed:', {
-          patientId,
-          docCount: snapshot.docs.length,
-          hasChanges: !snapshot.metadata.fromCache,
-        });
+    const MAX_ATTEMPTS = 20; // ✅ Regla 3: Límite de polling (ISO/PHIPA friendly)
 
-        // Check if patient has consent
-        const hasConsent = await PatientConsentService.hasConsent(patientId);
-        setPatientHasConsent(hasConsent);
+    // Poll every 5 seconds if consent is pending
+    consentPollingRef.current = setInterval(async () => {
+      try {
+        // ✅ Regla 3: Límite de intentos
+        if (++consentPollingAttemptsRef.current >= MAX_ATTEMPTS) {
+          console.warn('[WORKFLOW] Consent polling timeout after', MAX_ATTEMPTS, 'attempts');
+          if (consentPollingRef.current) {
+            clearInterval(consentPollingRef.current);
+            consentPollingRef.current = null;
+          }
+          return;
+        }
 
-        // Get consent status for display
-        const status = await PatientConsentService.getConsentStatus(patientId);
-        setConsentStatus(status);
+        // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Never re-check if consent already granted
+        if (consentGrantedRef.current === true) {
+          console.log('[WORKFLOW] Consent already granted, skipping poll check');
+          return;
+        }
 
-        // If consent was granted, clear pending state
-        if (hasConsent) {
+        const consentResult = await checkConsentViaServer(patientId);
+        
+        // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
+        if (consentResult.hasValidConsent) {
+          // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted (irreversible)
+          consentGrantedRef.current = true;
+          setPatientHasConsent(true);
+          setConsentStatus(consentResult.status);
           setConsentPending(false);
           setSmsError(null);
-          console.log('[WORKFLOW] ✅ Consent granted! UI updated in real-time.');
+          console.log('[WORKFLOW] ✅ Consent granted! UI updated. Stopping polling permanently.');
+          
+          // Stop polling immediately
+          if (consentPollingRef.current) {
+            clearInterval(consentPollingRef.current);
+            consentPollingRef.current = null;
+            consentPollingAttemptsRef.current = 0;
+            consentPollingPatientIdRef.current = null;
+          }
+        } else {
+          // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Only update if not already granted
+          if (!consentGrantedRef.current) {
+            setPatientHasConsent(false);
+            setConsentStatus(consentResult.status);
+          }
         }
-      },
-      (error) => {
-        console.error('[WORKFLOW] Error in consent listener:', error);
+      } catch (error) {
+        console.warn('[WORKFLOW] Error polling consent status:', error);
         // Don't update state on error - keep current state
       }
-    );
+    }, 5000); // Poll every 5 seconds
 
-    // Cleanup listener on unmount or patient change
+    // ✅ Regla 3: Cleanup REAL
     return () => {
-      console.log('[WORKFLOW] Cleaning up consent listener for patient:', patientId);
-      unsubscribe();
+      console.log('[WORKFLOW] Cleaning up consent polling for patient:', patientId);
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
     };
-  }, [patientIdFromUrl, currentPatient?.id]);
+  }, [patientIdFromUrl, currentPatient?.id, user?.uid]); // ✅ Regla 4: Dependencias estables
 
   const persistEvaluation = useCallback((next: EvaluationTestEntry[]) => {
     // ✅ PHASE 2: Enhanced logging for debugging
@@ -2414,17 +2531,19 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
-    // ✅ Patient Consent Gate (PHIPA s. 18 compliance) - SMS-based approach
+    // ✅ WO-CONSENT-VERBAL-01-LANG: Patient Consent Gate with jurisdiction validation
     const patientId = patientIdFromUrl || demoPatient.id;
-    const hasConsent = await PatientConsentService.hasConsent(patientId);
+    const { getCurrentJurisdiction } = await import('../core/consent/consentJurisdiction');
+    const jurisdiction = getCurrentJurisdiction();
+    const hasValid = await VerbalConsentService.hasValidConsent(patientId, user?.uid, jurisdiction);
 
-    if (!hasConsent) {
-      // Show notification that consent is pending
+    if (!hasValid) {
+      // Show notification that consent is required
       setAnalysisError(
         'Patient consent is required before generating SOAP notes. ' +
-        'An SMS with a consent link has been sent to the patient. ' +
-        'Please wait for the patient to provide consent, or use manual documentation entry.'
+        'Please obtain verbal consent using the consent modal, or wait for the patient to provide digital consent via SMS.'
       );
+      setShowVerbalConsentModal(true);
       return; // Block AI processing until consent is given
     }
 
@@ -3140,6 +3259,39 @@ const ProfessionalWorkflowPage = () => {
   // ✅ ISO COMPLIANCE: Render functions extracted to separate components for better code organization
   // Components are lazy-loaded for optimal performance and memory management
 
+  // ✅ WO-CONSENT-GATE-UI-01: ABSOLUTE GATE - No clinical UI without valid consent
+  // This is NOT a modal or banner. This replaces ALL clinical UI.
+  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && hasValidConsentForUI === false) {
+    return (
+      <ConsentGateScreen
+        patientId={patientIdFromUrl}
+        patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+        patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
+        physiotherapistId={user.uid}
+        physiotherapistName={clinicianDisplayName}
+        clinicName={clinicName}
+        onConsentObtained={() => {
+          console.log('[WORKFLOW] ✅ Consent obtained - unlocking workflow');
+          setHasValidConsentForUI(null); // Reset to trigger re-check
+          setConsentCheckComplete(false); // Reset to re-check
+          setWorkflowBlocked(false);
+        }}
+      />
+    );
+  }
+
+  // ✅ WO-CONSENT-GATE-UI-01: Show loading while checking consent
+  if (patientIdFromUrl && user?.uid && currentPatient && !consentCheckComplete) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="mt-4 text-sm text-gray-600">Verifying patient consent...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="border-b border-slate-200 bg-white">
@@ -3219,8 +3371,14 @@ const ProfessionalWorkflowPage = () => {
 
         <nav className="flex flex-wrap gap-2">
           {[
-            { id: "analysis", label: "1 · Initial Analysis" },
-            { id: "evaluation", label: "2 · Physical Evaluation" },
+            { 
+              id: "analysis", 
+              label: visitType === 'follow-up' ? "1 · Follow-up Conversation" : "1 · Initial Analysis" 
+            },
+            { 
+              id: "evaluation", 
+              label: visitType === 'follow-up' ? "2 · Re-evaluation" : "2 · Physical Evaluation" 
+            },
             { id: "soap", label: "3 · SOAP Report" },
           ]
             .filter((tab) => {
@@ -3229,10 +3387,8 @@ const ProfessionalWorkflowPage = () => {
               const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
               const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
 
-              // Skip analysis tab for follow-ups
-              if (isFollowUpWorkflow && tab.id === 'analysis') {
-                return false;
-              }
+              // ✅ FIX: Don't skip analysis tab for follow-ups - needs conversation recording
+              // Removed: Skip analysis tab for follow-ups
 
               if (workflowRoute) {
                 return !shouldSkipTab(workflowRoute, tab.id);
@@ -3253,9 +3409,9 @@ const ProfessionalWorkflowPage = () => {
             ))}
         </nav>
 
-        {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups */}
         {/* ✅ ISO COMPLIANCE: Lazy-loaded components with Suspense for better performance */}
-        {activeTab === "analysis" && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+        {/* ✅ FIX: Show analysis tab for follow-ups (needs conversation recording) */}
+        {activeTab === "analysis" && (
           <Suspense fallback={<LoadingSpinner />}>
             <AnalysisTab
               currentPatient={currentPatient}
@@ -3321,6 +3477,7 @@ const ProfessionalWorkflowPage = () => {
         {activeTab === "evaluation" && (
           <Suspense fallback={<LoadingSpinner />}>
             <EvaluationTab
+              visitType={visitType}  // ✅ NEW: Pass visitType for follow-up selective re-evaluation
               filteredEvaluationTests={filteredEvaluationTests}
               evaluationTests={evaluationTests}
               completedCount={completedCount}
@@ -3419,6 +3576,35 @@ const ProfessionalWorkflowPage = () => {
           patientId={patientIdFromUrl || demoPatient.id}
           patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
           onPlanCreated={handlePlanCreated}
+        />
+      )}
+
+      {/* ✅ WO-CONSENT-VERBAL-01: Verbal Consent Modal - Gate for clinical workflow */}
+      {currentPatient && user?.uid && (
+        <VerbalConsentModal
+          isOpen={showVerbalConsentModal}
+          onClose={() => {
+            // Don't allow closing if workflow is blocked
+            if (workflowBlocked) {
+              return; // Modal must stay open until consent is obtained
+            }
+            setShowVerbalConsentModal(false);
+          }}
+          patientId={patientIdFromUrl || demoPatient.id}
+          patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
+          physiotherapistId={user.uid}
+          physiotherapistName={clinicianDisplayName}
+          onConsentObtained={async (consentId) => {
+            console.log('[WORKFLOW] ✅ Verbal consent obtained:', consentId);
+            setWorkflowBlocked(false);
+            setShowVerbalConsentModal(false);
+            setConsentCheckComplete(false); // Reset to re-check
+            setSuccessMessage('Consent obtained. You can now proceed with the clinical workflow.');
+          }}
+          onConsentDenied={() => {
+            console.log('[WORKFLOW] ❌ Consent denied by patient');
+            setAnalysisError('Patient consent is required to proceed. Please obtain consent before continuing.');
+          }}
         />
       )}
 

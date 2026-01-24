@@ -162,147 +162,10 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
 });
 
 /**
- * Receive inbound SMS from Vonage
- * 
- * Market: CA · en-CA · PHIPA/PIPEDA Ready
- * 
- * Webhook URL: https://us-central1-aiduxcare-v2-uat-dev.cloudfunctions.net/receiveSMS
+ * ✅ REMOVED: receiveSMS and smsDeliveryReceipt webhook functions
+ * These functions were not used in the codebase. If Vonage webhooks are needed in the future,
+ * they can be re-added and configured in the Vonage dashboard.
  */
-exports.receiveSMS = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS - Handle preflight
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(204).send('');
-  }
-
-  try {
-    // Vonage sends GET requests by default for inbound SMS
-    const data = req.method === 'GET' ? req.query : req.body;
-    
-    const {
-      msisdn,      // Sender's phone number
-      to,          // Recipient (our number)
-      text,        // Message content
-      messageId,   // Vonage message ID
-      'message-timestamp': messageTimestamp,
-    } = data;
-
-    console.log('[SMS Receive] Inbound SMS received:', {
-      from: msisdn,
-      to: to,
-      text: text?.substring(0, 100), // Limit log size
-      messageId,
-      timestamp: messageTimestamp,
-    });
-
-    // Log to Firestore for audit trail
-    try {
-      // Lazy load firebase-admin to prevent timeout during initialization
-      const admin = require('firebase-admin');
-      if (!admin.apps.length) {
-        admin.initializeApp();
-      }
-      const db = admin.firestore();
-      
-      await db.collection('inbound_sms').add({
-        from: msisdn,
-        to: to,
-        text: text,
-        messageId: messageId,
-        timestamp: messageTimestamp || admin.firestore.FieldValue.serverTimestamp(),
-        receivedAt: admin.firestore.FieldValue.serverTimestamp(),
-        processed: false,
-      });
-    } catch (firestoreError) {
-      console.error('[SMS Receive] Error logging to Firestore:', firestoreError);
-      // Continue even if Firestore logging fails
-    }
-
-    // Return 200 OK to Vonage (required)
-    return res.status(200).send('OK');
-  } catch (error) {
-    console.error('[SMS Receive] Error:', error);
-    // Still return 200 to prevent Vonage from retrying
-    return res.status(200).send('OK');
-  }
-});
-
-/**
- * SMS Delivery Receipt webhook from Vonage
- * 
- * Market: CA · en-CA · PHIPA/PIPEDA Ready
- * 
- * Webhook URL: https://us-central1-aiduxcare-v2-uat-dev.cloudfunctions.net/smsDeliveryReceipt
- */
-exports.smsDeliveryReceipt = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS - Handle preflight
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(204).send('');
-  }
-
-  try {
-    // Vonage sends GET requests by default for delivery receipts
-    const data = req.method === 'GET' ? req.query : req.body;
-    
-    const {
-      msisdn,      // Recipient phone number
-      to,          // Our number (sender)
-      'message-id': messageId,
-      status,      // Delivery status
-      'err-code': errCode,
-      'price': price,
-      'network': network,
-    } = data;
-
-    console.log('[SMS Delivery] Receipt received:', {
-      to: msisdn,
-      from: to,
-      messageId,
-      status,
-      errCode,
-      price,
-      network,
-    });
-
-    // Log to Firestore for audit trail
-    try {
-      // Lazy load firebase-admin to prevent timeout during initialization
-      const admin = require('firebase-admin');
-      if (!admin.apps.length) {
-        admin.initializeApp();
-      }
-      const db = admin.firestore();
-      
-      await db.collection('sms_delivery_receipts').add({
-        to: msisdn,
-        from: to,
-        messageId,
-        status,
-        errCode,
-        price,
-        network,
-        receivedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    } catch (firestoreError) {
-      console.error('[SMS Delivery] Error logging to Firestore:', firestoreError);
-      // Continue even if Firestore logging fails
-    }
-
-    // Return 200 OK to Vonage (required)
-    return res.status(200).send('OK');
-  } catch (error) {
-    console.error('[SMS Delivery] Error:', error);
-    // Still return 200 to prevent Vonage from retrying
-    return res.status(200).send('OK');
-  }
-});
 
 /**
  * NUEVO vertexAIProxy: passthrough limpio (sin 'entities'), con CORS
@@ -519,53 +382,8 @@ if (VALIDATION_ENABLED) {
 }
 // ===== End Validation Wiring v2 =====
 */
-
-// Export stub functions to prevent undefined exports
-exports.apiCreateNote = exports.apiCreateNote || functions.region(LOCATION).https.onRequest(async (req, res) => {
-  return res.status(501).json({ ok: false, error: "Validation API not enabled" });
-});
-exports.apiUpdateNote = exports.apiUpdateNote || functions.region(LOCATION).https.onRequest(async (req, res) => {
-  return res.status(501).json({ ok: false, error: "Validation API not enabled" });
-});
-exports.apiSignNote = exports.apiSignNote || functions.region(LOCATION).https.onRequest(async (req, res) => {
-  return res.status(501).json({ ok: false, error: "Validation API not enabled" });
-});
-exports.apiAuditLog = exports.apiAuditLog || functions.region(LOCATION).https.onRequest(async (req, res) => {
-  return res.status(501).json({ ok: false, error: "Validation API not enabled" });
-});
-exports.apiConsent = exports.apiConsent || functions.region(LOCATION).https.onRequest(async (req, res) => {
-  return res.status(501).json({ ok: false, error: "Validation API not enabled" });
-});
-
-/**
- * GET/POST /api/referral - Null-safe endpoint to prevent 403 errors
- * 
- * This endpoint exists to handle legacy or phantom requests to /api/referral
- * that may come from old bookmarks, scripts, or deployed rewrites not in repo.
- * 
- * Returns 404 (Not Found) consistently, never 403 (Forbidden).
- * 
- * Market: CA · en-CA · PHIPA/PIPEDA Ready
- */
-exports.apiReferral = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS - Handle preflight
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Max-Age', '3600');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(204).send('');
-  }
-  
-  // Return 404 (Not Found) instead of 403 (Forbidden)
-  // This is the canonical "null-safe" response: endpoint exists but is not implemented
-  return res.status(404).json({ 
-    ok: false, 
-    error: 'not_implemented',
-    message: 'The /api/referral endpoint is not implemented. This endpoint exists to prevent 403 errors from legacy requests.'
-  });
-});
+// ✅ REMOVED: Stub functions (apiCreateNote, apiUpdateNote, apiSignNote, apiAuditLog, apiConsent, apiReferral)
+// These functions were not used in the codebase and only returned 501/404 errors.
 
 // Token reset functions are in separate file (monthlyTokenReset.js)
 // Firebase will discover them automatically during deployment
@@ -741,6 +559,14 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
 const whisperProxy = require('./src/whisperProxy');
 exports.whisperProxy = whisperProxy.whisperProxy;
 
+// ✅ WO-CONSENT-PORTAL-CF-01: Patient Consent Portal Cloud Function
+// Public endpoint for secure consent recording from patient portal
+const acceptPatientConsentByToken = require('./src/consent/acceptPatientConsentByToken');
+exports.acceptPatientConsentByToken = acceptPatientConsentByToken.acceptPatientConsentByToken;
+
+const getConsentStatus = require('./src/consent/getConsentStatus');
+exports.getConsentStatus = getConsentStatus.getConsentStatus;
+
 /**
  * Consent verification endpoint (token-based)
  * 
@@ -762,8 +588,18 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
   }
 
   const token = (req.query?.token || req.body?.token);
+  const action = (req.query?.action || req.body?.action || 'accept'); // 'accept' or 'decline'
+  const declineReasons = req.body?.declineReasons || null;
+  const declineNotes = req.body?.declineNotes || null;
+  const consentTextVersion = req.body?.consentTextVersion || '1.0.0';
+  const jurisdiction = req.body?.jurisdiction || 'CA-ON';
+  
   if (!token || typeof token !== 'string' || token.trim().length < 10) {
     return res.status(400).json({ ok: false, error: 'missing_or_invalid_token' });
+  }
+  
+  if (action === 'decline' && (!declineReasons || declineReasons.length === 0)) {
+    return res.status(400).json({ ok: false, error: 'decline_reasons_required' });
   }
 
   try {
@@ -790,10 +626,13 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
 
     // ✅ T3: Verificar si ya está usado - campo: used
     if (data.used === true) {
-      // Idempotente: si ya está otorgado, responder ok
+      // Idempotente: si ya está otorgado/declinado, responder ok
       const consentGiven = data.consentGiven || {};
       if (consentGiven.scope && consentGiven.scope !== 'declined') {
         return res.status(200).json({ ok: true, alreadyGranted: true, scope: consentGiven.scope });
+      }
+      if (consentGiven.scope === 'declined') {
+        return res.status(200).json({ ok: true, alreadyDeclined: true });
       }
     }
 
@@ -801,36 +640,52 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || '').trim();
     const ua = (req.get('user-agent') || '').slice(0, 200);
 
-    // ✅ T3: Marcar como usado y otorgar consent (scope: 'ongoing' por defecto)
+    // Determine consent status based on action
+    const isDeclined = action === 'decline';
+    const consentScope = isDeclined ? 'declined' : 'ongoing';
+    const consentStatus = isDeclined ? 'declined' : 'granted';
+    
+    // ✅ T3: Marcar como usado y registrar decisión
     await tokenRef.update({
       used: true,
       usedAt: admin.firestore.FieldValue.serverTimestamp(),
       consentGiven: {
-        scope: 'ongoing', // Default scope for token-based verification
+        scope: consentScope,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         ipAddress: ip || null,
         userAgent: ua || null,
       },
     });
 
-    // ✅ T3: Crear registro de consent en patient_consents
+    // ✅ PHIPA-compliant: Create consent record in patient_consent collection (new schema)
+    // This is the canonical collection used by ConsentGateScreen and all consent listeners
     const consentRecord = {
       patientId: data.patientId,
       patientName: data.patientName,
-      clinicName: data.clinicName || 'AiduxCare Clinic',
-      physiotherapistId: data.physiotherapistId,
-      physiotherapistName: data.physiotherapistName || 'Your physiotherapist',
-      consentScope: 'ongoing',
-      consented: true,
+      professionalId: data.physiotherapistId,
+      consentMethod: 'digital',
+      consentStatus: consentStatus,
+      status: consentStatus, // For query compatibility
+      consentTextVersion: consentTextVersion,
       consentDate: admin.firestore.FieldValue.serverTimestamp(),
       consentVersion: '1.0.0',
+      jurisdiction: jurisdiction,
+      consented: !isDeclined,
+      consentScope: consentScope,
       tokenUsed: token.trim(),
       ipAddress: ip || null,
       userAgent: ua || null,
       obtainmentMethod: 'SMS',
+      ...(isDeclined && {
+        declineReasons: Array.isArray(declineReasons) ? declineReasons.join(', ') : declineReasons,
+        declineNotes: declineNotes || null,
+        declinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }),
     };
 
-    await db.collection('patient_consents').add(consentRecord);
+    // Write to patient_consent (new canonical collection)
+    const consentId = `${data.patientId}_${Date.now()}`;
+    await db.collection('patient_consent').doc(consentId).set(consentRecord);
 
     // Log para audit
     await db.collection('audit_logs').add({
@@ -848,7 +703,12 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return res.status(200).json({ ok: true, scope: 'ongoing' });
+    return res.status(200).json({ 
+      ok: true, 
+      scope: consentScope,
+      status: consentStatus,
+      action: action
+    });
   } catch (e) {
     console.error('[apiConsentVerify] error:', e?.stack || e);
     return res.status(500).json({ ok: false, error: 'internal_error' });

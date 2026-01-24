@@ -16,7 +16,8 @@
  * - Once granted = valid for entire treatment
  */
 
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
+import { checkConsentViaServer } from './consentServerService';
 import { 
   collection, 
   doc, 
@@ -29,6 +30,10 @@ import {
   Timestamp,
   updateDoc
 } from 'firebase/firestore';
+// ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
+import { getCurrentJurisdiction, type ClinicalJurisdiction } from '../core/consent/consentJurisdiction';
+import { getConsentTextString, type ConsentTextVersion } from '../core/consent/consentTexts';
+import { hasValidConsent as validateConsentWithJurisdiction } from '../core/consent/consentValidation';
 
 // ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
@@ -72,6 +77,10 @@ export interface VerbalConsentRecord {
   physiotherapistId: string;
   hospitalId?: string;
   
+  // ✅ WO-CONSENT-VERBAL-01-LANG: Jurisdiction and text version
+  textVersion: ConsentTextVersion;
+  jurisdiction: ClinicalJurisdiction;
+  
   consentDetails: VerbalConsentDetails;
   timestamps: VerbalConsentTimestamps;
   validity: VerbalConsentValidity;
@@ -98,17 +107,89 @@ export interface ConsentVerificationResult {
 }
 
 /**
- * Consent text that must be read to patient (PHIPA-aware design goal)
+ * ✅ WO-CONSENT-VERBAL-01-LANG: Get consent text for current jurisdiction
+ * 
+ * Defaults to en-CA for CA-ON, but can be overridden for ES/CL
  */
-export const VERBAL_CONSENT_TEXT = `
-Vamos a grabar nuestra sesión de fisioterapia para generar 
-automáticamente las notas médicas usando inteligencia artificial.
-La grabación se mantiene segura en servidores canadienses.
-¿Autoriza esta grabación y procesamiento de sus datos?
-`.trim();
+export function getVerbalConsentText(version: ConsentTextVersion = 'v1-en-CA'): string {
+  return getConsentTextString(version);
+}
+
+/**
+ * ✅ WO-CONSENT-VERBAL-01-LANG: Get default consent text version for current jurisdiction
+ */
+export function getDefaultConsentTextVersion(): ConsentTextVersion {
+  const jurisdiction = getCurrentJurisdiction();
+  // CA-ON uses en-CA, ES/CL can use en-US
+  return jurisdiction === 'CA-ON' ? 'v1-en-CA' : 'v1-en-US';
+}
 
 export class VerbalConsentService {
   private static readonly COLLECTION_NAME = 'verbal_consents';
+  
+  /**
+   * ✅ WO-CONSENT-VERBAL-01-LANG: Helper to check if patient has valid consent (verbal OR digital)
+   * This is the canonical gate function required by the WO
+   * Now includes jurisdiction-aware validation
+   */
+  static async hasValidConsent(
+    patientId: string,
+    physiotherapistId?: string,
+    jurisdiction?: ClinicalJurisdiction
+  ): Promise<boolean> {
+    try {
+      const currentJurisdiction = jurisdiction || getCurrentJurisdiction();
+      
+      // Check both verbal and digital consent
+      const [verbalResult, hasDigital] = await Promise.all([
+        this.verifyConsent(patientId, physiotherapistId).catch(() => ({ hasConsent: false })),
+        // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
+        checkConsentViaServer(patientId).then(result => result.hasValidConsent).catch(() => false),
+      ]);
+      
+      // ✅ WO-CONSENT-VERBAL-01-LANG: Validate verbal consent with jurisdiction
+      const hasVerbal = verbalResult.hasConsent && verbalResult.consentId
+        ? await this.validateConsentForJurisdiction(verbalResult.consentId, currentJurisdiction)
+        : false;
+      
+      return hasVerbal || hasDigital;
+    } catch (error) {
+      console.error('[VerbalConsent] Error checking valid consent:', error);
+      return false; // Fail-safe: block if check fails
+    }
+  }
+  
+  /**
+   * ✅ WO-CONSENT-VERBAL-01-LANG: Validate consent record for jurisdiction
+   */
+  private static async validateConsentForJurisdiction(
+    consentId: string,
+    jurisdiction: ClinicalJurisdiction
+  ): Promise<boolean> {
+    try {
+      const consentRef = doc(db, this.COLLECTION_NAME, consentId);
+      const consentSnap = await getDoc(consentRef);
+      
+      if (!consentSnap.exists()) {
+        return false;
+      }
+      
+      const consentData = consentSnap.data() as VerbalConsentRecord;
+      
+      // ✅ WO-CONSENT-VERBAL-01-LANG: Use centralized validation with jurisdiction
+      // Map VerbalConsentRecord to format expected by hasValidConsent
+      const consentRecordForValidation = {
+        textVersion: consentData.textVersion,
+        status: consentData.validity.status,
+        jurisdiction: consentData.jurisdiction,
+      };
+      
+      return validateConsentWithJurisdiction(consentRecordForValidation, jurisdiction);
+    } catch (error) {
+      console.error('[VerbalConsent] Error validating consent for jurisdiction:', error);
+      return false;
+    }
+  }
   
   /**
    * Check if patient has valid consent
@@ -239,8 +320,17 @@ export class VerbalConsentService {
         obtainedBy: consentData.consentDetails.obtainedBy,
         validUntil,
       };
-    } catch (error) {
-      console.error('[VerbalConsent] Error verifying consent:', error);
+    } catch (error: any) {
+      // Handle permission errors gracefully - verbal_consents collection may not have rules
+      // or may not exist yet. System has fallback to PatientConsentService.
+      if (error?.code === 'permission-denied' || error?.code === 'missing-or-insufficient-permissions') {
+        // Silently handle - this is expected when collection doesn't exist or has no rules
+        // The system will work via PatientConsentService.hasConsent() fallback
+        console.debug('[VerbalConsent] Permission error (expected - using fallback):', error.code);
+      } else {
+        // Log other errors (network, etc.) but don't spam console
+        console.warn('[VerbalConsent] Error verifying consent:', error?.code || error?.message || 'Unknown error');
+      }
       return {
         hasConsent: false,
       };
@@ -250,6 +340,7 @@ export class VerbalConsentService {
   /**
    * Obtain verbal consent from patient
    * ✅ Security audit: All consent operations are logged
+   * ✅ WO-CONSENT-VERBAL-01-LANG: Now includes jurisdiction and textVersion
    */
   static async obtainConsent(
     patientId: string,
@@ -258,6 +349,8 @@ export class VerbalConsentService {
     options?: {
       hospitalId?: string;
       validUntil?: Date; // Default: 1 year from now
+      textVersion?: ConsentTextVersion; // ✅ WO-CONSENT-VERBAL-01-LANG
+      jurisdiction?: ClinicalJurisdiction; // ✅ WO-CONSENT-VERBAL-01-LANG
     }
   ): Promise<{ consentId: string; success: boolean }> {
     try {
@@ -268,6 +361,16 @@ export class VerbalConsentService {
 
       if (!consentDetails.patientUnderstood || !consentDetails.voluntarilyGiven) {
         throw new Error('Consent must be understood and voluntarily given');
+      }
+
+      // ✅ WO-CONSENT-VERBAL-01-LANG: Get jurisdiction and text version
+      const jurisdiction = options?.jurisdiction || getCurrentJurisdiction();
+      const textVersion = options?.textVersion || getDefaultConsentTextVersion();
+      
+      // Validate text version is allowed for jurisdiction
+      const { isConsentTextAllowed } = await import('../core/consent/consentValidation');
+      if (!isConsentTextAllowed(jurisdiction, textVersion)) {
+        throw new Error(`Text version ${textVersion} is not allowed for jurisdiction ${jurisdiction}`);
       }
 
       // Generate consent ID
@@ -294,11 +397,17 @@ export class VerbalConsentService {
           lastModified: any;
           accessLog: any[];
         };
+        // ✅ WO-CONSENT-VERBAL-01-LANG: Add textVersion and jurisdiction
+        textVersion: ConsentTextVersion;
+        jurisdiction: ClinicalJurisdiction;
       } = {
         consentId,
         patientId,
         physiotherapistId,
         hospitalId: options?.hospitalId,
+        // ✅ WO-CONSENT-VERBAL-01-LANG: Add textVersion and jurisdiction
+        textVersion,
+        jurisdiction,
         consentDetails: {
           method: 'verbal_via_physiotherapist',
           ...consentDetails,

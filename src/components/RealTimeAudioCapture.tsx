@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AudioCaptureServiceReal, CaptureSession, CaptureStatus } from '../services/AudioCaptureServiceReal';
 import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
 import { WebSpeechSTTService } from '../services/WebSpeechSTTService';
-import { PatientConsentService } from '../services/patientConsentService'; // ✅ PHIPA compliance (legacy)
+import { checkConsentViaServer } from '../services/consentServerService'; // ✅ WO-CONSENT-CLEANUP-03: Server-side only
 import VerbalConsentService from '../services/verbalConsentService'; // ✅ PHIPA compliance (verbal)
 
 interface RealTimeAudioCaptureProps {
@@ -112,7 +112,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
       try {
         // Check both consent services (legacy + verbal)
         const [hasLegacyConsent, hasVerbalConsent] = await Promise.all([
-          PatientConsentService.hasConsent(patientId).catch(() => false),
+          checkConsentViaServer(patientId).then(result => result.hasValidConsent).catch(() => false),
           VerbalConsentService.hasConsent(patientId, physiotherapistId).catch(() => false),
         ]);
 

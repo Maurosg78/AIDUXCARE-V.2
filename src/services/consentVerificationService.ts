@@ -17,6 +17,7 @@ import { db } from '../lib/firebase';
 import { auth } from '../lib/firebase';
 import { SMSService } from './smsService';
 import { PatientConsentService } from './patientConsentService';
+import { checkConsentViaServer } from './consentServerService';
 
 export type SMSConsentStatus = 'sending' | 'sent' | 'confirmed' | 'failed' | 'timeout';
 export type ConsentMethod = 'sms' | 'manual' | null;
@@ -76,8 +77,9 @@ export class ConsentVerificationService {
     physiotherapistName: string = 'Your physiotherapist'
   ): Promise<ConsentVerificationState> {
     try {
-      // Check if patient already has consent
-      const hasConsent = await PatientConsentService.hasConsent(patientId);
+      // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
+      const consentResult = await checkConsentViaServer(patientId);
+      const hasConsent = consentResult.hasValidConsent;
       if (hasConsent) {
         // Return verified state immediately
         return {
@@ -190,8 +192,9 @@ export class ConsentVerificationService {
    */
   static async checkSMSStatus(patientId: string): Promise<SMSConsentStatus> {
     try {
-      // Check if patient has consent (means SMS was confirmed)
-      const hasConsent = await PatientConsentService.hasConsent(patientId);
+      // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
+      const consentResult = await checkConsentViaServer(patientId);
+      const hasConsent = consentResult.hasValidConsent;
       if (hasConsent) {
         return 'confirmed';
       }
@@ -424,8 +427,9 @@ export class ConsentVerificationService {
    */
   static async isConsentVerified(patientId: string): Promise<boolean> {
     try {
-      // Check if patient has consent
-      const hasConsent = await PatientConsentService.hasConsent(patientId);
+      // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
+      const consentResult = await checkConsentViaServer(patientId);
+      const hasConsent = consentResult.hasValidConsent;
       if (hasConsent) {
         return true;
       }

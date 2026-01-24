@@ -12,7 +12,7 @@
  */
 
 import { collection, doc, setDoc, getDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 
 // UUID generator - uses crypto.randomUUID if available, otherwise fallback
 const generateUUID = (): string => {
@@ -80,7 +80,7 @@ type PatientConsentDoc = {
 const CONSENT_VERSION = '1.0.0';
 const TOKEN_EXPIRATION_DAYS = 7; // Token valid for 7 days
 const TOKEN_COLLECTION = 'patient_consent_tokens';
-const CONSENT_COLLECTION = 'patient_consents';
+const CONSENT_COLLECTION = 'patient_consent'; // ✅ Canonical collection (matches Cloud Function)
 
 /**
  * Patient Consent Service
@@ -341,17 +341,34 @@ export class PatientConsentService {
   /**
    * Check if patient has valid ongoing consent
    * 
+   * @deprecated WO-CONSENT-CLEANUP-03: This function is DEPRECATED. Use checkConsentViaServer() from consentServerService instead.
+   * This function attempts to read Firestore directly, which violates security rules.
+   * ALL consent checks MUST go through Cloud Functions (server-side).
+   * 
    * @param patientId - Patient ID
    * @returns Promise<boolean>
    */
-  static async hasConsent(patientId: string): Promise<boolean> {
+  static async hasConsent(patientId: string, professionalId?: string): Promise<boolean> {
+    console.error('❌ [DEPRECATED] PatientConsentService.hasConsent() is DEPRECATED. Use checkConsentViaServer() from consentServerService instead.');
+    console.error('❌ This function violates WO-CONSENT-CLEANUP-03: All consent checks MUST go through Cloud Functions.');
+    throw new Error('PatientConsentService.hasConsent() is deprecated. Use checkConsentViaServer() from consentServerService instead.');
     try {
+      // ✅ Get current user for security filter (required by Firestore rules)
+      const currentUser = auth.currentUser;
+      const userId = professionalId || currentUser?.uid;
+      
+      if (!userId) {
+        console.warn('[PATIENT CONSENT] User not authenticated, cannot check consent');
+        return false;
+      }
+
       const consentRef = collection(db, CONSENT_COLLECTION);
+      // ✅ Query by patientId AND professionalId (required by Firestore rules)
+      // Filter by status in memory to avoid composite index requirement
       const q = query(
         consentRef,
         where('patientId', '==', patientId),
-        where('consented', '==', true),
-        where('consentScope', '==', 'ongoing')
+        where('professionalId', '==', userId)
       );
 
       const snapshot = await getDocs(q);
@@ -360,13 +377,19 @@ export class PatientConsentService {
         return false;
       }
 
-      // Check if consent is still valid (not expired, correct version)
-      const consents = snapshot.docs.map(doc => doc.data());
-      const validConsent = consents.find(
-        consent => consent.consentVersion === CONSENT_VERSION
-      );
+      // Filter in memory: status === 'granted' and valid version
+      const consents = snapshot.docs
+        .map(doc => doc.data())
+        .filter(consent => {
+          const status = consent.consentStatus || consent.status;
+          return status === 'granted';
+        })
+        .filter(consent => 
+          consent.consentVersion === CONSENT_VERSION || 
+          consent.consentTextVersion === CONSENT_VERSION
+        );
 
-      return !!validConsent;
+      return consents.length > 0;
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error checking consent:', error);
       return false; // Fail-safe: no consent = block AI processing
@@ -376,16 +399,34 @@ export class PatientConsentService {
   /**
    * Get current consent status for a patient
    * 
+   * @deprecated WO-CONSENT-CLEANUP-03: This function is DEPRECATED. Use checkConsentViaServer() from consentServerService instead.
+   * This function attempts to read Firestore directly, which violates security rules.
+   * ALL consent checks MUST go through Cloud Functions (server-side).
+   * 
    * @param patientId - Patient ID
    * @returns Promise with consent status: 'ongoing' | 'session-only' | 'declined' | null
    */
-  static async getConsentStatus(patientId: string): Promise<'ongoing' | 'session-only' | 'declined' | null> {
+  static async getConsentStatus(patientId: string, professionalId?: string): Promise<'ongoing' | 'session-only' | 'declined' | null> {
+    console.error('❌ [DEPRECATED] PatientConsentService.getConsentStatus() is DEPRECATED. Use checkConsentViaServer() from consentServerService instead.');
+    console.error('❌ This function violates WO-CONSENT-CLEANUP-03: All consent checks MUST go through Cloud Functions.');
+    throw new Error('PatientConsentService.getConsentStatus() is deprecated. Use checkConsentViaServer() from consentServerService instead.');
     try {
+      // ✅ Get current user for security filter (required by Firestore rules)
+      const currentUser = auth.currentUser;
+      const userId = professionalId || currentUser?.uid;
+      
+      if (!userId) {
+        console.warn('[PATIENT CONSENT] User not authenticated, cannot get consent status');
+        return null;
+      }
+
       const consentRef = collection(db, CONSENT_COLLECTION);
+      // ✅ Query by patientId AND professionalId (required by Firestore rules)
+      // Filter by status in memory to avoid composite index requirement
       const q = query(
         consentRef,
         where('patientId', '==', patientId),
-        where('consented', '==', true)
+        where('professionalId', '==', userId)
       );
 
       const snapshot = await getDocs(q);
@@ -394,14 +435,21 @@ export class PatientConsentService {
         return null;
       }
 
-      // Get the most recent consent
+      // Get the most recent consent with status === 'granted'
       // Bloque 1: Mapeo con tipo correcto para Firestore docs
       const consents = snapshot.docs
         .map(doc => {
           const data = doc.data() as PatientConsentDoc;
           return { id: doc.id, ...data };
         })
-        .filter(consent => consent.consentVersion === CONSENT_VERSION)
+        .filter(consent => {
+          const status = consent.consentStatus || (consent as any).status;
+          return status === 'granted';
+        })
+        .filter(consent => 
+          consent.consentVersion === CONSENT_VERSION || 
+          (consent as any).consentTextVersion === CONSENT_VERSION
+        )
         .sort((a, b) => {
           const aDate = a.consentDate?.toDate?.() || new Date(0);
           const bDate = b.consentDate?.toDate?.() || new Date(0);
@@ -553,8 +601,153 @@ export class PatientConsentService {
    * 
    * @returns Current consent version string
    */
+
+  /**
+   * Record verbal consent (granted or declined)
+   * PHIPA/PIPEDA compliant with audit trail
+   * 
+   * @param details - Verbal consent details including status and reasons
+   */
+  static async recordVerbalConsent(details: {
+    patientId: string;
+    professionalId: string;
+    patientName: string;
+    consentStatus: 'granted' | 'declined';
+    consentTextVersion: string;
+    witnessStatement: string;
+    patientUnderstanding?: string;
+    declineReasons?: string;
+    declineNotes?: string;
+  }): Promise<void> {
+    try {
+      const consentRecord: any = {
+        patientId: details.patientId,
+        patientName: details.patientName,
+        professionalId: details.professionalId,
+        consentMethod: 'verbal',
+        consentStatus: details.consentStatus,
+        status: details.consentStatus, // For query compatibility
+        consentTextVersion: details.consentTextVersion,
+        witnessStatement: details.witnessStatement,
+        patientUnderstanding: details.patientUnderstanding || null,
+        consentDate: serverTimestamp(),
+        consentVersion: CONSENT_VERSION,
+        obtainmentMethod: 'Verbal',
+        jurisdiction: 'CA-ON',
+        
+        // Declined consent fields (PHIPA compliance requirement)
+        ...(details.consentStatus === 'declined' && {
+          declineReasons: details.declineReasons,
+          declineNotes: details.declineNotes || null,
+          declinedAt: serverTimestamp(),
+        }),
+        
+        // Granted consent fields
+        ...(details.consentStatus === 'granted' && {
+          consented: true,
+          consentScope: 'ongoing',
+          authorizedByPhysiotherapist: true,
+        }),
+      };
+
+      const consentRef = doc(db, 'patient_consent', `${details.patientId}_${Date.now()}`);
+      await setDoc(consentRef, consentRecord);
+
+      console.log('[PATIENT CONSENT] Verbal consent recorded:', {
+        patientId: details.patientId,
+        status: details.consentStatus,
+        method: 'verbal',
+      });
+    } catch (error) {
+      console.error('❌ [PATIENT CONSENT] Error recording verbal consent:', error);
+      throw error;
+    }
+  }
   static getConsentVersion(): string {
     return CONSENT_VERSION;
+  }
+
+  /**
+   * Record SMS consent request (state: sms_requested)
+   * Called when SMS is successfully sent to patient
+   * 
+   * @param patientId - Patient ID
+   * @param professionalId - Professional ID
+   * @param patientName - Patient name
+   * @param token - Consent token that was sent
+   * @returns Promise<void>
+   */
+  static async recordSMSConsentRequest(
+    patientId: string,
+    professionalId: string,
+    patientName: string,
+    token: string
+  ): Promise<void> {
+    try {
+      const consentRecord: any = {
+        patientId,
+        patientName,
+        professionalId,
+        consentMethod: 'digital',
+        consentStatus: 'sms_requested',
+        status: 'sms_requested', // For query compatibility
+        consentTextVersion: CONSENT_VERSION,
+        requestedAt: serverTimestamp(),
+        tokenUsed: token,
+        jurisdiction: 'CA-ON',
+        consented: false, // Not yet granted
+      };
+
+      const consentRef = doc(db, 'patient_consent', `${patientId}_${Date.now()}`);
+      await setDoc(consentRef, consentRecord);
+
+      console.log('[PATIENT CONSENT] SMS consent request recorded:', {
+        patientId,
+        token,
+        status: 'sms_requested',
+      });
+    } catch (error) {
+      console.error('❌ [PATIENT CONSENT] Error recording SMS consent request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if patient has SMS consent request pending
+   * 
+   * @param patientId - Patient ID
+   * @param professionalId - Professional ID
+   * @returns Promise<boolean> - true if sms_requested exists
+   */
+  static async hasSMSConsentRequest(
+    patientId: string,
+    professionalId: string
+  ): Promise<boolean> {
+    try {
+      const consentRef = collection(db, 'patient_consent');
+      const q = query(
+        consentRef,
+        where('patientId', '==', patientId),
+        where('professionalId', '==', professionalId),
+        where('consentStatus', '==', 'sms_requested')
+      );
+
+      const snapshot = await getDocs(q);
+      return !snapshot.empty;
+    } catch (error: any) {
+      // Handle permission errors gracefully - query may require composite index
+      // or Firestore rules may restrict multi-field queries. This is a non-critical
+      // optimization check, so we fail silently and let the system continue normally.
+      if (error?.code === 'permission-denied' || error?.code === 'missing-or-insufficient-permissions') {
+        // Silently handle - query may need composite index or rule adjustment
+        // System will work normally without this optimization
+        console.debug('[PATIENT CONSENT] Permission error checking SMS request (non-critical):', error.code);
+      } else {
+        // Log other errors (network, etc.) but don't spam console
+        console.warn('[PATIENT CONSENT] Error checking SMS consent request:', error?.code || error?.message || 'Unknown error');
+      }
+      return false;
+    }
   }
 }
 
