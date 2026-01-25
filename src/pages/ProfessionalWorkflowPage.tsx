@@ -238,6 +238,12 @@ const ProfessionalWorkflowPage = () => {
   const [consentCheckComplete, setConsentCheckComplete] = useState(false);
   // ✅ WO-CONSENT-GATE-UI-01: Track if consent is valid for UI gate
   const [hasValidConsentForUI, setHasValidConsentForUI] = useState<boolean | null>(null);
+  // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+  const [workflowConsentStatus, setWorkflowConsentStatus] = useState<{
+    hasValidConsent: boolean;
+    status?: string | null;
+    consentMethod?: string | null;
+  } | null>(null);
 
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
@@ -791,6 +797,13 @@ const ProfessionalWorkflowPage = () => {
           setWorkflowBlocked(false);
           setHasValidConsentForUI(true);
           setShowVerbalConsentModal(false);
+          // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Update consent status for gate immediately
+          // This ensures the gate receives the status even if checkConsentViaServer hasn't run yet
+          setWorkflowConsentStatus({
+            hasValidConsent: true,
+            status: 'ongoing',
+            consentMethod: 'verbal' // VerbalConsentService indicates verbal consent
+          });
         }
         
         setConsentCheckComplete(true);
@@ -1305,11 +1318,24 @@ const ProfessionalWorkflowPage = () => {
         if (consentGrantedRef.current === true) {
           console.log('[WORKFLOW] Consent already granted, skipping initial check');
           setPatientHasConsent(true);
+          // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Still update status for gate (even if already granted)
+          setWorkflowConsentStatus({
+            hasValidConsent: true,
+            status: 'ongoing', // Assume ongoing if already granted
+            consentMethod: 'verbal' // Assume verbal if already granted
+          });
           return;
         }
 
         const consentResult = await checkConsentViaServer(patientId);
         const hasConsent = consentResult.hasValidConsent;
+        
+        // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+        setWorkflowConsentStatus({
+          hasValidConsent: consentResult.hasValidConsent,
+          status: consentResult.status || null,
+          consentMethod: consentResult.consentMethod || null
+        });
         
         // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted if true (irreversible)
         if (hasConsent) {
@@ -1410,6 +1436,13 @@ const ProfessionalWorkflowPage = () => {
         }
 
         const consentResult = await checkConsentViaServer(patientId);
+        
+        // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+        setWorkflowConsentStatus({
+          hasValidConsent: consentResult.hasValidConsent,
+          status: consentResult.status || null,
+          consentMethod: consentResult.consentMethod || null
+        });
         
         // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
         if (consentResult.hasValidConsent) {
@@ -2533,17 +2566,20 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ WO-CONSENT-VERBAL-01-LANG: Patient Consent Gate with jurisdiction validation
     const patientId = patientIdFromUrl || demoPatient.id;
-    const { getCurrentJurisdiction } = await import('../core/consent/consentJurisdiction');
-    const jurisdiction = getCurrentJurisdiction();
-    const hasValid = await VerbalConsentService.hasValidConsent(patientId, user?.uid, jurisdiction);
-
-    if (!hasValid) {
+    // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Use same source of truth as workflow
+    // Check consent via server (same as workflow check)
+    const consentCheck = await checkConsentViaServer(patientId);
+    
+    if (!consentCheck.hasValidConsent) {
       // Show notification that consent is required
       setAnalysisError(
         'Patient consent is required before generating SOAP notes. ' +
         'Please obtain verbal consent using the consent modal, or wait for the patient to provide digital consent via SMS.'
       );
-      setShowVerbalConsentModal(true);
+      // ✅ Only show modal if NO valid consent AND hasValidConsentForUI is false
+      if (hasValidConsentForUI !== true) {
+        setShowVerbalConsentModal(true);
+      }
       return; // Block AI processing until consent is given
     }
 
@@ -3261,15 +3297,31 @@ const ProfessionalWorkflowPage = () => {
 
   // ✅ WO-CONSENT-GATE-UI-01: ABSOLUTE GATE - No clinical UI without valid consent
   // This is NOT a modal or banner. This replaces ALL clinical UI.
+  // ✅ CRITICAL: Only render ConsentGateScreen if consent is NOT valid
+  // If consent is valid, render the clinical workflow normally
   if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && hasValidConsentForUI === false) {
+    // ✅ CRITICAL: Only pass consentStatus if we're showing the gate
+    const gateConsentStatus = workflowConsentStatus;
+    
+    console.log('[WORKFLOW] Rendering ConsentGateScreen (no valid consent)', {
+      hasValidConsentForUI,
+      workflowConsentStatus,
+      gateConsentStatus
+    });
+    
     return (
       <ConsentGateScreen
         patientId={patientIdFromUrl}
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
         clinicName={clinicName}
+        // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Pass consent status from workflow (source of truth)
+        consentStatus={gateConsentStatus}
         onConsentVerified={() => {
-          console.log('[WORKFLOW] ✅ Consent obtained - redirecting to command-center');
+          console.log('[WORKFLOW] ✅ Consent obtained - updating state and redirecting to command-center');
+          // ✅ WO-CONSENT-VERBAL-OPTIMISTIC-UI-01: Update state immediately to prevent re-render of gate
+          setHasValidConsentForUI(true);
+          setPatientHasConsent(true);
           // ✅ Redirect to command-center immediately after consent is granted
           navigate('/command-center', { replace: true });
         }}
@@ -3577,7 +3629,8 @@ const ProfessionalWorkflowPage = () => {
       )}
 
       {/* ✅ WO-CONSENT-VERBAL-01: Verbal Consent Modal - Gate for clinical workflow */}
-      {currentPatient && user?.uid && (
+      {/* ✅ CRITICAL: Only show if NO valid consent exists */}
+      {currentPatient && user?.uid && hasValidConsentForUI !== true && (
         <VerbalConsentModal
           isOpen={showVerbalConsentModal}
           onClose={() => {

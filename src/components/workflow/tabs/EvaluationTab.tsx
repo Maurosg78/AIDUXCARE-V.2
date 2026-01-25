@@ -137,6 +137,9 @@ const renderFieldInput = (
 };
 
 export interface EvaluationTabProps {
+  // Visit type
+  visitType?: 'initial' | 'follow-up';  // ✅ NEW: For follow-up selective re-evaluation
+  
   // Test management
   filteredEvaluationTests: EvaluationTestEntry[];
   evaluationTests: EvaluationTestEntry[];
@@ -189,6 +192,7 @@ export interface EvaluationTabProps {
 }
 
 export const EvaluationTab: React.FC<EvaluationTabProps> = ({
+  visitType = 'initial',  // ✅ Default to 'initial' for backward compatibility
   filteredEvaluationTests,
   evaluationTests,
   completedCount,
@@ -369,12 +373,33 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       <header className="flex items-center gap-3">
         <Stethoscope className="w-6 h-6 text-emerald-600" />
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Physical Evaluation</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">
+            {visitType === 'follow-up' ? 'Selective Re-evaluation' : 'Physical Evaluation'}
+          </h2>
           <p className="text-sm text-slate-500">
-            Select the tests you performed and record the outcome. These findings feed the SOAP draft.
+            {visitType === 'follow-up' 
+              ? 'Focus on key tests to measure progress. Compare results with baseline from initial assessment.'
+              : 'Select the tests you performed and record the outcome. These findings feed the SOAP draft.'}
           </p>
         </div>
       </header>
+
+      {/* ✅ FOLLOW-UP: Banner explicativo para re-evaluación selectiva */}
+      {visitType === 'follow-up' && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">
+            Selective Re-evaluation Approach
+          </h3>
+          <p className="text-sm text-blue-700 mb-2">
+            In follow-up visits, focus on measuring progress in key areas rather than performing exhaustive testing.
+          </p>
+          <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+            <li>Re-test key measures from initial assessment</li>
+            <li>Focus on areas related to treatment goals</li>
+            <li>Compare results with baseline to document progress</li>
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-6">

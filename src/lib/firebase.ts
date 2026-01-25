@@ -55,7 +55,7 @@ function initFirebaseOnce() {
     _app = existingApps[0];
     return;
   }
-  const config = __IS_TEST__ && !firebaseConfig.projectId
+  const config = __IS_TEST__ && !firebaseConfig.projectId 
     ? { projectId: 'demo-notesrepo' }
     : firebaseConfig;
   _app = initializeApp(config);
@@ -226,8 +226,8 @@ if (!__IS_TEST__) {
         "Firestore: 127.0.0.1:8080",
         "Functions:",
         functionsEmulatorHost ? "127.0.0.1:5001" : "not configured"
-      );
-    } catch (error: any) {
+);
+   } catch (error: any) {
       console.warn("⚠️ Error conectando emulators (normal si ya conectados):", error?.message || error);
     }
   }

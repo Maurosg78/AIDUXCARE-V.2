@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
 import { useProfessionalProfile } from "../context/ProfessionalProfileContext";
@@ -15,6 +16,8 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLockActive, setCapsLockActive] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(false);
@@ -90,6 +93,25 @@ const LoginPage: React.FC = () => {
       }
     }
   }, [isWaitingForProfile, profileLoading, profile, user, profileError, navigate]);
+
+  // Caps Lock detection (global listener)
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.getModifierState && event.getModifierState('CapsLock')) {
+        setCapsLockActive(true);
+      } else {
+        setCapsLockActive(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('keyup', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('keyup', handleKeyPress);
+    };
+  }, []);
 
   // WO-13: Función para manejar redirección post-login usando isProfileComplete como fuente única de verdad
   const handlePostLoginRedirect = () => {
@@ -282,23 +304,45 @@ const LoginPage: React.FC = () => {
               />
             </div>
             
-            <div>
+            <div className="relative">
               <label htmlFor="password" className="block text-sm font-normal text-gray-700 mb-2 font-apple">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-[15px] bg-white font-apple font-light"
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  className="w-full h-11 px-4 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-[15px] bg-white font-apple font-light"
+                  placeholder="••••••••"
+                  val             onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={(event) => {
+                    const capsLockOn = event.getModifierState && event.getModifierState('CapsLock');
+                    setCapsLockActive(capsLockOn);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {capsLockActive && (
+                <div className="flex items-center gap-2 mt-2 text-amber-600 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Caps Lock is on</span>
+                </div>
+              )}
             </div>
-            
             <Button
               type="submit"
               variant="gradient"

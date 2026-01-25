@@ -196,6 +196,25 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </p>
       </header>
 
+      {/* ✅ FOLLOW-UP: Header específico para follow-up conversation */}
+      {visitType === 'follow-up' && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 className="text-lg font-semibold text-blue-900 mb-2">
+            Follow-up Conversation
+          </h2>
+          <p className="text-sm text-blue-700 mb-3">
+            Record your conversation with the patient about their progress since last visit. 
+            Focus on changes, what they can do now, and what's still limiting them.
+          </p>
+          {previousTreatmentPlan?.nextSessionFocus && (
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <p className="text-xs font-semibold text-blue-900 mb-1">Focus for today:</p>
+              <p className="text-xs text-blue-700">{previousTreatmentPlan.nextSessionFocus}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Column 1: PATIENT */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -271,41 +290,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     </p>
                     <p className="mt-1 text-xs text-red-700 font-apple font-light">
                       {smsError 
-                        ? `SMS delivery failed: ${smsError}. Use the link below or mark as authorized manually.`
+                        ? `SMS delivery failed: ${smsError}. Please use verbal consent or try sending SMS again.`
                         : consentLink
-                        ? 'Consent link sent to patient via SMS'
-                        : 'Send consent link to patient or mark as authorized manually.'}
+                        ? 'Consent link sent to patient via SMS. Waiting for patient to provide consent.'
+                        : 'Patient consent is required. Please obtain verbal consent or send consent link via SMS.'}
                     </p>
                   </div>
                 </div>
                 {consentLink ? (
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!consentToken || !user?.uid) return;
-                        try {
-                          await PatientConsentService.markConsentAsAuthorized(
-                            consentToken,
-                            'ongoing',
-                            user.uid
-                          );
-                          const patientId = patientIdFromUrl || demoPatient.id;
-                          const status = await PatientConsentService.getConsentStatus(patientId);
-                          setConsentStatus(status);
-                          const hasConsent = await PatientConsentService.hasConsent(patientId);
-                          setPatientHasConsent(hasConsent);
-                          setConsentPending(false);
-                          setSmsError(null);
-                        } catch (error) {
-                          console.error('[WORKFLOW] Error marking consent as authorized:', error);
-                          setSmsError('Failed to mark consent as authorized');
-                        }
-                      }}
-                      className="inline-flex items-center rounded-md border border-transparent bg-gradient-to-r from-primary-blue to-primary-purple px-3 py-1.5 text-xs font-medium text-white hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple min-h-[32px]"
-                    >
-                      Mark Authorized
-                    </button>
+                    {/* ✅ WO-CONSENT-GATE-UI-01: "Mark Authorized" removed - consent must be obtained via ConsentGateScreen */}
                     <button
                       type="button"
                       onClick={() => {
@@ -334,28 +328,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     >
                       Send Consent via SMS
                     </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!user?.uid) return;
-                        try {
-                          const patientId = patientIdFromUrl || demoPatient.id;
-                          await PatientConsentService.recordManualConsent(patientId, user.uid);
-                          const status = await PatientConsentService.getConsentStatus(patientId);
-                          setConsentStatus(status);
-                          const hasConsent = await PatientConsentService.hasConsent(patientId);
-                          setPatientHasConsent(hasConsent);
-                          setConsentPending(false);
-                          setSmsError(null);
-                        } catch (error) {
-                          console.error('[WORKFLOW] Error marking consent as authorized:', error);
-                          setSmsError('Failed to mark consent as authorized');
-                        }
-                      }}
-                      className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition font-apple min-h-[32px]"
-                    >
-                      Mark Manual Consent
-                    </button>
+                    {/* ✅ WO-CONSENT-GATE-UI-01: "Mark Manual Consent" removed - consent must be obtained via ConsentGateScreen */}
                   </div>
                 )}
               </div>

@@ -8,6 +8,9 @@ import CryptoService from './CryptoService';
 
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
+import { VerbalConsentService } from './verbalConsentService';
+// ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
+import { getCurrentJurisdiction } from '../core/consent/consentJurisdiction';
 
 // Bloque 5E: Export SOAPData para uso en PersistenceServiceEnhanced
 export type SOAPData = {
@@ -61,6 +64,13 @@ export class PersistenceService {
     try {
       const userId = this.getCurrentUserId();
       
+      // ✅ WO-CONSENT-VERBAL-01-LANG: Gate - Check for valid consent with jurisdiction validation
+      const jurisdiction = getCurrentJurisdiction();
+      const hasValid = await VerbalConsentService.hasValidConsent(patientId, userId, jurisdiction);
+      if (!hasValid) {
+        throw new Error('Patient consent (verbal or digital) is required before saving clinical notes. Please obtain consent first.');
+      }
+      
       // Cifrar los datos SOAP
       const encryptedData = await CryptoService.encryptMedicalData(soapData);
       
@@ -106,16 +116,19 @@ export class PersistenceService {
 
   /**
    * Get all saved notes for current user
+   * ✅ PHIPA/PIPEDA Compliance: Only returns notes owned by authenticated user
+   * ✅ Uses authorUid to match Firestore security rules
    */
   static async getAllNotes(): Promise<SavedNote[]> {
     try {
       const userId = this.getCurrentUserId();
       const notesRef = collection(db, this.COLLECTION_NAME);
-      const q = query(notesRef, where('ownerUid', '==', userId));
+      // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
+      const q = query(notesRef, where('authorUid', '==', userId), orderBy('createdAt', 'desc'));
       
       console.log(`[PersistenceService] Querying notes from Firestore:`, {
         collection: this.COLLECTION_NAME,
-        ownerUid: userId,
+        authorUid: userId,
       });
       
       const snapshot = await getDocs(q);
@@ -123,17 +136,26 @@ export class PersistenceService {
       const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data() as SavedNote;
         console.log(`[PersistenceService] Found note:`, {
-          id: data.id,
+          id: doc.id,
           patientId: data.patientId,
           createdAt: data.createdAt,
-          ownerUid: data.ownerUid,
+          authorUid: data.authorUid || data.ownerUid, // Support both for backward compatibility
         });
-        return data;
+        return { ...data, id: doc.id };
       });
       
       console.log(`✅ [PersistenceService] Retrieved ${notes.length} notes for user ${userId}`);
       return notes;
-    } catch (error) {
+    } catch (error: any) {
+      // WO-FS-DATA-03: Handle permission-denied as "no data yet"
+      const isPermissionDenied = error?.code === 'permission-denied' || 
+                                 error?.message?.includes('permission-denied');
+      
+      if (isPermissionDenied) {
+        console.info('[PersistenceService] No notes found (permission-denied) - may be empty state');
+        return [];
+      }
+      
       console.error('[PersistenceService] Error obteniendo notas:', error);
       return [];
     }
@@ -168,17 +190,42 @@ export class PersistenceService {
 
   /**
    * Obtiene notas por paciente
+   * ✅ PHIPA/PIPEDA Compliance: Only returns notes owned by authenticated user
+   * ✅ Uses authorUid to match Firestore security rules
    */
   static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
       const userId = this.getCurrentUserId();
       const notesRef = collection(db, this.COLLECTION_NAME);
-      const q = query(notesRef, where('ownerUid', '==', userId), where('patientId', '==', patientId));
+      // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
+      // Firestore rules require: resource.data.authorUid == request.auth.uid
+      const q = query(
+        notesRef, 
+        where('authorUid', '==', userId), 
+        where('patientId', '==', patientId),
+        orderBy('createdAt', 'desc') // Most recent first
+      );
       const snapshot = await getDocs(q);
       
-      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.data() as SavedNote);
-    } catch (error) {
-      console.error('Error obteniendo notas por paciente:', error);
+      console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for patient ${patientId} (user: ${userId})`);
+      
+      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data() as SavedNote;
+        // Ensure we have the document ID
+        return { ...data, id: doc.id };
+      });
+    } catch (error: any) {
+      // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
+      const isPermissionDenied = error?.code === 'permission-denied' || 
+                                 error?.message?.includes('permission-denied') ||
+                                 error?.message?.includes('Missing or insufficient permissions');
+      
+      if (isPermissionDenied) {
+        console.info('[PersistenceService] No notes found (permission-denied) - may be empty state');
+        return [];
+      }
+      
+      console.error('[PersistenceService] Error obteniendo notas por paciente:', error);
       return [];
     }
   }

@@ -66,9 +66,18 @@
       "collectionGroup": "consultations",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "treatment_plans",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "patientId", "order": "ASCENDING" },
         { "fieldPath": "authorUid", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "acceptedAt", "order": "DESCENDING" }
       ]
     },
     {

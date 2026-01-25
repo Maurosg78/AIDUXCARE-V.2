@@ -108,6 +108,24 @@ export async function checkConsentViaServer(patientId: string): Promise<ConsentS
     return data;
 
   } catch (error: any) {
+    const errorMessage = error?.message || '';
+    const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch');
+    const isLocalhost = typeof window !== 'undefined' && window.location.origin.includes('localhost');
+    
+    if (isCorsError && isLocalhost) {
+      console.warn('[ConsentServer] CORS error in localhost - this is expected if Cloud Function is not deployed with localhost support');
+      // En desarrollo local, no bloquear completamente si hay error de CORS
+      // El Optimistic UI Update ya manejó el consentimiento
+      return {
+        success: false,
+        hasValidConsent: false, // Mantener false para que el polling continúe (si no hay consentimiento optimista)
+        status: null,
+        consentMethod: null,
+        error: 'CORS_ERROR_LOCALHOST',
+        message: 'CORS error in localhost (expected in development - deploy Cloud Function with localhost support)'
+      };
+    }
+    
     console.error('[ConsentServer] Error checking consent:', error);
     return {
       success: false,

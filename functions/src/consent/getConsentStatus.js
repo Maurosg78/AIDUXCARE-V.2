@@ -32,12 +32,26 @@ const CONSENT_VERSION = '1.0.0';
  */
 exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req, res) => {
   // ✅ CORS for authenticated requests
-  const ALLOWED_ORIGIN = 'https://aiduxcare-v2-uat-dev.web.app';
+  // Allow both production and localhost for development
+  const origin = req.headers.origin || req.headers.referer || '';
+  const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('localhost:5002');
+  const isProduction = origin === 'https://aiduxcare-v2-uat-dev.web.app';
   
-  res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  // Set CORS headers
+  if (isLocalhost) {
+    // For localhost, allow the specific origin or use wildcard for development
+    res.set('Access-Control-Allow-Origin', origin || '*');
+  } else if (isProduction) {
+    res.set('Access-Control-Allow-Origin', 'https://aiduxcare-v2-uat-dev.web.app');
+  } else {
+    // Default to production for security
+    res.set('Access-Control-Allow-Origin', 'https://aiduxcare-v2-uat-dev.web.app');
+  }
+  
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Credentials', 'true');
   res.set('Access-Control-Max-Age', '3600');
   
   if (req.method === 'OPTIONS') {

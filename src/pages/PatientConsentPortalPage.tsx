@@ -54,15 +54,14 @@ export default function PatientConsentPortalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [consentDecision, setConsentDecision] = useState<'accept' | 'decline' | null>(null);
-  
+
   // Decline form state
   const [showDeclineForm, setShowDeclineForm] = useState(false);
   const [declineReasons, setDeclineReasons] = useState<string[]>([]);
   const [declineNotes, setDeclineNotes] = useState('');
 
   // Get consent text
-  const jurisdiction = getCurrentJurisdiction();
-  const textVersion = getDefaultConsentTextVersion(jurisdiction);
+  const textVersion = getDefaultConsentTextVersion();
   const consentText = getVerbalConsentText(textVersion);
 
   useEffect(() => {
@@ -87,26 +86,15 @@ export default function PatientConsentPortalPage() {
       }
 
       const data = tokenSnap.data();
-      
-      // ✅ Check if already used - show success message instead of form
+
+      // ✅ Check if already used - redirect to success page immediately
       if (data.used) {
         // Token was used - check what decision was made
         const consentGiven = data.consentGiven || {};
         const decision = consentGiven.scope === 'ongoing' ? 'accept' : 'decline';
-        
-        setTokenData({
-          patientId: data.patientId,
-          patientName: data.patientName,
-          professionalId: data.professionalId,
-          clinicName: data.clinicName,
-          expiresAt: data.expiresAt?.toDate() || new Date(),
-          used: true,
-        });
-        
-        // Show success message (already submitted)
-        setConsentDecision(decision);
-        setSubmitted(true);
-        setLoading(false);
+
+        // Redirect immediately to terminal success page (no intermediate screen)
+        window.location.replace(`${window.location.origin}/consent/success?decision=${decision}`);
         return;
       }
 
@@ -147,7 +135,7 @@ export default function PatientConsentPortalPage() {
       const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
       const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
       const functionsUrl = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/acceptPatientConsentByToken`;
-      
+
       const response = await fetch(functionsUrl, {
         method: 'POST',
         headers: {
@@ -162,7 +150,7 @@ export default function PatientConsentPortalPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorCode = errorData.error || 'INTERNAL_ERROR';
-        
+
         // User-friendly error messages
         if (errorCode === 'TOKEN_EXPIRED') {
           setError('This consent link has expired. Please request a new one from your clinic.');
@@ -177,33 +165,21 @@ export default function PatientConsentPortalPage() {
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         console.log('[ConsentPortal] Consent accepted via Cloud Function:', tokenData.patientId);
-        setConsentDecision('accept');
-        setSubmitted(true);
 
-        // ✅ Opción C: History lock - prevent back navigation after consent
-        window.history.pushState(null, '', window.location.href);
-        window.onpopstate = () => {
-          // Prevent going back - push state again
-          window.history.pushState(null, '', window.location.href);
-        };
-
-        // ✅ Opción A: Redirect duro después de mostrar mensaje de éxito
-        // Esto previene que el usuario vuelva al formulario en móvil
-        setTimeout(() => {
-          // Replace current URL to prevent back navigation
-          window.location.replace(`${window.location.origin}/consent/success?token=${token}`);
-        }, 2000); // Show success message for 2 seconds before redirect
+        // ✅ Redirect immediately to terminal success page (no intermediate screen)
+        // This prevents showing multiple success screens
+        window.location.replace(`${window.location.origin}/consent/success?decision=accept`);
       } else {
         setError('Failed to record consent. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       // ✅ T6: Logging mejorado para DX (sin cambiar mensaje al paciente)
       console.error('[ConsentPortal] accept failed', {
         message: err?.message,
-        url: functionsUrl
+        url: `https://${import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1'}-${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev'}.cloudfunctions.net/acceptPatientConsentByToken`
       });
       setError('Failed to record consent. Please try again.');
     } finally {
@@ -228,7 +204,7 @@ export default function PatientConsentPortalPage() {
       const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
       const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
       const functionsUrl = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/acceptPatientConsentByToken`;
-      
+
       const response = await fetch(functionsUrl, {
         method: 'POST',
         headers: {
@@ -245,7 +221,7 @@ export default function PatientConsentPortalPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorCode = errorData.error || 'INTERNAL_ERROR';
-        
+
         // User-friendly error messages
         if (errorCode === 'TOKEN_EXPIRED') {
           setError('This consent link has expired. Please request a new one from your clinic.');
@@ -260,36 +236,24 @@ export default function PatientConsentPortalPage() {
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
-        console.log('[ConsentPortal] Consent declined via Cloud Function:', { 
-          patientId: tokenData.patientId, 
-          reasons: declineReasons 
+        console.log('[ConsentPortal] Consent declined via Cloud Function:', {
+          patientId: tokenData.patientId,
+          reasons: declineReasons
         });
 
-        setConsentDecision('decline');
-        setSubmitted(true);
-
-        // ✅ Opción C: History lock - prevent back navigation after consent
-        window.history.pushState(null, '', window.location.href);
-        window.onpopstate = () => {
-          // Prevent going back - push state again
-          window.history.pushState(null, '', window.location.href);
-        };
-
-        // ✅ Opción A: Redirect duro después de mostrar mensaje
-        setTimeout(() => {
-          // Replace current URL to prevent back navigation
-          window.location.replace(`${window.location.origin}/consent/success?token=${token}&decision=declined`);
-        }, 3000); // Show decline message for 3 seconds before redirect
+        // ✅ Redirect immediately to terminal success page (no intermediate screen)
+        // This prevents showing multiple success screens
+        window.location.replace(`${window.location.origin}/consent/success?decision=declined`);
       } else {
         setError('Failed to record declined consent. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       // ✅ T6: Logging mejorado para DX (sin cambiar mensaje al paciente)
       console.error('[ConsentPortal] decline failed', {
         message: err?.message,
-        url: functionsUrl
+        url: `https://${import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1'}-${import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev'}.cloudfunctions.net/acceptPatientConsentByToken`
       });
       setError('Failed to record declined consent. Please try again.');
     } finally {
@@ -333,46 +297,40 @@ export default function PatientConsentPortalPage() {
     );
   }
 
-  // Success state (after submission)
-  if (submitted) {
-    const isAlreadyUsed = tokenData?.used === true;
-    
+  // Success state (after submission) - Only show if token was already used (revisit)
+  // For new submissions, we redirect immediately to /consent/success
+  if (submitted && tokenData?.used === true) {
+    // This only happens if user revisits a used token
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           {consentDecision === 'accept' ? (
             <>
               <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Recorded</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consentimiento Ya Registrado</h1>
               <p className="text-gray-600 mb-6">
-                Thank you for providing your consent. Your response has been recorded successfully.
+                Este enlace de consentimiento ya fue utilizado. Puede cerrar esta página de forma segura.
               </p>
-              {isAlreadyUsed ? (
-                <p className="text-sm text-gray-500">
-                  This consent link has already been used. You can safely close this page.
-                </p>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  This window will close automatically in a few seconds...
-                </p>
-              )}
+              <button
+                onClick={() => window.location.replace(`${window.location.origin}/consent/success?decision=accept`)}
+                className="mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              >
+                Ver Confirmación
+              </button>
             </>
           ) : (
             <>
               <XCircle className="w-20 h-20 text-orange-600 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Declined</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consentimiento Ya Registrado</h1>
               <p className="text-gray-600 mb-6">
-                Your decision has been recorded. No AI-assisted documentation will be used for your care.
+                Este enlace de consentimiento ya fue utilizado. Puede cerrar esta página de forma segura.
               </p>
-              {isAlreadyUsed ? (
-                <p className="text-sm text-gray-500">
-                  This consent link has already been used. You can safely close this page.
-                </p>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  This window will close automatically in a few seconds...
-                </p>
-              )}
+              <button
+                onClick={() => window.location.replace(`${window.location.origin}/consent/success?decision=declined`)}
+                className="mt-4 bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              >
+                Ver Confirmación
+              </button>
             </>
           )}
         </div>
@@ -421,7 +379,7 @@ export default function PatientConsentPortalPage() {
           {/* Consent Text */}
           <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200 max-h-96 overflow-y-auto">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Consent Statement ({jurisdiction})
+              Consent Statement
             </h2>
             <div className="prose prose-sm max-w-none">
               <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">

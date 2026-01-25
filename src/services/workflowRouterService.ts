@@ -74,14 +74,15 @@ export function determineWorkflowRoute(
     });
   }
   
-  // Follow-up workflow: Skip analysis tab, go directly to SOAP
+  // Follow-up workflow: Keep analysis tab for follow-up conversation
+  // ✅ CRITICAL: Follow-up needs conversation recording (not exhaustive analysis)
   // Only applies if confidence >= 80% (AUTO_FOLLOW_UP threshold)
   if (workflowType === 'follow-up') {
     return {
       type: 'follow-up',
-      skipTabs: ['analysis'], // Skip comprehensive analysis for follow-ups
-      directToTab: 'soap', // Go directly to SOAP generation
-      analysisLevel: 'optimized', // Use optimized templates
+      skipTabs: [], // ✅ FIX: Don't skip analysis - needs conversation recording
+      directToTab: 'analysis', // ✅ FIX: Start with analysis (follow-up conversation)
+      analysisLevel: 'follow-up', // Use follow-up specific templates
       auditLog: {
         detectionResult,
         routingDecision: {} as WorkflowRoute, // Will be filled below
@@ -119,8 +120,8 @@ export async function routeWorkflow(
   input: FollowUpDetectionInput,
   userId: string
 ): Promise<WorkflowRoute> {
-  // Detect follow-up
-  const detectionResult = await detectFollowUp(input);
+  // Detect follow-up (pass userId for audit logging)
+  const detectionResult = await detectFollowUp(input, userId);
   
   // Determine route
   const route = determineWorkflowRoute(detectionResult, userId, input.patientId);

@@ -1,441 +1,373 @@
 /**
- * Verbal Consent Modal - PHIPA Compliant
+ * Verbal Consent Modal - PHIPA/PIPEDA/ISO 27001 Compliant
  * 
- * Modal for obtaining verbal consent from patients for voice recording
- * and AI processing of clinical notes.
+ * Compliance Framework:
+ * - PHIPA s.18: Knowledgeable consent requirements
+ * - PIPEDA Principle 4.3: Knowledge and consent
+ * - ISO 27001 A.18.1.4: Privacy and protection of PII
+ * - ISO 27001 A.12.4.1: Event logging (audit trail)
  * 
- * Security audit logging:
- * - A.8.2.3: Handling of assets (consent lifecycle)
- * - A.12.4.1: Event logging (all consent operations)
- * 
- * PHIPA Compliance:
- * - Verbal consent explicitly legal under PHIPA
- * - Physiotherapist acts as authorized facilitator
- * - Patient retains full control
+ * Features:
+ * - No mandatory recording (physiotherapist reads verbally)
+ * - Explicit patient response documentation (granted/declined)
+ * - Declined consent reasons tracking (compliance requirement)
+ * - Complete audit trail with timestamps
  */
 
 import React, { useState } from 'react';
-import { X, CheckCircle, AlertCircle, User, Clock, Shield } from 'lucide-react';
-import VerbalConsentService, { VERBAL_CONSENT_TEXT, VerbalConsentDetails } from '../../services/verbalConsentService';
+import { X, CheckCircle, XCircle, AlertCircle, Shield, FileText } from 'lucide-react';
+import { getVerbalConsentText, getDefaultConsentTextVersion } from '../../services/verbalConsentService';
+import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
+import { PatientConsentService } from '../../services/patientConsentService';
+import { useAuth } from '../../hooks/useAuth';
 
-export interface VerbalConsentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface VerbalConsentModalProps {
   patientId: string;
-  patientName?: string;
-  physiotherapistId: string;
-  physiotherapistName?: string;
-  hospitalId?: string;
-  onConsentObtained: (consentId: string) => void;
-  onConsentDenied?: () => void;
+  patientName: string;
+  onClose: () => void;
+  onConsentGranted: () => void;
 }
 
-export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
-  isOpen,
-  onClose,
+const DECLINE_REASONS = [
+  { value: 'no_recording', label: 'Does not want to be recorded' },
+  { value: 'no_ai', label: 'Does not trust AI technology' },
+  { value: 'privacy_concerns', label: 'Has privacy concerns' },
+  { value: 'traditional_method', label: 'Prefers traditional documentation' },
+  { value: 'needs_time', label: 'Needs more time to decide' },
+  { value: 'language_barrier', label: 'Language barrier - did not understand' },
+  { value: 'other', label: 'Other reason' },
+];
+
+export function VerbalConsentModal({
   patientId,
   patientName,
-  physiotherapistId,
-  physiotherapistName,
-  hospitalId,
-  onConsentObtained,
-  onConsentDenied,
-}) => {
-  const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
-  const [readStarted, setReadStarted] = useState(false);
-  const [patientResponse, setPatientResponse] = useState<'authorized' | 'denied' | 'unable_to_respond' | null>(null);
-  const [patientUnderstood, setPatientUnderstood] = useState(false);
-  const [voluntarilyGiven, setVoluntarilyGiven] = useState(false);
-  const [witnessName, setWitnessName] = useState('');
-  const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  onClose,
+  onConsentGranted,
+}: VerbalConsentModalProps) {
+  const { user } = useAuth();
+  const [step, setStep] = useState<'read' | 'response'>('read');
+  const [hasReadToPatient, setHasReadToPatient] = useState(false);
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReasons, setDeclineReasons] = useState<string[]>([]);
+  const [declineNotes, setDeclineNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Get consent text
+  const jurisdiction = getCurrentJurisdiction();
+  const textVersion = getDefaultConsentTextVersion();
+  const consentText = getVerbalConsentText(textVersion);
 
-  const handleStartReading = () => {
-    setReadStarted(true);
-    setStep('response');
-  };
-
-  const handleResponseSelect = (response: 'authorized' | 'denied' | 'unable_to_respond') => {
-    setPatientResponse(response);
-    
-    if (response === 'authorized') {
-      setStep('confirm');
-    } else {
-      // Patient denied or unable to respond
-      handleSubmit(response);
-    }
-  };
-
-  const handleSubmit = async (response?: 'authorized' | 'denied' | 'unable_to_respond') => {
-    const finalResponse = response || patientResponse;
-    
-    if (!finalResponse) {
-      setError('Por favor seleccione la respuesta del paciente');
+  const handleGrantConsent = async () => {
+    if (!hasReadToPatient) {
+      setError('You must confirm that you have read the consent to the patient.');
       return;
     }
 
-    if (finalResponse === 'authorized') {
-      if (!patientUnderstood || !voluntarilyGiven) {
-        setError('Debe confirmar que el paciente entendió y dio su consentimiento voluntariamente');
-        return;
-      }
-    }
-
-    setIsSubmitting(true);
+    setSubmitting(true);
     setError(null);
 
     try {
-      if (finalResponse === 'authorized') {
-        const consentDetails: Omit<VerbalConsentDetails, 'method'> = {
-          obtainedBy: physiotherapistName || physiotherapistId,
-          patientResponse: 'authorized',
-          fullTextRead: VERBAL_CONSENT_TEXT,
-          patientUnderstood,
-          voluntarilyGiven,
-          witnessName: witnessName.trim() || undefined,
-          notes: notes.trim() || undefined,
-        };
+      // Record verbal consent (granted)
+      await PatientConsentService.recordVerbalConsent({
+        patientId,
+        professionalId: user?.uid || '',
+        patientName,
+        consentStatus: 'granted',
+        consentTextVersion: textVersion,
+        witnessStatement: 'Physiotherapist read consent verbally and patient provided oral authorization',
+        patientUnderstanding: 'Patient confirmed understanding of consent terms',
+      });
 
-        const result = await VerbalConsentService.obtainConsent(
-          patientId,
-          physiotherapistId,
-          consentDetails,
-          { hospitalId }
-        );
+      console.log('[VerbalConsent] ✅ Consent granted and recorded:', patientId);
 
-        if (result.success) {
-          onConsentObtained(result.consentId);
-          handleClose();
-        } else {
-          setError('Error al registrar el consentimiento. Por favor intente nuevamente.');
-        }
-      } else {
-        // Consent denied or unable to respond
-        if (onConsentDenied) {
-          onConsentDenied();
-        }
-        handleClose();
+      // ✅ FIX: Call parent callback (may be async, so await it just in case)
+      if (onConsentGranted) {
+        await Promise.resolve(onConsentGranted());
       }
+
+      // ✅ Close modal after successful registration
+      setTimeout(() => {
+        onClose();
+      }, 300);
     } catch (err) {
-      console.error('[VerbalConsentModal] Error:', err);
-      setError(err instanceof Error ? err.message : 'Error al procesar el consentimiento');
+      console.error('[VerbalConsent] Error recording granted consent:', err);
+      setError('Failed to record consent. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    // Reset state
-    setStep('read');
-    setReadStarted(false);
-    setPatientResponse(null);
-    setPatientUnderstood(false);
-    setVoluntarilyGiven(false);
-    setWitnessName('');
-    setNotes('');
+  const handleDeclineConsent = async () => {
+    if (declineReasons.length === 0) {
+      setError('Please select at least one reason for declining consent.');
+      return;
+    }
+
+    setSubmitting(true);
     setError(null);
-    onClose();
+
+    try {
+      // Record verbal consent (declined) - CRITICAL for compliance
+      await PatientConsentService.recordVerbalConsent({
+        patientId,
+        professionalId: user?.uid || '',
+        patientName,
+        consentStatus: 'declined',
+        consentTextVersion: textVersion,
+        witnessStatement: 'Physiotherapist read consent verbally and patient declined authorization',
+        declineReasons: declineReasons.join(', '),
+        declineNotes: declineNotes || undefined,
+      });
+
+      console.log('[VerbalConsent] Consent declined and recorded:', { patientId, reasons: declineReasons });
+
+      // Show confirmation and close
+      alert(`Consent declined by ${patientName}. This session cannot proceed without consent. Documented reasons: ${declineReasons.join(', ')}`);
+      onClose();
+    } catch (err) {
+      console.error('[VerbalConsent] Error recording declined consent:', err);
+      setError('Failed to record declined consent. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleDeclineReason = (reason: string) => {
+    setDeclineReasons(prev =>
+      prev.includes(reason)
+        ? prev.filter(r => r !== reason)
+        : [...prev, reason]
+    );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6" />
-            <div>
-              <h2 className="text-xl font-bold">Consentimiento Verbal Requerido</h2>
-              <p className="text-blue-100 text-sm">
-                {patientName ? `Paciente: ${patientName}` : `ID: ${patientId}`}
-              </p>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white sticky top-0 z-10 rounded-t-2xl">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 rounded-full p-2">
+                <Shield className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Verbal Consent</h2>
+                <p className="text-sm text-indigo-100 mt-1">Patient: {patientName}</p>
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={handleClose}
-            className="text-white hover:bg-blue-800 rounded-full p-2 transition"
-            aria-label="Cerrar"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 space-y-6">
+          {/* Step 1: Read to Patient */}
           {step === 'read' && (
-            <div className="space-y-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <>
+              {/* Instructions */}
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-yellow-800 mb-2">
-                      Instrucciones Importantes
-                    </h3>
-                    <p className="text-yellow-700 text-sm">
-                      Debe leer el texto completo de consentimiento al paciente antes de continuar.
-                      Este proceso es requerido por PHIPA y es legalmente válido.
+                  <FileText className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-indigo-900">
+                    <p className="font-semibold mb-2">Instructions for Physiotherapist:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-indigo-800">
+                      <li>Read the consent statement below to the patient <strong>verbally</strong></li>
+                      <li>Ensure the patient understands what they are consenting to</li>
+                      <li>Answer any questions the patient may have</li>
+                      <li>Obtain the patient's oral authorization (Yes or No)</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consent Text */}
+              <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                  Consent Statement ({jurisdiction})
+                </h3>
+                <div className="prose prose-sm max-w-none">
+                  <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+                    {consentText}
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirmation Checkbox */}
+              <label className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={hasReadToPatient}
+                  onChange={(e) => setHasReadToPatient(e.target.checked)}
+                  className="mt-1 w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                />
+                <span className="text-sm text-amber-900">
+                  <strong className="font-semibold">I confirm that I have:</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Read this consent statement to the patient verbally</li>
+                    <li>Ensured the patient understands the consent terms</li>
+                    <li>Answered all questions to the patient's satisfaction</li>
+                  </ul>
+                </span>
+              </label>
+
+              {/* Next Button */}
+              <button
+                onClick={() => setStep('response')}
+                disabled={!hasReadToPatient}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                Record Patient's Response
+                <CheckCircle className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Step 2: Patient Response */}
+          {step === 'response' && !showDeclineForm && (
+            <>
+              <div className="text-center py-6">
+                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-10 h-10 text-indigo-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Record Patient's Decision
+                </h3>
+                <p className="text-gray-600">
+                  After reading the consent, did the patient grant or decline authorization?
+                </p>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span className="text-sm text-red-800">{error}</span>
+                </div>
+              )}
+
+              {/* Grant Consent Button */}
+              <button
+                onClick={handleGrantConsent}
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-6 px-6 rounded-xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
+              >
+                <CheckCircle className="w-6 h-6" />
+                {submitting ? 'Recording...' : 'Patient GRANTS Consent'}
+              </button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500">or</span>
+                </div>
+              </div>
+
+              {/* Decline Consent Button */}
+              <button
+                onClick={() => setShowDeclineForm(true)}
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-6 px-6 rounded-xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
+              >
+                <XCircle className="w-6 h-6" />
+                Patient DECLINES Consent
+              </button>
+            </>
+          )}
+
+          {/* Decline Form */}
+          {showDeclineForm && (
+            <>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-orange-900">
+                    <p className="font-semibold mb-2">Consent Declined - Documentation Required</p>
+                    <p className="text-orange-800">
+                      PHIPA and PIPEDA require documentation of declined consent, including reasons.
+                      This information is critical for compliance and patient care continuity.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-blue-900">
-                    Texto de Consentimiento a Leer
-                  </h3>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-                    {VERBAL_CONSENT_TEXT}
-                  </p>
-                </div>
+              {/* Decline Reasons */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Reason(s) for Declining Consent: <span className="text-red-600">*</span>
+                </label>
+                {DECLINE_REASONS.map((reason) => (
+                  <label
+                    key={reason.value}
+                    className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={declineReasons.includes(reason.value)}
+                      onChange={() => toggleDeclineReason(reason.value)}
+                      className="mt-1 w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-800">{reason.label}</span>
+                  </label>
+                ))}
               </div>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={handleClose}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleStartReading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  He Leído el Texto al Paciente
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'response' && (
-            <div className="space-y-6">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-800">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Texto leído al paciente</span>
-                </div>
-              </div>
-
+              {/* Additional Notes */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  ¿Cuál fue la respuesta del paciente?
-                </h3>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handleResponseSelect('authorized')}
-                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
-                      patientResponse === 'authorized'
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-green-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className={`w-5 h-5 ${
-                        patientResponse === 'authorized' ? 'text-green-600' : 'text-gray-400'
-                      }`} />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          ✅ SÍ - Paciente autorizó verbalmente
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          El paciente entendió y autorizó la grabación y procesamiento
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handleResponseSelect('denied')}
-                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
-                      patientResponse === 'denied'
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-200 hover:border-red-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <X className={`w-5 h-5 ${
-                        patientResponse === 'denied' ? 'text-red-600' : 'text-gray-400'
-                      }`} />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          ❌ NO - Paciente no autorizó
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          El paciente no autorizó la grabación
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handleResponseSelect('unable_to_respond')}
-                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
-                      patientResponse === 'unable_to_respond'
-                        ? 'border-yellow-500 bg-yellow-50'
-                        : 'border-gray-200 hover:border-yellow-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className={`w-5 h-5 ${
-                        patientResponse === 'unable_to_respond' ? 'text-yellow-600' : 'text-gray-400'
-                      }`} />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          ⚠️ Paciente no puede decidir (SDM requerido)
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          Se requiere representante legal o decisor sustituto
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={declineNotes}
+                  onChange={(e) => setDeclineNotes(e.target.value)}
+                  placeholder="Any additional context about why the patient declined consent..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                />
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-800 text-sm">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span className="text-sm text-red-800">{error}</span>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3">
+              {/* Action Buttons */}
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('read')}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  onClick={() => {
+                    setShowDeclineForm(false);
+                    setDeclineReasons([]);
+                    setDeclineNotes('');
+                    setError(null);
+                  }}
+                  disabled={submitting}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-lg transition-colors"
                 >
-                  Volver
+                  Back
+                </button>
+                <button
+                  onClick={handleDeclineConsent}
+                  disabled={submitting || declineReasons.length === 0}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                >
+                  {submitting ? 'Recording...' : 'Confirm Declined Consent'}
                 </button>
               </div>
-            </div>
+            </>
           )}
-
-          {step === 'confirm' && patientResponse === 'authorized' && (
-            <div className="space-y-6">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-green-800">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Paciente autorizó verbalmente</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={patientUnderstood}
-                      onChange={(e) => setPatientUnderstood(e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        Confirmo que el paciente entendió el texto completo
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        El paciente demostró comprensión del consentimiento
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={voluntarilyGiven}
-                      onChange={(e) => setVoluntarilyGiven(e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        Confirmo que el consentimiento fue dado voluntariamente
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        Sin presión o coerción
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Testigos presentes (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={witnessName}
-                    onChange={(e) => setWitnessName(e.target.value)}
-                    placeholder="Ej: Enfermera María, Familiar Juan"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notas adicionales (opcional)
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Notas sobre la obtención del consentimiento..."
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-800 text-sm">{error}</p>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setStep('response')}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                  disabled={isSubmitting}
-                >
-                  Volver
-                </button>
-                <button
-                  onClick={() => handleSubmit()}
-                  disabled={!patientUnderstood || !voluntarilyGiven || isSubmitting}
-                  className={`px-6 py-2 rounded-lg transition font-medium ${
-                    patientUnderstood && voluntarilyGiven && !isSubmitting
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isSubmitting ? 'Registrando...' : 'Registrar Consentimiento'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="bg-gray-50 border-t p-4 rounded-b-lg">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <Shield className="w-4 h-4" />
-            <span>
-              Consentimiento verbal válido bajo PHIPA. Una vez otorgado, es válido para todo el tratamiento.
-            </span>
-          </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default VerbalConsentModal;
-
-

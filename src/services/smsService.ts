@@ -14,6 +14,7 @@ import { db } from '../lib/firebase';
 import logger from '@/shared/utils/logger';
 import { SMS_TEMPLATES, validateSMSTemplate } from '../content/smsTemplates';
 import { getPublicBaseUrl } from '../utils/urlHelpers';
+import { normalizeNameForSMS } from '../utils/textNormalizer';
 
 const SMS_COLLECTION = 'pending_sms'; // Audit trail for SMS sends
 
@@ -81,8 +82,8 @@ export class SMSService {
       
       // Use English template (en-CA for Canadian market)
       const message = SMS_TEMPLATES.consent.en_CA(
-        patientName,
-        physiotherapistName,
+        normalizeNameForSMS(patientName),
+        normalizeNameForSMS(physiotherapistName),
         consentUrl,
         privacyUrl
       );
@@ -490,7 +491,7 @@ export class SMSService {
       
       // Use English template (en-CA for Canadian market)
       const message = SMS_TEMPLATES.activation.en_CA(
-        professionalName,
+        normalizeNameForSMS(professionalName),
         activationUrl,
         privacyPolicyUrl,
         dataUsageUrl

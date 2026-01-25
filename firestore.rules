@@ -75,6 +75,57 @@ service cloud.firestore {
     }
 
     // ----------------------------
+    // Professionals Collection
+    // ----------------------------
+    match /professionals/{userId} {
+      // Allow authenticated users to read any professional profile
+      // This is needed for consent workflows to load physiotherapist names
+      allow read: if request.auth != null;
+
+      // Profile creation - users can only create their own profile
+      allow create: if request.auth != null
+                     && request.auth.uid == userId;
+
+      // Profile updates - users can update their own profile
+      allow update: if request.auth != null
+                     && request.auth.uid == userId;
+
+      // No deletes from client
+      allow delete: if false;
+    }
+
+    // ----------------------------
+    // Patient Consent (Main Collection)
+    // ----------------------------
+    // PHIPA-compliant consent records (verbal and digital)
+    match /patient_consent/{consentId} {
+      // List/Query: Allow queries filtering by professionalId
+      // This enables real-time listeners with where() clauses
+      allow list: if request.auth != null
+                   && request.query.limit <= 100;
+      
+      // Get: Read individual consent documents
+      allow get: if request.auth != null
+                  && (resource.data.professionalId == request.auth.uid
+                      || resource.data.patientId == request.auth.uid);
+      
+      // Create: Authenticated users can create consents for their patients
+      allow create: if request.auth != null
+                     && request.resource.data.professionalId == request.auth.uid;
+      
+      // Create: Public write for consent portal (digital consent from patients)
+      // Allow if consentMethod is 'digital' (from SMS link)
+      allow create: if request.resource.data.consentMethod == 'digital';
+      
+      // Update: Authenticated users can update consents they created
+      allow update: if request.auth != null
+                     && resource.data.professionalId == request.auth.uid;
+      
+      // Delete: No deletes from client (audit trail requirement)
+      allow delete: if false;
+    }
+
+    // ----------------------------
     // Analytics Events
     // ----------------------------
     match /analytics_events/{eventId} {

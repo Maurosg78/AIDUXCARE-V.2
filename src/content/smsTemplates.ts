@@ -4,7 +4,6 @@
  * 
  * All templates are in English only - no Spanish allowed
  */
-
 export const SMS_TEMPLATES = {
   consent: {
     en_CA: (
@@ -14,15 +13,11 @@ export const SMS_TEMPLATES = {
       privacyUrl: string
     ): string => {
       return `Hello ${patientName}, ${physioName} requires your consent for health data processing according to Canadian law (PHIPA s.18).
-
 Authorize: ${consentUrl}
-
 Privacy Policy: ${privacyUrl}
-
 Reply STOP to opt out.`;
     }
   },
-  
   activation: {
     en_CA: (
       professionalName: string,
@@ -31,16 +26,20 @@ Reply STOP to opt out.`;
       dataUsageUrl: string
     ): string => {
       return `Hello ${professionalName}, activate your AiDuxCare account:
-
 ${activationUrl}
-
 Privacy: ${privacyUrl}
 Data Usage: ${dataUsageUrl}
-
 Link valid for 24 hours.`;
     }
   }
 };
+
+/**
+ * Helper to detect non-ASCII characters
+ */
+function containsNonASCII(text: string): boolean {
+  return /[^\x00-\x7F]/.test(text);
+}
 
 /**
  * Validation helper for SMS templates
@@ -52,36 +51,39 @@ export function validateSMSTemplate(template: string): {
 } {
   const errors: string[] = [];
   
-  // Check for Spanish characters
-  if (/[áéíóúñü]/i.test(template)) {
-    errors.push('Contains Spanish characters');
+  // NEW: Check for non-ASCII characters (accents, tildes, ñ, etc.)
+  if (containsNonASCII(template)) {
+    console.error('[SMS VALIDATION] Template contains non-ASCII characters:', template);
+    errors.push('Contains non-ASCII characters (accents/tildes not allowed in SMS)');
   }
   
   // Check for Spanish words
   const spanishWords = [
-    'Hola', 'consentimiento', 'datos', 'salud', 'según', 'ley', 
+    'Hola', 'consentimiento', 'datos', 'salud', 'según', 'ley',
     'válido', 'necesita', 'para', 'cancelar', 'cuenta', 'activa'
   ];
+  
   spanishWords.forEach(word => {
-    if (new RegExp(`\\b${word}\\b`, 'i').test(template)) {
-      errors.push(`Contains Spanish word: ${word}`);
+    if (new RegExp('\\b' + word + '\\b', 'i').test(template)) {
+      errors.push('Contains Spanish word: ' + word);
     }
   });
-  
+
   // Check for required English content
   if (!template.includes('Hello') && !template.includes('Hi')) {
     errors.push('Missing English greeting');
   }
-  
+
   // Check for PHIPA mention in consent messages
   if (template.includes('consent') && !template.includes('PHIPA')) {
     // Warning but not error - PHIPA may be implied
     console.warn('SMS template mentions consent but not PHIPA');
   }
   
+  console.log('[SMS VALIDATION] Results:', { isValid: errors.length === 0, errors, templateLength: template.length });
+  
   return {
     isValid: errors.length === 0,
     errors
   };
 }
-

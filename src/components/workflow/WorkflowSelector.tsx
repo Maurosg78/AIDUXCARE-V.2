@@ -59,7 +59,8 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
       };
       
       try {
-        const result = await detectFollowUp(input);
+        // Pass userId to detectFollowUp for audit logging
+        const result = await detectFollowUp(input, userId);
         if (!isMounted) return;
         
         setDetectionResult(result);

@@ -218,27 +218,59 @@ class TreatmentPlanService {
 
   /**
    * Get treatment plan for a patient (most recent)
+   * ✅ PHIPA/PIPEDA Compliance: Only returns plans owned by authenticated user
+   * ✅ Uses authorUid to match Firestore security rules
    */
   async getTreatmentPlan(patientId: string): Promise<TreatmentPlan | null> {
     try {
+      // ✅ CRITICAL: Get current user for security filter
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[TreatmentPlanService] User not authenticated, cannot fetch plan');
+        return null;
+      }
+
       const plansRef = collection(db, this.COLLECTION_NAME);
+      // ✅ CRITICAL FIX: Add authorUid filter to match Firestore rules
       const q = query(
         plansRef,
         where('patientId', '==', patientId),
+        where('authorUid', '==', currentUser.uid),  // ✅ Security: Only user's own plans
         orderBy('acceptedAt', 'desc'),
         limit(1)
       );
 
       const snapshot = await getDocs(q);
-      if (snapshot.empty) return null;
+      if (snapshot.empty) {
+        console.info(`[TreatmentPlanService] No treatment plan found for patient ${patientId} (user: ${currentUser.uid})`);
+        return null;
+      }
 
       const doc = snapshot.docs[0];
-      return {
+      const plan = {
         id: doc.id,
         ...doc.data(),
       } as TreatmentPlan;
-    } catch (error) {
-      console.error('Error fetching treatment plan:', error);
+      
+      console.log(`[TreatmentPlanService] ✅ Loaded treatment plan: ${plan.id} (from ${plan.acceptedAt})`);
+      return plan;
+    } catch (error: any) {
+      // WO-FS-DATA-03: Handle permission-denied as "no data yet"
+      const isPermissionDenied = error?.code === 'permission-denied' || 
+                                 error?.message?.includes('permission-denied');
+      
+      if (isPermissionDenied) {
+        console.info('[TreatmentPlanService] No treatment plan found (permission-denied) - may be empty state');
+        return null;
+      }
+      
+      // Check for index error
+      if (error?.code === 'failed-precondition' && error?.message?.includes('index')) {
+        console.warn('[TreatmentPlanService] Index not ready yet, treatment plan query will work after index is built');
+        return null;
+      }
+      
+      console.error('[TreatmentPlanService] Error fetching treatment plan:', error);
       return null;
     }
   }

@@ -301,10 +301,12 @@ function detectKeywords(text: string): string[] {
  * Detects follow-up visit using multi-factor algorithm
  * 
  * @param input Detection input parameters
+ * @param userId Optional user ID for audit logging (must match authenticated user)
  * @returns Detection result with confidence and rationale
  */
 export async function detectFollowUp(
-  input: FollowUpDetectionInput
+  input: FollowUpDetectionInput,
+  userId?: string
 ): Promise<FollowUpDetectionResult> {
   // Manual override takes precedence
   if (input.manualOverride) {
@@ -480,21 +482,28 @@ export async function detectFollowUp(
     timestamp: new Date().toISOString()
   });
   
-  // Log detection event for audit
-  const logger = await getAuditLogger();
-  await logger.logEvent({
-    type: 'workflow_detection',
-    userId: 'system',
-    userRole: 'system',
-    patientId: input.patientId,
-    metadata: {
-      confidence,
-      recommendedWorkflow,
-      rationale,
-      isGrayZone: confidence >= CONFIDENCE_THRESHOLDS.SUGGEST_FOLLOW_UP && confidence < CONFIDENCE_THRESHOLDS.AUTO_FOLLOW_UP,
-      timestamp: new Date().toISOString(),
-    },
-  });
+  // Log detection event for audit (only if userId is provided and matches authenticated user)
+  if (userId) {
+    try {
+      const logger = await getAuditLogger();
+      await logger.logEvent({
+        type: 'workflow_detection',
+        userId, // Use provided userId (must match authenticated user)
+        userRole: 'professional',
+        patientId: input.patientId,
+        metadata: {
+          confidence,
+          recommendedWorkflow,
+          rationale,
+          isGrayZone: confidence >= CONFIDENCE_THRESHOLDS.SUGGEST_FOLLOW_UP && confidence < CONFIDENCE_THRESHOLDS.AUTO_FOLLOW_UP,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      // Log error but don't fail detection if audit logging fails
+      console.warn('[Workflow Detection] Failed to log audit event (non-blocking):', error);
+    }
+  }
   
   return result;
 }
