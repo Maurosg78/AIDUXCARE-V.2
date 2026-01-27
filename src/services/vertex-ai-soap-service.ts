@@ -23,7 +23,7 @@ import { enforceContractOrBuildRepair } from "../core/prompts/v3/validators/cont
 const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
 
 export interface SOAPGenerationResponse {
-  soap: SOAPNote;
+  soap: SOAPNote | null;
   metadata: {
     model: string;
     tokens: {
@@ -44,6 +44,10 @@ export interface SOAPGenerationResponse {
       isValid: boolean;
       hasRepetition: boolean;
     };
+    quality?: {
+      level: 'ok' | 'degraded';
+      flags: string[];
+    };
   };
 }
 
@@ -51,6 +55,53 @@ export interface SOAPGenerationError {
   message: string;
   code: 'vertex_error' | 'parse_error' | 'validation_error' | 'network_error';
   details?: any;
+}
+
+// ✅ WO-SOAP-QUALITY-GUARDS-01: Pre-SOAP Quality Evaluation
+type PreSOAPQuality =
+  | { level: 'ok' }
+  | { level: 'degraded'; reason: 'subjective_only' | 'weak_objective' }
+  | { level: 'unsafe'; reason: 'no_clinical_signal' };
+
+function evaluatePreSOAPQuality(context: SOAPContext): PreSOAPQuality {
+  const transcript = context.transcript?.toLowerCase() || '';
+
+  const hasObjectiveSignals =
+    Boolean(context.physicalExamResults?.length) ||
+    /\b(rom|range of motion|strength|palpation|tenderness|swelling|gait|degrees?|kg|lbs?)\b/.test(transcript) ||
+    /\b\d+\b/.test(transcript); // números clínicos básicos
+
+  const hasMeaningfulLength = transcript.split(' ').length >= 15;
+
+  if (!hasMeaningfulLength && !hasObjectiveSignals) {
+    return { level: 'unsafe', reason: 'no_clinical_signal' };
+  }
+
+  if (!hasObjectiveSignals) {
+    return { level: 'degraded', reason: 'subjective_only' };
+  }
+
+  return { level: 'ok' };
+}
+
+// ✅ WO-SOAP-QUALITY-GUARDS-01: Post-SOAP Quality Guard
+function applyPostSOAPQualityGuard(soap: SOAPNote): { soap: SOAPNote; flags: string[] } {
+  const flags: string[] = [];
+
+  const hasObjective =
+    Boolean(soap.objective && soap.objective.trim().length > 20);
+
+  if (!hasObjective && soap.assessment) {
+    soap.assessment = '';
+    flags.push('assessment_removed_no_objective');
+  }
+
+  if (!soap.assessment && soap.plan) {
+    soap.plan = '';
+    flags.push('plan_removed_no_assessment');
+  }
+
+  return { soap, flags };
 }
 
 /**
@@ -129,6 +180,29 @@ export async function generateSOAPNote(
       ...context,
       transcript: deidentifiedText,
     };
+    
+    // ✅ WO-SOAP-QUALITY-GUARDS-01: Pre-SOAP Quality Guard
+    const preSOAPQuality = evaluatePreSOAPQuality(context);
+    
+    if (preSOAPQuality.level === 'unsafe') {
+      return {
+        soap: null,
+        metadata: {
+          model: 'guard-blocked',
+          tokens: {
+            input: 0,
+            output: 0,
+          },
+          timestamp: new Date().toISOString(),
+          visitType: context.visitType,
+          analysisLevel: options?.analysisLevel,
+          quality: {
+            level: 'unsafe',
+            flags: [preSOAPQuality.reason],
+          },
+        },
+      };
+    }
     
     // ✅ WO-03: Resolve Prompt Brain version (v2 or v3)
     const pbVersion = resolvePromptBrainVersion({
@@ -327,6 +401,10 @@ export async function generateSOAPNote(
     // Parse Vertex AI response
     let soapNote = parseSOAPResponse(data, context.visitType);
     
+    // ✅ WO-SOAP-QUALITY-GUARDS-01: Post-SOAP Quality Guard
+    const postSOAPResult = applyPostSOAPQualityGuard(soapNote);
+    soapNote = postSOAPResult.soap;
+    
     // ✅ PHIPA COMPLIANCE: Re-identify SOAP note sections if needed
     if (Object.keys(identifiersMap).length > 0) {
       soapNote = {
@@ -395,6 +473,13 @@ export async function generateSOAPNote(
           totalCharacters: validation.totalCharacters,
           isValid: validation.isValid,
           hasRepetition: validation.repetitionCheck.hasRepetition,
+        },
+        quality: {
+          level: preSOAPQuality.level === 'ok' ? 'ok' : 'degraded',
+          flags: [
+            ...(preSOAPQuality.level === 'degraded' ? [preSOAPQuality.reason] : []),
+            ...(postSOAPResult?.flags || []),
+          ],
         },
       },
     };
