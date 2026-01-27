@@ -82,7 +82,7 @@ export class OpenAIWhisperService {
       .replace(/\/+/g, '/') // Fix multiple slashes (//, ///, etc.)
       .replace(/webrm/gi, 'webm') // Fix typo: webrm -> webm
       .trim();
-    
+
     const mimeToExt: Record<string, string> = {
       'audio/webm': 'webm',
       'audio/webm;codecs=opus': 'webm',
@@ -105,28 +105,28 @@ export class OpenAIWhisperService {
     // Remove parameters like codecs for lookup
     const baseMime = normalizedMime.split(';')[0].toLowerCase().trim();
     const extension = mimeToExt[baseMime] || mimeToExt[baseMime.split('/')[1]] || 'webm';
-    
+
     console.log(`[Whisper] Normalized MIME: "${mimeType}" -> "${normalizedMime}" -> "${baseMime}" -> extension: "${extension}"`);
-    
+
     return `clinical-audio.${extension}`;
   }
 
   private static buildFormData(audioBlob: Blob, options?: WhisperTranscriptionOptions): FormData {
     const formData = new FormData();
-    
+
     // ✅ SPRINT 2 P3: Detect and normalize MIME type from blob
     let mimeType = audioBlob.type || 'audio/webm';
-    
+
     // Normalize MIME type to fix common issues
     mimeType = mimeType
       .replace(/\/+/g, '/') // Fix multiple slashes (//, ///, etc.)
       .replace(/webrm/gi, 'webm') // Fix typo: webrm -> webm
       .trim();
-    
+
     const filename = this.getWhisperCompatibleFilename(mimeType);
-    
+
     console.log(`[Whisper] Audio MIME type: "${audioBlob.type}" -> normalized: "${mimeType}", using filename: ${filename}`);
-    
+
     formData.append("file", audioBlob, filename);
     formData.append("model", this.DEFAULT_MODEL);
     formData.append("response_format", "json");
@@ -147,8 +147,14 @@ export class OpenAIWhisperService {
 
   private static mapResponse(data: WhisperTranscriptionResponse): WhisperTranscriptionResult {
     const text = data.text?.trim();
-    if (!text) {
-      throw new Error("No se recibió texto transcrito desde Whisper");
+
+    // ✅ FIX-2: Enhanced validation for empty transcript
+    if (!text || text.length < 5) {
+      const errorMsg = !text
+        ? "No se recibió texto transcrito desde Whisper. El audio puede estar vacío o ser inaudible."
+        : `Transcripción muy corta (${text.length} caracteres). Por favor, grabe hablando más claramente durante al menos 3 segundos.`;
+      console.error('[Whisper] Empty or very short transcript:', { textLength: text?.length || 0, text });
+      throw new Error(errorMsg);
     }
 
     const language = typeof data.language === "string" ? data.language : null;
@@ -175,13 +181,21 @@ export class OpenAIWhisperService {
   static async transcribe(audioBlob: Blob, options?: WhisperTranscriptionOptions): Promise<WhisperTranscriptionResult> {
     this.ensureConfigured();
 
-    // ✅ SPRINT 2 P3: Validate audio size before processing
-    // Whisper API has practical limits: ~25MB file size, ~10 minutes duration
+    // ✅ PILOT VALIDATIONS: Audio size checks (FIX-1 + existing)
     const MAX_FILE_SIZE_MB = 25; // 25MB limit
     const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+    const MIN_FILE_SIZE_KB = 10; // 10KB minimum (roughly 2-3 seconds of audio)
+    const MIN_FILE_SIZE_BYTES = MIN_FILE_SIZE_KB * 1024;
     const fileSizeMB = audioBlob.size / (1024 * 1024);
-    const audioFileSizeMB = fileSizeMB; // Store for error handling
-    
+    const fileSizeKB = audioBlob.size / 1024;
+
+    // ✅ FIX-1: Validate audio is not too small (pilot-level validation)
+    if (audioBlob.size < MIN_FILE_SIZE_BYTES) {
+      const errorMessage = `El audio es demasiado corto (${fileSizeKB.toFixed(1)} KB). Por favor, grabe durante al menos 3 segundos hablando claramente.`;
+      console.error('[Whisper] Audio too small:', fileSizeKB.toFixed(1), 'KB, minimum:', MIN_FILE_SIZE_KB, 'KB');
+      throw new Error(errorMessage);
+    }
+
     if (audioBlob.size > MAX_FILE_SIZE_BYTES) {
       const errorMessage = `El archivo de audio es muy grande (${fileSizeMB.toFixed(2)} MB). El límite máximo es ${MAX_FILE_SIZE_MB} MB. Por favor, divida la grabación en segmentos más cortos.`;
       console.error('[Whisper] File too large:', fileSizeMB.toFixed(2), 'MB');
@@ -203,6 +217,7 @@ export class OpenAIWhisperService {
       const requestStartTime = performance.now();
       console.log(`[Whisper] 🚀 Starting transcription:`, {
         fileSizeMB: fileSizeMB.toFixed(2),
+        fileSizeKB: fileSizeKB.toFixed(1),
         fileSizeBytes: audioBlob.size,
         timeoutSeconds: TIMEOUT_MS / 1000,
         mimeType: audioBlob.type,
@@ -210,7 +225,6 @@ export class OpenAIWhisperService {
         mode: options?.mode || 'live',
         timestamp: new Date().toISOString()
       });
-      console.log(`[Whisper] Starting transcription: ${fileSizeMB.toFixed(2)} MB, timeout: ${TIMEOUT_MS / 1000}s`);
 
       const response = await fetch(this.API_URL, {
         method: "POST",
@@ -222,65 +236,77 @@ export class OpenAIWhisperService {
       });
 
       clearTimeout(timeoutId);
-      
+
       const requestTime = performance.now() - requestStartTime;
 
       if (!response.ok) {
         const errorBody = await response.text();
-        
-        // ✅ PHASE 1: Enhanced logging for Whisper API errors
+
+        // ✅ FIX-3: Enhanced error logging with specific error types
         console.error("[Whisper] ❌ API error:", {
           status: response.status,
           statusText: response.statusText,
           fileSizeMB: fileSizeMB.toFixed(2),
+          fileSizeKB: fileSizeKB.toFixed(1),
           mimeType: audioBlob.type,
           requestTimeMs: requestTime.toFixed(0),
           errorBody: errorBody.substring(0, 500), // Limit log size
           timestamp: new Date().toISOString()
         });
-        
-        console.error("Whisper API error:", response.status, errorBody);
-        console.error("Audio blob details:", {
-          size: audioBlob.size,
-          type: audioBlob.type,
-          sizeKB: (audioBlob.size / 1024).toFixed(2)
-        });
-        
-        // Try to parse error message from response
+
+        // ✅ FIX-3: User-friendly error messages with specific error types
         let errorMessage = "Servicio de transcripción temporalmente no disponible";
+        let errorType = "UNKNOWN_ERROR";
+
         try {
           const errorJson = JSON.parse(errorBody);
           if (errorJson.error?.message) {
-            errorMessage = errorJson.error.message;
-            
-            // ✅ SPRINT 2 P3: Provide user-friendly messages for common errors
-            const lowerMessage = errorMessage.toLowerCase();
-            
+            const apiMessage = errorJson.error.message;
+            const lowerMessage = apiMessage.toLowerCase();
+
+            // ✅ FIX-3: Specific error type classification
             if (lowerMessage.includes('mime') || lowerMessage.includes('format') || lowerMessage.includes('unsupported')) {
+              errorType = "AUDIO_FORMAT_UNSUPPORTED";
               errorMessage = `Formato de audio no soportado. Tipo detectado: ${audioBlob.type || 'desconocido'}. Por favor, intente grabar nuevamente.`;
             } else if (lowerMessage.includes('corrupted') || lowerMessage.includes('corrupt')) {
-              errorMessage = `El archivo de audio está corrupto o es muy pequeño (${(audioBlob.size / 1024).toFixed(2)} KB). Por favor, grabe nuevamente hablando más cerca del micrófono.`;
-            } else if (lowerMessage.includes('too small') || lowerMessage.includes('too short')) {
-              errorMessage = `El audio es muy corto (${(audioBlob.size / 1024).toFixed(2)} KB). Por favor, grabe durante al menos 3 segundos.`;
+              errorType = "AUDIO_CORRUPTED";
+              errorMessage = `El archivo de audio está corrupto (${fileSizeKB.toFixed(1)} KB). Por favor, grabe nuevamente hablando más cerca del micrófono.`;
+            } else if (lowerMessage.includes('too small') || lowerMessage.includes('too short') || lowerMessage.includes('minimum')) {
+              errorType = "AUDIO_TOO_SHORT";
+              errorMessage = `El audio es muy corto (${fileSizeKB.toFixed(1)} KB). Por favor, grabe durante al menos 3 segundos.`;
             } else if (lowerMessage.includes('invalid') || lowerMessage.includes('malformed')) {
+              errorType = "AUDIO_INVALID";
               errorMessage = `El formato de audio no es válido. Por favor, intente grabar nuevamente.`;
+            } else if (response.status === 429) {
+              errorType = "RATE_LIMIT";
+              errorMessage = "Demasiadas solicitudes. Por favor, espere un momento e intente nuevamente.";
+            } else if (response.status >= 500) {
+              errorType = "SERVICE_ERROR";
+              errorMessage = "El servicio de transcripción está temporalmente no disponible. Por favor, intente en unos momentos.";
+            } else {
+              // Keep original API message for unexpected errors
+              errorMessage = apiMessage;
             }
           }
         } catch {
           // If parsing fails, use default message
+          errorType = "PARSE_ERROR";
         }
-        
+
+        console.error(`[Whisper] Error type: ${errorType}`);
         throw new Error(errorMessage);
       }
 
       const transcription = (await response.json()) as WhisperTranscriptionResponse;
       if (transcription.error) {
+        console.error('[Whisper] API returned error in response:', transcription.error);
         throw new Error(transcription.error.message || "Error en respuesta de Whisper");
       }
 
+      // ✅ FIX-2: mapResponse now validates transcript is not empty
       const mapped = this.mapResponse(transcription);
       const totalRequestTime = performance.now() - requestStartTime;
-      
+
       // ✅ PHASE 1: Enhanced logging for successful transcription
       console.log("[Whisper] ✅ Transcription completed:", {
         textLength: mapped.text.length,
@@ -290,28 +316,40 @@ export class OpenAIWhisperService {
         durationSeconds: mapped.durationSeconds,
         averageLogProb: mapped.averageLogProb,
         fileSizeMB: fileSizeMB.toFixed(2),
+        fileSizeKB: fileSizeKB.toFixed(1),
         requestTimeMs: totalRequestTime.toFixed(0),
         requestTimeSeconds: (totalRequestTime / 1000).toFixed(2),
         timestamp: new Date().toISOString()
       });
-      
-      console.log("Transcripción completada:", mapped.text.length, "caracteres", {
-        preview: mapped.text.slice(0, 80),
-        detectedLanguage: mapped.detectedLanguage,
-        durationSeconds: mapped.durationSeconds,
-        averageLogProb: mapped.averageLogProb
-      });
+
       return mapped;
+
     } catch (error) {
-      console.error("Error interno en servicio de transcripción:", error);
-      
-      // ✅ SPRINT 2 P3: Handle timeout and abort errors specifically
+      console.error("[Whisper] Error interno en servicio de transcripción:", error);
+
+      // ✅ FIX-3: Specific error handling with error types
       if (error instanceof Error) {
+        // Handle timeout/abort
         if (error.name === 'AbortError' || error.message.includes('aborted')) {
-          throw new Error(`La transcripción está tomando demasiado tiempo (más de 5 minutos). El archivo puede ser muy largo (${audioFileSizeMB.toFixed(2)} MB). Por favor, intente dividir la grabación en segmentos más cortos o grabe nuevamente.`);
+          const errorType = "TRANSCRIPTION_TIMEOUT";
+          console.error(`[Whisper] Error type: ${errorType}`);
+          throw new Error(`La transcripción está tomando demasiado tiempo (más de 5 minutos). El archivo puede ser muy largo (${fileSizeMB.toFixed(2)} MB). Por favor, intente dividir la grabación en segmentos más cortos.`);
         }
+
+        // Handle network errors
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          const errorType = "NETWORK_ERROR";
+          console.error(`[Whisper] Error type: ${errorType}`);
+          throw new Error("Error de conexión. Por favor, verifique su conexión a internet e intente nuevamente.");
+        }
+
+        // Re-throw specific errors from validation or mapResponse
         throw error;
       }
+
+      // Unknown error
+      const errorType = "UNKNOWN_ERROR";
+      console.error(`[Whisper] Error type: ${errorType}`);
       throw new Error("Error procesando el audio. Por favor intente nuevamente.");
     }
   }
