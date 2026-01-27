@@ -34,43 +34,61 @@ export class FirestoreAuditLogger {
 
   /**
    * Registra un evento de auditoría inmutable con cifrado de metadatos
+   * Circuit breaker: auditoría nunca bloquea workflow clínico
    */
-  static async logEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<string> {
+  static async logEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<void> {
     try {
-      // WO-FS-DATA-03: Enforce ownership on all Firestore writes
       const currentUser = auth.currentUser;
-      if (!currentUser || !currentUser.uid) {
-        throw new Error('Missing authenticated user for ownership');
+
+      // Guard 1 — Auth aún no hidratada (race condition)
+      if (!currentUser) {
+        console.warn('[AuditLogger] Auth not ready — audit skipped (non-blocking)', {
+          eventType: event.type,
+        });
+        return;
       }
-      
-      // Ensure userId matches current user (security requirement)
-      const userId = event.userId || currentUser.uid;
-      if (userId !== currentUser.uid) {
-        throw new Error('Event userId must match current authenticated user');
-      }
-      
-      // WO-FS-DATA-03: Final validation - userId must be present
-      if (!userId) {
-        throw new Error('Missing userId: cannot log audit event without ownership');
+
+      // Guard 2 — userId mismatch → corregir, no fallar
+      let correctedEvent = event;
+      if (event.userId !== currentUser.uid) {
+        console.error('[AuditLogger] userId mismatch corrected', {
+          eventUserId: event.userId,
+          authUserId: currentUser.uid,
+          eventType: event.type,
+        });
+
+        correctedEvent = {
+          ...event,
+          userId: currentUser.uid,
+          metadata: {
+            ...event.metadata,
+            _userCorrected: true,
+            _originalUserId: event.userId,
+          },
+        };
       }
 
       // Cifrar metadatos sensibles si existen
       let encryptedMetadata: string | undefined;
-      if (event.metadata) {
-        encryptedMetadata = await encryptMetadata(JSON.stringify(event.metadata));
+      if (correctedEvent.metadata) {
+        encryptedMetadata = await encryptMetadata(JSON.stringify(correctedEvent.metadata));
       }
 
-      const docRef = await addDoc(collection(db, this.collectionName), {
-        ...event,
-        userId, // WO-FS-DATA-03: Always set from authenticated user
+      // Best-effort write (NO throw)
+      await addDoc(collection(db, this.collectionName), {
+        ...correctedEvent,
+        userId: currentUser.uid, // WO-FS-DATA-03: Always set from authenticated user
         metadata: encryptedMetadata, // Metadatos cifrados
         timestamp: Timestamp.now(),
+        status: 'logged',
       });
-      
-      return docRef.id;
-    } catch (error) {
-      console.error('Error logging audit event:', error);
-      throw new Error(`Failed to log audit event: ${error}`);
+
+    } catch (error: any) {
+      // Circuit breaker — auditoría nunca rompe workflow
+      console.error('[AuditLogger] Audit write failed (non-blocking)', {
+        eventType: event?.type,
+        message: error?.message,
+      });
     }
   }
 

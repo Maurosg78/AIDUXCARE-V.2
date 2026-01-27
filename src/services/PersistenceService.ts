@@ -6,7 +6,7 @@ import logger from '@/shared/utils/logger';
 
 import CryptoService from './CryptoService';
 
-import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, orderBy, getDocs, deleteDoc, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { VerbalConsentService } from './verbalConsentService';
 // ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
