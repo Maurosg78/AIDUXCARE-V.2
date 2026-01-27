@@ -618,6 +618,9 @@ export class PatientConsentService {
     patientUnderstanding?: string;
     declineReasons?: string;
     declineNotes?: string;
+    // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Optional disclosure delivery info
+    patientEmail?: string;
+    patientPhone?: string;
   }): Promise<void> {
     try {
       const consentRecord: any = {
@@ -653,11 +656,35 @@ export class PatientConsentService {
       const consentRef = doc(db, 'patient_consent', `${details.patientId}_${Date.now()}`);
       await setDoc(consentRef, consentRecord);
 
-      console.log('[PATIENT CONSENT] Verbal consent recorded:', {
+      console.log('[PATIENT CONSENT] ✅ Verbal consent recorded (NON-BLOCKING):', {
         patientId: details.patientId,
         status: details.consentStatus,
         method: 'verbal',
       });
+
+      // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Attempt disclosure delivery in parallel (NON-BLOCKING)
+      // Consent is valid regardless of disclosure delivery status
+      if (details.consentStatus === 'granted') {
+        // Import disclosure service dynamically to avoid circular dependencies
+        import('./disclosureService').then(({ DisclosureService }) => {
+          DisclosureService.attemptDisclosureDelivery(
+            details.patientId,
+            details.professionalId,
+            details.patientName,
+            details.patientEmail ? 'email' : 'sms', // Prefer email if available
+            details.patientEmail,
+            details.patientPhone
+          ).catch((error) => {
+            // Log but don't throw - consent is still valid
+            console.warn('[PATIENT CONSENT] Disclosure delivery failed (non-blocking):', {
+              patientId: details.patientId,
+              error: error?.message || 'Unknown error'
+            });
+          });
+        }).catch((error) => {
+          console.warn('[PATIENT CONSENT] Failed to load disclosure service (non-blocking):', error);
+        });
+      }
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error recording verbal consent:', error);
       throw error;

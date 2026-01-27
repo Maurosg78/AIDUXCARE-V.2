@@ -5,21 +5,21 @@ import { useAuth } from '../../hooks/useAuth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { PatientConsentService } from '../../services/patientConsentService';
-import { checkConsentViaServer } from '../../services/consentServerService';
+// ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más checkConsentViaServer en el Gate
+// El parent maneja toda la verificación
 import { VerbalConsentModal } from './VerbalConsentModal';
+import type { ConsentResolution } from '@/domain/consent/resolveConsentChannel';
 
 interface ConsentGateScreenProps {
   patientId: string;
   patientName?: string;
   patientPhone?: string;
   clinicName?: string;
-  onConsentVerified?: () => void;
-  // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Workflow is source of truth
-  consentStatus?: {
-    hasValidConsent: boolean;
-    status?: string | null;
-    consentMethod?: string | null;
-  } | null;
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Solo recibe consentResolution del dominio
+  // NO más callbacks, NO más estados duplicados
+  consentResolution: ConsentResolution;
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback para check inmediato cuando se declina
+  onConsentDeclined?: () => Promise<void>;
 }
 
 function ConsentGateScreen({
@@ -27,8 +27,8 @@ function ConsentGateScreen({
   patientName,
   patientPhone,
   clinicName = 'AiDuxCare Clinic',
-  onConsentVerified,
-  consentStatus
+  consentResolution,
+  onConsentDeclined
 }: ConsentGateScreenProps) {
   const { user } = useAuth();
   const [smsSending, setSmsSending] = useState(false);
@@ -36,16 +36,12 @@ function ConsentGateScreen({
   const [smsError, setSmsError] = useState<string | null>(null);
   const [physioNameForSms, setPhysioNameForSms] = useState<string>('');
   const [showVerbalModal, setShowVerbalModal] = useState(false);
-  const [hasConsent, setHasConsent] = useState(false);
   const [smsRequested, setSmsRequested] = useState(false);
   const [processingVerbalConsent, setProcessingVerbalConsent] = useState(false);
 
-  // ✅ WO-CONSENT-POLLING-FIX-04: Refs for polling control
-  const consentPollingRef = useRef<NodeJS.Timeout | null>(null);
-  const consentPollingAttemptsRef = useRef<number>(0);
-
-  // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Guard to prevent re-blocking once consent is granted
-  const consentGrantedRef = useRef<boolean>(false);
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más estados de consentimiento en el Gate
+  // El dominio decide todo, el Gate solo renderiza
+  // NO más: hasConsent, consentGrantedRef, checkingConsent, polling, checkConsentViaServer
 
   // Load physiotherapist name
   useEffect(() => {
@@ -86,211 +82,9 @@ function ConsentGateScreen({
     checkSMSConsentRequest();
   }, [patientId, user?.uid]);
 
-  // ✅ CRITICAL FIX: Check Firestore/Cloud Function FIRST on mount (persists across sessions)
-  // sessionStorage is only for optimization within the same session
-  const [checkingConsent, setCheckingConsent] = useState(true);
-  const verificationExecutedRef = useRef(false);
-  
-  // ✅ Log component mount
-  useEffect(() => {
-    console.log('[ConsentGate] 🚀 Component mounted/updated', {
-      patientId,
-      hasUser: !!user?.uid,
-      hasConsent,
-      consentGrantedRef: consentGrantedRef.current,
-      checkingConsent
-    });
-  }, [patientId, user?.uid]);
-  
-  useEffect(() => {
-    console.log('[ConsentGate] 🔄 useEffect triggered', {
-      patientId,
-      hasUser: !!user?.uid,
-      verificationExecuted: verificationExecutedRef.current
-    });
-    
-    if (!patientId || !user?.uid) {
-      console.log('[ConsentGate] ⚠️ Missing patientId or user, skipping verification');
-      setCheckingConsent(false);
-      return;
-    }
-
-    // ✅ Prevent multiple executions
-    if (verificationExecutedRef.current) {
-      console.log('[ConsentGate] ⚠️ Verification already executed, skipping');
-      return;
-    }
-
-    const checkExistingConsent = async () => {
-      verificationExecutedRef.current = true;
-      setCheckingConsent(true);
-      try {
-        console.log('[ConsentGate] 🔍 Checking existing consent from Firestore for patient:', patientId);
-        const consentResult = await checkConsentViaServer(patientId);
-        console.log('[ConsentGate] 📊 Consent check result:', {
-          hasValidConsent: consentResult.hasValidConsent,
-          status: consentResult.status,
-          method: consentResult.consentMethod,
-          error: consentResult.error
-        });
-        
-        if (consentResult.hasValidConsent) {
-          console.log('[ConsentGate] ✅ Patient already has consent in Firestore - loading immediately', {
-            patientId,
-            status: consentResult.status,
-            method: consentResult.consentMethod
-          });
-          // ✅ Consent exists in Firestore - load it immediately
-          consentGrantedRef.current = true;
-          setHasConsent(true);
-          
-          // ✅ Also update sessionStorage for optimization (prevent re-mounts in same session)
-          const consentKey = `consent_granted_${patientId}`;
-          sessionStorage.setItem(consentKey, 'true');
-          sessionStorage.setItem(`${consentKey}_timestamp`, Date.now().toString());
-          
-          // ✅ CRITICAL: Set checkingConsent to false AFTER setting state
-          // This allows the render check to work correctly
-          setCheckingConsent(false);
-          
-          console.log('[ConsentGate] ✅ State updated (consent already existed - NO navigation)', {
-            hasConsent: true,
-            consentGrantedRef: consentGrantedRef.current,
-            checkingConsent: false
-          });
-          
-          // ✅ CRITICAL: Do NOT call onConsentVerified if consent already existed
-          // onConsentVerified should only be called when consent is NEWLY granted
-          // If consent already exists, we're already in the workflow - don't navigate away
-          
-          // Return early - don't continue to show gate
-          return;
-        } else {
-          console.log('[ConsentGate] ❌ No existing consent found - will show gate', {
-            patientId,
-            result: consentResult
-          });
-          // ✅ Check sessionStorage as fallback (for same-session optimization)
-          const consentKey = `consent_granted_${patientId}`;
-          const wasGranted = sessionStorage.getItem(consentKey);
-          if (wasGranted === 'true') {
-            console.log('[ConsentGate] Consent was granted in this session (sessionStorage), skipping gate');
-            consentGrantedRef.current = true;
-            setHasConsent(true);
-            setCheckingConsent(false); // Set to false so render check works
-            // ✅ CRITICAL: Do NOT call onConsentVerified if consent already existed
-            // This prevents navigation when consent was already granted
-            return; // Return early
-          }
-          // No consent found - will show gate
-          setCheckingConsent(false);
-        }
-      } catch (error: any) {
-        console.error('[ConsentGate] ❌ Error checking existing consent (will show gate):', {
-          error: error?.message,
-          patientId
-        });
-        // On error, show gate (fail-safe)
-        setCheckingConsent(false);
-      }
-    };
-
-    checkExistingConsent();
-  }, [patientId, user?.uid, onConsentVerified]);
-
-  // ✅ WO-CONSENT-POLLING-FIX-04: Polling with single instance guard and max attempts
-  // NO Firestore listeners - all checks go through Cloud Functions
-  useEffect(() => {
-    if (!patientId || !user?.uid) {
-      // Cleanup if patient/user invalid
-      if (consentPollingRef.current) {
-        clearInterval(consentPollingRef.current);
-        consentPollingRef.current = null;
-        consentPollingAttemptsRef.current = 0;
-      }
-      return;
-    }
-
-    // ✅ Skip polling if consent already granted (checked from Firestore on mount)
-    if (consentGrantedRef.current || hasConsent) {
-      console.log('[ConsentGate] Consent already granted (from Firestore check), skipping polling setup');
-      return;
-    }
-
-    // ✅ Regla 1: Solo se inicia UNA vez por patientId
-    if (consentPollingRef.current) {
-      console.log('[ConsentGate] Polling already active for patient:', patientId);
-      return;
-    }
-
-    console.log('[ConsentGate] Setting up consent polling for patient:', patientId);
-    consentPollingAttemptsRef.current = 0;
-
-    const MAX_ATTEMPTS = 40; // ✅ Regla 3: Límite de polling (40 * 3s = 2 min max)
-
-    // Poll every 3 seconds if consent is pending
-    consentPollingRef.current = setInterval(async () => {
-      try {
-        // ✅ WO-CONSENT-VERBAL-OPTIMISTIC-UI-01: Check FIRST - if consent already granted, stop polling immediately
-        if (consentGrantedRef.current === true) {
-          console.log('[ConsentGate] Consent already granted (optimistic), stopping polling');
-          if (consentPollingRef.current) {
-            clearInterval(consentPollingRef.current);
-            consentPollingRef.current = null;
-            consentPollingAttemptsRef.current = 0;
-          }
-          return;
-        }
-
-        // ✅ Regla 3: Límite de intentos
-        if (++consentPollingAttemptsRef.current >= MAX_ATTEMPTS) {
-          console.warn('[ConsentGate] Consent polling timeout after', MAX_ATTEMPTS, 'attempts');
-          if (consentPollingRef.current) {
-            clearInterval(consentPollingRef.current);
-            consentPollingRef.current = null;
-          }
-          return;
-        }
-
-        const consentResult = await checkConsentViaServer(patientId);
-
-        // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
-        if (consentResult.hasValidConsent) {
-          // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted (irreversible)
-          consentGrantedRef.current = true;
-          console.log('[ConsentGate] ✅ Consent detected! Closing modal permanently...');
-          setHasConsent(true);
-          setSmsRequested(false);
-
-          // Stop polling immediately
-          if (consentPollingRef.current) {
-            clearInterval(consentPollingRef.current);
-            consentPollingRef.current = null;
-            consentPollingAttemptsRef.current = 0;
-          }
-
-          // ✅ CRITICAL: Only call onConsentVerified when consent is NEWLY detected via polling
-          // This means consent was just granted (e.g., via SMS), so we should navigate
-          if (onConsentVerified) {
-            console.log('[ConsentGate] 📞 Calling onConsentVerified (consent newly detected via polling)');
-            onConsentVerified();
-          }
-        }
-      } catch (error: any) {
-        console.warn('[ConsentGate] Error polling consent status:', error?.message || 'Unknown error');
-      }
-    }, 3000); // Poll every 3 seconds
-
-    // ✅ Regla 3: Cleanup REAL
-    return () => {
-      console.log('[ConsentGate] Cleaning up consent polling for patient:', patientId);
-      if (consentPollingRef.current) {
-        clearInterval(consentPollingRef.current);
-        consentPollingRef.current = null;
-        consentPollingAttemptsRef.current = 0;
-      }
-    };
-  }, [patientId, user?.uid]); // ✅ Regla 4: Dependencias estables (sin onConsentVerified)
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más verificación de consentimiento en el Gate
+  // El parent (ProfessionalWorkflowPage) maneja todo el polling y verificación
+  // El Gate solo renderiza según allowedActions del dominio
 
   const handleSendSMS = async () => {
     if (!patientPhone) {
@@ -372,126 +166,38 @@ function ConsentGateScreen({
   };
 
   const handleVerbalConsentComplete = async () => {
-    console.log('[ConsentGate] Verbal consent completed (OPTIMISTIC)');
+    console.log('[ConsentGate] Verbal consent completed');
 
-    // ✅ WO-CONSENT-VERBAL-OPTIMISTIC-UI-01: Optimistic UI Update
-    // 1. Persistir en sessionStorage para sobrevivir re-mounts
-    const consentKey = `consent_granted_${patientId}`;
-    sessionStorage.setItem(consentKey, 'true');
-    sessionStorage.setItem(`${consentKey}_timestamp`, Date.now().toString());
-    console.log('[ConsentGate] Consent persisted to sessionStorage:', consentKey);
-
-    // 2. Bloqueo inmediato de cualquier re-render y polling
-    consentGrantedRef.current = true;
-
-    // ✅ Detener polling inmediatamente (no esperar al siguiente ciclo)
-    if (consentPollingRef.current) {
-      clearInterval(consentPollingRef.current);
-      consentPollingRef.current = null;
-      consentPollingAttemptsRef.current = 0;
-      console.log('[ConsentGate] Polling stopped immediately after optimistic consent');
-    }
-
-    // 3. Cerrar modal y gate de forma definitiva
+    // ✅ WO-CONSENT-SINGLE-SOURCE-01: Gate NO actualiza estados de consentimiento
+    // Solo cierra el modal localmente
+    // El parent detecta el cambio vía workflowConsentStatus (actualizado por polling o check inmediato)
     setProcessingVerbalConsent(false);
     setShowVerbalModal(false);
-    setHasConsent(true);
 
-    // 3. Notificar al workflow (desbloquea UI clínica)
-    // ✅ Forzar navegación directamente para garantizar que ocurra
-    console.log('[ConsentGate] ✅ Verbal consent granted - updating state and navigating', {
-      patientId,
-      hasConsent: true,
-      consentGrantedRef: consentGrantedRef.current
-    });
-    
-    // ✅ CTO DECISION: Parent handles navigation - we only notify
-    if (onConsentVerified) {
-      console.log('[ConsentGate] 📞 Calling onConsentVerified callback (parent will navigate)');
-      onConsentVerified();
-    }
-
-    // 4. Verificación en background SOLO para logging / audit
-    //    (NO puede volver a bloquear la UI)
-    checkConsentViaServer(patientId)
-      .then(result => {
-        if (!result.hasValidConsent) {
-          console.warn(
-            '[ConsentGate] Background consent verification did not detect consent yet (expected eventual consistency)',
-            result
-          );
-        } else {
-          console.log('[ConsentGate] Background consent verification confirmed consent');
-        }
-      })
-      .catch(err => {
-        console.warn(
-          '[ConsentGate] Background consent verification failed (non-blocking)',
-          err
-        );
-      });
+    console.log('[ConsentGate] ✅ Verbal consent recorded - parent will detect via polling/check');
+    // ❌ NO actualizar hasConsent, consentGrantedRef, sessionStorage
+    // ❌ NO verificar backend - el parent maneja todo
+    // El parent's polling detectará el cambio (declined o granted) en el siguiente ciclo
   };
 
-  // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Guard absoluto - workflow is source of truth
-  // 🔒 ABSOLUTE GUARD — workflow decides, gate only reflects
-  console.log('[ConsentGate] 🎨 Render check', {
-    consentStatus,
-    hasValidConsent: consentStatus?.hasValidConsent,
-    method: consentStatus?.consentMethod,
-    status: consentStatus?.status,
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: ConsentResolution viene del parent (dominio)
+  // NO se resuelve aquí, NO se infiere, solo se consume
+  const { channel, allowedActions } = consentResolution;
+
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: El parent ya verificó que channel !== 'none' antes de renderizar
+  // Si llegamos aquí, es porque el dominio dice que debemos renderizar el Gate
+
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Log para debugging
+  console.log('[ConsentGate] 🎨 Render check (purely declarative)', {
+    channel,
+    allowedActions,
     patientId,
-    willRenderGate: consentStatus?.hasValidConsent !== true
+    willRenderGate: channel !== 'none'
   });
-  
-  if (consentStatus?.hasValidConsent === true) {
-    console.log('[ConsentGate] 🔒 Consent already valid → gate disabled', {
-      method: consentStatus.consentMethod,
-      status: consentStatus.status,
-      patientId
-    });
-    return null;
-  }
 
-  // ✅ Fallback guard (for backwards compatibility during transition)
-  const consentKey = patientId ? `consent_granted_${patientId}` : null;
-  const sessionConsentGranted = consentKey ? sessionStorage.getItem(consentKey) === 'true' : false;
-  
-  if (hasConsent || consentGrantedRef.current || sessionConsentGranted) {
-    // Sync state if sessionStorage says yes but state doesn't
-    if (sessionConsentGranted && !hasConsent) {
-      setHasConsent(true);
-      consentGrantedRef.current = true;
-    }
-    
-    // Stop checking if still in progress
-    if (checkingConsent) {
-      setCheckingConsent(false);
-    }
-    
-    // Ensure polling is stopped
-    if (consentPollingRef.current) {
-      clearInterval(consentPollingRef.current);
-      consentPollingRef.current = null;
-      consentPollingAttemptsRef.current = 0;
-    }
-
-    // ✅ CTO DECISION: Return null IMMEDIATELY - no gate, no modal, nothing
-    return null;
-  }
-
-  // ✅ Show loading state while checking consent from Firestore
-  // This only shows if consent doesn't exist
-  if (checkingConsent) {
-    return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
-          <Clock className="w-16 h-16 text-indigo-600 mx-auto mb-4 animate-spin" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Consent...</h2>
-          <p className="text-gray-600">Checking patient consent status...</p>
-        </div>
-      </div>
-    );
-  }
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más guards basados en estado local
+  // El parent ya decidió si renderizar el Gate basándose en consentResolution
+  // Si llegamos aquí, es porque el dominio dice que debemos renderizar
 
   return (
     <>
@@ -537,54 +243,8 @@ function ConsentGateScreen({
               </p>
             </div>
 
-            {/* Two options: Verbal or SMS */}
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">Choose consent method:</p>
-
-              {/* Option 1: Verbal Consent */}
-              <button
-                onClick={async () => {
-                  // ✅ Check if consent already exists or is being processed
-                  if (hasConsent || consentGrantedRef.current || processingVerbalConsent) {
-                    console.log('[ConsentGate] Consent already exists or being processed, skipping verbal modal');
-                    return;
-                  }
-
-                  // ✅ Check if consent already exists before showing modal
-                  // This prevents unnecessary verbal consent when digital consent already exists
-                  try {
-                    const consentResult = await checkConsentViaServer(patientId);
-                    if (consentResult.hasValidConsent) {
-                      console.log('[ConsentGate] Consent already exists, skipping verbal modal');
-                      // Consent already exists, close the gate immediately
-                      consentGrantedRef.current = true;
-                      setHasConsent(true);
-                      // ✅ CRITICAL: Do NOT call onConsentVerified - consent already existed
-                      return;
-                    }
-                  } catch (error) {
-                    console.warn('[ConsentGate] Error checking consent before showing verbal modal:', error);
-                    // Continue to show modal if check fails
-                  }
-                  setShowVerbalModal(true);
-                }}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <Mic className="w-4 h-4" />
-                Read & Record Verbal Consent
-              </button>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
-                </div>
-              </div>
-
-              {/* Option 2: SMS Consent */}
+            {/* ✅ WO-CONSENT-DOMAIN-ACTIONS-01: Render SOLO por acciones permitidas (sin inferencias) */}
+            {allowedActions.sendSms && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-gray-700">
@@ -640,10 +300,42 @@ function ConsentGateScreen({
                   )}
                 </button>
               </div>
-            </div>
+            )}
 
-            {/* Waiting message */}
-            {smsRequested && (
+            {/* ✅ WO-CONSENT-DOMAIN-ACTIONS-01: Verbal solo si explícitamente permitido por dominio */}
+            {allowedActions.recordVerbal && (
+              <div className="space-y-3">
+                {allowedActions.sendSms && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">or</span>
+                    </div>
+                  </div>
+                )}
+                <p className="text-sm font-medium text-gray-700">Verbal Consent:</p>
+                <button
+                  onClick={() => {
+                    // ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más verificación de consentimiento
+                    // Solo verificar estado local del modal
+                    if (processingVerbalConsent) {
+                      console.log('[ConsentGate] Verbal consent already being processed, skipping');
+                      return;
+                    }
+                    setShowVerbalModal(true);
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Mic className="w-4 h-4" />
+                  Read & Record Verbal Consent
+                </button>
+              </div>
+            )}
+
+            {/* ✅ WO-CONSENT-DOMAIN-ACTIONS-01: Waiting message (solo si SMS está permitido) */}
+            {allowedActions.sendSms && smsRequested && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 animate-pulse" />
@@ -663,25 +355,12 @@ function ConsentGateScreen({
                     {smsSending ? 'Sending...' : 'Re-send SMS'}
                   </button>
                   <button
-                    onClick={async () => {
-                      // ✅ Check if consent already exists or is being processed
-                      if (hasConsent || consentGrantedRef.current || processingVerbalConsent) {
-                        console.log('[ConsentGate] Consent already exists or being processed, skipping verbal modal');
+                    onClick={() => {
+                      // ✅ WO-CONSENT-SINGLE-SOURCE-01: NO más verificación de consentimiento
+                      // Solo verificar estado local del modal
+                      if (processingVerbalConsent) {
+                        console.log('[ConsentGate] Verbal consent already being processed, skipping');
                         return;
-                      }
-
-                      // ✅ Check if consent already exists before showing modal
-                      try {
-                        const consentResult = await checkConsentViaServer(patientId);
-                        if (consentResult.hasValidConsent) {
-                          console.log('[ConsentGate] Consent already exists, skipping verbal modal');
-                          consentGrantedRef.current = true;
-                          setHasConsent(true);
-                          // ✅ CRITICAL: Do NOT call onConsentVerified - consent already existed
-                          return;
-                        }
-                      } catch (error) {
-                        console.warn('[ConsentGate] Error checking consent before showing verbal modal:', error);
                       }
                       setShowVerbalModal(true);
                     }}
@@ -697,33 +376,34 @@ function ConsentGateScreen({
       </div>
 
       {/* Verbal Consent Modal */}
-      {/* ✅ WO-CONSENT-VERBAL-OPTIMISTIC-UI-01: Quadruple guard - modal NEVER shows if consent granted */}
-      {(() => {
-        const consentKey = patientId ? `consent_granted_${patientId}` : null;
-        const sessionConsentGranted = consentKey ? sessionStorage.getItem(consentKey) === 'true' : false;
-
-        // Never show modal if consent was granted (any source)
-        if (hasConsent || consentGrantedRef.current || sessionConsentGranted || processingVerbalConsent) {
-          return null;
-        }
-
-        // Only show if explicitly requested and no consent exists
-        if (!showVerbalModal) {
-          return null;
-        }
-
-        return (
-          <VerbalConsentModal
-            patientId={patientId}
-            patientName={patientName || 'Patient'}
-            onClose={() => {
-              console.log('[ConsentGate] Verbal modal closed');
-              setShowVerbalModal(false);
-            }}
-            onConsentGranted={handleVerbalConsentComplete}
-          />
-        );
-      })()}
+      {/* ✅ WO-CONSENT-SINGLE-SOURCE-01: Modal solo se muestra si allowedActions.recordVerbal === true */}
+      {/* NO más guards basados en estado local de consentimiento */}
+      {showVerbalModal && allowedActions.recordVerbal && (
+        <VerbalConsentModal
+          patientId={patientId}
+          patientName={patientName || 'Patient'}
+          // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Pass disclosure delivery info
+          patientEmail={undefined} // TODO: Get from patient data if available
+          patientPhone={patientPhone}
+          onClose={() => {
+            console.log('[ConsentGate] Verbal modal closed');
+            setShowVerbalModal(false);
+          }}
+          onConsentGranted={handleVerbalConsentComplete}
+          // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Trigger immediate check when consent is declined
+          onConsentDeclined={async () => {
+            console.log('[ConsentGate] Consent declined - triggering immediate check');
+            // Close modal
+            setProcessingVerbalConsent(false);
+            setShowVerbalModal(false);
+            // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Trigger immediate check in parent
+            // This ensures workflowConsentStatus is updated immediately (no waiting for polling)
+            if (onConsentDeclined) {
+              await onConsentDeclined();
+            }
+          }}
+        />
+      )}
     </>
   );
 }

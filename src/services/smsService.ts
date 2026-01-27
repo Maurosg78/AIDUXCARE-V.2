@@ -58,6 +58,112 @@ if (import.meta.env.DEV) {
  */
 export class SMSService {
   /**
+   * ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Send disclosure document link via SMS
+   * 
+   * @param phone - Patient phone number (E.164 format)
+   * @param patientName - Patient name
+   * @param patientId - Patient ID
+   * @returns Promise<void>
+   */
+  static async sendDisclosureLink(
+    phone: string,
+    patientName: string,
+    patientId: string
+  ): Promise<void> {
+    try {
+      const publicBaseUrl = getPublicBaseUrl();
+      const disclosureUrl = `${publicBaseUrl}/disclosure/${patientId}`;
+      
+      // Simple disclosure message (can be enhanced later)
+      const message = `Hi ${normalizeNameForSMS(patientName)}, your consent disclosure document is available at: ${disclosureUrl}`;
+      
+      // Validate template
+      const validation = validateSMSTemplate(message);
+      if (!validation.isValid) {
+        logger.error('[SMS] Disclosure template validation failed:', validation.errors);
+        throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Validate and format phone number
+      let validatedPhone = phone.trim();
+      
+      // Use same SMS sending logic as consent link
+      if (SMS_PROVIDER === 'vonage' && VONAGE_ENABLED) {
+        // Vonage implementation (same as sendConsentLink)
+        const response = await fetch(
+          `https://us-central1-${import.meta.env.VITE_FIREBASE_PROJECT_ID}.cloudfunctions.net/sendConsentSMS`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: validatedPhone,
+              message,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        logger.info('[SMS] Vonage disclosure SMS sent via Cloud Function:', {
+          to: validatedPhone,
+          messageId: result.messageId,
+          remainingBalance: result.remainingBalance
+        });
+      } else if (TWILIO_ENABLED) {
+        // Twilio implementation (same as sendConsentLink)
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+        const formData = new URLSearchParams();
+        formData.append('To', validatedPhone);
+        formData.append('From', TWILIO_PHONE_NUMBER);
+        formData.append('Body', message);
+
+        const response = await fetch(twilioUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString(),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Twilio error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        logger.info('[SMS] Twilio disclosure SMS sent:', {
+          to: validatedPhone,
+          sid: result.sid,
+          status: result.status
+        });
+      } else {
+        throw new Error('SMS service is not configured');
+      }
+
+      // Audit trail
+      await addDoc(collection(db, SMS_COLLECTION), {
+        phone: validatedPhone,
+        message,
+        patientName,
+        patientId,
+        type: 'disclosure',
+        status: 'sent',
+        createdAt: serverTimestamp(),
+      });
+    } catch (error: any) {
+      logger.error('[SMS] Error sending disclosure link:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Send consent link via SMS using Twilio
    * 
    * @param phone - Patient phone number (E.164 format recommended)

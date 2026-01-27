@@ -24,8 +24,13 @@ import { useAuth } from '../../hooks/useAuth';
 interface VerbalConsentModalProps {
   patientId: string;
   patientName: string;
+  // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Optional disclosure delivery info
+  patientEmail?: string;
+  patientPhone?: string;
   onClose: () => void;
   onConsentGranted: () => void;
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback when consent is declined
+  onConsentDeclined?: () => void;
 }
 
 const DECLINE_REASONS = [
@@ -41,8 +46,11 @@ const DECLINE_REASONS = [
 export function VerbalConsentModal({
   patientId,
   patientName,
+  patientEmail,
+  patientPhone,
   onClose,
   onConsentGranted,
+  onConsentDeclined,
 }: VerbalConsentModalProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<'read' | 'response'>('read');
@@ -68,7 +76,8 @@ export function VerbalConsentModal({
     setError(null);
 
     try {
-      // Record verbal consent (granted)
+      // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Record verbal consent (granted)
+      // Disclosure delivery will be attempted in parallel (non-blocking)
       await PatientConsentService.recordVerbalConsent({
         patientId,
         professionalId: user?.uid || '',
@@ -77,6 +86,9 @@ export function VerbalConsentModal({
         consentTextVersion: textVersion,
         witnessStatement: 'Physiotherapist read consent verbally and patient provided oral authorization',
         patientUnderstanding: 'Patient confirmed understanding of consent terms',
+        // ✅ WO-CONSENT-VERBAL-NON-BLOCKING-01: Pass disclosure delivery info
+        patientEmail,
+        patientPhone,
       });
 
       console.log('[VerbalConsent] ✅ Consent granted and recorded:', patientId);
@@ -122,8 +134,13 @@ export function VerbalConsentModal({
 
       console.log('[VerbalConsent] Consent declined and recorded:', { patientId, reasons: declineReasons });
 
-      // Show confirmation and close
-      alert(`Consent declined by ${patientName}. This session cannot proceed without consent. Documented reasons: ${declineReasons.join(', ')}`);
+      // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Notify parent that consent was declined
+      // This triggers immediate update of workflowConsentStatus and hard block
+      if (onConsentDeclined) {
+        await Promise.resolve(onConsentDeclined());
+      }
+
+      // Close modal - parent will show DeclinedConsentModal
       onClose();
     } catch (err) {
       console.error('[VerbalConsent] Error recording declined consent:', err);

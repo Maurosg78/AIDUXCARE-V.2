@@ -24,6 +24,8 @@ import type { ValueMetricsEvent } from "../services/analyticsService";
 import { checkConsentViaServer } from "../services/consentServerService";
 import { VerbalConsentService } from "../services/verbalConsentService";
 import { SMSService } from "../services/smsService";
+import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
+import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
@@ -38,6 +40,7 @@ import { InitialPlanModal } from "../components/treatment-plan/InitialPlanModal"
 import UniversalShareMenu, { ShareOptions } from "../components/share/UniversalShareMenu";
 import { VerbalConsentModal } from "../components/consent/VerbalConsentModal";
 import { ConsentGateScreen } from "../components/consent/ConsentGateScreen";
+import { DeclinedConsentModal } from "../components/consent/DeclinedConsentModal";
 import {
   MSK_TEST_LIBRARY,
   regions,
@@ -236,13 +239,17 @@ const ProfessionalWorkflowPage = () => {
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [showVerbalConsentModal, setShowVerbalConsentModal] = useState(false);
   const [consentCheckComplete, setConsentCheckComplete] = useState(false);
-  // ✅ WO-CONSENT-GATE-UI-01: Track if consent is valid for UI gate
-  const [hasValidConsentForUI, setHasValidConsentForUI] = useState<boolean | null>(null);
-  // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+  // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Allow recording new consent if patient changes mind after decline
+  const [showVerbalConsentForDeclined, setShowVerbalConsentForDeclined] = useState(false);
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Única fuente de verdad - solo workflowConsentStatus del backend
+  // NO más estados duplicados: hasValidConsentForUI eliminado
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
   const [workflowConsentStatus, setWorkflowConsentStatus] = useState<{
     hasValidConsent: boolean;
+    isDeclined?: boolean;
     status?: string | null;
     consentMethod?: string | null;
+    declineReasons?: string[];
   } | null>(null);
 
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
@@ -790,17 +797,24 @@ const ProfessionalWorkflowPage = () => {
         if (!hasValid) {
           console.log('[WORKFLOW] ❌ No valid consent (verbal or digital) - blocking ALL clinical UI', { jurisdiction });
           setWorkflowBlocked(true);
-          setHasValidConsentForUI(false);
           setShowVerbalConsentModal(false); // Don't show modal here - ConsentGateScreen handles it
+          // ✅ WO-CONSENT-SINGLE-SOURCE-01: Actualizar solo workflowConsentStatus (única fuente de verdad)
+          // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
+          setWorkflowConsentStatus({
+            hasValidConsent: false,
+            isDeclined: false, // Not declined, just missing
+            status: null,
+            consentMethod: null
+          });
         } else {
           console.log('[WORKFLOW] ✅ Valid consent found - workflow unlocked', { jurisdiction });
           setWorkflowBlocked(false);
-          setHasValidConsentForUI(true);
           setShowVerbalConsentModal(false);
-          // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Update consent status for gate immediately
-          // This ensures the gate receives the status even if checkConsentViaServer hasn't run yet
+          // ✅ WO-CONSENT-SINGLE-SOURCE-01: Actualizar solo workflowConsentStatus (única fuente de verdad)
+          // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
           setWorkflowConsentStatus({
             hasValidConsent: true,
+            isDeclined: false,
             status: 'ongoing',
             consentMethod: 'verbal' // VerbalConsentService indicates verbal consent
           });
@@ -811,8 +825,15 @@ const ProfessionalWorkflowPage = () => {
         console.error('[WORKFLOW] Error checking valid consent:', error);
         // Fail-safe: Block if check fails
         setWorkflowBlocked(true);
-        setHasValidConsentForUI(false);
         setShowVerbalConsentModal(false);
+        // ✅ WO-CONSENT-SINGLE-SOURCE-01: Actualizar solo workflowConsentStatus (única fuente de verdad)
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
+        setWorkflowConsentStatus({
+          hasValidConsent: false,
+          isDeclined: false, // Error, not declined
+          status: null,
+          consentMethod: null
+        });
         setConsentCheckComplete(true);
       }
     };
@@ -1260,18 +1281,42 @@ const ProfessionalWorkflowPage = () => {
   }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion]); // ✅ FIX: Removed evaluationTests.length to prevent infinite loop
 
   // Check if this is the first session and handle patient consent via SMS
-  // Use ref to prevent multiple executions in React Strict Mode
-  const consentCheckRef = useRef(false);
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset consent state when patient changes
+  // Use ref to track current patient and prevent multiple executions per patient
+  const consentCheckRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Prevent multiple executions
-    if (consentCheckRef.current) {
+    const currentPatientId = patientIdFromUrl || demoPatient.id;
+    
+    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset state when patient changes
+    if (consentCheckRef.current !== currentPatientId) {
+      console.log('[WORKFLOW] Patient changed - resetting consent state', {
+        previousPatient: consentCheckRef.current,
+        newPatient: currentPatientId
+      });
+      
+      // Reset consent state for new patient
+      setWorkflowConsentStatus(null);
+      setConsentCheckComplete(false);
+      setPatientHasConsent(false);
+      consentGrantedRef.current = false;
+      
+      // Cleanup polling for previous patient
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
+      
+      // Update ref to new patient
+      consentCheckRef.current = currentPatientId;
+    } else {
+      // Same patient - prevent multiple executions
       return;
     }
 
     const checkFirstSessionAndConsent = async () => {
-      // Mark as executing
-      consentCheckRef.current = true;
 
       try {
         setCheckingFirstSession(true);
@@ -1321,6 +1366,7 @@ const ProfessionalWorkflowPage = () => {
           // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Still update status for gate (even if already granted)
           setWorkflowConsentStatus({
             hasValidConsent: true,
+            isDeclined: false,
             status: 'ongoing', // Assume ongoing if already granted
             consentMethod: 'verbal' // Assume verbal if already granted
           });
@@ -1330,11 +1376,29 @@ const ProfessionalWorkflowPage = () => {
         const consentResult = await checkConsentViaServer(patientId);
         const hasConsent = consentResult.hasValidConsent;
         
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Si declined, NO iniciar polling
+        if (consentResult.isDeclined === true) {
+          console.warn('[WORKFLOW] 🚫 Declined consent detected - NO polling will be started');
+          setWorkflowConsentStatus({
+            hasValidConsent: false,
+            isDeclined: true,
+            status: 'declined',
+            consentMethod: consentResult.consentMethod || null,
+            declineReasons: consentResult.declineReasons || undefined
+          });
+          setConsentCheckComplete(true);
+          // ❌ NO iniciar polling - declined es permanente
+          return;
+        }
+        
         // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
         setWorkflowConsentStatus({
           hasValidConsent: consentResult.hasValidConsent,
+          isDeclined: consentResult.isDeclined === true,
           status: consentResult.status || null,
-          consentMethod: consentResult.consentMethod || null
+          consentMethod: consentResult.consentMethod || null,
+          declineReasons: consentResult.declineReasons || undefined
         });
         
         // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted if true (irreversible)
@@ -1394,6 +1458,34 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
+    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
+    // Declined es permanente - no tiene sentido seguir preguntando
+    if (workflowConsentStatus?.isDeclined === true) {
+      console.log('[WORKFLOW] Consent declined - skipping polling setup (permanent block)');
+      // Cleanup any existing polling
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
+      return;
+    }
+
+    // ✅ WO-CONSENT-DECLINED-REVERSAL-01: NO iniciar polling si consentimiento ya fue otorgado
+    // Esto previene que el polling se reinicie después de una reversión
+    if (consentGrantedRef.current === true || workflowConsentStatus?.hasValidConsent === true) {
+      console.log('[WORKFLOW] Consent already granted - skipping polling setup');
+      // Cleanup any existing polling
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      }
+      return;
+    }
+
     // ✅ Regla 1: Solo se inicia UNA vez por patientId
     // Check if polling is already active for this patient
     if (consentPollingRef.current !== null) {
@@ -1429,6 +1521,19 @@ const ProfessionalWorkflowPage = () => {
           return;
         }
 
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO polling si consentimiento está declined
+        // Declined es permanente - no tiene sentido seguir preguntando
+        if (workflowConsentStatus?.isDeclined === true) {
+          console.log('[WORKFLOW] Consent declined - stopping polling immediately (permanent block)');
+          if (consentPollingRef.current) {
+            clearInterval(consentPollingRef.current);
+            consentPollingRef.current = null;
+            consentPollingAttemptsRef.current = 0;
+            consentPollingPatientIdRef.current = null;
+          }
+          return;
+        }
+
         // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Never re-check if consent already granted
         if (consentGrantedRef.current === true) {
           console.log('[WORKFLOW] Consent already granted, skipping poll check');
@@ -1437,11 +1542,40 @@ const ProfessionalWorkflowPage = () => {
 
         const consentResult = await checkConsentViaServer(patientId);
         
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: CRITICAL - Check declined FIRST
+        // If declined, update state immediately, stop polling, and return
+        if (consentResult.isDeclined === true) {
+          console.warn('[WORKFLOW] 🚫 Declined consent detected via polling - stopping immediately and updating state');
+          
+          // Update state FIRST (this triggers re-render with hard block)
+          setWorkflowConsentStatus({
+            hasValidConsent: false,
+            isDeclined: true,
+            status: 'declined',
+            consentMethod: consentResult.consentMethod || null,
+            declineReasons: consentResult.declineReasons || undefined
+          });
+          
+          // Stop polling immediately
+          if (consentPollingRef.current) {
+            clearInterval(consentPollingRef.current);
+            consentPollingRef.current = null;
+            consentPollingAttemptsRef.current = 0;
+            consentPollingPatientIdRef.current = null;
+          }
+          
+          // Return immediately - no further processing
+          return;
+        }
+        
         // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status (should be false here)
         setWorkflowConsentStatus({
           hasValidConsent: consentResult.hasValidConsent,
+          isDeclined: false, // Explicit false if not declined
           status: consentResult.status || null,
-          consentMethod: consentResult.consentMethod || null
+          consentMethod: consentResult.consentMethod || null,
+          declineReasons: undefined // Only set if declined
         });
         
         // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
@@ -1484,7 +1618,7 @@ const ProfessionalWorkflowPage = () => {
         consentPollingPatientIdRef.current = null;
       }
     };
-  }, [patientIdFromUrl, currentPatient?.id, user?.uid]); // ✅ Regla 4: Dependencias estables
+  }, [patientIdFromUrl, currentPatient?.id, user?.uid, workflowConsentStatus?.isDeclined]); // ✅ Regla 4: Dependencias estables + declined check
 
   const persistEvaluation = useCallback((next: EvaluationTestEntry[]) => {
     // ✅ PHASE 2: Enhanced logging for debugging
@@ -2576,8 +2710,16 @@ const ProfessionalWorkflowPage = () => {
         'Patient consent is required before generating SOAP notes. ' +
         'Please obtain verbal consent using the consent modal, or wait for the patient to provide digital consent via SMS.'
       );
-      // ✅ Only show modal if NO valid consent AND hasValidConsentForUI is false
-      if (hasValidConsentForUI !== true) {
+      // ✅ WO-CONSENT-SINGLE-SOURCE-01: Verificar desde dominio, no desde estado duplicado
+      const jurisdiction = getCurrentJurisdiction();
+      const isFirstSession = true; // TODO: Pass as prop when available
+      const currentResolution = resolveConsentChannel({
+        hasValidConsent: consentCheck.hasValidConsent,
+        jurisdiction,
+        isFirstSession,
+      });
+      // Solo mostrar modal si dominio dice que no hay consentimiento válido
+      if (currentResolution.channel !== 'none') {
         setShowVerbalConsentModal(true);
       }
       return; // Block AI processing until consent is given
@@ -3295,18 +3437,129 @@ const ProfessionalWorkflowPage = () => {
   // ✅ ISO COMPLIANCE: Render functions extracted to separate components for better code organization
   // Components are lazy-loaded for optimal performance and memory management
 
-  // ✅ WO-CONSENT-GATE-UI-01: ABSOLUTE GATE - No clinical UI without valid consent
-  // This is NOT a modal or banner. This replaces ALL clinical UI.
-  // ✅ CRITICAL: Only render ConsentGateScreen if consent is NOT valid
-  // If consent is valid, render the clinical workflow normally
-  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && hasValidConsentForUI === false) {
-    // ✅ CRITICAL: Only pass consentStatus if we're showing the gate
-    const gateConsentStatus = workflowConsentStatus;
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Dominio es única fuente de verdad
+  // Resolver consentimiento desde workflowConsentStatus (backend) → dominio → render
+  let consentResolution = null;
+  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && workflowConsentStatus !== null) {
+    const jurisdiction = getCurrentJurisdiction();
+    const isFirstSession = true; // TODO: Pass as prop when available
+    consentResolution = resolveConsentChannel({
+      hasValidConsent: workflowConsentStatus.hasValidConsent,
+      // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Pass declined status to domain
+      isDeclined: workflowConsentStatus.isDeclined === true,
+      jurisdiction,
+      isFirstSession,
+    });
     
-    console.log('[WORKFLOW] Rendering ConsentGateScreen (no valid consent)', {
-      hasValidConsentForUI,
+    console.log('[WORKFLOW] Consent resolution from domain (single source of truth)', {
+      consentResolution,
       workflowConsentStatus,
-      gateConsentStatus
+      willRenderGate: consentResolution.channel !== 'none' && consentResolution.channel !== 'blocked',
+      hardBlock: consentResolution.hardBlock
+    });
+  }
+
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Hard block guard - ANTES de renderizar nada
+  // Si consentimiento está declined, AiDux NO puede usarse - redirect inmediato
+  if (consentResolution?.hardBlock === true) {
+    console.warn('[WORKFLOW] 🚫 HARD BLOCK: Patient declined consent - AiDux cannot be used', {
+      patientId: patientIdFromUrl,
+      blockReason: consentResolution.blockReason,
+      consentStatus: workflowConsentStatus
+    });
+    
+    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Track analytics event
+    if (patientIdFromUrl && user?.uid) {
+      AnalyticsService.trackEvent('aidux_patient_blocked_due_to_consent_decline', {
+        patientId: patientIdFromUrl,
+        userId: user.uid,
+        declineReasons: workflowConsentStatus?.declineReasons || [],
+        timestamp: new Date().toISOString()
+      }).catch(err => {
+        console.warn('[WORKFLOW] Error tracking declined consent analytics:', err);
+      });
+    }
+    
+    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Show declined consent modal
+    // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Allow recording new consent if patient changes mind
+    // If user wants to record new consent, show verbal consent modal
+    if (showVerbalConsentForDeclined) {
+      return (
+        <VerbalConsentModal
+          patientId={patientIdFromUrl}
+          patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+          patientEmail={currentPatient?.email}
+          patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
+          onClose={() => {
+            console.log('[WORKFLOW] Verbal consent modal closed for declined patient');
+            setShowVerbalConsentForDeclined(false);
+          }}
+          onConsentGranted={async () => {
+            console.log('[WORKFLOW] New consent granted after decline - triggering check');
+            setShowVerbalConsentForDeclined(false);
+            
+            // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Small delay to allow Firestore propagation
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Trigger immediate check to update workflowConsentStatus
+            if (patientIdFromUrl) {
+              const consentResult = await checkConsentViaServer(patientIdFromUrl);
+              console.log('[WORKFLOW] Reversal check result:', {
+                hasValidConsent: consentResult.hasValidConsent,
+                isDeclined: consentResult.isDeclined,
+                status: consentResult.status
+              });
+              
+              if (consentResult.hasValidConsent === true) {
+                console.log('[WORKFLOW] ✅ New consent confirmed - hard block removed');
+                setWorkflowConsentStatus({
+                  hasValidConsent: true,
+                  isDeclined: false,
+                  status: consentResult.status || 'ongoing',
+                  consentMethod: consentResult.consentMethod || null,
+                  declineReasons: undefined
+                });
+                // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Update consentStatus to remove "Consent Required" banner
+                setConsentStatus(consentResult.status || 'ongoing');
+                // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Mark check as complete so consentResolution recalculates
+                setConsentCheckComplete(true);
+                // Mark as granted to prevent re-checking
+                consentGrantedRef.current = true;
+                // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Ensure patientHasConsent is updated
+                setPatientHasConsent(true);
+              } else {
+                console.warn('[WORKFLOW] ⚠️ New consent not yet detected - will be picked up by polling');
+                // Even if not detected yet, mark check as complete to allow recalculation
+                setConsentCheckComplete(true);
+              }
+            }
+          }}
+        />
+      );
+    }
+    
+    return (
+      <DeclinedConsentModal
+        patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+        declineReasons={workflowConsentStatus?.declineReasons}
+        patientId={patientIdFromUrl}
+        onRecordNewConsent={() => {
+          console.log('[WORKFLOW] User wants to record new consent for declined patient');
+          setShowVerbalConsentForDeclined(true);
+        }}
+      />
+    );
+  }
+
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Gate se desmonta si dominio dice channel === 'none' o 'blocked'
+  // NO hay estados duplicados, solo dominio decide
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: 'blocked' también desmonta el Gate (hard block se maneja arriba)
+  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && 
+      consentResolution && consentResolution.channel !== 'none' && consentResolution.channel !== 'blocked') {
+    
+    console.log('[WORKFLOW] Rendering ConsentGateScreen (domain says channel !== none)', {
+      consentResolution,
+      workflowConsentStatus
     });
     
     return (
@@ -3315,18 +3568,56 @@ const ProfessionalWorkflowPage = () => {
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
         clinicName={clinicName}
-        // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Pass consent status from workflow (source of truth)
-        consentStatus={gateConsentStatus}
-        onConsentVerified={() => {
-          console.log('[WORKFLOW] ✅ Consent obtained - updating state and redirecting to command-center');
-          // ✅ WO-CONSENT-VERBAL-OPTIMISTIC-UI-01: Update state immediately to prevent re-render of gate
-          setHasValidConsentForUI(true);
-          setPatientHasConsent(true);
-          // ✅ Redirect to command-center immediately after consent is granted
-          navigate('/command-center', { replace: true });
+        // ✅ WO-CONSENT-SINGLE-SOURCE-01: Pasar solo consentResolution (dominio decide todo)
+        consentResolution={consentResolution}
+        // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback para check inmediato cuando se declina
+        onConsentDeclined={async () => {
+          console.log('[WORKFLOW] Consent declined - triggering immediate check');
+          if (!patientIdFromUrl || !user?.uid) return;
+          
+          // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Small delay to allow Firestore propagation
+          // Firestore writes are eventually consistent, so we wait a bit before checking
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check immediately to update workflowConsentStatus
+          const consentResult = await checkConsentViaServer(patientIdFromUrl);
+          
+          console.log('[WORKFLOW] Immediate check result after decline:', {
+            isDeclined: consentResult.isDeclined,
+            status: consentResult.status,
+            hasValidConsent: consentResult.hasValidConsent
+          });
+          
+          if (consentResult.isDeclined === true) {
+            console.warn('[WORKFLOW] 🚫 Declined consent confirmed via immediate check');
+            setWorkflowConsentStatus({
+              hasValidConsent: false,
+              isDeclined: true,
+              status: 'declined',
+              consentMethod: consentResult.consentMethod || null,
+              declineReasons: consentResult.declineReasons || undefined
+            });
+            
+            // Stop polling immediately
+            if (consentPollingRef.current) {
+              clearInterval(consentPollingRef.current);
+              consentPollingRef.current = null;
+              consentPollingAttemptsRef.current = 0;
+              consentPollingPatientIdRef.current = null;
+            }
+          } else {
+            // If declined not detected yet, the polling will pick it up
+            console.warn('[WORKFLOW] ⚠️ Declined not detected yet - polling will retry');
+          }
         }}
       />
     );
+  }
+
+  // ✅ WO-CONSENT-SINGLE-SOURCE-01: Si dominio dice channel === 'none', Gate NO se renderiza
+  // El workflow clínico continúa normalmente (Gate desmontado)
+  if (consentResolution && consentResolution.channel === 'none') {
+    console.log('[WORKFLOW] ✅ Domain says consent valid (channel === none) - Gate UNMOUNTED, rendering clinical workflow');
   }
 
   // ✅ WO-CONSENT-GATE-UI-01: Show loading while checking consent
@@ -3629,8 +3920,18 @@ const ProfessionalWorkflowPage = () => {
       )}
 
       {/* ✅ WO-CONSENT-VERBAL-01: Verbal Consent Modal - Gate for clinical workflow */}
-      {/* ✅ CRITICAL: Only show if NO valid consent exists */}
-      {currentPatient && user?.uid && hasValidConsentForUI !== true && (
+      {/* ✅ WO-CONSENT-SINGLE-SOURCE-01: Solo mostrar si dominio dice que no hay consentimiento válido */}
+      {(() => {
+        if (!currentPatient || !user?.uid || !workflowConsentStatus) return false;
+        const jurisdiction = getCurrentJurisdiction();
+        const isFirstSession = true;
+        const currentResolution = resolveConsentChannel({
+          hasValidConsent: workflowConsentStatus.hasValidConsent,
+          jurisdiction,
+          isFirstSession,
+        });
+        return currentResolution.channel !== 'none';
+      })() && (
         <VerbalConsentModal
           isOpen={showVerbalConsentModal}
           onClose={() => {

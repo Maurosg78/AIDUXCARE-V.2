@@ -21,9 +21,13 @@ const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat
 interface ConsentStatusResponse {
   success: boolean;
   hasValidConsent: boolean;
-  status: 'ongoing' | 'session-only' | null;
+  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Detect declined consent
+  isDeclined?: boolean;
+  status: 'ongoing' | 'session-only' | 'declined' | null;
   consentMethod: 'digital' | 'verbal' | null;
   grantedAt?: string | null;
+  declinedAt?: string | null;
+  declineReasons?: string[];
   error?: string;
   message?: string;
 }
