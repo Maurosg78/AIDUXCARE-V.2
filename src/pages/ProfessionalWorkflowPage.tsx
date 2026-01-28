@@ -3763,22 +3763,30 @@ const ProfessionalWorkflowPage = () => {
             </div>
           )}
 
-          {/* Bloque 2: Clinical notes */}
+          {/* Bloque 2: Clinical notes / Follow-up clinical update */}
           <div className="bg-white border border-blue-200 rounded-lg p-6">
+            {/* WO-06.1: Micro-copy de continuidad (solo follow-up) */}
+            {visitType === 'follow-up' && (
+              <p className="text-xs text-slate-500 mb-3 font-apple font-light">
+                Based on the initial assessment and previous sessions.
+              </p>
+            )}
             <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">🎙️</span>
+              <span className="text-2xl">{visitType === 'follow-up' ? '📝' : '🎙️'}</span>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Clinical notes
+                  {visitType === 'follow-up' ? 'Follow-up clinical update' : 'Clinical notes'}
                 </h2>
                 <p className="text-sm text-slate-600">
-                  Record, type, or paste your clinical observations.
+                  {visitType === 'follow-up' 
+                    ? 'Add observations, patient response, and any changes since the last session.'
+                    : 'Record, type, or paste your clinical observations.'}
                 </p>
               </div>
               {transcript?.trim() && (
                 <div className="flex items-center gap-2 text-sm text-blue-600">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Clinical notes captured</span>
+                  <span>{visitType === 'follow-up' ? 'Clinical update captured' : 'Clinical notes captured'}</span>
                 </div>
               )}
             </div>

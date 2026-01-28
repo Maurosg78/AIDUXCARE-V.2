@@ -85,6 +85,9 @@ export interface TranscriptAreaProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
+  
+  // WO-06.1: Visit type for contextual placeholder
+  visitType?: 'initial' | 'follow-up';
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -110,6 +113,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
+  visitType = 'initial',
 }) => {
   // Local state for immediate UI updates
   const [localTranscript, setLocalTranscript] = useState(transcript);
@@ -304,7 +308,9 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
       <textarea
         key="transcript-textarea"
         className="mt-4 w-full min-h-[160px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
-        placeholder="Paste the transcript or record directly from the browser..."
+        placeholder={visitType === 'follow-up' 
+          ? "Follow-up observations:\n• Patient response to last session\n• Progress or setbacks\n• Modifications applied today"
+          : "Paste the transcript or record directly from the browser..."}
         value={localTranscript}
         onChange={handleChange}
         onPaste={handlePaste}
