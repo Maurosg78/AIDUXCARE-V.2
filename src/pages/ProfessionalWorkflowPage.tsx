@@ -3711,29 +3711,135 @@ const ProfessionalWorkflowPage = () => {
 
         {/* WO-06: Follow-up indicator removed - now shown in header context */}
 
-        {/* WO-06: Single-flow clinical session - vertical layout */}
+        {/* WO-06.4: Single-flow clinical session - canonical pilot flow */}
         <div className="space-y-6">
-          {/* Header - Session context (auto, no interactivo) */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-blue-600" />
-                <span className="text-blue-900 font-medium">
-                  {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
-                </span>
+          {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
+          <div className="bg-white border border-blue-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Patient Info */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Patient</p>
+                <p className="text-lg font-semibold text-slate-900 font-apple">
+                  {currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-slate-500 font-apple font-light">{currentPatient?.email || demoPatient.email}</p>
+                  {(() => {
+                    const dob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
+                    const age = dob ? calculateAge(dob) : null;
+                    return age !== null ? (
+                      <span className="text-sm text-slate-500 font-apple font-light">
+                        · {age} years
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+                {/* Red Flags (Allergies/Contraindications) */}
+                {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                    {patientClinicalInfo.allergies && (
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-amber-800 font-apple">Allergies</p>
+                          <p className="text-xs text-amber-700 font-apple font-light mt-0.5">
+                            {patientClinicalInfo.allergies.join(', ')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {patientClinicalInfo.contraindications && (
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-red-800 font-apple">Contraindications</p>
+                          <p className="text-xs text-red-700 font-apple font-light mt-0.5">
+                            {patientClinicalInfo.contraindications.slice(0, 2).join('; ')}
+                            {patientClinicalInfo.contraindications.length > 2 && ` (+${patientClinicalInfo.contraindications.length - 2} more)`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Consent Status */}
+                {workflowConsentStatus?.hasValidConsent ? (
+                  <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-xs text-slate-600 font-apple font-light">
+                      Consent valid (ON)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-red-800 font-apple">
+                            Consent Required
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {previousTreatmentPlan && (
+
+              {/* Last Session (READ-ONLY link) */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-slate-400" />
+                  <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light">Last Session</p>
+                </div>
+                {lastEncounter.loading ? (
+                  <p className="text-sm text-slate-500 font-apple font-light">Loading...</p>
+                ) : lastEncounter.error ? (
+                  <p className="text-sm text-red-600 font-apple font-light">Error loading session</p>
+                ) : lastEncounter.data ? (
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 font-apple">
+                      {formatLastSessionDate(lastEncounter.data) || 'Previous session'}
+                    </p>
+                    {lastEncounter.data.soap && (
+                      <button
+                        onClick={() => {
+                          // WO-06.4: Link to last SOAP (read-only view)
+                          const sessionId = lastEncounter.data?.sessionId || lastEncounter.data?.id;
+                          if (sessionId) {
+                            window.open(`/documents?session=${sessionId}`, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
+                      >
+                        View last SOAP note →
+                      </button>
+                    )}
+                  </div>
+                ) : isFirstSession === true ? (
+                  <p className="text-sm text-slate-700 font-apple font-light">First session</p>
+                ) : (
+                  <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
+                )}
+              </div>
+
+              {/* Visit Type Indicator */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700">Previous treatment plan loaded</span>
+                  <span className="text-sm font-semibold text-slate-900 font-apple">
+                    {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
+                  </span>
                 </div>
-              )}
-              {workflowConsentStatus?.hasValidConsent && (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700">Consent valid (ON)</span>
-                </div>
-              )}
+                {previousTreatmentPlan && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-xs text-slate-600 font-apple font-light">Previous treatment plan loaded</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -3779,7 +3885,7 @@ const ProfessionalWorkflowPage = () => {
                 </h2>
                 <p className="text-sm text-slate-600">
                   {visitType === 'follow-up' 
-                    ? 'Add observations, patient response, and any changes since the last session.'
+                    ? 'Update based on patient response, progress, setbacks, and modifications applied today.'
                     : 'Record, type, or paste your clinical observations.'}
                 </p>
               </div>
