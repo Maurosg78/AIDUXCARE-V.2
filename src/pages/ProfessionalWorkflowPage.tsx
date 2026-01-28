@@ -3711,8 +3711,9 @@ const ProfessionalWorkflowPage = () => {
 
         {/* WO-06: Follow-up indicator removed - now shown in header context */}
 
-        {/* WO-06.4: Single-flow clinical session - canonical pilot flow */}
-        <div className="space-y-6">
+        {/* WO-07 FIX: Layout condicional - Tabs para Initial, Vertical para Follow-up */}
+        {visitType === 'follow-up' ? (
+          <div className="space-y-6">
           {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
           <div className="bg-white border border-blue-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
@@ -3959,72 +3960,10 @@ const ProfessionalWorkflowPage = () => {
               onTodayFocusChange={setTodayFocus}
               onFinishSession={undefined}
               hideHeader={true}
-                />
-              </Suspense>
-            </div>
+              />
+            </Suspense>
           </div>
 
-          {/* WO-07: Bloque 3 (Optional re-evaluation) ELIMINADO en follow-up para simplificar flujo piloto.
-              Solo se muestra en Initial Assessment si es necesario. */}
-          {visitType !== 'follow-up' && (
-            <details className="bg-white border border-blue-200 rounded-lg p-6">
-              <summary className="flex items-start gap-3 cursor-pointer list-none">
-                <span className="text-2xl">🧪</span>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                    Optional re-evaluation
-                  </h2>
-                  <p className="text-sm text-slate-600">
-                    Only if you need to re-test specific outcomes.
-                  </p>
-                </div>
-                {evaluationTests.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-blue-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Progress reassessed</span>
-                  </div>
-                )}
-              </summary>
-              <div className="mt-4 pt-4 border-t border-blue-100">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <EvaluationTab
-                    visitType={visitType}
-                    filteredEvaluationTests={filteredEvaluationTests}
-                    evaluationTests={evaluationTests}
-                    completedCount={completedCount}
-                    detectedCaseRegion={detectedCaseRegion}
-                    pendingAiSuggestions={pendingAiSuggestions}
-                    allAiSuggestions={aiSuggestions}
-                    isTestAlreadySelected={isTestAlreadySelected}
-                    addEvaluationTest={addEvaluationTest}
-                    removeEvaluationTest={removeEvaluationTest}
-                    updateEvaluationTest={updateEvaluationTest}
-                    createEntryFromLibrary={createEntryFromLibrary}
-                    createCustomEntry={createCustomEntry}
-                    customTestName={customTestName}
-                    customTestRegion={customTestRegion}
-                    customTestResult={customTestResult}
-                    customTestNotes={customTestNotes}
-                    isCustomFormOpen={isCustomFormOpen}
-                    setCustomTestName={setCustomTestName}
-                    setCustomTestRegion={setCustomTestRegion}
-                    setCustomTestResult={setCustomTestResult}
-                    setCustomTestNotes={setCustomTestNotes}
-                    setIsCustomFormOpen={setIsCustomFormOpen}
-                    resetCustomForm={resetCustomForm}
-                    handleAddCustomTest={handleAddCustomTest}
-                    handleLibrarySelect={handleLibrarySelect}
-                    handleGenerateSoap={handleGenerateSoap}
-                    isGeneratingSOAP={isGeneratingSOAP}
-                    sessionTypeFromUrl={sessionTypeFromUrl}
-                    workflowRoute={workflowRoute}
-                  />
-                </Suspense>
-              </div>
-            </details>
-          )}
-
-          {/* Bloque 4: Documentation (SOAP) */}
           <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
             <div className="flex items-start gap-3 mb-4">
               <span className="text-2xl">📝</span>
@@ -4145,10 +4084,182 @@ const ProfessionalWorkflowPage = () => {
               );
             })()
           )}
-        </div>
+          </div>
+        ) : (
+          <>
+            <nav className="flex flex-wrap gap-2">
+              {[
+                { id: "analysis", label: "1 · Initial Analysis" },
+                { id: "evaluation", label: "2 · Physical Evaluation" },
+                { id: "soap", label: "3 · SOAP Report" },
+              ]
+                .filter((tab) => {
+                  // Skip analysis tab for follow-ups (pero esto es Initial, así que siempre mostrar)
+                  const isFollowUpWorkflow = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
+                  if (isFollowUpWorkflow && tab.id === 'analysis') {
+                    return false;
+                  }
+                  
+                  if (workflowRoute) {
+                    return !shouldSkipTab(workflowRoute, tab.id);
+                  }
+                  return true; // Show all tabs if no route detected yet
+                })
+                .map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as ActiveTab)}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
+                        : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+            </nav>
 
-        {/* Feedback Widget - Always visible for beta testing */}
-        <FeedbackWidget />
+            {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups */}
+            {/* ✅ ISO COMPLIANCE: Lazy-loaded components with Suspense for better performance */}
+            {activeTab === "analysis" && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+              <Suspense fallback={<LoadingSpinner />}>
+                <AnalysisTab
+                  currentPatient={currentPatient}
+                  patientIdFromUrl={patientIdFromUrl}
+                  patientClinicalInfo={patientClinicalInfo}
+                  calculateAge={calculateAge}
+                  consentStatus={consentStatus}
+                  consentPending={consentPending}
+                  consentToken={consentToken}
+                  consentLink={consentLink}
+                  smsError={smsError}
+                  user={user}
+                  setConsentStatus={setConsentStatus}
+                  setPatientHasConsent={setPatientHasConsent}
+                  setConsentPending={setConsentPending}
+                  setSmsError={setSmsError}
+                  handleCopyConsentLink={handleCopyConsentLink}
+                  handleResendConsentSMS={handleResendConsentSMS}
+                  lastEncounter={lastEncounter}
+                  isFirstSession={isFirstSession}
+                  formatLastSessionDate={formatLastSessionDate}
+                  visitType={visitType}
+                  visitCount={visitCount}
+                  sessionTypeConfig={sessionTypeConfig}
+                  previousTreatmentPlan={previousTreatmentPlan}
+                  setIsInitialPlanModalOpen={setIsInitialPlanModalOpen}
+                  physioNotes={physioNotes}
+                  setPhysioNotes={setPhysioNotes}
+                  recordingTime={recordingTime}
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  transcript={transcript}
+                  setTranscript={setTranscript}
+                  transcriptError={transcriptError}
+                  transcriptMeta={transcriptMeta}
+                  languagePreference={languagePreference}
+                  setLanguagePreference={setLanguagePreference}
+                  mode={mode}
+                  setMode={setMode}
+                  isTranscribing={isTranscribing}
+                  isProcessing={isProcessing}
+                  audioStream={audioStream}
+                  handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                  attachments={attachments}
+                  isUploadingAttachment={isUploadingAttachment}
+                  attachmentError={attachmentError}
+                  removingAttachmentId={removingAttachmentId}
+                  handleAttachmentUpload={handleAttachmentUpload}
+                  handleAttachmentRemove={handleAttachmentRemove}
+                  niagaraResults={niagaraResults}
+                  interactiveResults={interactiveResults}
+                  selectedEntityIds={selectedEntityIds}
+                  setSelectedEntityIds={setSelectedEntityIds}
+                  continueToEvaluation={continueToEvaluation}
+                  analysisError={analysisError}
+                  successMessage={successMessage}
+                  setAnalysisError={setAnalysisError}
+                  setSuccessMessage={setSuccessMessage}
+                  onTodayFocusChange={setTodayFocus}
+                  onFinishSession={undefined}
+                  hideHeader={false}
+                />
+              </Suspense>
+            )}
+            {activeTab === "evaluation" && (
+              <Suspense fallback={<LoadingSpinner />}>
+                <EvaluationTab
+                  visitType={visitType}
+                  filteredEvaluationTests={filteredEvaluationTests}
+                  evaluationTests={evaluationTests}
+                  completedCount={completedCount}
+                  detectedCaseRegion={detectedCaseRegion}
+                  pendingAiSuggestions={pendingAiSuggestions}
+                  allAiSuggestions={aiSuggestions}
+                  isTestAlreadySelected={isTestAlreadySelected}
+                  addEvaluationTest={addEvaluationTest}
+                  removeEvaluationTest={removeEvaluationTest}
+                  updateEvaluationTest={updateEvaluationTest}
+                  createEntryFromLibrary={createEntryFromLibrary}
+                  createCustomEntry={createCustomEntry}
+                  customTestName={customTestName}
+                  customTestRegion={customTestRegion}
+                  customTestResult={customTestResult}
+                  customTestNotes={customTestNotes}
+                  isCustomFormOpen={isCustomFormOpen}
+                  setCustomTestName={setCustomTestName}
+                  setCustomTestRegion={setCustomTestRegion}
+                  setCustomTestResult={setCustomTestResult}
+                  setCustomTestNotes={setCustomTestNotes}
+                  setIsCustomFormOpen={setIsCustomFormOpen}
+                  resetCustomForm={resetCustomForm}
+                  handleAddCustomTest={handleAddCustomTest}
+                  handleLibrarySelect={handleLibrarySelect}
+                  handleGenerateSoap={handleGenerateSoap}
+                  isGeneratingSOAP={isGeneratingSOAP}
+                  sessionTypeFromUrl={sessionTypeFromUrl}
+                  workflowRoute={workflowRoute}
+                />
+              </Suspense>
+            )}
+            {activeTab === "soap" && (
+              <Suspense fallback={<LoadingSpinner />}>
+                <SOAPTab
+                  localSoapNote={localSoapNote}
+                  soapStatus={soapStatus}
+                  visitType={visitType}
+                  isGeneratingSOAP={isGeneratingSOAP}
+                  patientId={patientId}
+                  sessionId={sessionId}
+                  handleGenerateSoap={handleGenerateSoap}
+                  handleSaveSOAP={handleSaveSOAP}
+                  handleRegenerateSOAP={handleRegenerateSOAP}
+                  handleFinalizeSOAP={handleFinalizeSOAP}
+                  handleUnfinalizeSOAP={handleUnfinalizeSOAP}
+                  setIsShareMenuOpen={setIsShareMenuOpen}
+                  workflowMetrics={workflowMetrics}
+                  workflowRoute={workflowRoute}
+                  soapTokenOptimization={soapTokenOptimization}
+                  niagaraResults={niagaraResults}
+                  transcript={transcript}
+                  physicalExamResults={physicalExamResults}
+                  treatmentReminder={treatmentReminder}
+                  analysisError={analysisError}
+                  successMessage={successMessage}
+                  setAnalysisError={setAnalysisError}
+                  setSuccessMessage={setSuccessMessage}
+                  setVisitType={setVisitType}
+                />
+              </Suspense>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Feedback Widget - Always visible for beta testing */}
+      <FeedbackWidget />
 
         {/* Initial Plan Modal for existing patients without initial assessment */}
         {currentPatient && (
