@@ -129,6 +129,8 @@ export interface AnalysisTabProps {
   
   // WO-FLOW-005: Callback opcional para exponer focos editables al contexto de SOAP
   onTodayFocusChange?: (focus: TodayFocusItem[]) => void;
+  // WO-FLOW-005: Callback para cambiar a tab SOAP al finalizar sesión
+  onFinishSession?: () => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -190,6 +192,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setAnalysisError,
   setSuccessMessage,
   onTodayFocusChange,
+  onFinishSession,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -240,6 +243,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         <SuggestedFocusEditor
           items={todayFocus}
           onChange={handleFocusChange}
+          onFinishSession={onFinishSession}
         />
       )}
 

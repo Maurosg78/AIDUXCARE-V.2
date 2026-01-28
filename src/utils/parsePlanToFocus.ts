@@ -8,7 +8,8 @@
 export interface TodayFocusItem {
   id: string;
   label: string;      // editable
-  notes?: string;      // editable
+  completed: boolean; // checkbox state
+  notes?: string;      // editable (collapsible)
   source: 'plan';     // fijo
 }
 
@@ -46,6 +47,7 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
         items.push({
           id: `intervention-${itemId++}`,
           label: intervention,
+          completed: false,
           source: 'plan',
         });
       }
@@ -67,6 +69,7 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
         items.push({
           id: `exercise-${itemId++}`,
           label: exercise,
+          completed: false,
           source: 'plan',
         });
       }
@@ -85,6 +88,7 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
           items.push({
             id: `general-${itemId++}`,
             label: label,
+            completed: false,
             source: 'plan',
           });
         }

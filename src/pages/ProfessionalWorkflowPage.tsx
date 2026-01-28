@@ -3811,6 +3811,7 @@ const ProfessionalWorkflowPage = () => {
               successMessage={successMessage}
               setAnalysisError={setAnalysisError}
               setSuccessMessage={setSuccessMessage}
+              onFinishSession={() => setActiveTab('soap')}
             />
           </Suspense>
         )}
