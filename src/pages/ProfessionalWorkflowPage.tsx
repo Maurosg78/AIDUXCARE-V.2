@@ -4095,54 +4095,56 @@ const ProfessionalWorkflowPage = () => {
             </Suspense>
           </div>
 
-          {/* WO-06: Botón principal inteligente (sticky) */}
-          {(() => {
-            const hasClinicalNotes = transcript?.trim().length > 0;
-            const analysisDone = niagaraResults !== null;
-            const soapGenerated = localSoapNote !== null;
+          {/* WO-07: Botón sticky ELIMINADO en follow-up - fuerza a llegar al final y rellenar datos mínimos */}
+          {visitType !== 'follow-up' && (
+            (() => {
+              const hasClinicalNotes = transcript?.trim().length > 0;
+              const analysisDone = niagaraResults !== null;
+              const soapGenerated = localSoapNote !== null;
 
-            let buttonAction: () => void;
-            let buttonLabel: string;
-            let buttonDisabled = false;
+              let buttonAction: () => void;
+              let buttonLabel: string;
+              let buttonDisabled = false;
 
-            if (!hasClinicalNotes) {
-              buttonAction = () => {
-                // Focus en el área de transcript
-                document.querySelector('textarea')?.focus();
-              };
-              buttonLabel = "Add clinical notes";
-            } else if (!analysisDone) {
-              buttonAction = handleAnalyzeWithVertex;
-              buttonLabel = "Analyze clinical notes";
-              buttonDisabled = isProcessing;
-            } else if (!soapGenerated) {
-              buttonAction = handleGenerateSoap;
-              buttonLabel = "Generate SOAP note";
-              buttonDisabled = isGeneratingSOAP;
-            } else {
-              buttonAction = () => {
-                // Scroll a SOAP section
-                document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth' });
-              };
-              buttonLabel = "Review & export SOAP";
-            }
+              if (!hasClinicalNotes) {
+                buttonAction = () => {
+                  // Focus en el área de transcript
+                  document.querySelector('textarea')?.focus();
+                };
+                buttonLabel = "Add clinical notes";
+              } else if (!analysisDone) {
+                buttonAction = handleAnalyzeWithVertex;
+                buttonLabel = "Analyze clinical notes";
+                buttonDisabled = isProcessing;
+              } else if (!soapGenerated) {
+                buttonAction = handleGenerateSoap;
+                buttonLabel = "Generate SOAP note";
+                buttonDisabled = isGeneratingSOAP;
+              } else {
+                buttonAction = () => {
+                  // Scroll a SOAP section
+                  document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth' });
+                };
+                buttonLabel = "Review & export SOAP";
+              }
 
-            return (
-              <div className="sticky bottom-0 bg-white border-t border-blue-200 p-4 mt-6 shadow-lg z-10">
-                <button
-                  onClick={buttonAction}
-                  disabled={buttonDisabled}
-                  className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
-                    buttonDisabled
-                      ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {buttonDisabled ? 'Processing...' : buttonLabel}
-                </button>
-              </div>
-            );
-          })()}
+              return (
+                <div className="sticky bottom-0 bg-white border-t border-blue-200 p-4 mt-6 shadow-lg z-10">
+                  <button
+                    onClick={buttonAction}
+                    disabled={buttonDisabled}
+                    className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
+                      buttonDisabled
+                        ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {buttonDisabled ? 'Processing...' : buttonLabel}
+                  </button>
+                </div>
+              );
+            })()
+          )}
         </div>
 
         {/* Feedback Widget - Always visible for beta testing */}
