@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Edit2, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit2, X, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
 export interface SuggestedFocusEditorProps {
@@ -121,15 +121,30 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
           return (
             <div
               key={item.id}
-              className="flex items-start gap-3 py-2 border-b border-slate-100 last:border-b-0"
+              className={`flex items-start gap-3 py-2 px-3 rounded-lg border-b border-slate-100 last:border-b-0 transition-colors ${
+                item.completed
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-white'
+              }`}
             >
-              {/* Checkbox */}
-              <input
-                type="checkbox"
-                checked={item.completed}
-                onChange={() => handleToggleCompleted(item.id)}
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
+              {/* Checkbox / Check verde */}
+              {item.completed ? (
+                <button
+                  onClick={() => handleToggleCompleted(item.id)}
+                  className="mt-1 flex-shrink-0"
+                  title="Incorporado al análisis de hoy - Click para desmarcar"
+                >
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </button>
+              ) : (
+                <input
+                  type="checkbox"
+                  checked={false}
+                  onChange={() => handleToggleCompleted(item.id)}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  title="Click para incorporar al análisis de hoy"
+                />
+              )}
 
               {/* Activity content */}
               <div className="flex-1 min-w-0">
@@ -154,12 +169,17 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     <span
                       className={`flex-1 text-sm font-apple ${
                         item.completed
-                          ? 'text-slate-500 line-through'
+                          ? 'text-green-800 font-medium'
                           : 'text-slate-900'
                       }`}
                       onClick={() => handleEditLabel(item.id)}
                       style={{ cursor: 'text' }}
                     >
+                      {item.completed && (
+                        <span className="inline-flex items-center gap-1 mr-2">
+                          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                        </span>
+                      )}
                       {item.label}
                     </span>
                     <div className="flex items-center gap-1">
