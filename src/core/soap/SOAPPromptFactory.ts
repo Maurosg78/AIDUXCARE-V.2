@@ -321,6 +321,17 @@ CRITICAL LENGTH REQUIREMENTS:
 PREVIOUS VISIT CONTEXT:
 ${previousVisitsText}
 
+${context.todayFocus && context.todayFocus.length > 0 ? `
+CLINICAL FOCUS FOR TODAY (Adjusted by clinician):
+The clinician has reviewed the previous plan and adjusted the focus for today's session:
+${context.todayFocus.map((focus, idx) => {
+  const notes = focus.notes ? `\n  Notes: ${focus.notes}` : '';
+  return `${idx + 1}. ${focus.label}${notes}`;
+}).join('\n')}
+
+IMPORTANT: Reflect these adjusted focus areas and any clinician notes in the SOAP note, particularly in the Assessment and Plan sections. The clinician has explicitly chosen these focus areas based on their clinical judgment.
+` : ''}
+
 CURRENT VISIT DATA:
 
 TRANSCRIPT:

@@ -7,7 +7,7 @@
  * @compliance PHIPA-aware (design goal), security audit logging
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight } from 'lucide-react';
 import type { Patient } from '../../../services/patientService';
 import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
@@ -21,6 +21,8 @@ import { PatientConsentService } from '../../../services/patientConsentService';
 import type { User } from 'firebase/auth';
 import type { VisitType } from '../../../core/soap/SOAPContextBuilder';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
+import { SuggestedFocusEditor } from '../SuggestedFocusEditor';
+import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parsePlanToFocus';
 
 const demoPatient = {
   id: "CA-TEST-001",
@@ -124,6 +126,9 @@ export interface AnalysisTabProps {
   successMessage: string | null;
   setAnalysisError: (error: string | null) => void;
   setSuccessMessage: (message: string | null) => void;
+  
+  // WO-FLOW-005: Callback opcional para exponer focos editables al contexto de SOAP
+  onTodayFocusChange?: (focus: TodayFocusItem[]) => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -184,7 +189,41 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   successMessage,
   setAnalysisError,
   setSuccessMessage,
+  onTodayFocusChange,
 }) => {
+  // WO-FLOW-005: Estado local para focos clínicos editables
+  const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
+  
+  // Exponer cambios de focos al padre (para contexto de SOAP)
+  const handleFocusChange = (focus: TodayFocusItem[]) => {
+    setTodayFocus(focus);
+    onTodayFocusChange?.(focus);
+  };
+
+  // Parsear plan previo cuando cambie lastEncounter o previousTreatmentPlan
+  useEffect(() => {
+    if (visitType === 'follow-up') {
+      let planText: string | null = null;
+      
+      // Prioridad: previousTreatmentPlan > lastEncounter.soap.plan
+      if (previousTreatmentPlan?.planText) {
+        planText = previousTreatmentPlan.planText;
+      } else if (lastEncounter.data?.soap?.plan) {
+        planText = lastEncounter.data.soap.plan;
+      }
+      
+      if (planText) {
+        const parsed = parsePlanToFocusItems(planText);
+        setTodayFocus(parsed);
+      } else {
+        setTodayFocus([]);
+      }
+    } else {
+      // Reset en initial assessment
+      setTodayFocus([]);
+    }
+  }, [visitType, lastEncounter.data?.soap?.plan, previousTreatmentPlan?.planText]);
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-1">
@@ -196,8 +235,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </p>
       </header>
 
-      {/* ✅ FOLLOW-UP: Header específico para follow-up conversation */}
-      {visitType === 'follow-up' && (
+      {/* WO-FLOW-005: Suggested Focus Editor (solo en follow-up) */}
+      {visitType === 'follow-up' && todayFocus.length > 0 && (
+        <SuggestedFocusEditor
+          items={todayFocus}
+          onChange={handleFocusChange}
+        />
+      )}
+
+      {/* ✅ FOLLOW-UP: Header específico para follow-up conversation (sin duplicación de focus) */}
+      {visitType === 'follow-up' && todayFocus.length === 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
             Follow-up Conversation
@@ -206,12 +253,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             Record your conversation with the patient about their progress since last visit. 
             Focus on changes, what they can do now, and what's still limiting them.
           </p>
-          {previousTreatmentPlan?.nextSessionFocus && (
-            <div className="mt-3 pt-3 border-t border-blue-200">
-              <p className="text-xs font-semibold text-blue-900 mb-1">Focus for today:</p>
-              <p className="text-xs text-blue-700">{previousTreatmentPlan.nextSessionFocus}</p>
-            </div>
-          )}
         </div>
       )}
 
@@ -379,78 +420,32 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             {sessionTypeConfig.label}
           </p>
             
-          {/* Last Visit Summary - Using Structured Plan */}
-          {previousTreatmentPlan && (
-            <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
-              {/* Next Session Focus - Most Important */}
+          {/* WO-FLOW-005: En follow-up, el plan previo se muestra en SuggestedFocusEditor (arriba) */}
+          {/* Aquí solo mostramos información de referencia si NO hay focos editables */}
+          {visitType === 'follow-up' && todayFocus.length === 0 && previousTreatmentPlan && (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-xs text-slate-500 font-apple font-light italic">
+                Review previous plan above to set today's focus
+              </p>
+            </div>
+          )}
+          
+          {/* Initial assessment: mostrar plan previo si existe (read-only) */}
+          {visitType === 'initial' && previousTreatmentPlan && (
+            <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
               {previousTreatmentPlan.nextSessionFocus && (
                 <div>
-                  <p className="text-xs font-semibold text-emerald-700 font-apple mb-1.5">Focus for today:</p>
-                  <p className="text-xs text-slate-700 font-apple font-medium">
+                  <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Previous focus:</p>
+                  <p className="text-xs text-slate-600 font-apple font-light">
                     {previousTreatmentPlan.nextSessionFocus}
                   </p>
-                </div>
-              )}
-              
-              {/* Interventions */}
-              {previousTreatmentPlan.interventions && previousTreatmentPlan.interventions.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Interventions:</p>
-                  <ul className="text-xs text-slate-600 font-apple font-light space-y-0.5">
-                    {previousTreatmentPlan.interventions.slice(0, 3).map((intervention: string, idx: number) => (
-                      <li key={idx}>• {intervention}</li>
-                    ))}
-                    {previousTreatmentPlan.interventions.length > 3 && (
-                      <li className="text-slate-400">+{previousTreatmentPlan.interventions.length - 3} more</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-              
-              {/* Modalities */}
-              {previousTreatmentPlan.modalities && previousTreatmentPlan.modalities.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Modalities:</p>
-                  <p className="text-xs text-slate-600 font-apple font-light">
-                    {previousTreatmentPlan.modalities.join(', ')}
-                  </p>
-                </div>
-              )}
-              
-              {/* Home Exercises */}
-              {previousTreatmentPlan.homeExercises && previousTreatmentPlan.homeExercises.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Home exercises:</p>
-                  <ul className="text-xs text-slate-600 font-apple font-light space-y-0.5">
-                    {previousTreatmentPlan.homeExercises.slice(0, 2).map((exercise: string, idx: number) => (
-                      <li key={idx}>• {exercise}</li>
-                    ))}
-                    {previousTreatmentPlan.homeExercises.length > 2 && (
-                      <li className="text-slate-400">+{previousTreatmentPlan.homeExercises.length - 2} more</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-              
-              {/* Goals */}
-              {previousTreatmentPlan.goals && previousTreatmentPlan.goals.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Goals:</p>
-                  <ul className="text-xs text-slate-600 font-apple font-light space-y-0.5">
-                    {previousTreatmentPlan.goals.slice(0, 2).map((goal: string, idx: number) => (
-                      <li key={idx}>• {goal}</li>
-                    ))}
-                    {previousTreatmentPlan.goals.length > 2 && (
-                      <li className="text-slate-400">+{previousTreatmentPlan.goals.length - 2} more</li>
-                    )}
-                  </ul>
                 </div>
               )}
             </div>
           )}
             
-          {/* Fallback: Last Visit Summary (if structured plan not available) */}
-          {!previousTreatmentPlan && lastEncounter.data && lastEncounter.data.soap && (
+          {/* Fallback: Last Visit Summary (solo si no hay plan estructurado y no es follow-up con focos) */}
+          {!previousTreatmentPlan && lastEncounter.data && lastEncounter.data.soap && visitType !== 'follow-up' && (
             <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
               <div>
                 <p className="text-xs font-semibold text-slate-700 font-apple mb-1">Last visit:</p>
@@ -471,16 +466,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   <p className="text-xs text-slate-400 font-apple font-light italic">No interventions documented</p>
                 )}
               </div>
-                
-              {/* Today's Proposed Plan */}
-              {lastEncounter.data.soap.plan && (
-                <div className="mt-2">
-                  <p className="text-xs font-semibold text-emerald-700 font-apple mb-1">Today's plan:</p>
-                  <p className="text-xs text-slate-600 font-apple font-light line-clamp-2">
-                    {lastEncounter.data.soap.plan.substring(0, 100)}...
-                  </p>
-                </div>
-              )}
             </div>
           )}
             

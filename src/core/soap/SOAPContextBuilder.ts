@@ -42,6 +42,13 @@ export interface SOAPContext {
     painScale?: string; // Bloque 4: Agregado para uso en prompts
   };
   physicalExamResults?: unknown[]; // Bloque 4: Agregado para compatibilidad con código existente
+  // WO-FLOW-005: Focos clínicos editables del plan previo (solo follow-up)
+  todayFocus?: Array<{
+    id: string;
+    label: string;
+    notes?: string;
+    source: 'plan';
+  }>;
 }
 
 export interface VisitTypeDetectionResult {
@@ -107,7 +114,13 @@ export function buildSOAPContext(
     previousVisits?: number;
     lastVisitDate?: string;
     ongoingTreatment?: string;
-  }
+  },
+  todayFocus?: Array<{
+    id: string;
+    label: string;
+    notes?: string;
+    source: 'plan';
+  }>
 ): SOAPContext {
   const context: SOAPContext = {
     visitType,
@@ -133,6 +146,7 @@ export function buildSOAPContext(
       summary: undefined, // Will be set by caller if needed
     },
     patientContext,
+    todayFocus, // WO-FLOW-005: Focos clínicos editables
   };
 
   return context;
