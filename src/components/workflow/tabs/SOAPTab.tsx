@@ -221,65 +221,9 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
         </div>
       )}
 
-      {/* ✅ FOLLOW-UP WORKFLOW: Clinical Input Interface for Follow-up Visits */}
-      {visitType === 'follow-up' && workflowRoute?.type === 'follow-up' && (!transcript || !transcript.trim()) && (
-        <ErrorBoundary
-          fallback={
-            <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-              <p className="text-sm text-red-700">
-                There was an error loading the transcript input. Please refresh the page.
-              </p>
-            </div>
-          }
-        >
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Follow-up Visit Documentation</h3>
-              <p className="text-sm text-slate-600">
-                Document the follow-up visit content. Focus on progress assessment, treatment response, and any changes since the last visit.
-              </p>
-            </div>
-            {recordingTime !== undefined && isRecording !== undefined && startRecording && stopRecording && 
-             setTranscript && transcriptError !== undefined && transcriptMeta !== undefined &&
-             languagePreference !== undefined && setLanguagePreference && mode !== undefined && setMode &&
-             isTranscribing !== undefined && isProcessing !== undefined && audioStream !== undefined &&
-             handleAnalyzeWithVertex && attachments !== undefined && isUploadingAttachment !== undefined &&
-             attachmentError !== undefined && removingAttachmentId !== undefined &&
-             handleAttachmentUpload && handleAttachmentRemove ? (
-              <TranscriptArea
-              recordingTime={recordingTime}
-              isRecording={isRecording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              transcript={transcript || ''}
-              setTranscript={setTranscript}
-              transcriptError={transcriptError}
-              transcriptMeta={transcriptMeta}
-              languagePreference={languagePreference}
-              setLanguagePreference={setLanguagePreference}
-              mode={mode}
-              setMode={setMode}
-              isTranscribing={isTranscribing}
-              isProcessing={isProcessing}
-              audioStream={audioStream}
-              handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-              attachments={attachments}
-              isUploadingAttachment={isUploadingAttachment}
-              attachmentError={attachmentError}
-              removingAttachmentId={removingAttachmentId}
-              handleAttachmentUpload={handleAttachmentUpload}
-              handleAttachmentRemove={handleAttachmentRemove}
-              />
-            ) : (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm text-amber-800">
-                  Transcript input interface is being initialized. Please wait...
-                </p>
-              </div>
-            )}
-          </div>
-        </ErrorBoundary>
-      )}
+      {/* WO-06.3: Eliminado bloque "Follow-up Visit Documentation" duplicado.
+          En follow-up, el input único está en "Follow-up clinical update" (AnalysisTab).
+          Este bloque (SOAPTab) solo muestra preview de SOAP generado, NO acepta input. */}
 
       {/* Context Summary */}
       {niagaraResults && (
@@ -314,14 +258,14 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
             <p className="text-xs text-slate-500 mb-6">
               {visitType === 'follow-up' 
-                ? 'Enter clinical content above and analyze, then generate SOAP note'
+                ? 'Complete your clinical update above, analyze it, then generate SOAP note'
                 : 'Complete the analysis and physical evaluation tabs, then generate a SOAP note'}
             </p>
-            {/* ✅ FOLLOW-UP WORKFLOW: Show different requirements for follow-up */}
+            {/* WO-06.3: En follow-up, el análisis se hace desde "Follow-up clinical update" */}
             {visitType === 'follow-up' && !niagaraResults && transcript && (
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <p className="text-sm text-blue-800">
-                  ⚠️ Please click "Analyze with AiduxCare AI" above to process your transcript before generating SOAP note.
+                  ⚠️ Please analyze your clinical update in the "Follow-up clinical update" section above before generating SOAP note.
                 </p>
               </div>
             )}
