@@ -13,12 +13,14 @@ export interface SuggestedFocusEditorProps {
   items: TodayFocusItem[];
   onChange: (items: TodayFocusItem[]) => void;
   onFinishSession?: () => void; // Callback para cambiar a tab SOAP
+  hideHeader?: boolean; // WO-07: Para evitar header duplicado cuando se usa desde bloque externo
 }
 
 export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
   items: initialItems,
   onChange,
   onFinishSession,
+  hideHeader = false,
 }) => {
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
@@ -100,19 +102,21 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
   }
 
   return (
-    <div className="mb-6 bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-      {/* Header */}
-      <div className="flex items-start gap-2 mb-1">
-        <span className="text-lg">🗓️</span>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-900 font-apple">
-            Today's treatment session
-          </h2>
-          <p className="text-sm text-slate-600 font-apple font-light mt-1">
-            From last session plan — confirm or adjust
-          </p>
+    <div className={`${hideHeader ? '' : 'mb-6 bg-white border border-slate-200 rounded-lg p-6 shadow-sm'}`}>
+      {/* WO-07: Header eliminado cuando hideHeader=true para evitar duplicación */}
+      {!hideHeader && (
+        <div className="flex items-start gap-2 mb-1">
+          <span className="text-lg">🗓️</span>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-slate-900 font-apple">
+              Today's treatment session
+            </h2>
+            <p className="text-sm text-slate-600 font-apple font-light mt-1">
+              From last session plan — confirm or adjust
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Checklist */}
       <div className="mt-4 space-y-3">

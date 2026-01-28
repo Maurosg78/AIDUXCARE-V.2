@@ -3865,6 +3865,7 @@ const ProfessionalWorkflowPage = () => {
                 items={todayFocus}
                 onChange={setTodayFocus}
                 onFinishSession={undefined}
+                hideHeader={true}
               />
             </div>
           )}
@@ -3963,62 +3964,65 @@ const ProfessionalWorkflowPage = () => {
             </div>
           </div>
 
-          {/* Bloque 3: Optional re-evaluation (colapsable) */}
-          <details className="bg-white border border-blue-200 rounded-lg p-6">
-            <summary className="flex items-start gap-3 cursor-pointer list-none">
-              <span className="text-2xl">🧪</span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Optional re-evaluation
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Only if you need to re-test specific outcomes.
-                </p>
-              </div>
-              {evaluationTests.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Progress reassessed</span>
+          {/* WO-07: Bloque 3 (Optional re-evaluation) ELIMINADO en follow-up para simplificar flujo piloto.
+              Solo se muestra en Initial Assessment si es necesario. */}
+          {visitType !== 'follow-up' && (
+            <details className="bg-white border border-blue-200 rounded-lg p-6">
+              <summary className="flex items-start gap-3 cursor-pointer list-none">
+                <span className="text-2xl">🧪</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                    Optional re-evaluation
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Only if you need to re-test specific outcomes.
+                  </p>
                 </div>
-              )}
-            </summary>
-            <div className="mt-4 pt-4 border-t border-blue-100">
-              <Suspense fallback={<LoadingSpinner />}>
-                <EvaluationTab
-                  visitType={visitType}  // ✅ NEW: Pass visitType for follow-up selective re-evaluation
-              filteredEvaluationTests={filteredEvaluationTests}
-              evaluationTests={evaluationTests}
-              completedCount={completedCount}
-              detectedCaseRegion={detectedCaseRegion}
-              pendingAiSuggestions={pendingAiSuggestions}
-              allAiSuggestions={aiSuggestions} // ✅ NEW: Pass ALL suggestions (not filtered) for top 5 calculation
-              isTestAlreadySelected={isTestAlreadySelected}
-              addEvaluationTest={addEvaluationTest}
-              removeEvaluationTest={removeEvaluationTest}
-              updateEvaluationTest={updateEvaluationTest}
-              createEntryFromLibrary={createEntryFromLibrary}
-              createCustomEntry={createCustomEntry}
-              customTestName={customTestName}
-              customTestRegion={customTestRegion}
-              customTestResult={customTestResult}
-              customTestNotes={customTestNotes}
-              isCustomFormOpen={isCustomFormOpen}
-              setCustomTestName={setCustomTestName}
-              setCustomTestRegion={setCustomTestRegion}
-              setCustomTestResult={setCustomTestResult}
-              setCustomTestNotes={setCustomTestNotes}
-              setIsCustomFormOpen={setIsCustomFormOpen}
-              resetCustomForm={resetCustomForm}
-              handleAddCustomTest={handleAddCustomTest}
-              handleLibrarySelect={handleLibrarySelect}
-              handleGenerateSoap={handleGenerateSoap}
-              isGeneratingSOAP={isGeneratingSOAP}
-              sessionTypeFromUrl={sessionTypeFromUrl}
-              workflowRoute={workflowRoute}
-                />
-              </Suspense>
-            </div>
-          </details>
+                {evaluationTests.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Progress reassessed</span>
+                  </div>
+                )}
+              </summary>
+              <div className="mt-4 pt-4 border-t border-blue-100">
+                <Suspense fallback={<LoadingSpinner />}>
+                  <EvaluationTab
+                    visitType={visitType}
+                    filteredEvaluationTests={filteredEvaluationTests}
+                    evaluationTests={evaluationTests}
+                    completedCount={completedCount}
+                    detectedCaseRegion={detectedCaseRegion}
+                    pendingAiSuggestions={pendingAiSuggestions}
+                    allAiSuggestions={aiSuggestions}
+                    isTestAlreadySelected={isTestAlreadySelected}
+                    addEvaluationTest={addEvaluationTest}
+                    removeEvaluationTest={removeEvaluationTest}
+                    updateEvaluationTest={updateEvaluationTest}
+                    createEntryFromLibrary={createEntryFromLibrary}
+                    createCustomEntry={createCustomEntry}
+                    customTestName={customTestName}
+                    customTestRegion={customTestRegion}
+                    customTestResult={customTestResult}
+                    customTestNotes={customTestNotes}
+                    isCustomFormOpen={isCustomFormOpen}
+                    setCustomTestName={setCustomTestName}
+                    setCustomTestRegion={setCustomTestRegion}
+                    setCustomTestResult={setCustomTestResult}
+                    setCustomTestNotes={setCustomTestNotes}
+                    setIsCustomFormOpen={setIsCustomFormOpen}
+                    resetCustomForm={resetCustomForm}
+                    handleAddCustomTest={handleAddCustomTest}
+                    handleLibrarySelect={handleLibrarySelect}
+                    handleGenerateSoap={handleGenerateSoap}
+                    isGeneratingSOAP={isGeneratingSOAP}
+                    sessionTypeFromUrl={sessionTypeFromUrl}
+                    workflowRoute={workflowRoute}
+                  />
+                </Suspense>
+              </div>
+            </details>
+          )}
 
           {/* Bloque 4: Documentation (SOAP) */}
           <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">

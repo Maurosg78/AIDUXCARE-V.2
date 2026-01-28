@@ -148,148 +148,59 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
 }) => {
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="w-6 h-6 text-slate-900" />
-          <div>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">SOAP Note Generation</h2>
-            <p className="text-sm text-slate-500">
-              Generate professional SOAP notes from your clinical data. AI-assisted documentation.
-            </p>
-          </div>
+      {/* WO-07: Simplificado - solo header mínimo para follow-up */}
+      {visitType === 'follow-up' ? (
+        // Follow-up: header mínimo, sin ruido
+        <div className="text-center py-4">
+          <h2 className="text-xl font-semibold text-slate-900">SOAP Note</h2>
+          <p className="text-sm text-slate-500 mt-1">Review and finalize your documentation</p>
         </div>
-      </header>
-
-      {/* ✅ WORKFLOW OPTIMIZATION: Display workflow metrics */}
-      {workflowMetrics && workflowMetrics.workflowType === 'follow-up' && (
-        <WorkflowMetricsDisplay metrics={workflowMetrics} />
-      )}
-
-      {/* Visit Type Selector */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Visit Type
-            </label>
-            <div className="flex items-center gap-4">
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="visitType"
-                  value="initial"
-                  checked={visitType === 'initial'}
-                  onChange={(e) => setVisitType(e.target.value as VisitType)}
-                  className="h-4 w-4 text-sky-600 focus:ring-sky-500"
-                />
-                <span className="text-sm text-slate-700">Initial Assessment</span>
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="visitType"
-                  value="follow-up"
-                  checked={visitType === 'follow-up'}
-                  onChange={(e) => setVisitType(e.target.value as VisitType)}
-                  className="h-4 w-4 text-sky-600 focus:ring-sky-500"
-                />
-                <span className="text-sm text-slate-700">Follow-up Visit</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Treatment Reminder for Follow-up */}
-      {treatmentReminder && visitType === 'follow-up' && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                <ClipboardList className="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                Treatment Plan Reminder
-              </h3>
-              <p className="text-sm text-blue-800">
-                {treatmentReminder}
+      ) : (
+        // Initial: mantener header completo
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="w-6 h-6 text-slate-900" />
+            <div>
+              <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">SOAP Note Generation</h2>
+              <p className="text-sm text-slate-500">
+                Generate professional SOAP notes from your clinical data. AI-assisted documentation.
               </p>
             </div>
           </div>
-        </div>
+        </header>
       )}
 
+      {/* ✅ WORKFLOW OPTIMIZATION: Display workflow metrics (solo initial) */}
+      {workflowMetrics && workflowMetrics.workflowType === 'follow-up' && visitType !== 'follow-up' && (
+        <WorkflowMetricsDisplay metrics={workflowMetrics} />
+      )}
+
+      {/* WO-07: Visit Type Selector ELIMINADO - ya está decidido en Patient context */}
+      
+      {/* WO-07: Treatment Plan Reminder ELIMINADO - duplicado, info ya está en Today's treatment session */}
+      
       {/* WO-06.3: Eliminado bloque "Follow-up Visit Documentation" duplicado.
           En follow-up, el input único está en "Follow-up clinical update" (AnalysisTab).
           Este bloque (SOAPTab) solo muestra preview de SOAP generado, NO acepta input. */}
 
-      {/* Context Summary */}
-      {niagaraResults && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3">Context Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-slate-500">Transcript</p>
-              <p className="text-sm font-medium text-slate-900">{(transcript || '').split(/\s+/).filter(Boolean).length} words</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Red Flags</p>
-              <p className="text-sm font-medium text-slate-900">{niagaraResults.red_flags?.length || 0} identified</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Physical Tests</p>
-              <p className="text-sm font-medium text-slate-900">{physicalExamResults.length} completed</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Medications</p>
-              <p className="text-sm font-medium text-slate-900">{niagaraResults.medicacion_actual?.length || 0} documented</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* WO-07: Context Summary ELIMINADO - ruido innecesario para piloto */}
 
-      {/* Generate Button or SOAP Editor */}
+      {/* WO-07: Generate Button ELIMINADO de aquí - ya existe botón sticky principal.
+          En follow-up, solo mostrar estado o SOAP generado. */}
       {!localSoapNote ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
-            <p className="text-xs text-slate-500 mb-6">
-              {visitType === 'follow-up' 
-                ? 'Complete your clinical update above, analyze it, then generate SOAP note'
-                : 'Complete the analysis and physical evaluation tabs, then generate a SOAP note'}
-            </p>
-            {/* WO-06.3: En follow-up, el análisis se hace desde "Follow-up clinical update" */}
-            {visitType === 'follow-up' && !niagaraResults && transcript && (
-              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-sm text-blue-800">
-                  ⚠️ Please analyze your clinical update in the "Follow-up clinical update" section above before generating SOAP note.
-                </p>
-              </div>
+            {visitType === 'follow-up' ? (
+              <p className="text-xs text-slate-500">
+                Complete your clinical update above, then use the button below to generate SOAP note.
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Complete the analysis and physical evaluation tabs, then generate a SOAP note.
+              </p>
             )}
-            <button
-              onClick={handleGenerateSoap}
-              disabled={
-                !niagaraResults || 
-                (visitType !== 'follow-up' && physicalExamResults.length === 0) || 
-                isGeneratingSOAP
-              }
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {isGeneratingSOAP ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating SOAP Note...
-                </>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4" />
-                  Generate SOAP Note
-                </>
-              )}
-            </button>
             {analysisError && (
               <ErrorMessage
                 message={analysisError}

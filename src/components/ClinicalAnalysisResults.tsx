@@ -10,12 +10,14 @@ interface ClinicalAnalysisResultsProps {
   results: any;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  visitType?: 'initial' | 'follow-up'; // WO-07: Para ocultar secciones innecesarias en follow-up
 }
 
 export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = ({
   results,
   selectedIds,
-  onSelectionChange
+  onSelectionChange,
+  visitType = 'initial'
 }) => {
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
   
@@ -184,7 +186,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   return (
     <div className="flex flex-col gap-4">
       
-      {/* Row 1: Medico-legal Alerts */}
+      {/* WO-07: Medico-legal Alerts - OCULTO en follow-up (ruido innecesario) */}
+      {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -245,8 +248,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
+      )}
 
-      {/* Row 2: Conversation Highlights */}
+      {/* WO-07: Conversation Highlights - OCULTO en follow-up (ruido innecesario) */}
+      {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -315,8 +320,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         </div>
       </div>
+      )}
 
-      {/* Row 3: Recommended Physical Tests */}
+      {/* WO-07: Recommended Physical Tests - OCULTO en follow-up (ruido innecesario) */}
+      {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -412,8 +419,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
+      )}
 
-      {/* Row 4: Biopsychosocial Factors */}
+      {/* WO-07: Biopsychosocial Factors - OCULTO en follow-up (ruido innecesario) */}
+      {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -544,6 +553,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
+      )}
     </div>
   );
 };

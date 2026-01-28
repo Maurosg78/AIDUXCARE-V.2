@@ -354,26 +354,30 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               results={interactiveResults}
               selectedIds={selectedEntityIds}
               onSelectionChange={setSelectedEntityIds}
+              visitType={visitType}
             />
           </div>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div>
-              <p className="text-sm text-slate-600">
-                Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
-              </p>
+          {/* WO-07: Botón "Continue to physical evaluation" ELIMINADO en follow-up (ruido innecesario) */}
+          {visitType !== 'follow-up' && (
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <div>
+                <p className="text-sm text-slate-600">
+                  Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
+                </p>
+              </div>
+              <button
+                onClick={continueToEvaluation}
+                disabled={
+                  (interactiveResults.physicalTests?.length ?? 0) > 0 &&
+                  !selectedEntityIds.some((id) => id.startsWith("physical-"))
+                }
+                className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+              >
+                <ChevronsRight className="w-4 h-4" />
+                Continue to physical evaluation
+              </button>
             </div>
-            <button
-              onClick={continueToEvaluation}
-              disabled={
-                (interactiveResults.physicalTests?.length ?? 0) > 0 &&
-                !selectedEntityIds.some((id) => id.startsWith("physical-"))
-              }
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
-            >
-              <ChevronsRight className="w-4 h-4" />
-              Continue to physical evaluation
-            </button>
-          </div>
+          )}
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
