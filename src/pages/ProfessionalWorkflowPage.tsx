@@ -99,6 +99,7 @@ import {
   trackError,
 } from "@/services/analytics/AnalyticsEvents";
 import { lazy, Suspense } from "react";
+import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -258,6 +259,9 @@ const ProfessionalWorkflowPage = () => {
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
+  
+  // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo)
+  const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
 
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
@@ -2768,6 +2772,29 @@ const ProfessionalWorkflowPage = () => {
       // Step 3: Organize all data into structured format for SOAP prompt
       const organized = organizeSOAPData(unifiedData);
 
+      // WO-05-FIX: Inyectar todayFocus en el contexto antes de generar SOAP
+      if (todayFocus.length > 0) {
+        organized.context.todayFocus = todayFocus.map(item => ({
+          id: item.id,
+          label: item.label,
+          notes: item.notes,
+          source: 'plan' as const,
+        }));
+        
+        console.info(
+          '[WO-05-FIX][PROOF] Injecting todayFocus into SOAPContext',
+          {
+            count: todayFocus.length,
+            items: todayFocus.map(i => ({
+              id: i.id,
+              label: i.label,
+              completed: i.completed,
+              hasNotes: !!i.notes
+            }))
+          }
+        );
+      }
+
       // Log data summary for debugging
       console.log('[Workflow] Clinical data organization summary:', createDataSummary(organized));
 
@@ -3811,6 +3838,7 @@ const ProfessionalWorkflowPage = () => {
               successMessage={successMessage}
               setAnalysisError={setAnalysisError}
               setSuccessMessage={setSuccessMessage}
+              onTodayFocusChange={setTodayFocus}
               onFinishSession={() => setActiveTab('soap')}
             />
           </Suspense>

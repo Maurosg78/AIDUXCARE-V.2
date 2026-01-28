@@ -203,7 +203,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     onTodayFocusChange?.(focus);
   };
 
-  // Parsear plan previo cuando cambie lastEncounter o previousTreatmentPlan
+  // WO-05-FIX: Mapping explícito del treatment plan a todayFocus
   useEffect(() => {
     if (visitType === 'follow-up') {
       let planText: string | null = null;
@@ -211,14 +211,28 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       // Prioridad: previousTreatmentPlan > lastEncounter.soap.plan
       if (previousTreatmentPlan?.planText) {
         planText = previousTreatmentPlan.planText;
+        console.info('[WO-05-FIX][PROOF] Using previousTreatmentPlan.planText as source');
       } else if (lastEncounter.data?.soap?.plan) {
         planText = lastEncounter.data.soap.plan;
+        console.info('[WO-05-FIX][PROOF] Using lastEncounter.soap.plan as source');
       }
       
-      if (planText) {
+      if (planText && planText.trim().length > 0) {
         const parsed = parsePlanToFocusItems(planText);
+        
+        console.info(
+          '[WO-05-FIX][PROOF] todayFocus initialized from treatmentPlan',
+          {
+            source: previousTreatmentPlan ? 'previousTreatmentPlan' : 'lastEncounter',
+            planTextLength: planText.length,
+            parsedCount: parsed.length,
+            items: parsed.map(item => ({ id: item.id, label: item.label, completed: item.completed }))
+          }
+        );
+        
         setTodayFocus(parsed);
       } else {
+        console.info('[WO-05-FIX][PROOF] No planText found, todayFocus remains empty');
         setTodayFocus([]);
       }
     } else {
@@ -226,6 +240,19 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       setTodayFocus([]);
     }
   }, [visitType, lastEncounter.data?.soap?.plan, previousTreatmentPlan?.planText]);
+
+  // WO-05-FIX: Log de evidencia cuando se renderiza el componente
+  useEffect(() => {
+    if (visitType === 'follow-up' && todayFocus.length > 0) {
+      console.info(
+        '[WO-05-FIX][PROOF] Rendering Today\'s treatment session',
+        { 
+          count: todayFocus.length, 
+          items: todayFocus.map(i => ({ id: i.id, label: i.label, completed: i.completed })) 
+        }
+      );
+    }
+  }, [visitType, todayFocus]);
 
   return (
     <div className="space-y-6">
