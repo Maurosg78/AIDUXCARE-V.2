@@ -224,15 +224,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
         })}
       </div>
 
-      {/* Finish session button */}
-      {onFinishSession && (
-        <button
-          onClick={handleFinishSession}
-          className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium font-apple transition-colors"
-        >
-          Finish session & document
-        </button>
-      )}
+      {/* WO-06: Finish session button removed - now handled by main action button */}
     </div>
   );
 };

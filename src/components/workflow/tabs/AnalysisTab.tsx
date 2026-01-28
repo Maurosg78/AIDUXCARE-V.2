@@ -131,6 +131,8 @@ export interface AnalysisTabProps {
   onTodayFocusChange?: (focus: TodayFocusItem[]) => void;
   // WO-FLOW-005: Callback para cambiar a tab SOAP al finalizar sesión
   onFinishSession?: () => void;
+  // WO-06: Ocultar header para layout vertical único
+  hideHeader?: boolean;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -193,6 +195,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setSuccessMessage,
   onTodayFocusChange,
   onFinishSession,
+  hideHeader = false,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -256,14 +259,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-3xl sm:text-4xl font-light text-slate-900 tracking-[-0.02em] leading-[1.1] font-apple mb-3">
-          Professional Workflow
-        </h1>
-        <p className="text-lg text-slate-500 font-light leading-[1.3] font-apple">
-          Canada · Patient data stored under PHIPA/PIPEDA controls · Clinical AI processing verified.
-        </p>
-      </header>
+      {!hideHeader && (
+        <header className="flex flex-col gap-1">
+          <h1 className="text-3xl sm:text-4xl font-light text-slate-900 tracking-[-0.02em] leading-[1.1] font-apple mb-3">
+            Professional Workflow
+          </h1>
+          <p className="text-lg text-slate-500 font-light leading-[1.3] font-apple">
+            Canada · Patient data stored under PHIPA/PIPEDA controls · Clinical AI processing verified.
+          </p>
+        </header>
+      )}
 
       {/* WO-FLOW-005: Suggested Focus Editor (solo en follow-up) */}
       {visitType === 'follow-up' && todayFocus.length > 0 && (

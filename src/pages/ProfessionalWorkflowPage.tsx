@@ -100,6 +100,7 @@ import {
 } from "@/services/analytics/AnalyticsEvents";
 import { lazy, Suspense } from "react";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
+import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -3708,79 +3709,81 @@ const ProfessionalWorkflowPage = () => {
           />
         )} */}
 
-        {/* ✅ FOLLOW-UP WORKFLOW: Show explicit follow-up indicator when URL has type=followup */}
-        {isExplicitFollowUp && workflowRoute && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-100 rounded-full p-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+        {/* WO-06: Follow-up indicator removed - now shown in header context */}
+
+        {/* WO-06: Single-flow clinical session - vertical layout */}
+        <div className="space-y-6">
+          {/* Header - Session context (auto, no interactivo) */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-blue-600" />
+                <span className="text-blue-900 font-medium">
+                  {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
+                </span>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Follow-up Visit</h3>
-                <p className="text-xs text-gray-600 mt-1">
-                  {workflowRoute.auditLog?.detectionResult?.daysSinceLastVisit !== undefined
-                    ? `Previous visit: ${workflowRoute.auditLog.detectionResult.daysSinceLastVisit} days ago`
-                    : 'Follow-up workflow activated'}
-                  {workflowRoute.auditLog?.detectionResult?.lastVisitDate && (
-                    <span className="ml-2">
-                      ({workflowRoute.auditLog.detectionResult.lastVisitDate.toLocaleDateString('en-CA', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })})
-                    </span>
-                  )}
-                </p>
-              </div>
+              {previousTreatmentPlan && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-700">Previous treatment plan loaded</span>
+                </div>
+              )}
+              {workflowConsentStatus?.hasValidConsent && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-700">Consent valid (ON)</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        <nav className="flex flex-wrap gap-2">
-          {[
-            { 
-              id: "analysis", 
-              label: visitType === 'follow-up' ? "1 · Follow-up Conversation" : "1 · Initial Analysis" 
-            },
-            { 
-              id: "evaluation", 
-              label: visitType === 'follow-up' ? "2 · Re-evaluation" : "2 · Physical Evaluation" 
-            },
-            { id: "soap", label: "3 · SOAP Report" },
-          ]
-            .filter((tab) => {
-              // ✅ WORKFLOW OPTIMIZATION: Hide tabs that should be skipped
-              // ✅ CRITICAL FIX: Also check if explicit followup from URL
-              const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-              const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
+          {/* Bloque 1: Today's treatment session (solo follow-up) */}
+          {visitType === 'follow-up' && todayFocus.length > 0 && (
+            <div className="bg-white border border-blue-200 rounded-lg p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">🗓️</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                    Today's treatment session
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Confirm or adjust what was planned previously.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Today's treatment confirmed</span>
+                </div>
+              </div>
+              <SuggestedFocusEditor
+                items={todayFocus}
+                onChange={setTodayFocus}
+                onFinishSession={undefined}
+              />
+            </div>
+          )}
 
-              // ✅ FIX: Don't skip analysis tab for follow-ups - needs conversation recording
-              // Removed: Skip analysis tab for follow-ups
-
-              if (workflowRoute) {
-                return !shouldSkipTab(workflowRoute, tab.id);
-              }
-              return true; // Show all tabs if no route detected yet
-            })
-            .map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as ActiveTab)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                  ? "bg-blue-600 text-white shadow-md" // ✅ WO-PHASE3-CRITICAL-FIXES: Same color (blue) for active
-                  : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50" // ✅ Same style for inactive
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-        </nav>
-
-        {/* ✅ ISO COMPLIANCE: Lazy-loaded components with Suspense for better performance */}
-        {/* ✅ FIX: Show analysis tab for follow-ups (needs conversation recording) */}
-        {activeTab === "analysis" && (
-          <Suspense fallback={<LoadingSpinner />}>
-            <AnalysisTab
+          {/* Bloque 2: Clinical notes */}
+          <div className="bg-white border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-2xl">🎙️</span>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                  Clinical notes
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Record, type, or paste your clinical observations.
+                </p>
+              </div>
+              {transcript?.trim() && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Clinical notes captured</span>
+                </div>
+              )}
+            </div>
+            <Suspense fallback={<LoadingSpinner />}>
+              <AnalysisTab
               currentPatient={currentPatient}
               patientIdFromUrl={patientIdFromUrl}
               patientClinicalInfo={patientClinicalInfo}
@@ -3839,14 +3842,36 @@ const ProfessionalWorkflowPage = () => {
               setAnalysisError={setAnalysisError}
               setSuccessMessage={setSuccessMessage}
               onTodayFocusChange={setTodayFocus}
-              onFinishSession={() => setActiveTab('soap')}
-            />
-          </Suspense>
-        )}
-        {activeTab === "evaluation" && (
-          <Suspense fallback={<LoadingSpinner />}>
-            <EvaluationTab
-              visitType={visitType}  // ✅ NEW: Pass visitType for follow-up selective re-evaluation
+              onFinishSession={undefined}
+              hideHeader={true}
+                />
+              </Suspense>
+            </div>
+          </div>
+
+          {/* Bloque 3: Optional re-evaluation (colapsable) */}
+          <details className="bg-white border border-blue-200 rounded-lg p-6">
+            <summary className="flex items-start gap-3 cursor-pointer list-none">
+              <span className="text-2xl">🧪</span>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                  Optional re-evaluation
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Only if you need to re-test specific outcomes.
+                </p>
+              </div>
+              {evaluationTests.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Progress reassessed</span>
+                </div>
+              )}
+            </summary>
+            <div className="mt-4 pt-4 border-t border-blue-100">
+              <Suspense fallback={<LoadingSpinner />}>
+                <EvaluationTab
+                  visitType={visitType}  // ✅ NEW: Pass visitType for follow-up selective re-evaluation
               filteredEvaluationTests={filteredEvaluationTests}
               evaluationTests={evaluationTests}
               completedCount={completedCount}
@@ -3876,12 +3901,32 @@ const ProfessionalWorkflowPage = () => {
               isGeneratingSOAP={isGeneratingSOAP}
               sessionTypeFromUrl={sessionTypeFromUrl}
               workflowRoute={workflowRoute}
-            />
-          </Suspense>
-        )}
-        {activeTab === "soap" && (
-          <Suspense fallback={<LoadingSpinner />}>
-            <SOAPTab
+                />
+              </Suspense>
+            </div>
+          </details>
+
+          {/* Bloque 4: Documentation (SOAP) */}
+          <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-2xl">📝</span>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                  Documentation
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Review and finalize your SOAP note.
+                </p>
+              </div>
+              {localSoapNote && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>SOAP note generated</span>
+                </div>
+              )}
+            </div>
+            <Suspense fallback={<LoadingSpinner />}>
+              <SOAPTab
               localSoapNote={localSoapNote}
               soapStatus={soapStatus}
               visitType={visitType}
@@ -3928,17 +3973,65 @@ const ProfessionalWorkflowPage = () => {
               removingAttachmentId={removingAttachmentId}
               handleAttachmentUpload={handleAttachmentUpload}
               handleAttachmentRemove={handleAttachmentRemove}
-            />
-          </Suspense>
-        )}
-      </div>
+              />
+            </Suspense>
+          </div>
 
+          {/* WO-06: Botón principal inteligente (sticky) */}
+          {(() => {
+            const hasClinicalNotes = transcript?.trim().length > 0;
+            const analysisDone = niagaraResults !== null;
+            const soapGenerated = localSoapNote !== null;
 
-      {/* Feedback Widget - Always visible for beta testing */}
-      <FeedbackWidget />
+            let buttonAction: () => void;
+            let buttonLabel: string;
+            let buttonDisabled = false;
 
-      {/* Initial Plan Modal for existing patients without initial assessment */}
-      {currentPatient && (
+            if (!hasClinicalNotes) {
+              buttonAction = () => {
+                // Focus en el área de transcript
+                document.querySelector('textarea')?.focus();
+              };
+              buttonLabel = "Add clinical notes";
+            } else if (!analysisDone) {
+              buttonAction = handleAnalyzeWithVertex;
+              buttonLabel = "Analyze clinical notes";
+              buttonDisabled = isProcessing;
+            } else if (!soapGenerated) {
+              buttonAction = handleGenerateSoap;
+              buttonLabel = "Generate SOAP note";
+              buttonDisabled = isGeneratingSOAP;
+            } else {
+              buttonAction = () => {
+                // Scroll a SOAP section
+                document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth' });
+              };
+              buttonLabel = "Review & export SOAP";
+            }
+
+            return (
+              <div className="sticky bottom-0 bg-white border-t border-blue-200 p-4 mt-6 shadow-lg z-10">
+                <button
+                  onClick={buttonAction}
+                  disabled={buttonDisabled}
+                  className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
+                    buttonDisabled
+                      ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {buttonDisabled ? 'Processing...' : buttonLabel}
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Feedback Widget - Always visible for beta testing */}
+        <FeedbackWidget />
+
+        {/* Initial Plan Modal for existing patients without initial assessment */}
+        {currentPatient && (
         <InitialPlanModal
           isOpen={isInitialPlanModalOpen}
           onClose={() => setIsInitialPlanModalOpen(false)}
