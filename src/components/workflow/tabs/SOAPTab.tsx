@@ -185,22 +185,43 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
 
       {/* WO-07: Context Summary ELIMINADO - ruido innecesario para piloto */}
 
-      {/* WO-07: Generate Button ELIMINADO de aquí - ya existe botón sticky principal.
-          En follow-up, solo mostrar estado o SOAP generado. */}
+      {/* WO-07: Botón Generate SOAP al final de página (NO sticky) - fuerza a llegar al final */}
       {!localSoapNote ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
             {visitType === 'follow-up' ? (
-              <p className="text-xs text-slate-500">
-                Complete your clinical update above, then use the button below to generate SOAP note.
+              <p className="text-xs text-slate-500 mb-6">
+                Complete your clinical update above, then generate SOAP note.
               </p>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mb-6">
                 Complete the analysis and physical evaluation tabs, then generate a SOAP note.
               </p>
             )}
+            {/* WO-07: Botón Generate SOAP al final de página (no sticky) */}
+            <button
+              onClick={handleGenerateSoap}
+              disabled={
+                !niagaraResults || 
+                (visitType !== 'follow-up' && physicalExamResults.length === 0) || 
+                isGeneratingSOAP
+              }
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {isGeneratingSOAP ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating SOAP Note...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4" />
+                  Generate SOAP Note
+                </>
+              )}
+            </button>
             {analysisError && (
               <ErrorMessage
                 message={analysisError}
