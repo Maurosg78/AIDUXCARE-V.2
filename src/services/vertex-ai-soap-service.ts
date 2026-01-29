@@ -10,7 +10,7 @@
 import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
 import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
-import type { SOAPNote } from '../types/vertex-ai';
+import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from '../types/vertex-ai';
 import type { SessionType } from './sessionTypeService';
 import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
@@ -712,5 +712,108 @@ function parseSOAPResponse(
     assessment: '',
     plan: '',
   };
+}
+
+/**
+ * WO-11: Generate follow-up SOAP using raw prompt v2 (4 sources).
+ * WO-11.1: Also parses ALERTS and plan[] for UI (red/yellow, checklist).
+ */
+export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
+  raw: string;
+  soap: SOAPNote | null;
+  alerts?: FollowUpAlerts | null;
+  planItems?: FollowUpPlanItem[] | null;
+}> {
+  const traceId = `soap-followup-v2-${Date.now()}`;
+  const response = await fetch(VERTEX_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: fullPrompt,
+      action: 'analyze',
+      traceId,
+      model: 'gemini-2.0-flash-exp',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  let rawText =
+    data.candidates?.[0]?.content?.parts?.[0]?.text ??
+    data.text ??
+    (data.soap ? JSON.stringify(data.soap) : '');
+
+  if (!rawText || typeof rawText !== 'string') {
+    return { raw: '', soap: null };
+  }
+
+  let soap: SOAPNote | null = null;
+  let planItems: FollowUpPlanItem[] | null = null;
+  let alerts: FollowUpAlerts | null = null;
+
+  try {
+    let soapData: any = null;
+    const soapNoteBlock = rawText.match(/SOAP_NOTE\s*\{[\s\S]*?\}\s*(?=ALERTS|$)/i);
+    if (soapNoteBlock) {
+      const jsonStr = soapNoteBlock[0].replace(/^SOAP_NOTE\s*/i, '').trim();
+      soapData = JSON.parse(jsonStr);
+    } else {
+      const firstJson = rawText.match(/\{[\s\S]*\}/);
+      if (firstJson) soapData = JSON.parse(firstJson[0]);
+    }
+    if (soapData && typeof soapData === 'object') {
+      const plan =
+        typeof soapData.plan === 'string'
+          ? soapData.plan
+          : Array.isArray(soapData.plan)
+            ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
+            : 'Not documented.';
+      soap = {
+        subjective: String(soapData.subjective ?? 'Not documented.'),
+        objective: String(soapData.objective ?? 'Not documented.'),
+        assessment: String(soapData.assessment ?? 'Not documented.'),
+        plan: plan || 'Not documented.',
+      };
+      // WO-11.1: structured plan[] for checklist
+      if (Array.isArray(soapData.plan) && soapData.plan.length > 0) {
+        planItems = soapData.plan.map((p: any) => ({
+          id: p.id ?? String(Math.random()).slice(2, 9),
+          action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
+          status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
+          notes: p.notes,
+        }));
+      }
+    }
+  } catch (e) {
+    console.warn('[SOAP Service] WO-11 parse SOAP_NOTE from v2 response:', e);
+  }
+
+  // WO-11.1: parse ALERTS block
+  try {
+    const alertsBlock = rawText.match(/ALERTS\s*\{[\s\S]*?\}\s*$/i) ?? rawText.match(/ALERTS\s*\{[\s\S]*\}/i);
+    if (alertsBlock) {
+      const jsonStr = alertsBlock[0].replace(/^ALERTS\s*/i, '').trim();
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.none === true) {
+          alerts = { none: true };
+        } else {
+          alerts = {
+            red_flags: Array.isArray(parsed.red_flags) ? parsed.red_flags : undefined,
+            yellow_flags: Array.isArray(parsed.yellow_flags) ? parsed.yellow_flags : undefined,
+            medico_legal: Array.isArray(parsed.medico_legal) ? parsed.medico_legal : undefined,
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[SOAP Service] WO-11.1 parse ALERTS from v2 response:', e);
+  }
+
+  return { raw: rawText, soap, alerts: alerts ?? undefined, planItems: planItems ?? undefined };
 }
 

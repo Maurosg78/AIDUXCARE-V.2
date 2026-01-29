@@ -42,6 +42,29 @@ export interface ClinicalAnalysisResponse {
   rawResponse?: string;
 }
 
+/** WO-11.1: Follow-up plan item (parseable from SOAP_NOTE.plan[]) */
+export interface FollowUpPlanItem {
+  id: string;
+  action: string;
+  status: 'completed' | 'modified' | 'deferred' | 'planned';
+  notes?: string;
+}
+
+/** WO-11.1: Follow-up alert (parseable from ALERTS block) */
+export interface FollowUpAlertFlag {
+  label: string;
+  evidence: string;
+  suggested_action: string;
+  urgency?: 'immediate' | 'today' | 'monitor';
+}
+
+export interface FollowUpAlerts {
+  red_flags?: FollowUpAlertFlag[];
+  yellow_flags?: FollowUpAlertFlag[];
+  medico_legal?: FollowUpAlertFlag[];
+  none?: true;
+}
+
 export interface SOAPNote {
   subjective: string;
   objective: string;
