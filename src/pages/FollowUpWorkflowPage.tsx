@@ -23,7 +23,8 @@ import { SessionTypeService } from "../services/sessionTypeService";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
 import { parsePlanToFocusItems } from "../utils/parsePlanToFocus";
-import { FOLLOW_UP_PROMPT_V2 } from "../constants/followUpPromptV2";
+import { buildFollowUpClinicalBaseline, FollowUpNotAllowedError, type FollowUpClinicalBaseline } from "../services/followUp/FollowUpClinicalBaselineBuilder";
+import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
 
 // Components
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -32,9 +33,9 @@ import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from "../types/vertex-ai";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 
-// Lazy load tabs
+// WO-14: Follow-up uses FollowUpConversationCapture (no AnalysisTab)
+import { FollowUpConversationCapture } from "../components/followup";
 import { lazy } from "react";
-const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
 const SOAPTab = lazy(() => import("../components/workflow/tabs/SOAPTab").then(m => ({ default: m.default })));
 
 // Types
@@ -72,6 +73,16 @@ const FollowUpWorkflowPage = () => {
   // WO-11.1: parsed ALERTS and plan[] for UI
   const [followUpAlerts, setFollowUpAlerts] = useState<FollowUpAlerts | null>(null);
   const [followUpPlanItems, setFollowUpPlanItems] = useState<FollowUpPlanItem[] | null>(null);
+
+  // WO-12: ref for auto-navigate to Documentation on SOAP success
+  const documentationSectionRef = useRef<HTMLDivElement | null>(null);
+  // WO-13.1: ref for auto-scroll to Clinical Conversation Capture when activity is completed
+  const clinicalConversationRef = useRef<HTMLDivElement | null>(null);
+
+  // WO-FOLLOWUP-UI-GATE-001: baseline as hard gate; if missing, follow-up is blocked
+  const [baseline, setBaseline] = useState<FollowUpClinicalBaseline | null>(null);
+  const [followUpBlocked, setFollowUpBlocked] = useState(false);
+  const [baselineLoading, setBaselineLoading] = useState(true);
 
   // Today's focus (treatment plan)
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -222,28 +233,67 @@ const FollowUpWorkflowPage = () => {
     loadTreatmentPlan();
   }, [patientId]);
 
-  // WO-11: Populate todayFocus from previous SOAP plan (last encounter)
+  // WO-FOLLOWUP-UI-GATE-001: Baseline as gate on mount. No baseline → follow-up blocked.
   useEffect(() => {
-    if (lastEncounter.loading || lastEncounter.error || !lastEncounter.data?.soap?.plan) {
-      if (!lastEncounter.loading && !lastEncounter.error && !lastEncounter.data?.soap?.plan) {
-        const count = 0;
-        console.info('[WO-11][PROOF] todayTreatmentSession derived', { count });
-      }
+    if (!patientId?.trim()) {
+      setBaselineLoading(false);
+      setFollowUpBlocked(true);
       return;
     }
+    let cancelled = false;
+    setBaselineLoading(true);
+    setFollowUpBlocked(false);
+    setBaseline(null);
+    buildFollowUpClinicalBaseline(patientId)
+      .then((b) => {
+        if (!cancelled) {
+          setBaseline(b);
+          setFollowUpBlocked(false);
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        if (e instanceof FollowUpNotAllowedError) {
+          setFollowUpBlocked(true);
+          setBaseline(null);
+        } else {
+          console.error('[FollowUpWorkflow] Baseline load error:', e);
+          setFollowUpBlocked(true);
+          setBaseline(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setBaselineLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId]);
+
+  // WO-11: Populate todayFocus from previous SOAP plan (last encounter) — only when baseline exists
+  useEffect(() => {
+    if (!baseline || lastEncounter.loading || lastEncounter.error || !lastEncounter.data?.soap?.plan) {
+      if (!baseline) setTodayFocus([]);
+      return;
+    }
+    const data = lastEncounter.data;
     const planText =
-      typeof lastEncounter.data.soap.plan === 'string'
-        ? lastEncounter.data.soap.plan
-        : JSON.stringify(lastEncounter.data.soap.plan ?? '');
+      typeof data.soap!.plan === 'string'
+        ? data.soap!.plan
+        : JSON.stringify(data.soap!.plan ?? '');
     const items = parsePlanToFocusItems(planText);
     setTodayFocus(items);
-    console.info('[WO-11][PROOF] todayTreatmentSession derived', { count: items.length });
-  }, [lastEncounter.loading, lastEncounter.error, lastEncounter.data]);
+  }, [baseline, lastEncounter.loading, lastEncounter.error, lastEncounter.data]);
 
   /**
-   * WO-11: Handler único follow-up. Payload 4 fuentes + prompt v2. No análisis visible.
+   * WO-11 + WO-FOLLOWUP-UI-GATE-001: Handler único follow-up.
+   * Baseline obligatorio en estado (gate en mount); no se llama a Vertex sin baseline.
    */
   const handleGenerateSOAPFollowUp = useCallback(async () => {
+    // WO-FOLLOWUP-UI-GATE-001: guardrail defensivo — no debería dispararse si el gate está bien
+    if (!baseline) {
+      throw new Error('Invariant violated: Follow-up attempted without baseline');
+    }
     const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
     const hasChecklist = todayFocus.length > 0;
     const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
@@ -256,101 +306,40 @@ const FollowUpWorkflowPage = () => {
     setIsGeneratingSOAP(true);
 
     try {
-      // WO-11 — 1.1 PATIENT_CONTEXT
-      const lastVisitDate = lastEncounter.data?.encounterDate
-        ? formatLastSessionDate(lastEncounter.data)
-        : undefined;
-      const patientContext = {
-        patientId: patientIdFromUrl || demoPatient.id,
-        demographics: {
-          name:
-            currentPatient?.fullName ||
-            `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim() ||
-            demoPatient.name,
-          email: currentPatient?.email ?? demoPatient.email,
-          age: currentPatient?.dateOfBirth
-            ? (() => {
-                const dob = currentPatient?.dateOfBirth ?? (currentPatient as any)?.birthDate;
-                return dob ? calculateAge(dob) : null;
-              })()
-            : null,
-        },
-        antecedents: patientClinicalInfo.allergies?.length || patientClinicalInfo.contraindications?.length ? patientClinicalInfo : undefined,
-        consentStatus: workflowConsentStatus?.hasValidConsent ?? false,
-        previousVisits: visitCount.data ?? undefined,
-        lastVisitDate,
-      };
-      console.info('[WO-11][PROOF] patientContext ready', {
-        keys: Object.keys(patientContext),
-      });
-
-      // WO-11 — 1.2 PREVIOUS_SOAP
-      const previousSoap = lastEncounter.data?.soap ?? null;
-      const hasPreviousSoap = Boolean(previousSoap);
-      if (!hasPreviousSoap) {
-        console.warn('[WO-11] No previous SOAP; continuing with empty baseline.');
-      }
-      console.info('[WO-11][PROOF] previousSOAP loaded', { hasPreviousSoap });
-
-      // WO-11 — 1.3 TODAY_TREATMENT_SESSION (already in todayFocus; log)
-      const todayTreatmentSession = todayFocus.map((i) => ({
-        id: i.id,
-        action: i.label,
-        status: i.completed ? ('completed' as const) : ('not_performed' as const),
-        notes: i.notes,
-      }));
-      console.info('[WO-11][PROOF] todayTreatmentSession derived', { count: todayTreatmentSession.length });
-
-      // WO-11 — 1.4 FOLLOW_UP_CLINICAL_UPDATE
-      const hasAttachments = false;
-      console.info('[WO-11][PROOF] followUpClinicalUpdate ready', {
-        chars: followUpClinicalUpdate.length,
-        hasAttachments,
-      });
-
-      // WO-11 — 2. Prompt v2 (inmutable)
-      const promptV2 = FOLLOW_UP_PROMPT_V2;
-      const charCount = promptV2.length;
-      const preview = promptV2.slice(0, 40).replace(/\n/g, ' ');
-      console.info('[WO-11][PROOF] follow-up prompt loaded', { charCount, preview: `${preview}...` });
-
-      // WO-11 — 3. Payload + full prompt
-      const payloadText = [
-        'PATIENT_CONTEXT:',
-        JSON.stringify(patientContext, null, 2),
-        '',
-        'PREVIOUS_SOAP:',
-        previousSoap ? JSON.stringify(previousSoap, null, 2) : 'No previous SOAP.',
-        '',
-        'TODAY_TREATMENT_SESSION:',
-        JSON.stringify(todayTreatmentSession, null, 2),
-        '',
-        'FOLLOW_UP_CLINICAL_UPDATE:',
-        followUpClinicalUpdate || '(No typed/transcribed update.)',
-      ].join('\n');
-
-      const fullPrompt = promptV2 + '\n\n---\n\nINPUT:\n\n' + payloadText;
-      console.info('[WO-11][PROOF] payload ready', {
-        hasPatientContext: true,
-        hasPreviousSoap,
-        countTodayFocus: todayTreatmentSession.length,
-        clinicalUpdateChars: followUpClinicalUpdate.length,
+      const fullPrompt = buildFollowUpPromptV3({
+        baseline,
+        clinicalUpdate: followUpClinicalUpdate,
       });
 
       const { raw, soap, alerts, planItems } = await generateFollowUpSOAPV2Raw(fullPrompt);
 
       const hasSOAP_NOTE = Boolean(soap);
       const hasALERTS = raw.includes('ALERTS') || raw.includes('none');
-      console.info('[WO-11][PROOF] vertex response received', { hasSOAP_NOTE, hasALERTS });
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[WO-11][PROOF] vertex response received', { hasSOAP_NOTE, hasALERTS });
+      }
 
       if (!soap) {
         setSoapError('SOAP generation returned no result. Please try again.');
         return;
       }
 
+      const emptyOrPlaceholder = (s: string) => !s?.trim() || s.trim().toLowerCase() === 'not documented.';
+      if (
+        emptyOrPlaceholder(soap.subjective) &&
+        emptyOrPlaceholder(soap.objective) &&
+        emptyOrPlaceholder(soap.assessment) &&
+        emptyOrPlaceholder(soap.plan)
+      ) {
+        setSoapError('SOAP invalid / missing fields. Please try again or enter manually.');
+        return;
+      }
+
       setLocalSoapNote(soap);
       setFollowUpAlerts(alerts ?? null);
       setFollowUpPlanItems(planItems ?? null);
+      setSoapError(null);
+      setTimeout(() => documentationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
     } catch (err: any) {
       const message = err?.message || 'Failed to generate SOAP note. Please try again.';
       setSoapError(message);
@@ -358,18 +347,7 @@ const FollowUpWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [
-    todayFocus,
-    transcript,
-    currentPatient,
-    patientIdFromUrl,
-    lastEncounter.data,
-    visitCount.data,
-    patientClinicalInfo,
-    workflowConsentStatus,
-    formatLastSessionDate,
-    calculateAge,
-  ]);
+  }, [baseline, todayFocus, transcript]);
 
   const handleAnalyzeWithVertex = handleGenerateSOAPFollowUp;
   const handleGenerateSoap = handleGenerateSOAPFollowUp;
@@ -398,7 +376,20 @@ const FollowUpWorkflowPage = () => {
     );
   }
 
+  // WO-FOLLOWUP-UI-GATE-001: While baseline is loading, show spinner (no flow)
+  if (baselineLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LoadingSpinner />
+          <p className="text-sm text-slate-600 font-apple font-light">Checking clinical history…</p>
+        </div>
+      </div>
+    );
+  }
+
   const isFirstSession = false; // TODO: Determine from lastEncounter
+  const showFollowUpFlow = !followUpBlocked && baseline != null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -565,8 +556,19 @@ const FollowUpWorkflowPage = () => {
             </div>
           </div>
 
-          {/* SECCIÓN 2: Today's treatment session */}
-          {todayFocus.length > 0 && (
+          {/* WO-FOLLOWUP-UI-GATE-001: Follow-up not available when no baseline */}
+          {followUpBlocked && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+              <h2 className="text-lg font-semibold text-amber-900 mb-2">Follow-up not available</h2>
+              <p className="text-slate-700 font-apple font-light max-w-xl mx-auto">
+                This patient does not have sufficient clinical history to generate a follow-up note.
+                Please complete an Initial Assessment or add a clinical baseline first.
+              </p>
+            </div>
+          )}
+
+          {/* SECCIÓN 2: Today's treatment session — only when baseline exists */}
+          {showFollowUpFlow && todayFocus.length > 0 && (
             <div className="bg-white border border-blue-200 rounded-lg p-6">
               <div className="flex items-start gap-3 mb-4">
                 <span className="text-2xl">🗓️</span>
@@ -588,23 +590,22 @@ const FollowUpWorkflowPage = () => {
                 onChange={setTodayFocus}
                 onFinishSession={undefined}
                 hideHeader={true}
+                conversationSectionRef={clinicalConversationRef}
               />
             </div>
           )}
 
-          {/* SECCIÓN 3: Follow-up clinical update */}
-          <div className="bg-white border border-blue-200 rounded-lg p-6">
-            <p className="text-xs text-slate-500 mb-3 font-apple font-light">
-              Based on the initial assessment and previous sessions.
-            </p>
+          {/* SECCIÓN 3: Clinical Conversation Capture — WO-FOLLOWUP-UI-GATE-001: only when baseline exists (no transcript/button when blocked) */}
+          {showFollowUpFlow && (
+          <div ref={clinicalConversationRef} className="bg-white border border-blue-200 rounded-lg p-6">
             <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">📝</span>
+              <span className="text-2xl">🎙️</span>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Follow-up clinical update
+                  Clinical Conversation Capture
                 </h2>
                 <p className="text-sm text-slate-600">
-                  Update based on patient response, progress, setbacks, and modifications applied today.
+                  Capture patient response, progress, setbacks, and modifications for the SOAP note.
                 </p>
               </div>
               {transcript?.trim() && (
@@ -614,74 +615,33 @@ const FollowUpWorkflowPage = () => {
                 </div>
               )}
             </div>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AnalysisTab
-                currentPatient={currentPatient}
-                patientIdFromUrl={patientIdFromUrl}
-                patientClinicalInfo={patientClinicalInfo}
-                calculateAge={calculateAge}
-                consentStatus={null}
-                consentPending={false}
-                consentToken={null}
-                consentLink={null}
-                smsError={null}
-                user={user}
-                setConsentStatus={() => {}}
-                setPatientHasConsent={() => {}}
-                setConsentPending={() => {}}
-                setSmsError={() => {}}
-                handleCopyConsentLink={() => {}}
-                handleResendConsentSMS={() => {}}
-                lastEncounter={lastEncounter}
-                isFirstSession={isFirstSession}
-                formatLastSessionDate={formatLastSessionDate}
-                visitType={visitType}
-                visitCount={visitCount}
-                sessionTypeConfig={sessionTypeConfig}
-                previousTreatmentPlan={previousTreatmentPlan}
-                setIsInitialPlanModalOpen={() => {}}
-                physioNotes={''}
-                setPhysioNotes={() => {}}
-                recordingTime={recordingTime}
-                isRecording={isRecording}
-                startRecording={startRecording}
-                stopRecording={stopRecording}
-                transcript={transcript}
-                setTranscript={setTranscript}
-                transcriptError={transcriptError}
-                transcriptMeta={transcriptMeta}
-                languagePreference={languagePreference}
-                setLanguagePreference={setLanguagePreference}
-                mode={mode}
-                setMode={setMode}
-                isTranscribing={isTranscribing}
-                isProcessing={isProcessing}
-                audioStream={audioStream}
-                handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-                attachments={[]}
-                isUploadingAttachment={false}
-                attachmentError={null}
-                removingAttachmentId={null}
-                handleAttachmentUpload={() => {}}
-                handleAttachmentRemove={() => {}}
-                niagaraResults={niagaraResults}
-                interactiveResults={null}
-                selectedEntityIds={[]}
-                setSelectedEntityIds={() => {}}
-                continueToEvaluation={() => {}}
-                analysisError={null}
-                successMessage={null}
-                setAnalysisError={() => {}}
-                setSuccessMessage={() => {}}
-                onTodayFocusChange={setTodayFocus}
-                onFinishSession={undefined}
-                hideHeader={true}
-              />
-            </Suspense>
+            {/* WO-14: Follow-up–only capture; no AnalysisTab, no duplicate Today's treatment session */}
+            <FollowUpConversationCapture
+              visitType="follow-up"
+              transcript={transcript}
+              setTranscript={setTranscript}
+              onGenerateSoap={handleGenerateSOAPFollowUp}
+              isLoading={isGeneratingSOAP}
+              recordingTime={recordingTime}
+              isRecording={isRecording}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              transcriptError={transcriptError}
+              transcriptMeta={transcriptMeta}
+              languagePreference={languagePreference}
+              setLanguagePreference={setLanguagePreference}
+              mode={mode}
+              setMode={setMode}
+              isTranscribing={isTranscribing}
+              isProcessing={isGeneratingSOAP}
+              audioStream={audioStream ?? null}
+            />
           </div>
+          )}
 
-          {/* SECCIÓN 4: Documentation (SOAP) */}
-          <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
+          {/* SECCIÓN 4: Documentation (SOAP) — only when baseline exists (WO-FOLLOWUP-UI-GATE-001) */}
+          {showFollowUpFlow && (
+          <div ref={documentationSectionRef} className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
             <div className="flex items-start gap-3 mb-4">
               <span className="text-2xl">📝</span>
               <div className="flex-1">
@@ -835,6 +795,7 @@ const FollowUpWorkflowPage = () => {
               />
             </Suspense>
           </div>
+          )}
         </div>
       </div>
     </div>
