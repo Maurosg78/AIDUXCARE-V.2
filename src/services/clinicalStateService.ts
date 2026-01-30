@@ -3,6 +3,10 @@
  *
  * Single source of truth for rehydrated clinical state (baseline + consent + first session).
  * No sessionStorage. No UI logic. No duplicate checks.
+ *
+ * WO-CLINICAL-CONTINUITY-CONTRACT-001: This service implements the Canonical Clinical Continuity Contract.
+ * - hasBaseline === true ONLY when the last documented encounter has complete, non-placeholder SOAP (see docs/CLINICAL-CONTINUITY-CANONICAL-CONTRACT.md).
+ * - Baseline always refers to the last documented session; no default or empty baseline for follow-up.
  */
 
 import { buildFollowUpClinicalBaseline, FollowUpNotAllowedError } from './followUp/FollowUpClinicalBaselineBuilder';
@@ -74,6 +78,10 @@ export async function getClinicalState(
   };
 }
 
+/**
+ * Baseline: last documented encounter with complete SOAP only (Canonical Contract §3).
+ * FollowUpClinicalBaselineBuilder enforces completeness; no baseline → hasBaseline false.
+ */
 async function getBaselineSafe(patientId: string): Promise<{
   hasBaseline: boolean;
   baselineSOAP?: ClinicalState['baselineSOAP'];
