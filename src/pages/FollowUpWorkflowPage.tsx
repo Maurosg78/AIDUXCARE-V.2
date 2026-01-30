@@ -604,7 +604,7 @@ const FollowUpWorkflowPage = () => {
             </div>
           )}
 
-          {/* SECCIÓN 3: Clinical Conversation Capture — WO-FOLLOWUP-UI-GATE-001: only when baseline exists (no transcript/button when blocked) */}
+          {/* SECCIÓN 3: Clinical Conversation Capture — WO-FOLLOWUP-UI-GATE-002: only when followUpReady (ClinicalState) */}
           {showFollowUpFlow && (
           <div ref={clinicalConversationRef} className="bg-white border border-blue-200 rounded-lg p-6">
             <div className="flex items-start gap-3 mb-4">
@@ -648,7 +648,7 @@ const FollowUpWorkflowPage = () => {
           </div>
           )}
 
-          {/* SECCIÓN 4: Documentation (SOAP) — only when baseline exists (WO-FOLLOWUP-UI-GATE-001) */}
+          {/* SECCIÓN 4: Documentation (SOAP) — only when followUpReady (WO-FOLLOWUP-UI-GATE-002) */}
           {showFollowUpFlow && (
           <div ref={documentationSectionRef} className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
             <div className="flex items-start gap-3 mb-4">
