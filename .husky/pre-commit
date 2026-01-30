@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
-# DISABLED: Pre-commit hooks disabled for solo development workflow
-# Original hook required third-party approval which is not needed for solo development
-# . "$(dirname -- "$0")/_/husky.sh"
+# WO-CLINICAL-STATE-REHYDRATION-001 Fase 0: bloqueo de secrets en commits
+[ -f "$(dirname -- "$0")/_/husky.sh" ] && . "$(dirname -- "$0")/_/husky.sh"
+if [ -f scripts/check-secrets-pre-commit.sh ]; then
+  bash scripts/check-secrets-pre-commit.sh || exit 1
+fi
+# DISABLED for solo workflow: validate:data
 # npm run -s validate:data || exit $?
 exit 0
