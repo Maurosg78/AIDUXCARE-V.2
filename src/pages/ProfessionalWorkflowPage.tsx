@@ -293,6 +293,7 @@ const ProfessionalWorkflowPage = () => {
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<Date | null>(null);
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
+  const [soapGenerationEndTime, setSoapGenerationEndTime] = useState<Date | null>(null);
 
   // Patient Consent - PHIPA s. 18 compliance (SMS-based approach)
   const [isFirstSession, setIsFirstSession] = useState<boolean | null>(null); // null = checking, true/false = result
@@ -1448,6 +1449,11 @@ const ProfessionalWorkflowPage = () => {
   // Consent is IRREVERSIBLE in session (PHIPA/ISO compliance + clinical common sense)
   const consentGrantedRef = useRef<boolean>(false);
 
+  const hasValidConsent =
+    consentGrantedRef.current === true ||
+    workflowConsentStatus?.hasValidConsent === true;
+
+
   useEffect(() => {
     const patientId = patientIdFromUrl || (currentPatient?.id);
     
@@ -1463,7 +1469,13 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
-    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
+        // ✅ P1.3: Stop polling immediately if consent already valid
+    if (hasValidConsent) {
+      stopConsentPolling("already-valid");
+      return;
+    }
+
+// ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
     // Declined es permanente - no tiene sentido seguir preguntando
     if (workflowConsentStatus?.isDeclined === true) {
       console.log('[WORKFLOW] Consent declined - skipping polling setup (permanent block)');
@@ -1623,7 +1635,7 @@ const ProfessionalWorkflowPage = () => {
         consentPollingPatientIdRef.current = null;
       }
     };
-  }, [patientIdFromUrl, currentPatient?.id, user?.uid, workflowConsentStatus?.isDeclined]); // ✅ Regla 4: Dependencias estables + declined check
+  }, [patientIdFromUrl, currentPatient?.id, user?.uid, workflowConsentStatus?.isDeclined, hasValidConsent]); // ✅ Regla 4: Dependencias estables + declined check
 
   const persistEvaluation = useCallback((next: EvaluationTestEntry[]) => {
     // ✅ PHASE 2: Enhanced logging for debugging
@@ -1828,21 +1840,30 @@ const ProfessionalWorkflowPage = () => {
 
   const removeEvaluationTest = useCallback(
     (id: string) => {
-      const next = evaluationTests.filter((test) => test.id !== id);
-      persistEvaluation(next);
+      setEvaluationTests((currentTests) => {
+        const next = currentTests.filter((test) => test.id !== id);
+        persistEvaluation(next);
+        return next;
+      });
     },
-    [evaluationTests, persistEvaluation]
+    [persistEvaluation]
   );
 
   const updateEvaluationTest = useCallback(
     (id: string, updates: Partial<EvaluationTestEntry>) => {
-      const next = evaluationTests.map((test) => (test.id === id ? { ...test, ...updates } : test));
-      persistEvaluation(next);
+      setEvaluationTests((currentTests) => {
+        const next = currentTests.map((test) =>
+          test.id === id ? { ...test, ...updates } : test
+        );
+        persistEvaluation(next);
+        return next;
+      });
     },
-    [evaluationTests, persistEvaluation]
+    [persistEvaluation]
   );
 
   const createEntryFromLibrary = useCallback(
+
     (
       test: PhysicalTest | MskTestDefinition,
       source: "ai" | "manual"
@@ -2073,7 +2094,7 @@ const ProfessionalWorkflowPage = () => {
       const isDismissed = dismissedSuggestionKeys.includes(item.key);
       return !alreadySelected && !isDismissed;
     });
-  }, [aiSuggestions, evaluationTests, dismissedSuggestionKeys]);
+  }, [aiSuggestions, filteredEvaluationTests, dismissedSuggestionKeys]);
 
   const interactiveResults = useMemo(() => {
     if (!niagaraResults) return null;
@@ -2922,7 +2943,8 @@ const ProfessionalWorkflowPage = () => {
         },
       };
 
-      setLocalSoapNote(soapWithReviewFlags);
+      setSoapGenerationEndTime(new Date());
+setLocalSoapNote(soapWithReviewFlags);
       setSoapStatus('draft');
       setActiveTab("soap");
 
@@ -3007,69 +3029,31 @@ const ProfessionalWorkflowPage = () => {
   const calculateAndTrackValueMetrics = useCallback(async (finalizedAt: Date) => {
     try {
       // Calculate times (in minutes)
-      const transcriptionTime = transcriptionStartTime && transcriptionEndTime
-        ? (transcriptionEndTime.getTime() - transcriptionStartTime.getTime()) / 1000 / 60
-        : undefined;
+      
+      
+      const transcriptionTime =
+        transcriptionStartTime && transcriptionEndTime
+          ? (transcriptionEndTime.getTime() - transcriptionStartTime.getTime()) / 1000 / 60
+          : undefined;
 
-      const aiGenerationTime = soapGenerationStartTime && transcriptionEndTime
-        ? (new Date().getTime() - soapGenerationStartTime.getTime()) / 1000 / 60
-        : undefined;
+      const aiGenerationTime =
+        soapGenerationStartTime && soapGenerationEndTime
+          ? (soapGenerationEndTime.getTime() - soapGenerationStartTime.getTime()) / 1000 / 60
+          : undefined;
 
-      const totalDocumentationTime = (finalizedAt.getTime() - sessionStartTime.getTime()) / 1000 / 60;
+      const rawManualEditingTime =
+        totalDocumentationTime -
+        (aiGenerationTime || 0) -
+        (transcriptionTime || 0);
 
-      const manualEditingTime = aiGenerationTime && transcriptionTime
-        ? totalDocumentationTime - aiGenerationTime - (transcriptionTime || 0)
-        : undefined;
-
-      // Detect features used
-      const featuresUsed = {
-        transcription: !!(transcript && transcript.trim().length > 0),
-        physicalTests: filteredEvaluationTests.length > 0, // ✅ P1.1: Use filtered tests
-        aiSuggestions: !!(sharedState.clinicalAnalysis?.physicalTests && sharedState.clinicalAnalysis.physicalTests.length > 0),
-        soapGeneration: !!localSoapNote,
-      };
-
-      // Calculate quality metrics
-      const soapSectionsCompleted = {
-        subjective: !!(localSoapNote?.subjective && localSoapNote.subjective.trim().length > 0),
-        objective: !!(localSoapNote?.objective && localSoapNote.objective.trim().length > 0),
-        assessment: !!(localSoapNote?.assessment && localSoapNote.assessment.trim().length > 0),
-        plan: !!(localSoapNote?.plan && localSoapNote.plan.trim().length > 0),
-      };
-
-      // For now, estimate suggestions offered/accepted/rejected from available data
-      // TODO: Track these in real-time during workflow for more accurate metrics
-      const suggestionsOffered = sharedState.clinicalAnalysis?.physicalTests?.length || 0;
-      const suggestionsAccepted = filteredEvaluationTests.filter(test => test.source === 'ai').length; // ✅ P1.1: Use filtered tests
-      const suggestionsRejected = suggestionsOffered - suggestionsAccepted;
-
-      // Estimate edits made to SOAP (for now, just check if SOAP was modified)
-      // TODO: Track actual edits in real-time for more accurate metrics
-      const editsMadeToSOAP = localSoapNote ? 1 : 0; // Placeholder - would need to track actual edits
-
-      // Generate session ID (simple hash for now)
-      const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-
-      // ✅ WO-PHASE3-CRITICAL-FIXES: PHI Protection - Only send metadata, NEVER content
-      // Prepare metrics event (NO PHI content - only metadata)
-      const metrics: Omit<ValueMetricsEvent, 'timestamp'> = {
-        hashedUserId: TEMP_USER_ID, // Will be pseudonymized in AnalyticsService
-        hashedSessionId: sessionId,
-        timestamps: {
-          sessionStart: sessionStartTime,
-          transcriptionStart: transcriptionStartTime || undefined,
-          transcriptionEnd: transcriptionEndTime || undefined,
-          soapGenerationStart: soapGenerationStartTime || undefined,
-          soapFinalized: finalizedAt,
-        },
-        calculatedTimes: {
-          totalDocumentationTime,
-          transcriptionTime: transcriptionTime || undefined,
-          aiGenerationTime: aiGenerationTime || undefined,
-          manualEditingTime: manualEditingTime || undefined,
-        },
-        featuresUsed,
-        quality: {
+      const manualEditingTime =
+        rawManualEditingTime > 0 ? rawManualEditingTime : 0;
+        const metrics = {
+          transcriptionTime,
+          aiGenerationTime,
+          manualEditingTime,
+          featuresUsed,
+          quality: {
           soapSectionsCompleted,
           suggestionsOffered,
           suggestionsAccepted,
@@ -4368,6 +4352,6 @@ const ProfessionalWorkflowPage = () => {
       )}
     </div>
   );
-};
+}
 
 export default ProfessionalWorkflowPage;
