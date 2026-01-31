@@ -236,7 +236,7 @@ const ProfessionalWorkflowPage = () => {
   // State for real patient data
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
-  
+
   // ✅ WO-CONSENT-VERBAL-01: Gate state for verbal consent
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [showVerbalConsentModal, setShowVerbalConsentModal] = useState(false);
@@ -260,7 +260,7 @@ const ProfessionalWorkflowPage = () => {
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
-  
+
   // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo)
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
 
@@ -793,13 +793,13 @@ const ProfessionalWorkflowPage = () => {
         // Still loading, don't check yet
         return;
       }
-      
+
       try {
         // ✅ WO-CONSENT-VERBAL-01-LANG: Pass jurisdiction to validation
         const { getCurrentJurisdiction } = await import('../core/consent/consentJurisdiction');
         const jurisdiction = getCurrentJurisdiction();
         const hasValid = await VerbalConsentService.hasValidConsent(patientIdFromUrl, user.uid, jurisdiction);
-        
+
         if (!hasValid) {
           console.log('[WORKFLOW] ❌ No valid consent (verbal or digital) - blocking ALL clinical UI', { jurisdiction });
           setWorkflowBlocked(true);
@@ -825,7 +825,7 @@ const ProfessionalWorkflowPage = () => {
             consentMethod: 'verbal' // VerbalConsentService indicates verbal consent
           });
         }
-        
+
         setConsentCheckComplete(true);
       } catch (error) {
         console.error('[WORKFLOW] Error checking valid consent:', error);
@@ -1293,20 +1293,20 @@ const ProfessionalWorkflowPage = () => {
 
   useEffect(() => {
     const currentPatientId = patientIdFromUrl || demoPatient.id;
-    
+
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset state when patient changes
     if (consentCheckRef.current !== currentPatientId) {
       console.log('[WORKFLOW] Patient changed - resetting consent state', {
         previousPatient: consentCheckRef.current,
         newPatient: currentPatientId
       });
-      
+
       // Reset consent state for new patient
       setWorkflowConsentStatus(null);
       setConsentCheckComplete(false);
       setPatientHasConsent(false);
       consentGrantedRef.current = false;
-      
+
       // Cleanup polling for previous patient
       if (consentPollingRef.current) {
         clearInterval(consentPollingRef.current);
@@ -1314,7 +1314,7 @@ const ProfessionalWorkflowPage = () => {
         consentPollingAttemptsRef.current = 0;
         consentPollingPatientIdRef.current = null;
       }
-      
+
       // Update ref to new patient
       consentCheckRef.current = currentPatientId;
     } else {
@@ -1381,7 +1381,7 @@ const ProfessionalWorkflowPage = () => {
 
         const consentResult = await checkConsentViaServer(patientId);
         const hasConsent = consentResult.hasValidConsent;
-        
+
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Si declined, NO iniciar polling
         if (consentResult.isDeclined === true) {
           console.warn('[WORKFLOW] 🚫 Declined consent detected - NO polling will be started');
@@ -1396,7 +1396,7 @@ const ProfessionalWorkflowPage = () => {
           // ❌ NO iniciar polling - declined es permanente
           return;
         }
-        
+
         // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
         setWorkflowConsentStatus({
@@ -1406,12 +1406,12 @@ const ProfessionalWorkflowPage = () => {
           consentMethod: consentResult.consentMethod || null,
           declineReasons: consentResult.declineReasons || undefined
         });
-        
+
         // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted if true (irreversible)
         if (hasConsent) {
           consentGrantedRef.current = true;
         }
-        
+
         setPatientHasConsent(hasConsent);
         setConsentStatus(consentResult.status);
 
@@ -1444,7 +1444,7 @@ const ProfessionalWorkflowPage = () => {
   const consentPollingRef = useRef<NodeJS.Timeout | null>(null);
   const consentPollingAttemptsRef = useRef<number>(0);
   const consentPollingPatientIdRef = useRef<string | null>(null);
-  
+
   // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Guard to prevent re-blocking once consent is granted
   // Consent is IRREVERSIBLE in session (PHIPA/ISO compliance + clinical common sense)
   const consentGrantedRef = useRef<boolean>(false);
@@ -1456,7 +1456,7 @@ const ProfessionalWorkflowPage = () => {
 
   useEffect(() => {
     const patientId = patientIdFromUrl || (currentPatient?.id);
-    
+
     // Skip if no patient ID or demo patient or no user
     if (!patientId || patientId === demoPatient.id || !user?.uid) {
       // Cleanup if patient/user invalid
@@ -1469,13 +1469,13 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
-        // ✅ P1.3: Stop polling immediately if consent already valid
+    // ✅ P1.3: Stop polling immediately if consent already valid
     if (hasValidConsent) {
       stopConsentPolling("already-valid");
       return;
     }
 
-// ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
+    // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
     // Declined es permanente - no tiene sentido seguir preguntando
     if (workflowConsentStatus?.isDeclined === true) {
       console.log('[WORKFLOW] Consent declined - skipping polling setup (permanent block)');
@@ -1558,12 +1558,12 @@ const ProfessionalWorkflowPage = () => {
         }
 
         const consentResult = await checkConsentViaServer(patientId);
-        
+
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: CRITICAL - Check declined FIRST
         // If declined, update state immediately, stop polling, and return
         if (consentResult.isDeclined === true) {
           console.warn('[WORKFLOW] 🚫 Declined consent detected via polling - stopping immediately and updating state');
-          
+
           // Update state FIRST (this triggers re-render with hard block)
           setWorkflowConsentStatus({
             hasValidConsent: false,
@@ -1572,7 +1572,7 @@ const ProfessionalWorkflowPage = () => {
             consentMethod: consentResult.consentMethod || null,
             declineReasons: consentResult.declineReasons || undefined
           });
-          
+
           // Stop polling immediately
           if (consentPollingRef.current) {
             clearInterval(consentPollingRef.current);
@@ -1580,11 +1580,11 @@ const ProfessionalWorkflowPage = () => {
             consentPollingAttemptsRef.current = 0;
             consentPollingPatientIdRef.current = null;
           }
-          
+
           // Return immediately - no further processing
           return;
         }
-        
+
         // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Store full consent status for gate
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status (should be false here)
         setWorkflowConsentStatus({
@@ -1594,7 +1594,7 @@ const ProfessionalWorkflowPage = () => {
           consentMethod: consentResult.consentMethod || null,
           declineReasons: undefined // Only set if declined
         });
-        
+
         // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
         if (consentResult.hasValidConsent) {
           // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted (irreversible)
@@ -1604,7 +1604,7 @@ const ProfessionalWorkflowPage = () => {
           setConsentPending(false);
           setSmsError(null);
           console.log('[WORKFLOW] ✅ Consent granted! UI updated. Stopping polling permanently.');
-          
+
           // Stop polling immediately
           if (consentPollingRef.current) {
             clearInterval(consentPollingRef.current);
@@ -2729,7 +2729,7 @@ const ProfessionalWorkflowPage = () => {
     // ✅ WO-CONSENT-GATE-ALIGN-WORKFLOW-01: Use same source of truth as workflow
     // Check consent via server (same as workflow check)
     const consentCheck = await checkConsentViaServer(patientId);
-    
+
     if (!consentCheck.hasValidConsent) {
       // Show notification that consent is required
       setAnalysisError(
@@ -2802,7 +2802,7 @@ const ProfessionalWorkflowPage = () => {
           notes: item.notes,
           source: 'plan' as const,
         }));
-        
+
         console.info(
           '[WO-05-FIX][PROOF] Injecting todayFocus into SOAPContext',
           {
@@ -2944,7 +2944,7 @@ const ProfessionalWorkflowPage = () => {
       };
 
       setSoapGenerationEndTime(new Date());
-setLocalSoapNote(soapWithReviewFlags);
+      setLocalSoapNote(soapWithReviewFlags);
       setSoapStatus('draft');
       setActiveTab("soap");
 
@@ -3029,8 +3029,8 @@ setLocalSoapNote(soapWithReviewFlags);
   const calculateAndTrackValueMetrics = useCallback(async (finalizedAt: Date) => {
     try {
       // Calculate times (in minutes)
-      
-      
+
+
       const transcriptionTime =
         transcriptionStartTime && transcriptionEndTime
           ? (transcriptionEndTime.getTime() - transcriptionStartTime.getTime()) / 1000 / 60
@@ -3048,12 +3048,12 @@ setLocalSoapNote(soapWithReviewFlags);
 
       const manualEditingTime =
         rawManualEditingTime > 0 ? rawManualEditingTime : 0;
-        const metrics = {
-          transcriptionTime,
-          aiGenerationTime,
-          manualEditingTime,
-          featuresUsed,
-          quality: {
+      const metrics = {
+        transcriptionTime,
+        aiGenerationTime,
+        manualEditingTime,
+        featuresUsed,
+        quality: {
           soapSectionsCompleted,
           suggestionsOffered,
           suggestionsAccepted,
@@ -3200,9 +3200,17 @@ setLocalSoapNote(soapWithReviewFlags);
 
     // ✅ WORKFLOW OPTIMIZATION: Track workflow session end and show feedback
     try {
-      const sessionIdForMetrics = sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-      if (user?.uid && workflowRoute) {
-        const metrics = await trackWorkflowSessionEnd(sessionIdForMetrics, user.uid, patientIdFromUrl || demoPatient.id);
+      if (!sessionId || !user?.uid || !workflowRoute) {
+        console.warn(
+          '[WORKFLOW] Skipping workflow end tracking (missing sessionId or user)',
+          { sessionId, user: user?.uid, workflowRoute }
+        );
+      } else {
+        const metrics = await trackWorkflowSessionEnd(
+          sessionId,
+          user.uid,
+          patientIdFromUrl || demoPatient.id
+        );
         if (metrics) {
           console.log('[WORKFLOW] Workflow session metrics:', metrics);
           // Build WorkflowMetrics from session metrics
@@ -3462,7 +3470,7 @@ setLocalSoapNote(soapWithReviewFlags);
       jurisdiction,
       isFirstSession,
     });
-    
+
     console.log('[WORKFLOW] Consent resolution from domain (single source of truth)', {
       consentResolution,
       workflowConsentStatus,
@@ -3479,7 +3487,7 @@ setLocalSoapNote(soapWithReviewFlags);
       blockReason: consentResolution.blockReason,
       consentStatus: workflowConsentStatus
     });
-    
+
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Track analytics event
     if (patientIdFromUrl && user?.uid) {
       AnalyticsService.trackEvent('aidux_patient_blocked_due_to_consent_decline', {
@@ -3491,7 +3499,7 @@ setLocalSoapNote(soapWithReviewFlags);
         console.warn('[WORKFLOW] Error tracking declined consent analytics:', err);
       });
     }
-    
+
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Show declined consent modal
     // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Allow recording new consent if patient changes mind
     // If user wants to record new consent, show verbal consent modal
@@ -3509,10 +3517,10 @@ setLocalSoapNote(soapWithReviewFlags);
           onConsentGranted={async () => {
             console.log('[WORKFLOW] New consent granted after decline - triggering check');
             setShowVerbalConsentForDeclined(false);
-            
+
             // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Small delay to allow Firestore propagation
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             // Trigger immediate check to update workflowConsentStatus
             if (patientIdFromUrl) {
               const consentResult = await checkConsentViaServer(patientIdFromUrl);
@@ -3521,7 +3529,7 @@ setLocalSoapNote(soapWithReviewFlags);
                 isDeclined: consentResult.isDeclined,
                 status: consentResult.status
               });
-              
+
               if (consentResult.hasValidConsent === true) {
                 console.log('[WORKFLOW] ✅ New consent confirmed - hard block removed');
                 setWorkflowConsentStatus({
@@ -3549,7 +3557,7 @@ setLocalSoapNote(soapWithReviewFlags);
         />
       );
     }
-    
+
     return (
       <DeclinedConsentModal
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
@@ -3566,14 +3574,14 @@ setLocalSoapNote(soapWithReviewFlags);
   // ✅ WO-CONSENT-SINGLE-SOURCE-01: Gate se desmonta si dominio dice channel === 'none' o 'blocked'
   // NO hay estados duplicados, solo dominio decide
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: 'blocked' también desmonta el Gate (hard block se maneja arriba)
-  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete && 
-      consentResolution && consentResolution.channel !== 'none' && consentResolution.channel !== 'blocked') {
-    
+  if (patientIdFromUrl && user?.uid && currentPatient && consentCheckComplete &&
+    consentResolution && consentResolution.channel !== 'none' && consentResolution.channel !== 'blocked') {
+
     console.log('[WORKFLOW] Rendering ConsentGateScreen (domain says channel !== none)', {
       consentResolution,
       workflowConsentStatus
     });
-    
+
     return (
       <ConsentGateScreen
         patientId={patientIdFromUrl}
@@ -3586,20 +3594,20 @@ setLocalSoapNote(soapWithReviewFlags);
         onConsentDeclined={async () => {
           console.log('[WORKFLOW] Consent declined - triggering immediate check');
           if (!patientIdFromUrl || !user?.uid) return;
-          
+
           // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Small delay to allow Firestore propagation
           // Firestore writes are eventually consistent, so we wait a bit before checking
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           // Check immediately to update workflowConsentStatus
           const consentResult = await checkConsentViaServer(patientIdFromUrl);
-          
+
           console.log('[WORKFLOW] Immediate check result after decline:', {
             isDeclined: consentResult.isDeclined,
             status: consentResult.status,
             hasValidConsent: consentResult.hasValidConsent
           });
-          
+
           if (consentResult.isDeclined === true) {
             console.warn('[WORKFLOW] 🚫 Declined consent confirmed via immediate check');
             setWorkflowConsentStatus({
@@ -3609,7 +3617,7 @@ setLocalSoapNote(soapWithReviewFlags);
               consentMethod: consentResult.consentMethod || null,
               declineReasons: consentResult.declineReasons || undefined
             });
-            
+
             // Stop polling immediately
             if (consentPollingRef.current) {
               clearInterval(consentPollingRef.current);
@@ -3698,376 +3706,375 @@ setLocalSoapNote(soapWithReviewFlags);
         {/* WO-07 FIX: Layout condicional - Tabs para Initial, Vertical para Follow-up */}
         {visitType === 'follow-up' ? (
           <div className="space-y-6">
-          {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
-          <div className="bg-white border border-blue-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Patient Info */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Patient</p>
-                <p className="text-lg font-semibold text-slate-900 font-apple">
-                  {currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm text-slate-500 font-apple font-light">{currentPatient?.email || demoPatient.email}</p>
-                  {(() => {
-                    const dob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
-                    const age = dob ? calculateAge(dob) : null;
-                    return age !== null ? (
-                      <span className="text-sm text-slate-500 font-apple font-light">
-                        · {age} years
+            {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
+            <div className="bg-white border border-blue-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Patient Info */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Patient</p>
+                  <p className="text-lg font-semibold text-slate-900 font-apple">
+                    {currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-slate-500 font-apple font-light">{currentPatient?.email || demoPatient.email}</p>
+                    {(() => {
+                      const dob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
+                      const age = dob ? calculateAge(dob) : null;
+                      return age !== null ? (
+                        <span className="text-sm text-slate-500 font-apple font-light">
+                          · {age} years
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                  {/* Red Flags (Allergies/Contraindications) */}
+                  {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+                      {patientClinicalInfo.allergies && (
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-amber-800 font-apple">Allergies</p>
+                            <p className="text-xs text-amber-700 font-apple font-light mt-0.5">
+                              {patientClinicalInfo.allergies.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {patientClinicalInfo.contraindications && (
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-red-800 font-apple">Contraindications</p>
+                            <p className="text-xs text-red-700 font-apple font-light mt-0.5">
+                              {patientClinicalInfo.contraindications.slice(0, 2).join('; ')}
+                              {patientClinicalInfo.contraindications.length > 2 && ` (+${patientClinicalInfo.contraindications.length - 2} more)`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Consent Status */}
+                  {workflowConsentStatus?.hasValidConsent ? (
+                    <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-xs text-slate-600 font-apple font-light">
+                        Consent valid (ON)
                       </span>
-                    ) : null;
-                  })()}
-                </div>
-                {/* Red Flags (Allergies/Contraindications) */}
-                {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
-                  <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
-                    {patientClinicalInfo.allergies && (
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-amber-800 font-apple">Allergies</p>
-                          <p className="text-xs text-amber-700 font-apple font-light mt-0.5">
-                            {patientClinicalInfo.allergies.join(', ')}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {patientClinicalInfo.contraindications && (
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-red-800 font-apple">Contraindications</p>
-                          <p className="text-xs text-red-700 font-apple font-light mt-0.5">
-                            {patientClinicalInfo.contraindications.slice(0, 2).join('; ')}
-                            {patientClinicalInfo.contraindications.length > 2 && ` (+${patientClinicalInfo.contraindications.length - 2} more)`}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Consent Status */}
-                {workflowConsentStatus?.hasValidConsent ? (
-                  <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-slate-600 font-apple font-light">
-                      Consent valid (ON)
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-xs font-semibold text-red-800 font-apple">
-                            Consent Required
-                          </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-red-800 font-apple">
+                              Consent Required
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Last Session (READ-ONLY link) */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-slate-400" />
-                  <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light">Last Session</p>
+                  )}
                 </div>
-                {lastEncounter.loading ? (
-                  <p className="text-sm text-slate-500 font-apple font-light">Loading...</p>
-                ) : lastEncounter.error ? (
-                  <p className="text-sm text-red-600 font-apple font-light">Error loading session</p>
-                ) : lastEncounter.data ? (
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 font-apple">
-                      {formatLastSessionDate(lastEncounter.data) || 'Previous session'}
-                    </p>
-                    {lastEncounter.data.soap && (
-                      <button
-                        onClick={() => {
-                          // WO-06.4: Link to last SOAP (read-only view)
-                          const sessionId = lastEncounter.data?.sessionId || lastEncounter.data?.id;
-                          if (sessionId) {
-                            window.open(`/documents?session=${sessionId}`, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
-                      >
-                        View last SOAP note →
-                      </button>
-                    )}
-                  </div>
-                ) : isFirstSession === true ? (
-                  <p className="text-sm text-slate-700 font-apple font-light">First session</p>
-                ) : (
-                  <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
-                )}
-              </div>
 
-              {/* Visit Type Indicator */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-slate-900 font-apple">
-                    {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
-                  </span>
-                </div>
-                {previousTreatmentPlan && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-slate-600 font-apple font-light">Previous treatment plan loaded</span>
+                {/* Last Session (READ-ONLY link) */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light">Last Session</p>
                   </div>
-                )}
+                  {lastEncounter.loading ? (
+                    <p className="text-sm text-slate-500 font-apple font-light">Loading...</p>
+                  ) : lastEncounter.error ? (
+                    <p className="text-sm text-red-600 font-apple font-light">Error loading session</p>
+                  ) : lastEncounter.data ? (
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 font-apple">
+                        {formatLastSessionDate(lastEncounter.data) || 'Previous session'}
+                      </p>
+                      {lastEncounter.data.soap && (
+                        <button
+                          onClick={() => {
+                            // WO-06.4: Link to last SOAP (read-only view)
+                            const sessionId = lastEncounter.data?.sessionId || lastEncounter.data?.id;
+                            if (sessionId) {
+                              window.open(`/documents?session=${sessionId}`, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
+                        >
+                          View last SOAP note →
+                        </button>
+                      )}
+                    </div>
+                  ) : isFirstSession === true ? (
+                    <p className="text-sm text-slate-700 font-apple font-light">First session</p>
+                  ) : (
+                    <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
+                  )}
+                </div>
+
+                {/* Visit Type Indicator */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-slate-900 font-apple">
+                      {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
+                    </span>
+                  </div>
+                  {previousTreatmentPlan && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-xs text-slate-600 font-apple font-light">Previous treatment plan loaded</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Bloque 1: Today's treatment session (solo follow-up) */}
-          {visitType === 'follow-up' && todayFocus.length > 0 && (
+            {/* Bloque 1: Today's treatment session (solo follow-up) */}
+            {visitType === 'follow-up' && todayFocus.length > 0 && (
+              <div className="bg-white border border-blue-200 rounded-lg p-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🗓️</span>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                      Today's treatment session
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      Confirm or adjust what was planned previously.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Today's treatment confirmed</span>
+                  </div>
+                </div>
+                <SuggestedFocusEditor
+                  items={todayFocus}
+                  onChange={setTodayFocus}
+                  onFinishSession={undefined}
+                  hideHeader={true}
+                />
+              </div>
+            )}
+
+            {/* Bloque 2: Clinical notes / Follow-up clinical update */}
             <div className="bg-white border border-blue-200 rounded-lg p-6">
+              {/* WO-06.1: Micro-copy de continuidad (solo follow-up) */}
+              {visitType === 'follow-up' && (
+                <p className="text-xs text-slate-500 mb-3 font-apple font-light">
+                  Based on the initial assessment and previous sessions.
+                </p>
+              )}
               <div className="flex items-start gap-3 mb-4">
-                <span className="text-2xl">🗓️</span>
+                <span className="text-2xl">{visitType === 'follow-up' ? '📝' : '🎙️'}</span>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                    Today's treatment session
+                    {visitType === 'follow-up' ? 'Follow-up clinical update' : 'Clinical notes'}
                   </h2>
                   <p className="text-sm text-slate-600">
-                    Confirm or adjust what was planned previously.
+                    {visitType === 'follow-up'
+                      ? 'Update based on patient response, progress, setbacks, and modifications applied today.'
+                      : 'Record, type, or paste your clinical observations.'}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Today's treatment confirmed</span>
-                </div>
+                {transcript?.trim() && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>{visitType === 'follow-up' ? 'Clinical update captured' : 'Clinical notes captured'}</span>
+                  </div>
+                )}
               </div>
-              <SuggestedFocusEditor
-                items={todayFocus}
-                onChange={setTodayFocus}
-                onFinishSession={undefined}
-                hideHeader={true}
-              />
+              <Suspense fallback={<LoadingSpinner />}>
+                <AnalysisTab
+                  currentPatient={currentPatient}
+                  patientIdFromUrl={patientIdFromUrl}
+                  patientClinicalInfo={patientClinicalInfo}
+                  calculateAge={calculateAge}
+                  consentStatus={consentStatus}
+                  consentPending={consentPending}
+                  consentToken={consentToken}
+                  consentLink={consentLink}
+                  smsError={smsError}
+                  user={user}
+                  setConsentStatus={setConsentStatus}
+                  setPatientHasConsent={setPatientHasConsent}
+                  setConsentPending={setConsentPending}
+                  setSmsError={setSmsError}
+                  handleCopyConsentLink={handleCopyConsentLink}
+                  handleResendConsentSMS={handleResendConsentSMS}
+                  lastEncounter={lastEncounter}
+                  isFirstSession={isFirstSession}
+                  formatLastSessionDate={formatLastSessionDate}
+                  visitType={visitType}
+                  visitCount={visitCount}
+                  sessionTypeConfig={sessionTypeConfig}
+                  previousTreatmentPlan={previousTreatmentPlan}
+                  setIsInitialPlanModalOpen={setIsInitialPlanModalOpen}
+                  physioNotes={physioNotes}
+                  setPhysioNotes={setPhysioNotes}
+                  recordingTime={recordingTime}
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  transcript={transcript}
+                  setTranscript={setTranscript}
+                  transcriptError={transcriptError}
+                  transcriptMeta={transcriptMeta}
+                  languagePreference={languagePreference}
+                  setLanguagePreference={setLanguagePreference}
+                  mode={mode}
+                  setMode={setMode}
+                  isTranscribing={isTranscribing}
+                  isProcessing={isProcessing}
+                  audioStream={audioStream}
+                  handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                  attachments={attachments}
+                  isUploadingAttachment={isUploadingAttachment}
+                  attachmentError={attachmentError}
+                  removingAttachmentId={removingAttachmentId}
+                  handleAttachmentUpload={handleAttachmentUpload}
+                  handleAttachmentRemove={handleAttachmentRemove}
+                  niagaraResults={niagaraResults}
+                  interactiveResults={interactiveResults}
+                  selectedEntityIds={selectedEntityIds}
+                  setSelectedEntityIds={setSelectedEntityIds}
+                  continueToEvaluation={continueToEvaluation}
+                  analysisError={analysisError}
+                  successMessage={successMessage}
+                  setAnalysisError={setAnalysisError}
+                  setSuccessMessage={setSuccessMessage}
+                  onTodayFocusChange={setTodayFocus}
+                  onFinishSession={undefined}
+                  hideHeader={true}
+                />
+              </Suspense>
             </div>
-          )}
 
-          {/* Bloque 2: Clinical notes / Follow-up clinical update */}
-          <div className="bg-white border border-blue-200 rounded-lg p-6">
-            {/* WO-06.1: Micro-copy de continuidad (solo follow-up) */}
-            {visitType === 'follow-up' && (
-              <p className="text-xs text-slate-500 mb-3 font-apple font-light">
-                Based on the initial assessment and previous sessions.
-              </p>
+            <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">📝</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                    Documentation
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Review and finalize your SOAP note.
+                  </p>
+                </div>
+                {localSoapNote && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>SOAP note generated</span>
+                  </div>
+                )}
+              </div>
+              <Suspense fallback={<LoadingSpinner />}>
+                <SOAPTab
+                  localSoapNote={localSoapNote}
+                  soapStatus={soapStatus}
+                  visitType={visitType}
+                  isGeneratingSOAP={isGeneratingSOAP}
+                  patientId={patientId}
+                  sessionId={sessionId}
+                  handleGenerateSoap={handleGenerateSoap}
+                  handleSaveSOAP={handleSaveSOAP}
+                  handleRegenerateSOAP={handleRegenerateSOAP}
+                  handleFinalizeSOAP={handleFinalizeSOAP}
+                  handleUnfinalizeSOAP={handleUnfinalizeSOAP}
+                  setIsShareMenuOpen={setIsShareMenuOpen}
+                  workflowMetrics={workflowMetrics}
+                  workflowRoute={workflowRoute}
+                  soapTokenOptimization={soapTokenOptimization}
+                  niagaraResults={niagaraResults}
+                  transcript={transcript}
+                  physicalExamResults={physicalExamResults}
+                  treatmentReminder={treatmentReminder}
+                  analysisError={analysisError}
+                  successMessage={successMessage}
+                  setAnalysisError={setAnalysisError}
+                  setSuccessMessage={setSuccessMessage}
+                  setVisitType={setVisitType}
+                  // ✅ FOLLOW-UP WORKFLOW: Transcript input props for follow-up visits
+                  recordingTime={recordingTime}
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  setTranscript={setTranscript}
+                  transcriptError={transcriptError}
+                  transcriptMeta={transcriptMeta}
+                  languagePreference={languagePreference}
+                  setLanguagePreference={setLanguagePreference}
+                  mode={mode}
+                  setMode={setMode}
+                  isTranscribing={isTranscribing}
+                  isProcessing={isProcessing}
+                  audioStream={audioStream}
+                  handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                  attachments={attachments}
+                  isUploadingAttachment={isUploadingAttachment}
+                  attachmentError={attachmentError}
+                  removingAttachmentId={removingAttachmentId}
+                  handleAttachmentUpload={handleAttachmentUpload}
+                  handleAttachmentRemove={handleAttachmentRemove}
+                />
+              </Suspense>
+            </div>
+
+            {/* WO-07: Botón sticky ELIMINADO en follow-up - fuerza a llegar al final y rellenar datos mínimos */}
+            {visitType !== 'follow-up' && (
+              (() => {
+                const hasClinicalNotes = transcript?.trim().length > 0;
+                const analysisDone = niagaraResults !== null;
+                const soapGenerated = localSoapNote !== null;
+
+                let buttonAction: () => void;
+                let buttonLabel: string;
+                let buttonDisabled = false;
+
+                if (!hasClinicalNotes) {
+                  buttonAction = () => {
+                    // Focus en el área de transcript
+                    document.querySelector('textarea')?.focus();
+                  };
+                  buttonLabel = "Add clinical notes";
+                } else if (!analysisDone) {
+                  buttonAction = handleAnalyzeWithVertex;
+                  buttonLabel = "Analyze clinical notes";
+                  buttonDisabled = isProcessing;
+                } else if (!soapGenerated) {
+                  buttonAction = handleGenerateSoap;
+                  buttonLabel = "Generate SOAP note";
+                  buttonDisabled = isGeneratingSOAP;
+                } else {
+                  buttonAction = () => {
+                    // Scroll a SOAP section
+                    document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth' });
+                  };
+                  buttonLabel = "Review & export SOAP";
+                }
+
+                return (
+                  <div className="sticky bottom-0 bg-white border-t border-blue-200 p-4 mt-6 shadow-lg z-10">
+                    <button
+                      onClick={buttonAction}
+                      disabled={buttonDisabled}
+                      className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${buttonDisabled
+                          ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                    >
+                      {buttonDisabled ? 'Processing...' : buttonLabel}
+                    </button>
+                  </div>
+                );
+              })()
             )}
-            <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">{visitType === 'follow-up' ? '📝' : '🎙️'}</span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  {visitType === 'follow-up' ? 'Follow-up clinical update' : 'Clinical notes'}
-                </h2>
-                <p className="text-sm text-slate-600">
-                  {visitType === 'follow-up' 
-                    ? 'Update based on patient response, progress, setbacks, and modifications applied today.'
-                    : 'Record, type, or paste your clinical observations.'}
-                </p>
-              </div>
-              {transcript?.trim() && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>{visitType === 'follow-up' ? 'Clinical update captured' : 'Clinical notes captured'}</span>
-                </div>
-              )}
-            </div>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AnalysisTab
-              currentPatient={currentPatient}
-              patientIdFromUrl={patientIdFromUrl}
-              patientClinicalInfo={patientClinicalInfo}
-              calculateAge={calculateAge}
-              consentStatus={consentStatus}
-              consentPending={consentPending}
-              consentToken={consentToken}
-              consentLink={consentLink}
-              smsError={smsError}
-              user={user}
-              setConsentStatus={setConsentStatus}
-              setPatientHasConsent={setPatientHasConsent}
-              setConsentPending={setConsentPending}
-              setSmsError={setSmsError}
-              handleCopyConsentLink={handleCopyConsentLink}
-              handleResendConsentSMS={handleResendConsentSMS}
-              lastEncounter={lastEncounter}
-              isFirstSession={isFirstSession}
-              formatLastSessionDate={formatLastSessionDate}
-              visitType={visitType}
-              visitCount={visitCount}
-              sessionTypeConfig={sessionTypeConfig}
-              previousTreatmentPlan={previousTreatmentPlan}
-              setIsInitialPlanModalOpen={setIsInitialPlanModalOpen}
-              physioNotes={physioNotes}
-              setPhysioNotes={setPhysioNotes}
-              recordingTime={recordingTime}
-              isRecording={isRecording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              transcript={transcript}
-              setTranscript={setTranscript}
-              transcriptError={transcriptError}
-              transcriptMeta={transcriptMeta}
-              languagePreference={languagePreference}
-              setLanguagePreference={setLanguagePreference}
-              mode={mode}
-              setMode={setMode}
-              isTranscribing={isTranscribing}
-              isProcessing={isProcessing}
-              audioStream={audioStream}
-              handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-              attachments={attachments}
-              isUploadingAttachment={isUploadingAttachment}
-              attachmentError={attachmentError}
-              removingAttachmentId={removingAttachmentId}
-              handleAttachmentUpload={handleAttachmentUpload}
-              handleAttachmentRemove={handleAttachmentRemove}
-              niagaraResults={niagaraResults}
-              interactiveResults={interactiveResults}
-              selectedEntityIds={selectedEntityIds}
-              setSelectedEntityIds={setSelectedEntityIds}
-              continueToEvaluation={continueToEvaluation}
-              analysisError={analysisError}
-              successMessage={successMessage}
-              setAnalysisError={setAnalysisError}
-              setSuccessMessage={setSuccessMessage}
-              onTodayFocusChange={setTodayFocus}
-              onFinishSession={undefined}
-              hideHeader={true}
-              />
-            </Suspense>
-          </div>
-
-          <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
-            <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">📝</span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Documentation
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Review and finalize your SOAP note.
-                </p>
-              </div>
-              {localSoapNote && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>SOAP note generated</span>
-                </div>
-              )}
-            </div>
-            <Suspense fallback={<LoadingSpinner />}>
-              <SOAPTab
-              localSoapNote={localSoapNote}
-              soapStatus={soapStatus}
-              visitType={visitType}
-              isGeneratingSOAP={isGeneratingSOAP}
-              patientId={patientId}
-              sessionId={sessionId}
-              handleGenerateSoap={handleGenerateSoap}
-              handleSaveSOAP={handleSaveSOAP}
-              handleRegenerateSOAP={handleRegenerateSOAP}
-              handleFinalizeSOAP={handleFinalizeSOAP}
-              handleUnfinalizeSOAP={handleUnfinalizeSOAP}
-              setIsShareMenuOpen={setIsShareMenuOpen}
-              workflowMetrics={workflowMetrics}
-              workflowRoute={workflowRoute}
-              soapTokenOptimization={soapTokenOptimization}
-              niagaraResults={niagaraResults}
-              transcript={transcript}
-              physicalExamResults={physicalExamResults}
-              treatmentReminder={treatmentReminder}
-              analysisError={analysisError}
-              successMessage={successMessage}
-              setAnalysisError={setAnalysisError}
-              setSuccessMessage={setSuccessMessage}
-              setVisitType={setVisitType}
-              // ✅ FOLLOW-UP WORKFLOW: Transcript input props for follow-up visits
-              recordingTime={recordingTime}
-              isRecording={isRecording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              setTranscript={setTranscript}
-              transcriptError={transcriptError}
-              transcriptMeta={transcriptMeta}
-              languagePreference={languagePreference}
-              setLanguagePreference={setLanguagePreference}
-              mode={mode}
-              setMode={setMode}
-              isTranscribing={isTranscribing}
-              isProcessing={isProcessing}
-              audioStream={audioStream}
-              handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-              attachments={attachments}
-              isUploadingAttachment={isUploadingAttachment}
-              attachmentError={attachmentError}
-              removingAttachmentId={removingAttachmentId}
-              handleAttachmentUpload={handleAttachmentUpload}
-              handleAttachmentRemove={handleAttachmentRemove}
-              />
-            </Suspense>
-          </div>
-
-          {/* WO-07: Botón sticky ELIMINADO en follow-up - fuerza a llegar al final y rellenar datos mínimos */}
-          {visitType !== 'follow-up' && (
-            (() => {
-              const hasClinicalNotes = transcript?.trim().length > 0;
-              const analysisDone = niagaraResults !== null;
-              const soapGenerated = localSoapNote !== null;
-
-              let buttonAction: () => void;
-              let buttonLabel: string;
-              let buttonDisabled = false;
-
-              if (!hasClinicalNotes) {
-                buttonAction = () => {
-                  // Focus en el área de transcript
-                  document.querySelector('textarea')?.focus();
-                };
-                buttonLabel = "Add clinical notes";
-              } else if (!analysisDone) {
-                buttonAction = handleAnalyzeWithVertex;
-                buttonLabel = "Analyze clinical notes";
-                buttonDisabled = isProcessing;
-              } else if (!soapGenerated) {
-                buttonAction = handleGenerateSoap;
-                buttonLabel = "Generate SOAP note";
-                buttonDisabled = isGeneratingSOAP;
-              } else {
-                buttonAction = () => {
-                  // Scroll a SOAP section
-                  document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth' });
-                };
-                buttonLabel = "Review & export SOAP";
-              }
-
-              return (
-                <div className="sticky bottom-0 bg-white border-t border-blue-200 p-4 mt-6 shadow-lg z-10">
-                  <button
-                    onClick={buttonAction}
-                    disabled={buttonDisabled}
-                    className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
-                      buttonDisabled
-                        ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {buttonDisabled ? 'Processing...' : buttonLabel}
-                  </button>
-                </div>
-              );
-            })()
-          )}
           </div>
         ) : (
           <>
@@ -4083,7 +4090,7 @@ setLocalSoapNote(soapWithReviewFlags);
                   if (isFollowUpWorkflow && tab.id === 'analysis') {
                     return false;
                   }
-                  
+
                   if (workflowRoute) {
                     return !shouldSkipTab(workflowRoute, tab.id);
                   }
@@ -4093,11 +4100,10 @@ setLocalSoapNote(soapWithReviewFlags);
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as ActiveTab)}
-                    className={`rounded-full px-4 py-2 text-sm transition ${
-                      activeTab === tab.id
+                    className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
                         ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
                         : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-                    }`}
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -4245,8 +4251,8 @@ setLocalSoapNote(soapWithReviewFlags);
       {/* Feedback Widget - Always visible for beta testing */}
       <FeedbackWidget />
 
-        {/* Initial Plan Modal for existing patients without initial assessment */}
-        {currentPatient && (
+      {/* Initial Plan Modal for existing patients without initial assessment */}
+      {currentPatient && (
         <InitialPlanModal
           isOpen={isInitialPlanModalOpen}
           onClose={() => setIsInitialPlanModalOpen(false)}
@@ -4269,32 +4275,32 @@ setLocalSoapNote(soapWithReviewFlags);
         });
         return currentResolution.channel !== 'none';
       })() && (
-        <VerbalConsentModal
-          isOpen={showVerbalConsentModal}
-          onClose={() => {
-            // Don't allow closing if workflow is blocked
-            if (workflowBlocked) {
-              return; // Modal must stay open until consent is obtained
-            }
-            setShowVerbalConsentModal(false);
-          }}
-          patientId={patientIdFromUrl || demoPatient.id}
-          patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
-          physiotherapistId={user.uid}
-          physiotherapistName={clinicianDisplayName}
-          onConsentObtained={async (consentId) => {
-            console.log('[WORKFLOW] ✅ Verbal consent obtained:', consentId);
-            setWorkflowBlocked(false);
-            setShowVerbalConsentModal(false);
-            setConsentCheckComplete(false); // Reset to re-check
-            setSuccessMessage('Consent obtained. You can now proceed with the clinical workflow.');
-          }}
-          onConsentDenied={() => {
-            console.log('[WORKFLOW] ❌ Consent denied by patient');
-            setAnalysisError('Patient consent is required to proceed. Please obtain consent before continuing.');
-          }}
-        />
-      )}
+          <VerbalConsentModal
+            isOpen={showVerbalConsentModal}
+            onClose={() => {
+              // Don't allow closing if workflow is blocked
+              if (workflowBlocked) {
+                return; // Modal must stay open until consent is obtained
+              }
+              setShowVerbalConsentModal(false);
+            }}
+            patientId={patientIdFromUrl || demoPatient.id}
+            patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
+            physiotherapistId={user.uid}
+            physiotherapistName={clinicianDisplayName}
+            onConsentObtained={async (consentId) => {
+              console.log('[WORKFLOW] ✅ Verbal consent obtained:', consentId);
+              setWorkflowBlocked(false);
+              setShowVerbalConsentModal(false);
+              setConsentCheckComplete(false); // Reset to re-check
+              setSuccessMessage('Consent obtained. You can now proceed with the clinical workflow.');
+            }}
+            onConsentDenied={() => {
+              console.log('[WORKFLOW] ❌ Consent denied by patient');
+              setAnalysisError('Patient consent is required to proceed. Please obtain consent before continuing.');
+            }}
+          />
+        )}
 
       {/* ✅ WORKFLOW OPTIMIZATION: Workflow Feedback - Show after finalization */}
       {showWorkflowFeedback && workflowRoute && user?.uid && (
