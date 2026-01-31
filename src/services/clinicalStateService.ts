@@ -9,9 +9,10 @@
  * - Baseline always refers to the last documented session; no default or empty baseline for follow-up.
  */
 
-import { buildFollowUpClinicalBaseline, FollowUpNotAllowedError } from './followUp/FollowUpClinicalBaselineBuilder';
 import { checkConsentViaServer } from './consentServerService';
 import sessionService from './sessionService';
+import { PatientService } from './patientService';
+import { getBaselineById } from './clinicalBaselineService';
 
 // ---------------------------------------------------------------------------
 // Contract
@@ -79,36 +80,36 @@ export async function getClinicalState(
 }
 
 /**
- * Baseline: last documented encounter with complete SOAP only (Canonical Contract §3).
- * FollowUpClinicalBaselineBuilder enforces completeness; no baseline → hasBaseline false.
+ * Baseline: WO-IA-CLOSE-01 use persisted clinical_baselines only when patient.activeBaselineId exists.
+ * If no activeBaselineId → hasBaseline false (block follow-up). Old builder code kept but not used as primary.
  */
 async function getBaselineSafe(patientId: string): Promise<{
   hasBaseline: boolean;
   baselineSOAP?: ClinicalState['baselineSOAP'];
 }> {
-  try {
-    const baseline = await buildFollowUpClinicalBaseline(patientId);
-    const date = baseline.previousSOAP.date instanceof Date
-      ? baseline.previousSOAP.date
-      : new Date(baseline.previousSOAP.date);
-    return {
-      hasBaseline: true,
-      baselineSOAP: {
-        subjective: baseline.previousSOAP.subjective,
-        objective: baseline.previousSOAP.objective,
-        assessment: baseline.previousSOAP.assessment,
-        plan: baseline.previousSOAP.plan,
-        encounterId: baseline.previousSOAP.encounterId,
-        date,
-      },
-    };
-  } catch (e) {
-    const isNotAllowed =
-      e instanceof FollowUpNotAllowedError ||
-      (e && typeof e === 'object' && (e as Error).name === 'FollowUpNotAllowedError');
-    if (isNotAllowed) {
-      return { hasBaseline: false };
-    }
-    throw e;
+  const patient = await PatientService.getPatientById(patientId);
+  if (!patient?.activeBaselineId) {
+    return { hasBaseline: false };
   }
+  const baseline = await getBaselineById(patient.activeBaselineId);
+  if (!baseline) {
+    return { hasBaseline: false };
+  }
+  const snap = baseline.snapshot;
+  const date = baseline.createdAt && typeof (baseline.createdAt as { toDate?: () => Date }).toDate === 'function'
+    ? (baseline.createdAt as { toDate: () => Date }).toDate()
+    : baseline.createdAt instanceof Date
+      ? baseline.createdAt
+      : new Date();
+  return {
+    hasBaseline: true,
+    baselineSOAP: {
+      subjective: snap.keyFindings?.[0] ?? '',
+      objective: (snap.keyFindings?.slice(1) ?? []).join('\n') ?? '',
+      assessment: snap.primaryAssessment ?? '',
+      plan: snap.planSummary ?? '',
+      encounterId: baseline.sourceSoapId ?? baseline.id,
+      date,
+    },
+  };
 }

@@ -67,6 +67,7 @@ import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePat
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
 import { SessionStorage } from "../services/session-storage";
+import { createBaseline } from "../services/clinicalBaselineService";
 // FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
 // import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
@@ -203,7 +204,11 @@ const ProfessionalWorkflowPage = () => {
 
   // ✅ DIFFERENT APPROACH: Get URL params and clear localStorage IMMEDIATELY before any state
   const patientIdFromUrl = searchParams.get('patientId');
-  const sessionTypeFromUrl = searchParams.get('type') as 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
+  // WO-P0-GATE-01: single source of truth — normalize type vs sessionType (priority: type)
+  const rawType = searchParams.get('type') ?? searchParams.get('sessionType');
+  const sessionTypeFromUrl = (rawType === 'followup' || rawType === 'follow-up'
+    ? 'followup'
+    : (rawType || null)) as 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
 
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
 
@@ -287,6 +292,10 @@ const ProfessionalWorkflowPage = () => {
   // ✅ Day 3: Session Comparison Integration
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentSessionForComparison, setCurrentSessionForComparison] = useState<Session | null>(null);
+
+  // WO-IA-CLOSE-01: Initial assessment closed — button hide and session state
+  const [initialAssessmentClosedAt, setInitialAssessmentClosedAt] = useState<string | null>(null);
+  const [baselineIdFromSession, setBaselineIdFromSession] = useState<string | null>(null);
 
   // Value Metrics Tracking - Timestamps
   const [sessionStartTime] = useState<Date>(new Date());
@@ -1080,6 +1089,8 @@ const ProfessionalWorkflowPage = () => {
         const savedState = SessionStorage.getSession(patientId, userId, visitType || 'initial', currentSessionId);
 
         if (!savedState) {
+          setInitialAssessmentClosedAt(null);
+          setBaselineIdFromSession(null);
           return;
         }
 
@@ -1118,6 +1129,10 @@ const ProfessionalWorkflowPage = () => {
           setTranscript(savedState.transcript);
           console.log('[WORKFLOW] ✅ Restored transcript');
         }
+
+        // WO-IA-CLOSE-01: Restore initial assessment closed state (clear when not in savedState to avoid bleed between patients)
+        setInitialAssessmentClosedAt(savedState.initialAssessmentClosedAt != null && savedState.initialAssessmentClosedAt !== '' ? savedState.initialAssessmentClosedAt : null);
+        setBaselineIdFromSession(savedState.baselineId != null && savedState.baselineId !== '' ? savedState.baselineId : null);
       } catch (error) {
         console.error('[WORKFLOW] Error restoring workflow state:', error);
       }
@@ -1148,7 +1163,9 @@ const ProfessionalWorkflowPage = () => {
           soapStatus: soapStatus,
           visitType: visitType,
           timestamp: new Date().toISOString(),
-          version: '1.0'
+          version: '1.0',
+          ...(initialAssessmentClosedAt != null && { initialAssessmentClosedAt }),
+          ...(baselineIdFromSession != null && { baselineId: baselineIdFromSession }),
         };
 
         // Create a stable key to compare states
@@ -1158,7 +1175,9 @@ const ProfessionalWorkflowPage = () => {
           activeTab: activeTab,
           selectedEntityIdsCount: selectedEntityIds.length,
           soapStatus: soapStatus,
-          visitType: visitType
+          visitType: visitType,
+          initialAssessmentClosedAt,
+          baselineIdFromSession,
         });
 
         // Only save if state actually changed
@@ -1199,14 +1218,25 @@ const ProfessionalWorkflowPage = () => {
       // Final save on cleanup
       saveWorkflowState();
     };
-  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, visitType]);
+  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
   const lastSharedStateRef = useRef<string>(''); // Track last sharedState to prevent unnecessary updates
+  const prevPatientIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // ✅ PHASE 2: Skip if we're actively adding tests (to prevent overwriting)
+    // ✅ FIX: Detect patient change and clear tests
+    if (prevPatientIdRef.current && prevPatientIdRef.current !== patientId) {
+      console.log('[PHASE2] Patient changed, clearing evaluation tests');
+      setEvaluationTests([]);
+      lastSharedStateRef.current = '';
+      prevPatientIdRef.current = patientId;
+      return;
+    }
+    prevPatientIdRef.current = patientId;
+
     if (isAddingTestsRef.current) {
       console.log(`[PHASE2] useEffect - Skipping load (actively adding tests)`);
       return;
@@ -1284,7 +1314,7 @@ const ProfessionalWorkflowPage = () => {
         console.log(`[PHASE2] No selectedTests in sharedState, skipping load`);
       }
     }
-  }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion]); // ✅ FIX: Removed evaluationTests.length to prevent infinite loop
+  }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId]); // ✅ FIX: Added patientId to detect patient changes
 
   // Check if this is the first session and handle patient consent via SMS
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset consent state when patient changes
@@ -1471,8 +1501,13 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ P1.3: Stop polling immediately if consent already valid
     if (hasValidConsent) {
-      stopConsentPolling("already-valid");
-      return;
+      console.log('[WORKFLOW] ✅ Consent granted! UI updated. Stopping polling permanently.');
+      if (consentPollingRef.current) {
+        clearInterval(consentPollingRef.current);
+        consentPollingRef.current = null;
+        consentPollingAttemptsRef.current = 0;
+        consentPollingPatientIdRef.current = null;
+      } return;
     }
 
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: NO iniciar polling si consentimiento está declined
@@ -3190,6 +3225,68 @@ const ProfessionalWorkflowPage = () => {
     // This handler can be used to log or track the unfinalization event
   };
 
+  // WO-IA-CLOSE-01: Close Initial Assessment — persist baseline, update patient/session, redirect
+  const handleCloseInitialAssessment = useCallback(async () => {
+    if (soapStatus !== 'finalized') {
+      setAnalysisError('SOAP note must be finalized before closing the initial assessment.');
+      return;
+    }
+    if (initialAssessmentClosedAt != null && initialAssessmentClosedAt !== '') {
+      return;
+    }
+    if (!localSoapNote) {
+      setAnalysisError('No SOAP note to save as baseline.');
+      return;
+    }
+    const pid = patientIdFromUrl || demoPatient.id;
+    const uid = user?.uid;
+    if (!uid) {
+      setAnalysisError('User not authenticated.');
+      return;
+    }
+    setAnalysisError(null);
+    try {
+      const sourceSessionId = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+      const baselineId = await createBaseline({
+        patientId: pid,
+        sourceSoapId: sourceSessionId,
+        sourceSessionId,
+        snapshot: {
+          primaryAssessment: localSoapNote.assessment ?? '',
+          keyFindings: [localSoapNote.subjective ?? '', localSoapNote.objective ?? ''].filter(Boolean),
+          precautions: localSoapNote.precautions ? [localSoapNote.precautions] : undefined,
+          planSummary: localSoapNote.plan ?? '',
+        },
+        createdBy: uid,
+      });
+      await PatientService.updatePatient(pid, { activeBaselineId: baselineId });
+      const now = new Date().toISOString();
+      setInitialAssessmentClosedAt(now);
+      setBaselineIdFromSession(baselineId);
+      const userId = uid || TEMP_USER_ID;
+      const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+      SessionStorage.saveSession(pid, {
+        transcript: transcript || '',
+        niagaraResults: niagaraResults || null,
+        evaluationTests: evaluationTests || [],
+        activeTab,
+        selectedEntityIds: selectedEntityIds || [],
+        localSoapNote: localSoapNote || null,
+        soapStatus,
+        visitType: visitType || 'initial',
+        timestamp: now,
+        version: '1.0',
+        initialAssessmentClosedAt: now,
+        baselineId,
+      }, userId, visitType || 'initial', currentSessionId);
+      setSuccessMessage('Initial Assessment closed. Baseline saved.');
+      navigate('/command-center');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
+      setAnalysisError(message);
+    }
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, visitType]);
+
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
 
@@ -4022,6 +4119,7 @@ const ProfessionalWorkflowPage = () => {
                   removingAttachmentId={removingAttachmentId}
                   handleAttachmentUpload={handleAttachmentUpload}
                   handleAttachmentRemove={handleAttachmentRemove}
+                  onCloseInitialAssessment={visitType === 'initial' && soapStatus === 'finalized' && !initialAssessmentClosedAt ? handleCloseInitialAssessment : undefined}
                 />
               </Suspense>
             </div>
@@ -4065,8 +4163,8 @@ const ProfessionalWorkflowPage = () => {
                       onClick={buttonAction}
                       disabled={buttonDisabled}
                       className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${buttonDisabled
-                          ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-blue-300 text-blue-100 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
                       {buttonDisabled ? 'Processing...' : buttonLabel}
@@ -4101,8 +4199,8 @@ const ProfessionalWorkflowPage = () => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as ActiveTab)}
                     className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
-                        ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
-                        : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
+                      : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
                       }`}
                   >
                     {tab.label}

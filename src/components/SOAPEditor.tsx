@@ -535,27 +535,6 @@ ${'='.repeat(60)}`;
       {currentSOAP && (
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
           <div className="px-6 py-3">
-            {/* Overall progress */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-700">
-                SOAP Note Progress
-              </span>
-              <span className="text-sm text-gray-500">
-                {Math.round(completeness.overall * 100)}% complete
-              </span>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-              <div
-                className={
-                  completeness.overall >= 0.9 ? 'h-full bg-green-500 transition-all duration-500' :
-                  completeness.overall >= 0.5 ? 'h-full bg-yellow-500 transition-all duration-500' :
-                  'h-full bg-red-500 transition-all duration-500'
-                }
-                style={{ width: `${completeness.overall * 100}%` }}
-              />
-            </div>
             
             {/* Section indicators */}
             <div className="grid grid-cols-4 gap-2">

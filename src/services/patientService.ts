@@ -75,6 +75,9 @@ export interface Patient {
   lastVisit: string;
   createdAt: string;
   updatedAt: string;
+
+  // WO-IA-CLOSE-01: active baseline for follow-up (clinical_baselines id)
+  activeBaselineId?: string;
 }
 
 export interface CreatePatientData {
@@ -363,6 +366,7 @@ export class PatientService {
           lastVisit: data.lastVisit as string || '',
           createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
           updatedAt: data.updatedAt?.toDate()?.toISOString() || new Date().toISOString(),
+          ...(data.activeBaselineId != null && data.activeBaselineId !== '' && { activeBaselineId: data.activeBaselineId as string }),
         };
       }
 

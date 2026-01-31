@@ -10,21 +10,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-interface MockBaseline {
+const mockGetPatientById = vi.fn< (patientId: string) => Promise<{ id: string; activeBaselineId?: string } | null> >();
+const mockGetBaselineById = vi.fn< (baselineId: string) => Promise<{
+  id: string;
   patientId: string;
-  previousSOAP: {
-    subjective: string;
-    objective: string;
-    assessment: string;
-    plan: string;
-    encounterId: string;
-    date: Date;
-  };
-  derivedFocus: unknown[];
-  daysSinceLastVisit: number;
-}
-
-const mockBuildFollowUpClinicalBaseline = vi.fn< (patientId: string) => Promise<MockBaseline> >();
+  sourceSoapId: string;
+  snapshot: { primaryAssessment: string; keyFindings: string[]; planSummary: string };
+  createdAt: Date;
+} | null> >();
 const mockCheckConsentViaServer = vi.fn< (patientId: string) => Promise<{
   success: boolean;
   hasValidConsent: boolean;
@@ -32,14 +25,14 @@ const mockCheckConsentViaServer = vi.fn< (patientId: string) => Promise<{
 }> >();
 const mockIsFirstSession = vi.fn< (patientId: string, userId?: string) => Promise<boolean> >();
 
-vi.mock('../followUp/FollowUpClinicalBaselineBuilder', () => ({
-  buildFollowUpClinicalBaseline: (patientId: string) => mockBuildFollowUpClinicalBaseline(patientId),
-  FollowUpNotAllowedError: class FollowUpNotAllowedError extends Error {
-    constructor(m = 'Follow-up requires prior clinical history') {
-      super(m);
-      this.name = 'FollowUpNotAllowedError';
-    }
+vi.mock('../patientService', () => ({
+  PatientService: {
+    getPatientById: (patientId: string) => mockGetPatientById(patientId),
   },
+}));
+
+vi.mock('../clinicalBaselineService', () => ({
+  getBaselineById: (baselineId: string) => mockGetBaselineById(baselineId),
 }));
 
 vi.mock('../consentServerService', () => ({
@@ -58,27 +51,19 @@ import { getClinicalState } from '../clinicalStateService';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeBaseline(patientId: string): MockBaseline {
+function makePersistedBaseline(patientId: string) {
   const date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   return {
+    id: 'bl-1',
     patientId,
-    previousSOAP: {
-      subjective: 'S',
-      objective: 'O',
-      assessment: 'A',
-      plan: 'P',
-      date,
-      encounterId: 'enc-1',
+    sourceSoapId: 'enc-1',
+    snapshot: {
+      primaryAssessment: 'A',
+      keyFindings: ['S', 'O'],
+      planSummary: 'P',
     },
-    derivedFocus: [],
-    daysSinceLastVisit: 7,
+    createdAt: date,
   };
-}
-
-function makeNotAllowedError(): Error {
-  const e = new Error('Follow-up requires prior clinical history');
-  e.name = 'FollowUpNotAllowedError';
-  return e;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,9 +82,9 @@ describe('ClinicalStateService', () => {
   });
 
   describe('baseline existe → hasBaseline = true', () => {
-    it('returns hasBaseline true and baselineSOAP when buildFollowUpClinicalBaseline succeeds', async () => {
-      const baseline = makeBaseline('p-1');
-      mockBuildFollowUpClinicalBaseline.mockResolvedValue(baseline);
+    it('returns hasBaseline true and baselineSOAP when persisted baseline exists', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-1', activeBaselineId: 'bl-1' });
+      mockGetBaselineById.mockResolvedValue(makePersistedBaseline('p-1'));
 
       const state = await getClinicalState('p-1', 'user-1');
 
@@ -107,13 +92,14 @@ describe('ClinicalStateService', () => {
       expect(state.baselineSOAP).toBeDefined();
       expect(state.baselineSOAP?.encounterId).toBe('enc-1');
       expect(state.baselineSOAP?.plan).toBe('P');
+      expect(state.baselineSOAP?.assessment).toBe('A');
       expect(state.baselineSOAP?.date).toBeInstanceOf(Date);
     });
   });
 
   describe('no SOAP previo → hasBaseline = false', () => {
-    it('returns hasBaseline false when FollowUpNotAllowedError is thrown', async () => {
-      mockBuildFollowUpClinicalBaseline.mockRejectedValue(makeNotAllowedError());
+    it('returns hasBaseline false when patient has no activeBaselineId', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-none' });
 
       const state = await getClinicalState('p-none', 'user-1');
 
@@ -124,7 +110,7 @@ describe('ClinicalStateService', () => {
 
   describe('consentimiento válido rehidratado', () => {
     it('returns consent from checkConsentViaServer', async () => {
-      mockBuildFollowUpClinicalBaseline.mockRejectedValue(makeNotAllowedError());
+      mockGetPatientById.mockResolvedValue({ id: 'p-1' });
       mockCheckConsentViaServer.mockResolvedValue({
         success: true,
         hasValidConsent: true,
@@ -138,7 +124,7 @@ describe('ClinicalStateService', () => {
     });
 
     it('returns consent declined when checkConsentViaServer says so', async () => {
-      mockBuildFollowUpClinicalBaseline.mockRejectedValue(makeNotAllowedError());
+      mockGetPatientById.mockResolvedValue({ id: 'p-1' });
       mockCheckConsentViaServer.mockResolvedValue({
         success: true,
         hasValidConsent: false,
@@ -154,7 +140,7 @@ describe('ClinicalStateService', () => {
 
   describe('primer sesión correctamente detectada', () => {
     it('returns isFirstSession true when sessionService.isFirstSession returns true', async () => {
-      mockBuildFollowUpClinicalBaseline.mockRejectedValue(makeNotAllowedError());
+      mockGetPatientById.mockResolvedValue({ id: 'p-1' });
       mockIsFirstSession.mockResolvedValue(true);
 
       const state = await getClinicalState('p-1', 'user-1');
@@ -163,7 +149,7 @@ describe('ClinicalStateService', () => {
     });
 
     it('returns isFirstSession false when sessionService.isFirstSession returns false', async () => {
-      mockBuildFollowUpClinicalBaseline.mockRejectedValue(makeNotAllowedError());
+      mockGetPatientById.mockResolvedValue({ id: 'p-1' });
       mockIsFirstSession.mockResolvedValue(false);
 
       const state = await getClinicalState('p-1', 'user-1');

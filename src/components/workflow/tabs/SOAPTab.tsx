@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FileText, Loader2, ClipboardList } from 'lucide-react';
+import { FileText, Loader2, ClipboardList, CheckCircle } from 'lucide-react';
 import type { SOAPNote } from '../../../types/vertex-ai';
 import type { SOAPStatus } from '../../../components/SOAPEditor';
 import { SOAPEditor } from '../../../components/SOAPEditor';
@@ -30,11 +30,11 @@ export interface SOAPTabProps {
   soapStatus: SOAPStatus;
   visitType: VisitType;
   isGeneratingSOAP: boolean;
-  
+
   // Patient and session
   patientId: string;
   sessionId: string | null;
-  
+
   // Handlers
   handleGenerateSoap: () => Promise<void>;
   handleSaveSOAP: (soap: SOAPNote, status: SOAPStatus) => Promise<void>;
@@ -42,7 +42,8 @@ export interface SOAPTabProps {
   handleFinalizeSOAP: (soap: SOAPNote) => Promise<void>;
   handleUnfinalizeSOAP: (soap: SOAPNote) => Promise<void>;
   setIsShareMenuOpen: (open: boolean) => void;
-  
+  onCloseInitialAssessment?: () => void;
+
   // Workflow optimization
   workflowMetrics: WorkflowMetrics | null;
   workflowRoute: WorkflowRoute | null;
@@ -52,24 +53,24 @@ export interface SOAPTabProps {
     reduction: number;
     reductionPercent: number;
   };
-  
+
   // Context data
   niagaraResults: ClinicalAnalysis | null;
   transcript: string;
   physicalExamResults: any[];
-  
+
   // Treatment reminder
   treatmentReminder: string | null;
-  
+
   // Messages
   analysisError: string | null;
   successMessage: string | null;
   setAnalysisError: (error: string | null) => void;
   setSuccessMessage: (message: string | null) => void;
-  
+
   // Visit type setter
   setVisitType: (type: VisitType) => void;
-  
+
   // ✅ FOLLOW-UP WORKFLOW: Transcript input props for follow-up visits
   recordingTime?: string;
   isRecording?: boolean;
@@ -111,6 +112,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleFinalizeSOAP,
   handleUnfinalizeSOAP,
   setIsShareMenuOpen,
+  onCloseInitialAssessment,
   workflowMetrics,
   workflowRoute,
   soapTokenOptimization,
@@ -176,9 +178,9 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
       )}
 
       {/* WO-07: Visit Type Selector ELIMINADO - ya está decidido en Patient context */}
-      
+
       {/* WO-07: Treatment Plan Reminder ELIMINADO - duplicado, info ya está en Today's treatment session */}
-      
+
       {/* WO-06.3: Eliminado bloque "Follow-up Visit Documentation" duplicado.
           En follow-up, el input único está en "Follow-up clinical update" (AnalysisTab).
           Este bloque (SOAPTab) solo muestra preview de SOAP generado, NO acepta input. */}
@@ -204,8 +206,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             <button
               onClick={handleGenerateSoap}
               disabled={
-                !niagaraResults || 
-                (visitType !== 'follow-up' && physicalExamResults.length === 0) || 
+                !niagaraResults ||
+                (visitType !== 'follow-up' && physicalExamResults.length === 0) ||
                 isGeneratingSOAP
               }
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -242,32 +244,53 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           </div>
         </div>
       ) : (
-        <SOAPEditor
-          soap={localSoapNote}
-          status={soapStatus}
-          visitType={visitType}
-          isGenerating={isGeneratingSOAP}
-          patientId={patientId}
-          sessionId={sessionId}
-          onSave={handleSaveSOAP}
-          onRegenerate={handleRegenerateSOAP}
-          onFinalize={handleFinalizeSOAP}
-          onUnfinalize={handleUnfinalizeSOAP}
-          onPreview={(soap) => {
-            console.log('[Workflow] Clinical note preview requested', soap);
-          }}
-          onShare={() => {
-            setIsShareMenuOpen(true);
-          }}
-          // ✅ WORKFLOW OPTIMIZATION: Pass optimization props
-          isOptimized={workflowRoute?.analysisLevel === 'optimized'}
-          tokenOptimization={soapTokenOptimization}
-        />
+        <>
+          <SOAPEditor
+            soap={localSoapNote}
+            status={soapStatus}
+            visitType={visitType}
+            isGenerating={isGeneratingSOAP}
+            patientId={patientId}
+            sessionId={sessionId}
+            onSave={handleSaveSOAP}
+            onRegenerate={handleRegenerateSOAP}
+            onFinalize={handleFinalizeSOAP}
+            onUnfinalize={handleUnfinalizeSOAP}
+            onPreview={(soap) => {
+              console.log('[Workflow] Clinical note preview requested', soap);
+            }}
+            onShare={() => {
+              setIsShareMenuOpen(true);
+            }}
+            // ✅ WORKFLOW OPTIMIZATION: Pass optimization props
+            isOptimized={workflowRoute?.analysisLevel === 'optimized'}
+            tokenOptimization={soapTokenOptimization}
+          />
+
+          {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}
+          {visitType === 'initial' && soapStatus === 'finalized' && onCloseInitialAssessment && (
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  Initial Assessment Complete
+                </h3>
+                <p className="text-sm text-slate-600 mb-6">
+                  SOAP note finalized. Ready to close this assessment.
+                </p>
+                <button
+                  onClick={onCloseInitialAssessment}
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition shadow-sm"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Close Initial Assessment
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
 
 export default SOAPTab;
-
-

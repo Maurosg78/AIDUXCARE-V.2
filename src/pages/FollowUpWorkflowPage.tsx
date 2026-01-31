@@ -24,7 +24,6 @@ import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProf
 import { generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
 import { parsePlanToFocusItems } from "../utils/parsePlanToFocus";
 import { getClinicalState, type ClinicalState } from "../services/clinicalStateService";
-import { buildFollowUpClinicalBaseline } from "../services/followUp/FollowUpClinicalBaselineBuilder";
 import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
 import { resolveConsentChannel } from "../domain/consent/resolveConsentChannel";
 
@@ -296,7 +295,22 @@ const FollowUpWorkflowPage = () => {
     setIsGeneratingSOAP(true);
 
     try {
-      const baseline = await buildFollowUpClinicalBaseline(patientId);
+      // WO-IA-CLOSE-01: use persisted baseline from clinicalState (no buildFollowUpClinicalBaseline as primary)
+      if (!clinicalState?.baselineSOAP) {
+        setSoapError('Follow-up requires prior clinical baseline.');
+        setIsGeneratingSOAP(false);
+        return;
+      }
+      const baseline = {
+        previousSOAP: {
+          subjective: clinicalState.baselineSOAP.subjective,
+          objective: clinicalState.baselineSOAP.objective,
+          assessment: clinicalState.baselineSOAP.assessment,
+          plan: clinicalState.baselineSOAP.plan,
+          encounterId: clinicalState.baselineSOAP.encounterId,
+          date: clinicalState.baselineSOAP.date,
+        },
+      };
       const fullPrompt = buildFollowUpPromptV3({
         baseline,
         clinicalUpdate: followUpClinicalUpdate,
@@ -546,18 +560,13 @@ const FollowUpWorkflowPage = () => {
             </div>
           </div>
 
-          {/* WO-FOLLOWUP-UI-GATE-002: No baseline → block with message; no record/transcript/SOAP */}
+          {/* WO-IA-CLOSE-01: No baseline (no activeBaselineId) → block with message */}
           {followUpBlockedReason === 'no-baseline' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
               <h2 className="text-lg font-semibold text-amber-900 mb-2">Follow-up no disponible</h2>
-              <p className="text-slate-700 font-apple font-light max-w-xl mx-auto mb-4">
-                Para continuar, el paciente debe tener una sesión previa con documentación SOAP completa.
+              <p className="text-slate-700 font-apple font-light max-w-xl mx-auto">
+                Initial assessment required before follow-up.
               </p>
-              <p className="text-sm font-semibold text-slate-700 mb-2">Opciones:</p>
-              <ul className="text-sm text-slate-600 font-apple font-light list-disc list-inside max-w-md mx-auto text-left space-y-1">
-                <li>Completar una <em>Initial Assessment</em></li>
-                <li>Finalizar la documentación pendiente de la sesión anterior</li>
-              </ul>
             </div>
           )}
 
