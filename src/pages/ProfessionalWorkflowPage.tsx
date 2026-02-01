@@ -3712,6 +3712,24 @@ const ProfessionalWorkflowPage = () => {
             console.error('[Workflow] Failed to create follow-up encounter (non-blocking):', encErr);
           }
         }
+
+        // WO-INITIAL-CREATES-ENCOUNTER: create exactly 1 encounter on initial assessment completion (Session 1)
+        if (visitType === 'initial' && user?.uid) {
+          try {
+            const existing = await encountersRepo.getEncountersByPatient(patientId, 1);
+            if (existing.length === 0) {
+              const encounterId = await encountersRepo.createEncounter({
+                patientId,
+                authorUid: user.uid,
+                encounterDate: new Date(),
+              });
+              await encountersRepo.updateEncounter(encounterId, { status: 'completed' });
+              console.log('[Workflow] ✅ Initial assessment encounter created and completed:', encounterId);
+            }
+          } catch (encErr) {
+            console.error('[Workflow] Failed to create initial encounter (non-blocking):', encErr);
+          }
+        }
       } else {
         throw new Error(result.error || 'Failed to save after retries');
       }
