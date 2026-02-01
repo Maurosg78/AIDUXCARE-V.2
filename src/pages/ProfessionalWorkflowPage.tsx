@@ -4303,7 +4303,7 @@ const ProfessionalWorkflowPage = () => {
                         )}
                       </div>
                     ) : isFirstSession === true ? (
-                      <p className="text-sm text-slate-700 font-apple font-light">First session</p>
+                      <p className="text-sm text-slate-700 font-apple font-light">Session 1</p>
                     ) : (
                       <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
                     )}
@@ -4320,9 +4320,7 @@ const ProfessionalWorkflowPage = () => {
                         </span>
                       </div>
                       <p className="text-sm text-slate-600 font-apple font-light">
-                        {visitType === 'initial'
-                          ? 'First session'
-                          : (['Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth'][(visitCount.data ?? 1) - 1] ?? `Session ${(visitCount.data ?? 0) + 1}`) + ' session'}
+                        Session {(visitCount.data ?? 0) + 1}
                       </p>
                     </div>
                     {previousTreatmentPlan && (

@@ -3,7 +3,8 @@
  * 
  * Core business logic for comparing patient sessions to track progress,
  * detect regressions, and provide clinical insights.
- * 
+ * WO-SESSION-COMPARISON-HARDENING: Encounter is the only source of truth for sessions.
+ *
  * Sprint 1 - Day 1: Service Layer
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
@@ -12,6 +13,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../lib/firebase';
 import type { EvaluationTestEntry } from '../core/soap/PhysicalExamResultBuilder';
 import type { SOAPNote } from '../types/vertex-ai';
+import { encountersRepo, type Encounter } from '../repositories/encountersRepo';
 
 // ============================================================================
 // INTERFACES
@@ -149,10 +151,24 @@ export interface ComparisonDisplayData {
   overallProgress: 'improved' | 'stable' | 'regressed' | 'no_data';
   alerts: RegressionAlert[];
   summary: string;
+  /** WO-SESSION-COMPARISON-HARDENING: explicit reason when no comparison */
+  reason?: 'no_previous_session' | 'previous_incomplete';
+  currentSessionNumber?: number;
+  previousSessionNumber?: number;
 }
 
 // T6: Export alias for backward compatibility
 export type SessionComparisonView = ComparisonDisplayData;
+
+/** WO-SESSION-COMPARISON-HARDENING: result of encounter-based comparison state */
+export interface EncountersComparisonState {
+  isFirstSession: boolean;
+  reason?: 'no_previous_session' | 'previous_incomplete';
+  previousSession?: Session;
+  currentSession?: Session;
+  currentSessionNumber?: number;
+  previousSessionNumber?: number;
+}
 
 // ============================================================================
 // SERVICE CLASS
@@ -164,6 +180,95 @@ export type SessionComparisonView = ComparisonDisplayData;
 export class SessionComparisonService {
   private readonly COLLECTION_NAME = 'sessions';
   private readonly REGRESSION_THRESHOLD = 0.20; // 20% threshold for regression alerts
+
+  /**
+   * WO-SESSION-COMPARISON-HARDENING: Convert Encounter to Session for comparison pipeline.
+   * Encounter is source of truth; Session type is used for existing compareSessions/formatComparisonForUI.
+   */
+  private encounterToSession(enc: Encounter): Session {
+    const date = enc.encounterDate instanceof Timestamp
+      ? enc.encounterDate.toDate()
+      : (enc.encounterDate as unknown as { toDate?: () => Date }).toDate?.() ?? new Date(enc.encounterDate as unknown as number);
+    return {
+      id: enc.id,
+      userId: enc.authorUid,
+      patientId: enc.patientId,
+      patientName: '',
+      transcript: '',
+      soapNote: enc.soap ? {
+        subjective: enc.soap.subjective ?? '',
+        objective: enc.soap.objective ?? '',
+        assessment: enc.soap.assessment ?? '',
+        plan: enc.soap.plan ?? '',
+      } : null,
+      physicalTests: [],
+      timestamp: date,
+      status: enc.status,
+    };
+  }
+
+  /**
+   * WO-SESSION-COMPARISON-HARDENING: Get comparison state from encounters (single source of truth).
+   * Orders by encounterDate ascending; only compares when ≥2 encounters, both completed|signed.
+   */
+  async getEncountersComparisonState(patientId: string): Promise<EncountersComparisonState> {
+    try {
+      const encounters = await encountersRepo.getEncountersByPatient(patientId, 100);
+      const completed = encounters.filter(
+        (e) => e.status === 'completed' || e.status === 'signed'
+      );
+      const byDateAsc = [...completed].sort((a, b) => {
+        const ta = a.encounterDate instanceof Timestamp ? a.encounterDate.toMillis() : (a.encounterDate as unknown as { toMillis?: () => number }).toMillis?.() ?? new Date(a.encounterDate as unknown as number).getTime();
+        const tb = b.encounterDate instanceof Timestamp ? b.encounterDate.toMillis() : (b.encounterDate as unknown as { toMillis?: () => number }).toMillis?.() ?? new Date(b.encounterDate as unknown as number).getTime();
+        return ta - tb;
+      });
+
+      if (byDateAsc.length === 0) {
+        return { isFirstSession: true, reason: 'no_previous_session' };
+      }
+      if (byDateAsc.length === 1) {
+        return {
+          isFirstSession: true,
+          reason: 'no_previous_session',
+          currentSession: this.encounterToSession(byDateAsc[0]),
+          currentSessionNumber: 1,
+        };
+      }
+
+      const previousEnc = byDateAsc[byDateAsc.length - 2];
+      const currentEnc = byDateAsc[byDateAsc.length - 1];
+      const prevValid = previousEnc.status === 'completed' || previousEnc.status === 'signed';
+      const currValid = currentEnc.status === 'completed' || currentEnc.status === 'signed';
+
+      if (!prevValid) {
+        return {
+          isFirstSession: true,
+          reason: 'previous_incomplete',
+          currentSession: this.encounterToSession(currentEnc),
+          currentSessionNumber: byDateAsc.length,
+        };
+      }
+      if (!currValid) {
+        return {
+          isFirstSession: true,
+          reason: 'previous_incomplete',
+          currentSession: this.encounterToSession(currentEnc),
+          currentSessionNumber: byDateAsc.length,
+        };
+      }
+
+      return {
+        isFirstSession: false,
+        previousSession: this.encounterToSession(previousEnc),
+        currentSession: this.encounterToSession(currentEnc),
+        currentSessionNumber: byDateAsc.length,
+        previousSessionNumber: byDateAsc.length - 1,
+      };
+    } catch (err) {
+      console.error('[SessionComparison] getEncountersComparisonState failed:', err);
+      return { isFirstSession: true, reason: 'no_previous_session' };
+    }
+  }
 
   /**
    * Get the most recent previous session for a patient
@@ -552,19 +657,23 @@ export class SessionComparisonService {
 
   /**
    * Format comparison data for UI display
-   * 
+   * WO-SESSION-COMPARISON-HARDENING: optional reason when isFirstSession for explicit UI.
+   *
    * @param comparison - Comparison result
    * @param isFirstSession - Whether this is the first session
+   * @param reason - Explicit reason when no comparison (no_previous_session | previous_incomplete)
    * @returns Formatted data ready for React component
    */
   formatComparisonForUI(
     comparison: SessionComparison | null,
-    isFirstSession: boolean
+    isFirstSession: boolean,
+    reason?: 'no_previous_session' | 'previous_incomplete'
   ): ComparisonDisplayData {
     if (!comparison || isFirstSession) {
       return {
         hasComparison: false,
         isFirstSession: true,
+        reason: reason ?? 'no_previous_session',
         previousSessionDate: null,
         currentSessionDate: new Date().toLocaleDateString('en-CA'),
         daysBetween: null,
@@ -580,7 +689,7 @@ export class SessionComparisonService {
         },
         overallProgress: 'no_data',
         alerts: [],
-        summary: 'First session - no comparison available',
+        summary: reason === 'previous_incomplete' ? 'No previous session to compare' : 'First clinical session',
       };
     }
 

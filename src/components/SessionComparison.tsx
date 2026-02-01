@@ -16,7 +16,6 @@ import type { ComparisonDisplayData, Session } from '../services/sessionComparis
 export type SessionComparisonView = ComparisonDisplayData;
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { ErrorMessage } from './ui/ErrorMessage';
-import sessionService from '../services/sessionService';
 
 // ============================================================================
 // INTERFACES
@@ -70,7 +69,7 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
   const errorCountRef = React.useRef(0);
   const MAX_ERROR_COUNT = 3; // Prevent infinite retries
 
-  // Fetch comparison data
+  // WO-SESSION-COMPARISON-HARDENING: fetch comparison state from encounters (single source of truth)
   const fetchComparison = useCallback(async () => {
     if (!patientId) {
       setState({
@@ -82,13 +81,11 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
       return;
     }
 
-    // Prevent infinite loops: if we've already attempted and hit max errors, stop
     if (fetchAttemptedRef.current && errorCountRef.current >= MAX_ERROR_COUNT) {
-      console.warn('[SessionComparisonView] Max error count reached, stopping fetch attempts');
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Unable to load comparison. Please check Firestore index configuration.',
+        error: 'Unable to load comparison.',
         isFirstSession: false,
       }));
       return;
@@ -98,23 +95,11 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Get previous session
-      console.log('[SessionComparisonView] Getting previous session for patient:', patientId);
-      const previousSession = await service.getPreviousSession(
-        patientId,
-        currentSessionId || '',
-        undefined // userId - will be filtered by patientId only
-      );
-
-      console.log('[SessionComparisonView] Previous session found:', previousSession ? previousSession.id : 'none');
-
-      // Reset error count on success
+      const compState = await service.getEncountersComparisonState(patientId);
       errorCountRef.current = 0;
 
-      if (!previousSession) {
-        // First session - no comparison available
-        console.log('[SessionComparisonView] No previous session found - this is the first session');
-        const firstSessionData = service.formatComparisonForUI(null, true);
+      if (compState.isFirstSession) {
+        const firstSessionData = service.formatComparisonForUI(null, true, compState.reason);
         setState({
           comparison: firstSessionData,
           isLoading: false,
@@ -124,35 +109,11 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
         return;
       }
 
-      // Get current session
-      let currentSession: Session | null = null;
-
-      if (propCurrentSession) {
-        // Use provided current session
-        currentSession = propCurrentSession;
-      } else {
-        // No current session provided - show first session message
-        const firstSessionData = service.formatComparisonForUI(null, true);
-        setState({
-          comparison: firstSessionData,
-          isLoading: false,
-          error: null,
-          isFirstSession: true,
-        });
-        return;
-      }
-
-      // If we have previous session but no current session SOAP, still show comparison
-      // (component will handle missing SOAP gracefully)
-      if (!currentSession.soapNote && previousSession) {
-        // Still compare but with limited data
-        const comparison = service.compareSessions(previousSession, currentSession);
+      if (compState.previousSession && compState.currentSession) {
+        const comparison = service.compareSessions(compState.previousSession, compState.currentSession);
         const uiData = service.formatComparisonForUI(comparison, false);
-        
-        // Callback completely disabled to prevent errors from cached old code
-        // Old callbacks with AnalyticsService will be ignored
-        // No callback execution to prevent any errors
-
+        uiData.currentSessionNumber = compState.currentSessionNumber;
+        uiData.previousSessionNumber = compState.previousSessionNumber;
         setState({
           comparison: uiData,
           isLoading: false,
@@ -162,47 +123,20 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
         return;
       }
 
-      // Compare sessions (both have data)
-      console.log('[SessionComparisonView] Comparing sessions:', {
-        previous: previousSession.id,
-        current: currentSession.id,
-        hasSOAP: !!currentSession.soapNote
-      });
-      const comparison = service.compareSessions(previousSession, currentSession);
-      const uiData = service.formatComparisonForUI(comparison, false);
-
-      console.log('[SessionComparisonView] Comparison result:', {
-        hasComparison: uiData.hasComparison,
-        daysBetween: uiData.daysBetween,
-        overallProgress: comparison.deltas.overallProgress
-      });
-
-      // Callback completely disabled to prevent errors from cached old code
-      // Old callbacks with AnalyticsService will be ignored
-      // No callback execution to prevent any errors
-
+      const firstSessionData = service.formatComparisonForUI(null, true, 'no_previous_session');
       setState({
-        comparison: uiData,
+        comparison: firstSessionData,
         isLoading: false,
         error: null,
-        isFirstSession: false,
+        isFirstSession: true,
       });
-
     } catch (error) {
-      // Increment error count to prevent infinite loops
       errorCountRef.current += 1;
-      
       const errorMessage = error instanceof Error ? error.message : 'Failed to load session comparison';
-      const isIndexError = errorMessage.includes('index') || errorMessage.includes('Index');
-      
-      // Only log error once to avoid console spam
       if (errorCountRef.current === 1) {
         console.error('[SessionComparisonView] Error fetching comparison:', error);
       }
-      
-      // Show error on first occurrence, then treat as first session on subsequent errors
       if (errorCountRef.current === 1) {
-        // Show error state on first error
         setState({
           comparison: null,
           isLoading: false,
@@ -211,29 +145,15 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
         });
         return;
       }
-      
-      // On subsequent errors, treat as first session to prevent infinite loops
-      if (errorCountRef.current > 1) {
-        console.warn('[SessionComparisonView] Error detected, treating as first session to prevent loops');
-        const firstSessionData = service.formatComparisonForUI(null, true);
-        setState({
-          comparison: firstSessionData,
-          isLoading: false,
-          error: null, // Don't show error to user, just treat as first session
-          isFirstSession: true,
-        });
-        return;
-      }
-      
-      // This code should never be reached due to the check above
+      const firstSessionData = service.formatComparisonForUI(null, true, 'no_previous_session');
       setState({
-        comparison: null,
+        comparison: firstSessionData,
         isLoading: false,
-        error: null, // Don't show error
-        isFirstSession: true, // Always treat as first session on error
+        error: null,
+        isFirstSession: true,
       });
     }
-  }, [patientId, currentSessionId, propCurrentSession, service]);
+  }, [patientId, service]);
   // Note: onComparisonLoad removed from dependencies to prevent infinite loops
 
   // Load comparison on mount and when dependencies change
@@ -304,8 +224,13 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
     );
   }
 
-  // First session state
+  // WO-SESSION-COMPARISON-HARDENING: first session — explicit message, no comparison blocks
   if (state.isFirstSession || (state.comparison && state.comparison.isFirstSession)) {
+    const reason = state.comparison?.reason ?? 'no_previous_session';
+    const title = reason === 'previous_incomplete' ? 'No previous session to compare' : 'First clinical session';
+    const message = reason === 'previous_incomplete'
+      ? 'Previous session is incomplete. Comparison is not available.'
+      : 'No comparison available. This is the patient\'s first clinical session.';
     return (
       <div className={`session-comparison ${className}`}>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -315,10 +240,8 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">First Session</h3>
-            <p className="text-sm text-gray-600">
-              No comparison available. This is the patient's first session.
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+            <p className="text-sm text-gray-600">{message}</p>
           </div>
         </div>
       </div>
@@ -344,12 +267,16 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
   return (
     <div className={`session-comparison ${className}`}>
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        {/* Header */}
+        {/* WO-SESSION-COMPARISON-HARDENING: Compared with previous session; Session N vs N-1 */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Session Comparison</h3>
-          {comparison.daysBetween !== null && (
+          <h3 className="text-lg font-semibold text-gray-900">
+            {comparison.currentSessionNumber != null && comparison.previousSessionNumber != null
+              ? `Session ${comparison.currentSessionNumber} vs Session ${comparison.previousSessionNumber}`
+              : 'Session Comparison'}
+          </h3>
+          {comparison.daysBetween != null && (
             <span className="text-sm text-gray-500">
-              {comparison.daysBetween} day{comparison.daysBetween !== 1 ? 's' : ''} between sessions
+              Compared with previous session · {comparison.daysBetween} day{comparison.daysBetween !== 1 ? 's' : ''} between
             </span>
           )}
         </div>
