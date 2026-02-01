@@ -57,13 +57,13 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
         try {
           const { PersistenceService } = await import('@/services/PersistenceService');
           const notes = await PersistenceService.getNotesByPatient(patientId);
-          
+
           notes.forEach((note) => {
             const soapData = (note.soapData || {}) as { subjective?: string; objective?: string; assessment?: string; plan?: string };
-            
+
             visits.push({
               id: note.id,
-              type: 'initial', // Consultations are typically initial evaluations
+              type: (note as { visitType?: 'initial' | 'follow-up' }).visitType ?? 'initial',
               date: new Date(note.createdAt || Date.now()),
               status: 'completed', // Consultations are saved as completed
               soapNote: { status: 'finalized' }, // Saved notes treated as finalized
@@ -81,8 +81,8 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           });
         } catch (error: any) {
           // WO-FS-DATA-03: Handle permission-denied as "no data yet"
-          const isPermissionDenied = error?.code === 'permission-denied' || 
-                                     error?.message?.includes('permission-denied');
+          const isPermissionDenied = error?.code === 'permission-denied' ||
+            error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
             console.error('[usePatientVisits] Error fetching consultations:', error);
           }
@@ -97,13 +97,13 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             where('authorUid', '==', user.uid),
             orderBy('encounterDate', 'desc')
           );
-          
+
           const encountersSnapshot = await getDocs(encountersQuery);
           encountersSnapshot.forEach((doc) => {
             const data = doc.data();
             // Single source of truth: session really saved = completed/signed => finalized (avoid "Complete Pending Follow-up" when already closed)
             const soapNoteStatus = (data.soapNote as any)?.status ?? (data.status === 'signed' || data.status === 'completed' ? 'finalized' : 'draft');
-            
+
             visits.push({
               id: doc.id,
               type: 'follow-up', // Encounters are typically follow-ups
@@ -118,8 +118,8 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             });
           });
         } catch (error: any) {
-          const isPermissionDenied = error?.code === 'permission-denied' || 
-                                     error?.message?.includes('permission-denied');
+          const isPermissionDenied = error?.code === 'permission-denied' ||
+            error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
             console.error('[usePatientVisits] Error fetching encounters:', error);
           }
@@ -143,7 +143,7 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             const soapNoteStatus = (data.soapNote as any)?.status ?? (sessionStatus === 'signed' || sessionStatus === 'completed' ? 'finalized' : 'draft');
             const sessionType = data.sessionType || 'initial';
             const date = data.timestamp?.toDate?.() || data.createdAt?.toDate?.() || new Date();
-            
+
             visits.push({
               id: docSnap.id,
               type: sessionType === 'followup' ? 'follow-up' : 'initial',
@@ -152,11 +152,11 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
               soapNote: { status: soapNoteStatus === 'finalized' ? 'finalized' : 'draft' },
               soap: typeof data.soapNote === 'object' && data.soapNote && !Array.isArray(data.soapNote)
                 ? {
-                    subjective: (data.soapNote as any).subjective,
-                    objective: (data.soapNote as any).objective,
-                    assessment: (data.soapNote as any).assessment,
-                    plan: (data.soapNote as any).plan,
-                  }
+                  subjective: (data.soapNote as any).subjective,
+                  objective: (data.soapNote as any).objective,
+                  assessment: (data.soapNote as any).assessment,
+                  plan: (data.soapNote as any).plan,
+                }
                 : undefined,
               chiefComplaint: (data.soapNote as any)?.subjective?.substring?.(0, 100),
               diagnosis: (data.soapNote as any)?.assessment,
@@ -164,8 +164,8 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             });
           });
         } catch (error: any) {
-          const isPermissionDenied = error?.code === 'permission-denied' || 
-                                     error?.message?.includes('permission-denied');
+          const isPermissionDenied = error?.code === 'permission-denied' ||
+            error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
             console.error('[usePatientVisits][WO-DASHBOARD-01] Error fetching sessions (index may be missing)', error);
           }
@@ -177,9 +177,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
         setState({ loading: false, data: visits });
       } catch (error: any) {
         console.error('[usePatientVisits] Error:', error);
-        setState({ 
-          loading: false, 
-          error: error instanceof Error ? error : new Error('Unknown error') 
+        setState({
+          loading: false,
+          error: error instanceof Error ? error : new Error('Unknown error')
         });
       }
     });

@@ -37,6 +37,9 @@ export interface SavedNote {
   createdAt: string;
   updatedAt: string;
   ownerUid: string; // Added for querying
+  /** WO-FIX-FOLLOWUP-VISITTYPE-SESSION-COUNT: preserve for History and session count */
+  visitType?: 'initial' | 'follow-up';
+  source?: 'workflow' | 'consultation';
 }
 
 export class PersistenceService {
@@ -63,17 +66,17 @@ export class PersistenceService {
   ): Promise<string> {
     try {
       const userId = this.getCurrentUserId();
-      
+
       // ✅ WO-CONSENT-VERBAL-01-LANG: Gate - Check for valid consent with jurisdiction validation
       const jurisdiction = getCurrentJurisdiction();
       const hasValid = await VerbalConsentService.hasValidConsent(patientId, userId, jurisdiction);
       if (!hasValid) {
         throw new Error('Patient consent (verbal or digital) is required before saving clinical notes. Please obtain consent first.');
       }
-      
+
       // Cifrar los datos SOAP
       const encryptedData = await CryptoService.encryptMedicalData(soapData);
-      
+
       // Crear el registro de la nota
       const noteId = this.generateNoteId();
       const savedNote: SavedNote = {
@@ -85,6 +88,8 @@ export class PersistenceService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ownerUid: userId, // Mantener para compatibilidad con SavedNote interface
+        visitType: (soapData as { visitType?: 'initial' | 'follow-up' }).visitType,
+        source: (soapData as { source?: 'workflow' | 'consultation' }).source,
       };
 
       // ✅ FIX 1.1: Save to Firestore - Use authorUid to match Firestore rules
@@ -94,7 +99,7 @@ export class PersistenceService {
         authorUid: userId, // ✅ CRITICAL: Firestore rules expect authorUid, not ownerUid
         ownerUid: userId, // Keep for backward compatibility
       };
-      
+
       console.log(`[PersistenceService] Saving note to Firestore:`, {
         collection: this.COLLECTION_NAME,
         noteId,
@@ -103,9 +108,9 @@ export class PersistenceService {
         sessionId: savedNote.sessionId,
         createdAt: savedNote.createdAt,
       });
-      
+
       await setDoc(noteRef, dataToSave);
-      
+
       console.log(`✅ [PersistenceService] Note saved successfully with ID: ${noteId}`);
       return noteId;
     } catch (error) {
@@ -125,14 +130,14 @@ export class PersistenceService {
       const notesRef = collection(db, this.COLLECTION_NAME);
       // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
       const q = query(notesRef, where('authorUid', '==', userId), orderBy('createdAt', 'desc'));
-      
+
       console.log(`[PersistenceService] Querying notes from Firestore:`, {
         collection: this.COLLECTION_NAME,
         authorUid: userId,
       });
-      
+
       const snapshot = await getDocs(q);
-      
+
       const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data() as SavedNote;
         console.log(`[PersistenceService] Found note:`, {
@@ -143,19 +148,19 @@ export class PersistenceService {
         });
         return { ...data, id: doc.id };
       });
-      
+
       console.log(`✅ [PersistenceService] Retrieved ${notes.length} notes for user ${userId}`);
       return notes;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet"
-      const isPermissionDenied = error?.code === 'permission-denied' || 
-                                 error?.message?.includes('permission-denied');
-      
+      const isPermissionDenied = error?.code === 'permission-denied' ||
+        error?.message?.includes('permission-denied');
+
       if (isPermissionDenied) {
         console.info('[PersistenceService] No notes found (permission-denied) - may be empty state');
         return [];
       }
-      
+
       console.error('[PersistenceService] Error obteniendo notas:', error);
       return [];
     }
@@ -169,18 +174,18 @@ export class PersistenceService {
       const userId = this.getCurrentUserId();
       const noteRef = doc(db, this.COLLECTION_NAME, noteId);
       const snapshot = await getDoc(noteRef);
-      
+
       if (!snapshot.exists()) {
         return null;
       }
-      
+
       const data = snapshot.data() as SavedNote;
       // Verify ownership
       if (data.ownerUid !== userId) {
         console.warn('Note access denied: user does not own this note');
         return null;
       }
-      
+
       return data;
     } catch (error) {
       console.error('Error obteniendo nota por ID:', error);
@@ -200,15 +205,15 @@ export class PersistenceService {
       // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
       // Firestore rules require: resource.data.authorUid == request.auth.uid
       const q = query(
-        notesRef, 
-        where('authorUid', '==', userId), 
+        notesRef,
+        where('authorUid', '==', userId),
         where('patientId', '==', patientId),
         orderBy('createdAt', 'desc') // Most recent first
       );
       const snapshot = await getDocs(q);
-      
+
       console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for patient ${patientId} (user: ${userId})`);
-      
+
       return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data() as SavedNote;
         // Ensure we have the document ID
@@ -216,15 +221,15 @@ export class PersistenceService {
       });
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
-      const isPermissionDenied = error?.code === 'permission-denied' || 
-                                 error?.message?.includes('permission-denied') ||
-                                 error?.message?.includes('Missing or insufficient permissions');
-      
+      const isPermissionDenied = error?.code === 'permission-denied' ||
+        error?.message?.includes('permission-denied') ||
+        error?.message?.includes('Missing or insufficient permissions');
+
       if (isPermissionDenied) {
         console.info('[PersistenceService] No notes found (permission-denied) - may be empty state');
         return [];
       }
-      
+
       console.error('[PersistenceService] Error obteniendo notas por paciente:', error);
       return [];
     }
@@ -256,20 +261,20 @@ export class PersistenceService {
     try {
       const userId = this.getCurrentUserId();
       const noteRef = doc(db, this.COLLECTION_NAME, noteId);
-      
+
       // Verify ownership before deleting
       const snapshot = await getDoc(noteRef);
       if (!snapshot.exists()) {
         console.warn('Note not found:', noteId);
         return false;
       }
-      
+
       const data = snapshot.data();
       if (data.ownerUid !== userId) {
         console.warn('Note deletion denied: user does not own this note');
         return false;
       }
-      
+
       await deleteDoc(noteRef);
       console.log(`🗑️ Nota eliminada: ${noteId}`);
       return true;
@@ -292,8 +297,8 @@ export class PersistenceService {
     const notes = await this.getAllNotes();
     const patients = new Set(notes.map(n => n.patientId));
     const sessions = new Set(notes.map(n => n.sessionId));
-    
-    const sortedByDate = notes.sort((a, b) => 
+
+    const sortedByDate = notes.sort((a, b) =>
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
