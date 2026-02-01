@@ -33,6 +33,7 @@ import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import treatmentPlanService from "../services/treatmentPlanService";
 import PersistenceService from "../services/PersistenceService";
+import { encountersRepo } from "../repositories/encountersRepo";
 import { FeedbackWidget } from "../components/feedback/FeedbackWidget";
 import { FeedbackService } from "../services/feedbackService";
 import { ErrorMessage } from "../components/ui/ErrorMessage";
@@ -3696,6 +3697,21 @@ const ProfessionalWorkflowPage = () => {
           timestamp: new Date().toISOString()
         });
         setSuccessMessage('SOAP note saved successfully to Clinical Vault.');
+
+        // WO-FOLLOWUP-CREATES-ENCOUNTER: ensure follow-up creates or completes clinical encounter for session count
+        if (visitType === 'follow-up' && user?.uid) {
+          try {
+            const encounterId = await encountersRepo.createEncounter({
+              patientId,
+              authorUid: user.uid,
+              encounterDate: new Date(),
+            });
+            await encountersRepo.updateEncounter(encounterId, { status: 'completed' });
+            console.log('[Workflow] ✅ Follow-up encounter created and completed:', encounterId);
+          } catch (encErr) {
+            console.error('[Workflow] Failed to create follow-up encounter (non-blocking):', encErr);
+          }
+        }
       } else {
         throw new Error(result.error || 'Failed to save after retries');
       }
