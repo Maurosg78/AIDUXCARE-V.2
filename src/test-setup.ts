@@ -70,8 +70,7 @@ function closeMessagePortHandles(): void {
       onmessageerror?: ((event: MessageEvent) => void) | null | undefined;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const processWithHandles = process as any as NodeProcess;
+    const processWithHandles = process as unknown as NodeProcess;
     const handles: NodeHandle[] = processWithHandles._getActiveHandles?.() ?? [];
     const messagePortHandles: NodeHandle[] = [];
 

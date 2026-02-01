@@ -49,6 +49,8 @@ export interface SOAPContext {
     notes?: string;
     source: 'plan';
   }>;
+  // WO-FOLLOWUP-PROMPT: HEP prescrito (solo follow-up); editable por physio
+  homeProgramPrescribed?: string[];
 }
 
 export interface VisitTypeDetectionResult {

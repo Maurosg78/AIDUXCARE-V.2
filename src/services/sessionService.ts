@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { ClinicalAttachment } from './clinicalAttachmentService';
 import type { EvaluationTestEntry } from '../core/soap/PhysicalExamResultBuilder';
@@ -70,6 +70,57 @@ class SessionService {
     } catch (error) {
       console.error('Error creating session:', error);
       throw new Error('Failed to create session');
+    }
+  }
+
+  /**
+   * WO-IA-RESUME-01: Create session with a specific id so resume can find it.
+   * Use the same id the client uses (e.g. userId-timestamp) so notes and URL match.
+   */
+  async createSessionWithId(sessionId: string, sessionData: SessionData): Promise<string> {
+    try {
+      const docRef = doc(db, this.COLLECTION_NAME, sessionId);
+      const cleanedSessionData = this.cleanUndefined(sessionData);
+      const newSession = {
+        ...cleanedSessionData,
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp()
+      };
+      await setDoc(docRef, newSession);
+      return sessionId;
+    } catch (error) {
+      console.error('Error creating session with id:', error);
+      throw new Error('Failed to create session');
+    }
+  }
+
+  /**
+   * WO-IA-RESUME-01: Load existing session by id for resume flow.
+   * @returns Session data or null if not found
+   */
+  async getSessionById(sessionId: string): Promise<{ id: string; [key: string]: any } | null> {
+    try {
+      const docRef = doc(db, this.COLLECTION_NAME, sessionId);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return null;
+      return { id: snap.id, ...snap.data() };
+    } catch (error) {
+      console.error('Error fetching session by id:', error);
+      return null;
+    }
+  }
+
+  /**
+   * WO-IA-RESUME-01: Update existing session (merge). Use when resuming — do not create new session.
+   */
+  async updateSession(sessionId: string, data: Partial<SessionData> & { [key: string]: any }): Promise<void> {
+    try {
+      const docRef = doc(db, this.COLLECTION_NAME, sessionId);
+      const cleaned = this.cleanUndefined(data);
+      await setDoc(docRef, { ...cleaned, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (error) {
+      console.error('Error updating session:', error);
+      throw new Error('Failed to update session');
     }
   }
 

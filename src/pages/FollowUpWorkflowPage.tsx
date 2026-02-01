@@ -1,6 +1,12 @@
 // @ts-nocheck
-// WO-08: Follow-up workflow page - Independent page for follow-up visits
-// Hardcoded visitType = 'follow-up', no conditionals, minimal implementation
+// WO-08: Follow-up workflow page — PARALLEL PATH (not initial assessment).
+//
+// Follow-up does NOT use Niagara/analyze (no highlights, no physical tests, no biopsychosocial).
+// Hydration for Vertex = exactly three inputs:
+//   1. Patient data (who + injury/condition) — from baseline SOAP (previous evaluation).
+//   2. Exercises: in-clinic treatment today + home program (HEP) — from UI checklists.
+//   3. Clinical notes — from transcription area (what the clinician captured this visit).
+// Output = SOAP only (updated note). No analysis JSON, no intermediate highlights.
 
 import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
@@ -12,7 +18,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
-import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
 import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePatientVisitCount";
 
@@ -22,7 +27,7 @@ import treatmentPlanService from "../services/treatmentPlanService";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
-import { parsePlanToFocusItems } from "../utils/parsePlanToFocus";
+import { derivePlanFromText } from "../utils/derivePlanFromText";
 import { getClinicalState, type ClinicalState } from "../services/clinicalStateService";
 import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
 import { resolveConsentChannel } from "../domain/consent/resolveConsentChannel";
@@ -30,6 +35,7 @@ import { resolveConsentChannel } from "../domain/consent/resolveConsentChannel";
 // Components
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
+import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from "../types/vertex-ai";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
@@ -80,8 +86,10 @@ const FollowUpWorkflowPage = () => {
   const [clinicalStateLoading, setClinicalStateLoading] = useState(true);
   const [clinicalState, setClinicalState] = useState<ClinicalState | null>(null);
 
-  // Today's focus (treatment plan)
-  const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
+  // WO-FU-PLAN-SPLIT-01: In-clinic (checkboxes) vs HEP (no checkbox); HEP compliance (what patient did at home)
+  const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
+  const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  const [hepComplianceNotes, setHepComplianceNotes] = useState<string>('');
   const [previousTreatmentPlan, setPreviousTreatmentPlan] = useState<any>(null);
 
   // Hooks
@@ -110,12 +118,8 @@ const FollowUpWorkflowPage = () => {
 
   const { time: recordingTime } = useTimer(isRecording);
 
-  // Niagara processor
-  const {
-    processText,
-    niagaraResults,
-    isProcessing,
-  } = useNiagaraProcessor();
+  // Follow-up path: no Niagara/analysis. Vertex is hydrated only with baseline + exercises + transcript → SOAP only.
+  const isProcessing = isGeneratingSOAP;
 
   // Session type config
   const currentSessionType = sessionTypeFromUrl;
@@ -180,14 +184,18 @@ const FollowUpWorkflowPage = () => {
       }
     }
 
-    if (niagaraResults) {
-      if (niagaraResults.red_flags && Array.isArray(niagaraResults.red_flags)) {
-        contraindications.push(...niagaraResults.red_flags.filter(Boolean));
+    // Follow-up path: no Niagara; contraindications from patient only (no analysis red_flags).
+    if (currentPatient?.contraindications) {
+      if (typeof currentPatient.contraindications === 'string') {
+        const parsed = currentPatient.contraindications.trim();
+        if (parsed) contraindications.push(...parsed.split(/[,;]/).map(c => c.trim()).filter(Boolean));
+      } else if (Array.isArray(currentPatient.contraindications)) {
+        contraindications.push(...currentPatient.contraindications.filter(Boolean));
       }
     }
 
     return { allergies, contraindications };
-  }, [currentPatient, niagaraResults]);
+  }, [currentPatient]);
 
   // Load patient
   useEffect(() => {
@@ -264,14 +272,30 @@ const FollowUpWorkflowPage = () => {
   const followUpReady = clinicalState?.hasBaseline === true && clinicalState?.consent.hasValidConsent === true;
   const isFirstSession = clinicalState?.isFirstSession ?? false;
 
-  // WO-FOLLOWUP-UI-GATE-002: todayFocus from ClinicalState.baselineSOAP.plan only
+  // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP from baselineSOAP.plan (presentation only)
   useEffect(() => {
     if (!clinicalState?.baselineSOAP?.plan) {
-      setTodayFocus([]);
+      setInClinicItems([]);
+      setHomeProgramItems([]);
       return;
     }
-    const items = parsePlanToFocusItems(clinicalState.baselineSOAP.plan);
-    setTodayFocus(items);
+    const derived = derivePlanFromText(clinicalState.baselineSOAP.plan);
+    setInClinicItems(
+      derived.inClinic.map((label, i) => ({
+        id: `in-clinic-${i}`,
+        label,
+        completed: false,
+        source: 'plan' as const,
+      }))
+    );
+    setHomeProgramItems(
+      derived.homeProgram.map((label, i) => ({
+        id: `hep-${i}`,
+        label,
+        completed: false,
+        source: 'plan' as const,
+      }))
+    );
   }, [clinicalState?.baselineSOAP?.plan]);
 
   /**
@@ -284,7 +308,7 @@ const FollowUpWorkflowPage = () => {
       return;
     }
     const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
-    const hasChecklist = todayFocus.length > 0;
+    const hasChecklist = inClinicItems.length > 0;
     const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
     if (!hasChecklist && !hasClinicalUpdate) {
       setSoapError('Add at least one confirmed treatment or a clinical update to generate the SOAP note.');
@@ -301,19 +325,18 @@ const FollowUpWorkflowPage = () => {
         setIsGeneratingSOAP(false);
         return;
       }
-      const baseline = {
-        previousSOAP: {
-          subjective: clinicalState.baselineSOAP.subjective,
-          objective: clinicalState.baselineSOAP.objective,
-          assessment: clinicalState.baselineSOAP.assessment,
-          plan: clinicalState.baselineSOAP.plan,
-          encounterId: clinicalState.baselineSOAP.encounterId,
-          date: clinicalState.baselineSOAP.date,
-        },
-      };
       const fullPrompt = buildFollowUpPromptV3({
-        baseline,
+        baselineSOAP: {
+          subjective: clinicalState.baselineSOAP.subjective ?? '',
+          objective: clinicalState.baselineSOAP.objective ?? '',
+          assessment: clinicalState.baselineSOAP.assessment ?? '',
+          plan: clinicalState.baselineSOAP.plan ?? '',
+          date: clinicalState.baselineSOAP.date,
+          encounterId: clinicalState.baselineSOAP.encounterId,
+        },
         clinicalUpdate: followUpClinicalUpdate,
+        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
+        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
       });
 
       const { raw, soap, alerts, planItems } = await generateFollowUpSOAPV2Raw(fullPrompt);
@@ -352,7 +375,7 @@ const FollowUpWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [clinicalState?.hasBaseline, patientId, todayFocus, transcript]);
+  }, [clinicalState?.hasBaseline, patientId, inClinicItems, homeProgramItems, transcript, hepComplianceNotes]);
 
   const handleAnalyzeWithVertex = handleGenerateSOAPFollowUp;
   const handleGenerateSoap = handleGenerateSOAPFollowUp;
@@ -541,14 +564,19 @@ const FollowUpWorkflowPage = () => {
                 )}
               </div>
 
-              {/* Visit Type Indicator */}
+              {/* Visit Type Indicator — session ordinal: Follow-up = Second / Third / … */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                 <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-slate-900 font-apple">
-                    Follow-up visit
-                  </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-slate-900 font-apple">
+                      Follow-up visit
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-apple font-light">
+                    {(['Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth'][(visitCount.data ?? 1) - 1] ?? `Session ${(visitCount.data ?? 0) + 1}`) + ' session'}
+                  </p>
                 </div>
                 {previousTreatmentPlan && (
                   <div className="mt-2 flex items-center gap-2">
@@ -585,32 +613,61 @@ const FollowUpWorkflowPage = () => {
             />
           )}
 
-          {/* SECCIÓN 2: Today's treatment session — only when baseline exists */}
-          {showFollowUpFlow && todayFocus.length > 0 && (
+          {/* In-clinic treatment (proposed for today): editable; check when performed in clinic */}
+          {showFollowUpFlow && inClinicItems.length > 0 && (
             <div className="bg-white border border-blue-200 rounded-lg p-6">
               <div className="flex items-start gap-3 mb-4">
-                <span className="text-2xl">🗓️</span>
+                <span className="text-2xl">🟦</span>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                    Today's treatment session
+                    In-clinic treatment (proposed for today)
                   </h2>
                   <p className="text-sm text-slate-600">
-                    Confirm or adjust what was planned previously.
+                    Proposed treatment for this session. Modify as needed. Check when performed in clinic today. Add notes (dictated or typed) per item if needed.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-blue-600">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Today's treatment confirmed</span>
+                  <span>In-clinic</span>
                 </div>
               </div>
               <SuggestedFocusEditor
-                items={todayFocus}
-                onChange={setTodayFocus}
+                items={inClinicItems}
+                onChange={setInClinicItems}
                 onFinishSession={undefined}
                 hideHeader={true}
                 conversationSectionRef={clinicalConversationRef}
               />
             </div>
+          )}
+
+          {/* What the patient did at home (HEP compliance): dictated or typed */}
+          {showFollowUpFlow && (
+            <div className="bg-white border border-slate-200 rounded-lg p-6">
+              <div className="flex items-start gap-2 mb-3">
+                <span className="text-lg">📋</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 font-apple">
+                    What the patient did at home (HEP compliance)
+                  </h2>
+                  <p className="text-sm text-slate-600 font-apple font-light mt-1">
+                    What did the patient report doing at home since last visit? (e.g. completed exercises, partial, barriers). Dictated or typed.
+                  </p>
+                </div>
+              </div>
+              <textarea
+                value={hepComplianceNotes}
+                onChange={(e) => setHepComplianceNotes(e.target.value)}
+                placeholder="e.g. Completed ROM 3x/day; did not do strengthening due to pain. Patient reports better compliance this week."
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple resize-y min-h-[80px]"
+                rows={3}
+              />
+            </div>
+          )}
+
+          {/* Home Exercise Program (HEP): prescribed for home; edit as needed; allow adding items */}
+          {showFollowUpFlow && (
+            <HomeProgramBlock items={homeProgramItems} onChange={setHomeProgramItems} allowAdd={true} />
           )}
 
           {/* SECCIÓN 3: Clinical Conversation Capture — WO-FOLLOWUP-UI-GATE-002: only when followUpReady (ClinicalState) */}
@@ -780,7 +837,8 @@ const FollowUpWorkflowPage = () => {
                 workflowMetrics={null}
                 workflowRoute={null}
                 soapTokenOptimization={undefined}
-                niagaraResults={niagaraResults}
+                niagaraResults={null}
+                followUpHasContent={Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)}
                 transcript={transcript}
                 physicalExamResults={[]}
                 treatmentReminder={null}

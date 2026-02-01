@@ -1,11 +1,34 @@
 /**
  * WO-IA-CLOSE-01: Clinical Baselines — persist and read baseline from SOAP final.
+ * WO-MINIMAL-BASELINE: createBaselineFromMinimalSOAP for existing patients (paste/form → baseline).
  * Collection: clinical_baselines/{baselineId}
- * No refactor. No expansion.
  */
 
-import { collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, getDocs, query, where, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+/** SOAP shape for baseline creation (S/O/A/P). */
+export interface SOAPForBaseline {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+}
+
+/** Audit: source of minimal baseline. */
+export type MinimalBaselineSource = 'vertex_from_paste' | 'manual_minimal';
+
+const PLAN_REQUIRED_MSG =
+  'Para poder generar follow-ups, necesitamos saber qué tratamiento está en curso.';
+const MIN_PLAN_LENGTH = 15;
+const GENERIC_PLAN_PATTERNS = [/^paciente en tratamiento\.?$/i, /^en tratamiento\.?$/i, /^n\/a\.?$/i];
+
+function hasValidPlan(plan: string): boolean {
+  const trimmed = (plan ?? '').trim();
+  if (trimmed.length < MIN_PLAN_LENGTH) return false;
+  if (GENERIC_PLAN_PATTERNS.some((re) => re.test(trimmed))) return false;
+  return true;
+}
 
 export interface ClinicalBaselineSnapshot {
   primaryAssessment: string;
@@ -56,6 +79,44 @@ export async function createBaseline(params: {
 }
 
 /**
+ * WO-MINIMAL-BASELINE: Create a baseline from structured SOAP (from paste+Vertex or manual minimal form).
+ * Guard-rail: Plan must be explicit and non-generic; otherwise throws with user-facing message.
+ * Audit: source, createdFrom stored in document.
+ */
+export async function createBaselineFromMinimalSOAP(params: {
+  patientId: string;
+  soap: SOAPForBaseline;
+  createdBy: string;
+  source: MinimalBaselineSource;
+}): Promise<string> {
+  if (!hasValidPlan(params.soap.plan)) {
+    throw new Error(PLAN_REQUIRED_MSG);
+  }
+  const ref = doc(collection(db, COLLECTION_NAME));
+  const id = ref.id;
+  const now = serverTimestamp();
+  const snapshot: ClinicalBaselineSnapshot = {
+    primaryAssessment: (params.soap.assessment ?? '').trim(),
+    keyFindings: [(params.soap.subjective ?? '').trim(), (params.soap.objective ?? '').trim()],
+    planSummary: (params.soap.plan ?? '').trim(),
+  };
+  await setDoc(ref, {
+    patientId: params.patientId,
+    sourceSoapId: id,
+    snapshot: {
+      primaryAssessment: snapshot.primaryAssessment,
+      keyFindings: snapshot.keyFindings,
+      planSummary: snapshot.planSummary,
+    },
+    createdAt: now,
+    createdBy: params.createdBy,
+    source: params.source,
+    createdFrom: 'patient_existing',
+  });
+  return id;
+}
+
+/**
  * Get a baseline by id. Returns null if not found.
  */
 export async function getBaselineById(baselineId: string): Promise<ClinicalBaseline | null> {
@@ -77,4 +138,15 @@ export async function getBaselineById(baselineId: string): Promise<ClinicalBasel
     createdAt: data.createdAt,
     createdBy: data.createdBy ?? '',
   };
+}
+
+/**
+ * WO-DASHBOARD-01: Check if patient has any baseline (e.g. closed initial assessment).
+ * Use when patient.activeBaselineId is missing but a baseline may exist (legacy or partial update).
+ */
+export async function hasBaselineForPatient(patientId: string): Promise<boolean> {
+  const ref = collection(db, COLLECTION_NAME);
+  const q = query(ref, where('patientId', '==', patientId), limit(1));
+  const snap = await getDocs(q);
+  return !snap.empty;
 }

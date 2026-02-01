@@ -133,6 +133,10 @@ export interface AnalysisTabProps {
   onFinishSession?: () => void;
   // WO-06: Ocultar header para layout vertical único
   hideHeader?: boolean;
+  // WO-FU-PLAN-SPLIT-01: Si true, el parent ya muestra In-Clinic + HEP; no duplicar "Today's treatment session"
+  todayFocusBlockRenderedByParent?: boolean;
+  /** When resume failed (session not found), show links to view note or go back to Patient History */
+  resumeLoadFailed?: { sessionId: string; patientId: string } | null;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -196,6 +200,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onTodayFocusChange,
   onFinishSession,
   hideHeader = false,
+  todayFocusBlockRenderedByParent = false,
+  resumeLoadFailed = null,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -206,7 +212,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     onTodayFocusChange?.(focus);
   };
 
-  // WO-05-FIX: Mapping explícito del treatment plan a todayFocus
+  // WO-05-FIX: Mapping explícito del treatment plan a todayFocus (solo follow-up; initial assessment no usa este bloque)
   useEffect(() => {
     if (visitType === 'follow-up') {
       let planText: string | null = null;
@@ -244,18 +250,15 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     }
   }, [visitType, lastEncounter.data?.soap?.plan, previousTreatmentPlan?.planText]);
 
-  // WO-05-FIX: Log de evidencia cuando se renderiza el componente
+  // WO-05-FIX: Log solo cuando este tab realmente renderiza "Today's treatment session" (follow-up; parent no muestra ya In-Clinic+HEP)
   useEffect(() => {
-    if (visitType === 'follow-up' && todayFocus.length > 0) {
+    if (visitType === 'follow-up' && !todayFocusBlockRenderedByParent && todayFocus.length > 0) {
       console.info(
-        '[WO-05-FIX][PROOF] Rendering Today\'s treatment session',
-        { 
-          count: todayFocus.length, 
-          items: todayFocus.map(i => ({ id: i.id, label: i.label, completed: i.completed })) 
-        }
+        '[WO-05-FIX][PROOF] Rendering Today\'s treatment session (AnalysisTab)',
+        { count: todayFocus.length, items: todayFocus.map(i => ({ id: i.id, label: i.label, completed: i.completed })) }
       );
     }
-  }, [visitType, todayFocus]);
+  }, [visitType, todayFocusBlockRenderedByParent, todayFocus]);
 
   return (
     <div className="space-y-6">
@@ -270,8 +273,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </header>
       )}
 
-      {/* WO-FLOW-005: Suggested Focus Editor (solo en follow-up) */}
-      {visitType === 'follow-up' && todayFocus.length > 0 && (
+      {/* WO-FLOW-005 / WO-FU-PLAN-SPLIT-01: Suggested Focus Editor (solo si parent no muestra ya In-Clinic + HEP) */}
+      {visitType === 'follow-up' && !todayFocusBlockRenderedByParent && todayFocus.length > 0 && (
         <SuggestedFocusEditor
           items={todayFocus}
           onChange={handleFocusChange}
@@ -280,7 +283,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       )}
 
       {/* ✅ FOLLOW-UP: Header específico para follow-up conversation (sin duplicación de focus) */}
-      {visitType === 'follow-up' && todayFocus.length === 0 && (
+      {visitType === 'follow-up' && !todayFocusBlockRenderedByParent && todayFocus.length === 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
             Follow-up Conversation
@@ -330,12 +333,31 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       )}
 
       {analysisError && (
-        <ErrorMessage
-          message={analysisError}
-          onDismiss={() => setAnalysisError(null)}
-          variant="inline"
-          className="mt-4"
-        />
+        <>
+          <ErrorMessage
+            message={analysisError}
+            onDismiss={() => setAnalysisError(null)}
+            variant="inline"
+            className="mt-4"
+          />
+          {resumeLoadFailed && (
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              <a
+                href={`/notes/${resumeLoadFailed.sessionId}`}
+                className="text-brand-in-600 hover:text-brand-in-700 font-medium underline"
+              >
+                View as saved note
+              </a>
+              <span className="text-slate-400">|</span>
+              <a
+                href={`/patients/${resumeLoadFailed.patientId}/history`}
+                className="text-brand-in-600 hover:text-brand-in-700 font-medium underline"
+              >
+                Back to Patient History
+              </a>
+            </div>
+          )}
+        </>
       )}
       {successMessage && (
         <SuccessMessage
@@ -347,7 +369,12 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         />
       )}
 
-      {niagaraResults && interactiveResults ? (
+      {/* Follow-up path: no highlights, no biopsychosocial, no physical tests. Only SOAP from Documentation. */}
+      {visitType === 'follow-up' ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
+          Generate your SOAP note in the Documentation section below. No separate analysis step — follow-up uses baseline, treatments, and clinical notes only.
+        </div>
+      ) : niagaraResults && interactiveResults ? (
         <>
           <div className="mt-4">
             <ClinicalAnalysisResults
@@ -357,27 +384,24 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               visitType={visitType}
             />
           </div>
-          {/* WO-07: Botón "Continue to physical evaluation" ELIMINADO en follow-up (ruido innecesario) */}
-          {visitType !== 'follow-up' && (
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <div>
-                <p className="text-sm text-slate-600">
-                  Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
-                </p>
-              </div>
-              <button
-                onClick={continueToEvaluation}
-                disabled={
-                  (interactiveResults.physicalTests?.length ?? 0) > 0 &&
-                  !selectedEntityIds.some((id) => id.startsWith("physical-"))
-                }
-                className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
-              >
-                <ChevronsRight className="w-4 h-4" />
-                Continue to physical evaluation
-              </button>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div>
+              <p className="text-sm text-slate-600">
+                Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
+              </p>
             </div>
-          )}
+            <button
+              onClick={continueToEvaluation}
+              disabled={
+                (interactiveResults.physicalTests?.length ?? 0) > 0 &&
+                !selectedEntityIds.some((id) => id.startsWith("physical-"))
+              }
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+            >
+              <ChevronsRight className="w-4 h-4" />
+              Continue to physical evaluation
+            </button>
+          </div>
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">

@@ -38,7 +38,7 @@ Link valid for 24 hours.`;
  * Helper to detect non-ASCII characters
  */
 function containsNonASCII(text: string): boolean {
-  return /[^\x00-\x7F]/.test(text);
+  return /[\u0080-\uFFFF]/.test(text);
 }
 
 /**

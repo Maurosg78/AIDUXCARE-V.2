@@ -16,7 +16,9 @@ import ClinicalAttachmentService, { ClinicalAttachment } from "../services/clini
 import { matchTestName } from "@/core/msk-tests/matching/fuzzyMatch";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
-import { generateSOAPNote as generateSOAPNoteFromService } from "../services/vertex-ai-soap-service";
+import { generateSOAPNote as generateSOAPNoteFromService, generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
+import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
+import { getClinicalState } from "../services/clinicalStateService";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
 import { AnalyticsService } from "../services/analyticsService";
@@ -67,7 +69,10 @@ import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePat
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
 import { SessionStorage } from "../services/session-storage";
-import { createBaseline } from "../services/clinicalBaselineService";
+import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clinicalBaselineService";
+import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
+import { InitialClinicalSummaryModal } from "../components/workflow/InitialClinicalSummaryModal";
+import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-service";
 // FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
 // import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
@@ -102,6 +107,8 @@ import {
 import { lazy, Suspense } from "react";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
+import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
+import { derivePlanFromText } from "../utils/derivePlanFromText";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -212,11 +219,17 @@ const ProfessionalWorkflowPage = () => {
 
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
 
+  // WO-IA-RESUME-01: Resume Initial Assessment — load existing session, do not create new one
+  const resumeFromUrl = searchParams.get('resume') === 'true';
+  const sessionIdFromUrl = searchParams.get('sessionId') || null;
+
   // ✅ FIX: Use refs to track if localStorage was already cleared (only clear once)
   const localStorageClearedRef = useRef(false);
   const useEffectClearedRef = useRef(false);
   // ✅ WO-FIX-DATA-PERSISTENCE: Track if we've cleaned for this specific initial session
   const hasCleanedForInitial = useRef<string | null>(null);
+  // WO-IA-RESUME-01: Only run resume load once per sessionId
+  const hasResumeLoadAttemptedRef = useRef<string | null>(null);
 
   // ✅ FIX: Clear localStorage ONLY ONCE on initial mount for follow-up (not on every render)
   if (isExplicitFollowUp && patientIdFromUrl && typeof window !== 'undefined' && !localStorageClearedRef.current) {
@@ -266,8 +279,17 @@ const ProfessionalWorkflowPage = () => {
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
 
-  // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo)
+  // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo; usado en initial y legacy follow-up)
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
+  // WO-FU-PLAN-SPLIT-01: In-clinic vs HEP — FOLLOW-UP ONLY; poblado solo cuando visitType === 'follow-up'
+  const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
+  const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  // Follow-up path: baseline for SOAP (no Niagara). Single source of truth — loaded when visitType === 'follow-up'.
+  const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
+  /** True once getClinicalState has settled for follow-up; used to gate "no baseline → cannot start follow-up". */
+  const [followUpBaselineChecked, setFollowUpBaselineChecked] = useState(false);
+  /** WO-MINIMAL-BASELINE: Modal "Resumen clínico inicial" for existing patients without baseline. */
+  const [showInitialSummaryModal, setShowInitialSummaryModal] = useState(false);
 
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
@@ -284,6 +306,12 @@ const ProfessionalWorkflowPage = () => {
   const [savingSession, setSavingSession] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  /** When resume=true fails (session not found), show recovery links (View note / Back to Patient History) */
+  const [resumeLoadFailed, setResumeLoadFailed] = useState<{ sessionId: string; patientId: string } | null>(null);
+  const setAnalysisErrorWithRecovery = useCallback((err: string | null) => {
+    setAnalysisError(err);
+    if (err === null) setResumeLoadFailed(null);
+  }, []);
   const [attachments, setAttachments] = useState<ClinicalAttachment[]>([]);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<string | null>(null);
@@ -296,6 +324,8 @@ const ProfessionalWorkflowPage = () => {
   // WO-IA-CLOSE-01: Initial assessment closed — button hide and session state
   const [initialAssessmentClosedAt, setInitialAssessmentClosedAt] = useState<string | null>(null);
   const [baselineIdFromSession, setBaselineIdFromSession] = useState<string | null>(null);
+  const [showCloseInitialConfirmModal, setShowCloseInitialConfirmModal] = useState(false);
+  const [closeInitialConfirmData, setCloseInitialConfirmData] = useState<{ patientName?: string; baselineId?: string } | null>(null);
 
   // Value Metrics Tracking - Timestamps
   const [sessionStartTime] = useState<Date>(new Date());
@@ -738,12 +768,48 @@ const ProfessionalWorkflowPage = () => {
     detectWorkflow();
   }, [patientId, user?.uid, currentPatient, sessionTypeFromUrl]);
 
-  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits
+  // Follow-up path: load baseline for SOAP (no Niagara). Single source of truth — if present, baseline is built; if not, no follow-up.
+  useEffect(() => {
+    const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
+    if (!isFollowUp || !patientId || !user?.uid) {
+      setFollowUpClinicalState(null);
+      setFollowUpBaselineChecked(false);
+      return;
+    }
+    setFollowUpBaselineChecked(false);
+    let cancelled = false;
+    getClinicalState(patientId, user.uid)
+      .then((state) => {
+        if (cancelled) return;
+        if (!state?.hasBaseline || !state.baselineSOAP) {
+          setFollowUpClinicalState(null);
+        } else {
+          setFollowUpClinicalState({
+            baselineSOAP: {
+              subjective: state.baselineSOAP.subjective ?? '',
+              objective: state.baselineSOAP.objective ?? '',
+              assessment: state.baselineSOAP.assessment ?? '',
+              plan: state.baselineSOAP.plan ?? '',
+            },
+          });
+        }
+        setFollowUpBaselineChecked(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFollowUpClinicalState(null);
+          setFollowUpBaselineChecked(true);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type]);
+
+  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
   useEffect(() => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
 
-    // If follow-up and Niagara analysis is complete, navigate to SOAP tab
+    // If follow-up and Niagara analysis is complete, navigate to SOAP tab (only when Niagara was used)
     if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap') {
       console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
       setActiveTab('soap');
@@ -1013,6 +1079,10 @@ const ProfessionalWorkflowPage = () => {
         const isInitialSession = sessionTypeFromUrl === 'initial' || !sessionTypeFromUrl;
 
         if (isInitialSession) {
+          // WO-IA-RESUME-01: Don't clear when resuming — we load from Firestore and hydrate state
+          if (resumeFromUrl && sessionIdFromUrl) {
+            return;
+          }
           // ✅ WO-FIX-DATA-PERSISTENCE: Only clean ONCE per initial session
           const cleanupKey = `${patientId}-${sessionTypeFromUrl || 'initial'}`;
 
@@ -1143,6 +1213,100 @@ const ProfessionalWorkflowPage = () => {
       restoreWorkflowState();
     }
   }, [patientId, sessionTypeFromUrl]); // Only run when patientId or sessionTypeFromUrl changes
+
+  // WO-IA-RESUME-01: Load existing session when resume=true&sessionId=YYY — do not create new session
+  // Fallback: when session doc does not exist in sessions (e.g. legacy note-only flow), hydrate from consultation/note so user can close initial assessment without redoing
+  useEffect(() => {
+    if (!resumeFromUrl || visitType !== 'initial') return;
+    if (!sessionIdFromUrl) {
+      setAnalysisError('Cannot resume: session ID is missing.');
+      hasResumeLoadAttemptedRef.current = 'no-session-id';
+      return;
+    }
+    if (hasResumeLoadAttemptedRef.current === sessionIdFromUrl) return;
+    hasResumeLoadAttemptedRef.current = sessionIdFromUrl;
+
+    logger.info('[WO-IA-RESUME-01] resume detected from URL — loading session', { sessionId: sessionIdFromUrl });
+    let cancelled = false;
+    (async () => {
+      try {
+        const sessionData = await sessionService.getSessionById(sessionIdFromUrl);
+        if (cancelled) return;
+        if (sessionData && sessionData.soapNote) {
+          logger.info('[WO-IA-RESUME-01] loadSession(sessionId)', { sessionId: sessionIdFromUrl });
+          setSessionId(sessionIdFromUrl);
+          setLocalSoapNote(sessionData.soapNote as SOAPNote);
+          setSoapStatus((sessionData.status === 'completed' ? 'finalized' : 'draft') as SOAPStatus);
+          setActiveTab('soap');
+          setAnalysisError(null);
+          setResumeLoadFailed(null);
+          if (sessionData.transcript && typeof sessionData.transcript === 'string') {
+            setTranscript(sessionData.transcript);
+          }
+          if (sessionData.physicalTests && Array.isArray(sessionData.physicalTests) && sessionData.physicalTests.length > 0) {
+            const sanitized = (sessionData.physicalTests as EvaluationTestEntry[]).map(sanitizeEvaluationEntry);
+            setEvaluationTests(sanitized);
+            updatePhysicalEvaluation(sanitized);
+          }
+          return;
+        }
+        // Fallback: session doc missing (e.g. note saved but session never written). Hydrate from consultation/note.
+        if (!patientIdFromUrl) {
+          setAnalysisError('Session not found or could not be loaded. The data may be saved as a note — use the links below.');
+          setResumeLoadFailed(null);
+          return;
+        }
+        const notes = await PersistenceService.getNotesByPatient(patientIdFromUrl);
+        if (cancelled) return;
+        const note = notes.find((n) => n.sessionId === sessionIdFromUrl) ?? notes[0];
+        if (note?.soapData) {
+          logger.info('[WO-IA-RESUME-01] hydrated from note (session not in sessions collection)', { noteId: note.id, sessionId: sessionIdFromUrl });
+          setSessionId(note.sessionId);
+          setLocalSoapNote({
+            subjective: note.soapData.subjective ?? '',
+            objective: note.soapData.objective ?? '',
+            assessment: note.soapData.assessment ?? '',
+            plan: note.soapData.plan ?? '',
+          } as SOAPNote);
+          setSoapStatus('finalized');
+          setActiveTab('soap');
+          setAnalysisError(null);
+          setResumeLoadFailed(null);
+          return;
+        }
+        setAnalysisError('Session not found or could not be loaded. The data may be saved as a note — use the links below.');
+        setResumeLoadFailed(patientIdFromUrl ? { sessionId: sessionIdFromUrl, patientId: patientIdFromUrl } : null);
+      } catch (err) {
+        if (cancelled) return;
+        try {
+          const notes = await PersistenceService.getNotesByPatient(patientIdFromUrl ?? '');
+          if (cancelled) return;
+          const note = notes.find((n) => n.sessionId === sessionIdFromUrl) ?? notes[0];
+          if (note?.soapData) {
+            logger.info('[WO-IA-RESUME-01] hydrated from note after session load error', { noteId: note.id, sessionId: sessionIdFromUrl });
+            setSessionId(note.sessionId);
+            setLocalSoapNote({
+              subjective: note.soapData.subjective ?? '',
+              objective: note.soapData.objective ?? '',
+              assessment: note.soapData.assessment ?? '',
+              plan: note.soapData.plan ?? '',
+            } as SOAPNote);
+            setSoapStatus('finalized');
+            setActiveTab('soap');
+            setAnalysisError(null);
+            setResumeLoadFailed(null);
+            return;
+          }
+        } catch (_) {
+          // ignore
+        }
+        setAnalysisError('Session not found or could not be loaded. The data may be saved as a note — use the links below.');
+        setResumeLoadFailed(patientIdFromUrl ? { sessionId: sessionIdFromUrl, patientId: patientIdFromUrl } : null);
+        console.error('[WO-IA-RESUME-01] Failed to load session:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [resumeFromUrl, sessionIdFromUrl, visitType, patientIdFromUrl]);
 
   // ✅ WORKFLOW PERSISTENCE: Auto-save workflow state to localStorage
   // Use refs to track previous values and only save when there are actual changes
@@ -2004,10 +2168,12 @@ const ProfessionalWorkflowPage = () => {
 
 
   useEffect(() => {
-    if (soapNote) {
+    // WO-FOLLOWUP-SOAP-03: Follow-up generates SOAP via generateFollowUpSOAPV2Raw,
+    // not via useNiagaraProcessor. Skip overwrite when visitType is follow-up.
+    if (soapNote && visitType !== 'follow-up') {
       setLocalSoapNote(soapNote);
     }
-  }, [soapNote]);
+  }, [soapNote, visitType]);
 
   useEffect(() => {
     // ✅ PHASE 2: Clear selections when new analysis starts
@@ -2362,6 +2528,12 @@ const ProfessionalWorkflowPage = () => {
   );
 
   const handleAnalyzeWithVertex = async () => {
+    // Follow-up path: do NOT call Niagara (no highlights, no biopsychosocial). Only generate SOAP.
+    if (visitType === 'follow-up') {
+      await handleGenerateSOAPFollowUp();
+      return;
+    }
+
     // Ensure transcript is always a string
     const transcriptText = typeof transcript === 'string' ? transcript : String(transcript || '');
 
@@ -2740,6 +2912,32 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
 
+  // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP from plan text — FOLLOW-UP ONLY; initial assessment untouched
+  useEffect(() => {
+    if (visitType !== 'follow-up' || !previousTreatmentPlan?.planText) {
+      setInClinicItems([]);
+      setHomeProgramItems([]);
+      return;
+    }
+    const derived = derivePlanFromText(previousTreatmentPlan.planText);
+    setInClinicItems(
+      derived.inClinic.map((label, i) => ({
+        id: `in-clinic-${i}`,
+        label,
+        completed: false,
+        source: 'plan' as const,
+      }))
+    );
+    setHomeProgramItems(
+      derived.homeProgram.map((label, i) => ({
+        id: `hep-${i}`,
+        label,
+        completed: false,
+        source: 'plan' as const,
+      }))
+    );
+  }, [visitType, previousTreatmentPlan?.planText]);
+
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
     try {
@@ -2829,9 +3027,10 @@ const ProfessionalWorkflowPage = () => {
       // Step 3: Organize all data into structured format for SOAP prompt
       const organized = organizeSOAPData(unifiedData);
 
-      // WO-05-FIX: Inyectar todayFocus en el contexto antes de generar SOAP
-      if (todayFocus.length > 0) {
-        organized.context.todayFocus = todayFocus.map(item => ({
+      // WO-05-FIX / WO-FOLLOWUP-PROMPT: Inyectar todayFocus y homeProgramPrescribed solo en follow-up; initial no se toca
+      const focusToInject = visitType === 'follow-up' ? inClinicItems : todayFocus;
+      if (focusToInject.length > 0) {
+        organized.context.todayFocus = focusToInject.map(item => ({
           id: item.id,
           label: item.label,
           notes: item.notes,
@@ -2841,8 +3040,8 @@ const ProfessionalWorkflowPage = () => {
         console.info(
           '[WO-05-FIX][PROOF] Injecting todayFocus into SOAPContext',
           {
-            count: todayFocus.length,
-            items: todayFocus.map(i => ({
+            count: focusToInject.length,
+            items: focusToInject.map(i => ({
               id: i.id,
               label: i.label,
               completed: i.completed,
@@ -2850,6 +3049,9 @@ const ProfessionalWorkflowPage = () => {
             }))
           }
         );
+      }
+      if (visitType === 'follow-up' && homeProgramItems.length > 0) {
+        organized.context.homeProgramPrescribed = homeProgramItems.map((i) => i.label);
       }
 
       // Log data summary for debugging
@@ -2983,15 +3185,15 @@ const ProfessionalWorkflowPage = () => {
       setSoapStatus('draft');
       setActiveTab("soap");
 
-      // Step 5: Save to session with all structured data
-      await sessionService.createSession({
+      // Step 5: Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
+      const sessionPayload = {
         userId: TEMP_USER_ID,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
         soapNote: soapWithReviewFlags,
         physicalTests: organized.structuredData.physicalExamResults,
-        status: "draft",
+        status: "draft" as const,
         transcriptionMeta: {
           lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : null),
           languagePreference,
@@ -3001,18 +3203,23 @@ const ProfessionalWorkflowPage = () => {
           recordedAt: new Date().toISOString(),
         },
         attachments,
-        // Store organized data for future reference
         organizedData: {
           metadata: organized.metadata,
           physicalEvaluationStructured: organized.structuredData.physicalEvaluationStructured,
         },
-      });
-      // Track session started
-      await trackSessionStarted({
-        userId: TEMP_USER_ID,
-        patientId: patientIdFromUrl || demoPatient.id,
-        sessionType: "initial",
-      });
+      };
+      if (sessionId) {
+        await sessionService.updateSession(sessionId, sessionPayload);
+      } else {
+        const currentSessionId = `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+        await sessionService.createSessionWithId(currentSessionId, sessionPayload);
+        setSessionId(currentSessionId);
+        await trackSessionStarted({
+          userId: TEMP_USER_ID,
+          patientId: patientIdFromUrl || demoPatient.id,
+          sessionType: "initial",
+        });
+      }
     } catch (error: any) {
       console.error('[Workflow] Clinical note generation failed:', error);
 
@@ -3041,6 +3248,64 @@ const ProfessionalWorkflowPage = () => {
       setIsGeneratingSOAP(false);
     }
   };
+
+  // Follow-up path only: ONE Vertex call — SOAP from baseline + transcript + in-clinic/HEP (no Niagara, no analysis_requested).
+  // Single source of truth: baseline comes only from followUpClinicalState (built by getClinicalState on load). No fallbacks.
+  const handleGenerateSOAPFollowUp = useCallback(async () => {
+    const baseline = followUpClinicalState?.baselineSOAP ?? null;
+    if (!baseline) {
+      setAnalysisError('Follow-up requires prior clinical baseline (complete an initial assessment first).');
+      return;
+    }
+    const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
+    const hasChecklist = inClinicItems.length > 0 || homeProgramItems.length > 0;
+    const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
+    if (!hasChecklist && !hasClinicalUpdate) {
+      setAnalysisError('Add at least one confirmed treatment or a clinical update to generate the SOAP note.');
+      return;
+    }
+    setAnalysisError(null);
+    setIsGeneratingSOAP(true);
+    const startTime = Date.now();
+    try {
+      await trackSOAPGenerationStarted({ visitType: 'follow-up', source: 'followup_single_call' });
+      const fullPrompt = buildFollowUpPromptV3({
+        baselineSOAP: baseline,
+        clinicalUpdate: followUpClinicalUpdate,
+        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
+        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
+      });
+      const { raw, soap } = await generateFollowUpSOAPV2Raw(fullPrompt);
+      const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
+      const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
+      if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
+        setAnalysisError('SOAP generation returned no content. Please try again or enter manually.');
+        return;
+      }
+      setLocalSoapNote({
+        ...soap,
+        requiresReview: true,
+        isReviewed: false,
+        aiGenerated: true,
+        aiProcessor: 'AiduxCare Clinical AI',
+        processedAt: new Date(),
+      });
+      await trackSOAPGenerationCompleted({
+        visitType: 'follow-up',
+        duration: Date.now() - startTime,
+        soapLength: JSON.stringify(soap).length,
+        source: 'followup_single_call',
+      });
+      setActiveTab('soap');
+      document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err: any) {
+      const message = err?.message || 'Failed to generate SOAP note. Please try again.';
+      setAnalysisError(message);
+      console.error('[Workflow] Follow-up SOAP generation failed:', err);
+    } finally {
+      setIsGeneratingSOAP(false);
+    }
+  }, [followUpClinicalState, transcript, inClinicItems, homeProgramItems]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -3183,30 +3448,30 @@ const ProfessionalWorkflowPage = () => {
     // Clean SOAP note to remove undefined values before saving to Firestore
     const cleanedSoap = cleanUndefined(cleanSoap);
 
-    // Save to session
+    // Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
     try {
-      const newSessionId = await sessionService.createSession({
+      const savePayload = {
         userId: TEMP_USER_ID,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
-        soapNote: cleanedSoap, // Use cleaned version to avoid Firestore undefined errors
+        soapNote: cleanedSoap,
         physicalTests: physicalExamResults || [],
         status: status === 'finalized' ? 'completed' : 'draft',
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
-      });
-
-      // Track session started
-      await trackSessionStarted({
-        userId: TEMP_USER_ID,
-        patientId: patientIdFromUrl || demoPatient.id,
-        sessionType: "initial",
-      });
-
-      // ✅ Day 3: Store sessionId for comparison
-      if (newSessionId) {
-        setSessionId(newSessionId);
+      };
+      if (sessionId) {
+        await sessionService.updateSession(sessionId, savePayload);
+      } else {
+        const currentSessionId = `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+        await sessionService.createSessionWithId(currentSessionId, savePayload);
+        setSessionId(currentSessionId);
+        await trackSessionStarted({
+          userId: TEMP_USER_ID,
+          patientId: patientIdFromUrl || demoPatient.id,
+          sessionType: "initial",
+        });
       }
 
       // Track value metrics when SOAP is finalized
@@ -3279,13 +3544,16 @@ const ProfessionalWorkflowPage = () => {
         initialAssessmentClosedAt: now,
         baselineId,
       }, userId, visitType || 'initial', currentSessionId);
-      setSuccessMessage('Initial Assessment closed. Baseline saved.');
-      navigate('/command-center');
+      setCloseInitialConfirmData({
+        patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || 'Patient',
+        baselineId,
+      });
+      setShowCloseInitialConfirmModal(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
       setAnalysisError(message);
     }
-  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, visitType]);
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
@@ -3751,6 +4019,49 @@ const ProfessionalWorkflowPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <CloseInitialAssessmentConfirmModal
+        isOpen={showCloseInitialConfirmModal}
+        onClose={() => {
+          setShowCloseInitialConfirmModal(false);
+          setCloseInitialConfirmData(null);
+        }}
+        patientName={closeInitialConfirmData?.patientName}
+        baselineId={closeInitialConfirmData?.baselineId}
+      />
+      <InitialClinicalSummaryModal
+        isOpen={showInitialSummaryModal}
+        onClose={() => setShowInitialSummaryModal(false)}
+        patientId={patientId ?? ''}
+        patientName={currentPatient?.fullName ?? (currentPatient ? `${(currentPatient as any).firstName ?? ''} ${(currentPatient as any).lastName ?? ''}`.trim() : undefined)}
+        onSuccess={() => {
+          if (!patientId || !user?.uid) return;
+          getClinicalState(patientId, user.uid).then((state) => {
+            if (state?.hasBaseline && state.baselineSOAP) {
+              setFollowUpClinicalState({
+                baselineSOAP: {
+                  subjective: state.baselineSOAP.subjective ?? '',
+                  objective: state.baselineSOAP.objective ?? '',
+                  assessment: state.baselineSOAP.assessment ?? '',
+                  plan: state.baselineSOAP.plan ?? '',
+                },
+              });
+            }
+            setFollowUpBaselineChecked(true);
+          });
+        }}
+        onSubmit={async (freeText, inputMode) => {
+          if (!patientId || !user?.uid) throw new Error('Missing patient or user.');
+          const soap = await generateBaselineSOAPFromFreeText(freeText);
+          const baselineId = await createBaselineFromMinimalSOAP({
+            patientId,
+            soap: { subjective: soap.subjective, objective: soap.objective, assessment: soap.assessment, plan: soap.plan },
+            createdBy: user.uid,
+            source: inputMode === 'paste' ? 'vertex_from_paste' : 'manual_minimal',
+          });
+          await PatientService.updatePatient(patientId, { activeBaselineId: baselineId });
+          return baselineId;
+        }}
+      />
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div>
@@ -3802,6 +4113,36 @@ const ProfessionalWorkflowPage = () => {
 
         {/* WO-07 FIX: Layout condicional - Tabs para Initial, Vertical para Follow-up */}
         {visitType === 'follow-up' ? (
+          !followUpBaselineChecked ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <Loader2 className="w-8 h-8 text-slate-400 mx-auto mb-3 animate-spin" />
+              <p className="text-sm text-slate-600">Checking baseline…</p>
+            </div>
+          ) : followUpBaselineChecked && !followUpClinicalState ? (
+            <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
+              <h2 className="text-lg font-semibold text-slate-900 mb-2">No baseline — follow-up not available</h2>
+              <p className="text-sm text-slate-700 mb-4 max-w-md mx-auto">
+                You cannot start a follow-up without a prior initial assessment. Complete an initial assessment for this patient first; the baseline is then built from that and is the single source of truth for follow-up.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInitialSummaryModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+                >
+                  Establecer resumen clínico inicial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(patientId ? `/workflow?patientId=${patientId}` : '/command-center')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700"
+                >
+                  Start initial assessment
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-6">
             {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
             <div className="bg-white border border-blue-200 rounded-lg p-6">
@@ -3914,14 +4255,21 @@ const ProfessionalWorkflowPage = () => {
                   )}
                 </div>
 
-                {/* Visit Type Indicator */}
+                {/* Visit Type Indicator — session ordinal: Initial = First, Follow-up = Second / Third / … */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                   <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-semibold text-slate-900 font-apple">
-                      {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
-                    </span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-semibold text-slate-900 font-apple">
+                        {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 font-apple font-light">
+                      {visitType === 'initial'
+                        ? 'First session'
+                        : (['Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth'][(visitCount.data ?? 1) - 1] ?? `Session ${(visitCount.data ?? 0) + 1}`) + ' session'}
+                    </p>
                   </div>
                   {previousTreatmentPlan && (
                     <div className="mt-2 flex items-center gap-2">
@@ -3933,31 +4281,38 @@ const ProfessionalWorkflowPage = () => {
               </div>
             </div>
 
-            {/* Bloque 1: Today's treatment session (solo follow-up) */}
-            {visitType === 'follow-up' && todayFocus.length > 0 && (
-              <div className="bg-white border border-blue-200 rounded-lg p-6">
-                <div className="flex items-start gap-3 mb-4">
-                  <span className="text-2xl">🗓️</span>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                      Today's treatment session
-                    </h2>
-                    <p className="text-sm text-slate-600">
-                      Confirm or adjust what was planned previously.
-                    </p>
+            {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}
+            {visitType === 'follow-up' && (inClinicItems.length > 0 || homeProgramItems.length > 0) && (
+              <>
+                {inClinicItems.length > 0 && (
+                  <div className="bg-white border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <span className="text-2xl">🗓️</span>
+                      <div className="flex-1">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                          Today&apos;s in-clinic treatment
+                        </h2>
+                        <p className="text-sm text-slate-600">
+                          Confirm or adjust what was planned previously.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-blue-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Today&apos;s treatment confirmed</span>
+                      </div>
+                    </div>
+                    <SuggestedFocusEditor
+                      items={inClinicItems}
+                      onChange={setInClinicItems}
+                      onFinishSession={undefined}
+                      hideHeader={true}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-blue-600">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Today's treatment confirmed</span>
-                  </div>
-                </div>
-                <SuggestedFocusEditor
-                  items={todayFocus}
-                  onChange={setTodayFocus}
-                  onFinishSession={undefined}
-                  hideHeader={true}
-                />
-              </div>
+                )}
+                {homeProgramItems.length > 0 && (
+                  <HomeProgramBlock items={homeProgramItems} onChange={setHomeProgramItems} />
+                )}
+              </>
             )}
 
             {/* Bloque 2: Clinical notes / Follow-up clinical update */}
@@ -4044,11 +4399,13 @@ const ProfessionalWorkflowPage = () => {
                   continueToEvaluation={continueToEvaluation}
                   analysisError={analysisError}
                   successMessage={successMessage}
-                  setAnalysisError={setAnalysisError}
+                  setAnalysisError={setAnalysisErrorWithRecovery}
                   setSuccessMessage={setSuccessMessage}
                   onTodayFocusChange={setTodayFocus}
                   onFinishSession={undefined}
                   hideHeader={true}
+                  todayFocusBlockRenderedByParent={visitType === 'follow-up'}
+                  resumeLoadFailed={resumeLoadFailed}
                 />
               </Suspense>
             </div>
@@ -4079,7 +4436,7 @@ const ProfessionalWorkflowPage = () => {
                   isGeneratingSOAP={isGeneratingSOAP}
                   patientId={patientId}
                   sessionId={sessionId}
-                  handleGenerateSoap={handleGenerateSoap}
+                  handleGenerateSoap={visitType === 'follow-up' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
                   handleSaveSOAP={handleSaveSOAP}
                   handleRegenerateSOAP={handleRegenerateSOAP}
                   handleFinalizeSOAP={handleFinalizeSOAP}
@@ -4088,7 +4445,8 @@ const ProfessionalWorkflowPage = () => {
                   workflowMetrics={workflowMetrics}
                   workflowRoute={workflowRoute}
                   soapTokenOptimization={soapTokenOptimization}
-                  niagaraResults={niagaraResults}
+                  niagaraResults={visitType === 'follow-up' ? null : niagaraResults}
+                  followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
                   transcript={transcript}
                   physicalExamResults={physicalExamResults}
                   treatmentReminder={treatmentReminder}
@@ -4119,7 +4477,8 @@ const ProfessionalWorkflowPage = () => {
                   removingAttachmentId={removingAttachmentId}
                   handleAttachmentUpload={handleAttachmentUpload}
                   handleAttachmentRemove={handleAttachmentRemove}
-                  onCloseInitialAssessment={visitType === 'initial' && soapStatus === 'finalized' && !initialAssessmentClosedAt ? handleCloseInitialAssessment : undefined}
+                  onCloseInitialAssessment={undefined}
+                  onBackToCommandCenter={() => navigate('/command-center')}
                 />
               </Suspense>
             </div>
@@ -4174,6 +4533,7 @@ const ProfessionalWorkflowPage = () => {
               })()
             )}
           </div>
+          )
         ) : (
           <>
             <nav className="flex flex-wrap gap-2">
@@ -4268,11 +4628,12 @@ const ProfessionalWorkflowPage = () => {
                   continueToEvaluation={continueToEvaluation}
                   analysisError={analysisError}
                   successMessage={successMessage}
-                  setAnalysisError={setAnalysisError}
+                  setAnalysisError={setAnalysisErrorWithRecovery}
                   setSuccessMessage={setSuccessMessage}
                   onTodayFocusChange={setTodayFocus}
                   onFinishSession={undefined}
                   hideHeader={false}
+                  resumeLoadFailed={resumeLoadFailed}
                 />
               </Suspense>
             )}
@@ -4339,6 +4700,7 @@ const ProfessionalWorkflowPage = () => {
                   setAnalysisError={setAnalysisError}
                   setSuccessMessage={setSuccessMessage}
                   setVisitType={setVisitType}
+                  onBackToCommandCenter={() => navigate('/command-center')}
                 />
               </Suspense>
             )}

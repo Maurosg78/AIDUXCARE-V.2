@@ -179,6 +179,15 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   if (!editedResults) return null;
 
+  // Follow-up path: do NOT show Highlights or Biopsychosocial. Only SOAP from Documentation.
+  if (visitType === 'follow-up') {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
+        Generate your SOAP note in the Documentation section below. Follow-up uses baseline, treatments, and clinical notes only — no separate analysis sections.
+      </div>
+    );
+  }
+
   const criticalMeds = editedResults.entities?.filter(e => 
     e.type === 'medication' && e.text?.toLowerCase().includes('sin prescri')
   ) || [];
@@ -250,8 +259,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       </div>
       )}
 
-      {/* WO-07: Conversation Highlights - OCULTO en follow-up (ruido innecesario) */}
-      {visitType !== 'follow-up' && (
+      {/* Conversation Highlights: visible for both initial and follow-up so Vertex analysis is visible */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -259,8 +267,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               <Heart className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Conversation Highlights</h3>
-              <p className="text-xs text-slate-500">Capture chief complaint, key findings, and medication.</p>
+              <h3 className="text-base font-semibold text-slate-900">
+                {visitType === 'follow-up' ? 'Follow-up analysis' : 'Conversation Highlights'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {visitType === 'follow-up' ? 'Chief complaint, key findings, and summary from this visit.' : 'Capture chief complaint, key findings, and medication.'}
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -279,6 +291,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         </div>
 
+        {visitType === 'follow-up' && editedResults.motivo_consulta && (
+          <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Summary</p>
+            <p className="text-sm text-slate-800">{editedResults.motivo_consulta}</p>
+          </div>
+        )}
         <div className="grid gap-4 lg:grid-cols-2">
           <div>
             <h4 className="font-medium text-sm text-slate-700 mb-2">Chief complaint & key findings</h4>
@@ -320,9 +338,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         </div>
       </div>
-      )}
 
-      {/* WO-07: Recommended Physical Tests - OCULTO en follow-up (ruido innecesario) */}
+      {/* Recommended Physical Tests: only for initial (follow-up skips suggestions) */}
       {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
@@ -421,8 +438,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       </div>
       )}
 
-      {/* WO-07: Biopsychosocial Factors - OCULTO en follow-up (ruido innecesario) */}
-      {visitType !== 'follow-up' && (
+      {/* Biopsychosocial Factors: visible for both initial and follow-up so Vertex analysis is visible */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -553,7 +569,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
-      )}
     </div>
   );
 };

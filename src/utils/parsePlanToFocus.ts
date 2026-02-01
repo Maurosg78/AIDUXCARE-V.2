@@ -82,8 +82,8 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
     const lines = planText.split('\n');
     lines.forEach((line, idx) => {
       const trimmed = line.trim();
-      if (trimmed.match(/^[•\-\*]\s+/) && trimmed.length > 3) {
-        const label = trimmed.replace(/^[•\-\*]\s+/, '').trim();
+      if (trimmed.match(/^[•\-*]\s+/) && trimmed.length > 3) {
+        const label = trimmed.replace(/^[•\-*]\s+/, '').trim();
         if (label.length > 0) {
           items.push({
             id: `general-${itemId++}`,

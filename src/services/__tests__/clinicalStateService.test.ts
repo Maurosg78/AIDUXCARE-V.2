@@ -24,15 +24,30 @@ const mockCheckConsentViaServer = vi.fn< (patientId: string) => Promise<{
   status: 'ongoing' | 'session-only' | 'declined' | null;
 }> >();
 const mockIsFirstSession = vi.fn< (patientId: string, userId?: string) => Promise<boolean> >();
+const mockGetNotesByPatient = vi.fn< (patientId: string) => Promise<Array<{
+  id: string;
+  sessionId: string;
+  soapData: { subjective: string; objective: string; assessment: string; plan: string };
+  createdAt: string;
+}>> >();
+const mockCreateBaseline = vi.fn< () => Promise<string> >();
 
 vi.mock('../patientService', () => ({
   PatientService: {
     getPatientById: (patientId: string) => mockGetPatientById(patientId),
+    updatePatient: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
 vi.mock('../clinicalBaselineService', () => ({
   getBaselineById: (baselineId: string) => mockGetBaselineById(baselineId),
+  createBaseline: (...args: unknown[]) => mockCreateBaseline(...args),
+}));
+
+vi.mock('../PersistenceService', () => ({
+  PersistenceService: {
+    getNotesByPatient: (patientId: string) => mockGetNotesByPatient(patientId),
+  },
 }));
 
 vi.mock('../consentServerService', () => ({
@@ -79,6 +94,8 @@ describe('ClinicalStateService', () => {
       status: 'ongoing',
     });
     mockIsFirstSession.mockResolvedValue(false);
+    mockGetNotesByPatient.mockResolvedValue([]);
+    mockCreateBaseline.mockResolvedValue('auto-baseline-id');
   });
 
   describe('baseline existe → hasBaseline = true', () => {
@@ -98,13 +115,43 @@ describe('ClinicalStateService', () => {
   });
 
   describe('no SOAP previo → hasBaseline = false', () => {
-    it('returns hasBaseline false when patient has no activeBaselineId', async () => {
+    it('returns hasBaseline false when patient has no activeBaselineId and no notes', async () => {
       mockGetPatientById.mockResolvedValue({ id: 'p-none' });
+      mockGetNotesByPatient.mockResolvedValue([]);
 
       const state = await getClinicalState('p-none', 'user-1');
 
       expect(state.hasBaseline).toBe(false);
       expect(state.baselineSOAP).toBeUndefined();
+    });
+  });
+
+  describe('WO-AUTO-BASELINE-01: fallback from finalized initial SOAP', () => {
+    it('returns hasBaseline true and baselineSOAP when no activeBaselineId but last note exists', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-fallback' });
+      mockGetNotesByPatient.mockResolvedValue([
+        {
+          id: 'note-1',
+          sessionId: 'session-1',
+          soapData: {
+            subjective: 'S',
+            objective: 'O',
+            assessment: 'A',
+            plan: 'P',
+          },
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+
+      const state = await getClinicalState('p-fallback', 'user-1');
+
+      expect(state.hasBaseline).toBe(true);
+      expect(state.baselineSOAP).toBeDefined();
+      expect(state.baselineSOAP?.subjective).toBe('S');
+      expect(state.baselineSOAP?.objective).toBe('O');
+      expect(state.baselineSOAP?.assessment).toBe('A');
+      expect(state.baselineSOAP?.plan).toBe('P');
+      expect(state.baselineSOAP?.encounterId).toBe('session-1');
     });
   });
 

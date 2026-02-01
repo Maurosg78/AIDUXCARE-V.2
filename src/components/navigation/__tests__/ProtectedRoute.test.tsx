@@ -60,21 +60,16 @@ afterEach(() => {
 // ReturnType is a built-in TypeScript utility type, available globally
 type MockFunction<T extends (...args: never[]) => unknown> = ReturnType<typeof vi.fn> & T;
 
-// eslint-disable-next-line no-console
 console.error('[MARK] before mock definitions');
 const mockUseAuth = useAuth as MockFunction<typeof useAuth>;
-// eslint-disable-next-line no-console
 console.error('[MARK] after mockUseAuth');
 const mockLoadSessionState = sessionPersistence.loadSessionState as MockFunction<typeof sessionPersistence.loadSessionState>;
-// eslint-disable-next-line no-console
 console.error('[MARK] after mockLoadSessionState');
 const mockGetCurrentSessionId = sessionPersistence.getCurrentSessionId as MockFunction<typeof sessionPersistence.getCurrentSessionId>;
-// eslint-disable-next-line no-console
 console.error('[MARK] after mockGetCurrentSessionId');
 
 // __RUN__ bloque removido para bisect
 describe('ProtectedRoute', () => {
-  // eslint-disable-next-line no-console
   console.error('[MARK] inside describe ProtectedRoute');
 
   // beforeEach comentado completamente
@@ -82,22 +77,16 @@ describe('ProtectedRoute', () => {
   //   vi.clearAllMocks();
   //   mockGetCurrentSessionId.mockReturnValue(null);
   // });
-  // eslint-disable-next-line no-console
   console.error('[MARK] after beforeEach (comentado)');
 
   describe('Authentication Check', () => {
-    // eslint-disable-next-line no-console
     console.error('[MARK] inside describe Authentication Check');
 
     it('TEST: simple test', () => {
-      // eslint-disable-next-line no-console
       console.error('[MARK] TEST - inside test');
       expect(true).toBe(true);
-      // eslint-disable-next-line no-console
       console.error('[MARK] TEST - after expect');
     });
-    // eslint-disable-next-line no-console
-    // eslint-disable-next-line no-console
     console.error('[MARK] after first test');
 
     // SECOND TEST COMMENTED FOR BISECT

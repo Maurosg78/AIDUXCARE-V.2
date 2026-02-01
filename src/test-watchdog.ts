@@ -21,20 +21,16 @@ function summarize(h: NodeHandle): string {
 
 function dump(where: string): void {
     try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const processWithHandles = process as any as NodeProcess;
+        const processWithHandles = process as unknown as NodeProcess;
         const handles: NodeHandle[] = processWithHandles._getActiveHandles?.() ?? [];
         const requests: unknown[] = processWithHandles._getActiveRequests?.() ?? [];
         const handlesLength = handles.length;
         const requestsLength = requests.length;
-        // eslint-disable-next-line no-console
         console.error(`\n[WATCHDOG] ${where}: handles=${handlesLength} requests=${requestsLength}`);
         for (const h of handles) {
-            // eslint-disable-next-line no-console
             console.error(' -', summarize(h));
         }
     } catch (e) {
-        // eslint-disable-next-line no-console
         console.error('[WATCHDOG] dump failed', e);
     }
 }

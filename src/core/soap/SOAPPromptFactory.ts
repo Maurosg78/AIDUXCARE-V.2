@@ -79,19 +79,26 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Prognosis indicators
 - DO NOT repeat examination details from Objective
 
-**PLAN:** Treatment strategy and next steps - MUST use structured format
-The Plan section MUST follow this exact structure for parsing and "Today's Plan" population:
+**PLAN:** Treatment strategy and next steps - MUST use structured format (WO-PROMPT-PLAN-SPLIT-01)
+When writing the PLAN section, you MUST divide it into two clearly labeled sections:
+1. IN-CLINIC TREATMENT – interventions performed during the clinical session (manual therapy, supervised exercises, modalities, gait training, etc.).
+2. HOME EXERCISE PROGRAM (HEP) – exercises, education, or activities prescribed for the patient to perform independently at home.
+Do not mix items between sections. Use bullet points only.
 
-STRUCTURED PLAN FORMAT (REQUIRED):
-- Interventions: [List specific interventions, e.g., "Manual therapy to lumbar spine", "Strengthening exercises for quadriceps", "Gait training"]
-- Modalities: [List treatment modalities if applicable, e.g., "TENS", "Tecar therapy", "US", "Infrared light therapy", "Shockwave therapy" - or "None" if not applicable]
-- Home Exercises: [List specific home exercises prescribed, e.g., "Quad sets 3x10 daily", "ROM exercises 2x/day", "Ice 15min 3x/day" - or "None" if not prescribed]
-- Patient Education: [List education topics covered, e.g., "Posture awareness", "Activity modification", "Pain management strategies" - or "None" if not applicable]
-- Goals: [List measurable treatment goals, e.g., "Pain reduction to 3/10", "Return to running", "Full ROM restoration" - or "To be determined"]
-- Follow-up: [Next appointment details, e.g., "Reassess in 2 weeks", "Follow-up in 1 week", "As needed" - or "To be scheduled"]
-- Next Session Focus: [What to focus on in the next visit, e.g., "Progress strengthening program", "Reassess pain levels", "Advance exercises" - REQUIRED for follow-up planning]
+STRUCTURED PLAN FORMAT (REQUIRED) – exact headers:
+PLAN:
 
-CRITICAL: Use clear section headers (Interventions:, Modalities:, etc.) and list items with bullets or dashes. This structure enables automatic parsing for "Today's Plan" population in follow-up visits.
+IN-CLINIC TREATMENT:
+- Item 1
+- Item 2
+- …
+
+HOME EXERCISE PROGRAM (HEP):
+- Item 1
+- Item 2
+- …
+
+Rules: NO mixing items between sections. Everything supervised or performed in clinic → IN-CLINIC TREATMENT. Everything the patient does at home → HOME EXERCISE PROGRAM (HEP). If ambiguous: frequency daily (x/day, daily) → HEP; supervision, clinical equipment, manual therapy, electrotherapy → IN-CLINIC.
 DO NOT repeat assessment rationale
 
 AVOID:
@@ -110,21 +117,23 @@ O: R knee effusion present. Lachman test (+), anterior drawer (+). ROM flexion 1
 
 A: R ACL tear with secondary meniscal involvement. Clinical presentation consistent with acute ligament disruption. Good surgical candidate given age and activity level.
 
-P: 
-- Interventions: Urgent orthopedic referral for MRI and surgical consultation. Pre-hab program: quad setting, ROM exercises, ice/elevation. Crutches non-weight bearing.
-- Modalities: None
-- Home Exercises: Quad sets 3x10 daily, ROM exercises 2x/day, Ice 15min 3x/day
-- Patient Education: Surgical timeline and expectations, non-weight bearing precautions
-- Goals: Maintain quad strength, reduce effusion, prepare for surgery
-- Follow-up: Orthopedic consultation scheduled
-- Next Session Focus: Reassess quad strength and ROM, progress pre-hab program
+P:
+IN-CLINIC TREATMENT:
+- Manual therapy for lumbar spine mobility
+- Supervised therapeutic exercises for knee stability
+- Gait training with crutches
+
+HOME EXERCISE PROGRAM (HEP):
+- Quadriceps isometric exercises, 3x/day
+- Hamstring stretching, twice daily
+- Ice application for 15 minutes, 3x/day
 
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history. MAX 200 chars. Be concise and focused on what patient reports. Use abbreviations when appropriate.",
   "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM degrees, strength grades, pain scales). **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations. Focus on clinical significance.",
   "assessment": "Clinical reasoning: working diagnosis based on S+O findings, brief rationale, key impairments, prognosis. MAX 250 chars. Focus on clinical significance and pattern identification.",
-  "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [specific list]\n- Modalities: [TENS/Tecar/US/etc or None]\n- Home Exercises: [specific exercises or None]\n- Patient Education: [topics or None]\n- Goals: [measurable objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
+  "plan": "PLAN with exactly two sections:\n\nIN-CLINIC TREATMENT:\n- [item]\n- [item]\n\nHOME EXERCISE PROGRAM (HEP):\n- [item]\n- [item]\n\nUse bullet points only. Do not mix items between sections. MAX 500 chars."
 }
 
 CRITICAL LENGTH REQUIREMENTS:
@@ -271,19 +280,26 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Key changes identified
 - DO NOT repeat examination details from Objective
 
-**PLAN:** Treatment strategy and next steps - MUST use structured format
-The Plan section MUST follow this exact structure for parsing and "Today's Plan" population:
+**PLAN:** Treatment strategy and next steps - MUST use structured format (WO-PROMPT-PLAN-SPLIT-01)
+When writing the PLAN section, you MUST divide it into two clearly labeled sections:
+1. IN-CLINIC TREATMENT – interventions performed during the clinical session.
+2. HOME EXERCISE PROGRAM (HEP) – exercises or activities prescribed for the patient to perform at home.
+Do not mix items between sections. Use bullet points only.
 
-STRUCTURED PLAN FORMAT (REQUIRED):
-- Interventions: [List specific interventions/modifications, e.g., "Progress strengthening program", "Add resistance to exercises", "Continue manual therapy"]
-- Modalities: [List treatment modalities if applicable, e.g., "TENS 2x/week", "Tecar therapy", "US" - or "Continue current modalities" or "None"]
-- Home Exercises: [List home exercises prescribed/modified, e.g., "Progress UCL exercises", "Add resistance", "Continue ROM exercises" - or "None" if not modified]
-- Patient Education: [List education topics covered, e.g., "Ergonomics", "Activity pacing", "Pain management" - or "None" if not applicable]
-- Goals: [List updated treatment goals, e.g., "Maintain current progress", "Increase grip strength to 10kg", "Return to work" - or reference previous goals]
-- Follow-up: [Next appointment details, e.g., "Reassess in 2 weeks", "Follow-up in 1 week", "As needed"]
-- Next Session Focus: [What to focus on in the next visit, e.g., "Reassess progress", "Advance exercise program", "Evaluate return-to-work readiness" - REQUIRED for follow-up planning]
+STRUCTURED PLAN FORMAT (REQUIRED) – exact headers:
+PLAN:
 
-CRITICAL: Use clear section headers (Interventions:, Modalities:, etc.) and list items with bullets or dashes. This structure enables automatic parsing for "Today's Plan" population in follow-up visits.
+IN-CLINIC TREATMENT:
+- Item 1
+- Item 2
+- …
+
+HOME EXERCISE PROGRAM (HEP):
+- Item 1
+- Item 2
+- …
+
+Rules: NO mixing items between sections. Everything supervised or performed in clinic → IN-CLINIC TREATMENT. Everything the patient does at home → HOME EXERCISE PROGRAM (HEP).
 DO NOT repeat assessment rationale
 
 CLINICAL EXAMPLE (Follow-up SOAP Format):
@@ -295,20 +311,20 @@ O: Grip strength R 8kg (was 5kg), L 12kg. R wrist flexion 75° (was 70°). UCL s
 A: Good progress with UCL strengthening program. Pain reduction and grip improvement indicate positive response. Continue current plan with progression.
 
 P:
-- Interventions: Progress UCL exercises, add resistance. Continue manual therapy.
-- Modalities: TENS 2x/week
-- Home Exercises: Progress UCL exercises with resistance, continue ROM exercises
-- Patient Education: Ergonomics, activity modification
-- Goals: Increase grip strength to 10kg, maintain current progress
-- Follow-up: Reassess in 2 weeks
-- Next Session Focus: Reassess grip strength and pain levels, evaluate exercise progression
+IN-CLINIC TREATMENT:
+- Progress UCL exercises, add resistance. Continue manual therapy.
+- TENS 2x/week
+
+HOME EXERCISE PROGRAM (HEP):
+- Progress UCL exercises with resistance, continue ROM exercises
+- Ergonomics, activity modification
 
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: changes since last visit, treatment response, progress, new concerns. MAX 200 chars. Focus on changes and patient-reported outcomes.",
   "objective": "Measurable clinical findings: re-assessment findings, progress measures, comparison to baseline. **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers to show change. Focus on quantifiable progress.",
   "assessment": "Clinical reasoning: progress assessment, treatment effectiveness, plan modifications needed. MAX 250 chars. Compare to previous visit and assess response.",
-  "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [modifications/progression]\n- Modalities: [TENS/Tecar/US/etc or Continue/None]\n- Home Exercises: [exercises/modifications or None]\n- Patient Education: [topics or None]\n- Goals: [updated objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
+  "plan": "PLAN with exactly two sections:\n\nIN-CLINIC TREATMENT:\n- [item]\n- [item]\n\nHOME EXERCISE PROGRAM (HEP):\n- [item]\n- [item]\n\nUse bullet points only. Do not mix items between sections. MAX 500 chars."
 }
 
 CRITICAL LENGTH REQUIREMENTS:
@@ -330,6 +346,10 @@ ${context.todayFocus.map((focus, idx) => {
 }).join('\n')}
 
 IMPORTANT: Reflect these adjusted focus areas and any clinician notes in the SOAP note, particularly in the Assessment and Plan sections. The clinician has explicitly chosen these focus areas based on their clinical judgment.
+` : ''}
+${context.homeProgramPrescribed && context.homeProgramPrescribed.length > 0 ? `
+HOME PROGRAM PRESCRIBED (HEP - editable by clinician):
+${context.homeProgramPrescribed.map((line) => `- ${line.trim()}`).filter(Boolean).join('\n')}
 ` : ''}
 
 CURRENT VISIT DATA:

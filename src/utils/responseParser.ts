@@ -302,19 +302,19 @@ export function parseVertexResponse(response: any): ParsedResponse {
 }
 
 export function validateClinicalSchema(data: any): boolean {
+  // Follow-up analysis may omit recommended_physical_tests; still use structured mapping
   const requiredFields = [
     'medicolegal_alerts',
     'conversation_highlights',
-    'recommended_physical_tests',
     'biopsychosocial_factors'
   ];
-  
+
   for (const field of requiredFields) {
     if (!(field in data)) {
       console.warn(`[Validator] Missing required field: ${field}`);
       return false;
     }
   }
-  
+
   return true;
 }

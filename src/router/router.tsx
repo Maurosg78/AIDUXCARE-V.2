@@ -31,6 +31,7 @@ import TermsOfServicePage from '../pages/TermsOfServicePage';
 import AuthActionPage from '../pages/AuthActionPage';
 import TechDashboard from '../pages/Dashboard/TechDashboard';
 import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // LayoutWrapper simple
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -83,8 +84,8 @@ export const createRouter = () => createBrowserRouter([
   { path: '/appointments/:id', element: <AuthGuard><LayoutWrapper><AppointmentDetailPage /></LayoutWrapper></AuthGuard> },
   { path: '/notes', element: <AuthGuard><LayoutWrapper><NotesListPage /></LayoutWrapper></AuthGuard> },
   { path: '/notes/:id', element: <AuthGuard><LayoutWrapper><NoteDetailWrapper /></LayoutWrapper></AuthGuard> },
-  { path: '/workflow', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
-  { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ProfessionalWorkflowPage /></LayoutWrapper></AuthGuard> },
+  { path: '/workflow', element: <AuthGuard><LayoutWrapper><ErrorBoundary><ProfessionalWorkflowPage /></ErrorBoundary></LayoutWrapper></AuthGuard> },
+  { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ErrorBoundary><ProfessionalWorkflowPage /></ErrorBoundary></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
   // ✅ T2: Legacy/internal page — do not verify without token (redirects to /consent/:token if token provided)

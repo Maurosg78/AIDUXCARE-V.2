@@ -414,17 +414,19 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Analyzing...
+                {visitType === 'follow-up' ? 'Generating SOAP note...' : 'Analyzing...'}
               </>
             ) : (
               <>
                 <Brain className="w-4 h-4" />
-                Analyze with AiduxCare AI
+                {visitType === 'follow-up' ? 'Generate SOAP note' : 'Analyze with AiduxCare AI'}
               </>
             )}
           </button>
           <p className="mt-2 text-xs text-slate-500">
-            {transcript?.trim() && attachments.some(att => att.extractedText)
+            {visitType === 'follow-up'
+              ? 'One SOAP note from baseline, today’s treatments, and clinical notes'
+              : transcript?.trim() && attachments.some(att => att.extractedText)
               ? 'Analyze transcript and attachments together'
               : transcript?.trim()
               ? 'Analyze transcript with AI'

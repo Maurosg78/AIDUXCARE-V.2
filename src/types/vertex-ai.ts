@@ -65,11 +65,21 @@ export interface FollowUpAlerts {
   none?: true;
 }
 
+/** WO-PROMPT-PLAN-SPLIT-01: Parsed from plan text when model returns IN-CLINIC TREATMENT / HOME EXERCISE PROGRAM (HEP). */
+export interface SOAPPlanStructured {
+  inClinic: string[];
+  homeProgram: string[];
+}
+
 export interface SOAPNote {
   subjective: string;
   objective: string;
   assessment: string;
   plan: string;
+  /** WO-PROMPT-PLAN-SPLIT-01: In-clinic items when plan is structured. Not persisted; derived at parse/load. */
+  planInClinic?: string[];
+  /** WO-PROMPT-PLAN-SPLIT-01: HEP items when plan is structured. Not persisted; derived at parse/load. */
+  planHomeProgram?: string[];
   additionalNotes?: string;
   followUp?: string;
   precautions?: string;

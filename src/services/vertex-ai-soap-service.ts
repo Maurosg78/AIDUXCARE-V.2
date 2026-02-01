@@ -494,6 +494,51 @@ export async function generateSOAPNote(
 }
 
 /**
+ * WO-PROMPT-PLAN-SPLIT-01: Parse plan text into IN-CLINIC TREATMENT and HOME EXERCISE PROGRAM (HEP).
+ * Looks for exact headers (case-insensitive). Fallback: whole text as homeProgram, log warning.
+ */
+function parsePlanToStructured(planText: string): { inClinic: string[]; homeProgram: string[] } {
+  if (!planText || typeof planText !== 'string' || !planText.trim()) {
+    return { inClinic: [], homeProgram: [] };
+  }
+  const normalized = planText.trim();
+  const inClinicHeader = /IN-CLINIC\s+TREATMENT\s*:/i;
+  const hepHeader = /HOME\s+EXERCISE\s+PROGRAM\s*\(\s*HEP\s*\)\s*:/i;
+
+  const inClinicIdx = normalized.search(inClinicHeader);
+  const hepIdx = normalized.search(hepHeader);
+
+  const bulletLine = /^\s*[-•*]\s*(.+)$/;
+  const toItems = (block: string): string[] =>
+    block
+      .split(/\n/)
+      .map((line) => {
+        const m = line.match(bulletLine);
+        return m ? m[1].trim() : line.trim();
+      })
+      .filter(Boolean);
+
+  if (inClinicIdx !== -1 && hepIdx !== -1) {
+    const first = Math.min(inClinicIdx, hepIdx);
+    const second = Math.max(inClinicIdx, hepIdx);
+    const beforeSecond = normalized.slice(first, second);
+    const afterSecond = normalized.slice(second);
+    const isInClinicFirst = inClinicIdx < hepIdx;
+    const block1 = beforeSecond.replace(isInClinicFirst ? inClinicHeader : hepHeader, '').trim();
+    const block2 = afterSecond.replace(isInClinicFirst ? hepHeader : inClinicHeader, '').trim();
+    const items1 = toItems(block1);
+    const items2 = toItems(block2);
+    return isInClinicFirst
+      ? { inClinic: items1, homeProgram: items2 }
+      : { inClinic: items2, homeProgram: items1 };
+  }
+
+  console.warn('[SOAP][PLAN] Structured sections missing – fallback applied');
+  const allLines = normalized.split(/\n/).map((l) => l.replace(/^\s*[-•*]+\s*/, '').trim()).filter(Boolean);
+  return { inClinic: [], homeProgram: allLines };
+}
+
+/**
  * Parses Vertex AI response into SOAPNote structure
  */
 function parseSOAPResponse(
@@ -690,6 +735,9 @@ function parseSOAPResponse(
   
   console.log('[SOAP Builder] Plan length after formatting:', formattedPlan.length, 'chars');
 
+  // WO-PROMPT-PLAN-SPLIT-01: Parse plan into inClinic / homeProgram for UI consumption
+  const { inClinic: planInClinic, homeProgram: planHomeProgram } = parsePlanToStructured(formattedPlan);
+
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {
     return {
@@ -697,6 +745,8 @@ function parseSOAPResponse(
       objective: String(soapData.objective || 'Not documented.'),
       assessment: String(soapData.assessment || 'Not documented.'),
       plan: formattedPlan, // ✅ T3: Use validated and capped plan
+      planInClinic: planInClinic.length > 0 ? planInClinic : undefined,
+      planHomeProgram: planHomeProgram.length > 0 ? planHomeProgram : undefined,
       additionalNotes: soapData.additionalNotes ? String(soapData.additionalNotes) : undefined,
       followUp: soapData.followUp ? String(soapData.followUp) : undefined,
       precautions: soapData.precautions ? String(soapData.precautions) : undefined,
@@ -714,9 +764,63 @@ function parseSOAPResponse(
   };
 }
 
+const NOT_DOCUMENTED = 'Not documented.';
+const MIN_MEANINGFUL_LENGTH = 3;
+
+/** Check if section content is meaningful (not empty, not placeholder). */
+function isMeaningfulSection(text: string): boolean {
+  const t = (text ?? '').trim();
+  return t.length >= MIN_MEANINGFUL_LENGTH && t !== NOT_DOCUMENTED;
+}
+
+/**
+ * WO-FU-VERTEX-SPLIT-01: Parse plain SOAP sections when Vertex returns text (no JSON).
+ * Tries: Subjective:/Objective:/Assessment:/Plan:, then S:/O:/A:/P:, then Spanish Subjetivo:/Objetivo:/Evaluación:/Plan:
+ */
+function parsePlainSOAPSections(rawText: string): SOAPNote | null {
+  const trimmed = rawText.trim();
+  if (!trimmed) return null;
+
+  const headingSets: ReadonlyArray<[string, string, string, string]> = [
+    ['Subjective', 'Objective', 'Assessment', 'Plan'],
+    ['S', 'O', 'A', 'P'],
+    ['Subjetivo', 'Objetivo', 'Evaluación', 'Plan'],
+    ['Subjetivo', 'Objetivo', 'Assessment', 'Plan'],
+  ];
+
+  for (const headings of headingSets) {
+    const sections: Record<string, string> = {};
+    for (let i = 0; i < headings.length; i++) {
+      const name = headings[i];
+      const nextName = headings[i + 1];
+      const re = new RegExp(
+        `${name}:\\s*([\\s\\S]*?)(?=${nextName ? nextName + ':' : '$'})`,
+        'i'
+      );
+      const m = trimmed.match(re);
+      const text = m ? m[1].trim() : '';
+      const key = ['subjective', 'objective', 'assessment', 'plan'][i];
+      sections[key] = text || NOT_DOCUMENTED;
+    }
+    const hasAny = ['subjective', 'objective', 'assessment', 'plan'].some((k) =>
+      isMeaningfulSection(sections[k] ?? '')
+    );
+    if (hasAny) {
+      return {
+        subjective: sections.subjective ?? NOT_DOCUMENTED,
+        objective: sections.objective ?? NOT_DOCUMENTED,
+        assessment: sections.assessment ?? NOT_DOCUMENTED,
+        plan: sections.plan ?? NOT_DOCUMENTED,
+      };
+    }
+  }
+  return null;
+}
+
 /**
  * WO-11: Generate follow-up SOAP using raw prompt v2 (4 sources).
  * WO-11.1: Also parses ALERTS and plan[] for UI (red/yellow, checklist).
+ * WO-FU-VERTEX-SPLIT-01: Primary output is plain SOAP text; JSON parse is fallback.
  */
 export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   raw: string;
@@ -751,45 +855,79 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
     return { raw: '', soap: null };
   }
 
+  // WO-FOLLOWUP-SOAP-02: Temporary diagnostic log — remove after validation
+  console.log('[FOLLOWUP-RAW] length:', rawText.length, 'preview:', rawText.substring(0, 300));
+
   let soap: SOAPNote | null = null;
   let planItems: FollowUpPlanItem[] | null = null;
   let alerts: FollowUpAlerts | null = null;
 
-  try {
-    let soapData: any = null;
-    const soapNoteBlock = rawText.match(/SOAP_NOTE\s*\{[\s\S]*?\}\s*(?=ALERTS|$)/i);
-    if (soapNoteBlock) {
-      const jsonStr = soapNoteBlock[0].replace(/^SOAP_NOTE\s*/i, '').trim();
-      soapData = JSON.parse(jsonStr);
-    } else {
-      const firstJson = rawText.match(/\{[\s\S]*\}/);
-      if (firstJson) soapData = JSON.parse(firstJson[0]);
-    }
-    if (soapData && typeof soapData === 'object') {
-      const plan =
-        typeof soapData.plan === 'string'
-          ? soapData.plan
-          : Array.isArray(soapData.plan)
-            ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
-            : 'Not documented.';
-      soap = {
-        subjective: String(soapData.subjective ?? 'Not documented.'),
-        objective: String(soapData.objective ?? 'Not documented.'),
-        assessment: String(soapData.assessment ?? 'Not documented.'),
-        plan: plan || 'Not documented.',
-      };
-      // WO-11.1: structured plan[] for checklist
-      if (Array.isArray(soapData.plan) && soapData.plan.length > 0) {
-        planItems = soapData.plan.map((p: any) => ({
-          id: p.id ?? String(Math.random()).slice(2, 9),
-          action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
-          status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
-          notes: p.notes,
-        }));
+  // WO-FU-VERTEX-SPLIT-01: Prompt V3 requests plain SOAP only — try plain sections first
+  const plainSoap = parsePlainSOAPSections(rawText);
+  console.log('[FOLLOWUP-RAW] parsePlainSOAPSections result:', plainSoap ? 'MATCHED' : 'NULL');
+  if (plainSoap) {
+    soap = plainSoap;
+  }
+
+  if (!soap) {
+    try {
+      let soapData: any = null;
+      const soapNoteBlock = rawText.match(/SOAP_NOTE\s*\{[\s\S]*?\}\s*(?=ALERTS|$)/i);
+      if (soapNoteBlock) {
+        const jsonStr = soapNoteBlock[0].replace(/^SOAP_NOTE\s*/i, '').trim();
+        soapData = JSON.parse(jsonStr);
+      } else {
+        const firstJson = rawText.match(/\{[\s\S]*\}/);
+        if (firstJson) soapData = JSON.parse(firstJson[0]);
       }
-    }
+      if (soapData && typeof soapData === 'object') {
+        const plan =
+          typeof soapData.plan === 'string'
+            ? soapData.plan
+            : Array.isArray(soapData.plan)
+              ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
+              : 'Not documented.';
+        soap = {
+          subjective: String(soapData.subjective ?? 'Not documented.'),
+          objective: String(soapData.objective ?? 'Not documented.'),
+          assessment: String(soapData.assessment ?? 'Not documented.'),
+          plan: plan || 'Not documented.',
+        };
+        if (Array.isArray(soapData.plan) && soapData.plan.length > 0) {
+          planItems = soapData.plan.map((p: any) => ({
+            id: p.id ?? String(Math.random()).slice(2, 9),
+            action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
+            status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
+            notes: p.notes,
+          }));
+        }
+      }
   } catch (e) {
     console.warn('[SOAP Service] WO-11 parse SOAP_NOTE from v2 response:', e);
+  }
+  }
+
+  // Fallback: if no structured SOAP could be parsed but we have raw text, use it as single follow-up block
+  // so the UI shows the model output instead of "Not documented." everywhere.
+  if (!soap || (
+    !isMeaningfulSection(soap.subjective ?? '') &&
+    !isMeaningfulSection(soap.objective ?? '') &&
+    !isMeaningfulSection(soap.assessment ?? '') &&
+    !isMeaningfulSection(soap.plan ?? '') &&
+    !(soap.followUp != null && (soap.followUp as string).trim().length > 0)
+  )) {
+    const rawTrimmed = (rawText ?? '').trim();
+    if (rawTrimmed.length > 0) {
+      soap = {
+        subjective: '',
+        objective: '',
+        assessment: '',
+        plan: '',
+        followUp: rawTrimmed,
+      };
+      console.info('[SOAP Service] WO-11 using raw text as followUp block (structured parse had no content)');
+      console.log('[FOLLOWUP-RAW] FALLBACK activated. followUp length:', rawTrimmed.length);
+    }
   }
 
   // WO-11.1: parse ALERTS block
@@ -815,5 +953,76 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   }
 
   return { raw: rawText, soap, alerts: alerts ?? undefined, planItems: planItems ?? undefined };
+}
+
+/**
+ * WO-MINIMAL-BASELINE: Generate structured SOAP from free-form text (pasted EMR notes or "Estado actual del tratamiento").
+ * Used to create a baseline for existing patients. Returns SOAP only; no ALERTS/planItems.
+ */
+const BASELINE_FROM_TEXT_SYSTEM =
+  'You are a clinical note assistant. Given session note(s) or free-text clinical summary, output a single SOAP note that serves as clinical context for future follow-ups. Use plain text with exactly these headings (one per section): Subjective:, Objective:, Assessment:, Plan:. Each section must contain substantive content; Plan must explicitly state what treatment is in course. Output nothing else.';
+
+export async function generateBaselineSOAPFromFreeText(freeText: string): Promise<SOAPNote> {
+  const userPrompt = `Extract or generate a structured SOAP note from the following session note(s) or clinical summary. The SOAP will be used as baseline context for future follow-ups. The Plan section must explicitly state what treatment is currently in course.\n\n---\n${freeText.trim().slice(0, 15000)}\n---`;
+  const fullPrompt = `${BASELINE_FROM_TEXT_SYSTEM}\n\n${userPrompt}`;
+
+  const traceId = `baseline-from-text-${Date.now()}`;
+  const response = await fetch(VERTEX_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: fullPrompt,
+      action: 'analyze',
+      traceId,
+      model: 'gemini-2.0-flash-exp',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  const rawText =
+    data.candidates?.[0]?.content?.parts?.[0]?.text ??
+    data.text ??
+    (data.soap ? JSON.stringify(data.soap) : '');
+
+  if (!rawText || typeof rawText !== 'string') {
+    throw new Error('No SOAP content returned from AI.');
+  }
+
+  let soap: SOAPNote | null = parsePlainSOAPSections(rawText);
+  if (!soap) {
+    try {
+      const firstJson = rawText.match(/\{[\s\S]*\}/);
+      if (firstJson) {
+        const soapData = JSON.parse(firstJson[0]);
+        if (soapData && typeof soapData === 'object') {
+          const plan =
+            typeof soapData.plan === 'string'
+              ? soapData.plan
+              : Array.isArray(soapData.plan)
+                ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action ?? p?.label ?? String(p))).join('\n')
+                : '';
+          soap = {
+            subjective: String(soapData.subjective ?? ''),
+            objective: String(soapData.objective ?? ''),
+            assessment: String(soapData.assessment ?? ''),
+            plan: plan || '',
+          };
+        }
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  if (!soap) {
+    throw new Error('Could not parse SOAP from AI response.');
+  }
+
+  return soap;
 }
 

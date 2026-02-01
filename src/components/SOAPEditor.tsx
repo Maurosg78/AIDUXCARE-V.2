@@ -28,7 +28,11 @@ export interface SOAPEditorProps {
   onUnfinalize?: (soap: SOAPNote) => void;
   onPreview?: (soap: SOAPNote) => void;
   onShare?: () => void; // Callback to open share menu
+  /** When provided and status is finalized, shows "Back to Command Center" and save confirmation. */
+  onBackToCommandCenter?: () => void;
   className?: string;
+  /** Follow-up only: one editable block (no S/O/A/P split). When true, always show single block. */
+  singleBlockMode?: boolean;
   // ✅ WORKFLOW OPTIMIZATION: Optimized mode for follow-ups
   isOptimized?: boolean;
   tokenOptimization?: {
@@ -43,6 +47,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   soap,
   status,
   visitType,
+  singleBlockMode = false,
   isGenerating = false,
   patientId,
   sessionId,
@@ -52,10 +57,13 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   onUnfinalize,
   onPreview,
   onShare,
+  onBackToCommandCenter,
   className = '',
   isOptimized = false,
   tokenOptimization,
 }) => {
+  // Follow-up: one block only (no Niagara, no 4-section mapping). Cannot show S/O/A/P split.
+  const showSingleBlock = singleBlockMode || visitType === 'follow-up';
   const { user } = useAuth();
   const [editedSOAP, setEditedSOAP] = useState<SOAPNote | null>(soap);
   const [hasChanges, setHasChanges] = useState(false);
@@ -77,6 +85,28 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
       ...editedSOAP,
       [section]: value,
     });
+    setHasChanges(true);
+  };
+
+  /** Follow-up only: build single-block display from S/O/A/P when followUp not set. */
+  const getFollowUpSingleBlockContent = (soap: SOAPNote): string => {
+    if (soap.followUp != null && soap.followUp.trim() !== '') return soap.followUp;
+    const s = soap.subjective?.trim() || '';
+    const o = soap.objective?.trim() || '';
+    const a = soap.assessment?.trim() || '';
+    const p = soap.plan?.trim() || '';
+    const parts: string[] = [];
+    if (s) parts.push(`S: Subjective\n${s}`);
+    if (o) parts.push(`O: Objective\n${o}`);
+    if (a) parts.push(`A: Assessment\n${a}`);
+    if (p) parts.push(`P: Plan\n${p}`);
+    return parts.join('\n\n');
+  };
+
+  /** Follow-up only: update full note (store in followUp). */
+  const handleFollowUpSingleBlockChange = (value: string) => {
+    if (!editedSOAP) return;
+    setEditedSOAP({ ...editedSOAP, followUp: value });
     setHasChanges(true);
   };
 
@@ -205,14 +235,16 @@ ${'='.repeat(60)}`;
   };
 
   /**
-   * Copy SOAP note to clipboard as plain text
+   * Copy SOAP note to clipboard as plain text (follow-up: copy single block when edited)
    */
   const handleCopyToClipboard = async () => {
     if (!currentSOAP) return;
 
+    const textToCopy = showSingleBlock && currentSOAP
+      ? (currentSOAP.followUp?.trim() || getFollowUpSingleBlockContent(currentSOAP))
+      : generatePlainTextFormat(currentSOAP);
     try {
-      const plainText = generatePlainTextFormat(currentSOAP);
-      await navigator.clipboard.writeText(plainText);
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
       
@@ -240,7 +272,7 @@ ${'='.repeat(60)}`;
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
-      textArea.value = generatePlainTextFormat(currentSOAP);
+      textArea.value = textToCopy;
       textArea.style.position = 'fixed';
       textArea.style.opacity = '0';
       document.body.appendChild(textArea);
@@ -278,7 +310,9 @@ ${'='.repeat(60)}`;
   const handleDownloadAsText = () => {
     if (!currentSOAP) return;
 
-    const plainText = generatePlainTextFormat(currentSOAP);
+    const plainText = showSingleBlock && currentSOAP
+      ? (currentSOAP.followUp?.trim() || getFollowUpSingleBlockContent(currentSOAP))
+      : generatePlainTextFormat(currentSOAP);
     const blob = new Blob([plainText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -531,8 +565,8 @@ ${'='.repeat(60)}`;
 
   return (
     <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
-      {/* ✅ WO-PHASE3-CRITICAL-FIXES: Progress Indicator */}
-      {currentSOAP && (
+      {/* ✅ WO-PHASE3-CRITICAL-FIXES: Progress Indicator (initial only; follow-up uses single block) */}
+      {currentSOAP && !showSingleBlock && (
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
           <div className="px-6 py-3">
             
@@ -561,7 +595,7 @@ ${'='.repeat(60)}`;
         </div>
       )}
 
-      {/* Header */}
+      {/* Header: title + status only. Actions moved to bottom so physio reads S/O/A/P first. */}
       <div className="border-b border-slate-200 bg-gray-50 px-6 py-4 rounded-t-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -573,7 +607,6 @@ ${'='.repeat(60)}`;
                 <h3 className="text-xl font-medium bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-apple">
                   SOAP Note - {visitType === 'initial' ? 'Initial Assessment' : 'Follow-up Visit'}
                 </h3>
-                {/* ✅ WORKFLOW OPTIMIZATION: Show optimized badge */}
                 {isOptimized && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                     Optimized
@@ -586,7 +619,6 @@ ${'='.repeat(60)}`;
                     {status === 'finalized' ? 'Finalized' : 'Draft'}
                   </span>
                 </p>
-                {/* ✅ WORKFLOW OPTIMIZATION: Show token optimization metrics */}
                 {tokenOptimization && tokenOptimization.reductionPercent > 0 && (
                   <p className="text-xs text-green-600 font-medium">
                     {tokenOptimization.reductionPercent}% token reduction
@@ -594,111 +626,6 @@ ${'='.repeat(60)}`;
                 )}
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {status === 'draft' && (
-              <>
-                {onRegenerate && (
-                  <button
-                    onClick={onRegenerate}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Regenerate
-                  </button>
-                )}
-                <button
-                  onClick={handleSaveDraft}
-                  disabled={!hasChanges}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  Save Draft
-                </button>
-                <button
-                  onClick={handlePreview}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  Preview
-                </button>
-              </>
-            )}
-            {status === 'draft' && onFinalize && (
-              <button
-                onClick={handleFinalize}
-                className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-[15px] font-medium shadow-sm transition font-apple"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Finalize & Save
-              </button>
-            )}
-            {status === 'finalized' && currentSOAP && (
-              <>
-                {!isEditingFinalized ? (
-                  <>
-                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Secondary action - Outline, same size */}
-                    <button
-                      onClick={handleUnfinalize}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors min-w-[120px] justify-center"
-                      title="Unfinalize to edit this note (creates edit history)"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>Edit</span>
-                    </button>
-                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Primary actions - Blue, same size */}
-                    <button
-                      onClick={handleCopyToClipboard}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
-                      title="Copy to clipboard for pasting into your EMR"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy to Clipboard</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleDownloadAsText}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
-                      title="Download as text file"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download .txt</span>
-                    </button>
-                    {/* ✅ WO-PHASE3-CRITICAL-FIXES: Secondary action - Outline, same size */}
-                    {/* Share button removed per plan - Copy/Download are sufficient */}
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleSaveAfterUnfinalize}
-                      disabled={!hasChanges}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      Save Changes
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditingFinalized(false);
-                        setEditedSOAP(soap); // Reset to original
-                        setHasChanges(false);
-                      }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
-                    >
-                      Cancel Edit
-                    </button>
-                  </>
-                )}
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -747,32 +674,32 @@ ${'='.repeat(60)}`;
         </div>
       )}
 
-      {/* Disclaimer / Export Info */}
-      <div className={`px-6 py-3 border-b ${status === 'finalized' ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
-        {status === 'finalized' ? (
-          <div className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs text-green-800 mb-2">
-                <strong>✓ Finalized Document:</strong> This SOAP note has been finalized and is ready for export. Use "Copy to Clipboard" to paste into your EMR system, or download as a text file.
-              </p>
-              <p className="text-[10px] text-green-700">
-                <strong>EMR Compatibility:</strong> The copied text is plain text format, compatible with most EMR systems. Simply paste (Ctrl+V / Cmd+V) into your EMR's note field.
-              </p>
-            </div>
+      {/* SOAP Sections: single editable block for follow-up (no Niagara, no 4-section mapping), four sections for initial */}
+      <div className="p-6 space-y-6" data-follow-up-single-block={showSingleBlock ? 'true' : undefined}>
+        {showSingleBlock ? (
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Follow-up SOAP note (editable — copy and paste into your EMR)
+            </label>
+            <textarea
+              value={(() => {
+                if (!currentSOAP) return '';
+                console.log('[SOAP-DEBUG] currentSOAP keys:', Object.keys(currentSOAP),
+                  'followUp length:', currentSOAP.followUp?.length ?? 'undefined',
+                  'followUp preview:', currentSOAP.followUp?.substring(0, 80) ?? 'null');
+                return getFollowUpSingleBlockContent(currentSOAP);
+              })()}
+              onChange={(e) => handleFollowUpSingleBlockChange(e.target.value)}
+              readOnly={isReadOnly}
+              rows={20}
+              className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono ${
+                isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
+              }`}
+              placeholder="S: Subjective\n\nO: Objective\n\nA: Assessment\n\nP: Plan"
+            />
           </div>
         ) : (
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-800">
-              <strong>AI-Assisted Documentation:</strong> This SOAP note is AI-generated. Review and edit all content before finalizing. The clinician is responsible for the accuracy and completeness of this note.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* SOAP Sections */}
-      <div className="p-6 space-y-6">
+          <>
         {/* Subjective */}
         <div className="border-l-4 border-purple-300 pl-4">
           <label className="block text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
@@ -894,48 +821,12 @@ Include specific parameters, duration, and frequency for each modality used."
             </div>
           )}
           
-          {/* Companion Actions: Copy/Paste for EMR Integration - Always visible for easy access */}
-          {currentSOAP && status === 'draft' && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-700 mb-1">Quick Actions</h4>
-                  <p className="text-xs text-slate-500">Copy or export SOAP note for your clinic's EMR system</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyToClipboard}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    title="Copy SOAP note to clipboard (ready for EMR paste)"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy to Clipboard
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white text-sm font-medium hover:from-primary-blue-hover hover:to-primary-purple-hover transition-colors"
-                    title="Export SOAP note as PDF"
-                  >
-                    <Download className="w-4 h-4" />
-                    Export PDF
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+          </>
+        )}
 
-        {/* Optional sections */}
-        {(currentSOAP?.additionalNotes || currentSOAP?.followUp || currentSOAP?.precautions || currentSOAP?.referrals) && (
+        {/* Optional sections (initial only; follow-up uses single block) */}
+        {!showSingleBlock && (currentSOAP?.additionalNotes || currentSOAP?.followUp || currentSOAP?.precautions || currentSOAP?.referrals) && (
           <div className="pt-4 border-t border-slate-200 space-y-4">
             {currentSOAP.additionalNotes && (
               <div>
@@ -971,6 +862,156 @@ Include specific parameters, duration, and frequency for each modality used."
             )}
           </div>
         )}
+      </div>
+
+      {/* Panel de acciones al final: asegura que el fisio ha leído S/O/A/P antes de cerrar */}
+      <div className="border-t border-slate-200 px-6 py-5 bg-slate-50/80 rounded-b-2xl">
+        {/* Disclaimer / Export Info */}
+        <div className={`mb-4 px-4 py-3 rounded-lg ${status === 'finalized' ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+          {status === 'finalized' ? (
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-green-800 mb-1">
+                  <strong>Session finalized.</strong> Your patient&apos;s data has been saved correctly.
+                </p>
+                <p className="text-xs text-green-700 mb-2">
+                  This SOAP is ready for export. Use &quot;Copy to Clipboard&quot; or &quot;Download .txt&quot; for your EMR.
+                </p>
+                <p className="text-[10px] text-green-600">
+                  EMR: the text is compatible with most systems. Paste (Ctrl+V / Cmd+V) in the note field.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-800">
+                <strong>AI-Assisted Documentation:</strong> Review and edit all content before finalizing. The clinician is responsible for the accuracy and completeness of this note.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <h4 className="text-sm font-semibold text-slate-800 mb-3">Actions</h4>
+        <div className="flex flex-wrap items-center gap-3">
+          {status === 'draft' && (
+            <>
+              {onRegenerate && (
+                <button
+                  onClick={onRegenerate}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Regenerate
+                </button>
+              )}
+              <button
+                onClick={handleSaveDraft}
+                disabled={!hasChanges}
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save Draft
+              </button>
+              <button
+                onClick={handlePreview}
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Vista previa
+              </button>
+              {onFinalize && (
+                <button
+                  onClick={handleFinalize}
+                  className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-[15px] font-medium shadow-sm transition font-apple"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Finalize & Save
+                </button>
+              )}
+            </>
+          )}
+          {status === 'finalized' && currentSOAP && (
+            <>
+              {!isEditingFinalized ? (
+                <>
+                  <button
+                    onClick={handleUnfinalize}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors min-w-[120px] justify-center"
+                    title="Unfinalize to edit this note"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={handleCopyToClipboard}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
+                    title="Copy to clipboard for pasting into your EMR"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy to Clipboard
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadAsText}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
+                    title="Download as text file"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download .txt
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors justify-center"
+                    title="Export PDF"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export PDF
+                  </button>
+                  {onBackToCommandCenter && (
+                    <button
+                      onClick={onBackToCommandCenter}
+                      className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white text-[15px] font-medium shadow-sm hover:opacity-95 transition font-apple"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Back to Command Center
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSaveAfterUnfinalize}
+                    disabled={!hasChanges}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingFinalized(false);
+                      setEditedSOAP(soap);
+                      setHasChanges(false);
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    Cancel Edit
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Preview Modal */}

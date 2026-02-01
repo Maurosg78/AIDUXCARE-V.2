@@ -111,6 +111,37 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const isChunkLoadError =
+        this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
+        this.state.error?.message?.includes('Loading chunk') ||
+        this.state.error?.message?.includes('ChunkLoadError');
+
+      // Chunk load error (e.g. 404 after deploy): ask user to refresh to get new assets
+      if (isChunkLoadError) {
+        return (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+            <div className="flex items-start gap-3">
+              <RefreshCw className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-amber-900 mb-1">
+                  New version available
+                </h3>
+                <p className="text-sm text-amber-800 mb-3">
+                  Please refresh the page to load the latest version. Your data is safe.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-900 bg-amber-100 rounded-lg hover:bg-amber-200 transition"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh page
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Default error UI
       return (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">

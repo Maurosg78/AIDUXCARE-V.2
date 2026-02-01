@@ -1,32 +1,26 @@
 /**
- * WO-FLOW-005: Session-first Follow-up Execution UI
- * 
- * Transforma el follow-up en pantalla de ejecución clínica.
- * El profesional ejecuta durante la sesión, no documenta.
+ * WO-FU-PLAN-SPLIT-01: Home Exercise Program (HEP) block
+ * Checkboxes + notes + editable (same UX as in-clinic) so physio can select what goes to Vertex follow-up.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Edit2, X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
-export interface SuggestedFocusEditorProps {
+export interface HomeProgramBlockProps {
   items: TodayFocusItem[];
   onChange: (items: TodayFocusItem[]) => void;
-  onFinishSession?: () => void; // Callback para cambiar a tab SOAP
-  hideHeader?: boolean; // WO-07: Para evitar header duplicado cuando se usa desde bloque externo
-  /** When true, show block even when empty and allow adding new items. */
+  /** When true, show block even when empty and allow adding new exercises. */
   allowAdd?: boolean;
 }
 
-function newFocusItemId(): string {
-  return `added-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+function newHepItemId(): string {
+  return `hep-added-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
+export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
   items: initialItems,
   onChange,
-  onFinishSession,
-  hideHeader = false,
   allowAdd = false,
 }) => {
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
@@ -39,7 +33,6 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState('');
 
-  // Sincronizar cuando initialItems cambia (ej: nuevo plan parseado)
   useEffect(() => {
     setItems(initialItems.map(item => ({
       ...item,
@@ -88,11 +81,8 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
 
   const handleToggleNotes = (id: string) => {
     const newExpanded = new Set(expandedNotes);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
+    if (newExpanded.has(id)) newExpanded.delete(id);
+    else newExpanded.add(id);
     setExpandedNotes(newExpanded);
   };
 
@@ -100,13 +90,17 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
     const updated = items.filter(item => item.id !== id);
     setItems(updated);
     onChange(updated);
+    if (editingId === id) {
+      setEditingId(null);
+      setEditingLabel('');
+    }
   };
 
   const handleAddNew = () => {
     const label = newItemLabel.trim();
     if (!label) return;
     const newItem: TodayFocusItem = {
-      id: newFocusItemId(),
+      id: newHepItemId(),
       label,
       completed: false,
       source: 'plan',
@@ -123,32 +117,24 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
     setNewItemLabel('');
   };
 
-  const handleFinishSession = () => {
-    onFinishSession?.();
-  };
-
   if (items.length === 0 && !allowAdd) {
     return null;
   }
 
   return (
-    <div className={`${hideHeader ? '' : 'mb-6 bg-white border border-slate-200 rounded-lg p-6 shadow-sm'}`}>
-      {/* WO-07: Header eliminado cuando hideHeader=true para evitar duplicación */}
-      {!hideHeader && (
-        <div className="flex items-start gap-2 mb-1">
-          <span className="text-lg">🗓️</span>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-slate-900 font-apple">
-              In-clinic treatment (proposed for today)
-            </h2>
-            <p className="text-sm text-slate-600 font-apple font-light mt-1">
-              Proposed for this session. Modify as needed. Check when performed in clinic today. Add notes (dictated or typed) per item if needed.
-            </p>
-          </div>
+    <div className="mb-6 bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+      <div className="flex items-start gap-2 mb-1">
+        <span className="text-lg">🏠</span>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-slate-900 font-apple">
+            Home Exercise Program (HEP)
+          </h2>
+          <p className="text-sm text-slate-600 font-apple font-light mt-1">
+            Prescribed for home. Check to include in this follow-up. Edit as needed. Add notes (dictated or typed) per item if needed.
+          </p>
         </div>
-      )}
+      </div>
 
-      {/* Checklist */}
       <div className="mt-4 space-y-3">
         {items.map((item) => {
           const isNotesExpanded = expandedNotes.has(item.id);
@@ -156,17 +142,14 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
             <div
               key={item.id}
               className={`flex items-start gap-3 py-2 px-3 rounded-lg border-b border-slate-100 last:border-b-0 transition-colors ${
-                item.completed
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-white'
+                item.completed ? 'bg-green-50 border-green-200' : 'bg-white'
               }`}
             >
-              {/* Checkbox / Check verde */}
               {item.completed ? (
                 <button
                   onClick={() => handleToggleCompleted(item.id)}
                   className="mt-1 flex-shrink-0"
-                    title="Performed in clinic today — click to uncheck"
+                  title="Included in follow-up — click to uncheck"
                 >
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </button>
@@ -176,11 +159,10 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                   checked={false}
                   onChange={() => handleToggleCompleted(item.id)}
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  title="Check when performed in clinic today"
+                  title="Check to include in this follow-up"
                 />
               )}
 
-              {/* Activity content */}
               <div className="flex-1 min-w-0">
                 {editingId === item.id ? (
                   <input
@@ -189,11 +171,8 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     onChange={(e) => setEditingLabel(e.target.value)}
                     onBlur={() => handleSaveLabel(item.id)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveLabel(item.id);
-                      } else if (e.key === 'Escape') {
-                        handleCancelEdit();
-                      }
+                      if (e.key === 'Enter') handleSaveLabel(item.id);
+                      else if (e.key === 'Escape') handleCancelEdit();
                     }}
                     className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple"
                     autoFocus
@@ -202,9 +181,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                   <div className="flex items-start gap-2">
                     <span
                       className={`flex-1 text-sm font-apple ${
-                        item.completed
-                          ? 'text-green-800 font-medium'
-                          : 'text-slate-900'
+                        item.completed ? 'text-green-800 font-medium' : 'text-slate-900'
                       }`}
                       onClick={() => handleEditLabel(item.id)}
                       style={{ cursor: 'text' }}
@@ -220,7 +197,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                       <button
                         onClick={() => handleEditLabel(item.id)}
                         className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-colors"
-                        title="Edit activity"
+                        title="Edit exercise"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -228,7 +205,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                         <button
                           onClick={() => handleRemove(item.id)}
                           className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Remove activity"
+                          title="Remove exercise"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -237,18 +214,13 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                   </div>
                 )}
 
-                {/* Notes (collapsible) */}
                 {(item.notes || isNotesExpanded) && (
                   <div className="mt-2">
                     <button
                       onClick={() => handleToggleNotes(item.id)}
                       className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 font-apple font-light mb-1"
                     >
-                      {isNotesExpanded ? (
-                        <ChevronUp className="w-3 h-3" />
-                      ) : (
-                        <ChevronDown className="w-3 h-3" />
-                      )}
+                      {isNotesExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                       <span>Notes (dictated or typed)</span>
                     </button>
                     {isNotesExpanded && (
@@ -262,8 +234,6 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     )}
                   </div>
                 )}
-
-                {/* Expand notes button (if no notes yet) */}
                 {!item.notes && !isNotesExpanded && (
                   <button
                     onClick={() => handleToggleNotes(item.id)}
@@ -290,7 +260,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     if (e.key === 'Enter') handleAddNew();
                     if (e.key === 'Escape') handleCancelAdd();
                   }}
-                  placeholder="New treatment (e.g. Manual therapy, Exercise)"
+                  placeholder="New exercise (e.g. Lumbar mobility, Core activation)"
                   className="flex-1 px-2 py-1.5 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple"
                   autoFocus
                 />
@@ -317,14 +287,12 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-apple"
               >
                 <Plus className="w-4 h-4" />
-                Add treatment item
+                Add exercise
               </button>
             )}
           </div>
         )}
       </div>
-
-      {/* WO-06: Finish session button removed - now handled by main action button */}
     </div>
   );
 };
