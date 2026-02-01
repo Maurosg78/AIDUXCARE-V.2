@@ -15,6 +15,8 @@ import {
 
 import logger from '@/shared/utils/logger';
 import { db as sharedDb, auth } from "@/lib/firebase";
+import type { BillingEncounterExport } from '@/types/billing';
+import { BillingClassificationService } from '@/services/billingClassificationService';
 
 export interface Encounter {
   id: string;
@@ -268,6 +270,35 @@ class EncountersRepository {
       console.error('Error firmando encuentro:', error);
       throw error;
     }
+  }
+
+  /**
+   * WO-BILLING-READINESS-FOUNDATION: Export encounters for billing/audit.
+   * Ordered by encounterDate ascending; sessionNumber = order. Reuses getEncountersByPatient.
+   */
+  async getEncountersForBilling(patientId: string): Promise<BillingEncounterExport[]> {
+    const encounters = await this.getEncountersByPatient(patientId, 500);
+    const completed = encounters.filter(
+      (e) => e.status === 'completed' || e.status === 'signed'
+    );
+    const toMillis = (e: Encounter) => {
+      const d = e.encounterDate;
+      return d instanceof Timestamp ? d.toMillis() : new Date((d as unknown) as number).getTime();
+    };
+    const ordered = [...completed].sort((a, b) => toMillis(a) - toMillis(b));
+    return ordered.map((enc, idx) => {
+      const d = enc.encounterDate;
+      const date = d instanceof Timestamp ? d.toDate() : new Date((d as unknown) as number);
+      return {
+        encounterId: enc.id,
+        patientId: enc.patientId,
+        encounterDate: date.toISOString(),
+        visitType: idx === 0 ? 'initial' as const : 'follow-up' as const,
+        sessionNumber: idx + 1,
+        status: enc.status,
+        billingType: BillingClassificationService.classifyEncounter(enc),
+      };
+    });
   }
 }
 
