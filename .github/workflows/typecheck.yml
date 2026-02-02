@@ -27,7 +27,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # Skip typecheck if it fails (solo development workflow)
       - name: Typecheck
-        run: pnpm -s typecheck || echo "Typecheck warnings - continuing..."
-        continue-on-error: true
+        run: pnpm -s typecheck

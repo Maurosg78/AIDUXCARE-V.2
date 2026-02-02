@@ -67,6 +67,18 @@ jobs:
             npm run lint
           fi
 
+      - name: Typecheck
+        if: ${{ steps.detect_node.outputs.has_node == true }}
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm run typecheck
+          elif [ -f yarn.lock ]; then
+            yarn run typecheck
+          else
+            npm run typecheck
+          fi
+
       - name: Build
         if: ${{ steps.detect_node.outputs.has_node == true }}
         shell: bash

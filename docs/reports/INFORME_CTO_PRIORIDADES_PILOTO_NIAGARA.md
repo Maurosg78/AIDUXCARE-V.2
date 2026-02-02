@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-02-01  
 **Solicitante:** Equipo producto/ingeniería  
-**Estado:** Pendiente de aprobación CTO  
+**Estado:** Ejecución autorizada por CEO. Pasos 1–6 ejecutados (2026-02-01).  
 
 ---
 
@@ -71,3 +71,16 @@ Las prioridades **1–4** son las que “aseguran” el piloto ante Niagara. Las
 ---
 
 **Cuando la aprobación esté dada, se considera luz verde para partir con la prioridad 1 (CI estable) y seguir en orden.**
+
+---
+
+## 8. Ejecución completada (CEO autorizó 1–6)
+
+| # | Prioridad | Entregable |
+|---|-----------|------------|
+| 1 | CI estable | `ci.yml`: step Typecheck obligatorio; `typecheck.yml`: sin continue-on-error. |
+| 2 | Deploy y envs | `DEPLOY.md`: orden de deploy piloto + variables obligatorias/opcionales. |
+| 3 | Consent y datos | `docs/reports/RESUMEN_CONSENT_DATOS_PHIPA.md`: resumen ejecutivo para socio piloto. |
+| 4 | Alcance piloto | `docs/reports/ALCANCE_PILOTO_RUNBOOK.md`: alcance + runbook (rollback, contacto). |
+| 5 | Tests billing/session | `billingClassificationService.test.ts`, `encountersRepo.billing.test.ts`; `buildBillingExportFromEncounters` exportada para tests. |
+| 6 | Husky | `.husky/pre-commit`: eliminada línea deprecada `husky.sh` (Husky v10). |

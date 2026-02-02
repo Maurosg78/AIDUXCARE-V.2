@@ -286,20 +286,27 @@ class EncountersRepository {
       return d instanceof Timestamp ? d.toMillis() : new Date((d as unknown) as number).getTime();
     };
     const ordered = [...completed].sort((a, b) => toMillis(a) - toMillis(b));
-    return ordered.map((enc, idx) => {
-      const d = enc.encounterDate;
-      const date = d instanceof Timestamp ? d.toDate() : new Date((d as unknown) as number);
-      return {
-        encounterId: enc.id,
-        patientId: enc.patientId,
-        encounterDate: date.toISOString(),
-        visitType: idx === 0 ? 'initial' as const : 'follow-up' as const,
-        sessionNumber: idx + 1,
-        status: enc.status,
-        billingType: BillingClassificationService.classifyEncounter(enc),
-      };
-    });
+    return buildBillingExportFromEncounters(ordered);
   }
+}
+
+/**
+ * Pure mapping for billing export (testable). Expects encounters already filtered and sorted by encounterDate asc.
+ */
+export function buildBillingExportFromEncounters(encounters: Encounter[]): BillingEncounterExport[] {
+  return encounters.map((enc, idx) => {
+    const d = enc.encounterDate;
+    const date = d instanceof Timestamp ? d.toDate() : new Date((d as unknown) as number);
+    return {
+      encounterId: enc.id,
+      patientId: enc.patientId,
+      encounterDate: date.toISOString(),
+      visitType: idx === 0 ? ('initial' as const) : ('follow-up' as const),
+      sessionNumber: idx + 1,
+      status: enc.status,
+      billingType: BillingClassificationService.classifyEncounter(enc),
+    };
+  });
 }
 
 export const encountersRepo = new EncountersRepository();

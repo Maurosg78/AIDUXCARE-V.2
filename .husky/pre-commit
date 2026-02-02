@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # WO-CLINICAL-STATE-REHYDRATION-001 Fase 0: bloqueo de secrets en commits
-[ -f "$(dirname -- "$0")/_/husky.sh" ] && . "$(dirname -- "$0")/_/husky.sh"
+# Husky v10: removed deprecated . "$(dirname -- "$0")/_/husky.sh"
 if [ -f scripts/check-secrets-pre-commit.sh ]; then
   bash scripts/check-secrets-pre-commit.sh || exit 1
 fi
