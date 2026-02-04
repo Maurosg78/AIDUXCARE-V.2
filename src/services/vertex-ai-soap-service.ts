@@ -881,20 +881,26 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
         if (firstJson) soapData = JSON.parse(firstJson[0]);
       }
       if (soapData && typeof soapData === 'object') {
+        // WO-FOLLOWUP-PROMPT-04: Normalize keys — accept capitalized (Subjective, Objective, etc.) or lowercase
+        const subj = soapData.Subjective ?? soapData.subjective;
+        const obj = soapData.Objective ?? soapData.objective;
+        const ass = soapData.Assessment ?? soapData.assessment;
+        const planRaw = soapData.Plan ?? soapData.plan;
         const plan =
-          typeof soapData.plan === 'string'
-            ? soapData.plan
-            : Array.isArray(soapData.plan)
-              ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
+          typeof planRaw === 'string'
+            ? planRaw
+            : Array.isArray(planRaw)
+              ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
               : 'Not documented.';
         soap = {
-          subjective: String(soapData.subjective ?? 'Not documented.'),
-          objective: String(soapData.objective ?? 'Not documented.'),
-          assessment: String(soapData.assessment ?? 'Not documented.'),
+          subjective: String(subj ?? 'Not documented.'),
+          objective: String(obj ?? 'Not documented.'),
+          assessment: String(ass ?? 'Not documented.'),
           plan: plan || 'Not documented.',
         };
-        if (Array.isArray(soapData.plan) && soapData.plan.length > 0) {
-          planItems = soapData.plan.map((p: any) => ({
+        const planArr = Array.isArray(planRaw) ? planRaw : soapData.plan;
+        if (Array.isArray(planArr) && planArr.length > 0) {
+          planItems = planArr.map((p: any) => ({
             id: p.id ?? String(Math.random()).slice(2, 9),
             action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
             status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
@@ -918,15 +924,66 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   )) {
     const rawTrimmed = (rawText ?? '').trim();
     if (rawTrimmed.length > 0) {
-      soap = {
-        subjective: '',
-        objective: '',
-        assessment: '',
-        plan: '',
-        followUp: rawTrimmed,
+      // WO-FOLLOWUP-PROMPT-04: Try parsing raw as JSON (Vertex sometimes returns JSON with capitalized keys,
+      // optionally wrapped in markdown code blocks like ```json ... ```)
+      let parsedSoap: SOAPNote | null = null;
+      const extractJsonString = (s: string): string => {
+        const t = s.trim();
+        const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
+        if (codeBlock) return codeBlock[1].trim();
+        const firstBrace = t.indexOf('{');
+        if (firstBrace < 0) return t;
+        // Extract first complete {...} object (brace matching)
+        let depth = 0;
+        let end = -1;
+        for (let i = firstBrace; i < t.length; i++) {
+          if (t[i] === '{') depth++;
+          else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+        }
+        if (end >= 0) return t.slice(firstBrace, end + 1);
+        return t.slice(firstBrace);
       };
-      console.info('[SOAP Service] WO-11 using raw text as followUp block (structured parse had no content)');
-      console.log('[FOLLOWUP-RAW] FALLBACK activated. followUp length:', rawTrimmed.length);
+      try {
+        const jsonStr = extractJsonString(rawTrimmed);
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && typeof parsed === 'object') {
+          const subj = parsed.Subjective ?? parsed.subjective;
+          const obj = parsed.Objective ?? parsed.objective;
+          const ass = parsed.Assessment ?? parsed.assessment;
+          const planRaw = parsed.Plan ?? parsed.plan;
+          const hasAny = [subj, obj, ass, planRaw].some((v) => v != null && String(v).trim().length > 0);
+          if (hasAny) {
+            const planStr =
+              typeof planRaw === 'string'
+                ? planRaw
+                : Array.isArray(planRaw)
+                  ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action ?? p?.label ?? String(p))).join('\n')
+                  : '';
+            parsedSoap = {
+              subjective: String(subj ?? ''),
+              objective: String(obj ?? ''),
+              assessment: String(ass ?? ''),
+              plan: planStr || 'Not documented.',
+            };
+          }
+        }
+      } catch (_) {
+        // not JSON — use raw as followUp below
+      }
+      if (parsedSoap && (isMeaningfulSection(parsedSoap.subjective) || isMeaningfulSection(parsedSoap.objective) || isMeaningfulSection(parsedSoap.assessment) || isMeaningfulSection(parsedSoap.plan))) {
+        soap = parsedSoap;
+        console.info('[SOAP Service] WO-11 fallback: parsed JSON (capitalized keys) into SOAP');
+      } else {
+        soap = {
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+          followUp: rawTrimmed,
+        };
+        console.info('[SOAP Service] WO-11 using raw text as followUp block (structured parse had no content)');
+        console.log('[FOLLOWUP-RAW] FALLBACK activated. followUp length:', rawTrimmed.length);
+      }
     }
   }
 
@@ -956,6 +1013,71 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
 }
 
 /**
+ * WO-FOLLOWUP-PLAN-NEXT: Derive S/O/A/P from raw text (JSON or plain SOAP) for persistence.
+ * Use at save time when the note only has followUp (raw string) so the next follow-up has baseline/plan.
+ * Returns null if nothing could be parsed.
+ */
+export function deriveSOAPDataFromRawText(rawText: string): { subjective: string; objective: string; assessment: string; plan: string } | null {
+  const t = (rawText ?? '').trim();
+  if (!t.length) return null;
+
+  const plain = parsePlainSOAPSections(t);
+  if (plain) {
+    return {
+      subjective: plain.subjective ?? '',
+      objective: plain.objective ?? '',
+      assessment: plain.assessment ?? '',
+      plan: plain.plan ?? '',
+    };
+  }
+
+  const extractJsonString = (s: string): string => {
+    const trimmed = s.trim();
+    const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(trimmed);
+    if (codeBlock) return codeBlock[1].trim();
+    const firstBrace = trimmed.indexOf('{');
+    if (firstBrace < 0) return trimmed;
+    let depth = 0;
+    let end = -1;
+    for (let i = firstBrace; i < trimmed.length; i++) {
+      if (trimmed[i] === '{') depth++;
+      else if (trimmed[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end >= 0) return trimmed.slice(firstBrace, end + 1);
+    return trimmed.slice(firstBrace);
+  };
+
+  try {
+    const jsonStr = extractJsonString(t);
+    const parsed = JSON.parse(jsonStr);
+    if (parsed && typeof parsed === 'object') {
+      const subj = parsed.Subjective ?? parsed.subjective;
+      const obj = parsed.Objective ?? parsed.objective;
+      const ass = parsed.Assessment ?? parsed.assessment;
+      const planRaw = parsed.Plan ?? parsed.plan;
+      const hasAny = [subj, obj, ass, planRaw].some((v) => v != null && String(v).trim().length > 0);
+      if (hasAny) {
+        const planStr =
+          typeof planRaw === 'string'
+            ? planRaw
+            : Array.isArray(planRaw)
+              ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action ?? p?.label ?? String(p))).join('\n')
+              : '';
+        return {
+          subjective: String(subj ?? ''),
+          objective: String(obj ?? ''),
+          assessment: String(ass ?? ''),
+          plan: planStr || '',
+        };
+      }
+    }
+  } catch (_) {
+    // not JSON
+  }
+  return null;
+}
+
+/**
  * WO-MINIMAL-BASELINE: Generate structured SOAP from free-form text (pasted EMR notes or "Estado actual del tratamiento").
  * Used to create a baseline for existing patients. Returns SOAP only; no ALERTS/planItems.
  */
@@ -976,9 +1098,7 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
       traceId,
       model: 'gemini-2.0-flash-exp',
     }),
-  });
-
-  if (!response.ok) {
+  });  if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
   }
@@ -1025,4 +1145,3 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
 
   return soap;
 }
-

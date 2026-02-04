@@ -30,7 +30,7 @@ import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
 import treatmentPlanService from "../services/treatmentPlanService";
 import PersistenceService from "../services/PersistenceService";
 import { encountersRepo } from "../repositories/encountersRepo";
@@ -57,6 +57,7 @@ import {
 } from "@/core/msk-tests/library/mskTestLibrary";
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from "@/utils/sortPhysicalTestsByImportance";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
+import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
@@ -72,6 +73,7 @@ import { getPublicBaseUrl } from "../utils/urlHelpers";
 import { SessionStorage } from "../services/session-storage";
 import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clinicalBaselineService";
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
+import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
 import { InitialClinicalSummaryModal } from "../components/workflow/InitialClinicalSummaryModal";
 import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-service";
 // FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
@@ -209,6 +211,7 @@ const formatFileSize = (bytes: number) => {
 const ProfessionalWorkflowPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ✅ DIFFERENT APPROACH: Get URL params and clear localStorage IMMEDIATELY before any state
   const patientIdFromUrl = searchParams.get('patientId');
@@ -769,7 +772,7 @@ const ProfessionalWorkflowPage = () => {
     detectWorkflow();
   }, [patientId, user?.uid, currentPatient, sessionTypeFromUrl]);
 
-  // Follow-up path: load baseline for SOAP (no Niagara). Single source of truth — if present, baseline is built; if not, no follow-up.
+  // Follow-up path: load baseline for SOAP. Priority: (1) baselineFromOngoing from navigate state (Ongoing intake just completed), (2) getClinicalState from Firestore.
   useEffect(() => {
     const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
     if (!isFollowUp || !patientId || !user?.uid) {
@@ -777,7 +780,24 @@ const ProfessionalWorkflowPage = () => {
       setFollowUpBaselineChecked(false);
       return;
     }
+    setFollowUpClinicalState(null);
     setFollowUpBaselineChecked(false);
+
+    const baselineFromOngoing = (location.state as { baselineFromOngoing?: { subjective: string; objective: string; assessment: string; plan: string } })?.baselineFromOngoing;
+    if (baselineFromOngoing && baselineFromOngoing.plan?.trim()) {
+      setFollowUpClinicalState({
+        baselineSOAP: {
+          subjective: baselineFromOngoing.subjective ?? '',
+          objective: baselineFromOngoing.objective ?? '',
+          assessment: baselineFromOngoing.assessment ?? '',
+          plan: baselineFromOngoing.plan ?? '',
+        },
+      });
+      setFollowUpBaselineChecked(true);
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+      return;
+    }
+
     let cancelled = false;
     getClinicalState(patientId, user.uid)
       .then((state) => {
@@ -803,7 +823,7 @@ const ProfessionalWorkflowPage = () => {
         }
       });
     return () => { cancelled = true; };
-  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type]);
+  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state]);
 
   // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
   useEffect(() => {
@@ -2913,14 +2933,24 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
 
-  // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP from plan text — FOLLOW-UP ONLY; initial assessment untouched
+  // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP — FOLLOW-UP ONLY; baseline as primary source (no mock)
+  // Single source of truth: baselineSOAP.plan from clinical_baselines; fallback to treatment plan only if no baseline
   useEffect(() => {
-    if (visitType !== 'follow-up' || !previousTreatmentPlan?.planText) {
+    if (visitType !== 'follow-up') {
       setInClinicItems([]);
       setHomeProgramItems([]);
       return;
     }
-    const derived = derivePlanFromText(previousTreatmentPlan.planText);
+    const planText =
+      followUpClinicalState?.baselineSOAP?.plan?.trim() ||
+      previousTreatmentPlan?.planText?.trim() ||
+      '';
+    if (!planText) {
+      setInClinicItems([]);
+      setHomeProgramItems([]);
+      return;
+    }
+    const derived = derivePlanFromText(planText);
     setInClinicItems(
       derived.inClinic.map((label, i) => ({
         id: `in-clinic-${i}`,
@@ -2937,7 +2967,7 @@ const ProfessionalWorkflowPage = () => {
         source: 'plan' as const,
       }))
     );
-  }, [visitType, previousTreatmentPlan?.planText]);
+  }, [visitType, patientIdFromUrl, followUpClinicalState?.baselineSOAP?.plan, previousTreatmentPlan?.planText]);
 
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
@@ -3195,6 +3225,7 @@ const ProfessionalWorkflowPage = () => {
         soapNote: soapWithReviewFlags,
         physicalTests: organized.structuredData.physicalExamResults,
         status: "draft" as const,
+        sessionType: currentSessionType,
         transcriptionMeta: {
           lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : null),
           languagePreference,
@@ -3218,7 +3249,7 @@ const ProfessionalWorkflowPage = () => {
         await trackSessionStarted({
           userId: TEMP_USER_ID,
           patientId: patientIdFromUrl || demoPatient.id,
-          sessionType: "initial",
+          sessionType: currentSessionType,
         });
       }
     } catch (error: any) {
@@ -3459,6 +3490,7 @@ const ProfessionalWorkflowPage = () => {
         soapNote: cleanedSoap,
         physicalTests: physicalExamResults || [],
         status: status === 'finalized' ? 'completed' : 'draft',
+        sessionType: currentSessionType,
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
       };
@@ -3471,7 +3503,7 @@ const ProfessionalWorkflowPage = () => {
         await trackSessionStarted({
           userId: TEMP_USER_ID,
           patientId: patientIdFromUrl || demoPatient.id,
-          sessionType: "initial",
+          sessionType: currentSessionType,
         });
       }
 
@@ -4079,6 +4111,7 @@ const ProfessionalWorkflowPage = () => {
           setShowCloseInitialConfirmModal(false);
           setCloseInitialConfirmData(null);
         }}
+        patientId={patientIdFromUrl ?? undefined}
         patientName={closeInitialConfirmData?.patientName}
         baselineId={closeInitialConfirmData?.baselineId}
       />
@@ -4320,7 +4353,7 @@ const ProfessionalWorkflowPage = () => {
                         </span>
                       </div>
                       <p className="text-sm text-slate-600 font-apple font-light">
-                        Session {(visitCount.data ?? 0) + 1}
+                        {getSessionOrdinalLabel((visitCount.data ?? 0) + 1)}
                       </p>
                     </div>
                     {previousTreatmentPlan && (
@@ -4530,7 +4563,12 @@ const ProfessionalWorkflowPage = () => {
                     handleAttachmentUpload={handleAttachmentUpload}
                     handleAttachmentRemove={handleAttachmentRemove}
                     onCloseInitialAssessment={undefined}
-                    onBackToCommandCenter={() => navigate('/command-center')}
+                    onBackToCommandCenter={() => {
+                      const pid = patientIdFromUrl;
+                      const stype = visitType === 'initial' ? 'initial' : 'followup';
+                      if (pid) setSessionCompleted(pid, stype);
+                      navigate('/command-center');
+                    }}
                   />
                 </Suspense>
               </div>
@@ -4752,7 +4790,12 @@ const ProfessionalWorkflowPage = () => {
                   setAnalysisError={setAnalysisError}
                   setSuccessMessage={setSuccessMessage}
                   setVisitType={setVisitType}
-                  onBackToCommandCenter={() => navigate('/command-center')}
+                  onBackToCommandCenter={() => {
+                    const pid = patientIdFromUrl;
+                    const stype = visitType === 'initial' ? 'initial' : 'followup';
+                    if (pid) setSessionCompleted(pid, stype);
+                    navigate('/command-center');
+                  }}
                 />
               </Suspense>
             )}
