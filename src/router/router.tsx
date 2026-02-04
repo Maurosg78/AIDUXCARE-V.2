@@ -29,6 +29,8 @@ import PublicLandingPage from '../pages/PublicLandingPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
 import AuthActionPage from '../pages/AuthActionPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetCompletePage } from '../pages/ResetCompletePage';
 import TechDashboard from '../pages/Dashboard/TechDashboard';
 import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -60,7 +62,10 @@ function NoteDetailWrapper() {
 }
 
 export const createRouter = () => createBrowserRouter([
-  { path: '/', element: <UnifiedLandingPage /> }, // Main landing page - Unified (Hospital, Private Practice, Get Started)
+  // Pilot root: send clinicians straight to login (Private Practice workflow)
+  { path: '/', element: <LoginPage /> },
+  // Keep UnifiedLandingPage for future marketing/enterprise entry under a non-root path
+  { path: '/unified', element: <UnifiedLandingPage /> }, // Optional: explicit access if needed
   { path: '/login', element: <LoginPage /> }, // Login page
   { path: '/register', element: <RegisterPage /> },
   // WO-ONB-UNIFY-01: Redirigir /onboarding a /professional-onboarding (único proceso de onboarding)
@@ -73,6 +78,8 @@ export const createRouter = () => createBrowserRouter([
   { path: '/verify-email', element: <EmailVerifiedPage /> },
   { path: '/email-verified', element: <EmailVerifiedPage /> },
   { path: '/auth/action', element: <AuthActionPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-complete', element: <ResetCompletePage /> },
   {
     path: '/command-center',
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>
