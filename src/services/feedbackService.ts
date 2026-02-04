@@ -26,16 +26,16 @@ export interface EnrichedContext {
     soapGenerated?: boolean;
     soapFinalized?: boolean;
   };
-  
+
   // Patient context
   patientType?: 'new_evaluation' | 'existing_followup';
   visitNumber?: number;
   sessionType?: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate';
-  
+
   // User context
   isPilotUser?: boolean;
   userExperienceLevel?: 'new' | 'experienced';
-  
+
   // Performance context
   pageLoadTime?: number;
   lastAction?: string;
@@ -58,10 +58,10 @@ export interface UserFeedback {
     errorMessage?: string;
     stackTrace?: string;
   };
-  
+
   // 🔴 NUEVO: Contexto enriquecido automático
   enrichedContext?: EnrichedContext;
-  
+
   // 🔴 NUEVO: Auto-categorización
   autoTags?: string[];
   calculatedPriority?: number; // 1-10
@@ -99,7 +99,7 @@ export class FeedbackService {
       const patientContext = this.getPatientContext();
       const userContext = this.getUserContext();
       const performanceContext = this.getPerformanceContext();
-      
+
       return {
         // Workflow context
         workflowStep: this.detectWorkflowStep(),
@@ -111,16 +111,16 @@ export class FeedbackService {
           soapGenerated: !!workflowState?.localSoapNote,
           soapFinalized: workflowState?.soapStatus === 'finalized',
         },
-        
+
         // Patient context
         patientType: patientContext?.patientType,
         visitNumber: patientContext?.visitNumber,
         sessionType: patientContext?.sessionType,
-        
+
         // User context
         isPilotUser: userContext?.isPilotUser || false,
         userExperienceLevel: this.calculateExperienceLevel(userContext?.sessionsCompleted),
-        
+
         // Performance context
         pageLoadTime: performanceContext?.pageLoadTime,
         lastAction: sessionStorage.getItem('lastAction') || undefined,
@@ -139,19 +139,19 @@ export class FeedbackService {
     try {
       const url = window.location.href;
       const hash = window.location.hash;
-      
+
       if (url.includes('/workflow')) {
         if (hash.includes('analysis') || hash.includes('#analysis')) return 'analysis';
-        if (hash.includes('evaluation') || hash.includes('#evaluation')) return 'evaluation'; 
+        if (hash.includes('evaluation') || hash.includes('#evaluation')) return 'evaluation';
         if (hash.includes('soap') || hash.includes('#soap')) return 'soap';
       }
-      
+
       // Detectar por elementos DOM visibles
       const activeTab = document.querySelector('[data-tab].active')?.getAttribute('data-tab');
       if (activeTab === 'analysis') return 'analysis';
       if (activeTab === 'evaluation') return 'evaluation';
       if (activeTab === 'soap') return 'soap';
-      
+
       // Detectar por URL path
       if (url.includes('/workflow')) {
         // Intentar obtener activeTab desde localStorage (workflow state)
@@ -167,7 +167,7 @@ export class FeedbackService {
           // Ignore errors
         }
       }
-      
+
       return undefined;
     } catch (error) {
       console.warn('[FEEDBACK] Error detecting workflow step:', error);
@@ -182,10 +182,10 @@ export class FeedbackService {
     try {
       const patientId = this.getCurrentPatientId();
       if (!patientId) return {};
-      
+
       const workflowData = localStorage.getItem(`aidux_${patientId}`);
       if (!workflowData) return {};
-      
+
       const parsed = JSON.parse(workflowData);
       return {
         transcript: parsed.transcript || null,
@@ -211,18 +211,18 @@ export class FeedbackService {
       if (urlMatch && urlMatch[1]) {
         return urlMatch[1];
       }
-      
+
       // Intentar desde sessionStorage
       const sessionPatientId = sessionStorage.getItem('currentPatientId');
       if (sessionPatientId) return sessionPatientId;
-      
+
       // Intentar desde localStorage (último paciente usado)
       const keys = Object.keys(localStorage);
       const workflowKey = keys.find(key => key.startsWith('aidux_') && key !== 'aidux_workflow_');
       if (workflowKey) {
         return workflowKey.replace('aidux_', '');
       }
-      
+
       return null;
     } catch (error) {
       return null;
@@ -236,10 +236,10 @@ export class FeedbackService {
     try {
       const patientId = this.getCurrentPatientId();
       if (!patientId) return {};
-      
+
       const workflowData = localStorage.getItem(`aidux_${patientId}`);
       if (!workflowData) return {};
-      
+
       const parsed = JSON.parse(workflowData);
       return {
         patientType: sessionStorage.getItem('currentPatientType') || parsed.patientType || undefined,
@@ -266,7 +266,7 @@ export class FeedbackService {
           sessionsCompleted: parseInt(localStorage.getItem('user_sessions_completed') || '0'),
         };
       }
-      
+
       // Intentar desde sessionStorage
       const userData = sessionStorage.getItem('currentUser');
       if (userData) {
@@ -276,7 +276,7 @@ export class FeedbackService {
           sessionsCompleted: parsed.sessionsCompleted || 0,
         };
       }
-      
+
       return {};
     } catch (error) {
       console.warn('[FEEDBACK] Error getting user context:', error);
@@ -291,7 +291,7 @@ export class FeedbackService {
     try {
       const pageStartTime = parseInt(sessionStorage.getItem('pageStartTime') || '0');
       const navigation = performance.getEntriesByType('navigation')[0] as any;
-      
+
       return {
         pageLoadTime: navigation?.loadEventEnd ? navigation.loadEventEnd - navigation.loadEventStart : undefined,
         timeOnPage: pageStartTime ? Date.now() - pageStartTime : undefined,
@@ -348,57 +348,57 @@ export class FeedbackService {
    */
   static calculateAutoTags(feedback: UserFeedback): string[] {
     const tags: string[] = [];
-    
+
     // Workflow blocking
     if (feedback.severity === 'critical' && feedback.enrichedContext?.workflowStep) {
       tags.push('workflow-blocking');
     }
-    
+
     // UI confusion
     if (feedback.type === 'question' || feedback.type === 'suggestion') {
       tags.push('ui-confusion');
     }
-    
+
     // Performance issues
     if (feedback.enrichedContext?.pageLoadTime && feedback.enrichedContext.pageLoadTime > 3000) {
       tags.push('performance');
     }
-    
+
     // First-time user issues
     if (feedback.enrichedContext?.userExperienceLevel === 'new') {
       tags.push('onboarding');
     }
-    
+
     // SOAP generation issues
     if (feedback.enrichedContext?.workflowStep === 'soap' && feedback.type === 'bug') {
       tags.push('soap-generation');
     }
-    
+
     // Analysis step issues
     if (feedback.enrichedContext?.workflowStep === 'analysis') {
       tags.push('analysis-step');
     }
-    
+
     // Evaluation step issues  
     if (feedback.enrichedContext?.workflowStep === 'evaluation') {
       tags.push('evaluation-step');
     }
-    
+
     // Pilot user feedback
     if (feedback.enrichedContext?.isPilotUser) {
       tags.push('pilot-user');
     }
-    
+
     // New patient workflow
     if (feedback.enrichedContext?.patientType === 'new_evaluation') {
       tags.push('new-patient');
     }
-    
+
     // Existing patient workflow
     if (feedback.enrichedContext?.patientType === 'existing_followup') {
       tags.push('existing-patient');
     }
-    
+
     return tags;
   }
 
@@ -407,7 +407,7 @@ export class FeedbackService {
    */
   static calculatePriority(feedback: UserFeedback): number {
     let priority = 0;
-    
+
     // Severity base (40% del peso)
     const severityWeight = {
       'critical': 10,
@@ -416,7 +416,7 @@ export class FeedbackService {
       'low': 1
     };
     priority += severityWeight[feedback.severity] * 0.4;
-    
+
     // Type multiplier (20% del peso)
     const typeMultiplier = {
       'bug': 1.0,        // Bugs son más urgentes
@@ -425,19 +425,19 @@ export class FeedbackService {
       'other': 0.6
     };
     priority += (severityWeight[feedback.severity] * typeMultiplier[feedback.type]) * 0.2;
-    
+
     // Workflow blocking (30% del peso)
     if (feedback.enrichedContext?.workflowStep && feedback.severity === 'critical') {
       priority += 10 * 0.3; // Máximo si bloquea workflow
     } else if (feedback.enrichedContext?.workflowStep) {
       priority += 5 * 0.3; // Medio si afecta workflow
     }
-    
+
     // User experience level (10% del peso)
     if (feedback.enrichedContext?.userExperienceLevel === 'new') {
       priority += 3 * 0.1; // Priorizar problemas de onboarding
     }
-    
+
     return Math.min(Math.round(priority * 10) / 10, 10); // Cap at 10, round to 1 decimal
   }
 
@@ -449,7 +449,7 @@ export class FeedbackService {
     try {
       // Capturar contexto enriquecido automáticamente
       const enrichedContext = this.getEnrichedContext();
-      
+
       // Crear feedback completo
       const completeFeedback: Omit<UserFeedback, 'timestamp'> & { timestamp: any } = {
         ...feedback,
@@ -458,15 +458,20 @@ export class FeedbackService {
         autoTags: [],
         calculatedPriority: 0
       };
-      
+
       // Calcular auto-tags y prioridad
       completeFeedback.autoTags = this.calculateAutoTags(completeFeedback as UserFeedback);
       completeFeedback.calculatedPriority = this.calculatePriority(completeFeedback as UserFeedback);
-      
+
       // ✅ FIX: Clean undefined values before saving to Firestore
       const cleanedFeedbackData = this.cleanUndefined(completeFeedback);
 
-      await addDoc(collection(db, this.COLLECTION_NAME), cleanedFeedbackData);
+      // ✅ P3 CTO Runbook: No PHI in feedback — strip identifiers before persist
+      const payloadForFirestore = { ...cleanedFeedbackData };
+      delete (payloadForFirestore as Record<string, unknown>).patientId;
+      delete (payloadForFirestore as Record<string, unknown>).sessionId;
+
+      await addDoc(collection(db, this.COLLECTION_NAME), payloadForFirestore);
 
       logger.info('[FEEDBACK] Feedback submitted with enriched context:', {
         type: feedback.type,

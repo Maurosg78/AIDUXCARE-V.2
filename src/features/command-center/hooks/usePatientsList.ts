@@ -9,6 +9,8 @@ export interface PatientListItem {
   fullName: string;
   email?: string;
   phone?: string;
+  /** WO-IA-CLOSE-01: present when patient has closed initial assessment or ongoing intake baseline */
+  activeBaselineId?: string;
 }
 
 interface UsePatientsListResult {
@@ -56,6 +58,7 @@ export function usePatientsList(): UsePatientsListResult {
             fullName: fullName,
             email: patient.email || undefined,
             phone: patient.phone || undefined,
+            activeBaselineId: (patient as { activeBaselineId?: string }).activeBaselineId,
           };
         })
         .sort((a, b) => {

@@ -16,7 +16,7 @@ export interface SOAPForBaseline {
 }
 
 /** Audit: source of minimal baseline. */
-export type MinimalBaselineSource = 'vertex_from_paste' | 'manual_minimal';
+export type MinimalBaselineSource = 'vertex_from_paste' | 'manual_minimal' | 'ongoing_intake';
 
 const PLAN_REQUIRED_MSG =
   'Para poder generar follow-ups, necesitamos saber qué tratamiento está en curso.';

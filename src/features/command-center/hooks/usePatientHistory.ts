@@ -3,14 +3,14 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import { AsyncState } from './useUserProfile';
 import sessionService from '@/services/sessionService';
+import { PersistenceService } from '@/services/PersistenceService';
 
 import logger from '@/shared/utils/logger';
 
 /**
- * Hook to check if a patient has previous session history
- * Uses SessionService.isFirstSession() - returns true if patient has history (not first session)
- * 
- * Based on DATA_FLOW.md: SessionService.getSessionsByPatient(patientId) pattern
+ * Hook to check if a patient has previous session/visit history.
+ * Checks BOTH sessions collection AND notes (consultations) — patient has history if either has data.
+ * Use to disable "Ongoing (first time in AiDuxCare)" when patient already has baseline/visits.
  */
 export function usePatientHistory(patientId: string | null): AsyncState<boolean> {
   const [state, setState] = useState<AsyncState<boolean>>({
@@ -32,15 +32,19 @@ export function usePatientHistory(patientId: string | null): AsyncState<boolean>
       }
 
       try {
-        // Use SessionService.isFirstSession - if NOT first session, patient has history
-        const isFirst = await sessionService.isFirstSession(patientId, user.uid);
-        const hasHistory = !isFirst; // Invert: if NOT first, then has history
-        
+        const [isFirstSession, notes] = await Promise.all([
+          sessionService.isFirstSession(patientId, user.uid),
+          PersistenceService.getNotesByPatient(patientId),
+        ]);
+        const hasSessions = !isFirstSession;
+        const hasNotes = notes && notes.length > 0;
+        const hasHistory = hasSessions || hasNotes;
+
         setState({ loading: false, data: hasHistory });
       } catch (error) {
         logger.error('Error checking patient history:', error);
-        setState({ 
-          loading: false, 
+        setState({
+          loading: false,
           error: error instanceof Error ? error : new Error('Error checking patient history'),
           data: false // Default to false on error
         });

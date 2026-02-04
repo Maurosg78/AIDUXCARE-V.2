@@ -9,11 +9,11 @@
  */
 
 import React from 'react';
-import { 
-  FileText, 
-  RefreshCw, 
-  Building2, 
-  Car, 
+import {
+  FileText,
+  RefreshCw,
+  Building2,
+  Car,
   Scroll,
   ChevronRight,
   Info
@@ -136,10 +136,9 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                   className={`
                     w-full flex flex-col gap-2 px-3 py-3 rounded-lg border-2 transition-all duration-150
                     text-left
-                    ${
-                      !isPilotAvailable
-                        ? 'opacity-50 cursor-not-allowed border-slate-200/50 bg-slate-50/30'
-                        : isActive
+                    ${!isPilotAvailable
+                      ? 'opacity-50 cursor-not-allowed border-slate-200/50 bg-slate-50/30'
+                      : isActive
                         ? 'border-primary-blue bg-primary-blue/5 shadow-sm'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                     }
@@ -155,9 +154,8 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                         `}
                       />
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${
-                          !isPilotAvailable ? 'text-slate-500' : isActive ? 'text-primary-blue' : 'text-slate-900'
-                        }`}>
+                        <span className={`text-sm font-semibold ${!isPilotAvailable ? 'text-slate-500' : isActive ? 'text-primary-blue' : 'text-slate-900'
+                          }`}>
                           {item.label}
                         </span>
                         {!isPilotAvailable && (
@@ -175,25 +173,13 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                       </div>
                     )}
                   </div>
-                  
-                  <p className={`text-xs ${
-                    !isPilotAvailable ? 'text-slate-400' : isActive ? 'text-slate-600' : 'text-slate-500'
-                  }`}>
+
+                  <p className={`text-xs ${!isPilotAvailable ? 'text-slate-400' : isActive ? 'text-slate-600' : 'text-slate-500'
+                    }`}>
                     {item.description}
                   </p>
-                  
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                    <span className={`text-xs font-medium ${
-                      !isPilotAvailable ? 'text-slate-400' : 'text-slate-500'
-                    }`}>
-                      Token Budget:
-                    </span>
-                    <span className={`text-xs font-semibold ${
-                      !isPilotAvailable ? 'text-slate-400' : isActive ? 'text-primary-blue' : 'text-slate-700'
-                    }`}>
-                      {item.tokenBudget} tokens
-                    </span>
-                  </div>
+
+                  {/* WO-UX-01: Token budget removed from UI */}
                 </button>
               </li>
             );

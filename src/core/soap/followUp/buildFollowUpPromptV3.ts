@@ -159,7 +159,8 @@ The plan should logically follow from the baseline and today's update
 
 OUTPUT FORMAT (STRICT)
 
-Return ONLY the following sections, in order:
+Return ONLY the following sections, in order.
+Each section must describe ONLY what is new or changed today — do not repeat the baseline.
 
 Subjective:
 (text)
@@ -176,6 +177,8 @@ Plan:
 FINAL REMINDERS (NON-NEGOTIABLE)
 
 This is a follow-up, not an initial assessment
+
+Do NOT copy the baseline sections verbatim. Your output will be rejected if it repeats large portions of the baseline. Each section must describe ONLY what is new or changed today.
 
 Do NOT return analysis, highlights, or recommendations sections
 

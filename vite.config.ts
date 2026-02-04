@@ -70,6 +70,7 @@ export default defineConfig({
       "firebase/auth",
       "firebase/firestore",
       "firebase/functions",  // ✅ CRITICAL: Include Functions SDK to prevent tree-shaking
+      "pdfjs-dist",  // ✅ Resolve dynamic import in pdfTextExtractor.ts (build + dev)
     ],
     exclude: ["@firebase/util"],
     force: false,
@@ -81,8 +82,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           firebase: [
-            "firebase/app", 
-            "firebase/auth", 
+            "firebase/app",
+            "firebase/auth",
             "firebase/firestore",
             "firebase/functions",  // ✅ CRITICAL: Include Functions SDK in bundle
           ],

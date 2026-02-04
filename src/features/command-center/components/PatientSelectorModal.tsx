@@ -15,6 +15,8 @@ export interface PatientSelectorModalProps {
   onClose: () => void;
   onSelect: (patient: Patient | PatientListItem) => void;
   onCreateNew: () => void;
+  /** When true, hide "Create New Patient" — for quick session with registered patients only (e.g. top "Start in-clinic session now") */
+  allowCreateNew?: boolean;
 }
 
 export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
@@ -22,6 +24,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
   onClose,
   onSelect,
   onCreateNew,
+  allowCreateNew = true,
 }) => {
   const { patients, loading } = usePatientsList();
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,19 +107,21 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <button
-            onClick={() => {
-              onCreateNew();
-              onClose();
-            }}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-apple"
-          >
-            <UserPlus className="w-5 h-5" />
-            Create New Patient
-          </button>
-        </div>
+        {/* Footer — only when allowCreateNew (hidden for "Start in-clinic session now" = registered only) */}
+        {allowCreateNew && (
+          <div className="p-6 border-t border-gray-200">
+            <button
+              onClick={() => {
+                onCreateNew();
+                onClose();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-apple"
+            >
+              <UserPlus className="w-5 h-5" />
+              Create New Patient
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -98,3 +98,4 @@ backups/
 
 **/.pnpm-store/
 **/.pnpm-debug.log*
+scripts/create-pilot-env-on-vps.sh

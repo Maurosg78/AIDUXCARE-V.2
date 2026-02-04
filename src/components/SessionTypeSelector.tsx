@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { SessionType, SessionTypeService } from '../services/sessionTypeService';
-import { Info } from 'lucide-react';
 
 export interface SessionTypeSelectorProps {
   value: SessionType;
@@ -22,7 +21,7 @@ export interface SessionTypeSelectorProps {
 export const SessionTypeSelector: React.FC<SessionTypeSelectorProps> = ({
   value,
   onChange,
-  showTokenBudget = true,
+  showTokenBudget = false, // WO-UX-01: tokens not shown in UI
   className = '',
   disabled = false
 }) => {
@@ -34,19 +33,14 @@ export const SessionTypeSelector: React.FC<SessionTypeSelectorProps> = ({
         <label className="text-sm font-semibold text-slate-800 font-apple">
           Session Type
         </label>
-        {showTokenBudget && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Info className="w-3.5 h-3.5" />
-            <span>Token budget shown</span>
-          </div>
-        )}
+        {/* WO-UX-01: Token budget not shown */}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {sessionTypes.map((sessionType) => {
           const isSelected = value === sessionType.value;
           const config = SessionTypeService.getSessionTypeConfig(sessionType.value);
-          
+
           return (
             <button
               key={sessionType.value}
@@ -68,9 +62,8 @@ export const SessionTypeSelector: React.FC<SessionTypeSelectorProps> = ({
                   {config.icon && (
                     <span className="text-xl">{config.icon}</span>
                   )}
-                  <span className={`text-sm font-semibold font-apple ${
-                    isSelected ? 'text-primary-blue' : 'text-slate-800'
-                  }`}>
+                  <span className={`text-sm font-semibold font-apple ${isSelected ? 'text-primary-blue' : 'text-slate-800'
+                    }`}>
                     {config.label}
                   </span>
                 </div>
@@ -87,18 +80,7 @@ export const SessionTypeSelector: React.FC<SessionTypeSelectorProps> = ({
                 {config.description}
               </p>
 
-              {showTokenBudget && (
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                  <span className="text-xs font-medium text-slate-500 font-apple">
-                    Token Budget:
-                  </span>
-                  <span className={`text-xs font-semibold font-apple ${
-                    isSelected ? 'text-primary-blue' : 'text-slate-700'
-                  }`}>
-                    {config.tokenBudget} tokens
-                  </span>
-                </div>
-              )}
+              {/* WO-UX-01: Token budget removed from UI */}
             </button>
           );
         })}

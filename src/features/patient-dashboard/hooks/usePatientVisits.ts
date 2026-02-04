@@ -53,21 +53,91 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
       try {
         const visits: PatientVisit[] = [];
 
-        // 1. Get consultations (SOAP notes) - Use PersistenceService for consistency
+        // 0. Fetch sessions once: build sessionIdToType (for consultations without visitType) and session visits
+        const sessionIdToType = new Map<string, 'initial' | 'follow-up'>();
+        try {
+          const sessionsRef = collection(db, 'sessions');
+          const sessionsQuery = query(
+            sessionsRef,
+            where('patientId', '==', patientId),
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc')
+          );
+          const sessionsSnapshot = await getDocs(sessionsQuery);
+          logger.info('[usePatientVisits][WO-DASHBOARD-01] sessions loaded', { count: sessionsSnapshot.size, patientId });
+          const sessionVisits: (PatientVisit & { _missingSessionType?: boolean })[] = [];
+          sessionsSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const sessionStatus = data.status || 'draft';
+            const soapNoteStatus = (data.soapNote as any)?.status ?? (sessionStatus === 'signed' || sessionStatus === 'completed' ? 'finalized' : 'draft');
+            const sessionType = data.sessionType;
+            const date = data.timestamp?.toDate?.() || data.createdAt?.toDate?.() || new Date();
+            const hasType = sessionType === 'followup' || sessionType === 'initial';
+            const type: 'initial' | 'follow-up' = sessionType === 'followup' ? 'follow-up' : 'initial';
+            sessionIdToType.set(docSnap.id, type);
+            sessionVisits.push({
+              id: docSnap.id,
+              type,
+              date,
+              status: sessionStatus === 'completed' || sessionStatus === 'signed' ? sessionStatus : 'draft',
+              soapNote: { status: soapNoteStatus === 'finalized' ? 'finalized' : 'draft' },
+              soap: typeof data.soapNote === 'object' && data.soapNote && !Array.isArray(data.soapNote)
+                ? {
+                  subjective: (data.soapNote as any).subjective,
+                  objective: (data.soapNote as any).objective,
+                  assessment: (data.soapNote as any).assessment,
+                  plan: (data.soapNote as any).plan,
+                }
+                : undefined,
+              chiefComplaint: (data.soapNote as any)?.subjective?.substring?.(0, 100),
+              diagnosis: (data.soapNote as any)?.assessment,
+              source: 'session',
+              ...(hasType ? {} : { _missingSessionType: true }),
+            });
+          });
+          // Legacy: sessions without sessionType → assign by chronological order (first = initial, rest = follow-up)
+          const needOrdinal = sessionVisits.filter((v) => (v as { _missingSessionType?: boolean })._missingSessionType);
+          if (needOrdinal.length > 0) {
+            const byDateAsc = [...sessionVisits].sort((a, b) => a.date.getTime() - b.date.getTime());
+            let index = 0;
+            byDateAsc.forEach((v) => {
+              if ((v as { _missingSessionType?: boolean })._missingSessionType) {
+                v.type = index === 0 ? 'initial' : 'follow-up';
+                index++;
+              }
+            });
+            byDateAsc.forEach((v) => sessionIdToType.set(v.id, v.type as 'initial' | 'follow-up'));
+          }
+          sessionVisits.forEach((v) => {
+            const { _missingSessionType, ...rest } = v as PatientVisit & { _missingSessionType?: boolean };
+            visits.push(rest);
+          });
+        } catch (error: any) {
+          const isPermissionDenied = error?.code === 'permission-denied' ||
+            error?.message?.includes('permission-denied');
+          if (!isPermissionDenied) {
+            console.error('[usePatientVisits][WO-DASHBOARD-01] Error fetching sessions (index may be missing)', error);
+          }
+        }
+
+        // 1. Get consultations (SOAP notes) - use sessionIdToType when note has no visitType
         try {
           const { PersistenceService } = await import('@/services/PersistenceService');
           const notes = await PersistenceService.getNotesByPatient(patientId);
 
           notes.forEach((note) => {
             const soapData = (note.soapData || {}) as { subjective?: string; objective?: string; assessment?: string; plan?: string };
+            const sessionId = (note as { sessionId?: string }).sessionId;
+            const noteVisitType = (note as { visitType?: 'initial' | 'follow-up' }).visitType;
+            const type: 'initial' | 'follow-up' = noteVisitType ?? sessionIdToType.get(sessionId ?? '') ?? 'initial';
 
             visits.push({
               id: note.id,
-              type: (note as { visitType?: 'initial' | 'follow-up' }).visitType ?? 'initial',
+              type,
               date: new Date(note.createdAt || Date.now()),
               status: 'completed', // Consultations are saved as completed
               soapNote: { status: 'finalized' }, // Saved notes treated as finalized
-              sessionIdForResume: (note as { sessionId?: string }).sessionId, // For "Resume" / "Close IA" in workflow
+              sessionIdForResume: sessionId, // For "Resume" / "Close IA" in workflow
               soap: {
                 subjective: soapData.subjective,
                 objective: soapData.objective,
@@ -122,52 +192,6 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
             console.error('[usePatientVisits] Error fetching encounters:', error);
-          }
-        }
-
-        // 3. WO-DASHBOARD-01: Get sessions (initial/follow-up with session.status vs soapNote.status)
-        try {
-          const sessionsRef = collection(db, 'sessions');
-          const sessionsQuery = query(
-            sessionsRef,
-            where('patientId', '==', patientId),
-            where('userId', '==', user.uid),
-            orderBy('timestamp', 'desc')
-          );
-          const sessionsSnapshot = await getDocs(sessionsQuery);
-          logger.info('[usePatientVisits][WO-DASHBOARD-01] sessions loaded', { count: sessionsSnapshot.size, patientId });
-          sessionsSnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const sessionStatus = data.status || 'draft';
-            // Single source of truth: session really saved = completed/signed => finalized
-            const soapNoteStatus = (data.soapNote as any)?.status ?? (sessionStatus === 'signed' || sessionStatus === 'completed' ? 'finalized' : 'draft');
-            const sessionType = data.sessionType || 'initial';
-            const date = data.timestamp?.toDate?.() || data.createdAt?.toDate?.() || new Date();
-
-            visits.push({
-              id: docSnap.id,
-              type: sessionType === 'followup' ? 'follow-up' : 'initial',
-              date,
-              status: sessionStatus === 'completed' || sessionStatus === 'signed' ? sessionStatus : 'draft',
-              soapNote: { status: soapNoteStatus === 'finalized' ? 'finalized' : 'draft' },
-              soap: typeof data.soapNote === 'object' && data.soapNote && !Array.isArray(data.soapNote)
-                ? {
-                  subjective: (data.soapNote as any).subjective,
-                  objective: (data.soapNote as any).objective,
-                  assessment: (data.soapNote as any).assessment,
-                  plan: (data.soapNote as any).plan,
-                }
-                : undefined,
-              chiefComplaint: (data.soapNote as any)?.subjective?.substring?.(0, 100),
-              diagnosis: (data.soapNote as any)?.assessment,
-              source: 'session',
-            });
-          });
-        } catch (error: any) {
-          const isPermissionDenied = error?.code === 'permission-denied' ||
-            error?.message?.includes('permission-denied');
-          if (!isPermissionDenied) {
-            console.error('[usePatientVisits][WO-DASHBOARD-01] Error fetching sessions (index may be missing)', error);
           }
         }
 

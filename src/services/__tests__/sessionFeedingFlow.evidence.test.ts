@@ -278,3 +278,79 @@ describe('Evidencia: consent e isFirstSession no modifican baselineSOAP', () => 
     expect(state.consent.hasValidConsent).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Evidencia 5: Ongoing Patient First Time — baseline desde modal → rehidratación
+// ---------------------------------------------------------------------------
+// Simula que se creó un baseline vía OngoingPatientIntakeModal (createBaselineFromMinimalSOAP
+// source: ongoing_intake). El snapshot tiene: primaryAssessment = assessment,
+// keyFindings = [subjective, objective], planSummary = plan. getClinicalState debe devolver
+// baselineSOAP con ese mismo contenido para que el follow-up workflow esté bien conectado.
+
+const SOAP_ONGOING_FICTICIO = {
+  subjective: 'Dolor lumbar crónico, 6 meses. Primera vez en AiDuxCare.',
+  objective: 'Objective findings to be documented in session.',
+  assessment: 'Clinical impression to be documented in session.',
+  plan: 'Continuar MT lumbar 2x/semana. Reevaluar en 4 semanas. Objetivo: retorno a trabajo ligero.',
+};
+
+function baselineOngoingIntakeFicticio(patientId: string, baselineId: string) {
+  return {
+    id: baselineId,
+    patientId,
+    sourceSoapId: baselineId,
+    sourceSessionId: undefined as string | undefined,
+    snapshot: {
+      primaryAssessment: SOAP_ONGOING_FICTICIO.assessment,
+      keyFindings: [SOAP_ONGOING_FICTICIO.subjective, SOAP_ONGOING_FICTICIO.objective],
+      planSummary: SOAP_ONGOING_FICTICIO.plan,
+    },
+    createdAt: new Date(),
+    createdBy: 'user-pilot-001',
+  };
+}
+
+describe('Evidencia: Ongoing Patient First Time — baseline backend conectado', () => {
+  it('E8: Baseline creado por ongoing intake se rehidrata en getClinicalState como baselineSOAP', async () => {
+    const patientId = 'patient-ongoing-001';
+    const baselineId = 'bl-ongoing-001';
+    mockGetPatientById.mockResolvedValue({ id: patientId, activeBaselineId: baselineId });
+    mockGetBaselineById.mockResolvedValue(baselineOngoingIntakeFicticio(patientId, baselineId) as any);
+
+    const state = await getClinicalState(patientId, 'user-pilot-001');
+
+    expect(state.hasBaseline).toBe(true);
+    expect(state.baselineSOAP).toBeDefined();
+    expect(state.baselineSOAP?.subjective).toBe(SOAP_ONGOING_FICTICIO.subjective);
+    expect(state.baselineSOAP?.objective).toBe(SOAP_ONGOING_FICTICIO.objective);
+    expect(state.baselineSOAP?.assessment).toBe(SOAP_ONGOING_FICTICIO.assessment);
+    expect(state.baselineSOAP?.plan).toBe(SOAP_ONGOING_FICTICIO.plan);
+    expect(state.baselineSOAP?.encounterId).toBe(baselineId);
+    expect(state.baselineSOAP?.date).toBeInstanceOf(Date);
+  });
+
+  it('E9: Ongoing intake con un solo keyFinding (objective vacío) → objective en baselineSOAP vacío', async () => {
+    const patientId = 'p-ongoing-single';
+    const baselineId = 'bl-ongoing-single';
+    mockGetPatientById.mockResolvedValue({ id: patientId, activeBaselineId: baselineId });
+    mockGetBaselineById.mockResolvedValue({
+      id: baselineId,
+      patientId,
+      sourceSoapId: baselineId,
+      snapshot: {
+        primaryAssessment: 'Impresión clínica',
+        keyFindings: ['Solo chief complaint / subjective'],
+        planSummary: 'Plan de 15 caracteres o más para pasar validación.',
+      },
+      createdAt: new Date(),
+      createdBy: 'u1',
+    } as any);
+
+    const state = await getClinicalState(patientId, 'u1');
+
+    expect(state.hasBaseline).toBe(true);
+    expect(state.baselineSOAP?.subjective).toBe('Solo chief complaint / subjective');
+    expect(state.baselineSOAP?.objective).toBe('');
+    expect(state.baselineSOAP?.plan).toBe('Plan de 15 caracteres o más para pasar validación.');
+  });
+});

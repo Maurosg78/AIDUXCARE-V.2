@@ -99,8 +99,6 @@ export interface SOAPTabProps {
   handleAttachmentRemove?: (attachment: ClinicalAttachment) => Promise<void>;
   /** When provided, shows "Volver al Command Center" after finalization. */
   onBackToCommandCenter?: () => void;
-  /** Follow-up path only: has content to send (transcript and/or in-clinic/HEP items). Enables Generate SOAP without Niagara. */
-  followUpHasContent?: boolean;
 }
 
 export const SOAPTab: React.FC<SOAPTabProps> = ({
@@ -152,7 +150,6 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleAttachmentUpload,
   handleAttachmentRemove,
   onBackToCommandCenter,
-  followUpHasContent = false,
 }) => {
   return (
     <div className="space-y-6">
@@ -201,9 +198,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
             {visitType === 'follow-up' ? (
               <p className="text-xs text-slate-500 mb-6">
-                {followUpHasContent
-                  ? 'Patient context, treatments, and clinical notes are above. Generate your SOAP note below.'
-                  : 'Add clinical update and/or treatments above, then generate SOAP note.'}
+                Complete your clinical update above, then generate SOAP note.
               </p>
             ) : (
               <p className="text-xs text-slate-500 mb-6">
@@ -214,7 +209,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             <button
               onClick={handleGenerateSoap}
               disabled={
-                (visitType === 'follow-up' ? !followUpHasContent : !niagaraResults || physicalExamResults.length === 0) ||
+                !niagaraResults ||
+                (visitType !== 'follow-up' && physicalExamResults.length === 0) ||
                 isGeneratingSOAP
               }
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -256,7 +252,6 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             soap={localSoapNote}
             status={soapStatus}
             visitType={visitType}
-            singleBlockMode={visitType === 'follow-up'}
             isGenerating={isGeneratingSOAP}
             patientId={patientId}
             sessionId={sessionId}
@@ -276,16 +271,23 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             onBackToCommandCenter={onBackToCommandCenter}
           />
 
-          {/* WO-AUTO-BASELINE-01: Initial finalized — no extra step; note is baseline for follow-up. */}
-          {visitType === 'initial' && soapStatus === 'finalized' && (
+          {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}
+          {visitType === 'initial' && soapStatus === 'finalized' && onCloseInitialAssessment && (
             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                  Initial Assessment completed
+                  Initial Assessment Complete
                 </h3>
-                <p className="text-sm text-slate-600">
-                  This note will be used as baseline for follow-up visits. You can start a follow-up from Patient History.
+                <p className="text-sm text-slate-600 mb-6">
+                  SOAP note finalized. Ready to close this assessment.
                 </p>
+                <button
+                  onClick={onCloseInitialAssessment}
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition shadow-sm"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Close Initial Assessment
+                </button>
               </div>
             </div>
           )}

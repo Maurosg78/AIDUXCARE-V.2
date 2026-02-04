@@ -49,6 +49,7 @@
     "test:consent-flow": "tsx scripts/test-consent-flow.ts",
     "test:evidence-session-flow": "node scripts/evidence-session-feeding-flow.mjs",
     "test:evidence-followup-prompt-flow": "node scripts/evidence-followup-prompt-flow.mjs",
+    "test:baseline-backend": "vitest run --reporter=verbose src/services/__tests__/clinicalBaselineService.test.ts src/services/__tests__/sessionFeedingFlow.evidence.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

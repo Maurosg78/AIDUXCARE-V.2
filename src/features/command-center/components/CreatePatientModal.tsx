@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { X, Loader2, User, Phone, Mail, FileText, Calendar } from 'lucide-react';
+import { DictationButton } from '@/components/ui/DictationButton';
 
 import { patientsRepo, PatientCreateData } from '../../../repositories/patientsRepo';
 import { logAction } from '../../../analytics/events';
@@ -11,13 +12,16 @@ import logger from '@/shared/utils/logger';
 interface CreatePatientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (patientId: string) => Promise<void>; // Bloque 5: Prop opcional agregada para compatibilidad
+  /** When provided, called with patientId and sessionType so parent can navigate to workflow (Initial vs Ongoing first time in AiDux) */
+  onSuccess?: (patientId: string, sessionType?: 'initial' | 'followup') => void | Promise<void>;
+  /** Flow determined by entry point: undefined = Initial Assessment; 'existing_followup' = Ongoing (has own intake form). No selector in UI. */
+  initialPatientType?: 'new_evaluation' | 'existing_followup';
 }
 
-export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, onClose }) => {
+export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, onClose, onSuccess, initialPatientType }) => {
   const navigate = useNavigate();
   const firstNameInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -29,10 +33,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
     referralDiagnosis: '',
     suspectedDiagnosis: '',
   });
-  
-  // ✅ PILOT METRICS: Patient type selector (new vs existing)
-  const [patientType, setPatientType] = useState<'new_evaluation' | 'existing_followup'>('new_evaluation');
-  
+
+  // Flow determined by parent: Initial card → initial; Ongoing card → ongoing. No selector in form.
+  const intendedFlow: 'new_evaluation' | 'existing_followup' = initialPatientType ?? 'new_evaluation';
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -57,14 +61,13 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         referralDiagnosis: '',
         suspectedDiagnosis: '',
       });
-      setPatientType('new_evaluation'); // Reset to default
       setErrors({});
     }
   }, [isOpen]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'Required';
     }
@@ -85,7 +88,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
     if (!formData.chiefComplaint.trim()) {
       newErrors.chiefComplaint = 'Required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -108,13 +111,13 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const auth = getAuth();
       if (!auth.currentUser) throw new Error('User not authenticated');
@@ -147,7 +150,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         payload.birthDate = formData.birthDate;
         payload.dateOfBirth = formData.birthDate;
       }
-      
+
       // Add referral/suspected diagnosis fields
       if (formData.isReferral && formData.referralDiagnosis?.trim()) {
         payload.referralDiagnosis = formData.referralDiagnosis.trim();
@@ -155,40 +158,45 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
       } else if (!formData.isReferral && formData.suspectedDiagnosis?.trim()) {
         payload.suspectedDiagnosis = formData.suspectedDiagnosis.trim();
       }
-      
+
       // Set source based on referral status
       payload.source = formData.isReferral ? 'referral' : 'direct';
-      
+
       const patientId = await patientsRepo.createPatient(payload);
       logAction('create_patient_success', '/command-center');
-      
+
       // ✅ PILOT METRICS: Track pilot patient creation
       try {
         // Check if user is pilot user (from registration date)
         const pilotStartDate = new Date('2024-12-19T00:00:00Z');
         const isPilotUser = new Date() >= pilotStartDate;
-        
+
         if (isPilotUser) {
           await AnalyticsService.trackEvent('pilot_patient_created', {
             patientId,
             userId: auth.currentUser.uid,
-            patientType,
+            patientType: intendedFlow,
             createdAt: new Date().toISOString(),
             isPilotUser: true,
             isReferral: formData.isReferral,
             hasEmail: !!formData.email?.trim(),
             hasChiefComplaint: !!formData.chiefComplaint?.trim()
           });
-          console.log('✅ [PILOT METRICS] Pilot patient creation tracked:', patientId, patientType);
+          console.log('✅ [PILOT METRICS] Pilot patient creation tracked:', patientId, intendedFlow);
         }
       } catch (error) {
         console.error('⚠️ [PILOT METRICS] Error tracking pilot patient creation:', error);
         // Non-blocking: don't fail patient creation if analytics fails
       }
-      
-      // Close modal and redirect immediately
-      onClose();
-      navigate(`/consent-verification/${patientId}`);
+
+      const sessionType: 'initial' | 'followup' = intendedFlow === 'new_evaluation' ? 'initial' : 'followup';
+      if (onSuccess) {
+        await onSuccess(patientId, sessionType);
+        onClose();
+      } else {
+        onClose();
+        navigate(`/consent-verification/${patientId}`);
+      }
     } catch (error) {
       logger.error('Error creating patient:', error);
       setErrors({ submit: 'Failed to create patient. Please try again.' });
@@ -238,11 +246,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 value={formData.firstName}
                 onChange={handleInputChange}
                 required
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.firstName 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-slate-300 focus:ring-indigo-500'
-                }`}
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${errors.firstName
+                  ? 'border-red-300 focus:ring-red-500'
+                  : 'border-slate-300 focus:ring-indigo-500'
+                  }`}
                 placeholder="John"
                 disabled={isSubmitting}
               />
@@ -250,7 +257,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1">
                 Last Name <span className="text-red-500">*</span>
@@ -262,11 +269,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 value={formData.lastName}
                 onChange={handleInputChange}
                 required
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  errors.lastName 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-slate-300 focus:ring-indigo-500'
-                }`}
+                className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${errors.lastName
+                  ? 'border-red-300 focus:ring-red-500'
+                  : 'border-slate-300 focus:ring-indigo-500'
+                  }`}
                 placeholder="Doe"
                 disabled={isSubmitting}
               />
@@ -289,11 +295,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               value={formData.phone}
               onChange={handleInputChange}
               required
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                errors.phone 
-                  ? 'border-red-300 focus:ring-red-500' 
-                  : 'border-slate-300 focus:ring-indigo-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${errors.phone
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-slate-300 focus:ring-indigo-500'
+                }`}
               placeholder="+1 (555) 123-4567"
               disabled={isSubmitting}
             />
@@ -317,11 +322,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               onChange={handleInputChange}
               required
               max={new Date().toISOString().split('T')[0]}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                errors.birthDate 
-                  ? 'border-red-300 focus:ring-red-500' 
-                  : 'border-slate-300 focus:ring-indigo-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${errors.birthDate
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-slate-300 focus:ring-indigo-500'
+                }`}
               disabled={isSubmitting}
             />
             {errors.birthDate && (
@@ -341,11 +345,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                errors.email 
-                  ? 'border-red-300 focus:ring-red-500' 
-                  : 'border-slate-300 focus:ring-indigo-500'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${errors.email
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-slate-300 focus:ring-indigo-500'
+                }`}
               placeholder="john.doe@example.com"
               disabled={isSubmitting}
             />
@@ -354,74 +357,35 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
             )}
           </div>
 
-          {/* ✅ PILOT METRICS: Patient Type Selector */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Patient Type <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition ${
-                patientType === 'new_evaluation'
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-slate-300 hover:border-slate-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="patientType"
-                  value="new_evaluation"
-                  checked={patientType === 'new_evaluation'}
-                  onChange={(e) => setPatientType(e.target.value as 'new_evaluation' | 'existing_followup')}
-                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isSubmitting}
-                />
-                <div>
-                  <span className="text-sm font-medium text-slate-700">New Evaluation</span>
-                  <p className="text-xs text-slate-500">First-time patient</p>
-                </div>
-              </label>
-              <label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition ${
-                patientType === 'existing_followup'
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-slate-300 hover:border-slate-400'
-              }`}>
-                <input
-                  type="radio"
-                  name="patientType"
-                  value="existing_followup"
-                  checked={patientType === 'existing_followup'}
-                  onChange={(e) => setPatientType(e.target.value as 'new_evaluation' | 'existing_followup')}
-                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isSubmitting}
-                />
-                <div>
-                  <span className="text-sm font-medium text-slate-700">Existing Patient</span>
-                  <p className="text-xs text-slate-500">Follow-up visit</p>
-                </div>
-              </label>
-            </div>
-          </div>
-
           {/* Chief Complaint */}
           <div>
             <label htmlFor="chiefComplaint" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
               <FileText className="w-4 h-4 text-slate-500" />
               Chief Complaint <span className="text-red-500">*</span>
             </label>
-            <textarea
-              id="chiefComplaint"
-              name="chiefComplaint"
-              value={formData.chiefComplaint}
-              onChange={handleInputChange}
-              required
-              rows={3}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors resize-none ${
-                errors.chiefComplaint 
-                  ? 'border-red-300 focus:ring-red-500' 
+            <div className="flex gap-2">
+              <textarea
+                id="chiefComplaint"
+                name="chiefComplaint"
+                value={formData.chiefComplaint}
+                onChange={handleInputChange}
+                required
+                rows={3}
+                className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors resize-none ${errors.chiefComplaint
+                  ? 'border-red-300 focus:ring-red-500'
                   : 'border-slate-300 focus:ring-indigo-500'
-              }`}
-              placeholder="Brief description of the patient's main concern..."
-              disabled={isSubmitting}
-            />
+                  }`}
+                placeholder="Brief description of the patient's main concern..."
+                disabled={isSubmitting}
+              />
+              <DictationButton
+                value={formData.chiefComplaint}
+                onChange={(v) => setFormData((p) => ({ ...p, chiefComplaint: v }))}
+                disabled={isSubmitting}
+                title="Dictate chief complaint"
+                className="self-start"
+              />
+            </div>
             {errors.chiefComplaint && (
               <p className="text-red-600 text-xs mt-1">{errors.chiefComplaint}</p>
             )}
@@ -447,16 +411,24 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               <label htmlFor="referralDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
                 Referral Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
               </label>
-              <input
-                type="text"
-                id="referralDiagnosis"
-                name="referralDiagnosis"
-                value={formData.referralDiagnosis}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                placeholder="Diagnosis from referring physician..."
-                disabled={isSubmitting}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id="referralDiagnosis"
+                  name="referralDiagnosis"
+                  value={formData.referralDiagnosis}
+                  onChange={handleInputChange}
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                  placeholder="Diagnosis from referring physician..."
+                  disabled={isSubmitting}
+                />
+                <DictationButton
+                  value={formData.referralDiagnosis}
+                  onChange={(v) => setFormData((p) => ({ ...p, referralDiagnosis: v }))}
+                  disabled={isSubmitting}
+                  title="Dictate referral diagnosis"
+                />
+              </div>
             </div>
           )}
 
@@ -466,16 +438,24 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               <label htmlFor="suspectedDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
                 Suspected Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
               </label>
-              <input
-                type="text"
-                id="suspectedDiagnosis"
-                name="suspectedDiagnosis"
-                value={formData.suspectedDiagnosis}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                placeholder="Initial suspected diagnosis..."
-                disabled={isSubmitting}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id="suspectedDiagnosis"
+                  name="suspectedDiagnosis"
+                  value={formData.suspectedDiagnosis}
+                  onChange={handleInputChange}
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                  placeholder="Initial suspected diagnosis..."
+                  disabled={isSubmitting}
+                />
+                <DictationButton
+                  value={formData.suspectedDiagnosis}
+                  onChange={(v) => setFormData((p) => ({ ...p, suspectedDiagnosis: v }))}
+                  disabled={isSubmitting}
+                  title="Dictate suspected diagnosis"
+                />
+              </div>
             </div>
           )}
 

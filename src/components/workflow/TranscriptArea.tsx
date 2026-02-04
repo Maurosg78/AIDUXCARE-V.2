@@ -85,9 +85,6 @@ export interface TranscriptAreaProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
-  
-  // WO-06.1: Visit type for contextual placeholder
-  visitType?: 'initial' | 'follow-up';
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -113,7 +110,6 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
-  visitType = 'initial',
 }) => {
   // Local state for immediate UI updates
   const [localTranscript, setLocalTranscript] = useState(transcript);
@@ -308,9 +304,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
       <textarea
         key="transcript-textarea"
         className="mt-4 w-full min-h-[160px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
-        placeholder={visitType === 'follow-up' 
-          ? "Follow-up observations:\n• Patient response to last session\n• Progress or setbacks\n• Modifications applied today"
-          : "Paste the transcript or record directly from the browser..."}
+        placeholder="Paste the transcript or record directly from the browser..."
         value={localTranscript}
         onChange={handleChange}
         onPaste={handlePaste}
@@ -403,7 +397,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             ))}
           </div>
         )}
-        
+
         {/* ✅ Botón "Analyze with AI" siempre aparece después de la sección de attachments */}
         <div className="mt-4 pt-4 border-t border-slate-200">
           <button
@@ -414,25 +408,23 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                {visitType === 'follow-up' ? 'Generating SOAP note...' : 'Analyzing...'}
+                Analyzing...
               </>
             ) : (
               <>
                 <Brain className="w-4 h-4" />
-                {visitType === 'follow-up' ? 'Generate SOAP note' : 'Analyze with AiduxCare AI'}
+                Analyze with AiduxCare AI
               </>
             )}
           </button>
           <p className="mt-2 text-xs text-slate-500">
-            {visitType === 'follow-up'
-              ? 'One SOAP note from baseline, today’s treatments, and clinical notes'
-              : transcript?.trim() && attachments.some(att => att.extractedText)
+            {transcript?.trim() && attachments.some(att => att.extractedText)
               ? 'Analyze transcript and attachments together'
               : transcript?.trim()
-              ? 'Analyze transcript with AI'
-              : attachments.some(att => att.extractedText)
-              ? 'Analyze uploaded attachments with AI'
-              : 'Enter a transcript or upload attachments to analyze'}
+                ? 'Analyze transcript with AI'
+                : attachments.some(att => att.extractedText)
+                  ? 'Analyze uploaded attachments with AI'
+                  : 'Enter a transcript or upload attachments to analyze'}
           </p>
         </div>
       </div>

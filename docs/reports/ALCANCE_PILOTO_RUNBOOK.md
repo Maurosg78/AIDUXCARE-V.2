@@ -55,7 +55,15 @@
 2. Revisar errores en consola y en Network (llamadas a Firestore/Functions).
 3. Si el problema es persistente, escalar a responsable técnico (ver contacto más abajo) y documentar pasos para reproducir.
 
-### 2.4 Contacto si algo falla
+### 2.4 Incidente: pilot.aiduxcare.com no carga (VPS + túnel)
+
+Si el piloto se sirve desde un VPS con Cloudflare Tunnel (ver paso a paso en referencias):
+
+1. Seguir el **runbook de estabilidad**: `docs/reports/PILOTO_CTO_ESTABILIDAD.md` — sección "Runbook: pilot.aiduxcare.com no carga".
+2. Resumen: SSH al VPS → `pm2 list` → `pm2 restart pilot-web` / `pm2 restart pilot-tunnel` → revisar logs → comprobar `curl localhost:5174`.
+3. Documentar el incidente (fecha, síntomas, pasos, cierre).
+
+### 2.5 Contacto si algo falla
 
 - **Responsable técnico / escalación:** A definir internamente (nombre, rol, email o canal). Incluir aquí cuando esté definido:
   - Ejemplo: `[Nombre] — [Rol] — [email o Slack]`
@@ -65,6 +73,8 @@
 
 ## 3. Referencias
 
+- **CTO — Estabilidad del piloto (sin desconexiones evitables):** `docs/reports/PILOTO_CTO_ESTABILIDAD.md` — compromisos, PM2, monitoreo y runbook cuando pilot.aiduxcare.com no carga.
+- **Piloto en VPS (paso a paso con chequeos):** `docs/reports/PILOTO_VPS_PASO_A_PASO.md` — mover app + túnel a un servidor siempre encendido para mayor estabilidad.
 - Deploy y envs: `DEPLOY.md`
 - Consent y datos (PHIPA): `docs/reports/RESUMEN_CONSENT_DATOS_PHIPA.md`
 - Auditoría y prioridades: `docs/reports/AUDITORIA_PILOTO_MEJORAS.md`, `docs/reports/INFORME_CTO_PRIORIDADES_PILOTO_NIAGARA.md`

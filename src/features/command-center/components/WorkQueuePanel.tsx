@@ -6,13 +6,15 @@
  */
 
 import React, { useState } from 'react';
-import { FileText, AlertCircle, Scroll, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, AlertCircle, Scroll, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export interface WorkQueueSummary {
   pendingNotes: number;
   missingConsents: number;
   draftDocuments: number;
+  /** Patients in today's list not yet seen (status pending) — reminder to physio */
+  pendingPatients?: number;
 }
 
 export interface WorkQueuePanelProps {
@@ -27,8 +29,8 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const hasItems = workQueue.pendingNotes > 0 || workQueue.missingConsents > 0 || workQueue.draftDocuments > 0;
-  const totalItems = workQueue.pendingNotes + workQueue.missingConsents + workQueue.draftDocuments;
+  const hasItems = workQueue.pendingNotes > 0 || workQueue.missingConsents > 0 || workQueue.draftDocuments > 0 || (workQueue.pendingPatients ?? 0) > 0;
+  const totalItems = workQueue.pendingNotes + workQueue.missingConsents + workQueue.draftDocuments + (workQueue.pendingPatients ?? 0);
 
   return (
     <div id="work-queue" className="bg-white border border-gray-200 rounded-2xl shadow-sm">
@@ -63,6 +65,34 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
       {isExpanded && (
         <div className="px-6 pb-6 border-t border-gray-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-5">
+            {/* Pending Patients Card — today's list not yet seen */}
+            {(workQueue.pendingPatients ?? 0) > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-5 hover:shadow-sm transition-all duration-200 flex flex-col min-h-[160px]">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                    <User className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-red-900 font-apple mb-1">
+                      Pending Patients
+                    </h3>
+                    <div className="text-2xl font-bold text-red-800 font-apple">
+                      {workQueue.pendingPatients}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-red-700 font-apple font-light mb-4 flex-1">
+                  In today&apos;s list — session not yet completed
+                </p>
+                <button
+                  onClick={() => document.getElementById('work-with-patients')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
+                >
+                  View List
+                </button>
+              </div>
+            )}
+
             {/* Pending Notes Card */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 hover:shadow-sm transition-all duration-200 flex flex-col min-h-[160px]">
               <div className="flex items-center gap-4 mb-4">
@@ -82,11 +112,11 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   )}
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
                 Notes that must be reviewed and signed
               </p>
-              
+
               <button
                 onClick={() => navigate('/notes/pending')}
                 className="w-full px-4 py-3 bg-white hover:bg-primary-blue/5 border border-gray-200 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-semibold text-gray-900 font-apple"
@@ -114,11 +144,11 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   )}
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
                 Draft support documents (future)
               </p>
-              
+
               <button
                 disabled
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-400 font-apple cursor-not-allowed"
@@ -146,11 +176,11 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   )}
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
                 Patients requiring consent review
               </p>
-              
+
               <button
                 onClick={() => navigate('/consents')}
                 className="w-full px-4 py-3 bg-white hover:bg-primary-blue/5 border border-gray-200 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-semibold text-gray-900 font-apple"

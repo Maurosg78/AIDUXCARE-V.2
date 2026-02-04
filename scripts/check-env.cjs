@@ -6,13 +6,17 @@ const { config } = require('dotenv');
 const { resolve } = require('path');
 const fs = require('fs');
 
-// Cargar variables de entorno de .env.local
+// Cargar variables de entorno: .env.local primero, luego .env (VPS / deploy suelen usar .env)
 const envLocalPath = resolve(process.cwd(), '.env.local');
+const envPath = resolve(process.cwd(), '.env');
 if (fs.existsSync(envLocalPath)) {
   console.log(`📄 Cargando variables desde: ${envLocalPath}`);
   config({ path: envLocalPath });
+} else if (fs.existsSync(envPath)) {
+  console.log(`📄 Cargando variables desde: ${envPath}`);
+  config({ path: envPath });
 } else {
-  console.log('⚠️ No se encontró archivo .env.local, usando solo variables de sistema');
+  console.log('⚠️ No se encontró .env.local ni .env, usando solo variables de sistema');
 }
 
 function checkEnvVars() {

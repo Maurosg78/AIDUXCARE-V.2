@@ -7,12 +7,14 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { setSessionCompleted } from '@/features/command-center/todayListSessionStorage';
 
 const REDIRECT_DELAY_MS = 2000;
 
 export interface CloseInitialAssessmentConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
+  patientId?: string;
   patientName?: string;
   baselineId?: string;
 }
@@ -20,6 +22,7 @@ export interface CloseInitialAssessmentConfirmModalProps {
 export function CloseInitialAssessmentConfirmModal({
   isOpen,
   onClose,
+  patientId,
   patientName,
   baselineId,
 }: CloseInitialAssessmentConfirmModalProps) {
@@ -30,11 +33,12 @@ export function CloseInitialAssessmentConfirmModal({
     if (!isOpen) return;
     setSecondsLeft(Math.ceil(REDIRECT_DELAY_MS / 1000));
     const t = setTimeout(() => {
+      if (patientId) setSessionCompleted(patientId, 'initial');
       onClose();
       navigate('/command-center');
     }, REDIRECT_DELAY_MS);
     return () => clearTimeout(t);
-  }, [isOpen, onClose, navigate]);
+  }, [isOpen, onClose, navigate, patientId]);
 
   useEffect(() => {
     if (!isOpen) return;

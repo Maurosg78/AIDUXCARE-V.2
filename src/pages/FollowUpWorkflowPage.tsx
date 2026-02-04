@@ -26,6 +26,7 @@ import { PatientService, type Patient } from "../services/patientService";
 import treatmentPlanService from "../services/treatmentPlanService";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
+import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 import { getClinicalState, type ClinicalState } from "../services/clinicalStateService";
@@ -59,7 +60,7 @@ const FollowUpWorkflowPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const patientIdFromUrl = searchParams.get('patientId');
-  
+
   // Hardcoded for follow-up
   const visitType: VisitType = 'follow-up';
   const sessionTypeFromUrl = 'followup' as const;
@@ -267,8 +268,8 @@ const FollowUpWorkflowPage = () => {
   const followUpBlockedReason: 'no-baseline' | 'no-consent' | null =
     clinicalState == null ? null
       : !clinicalState.hasBaseline ? 'no-baseline'
-      : !clinicalState.consent.hasValidConsent ? 'no-consent'
-      : null;
+        : !clinicalState.consent.hasValidConsent ? 'no-consent'
+          : null;
   const followUpReady = clinicalState?.hasBaseline === true && clinicalState?.consent.hasValidConsent === true;
   const isFirstSession = clinicalState?.isFirstSession ?? false;
 
@@ -575,7 +576,7 @@ const FollowUpWorkflowPage = () => {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 font-apple font-light">
-                    {(['Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth'][(visitCount.data ?? 1) - 1] ?? `Session ${(visitCount.data ?? 0) + 1}`) + ' session'}
+                    {getSessionOrdinalLabel((visitCount.data ?? 0) + 1)}
                   </p>
                 </div>
                 {previousTreatmentPlan && (
@@ -672,186 +673,35 @@ const FollowUpWorkflowPage = () => {
 
           {/* SECCIÓN 3: Clinical Conversation Capture — WO-FOLLOWUP-UI-GATE-002: only when followUpReady (ClinicalState) */}
           {showFollowUpFlow && (
-          <div ref={clinicalConversationRef} className="bg-white border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">🎙️</span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Clinical Conversation Capture
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Capture patient response, progress, setbacks, and modifications for the SOAP note.
-                </p>
-              </div>
-              {transcript?.trim() && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Clinical update captured</span>
+            <div ref={clinicalConversationRef} className="bg-white border border-blue-200 rounded-lg p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">🎙️</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                    Clinical Conversation Capture
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Capture patient response, progress, setbacks, and modifications for the SOAP note.
+                  </p>
                 </div>
-              )}
-            </div>
-            {/* WO-14: Follow-up–only capture; no AnalysisTab, no duplicate Today's treatment session */}
-            <FollowUpConversationCapture
-              visitType="follow-up"
-              transcript={transcript}
-              setTranscript={setTranscript}
-              onGenerateSoap={handleGenerateSOAPFollowUp}
-              isLoading={isGeneratingSOAP}
-              recordingTime={recordingTime}
-              isRecording={isRecording}
-              startRecording={startRecording}
-              stopRecording={stopRecording}
-              transcriptError={transcriptError}
-              transcriptMeta={transcriptMeta}
-              languagePreference={languagePreference}
-              setLanguagePreference={setLanguagePreference}
-              mode={mode}
-              setMode={setMode}
-              isTranscribing={isTranscribing}
-              isProcessing={isGeneratingSOAP}
-              audioStream={audioStream ?? null}
-            />
-          </div>
-          )}
-
-          {/* SECCIÓN 4: Documentation (SOAP) — only when followUpReady (WO-FOLLOWUP-UI-GATE-002) */}
-          {showFollowUpFlow && (
-          <div ref={documentationSectionRef} className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
-            <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">📝</span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                  Documentation
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Review and finalize your SOAP note.
-                </p>
-              </div>
-              {localSoapNote && (
-                <div className="flex items-center gap-2 text-sm text-blue-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>SOAP note generated</span>
-                </div>
-              )}
-            </div>
-
-            {/* WO-11.1: ALERTS (red / yellow) */}
-            {followUpAlerts && !followUpAlerts.none && (
-              <div className="mb-6 space-y-3">
-                <h3 className="text-sm font-semibold text-slate-700">Clinical alerts</h3>
-                {followUpAlerts.red_flags && followUpAlerts.red_flags.length > 0 && (
-                  <div className="space-y-2">
-                    {followUpAlerts.red_flags.map((flag, i) => (
-                      <div
-                        key={`red-${i}`}
-                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm"
-                      >
-                        <p className="font-semibold text-red-800">{flag.label}</p>
-                        {flag.evidence && <p className="mt-1 text-red-700">{flag.evidence}</p>}
-                        {flag.suggested_action && (
-                          <p className="mt-1 text-red-600 italic">Suggested: {flag.suggested_action}</p>
-                        )}
-                        {flag.urgency && (
-                          <span className="mt-2 inline-block text-xs font-medium text-red-600">
-                            Urgency: {flag.urgency}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {followUpAlerts.yellow_flags && followUpAlerts.yellow_flags.length > 0 && (
-                  <div className="space-y-2">
-                    {followUpAlerts.yellow_flags.map((flag, i) => (
-                      <div
-                        key={`yellow-${i}`}
-                        className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm"
-                      >
-                        <p className="font-semibold text-amber-800">{flag.label}</p>
-                        {flag.evidence && <p className="mt-1 text-amber-700">{flag.evidence}</p>}
-                        {flag.suggested_action && (
-                          <p className="mt-1 text-amber-600 italic">Suggested: {flag.suggested_action}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {followUpAlerts.medico_legal && followUpAlerts.medico_legal.length > 0 && (
-                  <div className="space-y-2">
-                    {followUpAlerts.medico_legal.map((flag, i) => (
-                      <div
-                        key={`ml-${i}`}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
-                      >
-                        <p className="font-semibold text-slate-800">{flag.label}</p>
-                        {flag.evidence && <p className="mt-1 text-slate-700">{flag.evidence}</p>}
-                        {flag.suggested_action && (
-                          <p className="mt-1 text-slate-600 italic">Suggested: {flag.suggested_action}</p>
-                        )}
-                      </div>
-                    ))}
+                {transcript?.trim() && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Clinical update captured</span>
                   </div>
                 )}
               </div>
-            )}
-
-            {/* WO-11.1: Plan checklist (for next follow-up) */}
-            {followUpPlanItems && followUpPlanItems.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">Plan items (for next session)</h3>
-                <ul className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                  {followUpPlanItems.map((item) => (
-                    <li key={item.id} className="flex items-start gap-2 text-sm">
-                      <span
-                        className={
-                          item.status === 'completed'
-                            ? 'text-emerald-600'
-                            : item.status === 'modified'
-                              ? 'text-amber-600'
-                              : 'text-slate-500'
-                        }
-                      >
-                        {item.status === 'completed' ? '✓' : '○'} {item.action}
-                      </span>
-                      {item.notes && <span className="text-slate-500">— {item.notes}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <Suspense fallback={<LoadingSpinner />}>
-              <SOAPTab
-                localSoapNote={localSoapNote}
-                soapStatus={soapStatus}
-                visitType={visitType}
-                isGeneratingSOAP={isGeneratingSOAP}
-                patientId={patientId}
-                sessionId={null}
-                handleGenerateSoap={handleGenerateSoap}
-                handleSaveSOAP={handleSaveSOAP}
-                handleRegenerateSOAP={handleRegenerateSOAP}
-                handleFinalizeSOAP={handleFinalizeSOAP}
-                handleUnfinalizeSOAP={handleUnfinalizeSOAP}
-                setIsShareMenuOpen={() => {}}
-                workflowMetrics={null}
-                workflowRoute={null}
-                soapTokenOptimization={undefined}
-                niagaraResults={null}
-                followUpHasContent={Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)}
+              {/* WO-14: Follow-up–only capture; no AnalysisTab, no duplicate Today's treatment session */}
+              <FollowUpConversationCapture
+                visitType="follow-up"
                 transcript={transcript}
-                physicalExamResults={[]}
-                treatmentReminder={null}
-                analysisError={soapError}
-                successMessage={null}
-                setAnalysisError={setSoapError}
-                setSuccessMessage={() => {}}
-                setVisitType={() => {}}
+                setTranscript={setTranscript}
+                onGenerateSoap={handleGenerateSOAPFollowUp}
+                isLoading={isGeneratingSOAP}
                 recordingTime={recordingTime}
                 isRecording={isRecording}
                 startRecording={startRecording}
                 stopRecording={stopRecording}
-                setTranscript={setTranscript}
                 transcriptError={transcriptError}
                 transcriptMeta={transcriptMeta}
                 languagePreference={languagePreference}
@@ -859,18 +709,169 @@ const FollowUpWorkflowPage = () => {
                 mode={mode}
                 setMode={setMode}
                 isTranscribing={isTranscribing}
-                isProcessing={isProcessing}
-                audioStream={audioStream}
-                handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-                attachments={[]}
-                isUploadingAttachment={false}
-                attachmentError={null}
-                removingAttachmentId={null}
-                handleAttachmentUpload={() => {}}
-                handleAttachmentRemove={() => {}}
+                isProcessing={isGeneratingSOAP}
+                audioStream={audioStream ?? null}
               />
-            </Suspense>
-          </div>
+            </div>
+          )}
+
+          {/* SECCIÓN 4: Documentation (SOAP) — only when followUpReady (WO-FOLLOWUP-UI-GATE-002) */}
+          {showFollowUpFlow && (
+            <div ref={documentationSectionRef} className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-2xl">📝</span>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                    Documentation
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Review and finalize your SOAP note.
+                  </p>
+                </div>
+                {localSoapNote && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>SOAP note generated</span>
+                  </div>
+                )}
+              </div>
+
+              {/* WO-11.1: ALERTS (red / yellow) */}
+              {followUpAlerts && !followUpAlerts.none && (
+                <div className="mb-6 space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-700">Clinical alerts</h3>
+                  {followUpAlerts.red_flags && followUpAlerts.red_flags.length > 0 && (
+                    <div className="space-y-2">
+                      {followUpAlerts.red_flags.map((flag, i) => (
+                        <div
+                          key={`red-${i}`}
+                          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm"
+                        >
+                          <p className="font-semibold text-red-800">{flag.label}</p>
+                          {flag.evidence && <p className="mt-1 text-red-700">{flag.evidence}</p>}
+                          {flag.suggested_action && (
+                            <p className="mt-1 text-red-600 italic">Suggested: {flag.suggested_action}</p>
+                          )}
+                          {flag.urgency && (
+                            <span className="mt-2 inline-block text-xs font-medium text-red-600">
+                              Urgency: {flag.urgency}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {followUpAlerts.yellow_flags && followUpAlerts.yellow_flags.length > 0 && (
+                    <div className="space-y-2">
+                      {followUpAlerts.yellow_flags.map((flag, i) => (
+                        <div
+                          key={`yellow-${i}`}
+                          className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm"
+                        >
+                          <p className="font-semibold text-amber-800">{flag.label}</p>
+                          {flag.evidence && <p className="mt-1 text-amber-700">{flag.evidence}</p>}
+                          {flag.suggested_action && (
+                            <p className="mt-1 text-amber-600 italic">Suggested: {flag.suggested_action}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {followUpAlerts.medico_legal && followUpAlerts.medico_legal.length > 0 && (
+                    <div className="space-y-2">
+                      {followUpAlerts.medico_legal.map((flag, i) => (
+                        <div
+                          key={`ml-${i}`}
+                          className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
+                        >
+                          <p className="font-semibold text-slate-800">{flag.label}</p>
+                          {flag.evidence && <p className="mt-1 text-slate-700">{flag.evidence}</p>}
+                          {flag.suggested_action && (
+                            <p className="mt-1 text-slate-600 italic">Suggested: {flag.suggested_action}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* WO-11.1: Plan checklist (for next follow-up) */}
+              {followUpPlanItems && followUpPlanItems.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Plan items (for next session)</h3>
+                  <ul className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                    {followUpPlanItems.map((item) => (
+                      <li key={item.id} className="flex items-start gap-2 text-sm">
+                        <span
+                          className={
+                            item.status === 'completed'
+                              ? 'text-emerald-600'
+                              : item.status === 'modified'
+                                ? 'text-amber-600'
+                                : 'text-slate-500'
+                          }
+                        >
+                          {item.status === 'completed' ? '✓' : '○'} {item.action}
+                        </span>
+                        {item.notes && <span className="text-slate-500">— {item.notes}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <Suspense fallback={<LoadingSpinner />}>
+                <SOAPTab
+                  localSoapNote={localSoapNote}
+                  soapStatus={soapStatus}
+                  visitType={visitType}
+                  isGeneratingSOAP={isGeneratingSOAP}
+                  patientId={patientId}
+                  sessionId={null}
+                  handleGenerateSoap={handleGenerateSoap}
+                  handleSaveSOAP={handleSaveSOAP}
+                  handleRegenerateSOAP={handleRegenerateSOAP}
+                  handleFinalizeSOAP={handleFinalizeSOAP}
+                  handleUnfinalizeSOAP={handleUnfinalizeSOAP}
+                  setIsShareMenuOpen={() => { }}
+                  workflowMetrics={null}
+                  workflowRoute={null}
+                  soapTokenOptimization={undefined}
+                  niagaraResults={null}
+                  followUpHasContent={Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)}
+                  transcript={transcript}
+                  physicalExamResults={[]}
+                  treatmentReminder={null}
+                  analysisError={soapError}
+                  successMessage={null}
+                  setAnalysisError={setSoapError}
+                  setSuccessMessage={() => { }}
+                  setVisitType={() => { }}
+                  recordingTime={recordingTime}
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  setTranscript={setTranscript}
+                  transcriptError={transcriptError}
+                  transcriptMeta={transcriptMeta}
+                  languagePreference={languagePreference}
+                  setLanguagePreference={setLanguagePreference}
+                  mode={mode}
+                  setMode={setMode}
+                  isTranscribing={isTranscribing}
+                  isProcessing={isProcessing}
+                  audioStream={audioStream}
+                  handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                  attachments={[]}
+                  isUploadingAttachment={false}
+                  attachmentError={null}
+                  removingAttachmentId={null}
+                  handleAttachmentUpload={() => { }}
+                  handleAttachmentRemove={() => { }}
+                />
+              </Suspense>
+            </div>
           )}
         </div>
       </div>
