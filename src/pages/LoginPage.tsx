@@ -5,6 +5,7 @@ import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useProfessionalProfile } from "../context/ProfessionalProfileContext";
 import { emailActivationService } from "../services/emailActivationService";
+import { firebaseAuthService } from "@/services/firebaseAuthService";
 import { isProfileComplete } from "../utils/professionalProfileValidation";
 import Button from "../components/ui/button";
 import { auth } from "../lib/firebase";
@@ -22,6 +23,8 @@ const LoginPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [isWaitingForProfile, setIsWaitingForProfile] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
+  const [showPendingActivationResend, setShowPendingActivationResend] = useState(false);
   const hasRedirectedRef = useRef(false);
 
   const navigate = useNavigate();
@@ -210,14 +213,21 @@ const LoginPage: React.FC = () => {
         // Do NOT block – let profile loader + onboarding handle new pilot users
       }
 
-      if (professional && professional.isActive === false) {
+      // Pilot: if Firebase Auth says email is verified, don't block on legacy isActive
+      const currentUserAfterLogin = auth.currentUser;
+      const firebaseEmailVerified = currentUserAfterLogin?.emailVerified === true;
+      if (professional && professional.isActive === false && !firebaseEmailVerified) {
         setError("Your account is pending activation. Check your inbox.");
+        setShowPendingActivationResend(true);
         return;
       }
+      if (professional && professional.isActive === false && firebaseEmailVerified) {
+        logger.info("[LOGIN] Legacy isActive=false but Firebase email verified; allowing pilot flow", { email });
+      }
+      setShowPendingActivationResend(false);
 
       // Enterprise-grade: Use uid directly to avoid Firestore rules issues
-      const currentUser = auth.currentUser;
-      await emailActivationService.updateLastLogin(email, currentUser?.uid);
+      await emailActivationService.updateLastLogin(email, currentUserAfterLogin?.uid);
 
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
       // ✅ CRITICAL FIX: Always use useEffect to handle redirect
@@ -232,6 +242,7 @@ const LoginPage: React.FC = () => {
     } catch (err) {
       logger.error("[LOGIN] Authentication error", err);
       setError("We couldn't validate your credentials. Please try again.");
+      setShowPendingActivationResend(false);
       hasRedirectedRef.current = false; // Reset on error to allow retry
     } finally {
       setLoading(false);
@@ -274,8 +285,37 @@ const LoginPage: React.FC = () => {
             </div>
           )}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-              {error}
+            <div className="mb-4 space-y-2">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+              {showPendingActivationResend && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setResendVerificationLoading(true);
+                    const currentUser = auth.currentUser;
+                    if (!currentUser) {
+                      setError("Please sign in again, then use Resend verification email.");
+                      setResendVerificationLoading(false);
+                      return;
+                    }
+                    const result = await firebaseAuthService.sendEmailVerification(currentUser);
+                    setResendVerificationLoading(false);
+                    if (result.success) {
+                      setSuccessMessage("Verification email sent. Please check your inbox.");
+                      setError("");
+                      setShowPendingActivationResend(false);
+                    } else {
+                      setError(result.message || "Failed to send verification email. Please try again.");
+                    }
+                  }}
+                  disabled={resendVerificationLoading}
+                  className="w-full py-2.5 px-4 text-sm font-medium text-primary-blue border border-primary-blue/50 rounded-lg bg-primary-blue/5 hover:bg-primary-blue/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-apple"
+                >
+                  {resendVerificationLoading ? "Sending…" : "Resend verification email"}
+                </button>
+              )}
             </div>
           )}
 
@@ -322,7 +362,8 @@ const LoginPage: React.FC = () => {
                   required
                   className="w-full h-11 px-4 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-[15px] bg-white font-apple font-light"
                   placeholder="••••••••"
-                  val onChange={(event) => setPassword(event.target.value)}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   onKeyDown={(event) => {
                     const capsLockOn = event.getModifierState && event.getModifierState('CapsLock');
                     setCapsLockActive(capsLockOn);

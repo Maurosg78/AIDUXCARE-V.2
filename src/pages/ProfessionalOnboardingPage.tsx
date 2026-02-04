@@ -22,6 +22,12 @@ import { isProfileComplete } from '../utils/professionalProfileValidation';
 import Button from '../components/ui/button';
 import { Select } from '../components/ui/Select';
 import { PRIMARY_SPECIALTIES, MSK_SKILLS } from '../components/wizard/onboardingConstants';
+import {
+  normalizePracticeAreas,
+  normalizeTechniques,
+  CURRENT_PRACTICE_AREAS_VOCAB_VERSION,
+} from '../core/profile/normalizeProfessionalProfile';
+import { normalizeProfessionOther } from '../config/vocabularies/professionOtherV1';
 import { getPilotConsentContent, getLanguageFromCountry } from '../utils/pilotConsent';
 
 import logger from '@/shared/utils/logger';
@@ -47,7 +53,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   // WO-ONB-SIGNUP-01: NO redirigir si estamos mostrando la pantalla de éxito
   // ✅ FIX: Agregar ref para evitar múltiples redirecciones y flash
   const hasRedirectedRef = React.useRef(false);
-  
+
   useEffect(() => {
     // No redirigir si estamos en estado de éxito (mostrando pantalla de éxito)
     if (isSuccess) {
@@ -93,6 +99,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     province: '', // province/state
     city: '',
     profession: '', // physiotherapist, etc.
+    professionOther: '', // free-text when profession === 'Other'; captured and normalized
     licenseNumber: '',
     licenseCountry: '', // issuingBody
 
@@ -110,6 +117,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       preferredTreatments: [] as string[],
       doNotSuggest: [] as string[],
     },
+    practiceAreasInput: '', // Optional free-text; if empty, derived from specialties
+    techniquesInput: '', // Optional free-text; if empty, derived from preferredTreatments
 
     // WIZARD 3 — Uso de datos y consentimiento (CTO Spec)
     dataUseConsent: {
@@ -349,6 +358,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           formData.province &&
           formData.city &&
           formData.profession &&
+          (formData.profession !== 'Other' || !!formData.professionOther?.trim()) &&
           formData.licenseNumber?.trim() &&
           formData.licenseCountry
         );
@@ -429,12 +439,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
         authUser = userCredential.user;
         logger.info('[ONBOARDING] New user account created', { uid: authUser.uid, email: authUser.email });
-
-        // Enviar email de verificación (no bloquea)
-        const { sendEmailVerification } = await import('firebase/auth');
-        sendEmailVerification(authUser).catch((err) => {
-          logger.warn('[ONBOARDING] Failed to send verification email', err);
-        });
+        // Email de verificación se envía una sola vez después de guardar el perfil (más abajo)
       }
 
       if (!authUser) {
@@ -461,6 +466,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         ? `${formData.phoneCountryCode}${formData.phone.replace(/\D/g, '')}`
         : undefined;
 
+      // Normalize practice areas and techniques for prompts (vocab v1)
+      const areasInput = (formData.practiceAreasInput?.trim()
+        ? formData.practiceAreasInput
+        : Array.isArray(formData.specialties) ? formData.specialties : [formData.specialty].filter(Boolean)) as string | string[];
+      const techniquesInput = (formData.techniquesInput?.trim()
+        ? formData.techniquesInput
+        : formData.practicePreferences?.preferredTreatments ?? []) as string | string[];
+      const normalizedAreas = normalizePracticeAreas(areasInput);
+      const normalizedTechniques = normalizeTechniques(techniquesInput);
+      const specialtyFromAreas = normalizedAreas.matched[0]?.code ?? formData.specialty;
+
       // CTO SPEC: Persistir EXCLUSIVAMENTE en users/{uid}
       // CTO SPEC: Todos los campos del onboarding deben cumplir una de estas 3:
       // - Afecta UI (firstName, lastName, preferredName → displayName, fullName)
@@ -479,13 +495,31 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         province: formData.province, // Compliance: guardrails clínico-legales
         city: formData.city, // Compliance: copy dinámico
         profession: formData.profession, // Prompting: lenguaje clínico específico
-        professionalTitle: formData.profession, // Alias para compatibilidad
+        professionalTitle:
+          formData.profession === 'Other' && formData.professionOther?.trim()
+            ? normalizeProfessionOther(formData.professionOther.trim()).labelForPrompt
+            : formData.profession, // Alias para compatibilidad; cuando Other usamos etiqueta normalizada
+        ...(formData.profession === 'Other' && formData.professionOther?.trim()
+          ? {
+            professionOther: (() => {
+              const norm = normalizeProfessionOther(formData.professionOther.trim());
+              return { raw: norm.raw, labelForPrompt: norm.labelForPrompt };
+            })(),
+          }
+          : {}),
         licenseNumber: formData.licenseNumber, // Compliance: guardrails clínico-legales
         // licenseCountry: formData.licenseCountry, // Se puede almacenar como metadata si es necesario
 
         // WIZARD 2: Práctica clínica
         // Prompting: seniority, nivel de explicación, lenguaje clínico, prioridad en hipótesis
-        specialty: formData.specialty, // Prompting: lenguaje clínico específico
+        specialty: specialtyFromAreas || formData.specialty, // Backward compat; prefer first normalized area
+        practiceAreas: normalizedAreas.matched.length > 0 ? normalizedAreas.matched : undefined,
+        techniques: normalizedTechniques.matched.length > 0 ? normalizedTechniques.matched : undefined,
+        profileVocabVersion: CURRENT_PRACTICE_AREAS_VOCAB_VERSION,
+        unmatchedInputs:
+          normalizedAreas.unmatched.length > 0 || normalizedTechniques.unmatched.length > 0
+            ? { practiceAreas: normalizedAreas.unmatched, techniques: normalizedTechniques.unmatched }
+            : undefined,
         experienceYears: formData.yearsOfExperience.toString(), // Prompting: seniority
         practiceCountry: formData.practiceCountry || formData.country, // Compliance: país donde se ejercerá (fallback a country si no existe)
         practicePreferences, // Prompting: reduce fricción cognitiva, evita sugerencias no usadas
@@ -539,8 +573,21 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         });
       }, 3000);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error saving profile:', error);
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Please sign in or use a different email.');
+        return;
+      }
+      if (code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+        return;
+      }
+      if (code === 'auth/weak-password') {
+        setError('Password is too weak. Please use at least 6 characters.');
+        return;
+      }
       setError('Error saving professional profile. Please try again.');
     } finally {
       setIsLoading(false);
@@ -910,6 +957,28 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   </select>
                   {getFieldValidationIcon(formData.profession, true)}
                 </div>
+
+                {/* Specify profession when "Other" - captured and normalized */}
+                {formData.profession === 'Other' && (
+                  <div className="relative col-span-2">
+                    <label htmlFor="professionOther" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                      Specify your profession <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="professionOther"
+                      value={formData.professionOther}
+                      onChange={(e) => handleInputChange('professionOther', e.target.value)}
+                      placeholder="e.g. Osteopath, Kinesiologist, Athletic Therapist"
+                      className={getFieldValidationClass(formData.professionOther.trim(), true)}
+                      required
+                    />
+                    {getFieldValidationIcon(formData.professionOther.trim(), true)}
+                    <p className="text-[10px] text-gray-500 mt-0.5 font-apple">
+                      We will use this to tailor documentation to your role. Your answer is stored securely and normalized for prompts.
+                    </p>
+                  </div>
+                )}
 
                 {/* License Number - Required */}
                 <div className="relative">

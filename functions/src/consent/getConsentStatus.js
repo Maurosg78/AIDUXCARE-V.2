@@ -32,28 +32,29 @@ const CONSENT_VERSION = '1.0.0';
  */
 exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req, res) => {
   // ✅ CORS for authenticated requests
-  // Allow both production and localhost for development
+  // Allow production (web.app), pilot (VPS), and localhost
   const origin = req.headers.origin || req.headers.referer || '';
   const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('localhost:5002');
-  const isProduction = origin === 'https://aiduxcare-v2-uat-dev.web.app';
-  
-  // Set CORS headers
+  const allowedOrigins = [
+    'https://aiduxcare-v2-uat-dev.web.app',
+    'https://pilot.aiduxcare.com',
+  ];
+  const isAllowed = allowedOrigins.includes(origin);
+
   if (isLocalhost) {
-    // For localhost, allow the specific origin or use wildcard for development
     res.set('Access-Control-Allow-Origin', origin || '*');
-  } else if (isProduction) {
-    res.set('Access-Control-Allow-Origin', 'https://aiduxcare-v2-uat-dev.web.app');
+  } else if (isAllowed) {
+    res.set('Access-Control-Allow-Origin', origin);
   } else {
-    // Default to production for security
     res.set('Access-Control-Allow-Origin', 'https://aiduxcare-v2-uat-dev.web.app');
   }
-  
+
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.set('Access-Control-Allow-Credentials', 'true');
   res.set('Access-Control-Max-Age', '3600');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
   }
@@ -66,7 +67,7 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     // ✅ T1: Verify authentication token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: 'UNAUTHORIZED',
         message: 'Missing or invalid authorization token'
@@ -79,7 +80,7 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
       decodedToken = await admin.auth().verifyIdToken(idToken);
     } catch (error) {
       console.warn('[getConsentStatus] Invalid token:', error.message);
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: 'UNAUTHORIZED',
         message: 'Invalid or expired token'
@@ -90,7 +91,7 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
 
     // ✅ T2: Validate payload
     const { patientId } = req.body || {};
-    
+
     if (!patientId || typeof patientId !== 'string') {
       return res.status(400).json({
         success: false,
@@ -160,12 +161,12 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: If granted consent exists (even after decline), it takes precedence
     if (grantedConsents.length > 0) {
       const latestGranted = grantedConsents[0];
-      const consentMethod = latestGranted.consentMethod === 'digital' ? 'digital' : 
-                            latestGranted.consentMethod === 'sms' ? 'digital' : 
-                            latestGranted.consentMethod === 'verbal' ? 'verbal' : 
-                            'unknown';
+      const consentMethod = latestGranted.consentMethod === 'digital' ? 'digital' :
+        latestGranted.consentMethod === 'sms' ? 'digital' :
+          latestGranted.consentMethod === 'verbal' ? 'verbal' :
+            'unknown';
       const consentScope = latestGranted.consentScope || 'ongoing';
-      
+
       let displayStatus = null;
       if (consentScope === 'session-only') {
         displayStatus = 'session-only';
@@ -178,8 +179,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
         professionalId,
         consentMethod,
         displayStatus,
-        grantedAt: latestGranted.consentDate?.toDate?.()?.toISOString() || 
-                   latestGranted.grantedAt?.toDate?.()?.toISOString() || null
+        grantedAt: latestGranted.consentDate?.toDate?.()?.toISOString() ||
+          latestGranted.grantedAt?.toDate?.()?.toISOString() || null
       });
 
       return res.status(200).json({
@@ -188,8 +189,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
         isDeclined: false, // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Granted consent overrides declined
         status: displayStatus,
         consentMethod,
-        grantedAt: latestGranted.consentDate?.toDate?.()?.toISOString() || 
-                   latestGranted.grantedAt?.toDate?.()?.toISOString() || null
+        grantedAt: latestGranted.consentDate?.toDate?.()?.toISOString() ||
+          latestGranted.grantedAt?.toDate?.()?.toISOString() || null
       });
     }
 
@@ -215,8 +216,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
         documentId: latestDeclined.id,
         consentStatus: latestDeclined.consentStatus,
         status: latestDeclined.status,
-        declinedAt: latestDeclined.declinedAt?.toDate?.()?.toISOString() || 
-                    latestDeclined.consentDate?.toDate?.()?.toISOString() || null,
+        declinedAt: latestDeclined.declinedAt?.toDate?.()?.toISOString() ||
+          latestDeclined.consentDate?.toDate?.()?.toISOString() || null,
         declineReasons: latestDeclined.declineReasons || []
       });
 
@@ -238,8 +239,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
         isDeclined: true, // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: CRITICAL - must be true
         status: 'declined',
         consentMethod: latestDeclined.consentMethod || 'verbal',
-        declinedAt: latestDeclined.declinedAt?.toDate?.()?.toISOString() || 
-                    latestDeclined.consentDate?.toDate?.()?.toISOString() || null,
+        declinedAt: latestDeclined.declinedAt?.toDate?.()?.toISOString() ||
+          latestDeclined.consentDate?.toDate?.()?.toISOString() || null,
         declineReasons: declineReasonsArray
       });
     }
@@ -288,10 +289,10 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     const latestConsent = consents[0];
     // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Map consentMethod correctly
     // 'digital' from acceptPatientConsentByToken maps to 'digital' in response
-    const consentMethod = latestConsent.consentMethod === 'digital' ? 'digital' : 
-                          latestConsent.consentMethod === 'sms' ? 'digital' : // Legacy compatibility
-                          latestConsent.consentMethod === 'verbal' ? 'verbal' : 
-                          'unknown';
+    const consentMethod = latestConsent.consentMethod === 'digital' ? 'digital' :
+      latestConsent.consentMethod === 'sms' ? 'digital' : // Legacy compatibility
+        latestConsent.consentMethod === 'verbal' ? 'verbal' :
+          'unknown';
     const consentScope = latestConsent.consentScope || 'ongoing';
 
     // Determine status for display
@@ -316,13 +317,13 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
       isDeclined: false,
       status: displayStatus,
       consentMethod,
-      grantedAt: latestConsent.grantedAt?.toDate?.()?.toISOString() || 
-                 latestConsent.consentDate?.toDate?.()?.toISOString() || null
+      grantedAt: latestConsent.grantedAt?.toDate?.()?.toISOString() ||
+        latestConsent.consentDate?.toDate?.()?.toISOString() || null
     });
 
   } catch (error) {
     console.error('[getConsentStatus] Error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       error: 'INTERNAL_ERROR',
       message: 'Failed to retrieve consent status'

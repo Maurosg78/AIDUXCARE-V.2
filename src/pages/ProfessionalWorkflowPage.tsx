@@ -3100,6 +3100,7 @@ const ProfessionalWorkflowPage = () => {
       const response = await generateSOAPNoteFromService(organized.context, {
         analysisLevel,
         sessionType: currentSessionType,
+        professionalProfile: professionalProfile || undefined,
       });
 
       if (!response || !response.soap) {

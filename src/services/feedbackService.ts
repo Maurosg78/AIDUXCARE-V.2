@@ -184,7 +184,8 @@ export class FeedbackService {
       if (!patientId) return {};
 
       const workflowData = localStorage.getItem(`aidux_${patientId}`);
-      if (!workflowData) return {};
+      if (!workflowData || typeof workflowData !== 'string') return {};
+      if (!workflowData.trim().startsWith('{') && !workflowData.trim().startsWith('[')) return {};
 
       const parsed = JSON.parse(workflowData);
       return {
@@ -217,10 +218,17 @@ export class FeedbackService {
       if (sessionPatientId) return sessionPatientId;
 
       // Intentar desde localStorage (último paciente usado)
+      // Excluir claves que no son workflow por paciente (ej. aidux_firebase_project_id guarda projectId, no JSON)
       const keys = Object.keys(localStorage);
-      const workflowKey = keys.find(key => key.startsWith('aidux_') && key !== 'aidux_workflow_');
+      const excluded = ['aidux_workflow_', 'aidux_firebase_project_id'];
+      const workflowKey = keys.find(key => {
+        if (!key.startsWith('aidux_')) return false;
+        if (excluded.some(prefix => key === prefix || key.startsWith(prefix))) return false;
+        const value = localStorage.getItem(key);
+        return typeof value === 'string' && (value.startsWith('{') || value.startsWith('['));
+      });
       if (workflowKey) {
-        return workflowKey.replace('aidux_', '');
+        return workflowKey.replace(/^aidux_/, '');
       }
 
       return null;
@@ -238,7 +246,8 @@ export class FeedbackService {
       if (!patientId) return {};
 
       const workflowData = localStorage.getItem(`aidux_${patientId}`);
-      if (!workflowData) return {};
+      if (!workflowData || typeof workflowData !== 'string') return {};
+      if (!workflowData.trim().startsWith('{') && !workflowData.trim().startsWith('[')) return {};
 
       const parsed = JSON.parse(workflowData);
       return {

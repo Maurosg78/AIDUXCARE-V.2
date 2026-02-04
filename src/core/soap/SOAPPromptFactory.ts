@@ -13,6 +13,7 @@ import type { PhysicalExamResult } from '../../types/vertex-ai';
 import type { OrganizedSOAPInput } from './SOAPDataOrganizer';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { buildOptimizedFollowUpPrompt } from './FollowUpSOAPPromptBuilder';
+import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 
 export interface SOAPPromptOptions {
   previousVisitContext?: {
@@ -24,6 +25,23 @@ export interface SOAPPromptOptions {
   sessionType?: SessionType;
   // ✅ WORKFLOW OPTIMIZATION: Use optimized prompt for follow-ups
   useOptimizedPrompt?: boolean;
+  /** Optional: adapt role line and context to clinician profile */
+  professionalProfile?: ProfessionalProfile | null;
+}
+
+/** Returns role phrase for SOAP prompt first line (e.g. "a registered physiotherapist") from profile. */
+function getSOAPRolePhrase(profile?: ProfessionalProfile | null): string {
+  if (!profile?.profession?.trim()) return 'a registered physiotherapist';
+  const p = profile.profession.toLowerCase().trim();
+  // When user selected "Other" and specified a profession, use normalized label (never raw)
+  if (p === 'other' && profile.professionOther?.labelForPrompt?.trim()) {
+    const label = profile.professionOther.labelForPrompt.trim();
+    if (label !== 'Other') return `a registered ${label.toLowerCase()}`;
+  }
+  if (p.includes('chiropractor')) return 'a licensed chiropractor';
+  if (p.includes('massage') || p === 'rmt') return 'a registered massage therapist (RMT)';
+  if (p.includes('physio') || p.includes('physical therapist')) return 'a registered physiotherapist';
+  return 'a registered healthcare professional';
 }
 
 /**
@@ -33,7 +51,8 @@ export function buildInitialAssessmentPrompt(
   context: SOAPContext,
   options?: SOAPPromptOptions
 ): string {
-  const prompt = `You are a clinical documentation assistant for a registered physiotherapist in Ontario, Canada. Generate a SOAP note for an INITIAL ASSESSMENT visit.
+  const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for an INITIAL ASSESSMENT visit.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
@@ -186,23 +205,23 @@ CRITICAL REGIONAL RESTRICTION RULES:
 
 TESTED REGIONS (extracted from test list):
 ${(() => {
-  const regions = new Set<string>();
-  context.physicalEvaluation.tests.forEach(test => {
-    if (test.segment) regions.add(test.segment);
-  });
-  const regionList = Array.from(regions);
-  return regionList.length > 0 
-    ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
-    : 'No specific regions identified from test list. Describe only the tests performed.';
-})()}
+      const regions = new Set<string>();
+      context.physicalEvaluation.tests.forEach(test => {
+        if (test.segment) regions.add(test.segment);
+      });
+      const regionList = Array.from(regions);
+      return regionList.length > 0
+        ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
+        : 'No specific regions identified from test list. Describe only the tests performed.';
+    })()}
 
 physical_evaluation_structured:
 ${JSON.stringify(context.physicalEvaluation.tests, null, 2)}
 
 PHYSICAL EXAMINATION – NARRATIVE SUMMARY (for reference):
 ${context.physicalEvaluation.summary || context.physicalEvaluation.tests.map((test, idx) => {
-  return `${idx + 1}. ${test.testName}: ${test.result}${test.findingsText ? ` — ${test.findingsText}` : ''}`;
-}).join('\n') || 'No tests performed'}
+      return `${idx + 1}. ${test.testName}: ${test.result}${test.findingsText ? ` — ${test.findingsText}` : ''}`;
+    }).join('\n') || 'No tests performed'}
 
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
@@ -230,12 +249,13 @@ export function buildFollowUpPrompt(
   const previousContext = options?.previousVisitContext || [];
   const previousVisitsText = previousContext.length > 0
     ? previousContext.map((prev, idx) => {
-        const visitNum = previousContext.length - idx;
-        return `\nPREVIOUS VISIT #${visitNum}${prev.visitDate ? ` (${prev.visitDate})` : ''}:\nAssessment: ${prev.assessment}\nPlan: ${prev.plan}`;
-      }).join('\n---\n')
+      const visitNum = previousContext.length - idx;
+      return `\nPREVIOUS VISIT #${visitNum}${prev.visitDate ? ` (${prev.visitDate})` : ''}:\nAssessment: ${prev.assessment}\nPlan: ${prev.plan}`;
+    }).join('\n---\n')
     : 'No previous visit context available';
 
-  const prompt = `You are a clinical documentation assistant for a registered physiotherapist in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
+  const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
@@ -341,9 +361,9 @@ ${context.todayFocus && context.todayFocus.length > 0 ? `
 CLINICAL FOCUS FOR TODAY (Adjusted by clinician):
 The clinician has reviewed the previous plan and adjusted the focus for today's session:
 ${context.todayFocus.map((focus, idx) => {
-  const notes = focus.notes ? `\n  Notes: ${focus.notes}` : '';
-  return `${idx + 1}. ${focus.label}${notes}`;
-}).join('\n')}
+    const notes = focus.notes ? `\n  Notes: ${focus.notes}` : '';
+    return `${idx + 1}. ${focus.label}${notes}`;
+  }).join('\n')}
 
 IMPORTANT: Reflect these adjusted focus areas and any clinician notes in the SOAP note, particularly in the Assessment and Plan sections. The clinician has explicitly chosen these focus areas based on their clinical judgment.
 ` : ''}
@@ -383,23 +403,23 @@ CRITICAL REGIONAL RESTRICTION RULES:
 
 TESTED REGIONS (extracted from test list):
 ${(() => {
-  const regions = new Set<string>();
-  context.physicalEvaluation.tests.forEach(test => {
-    if (test.segment) regions.add(test.segment);
-  });
-  const regionList = Array.from(regions);
-  return regionList.length > 0 
-    ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
-    : 'No specific regions identified from test list. Describe only the tests performed.';
-})()}
+      const regions = new Set<string>();
+      context.physicalEvaluation.tests.forEach(test => {
+        if (test.segment) regions.add(test.segment);
+      });
+      const regionList = Array.from(regions);
+      return regionList.length > 0
+        ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
+        : 'No specific regions identified from test list. Describe only the tests performed.';
+    })()}
 
 physical_evaluation_structured:
 ${JSON.stringify(context.physicalEvaluation.tests, null, 2)}
 
 PHYSICAL EXAMINATION – NARRATIVE SUMMARY (for reference):
 ${context.physicalEvaluation.summary || context.physicalEvaluation.tests.map((test, idx) => {
-  return `${idx + 1}. ${test.testName}: ${test.result}${test.findingsText ? ` — ${test.findingsText}` : ''}`;
-}).join('\n') || 'No tests performed'}
+      return `${idx + 1}. ${test.testName}: ${test.result}${test.findingsText ? ` — ${test.findingsText}` : ''}`;
+    }).join('\n') || 'No tests performed'}
 
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
@@ -433,7 +453,7 @@ export function buildSOAPPrompt(
       options.sessionType,
       context.transcript
     );
-    
+
     // Enhance base prompt with session-specific context
     if (options.sessionType === 'wsib' || options.sessionType === 'mva') {
       return buildLegalFocusedPrompt(context, options.sessionType, sessionSpecificPrompt, options);
@@ -442,7 +462,7 @@ export function buildSOAPPrompt(
     }
     // For 'initial' and 'followup', use existing prompts but enhance with session context
   }
-  
+
   // Fallback to original visit type logic
   if (context.visitType === 'initial') {
     return buildInitialAssessmentPrompt(context, options);
@@ -465,8 +485,8 @@ function buildLegalFocusedPrompt(
   options?: SOAPPromptOptions
 ): string {
   const sessionLabel = sessionType === 'wsib' ? 'WSIB (Workplace Safety and Insurance Board)' : 'MVA (Motor Vehicle Accident)';
-  
-  const prompt = `You are a clinical documentation assistant for a registered physiotherapist in Ontario, Canada. Generate a SOAP note for a ${sessionLabel} ASSESSMENT visit.
+  const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a ${sessionLabel} ASSESSMENT visit.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
@@ -593,15 +613,15 @@ CRITICAL REGIONAL RESTRICTION RULES:
 
 TESTED REGIONS (extracted from test list):
 ${(() => {
-  const regions = new Set<string>();
-  context.physicalEvaluation.tests.forEach(test => {
-    if (test.segment) regions.add(test.segment);
-  });
-  const regionList = Array.from(regions);
-  return regionList.length > 0 
-    ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
-    : 'No specific regions identified from test list. Describe only the tests performed.';
-})()}
+      const regions = new Set<string>();
+      context.physicalEvaluation.tests.forEach(test => {
+        if (test.segment) regions.add(test.segment);
+      });
+      const regionList = Array.from(regions);
+      return regionList.length > 0
+        ? `The following body regions were tested: ${regionList.join(', ')}. ONLY describe findings from these regions.`
+        : 'No specific regions identified from test list. Describe only the tests performed.';
+    })()}
 
 physical_evaluation_structured:
 ${JSON.stringify(context.physicalEvaluation.tests, null, 2)}
@@ -631,7 +651,8 @@ function buildCertificatePrompt(
   sessionSpecificContext: string,
   options?: SOAPPromptOptions
 ): string {
-  const prompt = `You are a clinical documentation assistant for a registered physiotherapist in Ontario, Canada. Generate a SOAP note for a MEDICAL CERTIFICATE ASSESSMENT.
+  const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a MEDICAL CERTIFICATE ASSESSMENT.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose

@@ -29,7 +29,9 @@ export function isProfessionalProfileReady(
   }
 
   // Check if profile has basic professional data (for legacy profiles)
-  const hasSpecialty = profile.specialty && profile.specialty.trim() !== '';
+  const hasSpecialty =
+    (profile.specialty && profile.specialty.trim() !== '') ||
+    (profile.practiceAreas && profile.practiceAreas.length > 0);
   const hasProfessionalTitle = profile.professionalTitle && profile.professionalTitle.trim() !== '';
 
   if (hasSpecialty && hasProfessionalTitle) {
@@ -64,30 +66,33 @@ export function isProfileComplete(
   }
 
   // Extract firstName from fullName or displayName if not directly available
-  const firstName = profile.fullName?.split(' ')[0] || 
-                    profile.displayName?.split(' ')[0] || 
-                    '';
-  
+  const firstName = profile.fullName?.split(' ')[0] ||
+    profile.displayName?.split(' ')[0] ||
+    '';
+
   const hasFirstName = firstName.trim() !== '';
-  
+
   // professionalTitle can be in professionalTitle or profession field
   const hasProfessionalTitle = !!(
     (profile.professionalTitle && profile.professionalTitle.trim() !== '') ||
     (profile.profession && profile.profession.trim() !== '')
   );
-  
-  const hasSpecialty = !!(profile.specialty && profile.specialty.trim() !== '');
-  
+
+  const hasSpecialty = !!(
+    (profile.specialty && profile.specialty.trim() !== '') ||
+    (profile.practiceAreas && profile.practiceAreas.length > 0)
+  );
+
   // practiceCountry with fallback to country
   const practiceCountry = profile.practiceCountry || profile.country || '';
   const hasPracticeCountry = practiceCountry.trim() !== '';
-  
+
   // pilotConsent is required and must be accepted
   const hasPilotConsent = profile.pilotConsent?.accepted === true;
 
-  return hasFirstName && 
-         hasProfessionalTitle && 
-         hasSpecialty && 
-         hasPracticeCountry && 
-         hasPilotConsent;
+  return hasFirstName &&
+    hasProfessionalTitle &&
+    hasSpecialty &&
+    hasPracticeCountry &&
+    hasPilotConsent;
 }

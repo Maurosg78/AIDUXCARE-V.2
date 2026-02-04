@@ -1,5 +1,6 @@
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import { deriveProfessionalCapabilities } from './capabilities/deriveProfessionalCapabilities';
+import { getPracticeAreaPromptHint } from '@/core/profile/normalizeProfessionalProfile';
 
 export interface ClinicalAttachment {
   fileName: string;
@@ -278,18 +279,18 @@ Use full words, avoid abbreviations per CAPR/CPO standards. Remember: you are ex
  */
 const buildCapabilityContext = (profile?: ProfessionalProfile | null): string => {
   const capabilities = deriveProfessionalCapabilities(profile);
-  
+
   if (!profile || capabilities.seniority === 'mid' && capabilities.domainFocus === 'general') {
     // Skip if default/mid/general (no meaningful adjustment needed)
     return '';
   }
-  
+
   const styleMap: Record<string, string> = {
     'guiding': 'guided, explanatory',
     'neutral': 'balanced, evidence-focused',
     'terse': 'concise, non-explanatory, clinically prioritized',
   };
-  
+
   return `\n[Clinician Capability Context]
 - Experience level: ${capabilities.seniority}
 - Primary domain: ${capabilities.domainFocus}
@@ -302,55 +303,73 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
     console.log('🔍 [PROMPT] No professional profile provided');
     return '';
   }
-  
+
+  const practiceAreas = profile.practiceAreas && profile.practiceAreas.length > 0 ? profile.practiceAreas : null;
+  const techniques = profile.techniques && profile.techniques.length > 0 ? profile.techniques : null;
+
   console.log('🔍 [PROMPT] Building professional context from profile:', {
     specialty: profile.specialty,
+    practiceAreasCount: practiceAreas?.length ?? 0,
+    techniquesCount: techniques?.length ?? 0,
     professionalTitle: profile.professionalTitle,
     experienceYears: profile.experienceYears,
     clinic: profile.clinic?.name,
     workplace: profile.workplace,
-    licenseNumber: profile.licenseNumber
+    licenseNumber: profile.licenseNumber,
   });
-  
+
   const parts: string[] = [];
-  
-  // Specialty
-  if (profile.specialty) {
+
+  // Profession / Title (curated label only; when "Other" use normalized professionOther.labelForPrompt)
+  const title =
+    profile.profession === 'Other' && profile.professionOther?.labelForPrompt?.trim()
+      ? profile.professionOther.labelForPrompt
+      : (profile.profession || profile.professionalTitle);
+  if (title) {
+    parts.push(`Profession: ${title}`);
+  }
+
+  // Practice areas (labels only; never raw/user input)
+  if (practiceAreas && practiceAreas.length > 0) {
+    parts.push(`Practice areas: ${practiceAreas.map((a) => a.label).join(', ')}`);
+    const hints = practiceAreas
+      .map((a) => getPracticeAreaPromptHint(a.code))
+      .filter((h): h is string => Boolean(h));
+    hints.forEach((h) => parts.push(h));
+  } else if (profile.specialty) {
     parts.push(`Specialty: ${profile.specialty}`);
   }
-  
-  // Professional Title
-  if (profile.professionalTitle) {
-    parts.push(`Title: ${profile.professionalTitle}`);
+
+  // Main techniques (labels only)
+  if (techniques && techniques.length > 0) {
+    parts.push(`Main techniques: ${techniques.map((t) => t.label).join(', ')}`);
   }
-  
+
   // Years of Experience
   if (profile.experienceYears) {
     parts.push(`Experience: ${profile.experienceYears} years`);
   }
-  
+
   // Workplace/Clinic
   if (profile.clinic?.name) {
     parts.push(`Clinic: ${profile.clinic.name}`);
   } else if (profile.workplace) {
     parts.push(`Workplace: ${profile.workplace}`);
   }
-  
+
   // License Number (if available)
   if (profile.licenseNumber) {
     parts.push(`License: ${profile.licenseNumber}`);
   }
-  
-  const context = parts.length > 0 
-    ? `\n[Clinician Profile]\n${parts.join('\n')}\n`
-    : '';
-  
+
+  const context = parts.length > 0 ? `\n[Clinician Profile]\n${parts.join('\n')}\n` : '';
+
   if (context) {
     console.log('✅ [PROMPT] Professional context added:', context);
   } else {
     console.log('⚠️ [PROMPT] No professional context data available');
   }
-  
+
   return context;
 };
 
@@ -370,38 +389,38 @@ const buildPracticePreferencesContext = (profile?: ProfessionalProfile | null): 
 
   // T7: Removed @ts-expect-error - field may exist but not in base type
   const prefs = (profile as any)?.practicePreferences;
-  
+
   if (!prefs) {
     // No preferences - omit section (no defaults invented)
     return '';
   }
 
   const parts: string[] = [];
-  
+
   // Note verbosity
   if (prefs.noteVerbosity) {
     parts.push(`Note verbosity: ${prefs.noteVerbosity}`);
   }
-  
+
   // Tone
   if (prefs.tone) {
     parts.push(`Tone: ${prefs.tone}`);
   }
-  
+
   // Preferred treatments
   if (prefs.preferredTreatments && prefs.preferredTreatments.length > 0) {
     parts.push(`Preferred treatments: ${prefs.preferredTreatments.join(', ')}`);
   }
-  
+
   // Do-not-suggest
   if (prefs.doNotSuggest && prefs.doNotSuggest.length > 0) {
     parts.push(`Do-not-suggest: ${prefs.doNotSuggest.join(', ')}`);
   }
-  
+
   if (parts.length === 0) {
     return '';
   }
-  
+
   return `\n[Clinician Practice Preferences]\n${parts.join('\n')}\n`;
 };
 
@@ -422,19 +441,19 @@ export const validatePatientContext = (
 ): string => {
   // T7: Removed @ts-expect-error - field may exist but not in base type
   const consent = (professionalProfile as any)?.dataUseConsent;
-  
+
   if (consent && consent.personalizationFromPatientData === false) {
     // Consent denied - ensure context is minimal (no history/episodes)
     // If caller passed historical data, this is a safety check
     // Real filtering should happen where contextoPaciente is built
-    if (contextoPaciente.toLowerCase().includes('previous') || 
-        contextoPaciente.toLowerCase().includes('history') ||
-        contextoPaciente.toLowerCase().includes('episode')) {
+    if (contextoPaciente.toLowerCase().includes('previous') ||
+      contextoPaciente.toLowerCase().includes('history') ||
+      contextoPaciente.toLowerCase().includes('episode')) {
       // Safety: strip historical references if consent denied
       return "Current session only - no historical data per user consent";
     }
   }
-  
+
   return contextoPaciente;
 };
 
@@ -444,15 +463,15 @@ const buildAttachmentsSection = (attachments?: ClinicalAttachment[]): string => 
   }
 
   let section = '\n## CLINICAL ATTACHMENTS\n\n';
-  
+
   attachments.forEach((attachment, index) => {
     section += `### Attachment ${index + 1}: ${attachment.fileName}\n`;
     section += `Type: ${attachment.fileType}\n`;
-    
+
     if (attachment.pageCount) {
       section += `Pages: ${attachment.pageCount}\n`;
     }
-    
+
     if (attachment.extractedText) {
       section += `\n**EXTRACTED CONTENT:**\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
       section += `**CRITICAL ANALYSIS REQUIRED:**\n`;
@@ -468,7 +487,7 @@ const buildAttachmentsSection = (attachments?: ClinicalAttachment[]): string => 
       section += `\n**NOTE:** No text content extracted.\n\n`;
     }
   });
-  
+
   return section;
 };
 
@@ -483,23 +502,23 @@ export const buildCanadianPrompt = ({
   const capabilityContext = buildCapabilityContext(professionalProfile);
   const professionalContext = buildProfessionalContext(professionalProfile);
   const practicePreferencesContext = buildPracticePreferencesContext(professionalProfile);
-  
+
   // WO-AUTH-GUARD-ONB-DATA-01: Validate patient context according to consent
   // Note: The caller should filter contextoPaciente before passing it here if personalizationFromPatientData is false
   // This is a safety check - the real filtering should happen where contextoPaciente is constructed
   const validatedPatientContext = validatePatientContext(contextoPaciente, professionalProfile);
-  
+
   // Use follow-up specific instructions if visit type is follow-up
-  const defaultInstructions = visitType === 'follow-up' 
-    ? DEFAULT_INSTRUCTIONS_FOLLOWUP 
+  const defaultInstructions = visitType === 'follow-up'
+    ? DEFAULT_INSTRUCTIONS_FOLLOWUP
     : DEFAULT_INSTRUCTIONS_INITIAL;
-  
-  const visitTypeContext = visitType === 'follow-up' 
+
+  const visitTypeContext = visitType === 'follow-up'
     ? '\n[Visit Type: FOLLOW-UP - Focus on progress assessment and clinical continuity]\n'
     : '\n[Visit Type: INITIAL ASSESSMENT - Comprehensive clinical evaluation]\n';
-  
+
   const attachmentsSection = buildAttachmentsSection(attachments);
-  
+
   return `
 ${PROMPT_HEADER}${capabilityContext}${professionalContext}${practicePreferencesContext}${visitTypeContext}
 [Patient Context]

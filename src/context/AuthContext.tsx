@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  User, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  AuthError 
+import {
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  AuthError
 } from 'firebase/auth';
 
 import { auth } from '../lib/firebase';
@@ -61,24 +61,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
-      
+
       logger.info('Login exitoso:', userCredential.user.email);
-      
+
       // Track login
       await trackUserLogin({
         userId: userCredential.user.uid,
         loginMethod: "email",
       });
-      
+
       // Track login
       await trackUserLogin({
         userId: userCredential.user.uid,
         loginMethod: "email",
       });
-      
+
       // Track login
       await trackUserLogin({
         userId: userCredential.user.uid,
@@ -99,17 +99,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       await signOut(auth);
       setUser(null);
-      
+
       logger.info('Logout exitoso');
-      
+
       // Track logout
       await trackUserLogout({
         userId: user?.uid,
       });
-      
+
       // Track logout
       await trackUserLogout({
         userId: user?.uid,
@@ -129,12 +129,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       setUser(userCredential.user);
-      
+
       logger.info('Registro exitoso:', userCredential.user.email);
-      
+
       // Track signup
       await trackUserSignup({
         userId: userCredential.user.uid,
@@ -155,10 +155,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await firebaseAuthService.sendPasswordResetEmail(email);
       logger.info("[AUTH] Password reset requested", { ok: result.success, message: result.message });
-      
+
       logger.info('Email de recuperación enviado a:', email);
     } catch (error) {
       const authError = error as AuthError;
@@ -176,19 +176,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    // Hardening: Validar auth antes de onAuthStateChanged (test-safe)
-    if (!auth || typeof auth !== 'object' || !('_delegate' in auth)) {
-      logger.warn('[AUTH] Auth instance invalid or undefined, skipping onAuthStateChanged (test-safe)');
+    // Hardening: skip if auth not ready (test-safe). Avoid _delegate check — Firebase modular SDK may not expose it.
+    if (!auth || typeof auth !== 'object') {
       setUser(null);
       setLoading(false);
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, 
+    const unsubscribe = onAuthStateChanged(auth,
       (currentUser) => {
         setUser(currentUser);
         setLoading(false);
-        
+
         if (currentUser) {
           logger.info('Usuario autenticado:', currentUser.email);
         } else {
@@ -198,13 +197,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       async (error) => {
         // Handler robusto para errores de refresh token (403/securetoken)
         logger.warn('Auth state change error:', error);
-        
+
         const authError = error as { code?: string; message?: string };
-        if (authError.code === 'auth/network-request-failed' || 
-            authError.code === 'auth/too-many-requests' ||
-            authError.message?.includes('403') ||
-            authError.message?.includes('securetoken')) {
-          
+        if (authError.code === 'auth/network-request-failed' ||
+          authError.code === 'auth/too-many-requests' ||
+          authError.message?.includes('403') ||
+          authError.message?.includes('securetoken')) {
+
           console.info('Detectado error de refresh token, limpiando estado...');
           try {
             await signOut(auth);
@@ -213,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             logger.warn('Error al limpiar estado:', signOutError);
           }
         }
-        
+
         setLoading(false);
       }
     );
@@ -244,11 +243,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
  */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
-  
+
   return context;
 };
 

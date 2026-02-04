@@ -24,6 +24,8 @@ export interface ProfessionalProfile {
 
   // ✅ compat fields referenced in logs/guard
   profession?: string;
+  /** When profession is "Other", normalized capture: raw user input + safe label for prompts */
+  professionOther?: { raw: string; labelForPrompt: string };
   practiceCountry?: string;
   pilotConsent?: { accepted?: boolean; acceptedAt?: Date; version?: string; practiceCountry?: string };
 
@@ -53,6 +55,14 @@ export interface ProfessionalProfile {
     density: 'comfortable' | 'compact'
   };
   registrationStatus?: 'incomplete' | 'complete';
+  /** Normalized practice areas (from vocab); used for prompts and evaluation. */
+  practiceAreas?: Array<{ code: string; label: string; raw?: string }>;
+  /** Normalized techniques (from vocab). */
+  techniques?: Array<{ code: string; label: string; raw?: string }>;
+  /** Version of vocab used at normalization (for re-normalization on read). */
+  profileVocabVersion?: number;
+  /** Inputs that did not match vocab (for observability / vocab v2). */
+  unmatchedInputs?: { practiceAreas: string[]; techniques: string[] };
   practicePreferences?: {
     noteVerbosity: 'concise' | 'standard' | 'detailed';
     tone: 'formal' | 'friendly' | 'educational';
@@ -222,7 +232,10 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
         const firstName = userData.fullName?.split(' ')[0] || userData.displayName?.split(' ')[0] || '';
         const hasFirstName = firstName.trim() !== '';
         const hasProfessionalTitle = !!((userData.professionalTitle && userData.professionalTitle.trim() !== '') || (userData.profession && userData.profession.trim() !== ''));
-        const hasSpecialty = !!(userData.specialty && userData.specialty.trim() !== '');
+        const hasSpecialty = !!(
+          (userData.specialty && userData.specialty.trim() !== '') ||
+          (userData.practiceAreas && userData.practiceAreas.length > 0)
+        );
         const practiceCountry = (userData.practiceCountry || userData.country || '').trim();
         const hasPracticeCountry = practiceCountry !== '';
         const hasPilotConsent = (userData as any)?.pilotConsent?.accepted === true;

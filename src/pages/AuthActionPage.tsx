@@ -23,8 +23,10 @@ const AuthActionPage: React.FC = () => {
 
   useEffect(() => {
     if (!mode || !oobCode) {
-      setStatus('error');
-      setErrorMessage('Invalid action link. Missing required parameters.');
+      // User may have been redirected here after verification on Firebase's page (no params).
+      // Show success-like message so they can close or go to login.
+      setStatus('success');
+      setActionMode('verifyEmail');
       return;
     }
 
@@ -40,16 +42,7 @@ const AuthActionPage: React.FC = () => {
         case 'verifyEmail':
           await applyActionCode(auth, code);
           setStatus('success');
-          // Redirect to login after a short delay
-          setTimeout(() => {
-            navigate('/login', {
-              replace: true,
-              state: {
-                message: '¡Email verificado exitosamente! Ya puedes iniciar sesión.',
-                type: 'success'
-              }
-            });
-          }, 2000);
+          // No auto-redirect: show "close this window" + "Continue to sign in" so user chooses
           break;
 
         case 'resetPassword':
@@ -70,7 +63,7 @@ const AuthActionPage: React.FC = () => {
             navigate('/login', {
               replace: true,
               state: {
-                message: 'Email recuperado exitosamente.',
+                message: 'Email recovered successfully.',
                 type: 'success'
               }
             });
@@ -84,7 +77,7 @@ const AuthActionPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error processing action code:', error);
       const errorCode = error?.code || '';
-      const errorMsg = error?.message || 'Error al procesar la acción';
+      const errorMsg = error?.message || 'Error processing the action.';
 
       // Check for common Firebase errors
       if (errorCode.includes('expired') || errorMsg.toLowerCase().includes('expired')) {
@@ -107,10 +100,10 @@ const AuthActionPage: React.FC = () => {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Procesando...
+            Processing...
           </h1>
           <p className="text-gray-600">
-            Por favor espera mientras procesamos tu solicitud.
+            Please wait while we process your request.
           </p>
         </div>
       </div>
@@ -129,27 +122,27 @@ const AuthActionPage: React.FC = () => {
             <ExclamationTriangleIcon className="h-10 w-10 text-yellow-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {isExpired ? 'Enlace expirado' : isInvalid ? 'Enlace inválido' : 'Error'}
+            {isExpired ? 'Link expired' : isInvalid ? 'Invalid link' : 'Error'}
           </h1>
           <p className="text-gray-600 mb-6">
             {isExpired
-              ? 'El enlace ha expirado. Por favor, solicita un nuevo enlace.'
+              ? 'This link has expired. Please request a new one.'
               : isInvalid
-              ? 'El enlace no es válido o ya fue utilizado. Por favor, solicita un nuevo enlace.'
-              : errorMessage || 'Hubo un problema al procesar tu solicitud. Por favor, intenta nuevamente.'}
+                ? 'This link is invalid or has already been used. Please request a new one.'
+                : errorMessage || 'There was a problem processing your request. Please try again.'}
           </p>
           <button
             onClick={() => navigate('/login', { replace: true })}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
           >
-            Ir al Login
+            Go to Login
           </button>
         </div>
       </div>
     );
   }
 
-  // Success state (usually redirects quickly, but show a message just in case)
+  // Success state: for verifyEmail, no button — just message so user closes tab and returns to existing login (avoids duplicate sessions)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -157,18 +150,23 @@ const AuthActionPage: React.FC = () => {
           <CheckCircleIcon className="h-10 w-10 text-green-600" />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          ¡Acción completada!
+          {actionMode === 'verifyEmail' ? 'Email verified' : 'Action complete'}
         </h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-4">
           {actionMode === 'verifyEmail'
-            ? 'Tu email ha sido verificado exitosamente.'
+            ? 'Your email has been verified successfully.'
             : actionMode === 'resetPassword'
-            ? 'Redirigiendo a la página de restablecimiento de contraseña...'
-            : 'Tu solicitud ha sido procesada exitosamente.'}
+              ? 'Redirecting to password reset...'
+              : 'Your request has been processed successfully.'}
         </p>
-        <p className="text-sm text-gray-400">
-          Redirigiendo...
-        </p>
+        {actionMode === 'verifyEmail' && (
+          <p className="text-sm text-gray-500">
+            You can close this window and return to your login.
+          </p>
+        )}
+        {actionMode !== 'verifyEmail' && (
+          <p className="text-sm text-gray-400">Redirecting...</p>
+        )}
       </div>
     </div>
   );

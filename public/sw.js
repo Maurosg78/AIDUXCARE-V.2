@@ -1,54 +1,41 @@
-// Service Worker básico para AiDuxCare
-// Versión mínima para evitar errores de registro
+// Service Worker - AiDuxCare
+// Do NOT cache index.html so deploys always serve the latest bundle (hash-named JS).
 
-const CACHE_NAME = 'aiduxcare-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'aiduxcare-v3';
 
-// Install event - cache resources
+// Install: skip caching index.html so we always get fresh HTML and correct JS chunk
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('SW install error:', error);
-      })
-  );
+  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate: remove all old caches (v1 and any stale data)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames.map((cacheName) => caches.delete(cacheName))
       );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch: never serve index.html from cache - always network so deploy updates apply
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  const isDocument = event.request.mode === 'navigate' || event.request.destination === 'document';
+  const isIndexHtml = url.pathname === '/' || url.pathname === '/index.html';
+
+  if (isDocument || isIndexHtml) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      if (event.request.destination === 'document') {
+        return caches.match('/index.html');
+      }
+      return undefined;
     })
   );
 });
-
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
-      .catch(() => {
-        // Fallback for offline
-        if (event.request.destination === 'document') {
-          return caches.match('/index.html');
-        }
-      })
-  );
-});
-

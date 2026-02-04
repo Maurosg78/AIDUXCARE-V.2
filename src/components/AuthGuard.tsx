@@ -170,7 +170,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
         const hasProfessionalTitle =
           !!((profile.professionalTitle && profile.professionalTitle.trim() !== '') ||
             (profile.profession && profile.profession.trim() !== ''));
-        const hasSpecialty = !!(profile.specialty && profile.specialty.trim() !== '');
+        const hasSpecialty = !!(
+          (profile.specialty && profile.specialty.trim() !== '') ||
+          (profile.practiceAreas && profile.practiceAreas.length > 0)
+        );
         const practiceCountry = (profile.practiceCountry || profile.country || '').trim();
         const hasPracticeCountry = practiceCountry !== '';
         const hasPilotConsent = (profile as any).pilotConsent?.accepted === true;

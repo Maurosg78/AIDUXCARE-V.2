@@ -141,6 +141,18 @@ service cloud.firestore {
     }
 
     // ----------------------------
+    // User Feedback (pilot / beta)
+    // ----------------------------
+    match /user_feedback/{feedbackId} {
+      // Authenticated users can submit feedback (create only)
+      allow create: if request.auth != null;
+      // Only admins or backend can read
+      allow read: if request.auth != null
+                  && request.auth.token.admin == true;
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
     // Metrics Tech (written by CF)
     // ----------------------------
     match /metrics_tech/{docId} {

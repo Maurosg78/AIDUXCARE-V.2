@@ -55,7 +55,7 @@ function initFirebaseOnce() {
     _app = existingApps[0];
     return;
   }
-  const config = __IS_TEST__ && !firebaseConfig.projectId 
+  const config = __IS_TEST__ && !firebaseConfig.projectId
     ? { projectId: 'demo-notesrepo' }
     : firebaseConfig;
   _app = initializeApp(config);
@@ -174,12 +174,8 @@ if (!__IS_TEST__) {
       console.warn("⚠️ Firebase Functions SDK not available at module load, will retry on first use");
     }
   } catch (error: any) {
-    console.error("❌ Firebase Functions eager initialization failed:", {
-      error: error?.message || String(error),
-      projectId: _app.options.projectId,
-      appName: _app.name
-    });
-    // Don't throw - will retry on first use via getFirebaseFunctions()
+    // Non-blocking: Functions may be unavailable (e.g. not enabled for project). Retry on first use.
+    console.warn("⚠️ Firebase Functions not available in this environment:", error?.message || String(error));
   }
 
   if (typeof window !== 'undefined' && _db) {
@@ -187,12 +183,15 @@ if (!__IS_TEST__) {
   }
 
   if (typeof window !== 'undefined') {
-    try {
-      _analytics = getAnalytics(_app);
-      console.info("✅ Firebase Analytics initialized");
-    } catch (error: any) {
-      console.warn("⚠️ Firebase Analytics initialization failed:", error?.message || error);
-    }
+    // Defer Analytics so other Firebase components are registered first (avoids "Component analytics has not been registered yet")
+    queueMicrotask(() => {
+      try {
+        _analytics = getAnalytics(_app);
+        console.info("✅ Firebase Analytics initialized");
+      } catch (error: any) {
+        console.warn("⚠️ Firebase Analytics unavailable:", error?.message || error);
+      }
+    });
   }
 
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
@@ -226,8 +225,8 @@ if (!__IS_TEST__) {
         "Firestore: 127.0.0.1:8080",
         "Functions:",
         functionsEmulatorHost ? "127.0.0.1:5001" : "not configured"
-);
-   } catch (error: any) {
+      );
+    } catch (error: any) {
       console.warn("⚠️ Error conectando emulators (normal si ya conectados):", error?.message || error);
     }
   }

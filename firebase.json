@@ -20,6 +20,24 @@
     "trailingSlash": false,
     "headers": [
       {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
         "source": "/assets/**/*.@(js|mjs)",
         "headers": [
           {
@@ -118,10 +136,10 @@
       "port": 4400
     }
   },
-    "auth": {
-      "host": "127.0.0.1",
-      "port": 9099
-    },
+  "auth": {
+    "host": "127.0.0.1",
+    "port": 9099
+  },
   "functions": {
     "source": "functions"
   },

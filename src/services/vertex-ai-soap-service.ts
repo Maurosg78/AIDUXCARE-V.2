@@ -159,7 +159,7 @@ function validateSOAPAgainstDocumentation(
  */
 export async function generateSOAPNote(
   context: SOAPContext,
-  options?: SOAPPromptOptions & { 
+  options?: SOAPPromptOptions & {
     sessionType?: SessionType;
     analysisLevel?: 'full' | 'optimized'; // ✅ WORKFLOW OPTIMIZATION
   }
@@ -168,22 +168,22 @@ export async function generateSOAPNote(
     // ✅ PHIPA COMPLIANCE: De-identify transcript before building prompt
     const { deidentifiedText, identifiersMap } = deidentify(context.transcript);
     const traceId = `soap-${context.visitType}-${Date.now()}`;
-    
+
     // Log deidentification for audit
     await logDeidentification('deidentify', context.transcript.length, Object.keys(identifiersMap).length, {
       traceId,
       service: 'generateSOAPNote',
     });
-    
+
     // Create de-identified context
     const deidentifiedContext: SOAPContext = {
       ...context,
       transcript: deidentifiedText,
     };
-    
+
     // ✅ WO-SOAP-QUALITY-GUARDS-01: Pre-SOAP Quality Guard
     const preSOAPQuality = evaluatePreSOAPQuality(context);
-    
+
     if (preSOAPQuality.level === 'unsafe') {
       return {
         soap: null,
@@ -203,7 +203,7 @@ export async function generateSOAPNote(
         },
       };
     }
-    
+
     // ✅ WO-03: Resolve Prompt Brain version (v2 or v3)
     const pbVersion = resolvePromptBrainVersion({
       search: typeof window !== "undefined" ? window.location.search : "",
@@ -221,11 +221,12 @@ export async function generateSOAPNote(
     const promptOptions: SOAPPromptOptions = {
       ...options,
       useOptimizedPrompt: useOptimized,
+      professionalProfile: options?.professionalProfile,
     };
-    
+
     // ✅ WO-03: Build prompt (v3 or v2)
     let prompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
-    
+
     if (isV3Path) {
       // Extract context for v3 prompt
       const chiefComplaint = context.transcript?.slice(0, 200) || deidentifiedContext.transcript?.slice(0, 200) || "";
@@ -250,7 +251,7 @@ export async function generateSOAPNote(
         },
       });
     }
-    
+
     // ✅ WORKFLOW OPTIMIZATION: Calculate token optimization if using optimized prompt
     let tokenOptimization;
     if (useOptimized && context.visitType === 'follow-up') {
@@ -279,7 +280,7 @@ export async function generateSOAPNote(
     }
 
     const data = await response.json();
-    
+
     // ✅ WO-03: Extract raw text for contract validation (v3 path only)
     let rawText = "";
     if (isV3Path) {
@@ -311,7 +312,7 @@ export async function generateSOAPNote(
         // Retry once with repair prompt
         // Bloque 4: Type narrowing - repairPrompt solo existe cuando ok: false
         const repairPrompt = (firstCheck as { ok: false; repairPrompt: string }).repairPrompt;
-        
+
         const repairResponse = await fetch(VERTEX_PROXY_URL, {
           method: 'POST',
           headers: {
@@ -352,7 +353,7 @@ export async function generateSOAPNote(
             // Fallback to v2: rebuild prompt and call once
             console.warn('[SOAP Service] v3 contract enforcement failed after retry, falling back to v2');
             const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
-            
+
             const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
               method: 'POST',
               headers: {
@@ -376,7 +377,7 @@ export async function generateSOAPNote(
           // Repair request failed, fallback to v2
           console.warn('[SOAP Service] v3 repair request failed, falling back to v2');
           const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
-          
+
           const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
             method: 'POST',
             headers: {
@@ -397,14 +398,14 @@ export async function generateSOAPNote(
         }
       }
     }
-    
+
     // Parse Vertex AI response
     let soapNote = parseSOAPResponse(data, context.visitType);
-    
+
     // ✅ WO-SOAP-QUALITY-GUARDS-01: Post-SOAP Quality Guard
     const postSOAPResult = applyPostSOAPQualityGuard(soapNote);
     soapNote = postSOAPResult.soap;
-    
+
     // ✅ PHIPA COMPLIANCE: Re-identify SOAP note sections if needed
     if (Object.keys(identifiersMap).length > 0) {
       soapNote = {
@@ -414,13 +415,13 @@ export async function generateSOAPNote(
         assessment: reidentify(soapNote.assessment || '', identifiersMap),
         plan: reidentify(soapNote.plan || '', identifiersMap),
       };
-      
+
       await logDeidentification('reidentify', JSON.stringify(soapNote).length, Object.keys(identifiersMap).length, {
         traceId,
         service: 'generateSOAPNote',
       });
     }
-    
+
     // ✅ WO-PHASE3-CRITICAL-FIXES: Anti-Hallucination Validation
     // NOTE: Only logs warnings for debugging, does NOT modify plan
     // Phase 2 does NOT document modalities - user can add them manually in Phase 3
@@ -430,29 +431,29 @@ export async function generateSOAPNote(
       // ✅ CRITICAL: Do NOT modify plan - user can add modalities manually in Phase 3
       // Plan remains as generated - user has full control to edit and add modalities
     }
-    
+
     // ✅ REFINED: Validate for quality (guidelines, not strict limits)
     const validation = validateSOAP(soapNote);
-    
+
     // Only truncate if VERY excessive (exceeds warning threshold)
     if (!validation.isValid) {
       console.warn('[SOAP Service] SOAP note is very lengthy, condensing:', validation.errors);
-      
+
       // Truncate only if truly excessive
       soapNote = truncateSOAPToLimits(soapNote);
-      
+
       // Re-validate after truncation
       const revalidation = validateSOAP(soapNote);
       if (!revalidation.isValid) {
         console.error('[SOAP Service] SOAP note still very lengthy after truncation:', revalidation.errors);
       }
     }
-    
+
     // Log warnings for quality issues (guidelines exceeded, repetition)
     if (validation.warnings.length > 0) {
       console.log('[SOAP Service] Quality guidelines:', validation.warnings);
     }
-    
+
     if (validation.repetitionCheck.hasRepetition) {
       console.warn('[SOAP Service] Repetition detected - consider editing:', validation.repetitionCheck.repeatedPhrases);
     }
@@ -576,18 +577,18 @@ function parseSOAPResponse(
   // ✅ WO-PDF-004: Serialize treatment plan if it's an object
   const formatTreatmentPlan = (plan: any): string => {
     if (!plan) return 'Not documented.';
-    
+
     // If already a string, return it
     if (typeof plan === 'string') return plan;
-    
+
     // If it's an object, serialize it
     if (typeof plan === 'object') {
       // ✅ FIX: Log the actual structure for debugging
       console.log('[SOAP Builder] Plan object structure:', JSON.stringify(plan, null, 2));
       console.log('[SOAP Builder] Plan object keys:', Object.keys(plan));
-      
+
       let planText = '';
-      
+
       // Try different possible property names
       // Some AI models might use different naming conventions
       const interventions = plan.interventions || plan.intervention || plan.treatment_interventions || plan.treatments || [];
@@ -597,7 +598,7 @@ function parseSOAPResponse(
       const goals = plan.goals || plan.short_term_goals || [];
       const longTermGoals = plan.long_term_goals || plan.longTermGoals || [];
       const followUp = plan.follow_up_recommendations || plan.follow_up || plan.followUp || plan.followup || [];
-      
+
       // Interventions
       if (Array.isArray(interventions) && interventions.length > 0) {
         planText += 'Interventions:\n';
@@ -613,7 +614,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Modalities
       if (Array.isArray(modalities) && modalities.length > 0) {
         planText += 'Modalities:\n';
@@ -626,7 +627,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Short-term goals
       if (Array.isArray(goals) && goals.length > 0) {
         planText += 'Short-term Goals:\n';
@@ -635,7 +636,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Long-term goals
       if (Array.isArray(longTermGoals) && longTermGoals.length > 0) {
         planText += 'Long-term Goals:\n';
@@ -644,7 +645,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Patient education
       if (Array.isArray(education) && education.length > 0) {
         planText += 'Patient Education:\n';
@@ -653,7 +654,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Home exercise program
       if (Array.isArray(exercises) && exercises.length > 0) {
         planText += 'Home Exercise Program:\n';
@@ -662,7 +663,7 @@ function parseSOAPResponse(
         });
         planText += '\n';
       }
-      
+
       // Follow-up
       if (Array.isArray(followUp) && followUp.length > 0) {
         planText += 'Follow-up:\n';
@@ -670,12 +671,12 @@ function parseSOAPResponse(
           planText += `- ${rec}\n`;
         });
       }
-      
+
       // ✅ FIX: If object has a 'text' or 'description' property, use it
       if (!planText.trim() && (plan.text || plan.description || plan.plan_text)) {
         planText = plan.text || plan.description || plan.plan_text || '';
       }
-      
+
       // ✅ FIX: If still empty, try to extract any string values from the object
       if (!planText.trim()) {
         const stringValues: string[] = [];
@@ -691,12 +692,12 @@ function parseSOAPResponse(
           planText = stringValues.join('\n');
         }
       }
-      
+
       const result = planText.trim() || 'Not documented.';
       console.log('[SOAP Builder] Serialized plan length:', result.length, 'chars');
       return result;
     }
-    
+
     return String(plan);
   };
 
@@ -709,12 +710,12 @@ function parseSOAPResponse(
   }
   console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
   const formattedPlanRaw = formatTreatmentPlan(soapData?.plan);
-  
+
   // ✅ T3: Validate and limit plan size (max 2000 chars)
   const MAX_PLAN_LENGTH = 2000;
   const TRUNCATE_MARKER = '… [truncated]';
   let formattedPlan: string;
-  
+
   if (formattedPlanRaw.length > MAX_PLAN_LENGTH) {
     // Truncate and add marker
     const truncateAt = MAX_PLAN_LENGTH - TRUNCATE_MARKER.length;
@@ -727,12 +728,12 @@ function parseSOAPResponse(
   } else {
     formattedPlan = formattedPlanRaw;
   }
-  
+
   // ✅ T3: Validate plan is not empty/invalid
   if (!formattedPlan || formattedPlan.trim().length === 0 || formattedPlan === 'Not documented.') {
     formattedPlan = 'Not documented.';
   }
-  
+
   console.log('[SOAP Builder] Plan length after formatting:', formattedPlan.length, 'chars');
 
   // WO-PROMPT-PLAN-SPLIT-01: Parse plan into inClinic / homeProgram for UI consumption
@@ -908,9 +909,9 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
           }));
         }
       }
-  } catch (e) {
-    console.warn('[SOAP Service] WO-11 parse SOAP_NOTE from v2 response:', e);
-  }
+    } catch (e) {
+      console.warn('[SOAP Service] WO-11 parse SOAP_NOTE from v2 response:', e);
+    }
   }
 
   // Fallback: if no structured SOAP could be parsed but we have raw text, use it as single follow-up block
@@ -1098,7 +1099,7 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
       traceId,
       model: 'gemini-2.0-flash-exp',
     }),
-  });  if (!response.ok) {
+  }); if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
   }

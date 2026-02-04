@@ -30,15 +30,19 @@ const LOCATION = 'northamerica-northeast1'; // ✅ CANADÁ (Montreal) - PHIPA co
  * Validates token and records consent decision securely
  */
 exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // ✅ T2: CORS correcto (NO wildcard en prod) - Safari/iOS compatible
-  const ALLOWED_ORIGIN = 'https://aiduxcare-v2-uat-dev.web.app';
-  
+  // ✅ T2: CORS – allow web.app and pilot (consent link may open on either)
+  const origin = req.headers.origin || req.headers.referer || '';
+  const allowedOrigins = [
+    'https://aiduxcare-v2-uat-dev.web.app',
+    'https://pilot.aiduxcare.com',
+  ];
+  const ALLOWED_ORIGIN = allowedOrigins.includes(origin) ? origin : 'https://aiduxcare-v2-uat-dev.web.app';
   res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
   res.set('Access-Control-Max-Age', '3600');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
   }
@@ -50,14 +54,14 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
   try {
     // ✅ T3: Validación dura de payload (defensivo)
     const { token, decision, declineReasons, declineNotes } = req.body || {};
-    
+
     if (!token || !['granted', 'declined'].includes(decision)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid payload'
       });
     }
-    
+
     // ✅ T4: Logging mínimo pero trazable (ISO-friendly)
     console.info('[ConsentCF] request received', {
       hasToken: Boolean(token),
@@ -103,14 +107,14 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
       // Idempotent: if already recorded with same decision, return success
       const consentGiven = tokenData.consentGiven || {};
       const existingScope = consentGiven.scope;
-      
+
       if (decision === 'granted' && existingScope === 'ongoing') {
         return res.status(200).json({ success: true, alreadyRecorded: true });
       }
       if (decision === 'declined' && existingScope === 'declined') {
         return res.status(200).json({ success: true, alreadyRecorded: true });
       }
-      
+
       // Different decision - return error (cannot change decision)
       return res.status(409).json({ error: 'CONSENT_ALREADY_RECORDED' });
     }

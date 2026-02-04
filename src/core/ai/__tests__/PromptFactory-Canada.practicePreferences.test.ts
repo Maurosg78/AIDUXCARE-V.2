@@ -70,5 +70,34 @@ describe('PromptFactory-Canada Practice Preferences', () => {
     expect(prompt).toContain('[Transcript]');
     expect(prompt).not.toContain('[Clinician Practice Preferences]');
   });
+
+  it('should include practice areas and techniques when profile has normalized practiceAreas/techniques', () => {
+    const profileWithAreas: ProfessionalProfile = {
+      uid: 'test-uid',
+      email: 'test@example.com',
+      profession: 'Physiotherapist',
+      specialty: 'msk',
+      createdAt: {} as any,
+      practiceAreas: [
+        { code: 'msk', label: 'Musculoskeletal (MSK)' },
+        { code: 'pelvic', label: 'Pelvic Health' },
+      ],
+      techniques: [
+        { code: 'manual-therapy', label: 'Manual Therapy' },
+        { code: 'mckenzie', label: 'McKenzie Method' },
+      ],
+    };
+
+    const prompt = buildCanadianPrompt({
+      contextoPaciente: 'Test patient context',
+      transcript: 'Test transcript',
+      professionalProfile: profileWithAreas,
+    });
+
+    expect(prompt).toContain('[Clinician Profile]');
+    expect(prompt).toContain('Profession: Physiotherapist');
+    expect(prompt).toContain('Practice areas: Musculoskeletal (MSK), Pelvic Health');
+    expect(prompt).toContain('Main techniques: Manual Therapy, McKenzie Method');
+  });
 });
 
