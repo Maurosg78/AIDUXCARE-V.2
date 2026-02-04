@@ -1,6 +1,9 @@
-import { httpsCallable } from 'firebase/functions';
-import { app, getFunctionsInstance } from '../lib/firebase';
+import { auth } from '../lib/firebase';
 import { WHISPER_MODEL } from '../config/env';
+
+const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
+const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
+const WHISPER_PROXY_URL = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/whisperProxy`;
 
 export interface WhisperTranscriptionResult {
     // Bloque 3B: Campos opcionales agregados para compatibilidad
@@ -18,132 +21,95 @@ export interface WhisperTranscriptionOptions {
 }
 
 /**
- * Servicio de transcripción de audio usando Firebase Cloud Function whisperProxy
- * 
- * Este servicio resuelve el problema de CORS al llamar a la API de OpenAI directamente
- * desde el navegador. El Cloud Function maneja la autenticación y las llamadas a la API.
+ * Servicio de transcripción de audio usando Firebase Cloud Function whisperProxy.
+ * Llama a la función por HTTP (fetch) para no depender del SDK de Functions,
+ * que en algunos entornos falla con "Service functions is not available".
  */
 export class FirebaseWhisperService {
     /**
-     * Transcribir audio usando el Cloud Function whisperProxy
-     * 
-     * @param audioBlob - Blob de audio a transcribir
-     * @param options - Opciones de transcripción (idioma, modo)
-     * @returns Resultado de la transcripción
+     * Transcribir audio usando el Cloud Function whisperProxy (vía HTTP).
      */
     static async transcribe(
         audioBlob: Blob,
         options: WhisperTranscriptionOptions = {}
     ): Promise<WhisperTranscriptionResult> {
         try {
-            console.log('[FirebaseWhisper] Starting transcription via Cloud Function...');
+            console.log('[FirebaseWhisper] Starting transcription via Cloud Function (HTTP)...');
 
-            // ✅ CRITICAL: Use lazy-initialized Functions instance with retry
-            let functions;
-            const maxRetries = 3;
-            for (let attempt = 0; attempt < maxRetries; attempt++) {
-                try {
-                    functions = getFunctionsInstance();
-                    break; // Success, exit loop
-                } catch (error: any) {
-                    if (attempt < maxRetries - 1) {
-                        console.warn(`[FirebaseWhisper] Functions initialization failed, retrying in ${500 * (attempt + 1)}ms...`, {
-                            attempt: attempt + 1,
-                            error: error?.message || error
-                        });
-                        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                        continue;
-                    }
-                    throw new Error('Firebase Functions is not available after multiple retries. Please refresh the page.');
-                }
-            }
-
-            if (!functions) { // Should not happen if loop completes without throwing
-                throw new Error('Firebase Functions instance could not be obtained.');
-            }
-
-            console.log('[FirebaseWhisper] Using Functions instance:', {
-                functionsExists: !!functions,
-                appExists: !!app,
-                projectId: app?.options?.projectId || 'unknown'
-            });
-
-            // Llamar al Cloud Function whisperProxy
-            const whisperProxyFunction = httpsCallable(functions, 'whisperProxy', {
-                timeout: 300000 // 5 minutos para audio largo
-            });
-
-            // Convertir Blob a base64 para enviar al Cloud Function
             const base64Audio = await this.blobToBase64(audioBlob);
-
-            // Validar que la conversión fue exitosa
             if (!base64Audio || typeof base64Audio !== 'string' || base64Audio.length === 0) {
                 throw new Error('Error al convertir el audio a Base64. El resultado está vacío.');
             }
 
-            // Determinar el modelo a usar
             const model = WHISPER_MODEL || 'gpt-4o-mini-transcribe';
-
-            // Preparar payload
-            // ✅ IMPORTANTE: El Cloud Function espera 'audioBase64' (string Base64)
             const payload = {
-                audioBase64: base64Audio,  // ✅ Nombre correcto: 'audioBase64' (Base64 string)
-                model: model,
+                audioBase64: base64Audio,
+                model,
                 language: options.languageHint || 'auto',
                 mode: options.mode || 'dictation',
                 mimeType: audioBlob.type
             };
 
-            console.log('[FirebaseWhisper] Calling whisperProxy with:', {
+            const currentUser = auth?.currentUser;
+            if (!currentUser) {
+                throw new Error('Debe iniciar sesión para usar la transcripción.');
+            }
+            const idToken = await currentUser.getIdToken();
+
+            console.log('[FirebaseWhisper] Calling whisperProxy (HTTP):', {
                 model,
                 language: options.languageHint || 'auto',
                 mode: options.mode || 'dictation',
                 audioSize: `${(audioBlob.size / 1024 / 1024).toFixed(2)} MB`,
-                mimeType: audioBlob.type,
-                audioBase64Length: base64Audio.length,  // ✅ Verificar que Base64 está presente
-                audioBase64Preview: base64Audio.substring(0, 50) + '...'  // Preview para debugging
+                mimeType: audioBlob.type
             });
 
-            // Llamar al Cloud Function
-            const result = await whisperProxyFunction(payload);
-
-            // El resultado viene en formato { data: { text, language, duration } }
-            const data = result.data as any;
-
-            if (!data || !data.text) {
-                throw new Error('La transcripción no devolvió texto');
-            }
-
-            console.log('[FirebaseWhisper] ✅ Transcription successful:', {
-                textLength: data.text.length,
-                language: data.language,
-                duration: data.duration
+            // Llamar a la callable vía POST (mismo formato que el SDK: body.data)
+            const response = await fetch(WHISPER_PROXY_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({ data: payload })
             });
 
-            return {
-                text: data.text,
-                language: data.language,
-                duration: data.duration
-            };
-        } catch (error: any) {
-            console.error('[FirebaseWhisper] ❌ Transcription error:', error);
+            const json = await response.json().catch(() => ({}));
 
-            // Manejar errores específicos
-            if (error.code === 'functions/not-found') {
-                throw new Error('El servicio de transcripción no está disponible. Por favor, contacte al administrador.');
+            // Callable success: { result: { text, language, duration } }
+            if (response.ok && json.result) {
+                const data = json.result as { text?: string; language?: string; duration?: number };
+                if (!data?.text) {
+                    throw new Error('La transcripción no devolvió texto');
+                }
+                console.log('[FirebaseWhisper] ✅ Transcription successful:', {
+                    textLength: data.text.length,
+                    language: data.language,
+                    duration: data.duration
+                });
+                return {
+                    text: data.text,
+                    language: data.language,
+                    duration: data.duration
+                };
             }
 
-            if (error.code === 'functions/deadline-exceeded') {
+            // Callable error: { error: { message, code, details } }
+            const errMsg = json?.error?.message || json?.message || (response.ok ? 'Respuesta inválida' : `HTTP ${response.status}`);
+            if (json?.error?.code === 'deadline-exceeded' || errMsg.toLowerCase().includes('deadline')) {
                 throw new Error('La transcripción tomó demasiado tiempo. Por favor, intente con un audio más corto.');
             }
-
-            if (error.message?.includes('API key')) {
-                throw new Error('Error de autenticación. Por favor, contacte al administrador.');
+            if (json?.error?.code === 'unauthenticated' || errMsg.toLowerCase().includes('auth')) {
+                throw new Error('Sesión expirada. Por favor, vuelva a iniciar sesión.');
             }
-
-            // Error genérico
+            if (errMsg.includes('API key') || errMsg.includes('key')) {
+                throw new Error('Error de configuración del servicio. Por favor, contacte al administrador.');
+            }
+            throw new Error(errMsg);
+        } catch (error: any) {
+            console.error('[FirebaseWhisper] ❌ Transcription error:', error);
             throw new Error(
-                error.message || 'Error al transcribir el audio. Por favor, intente nuevamente.'
+                error?.message || 'Error al transcribir el audio. Por favor, intente nuevamente.'
             );
         }
     }

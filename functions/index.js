@@ -54,18 +54,18 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.set('Access-Control-Max-Age', '3600');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
   }
-  
+
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
 
   try {
     const { phone, message, clinicName, patientName, consentToken } = req.body || {};
-    
+
     if (!phone || !message) {
       return res.status(400).json({ ok: false, error: 'missing_required_fields', message: 'phone and message are required' });
     }
@@ -115,26 +115,31 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
       result: JSON.stringify(result).substring(0, 500), // Limit log size
     });
 
-    // Check Vonage response
+    // Check Vonage response (status '0' = accepted for delivery; actual delivery may still fail for international numbers)
     if (result.messages && result.messages[0]?.status === '0') {
-      // Success
+      const msg = result.messages[0];
+      const to = cleanPhone;
+      const isInternational = !/^\+1\d{10}$/.test(to.replace(/\s/g, ''));
+      if (isInternational) {
+        console.warn('[SMS Function] SMS accepted by Vonage for international number:', { to: to.substring(0, 6) + '***', messageId: msg['message-id'] });
+      }
       return res.status(200).json({
         ok: true,
         provider: 'vonage',
-        messageId: result.messages[0]['message-id'],
-        status: result.messages[0].status,
-        remainingBalance: result.messages[0]['remaining-balance'],
+        messageId: msg['message-id'],
+        status: msg.status,
+        remainingBalance: msg['remaining-balance'],
       });
     } else {
       // Error from Vonage
       const errorText = result.messages?.[0]?.['error-text'] || result['error-text'] || 'Unknown error';
       const errorCode = result.messages?.[0]?.['status'] || result['error-code'] || 'unknown';
-      console.error('[SMS Function] Vonage error:', { 
-        errorText, 
-        errorCode, 
+      console.error('[SMS Function] Vonage error:', {
+        errorText,
+        errorCode,
         fullResponse: JSON.stringify(result).substring(0, 1000),
       });
-      
+
       // Map common Vonage errors to user-friendly messages
       let userMessage = errorText;
       if (errorCode === '2' || errorText.includes('Bad Credentials')) {
@@ -142,7 +147,7 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
       } else if (errorCode === '3' || errorText.includes('Invalid')) {
         userMessage = 'Invalid request parameters. Please check phone number format.';
       }
-      
+
       return res.status(400).json({
         ok: false,
         error: 'vonage_api_error',
@@ -402,11 +407,11 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.set('Access-Control-Max-Age', '3600');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
   }
-  
+
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
@@ -451,7 +456,7 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
         const snapshot = await db.collection(collectionName)
           .where('patientId', '==', patientId)
           .get();
-        
+
         if (!snapshot.empty) {
           const batch = db.batch();
           snapshot.docs.forEach(doc => {
@@ -593,11 +598,11 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
   const declineNotes = req.body?.declineNotes || null;
   const consentTextVersion = req.body?.consentTextVersion || '1.0.0';
   const jurisdiction = req.body?.jurisdiction || 'CA-ON';
-  
+
   if (!token || typeof token !== 'string' || token.trim().length < 10) {
     return res.status(400).json({ ok: false, error: 'missing_or_invalid_token' });
   }
-  
+
   if (action === 'decline' && (!declineReasons || declineReasons.length === 0)) {
     return res.status(400).json({ ok: false, error: 'decline_reasons_required' });
   }
@@ -644,7 +649,7 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
     const isDeclined = action === 'decline';
     const consentScope = isDeclined ? 'declined' : 'ongoing';
     const consentStatus = isDeclined ? 'declined' : 'granted';
-    
+
     // ✅ T3: Marcar como usado y registrar decisión
     await tokenRef.update({
       used: true,
@@ -703,8 +708,8 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return res.status(200).json({ 
-      ok: true, 
+    return res.status(200).json({
+      ok: true,
       scope: consentScope,
       status: consentStatus,
       action: action

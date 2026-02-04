@@ -35,6 +35,7 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
   const allowedOrigins = [
     'https://aiduxcare-v2-uat-dev.web.app',
     'https://pilot.aiduxcare.com',
+    'https://aiduxcare.com',
   ];
   const ALLOWED_ORIGIN = allowedOrigins.includes(origin) ? origin : 'https://aiduxcare-v2-uat-dev.web.app';
   res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);

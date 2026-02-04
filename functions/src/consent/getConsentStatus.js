@@ -38,6 +38,7 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
   const allowedOrigins = [
     'https://aiduxcare-v2-uat-dev.web.app',
     'https://pilot.aiduxcare.com',
+    'https://aiduxcare.com',
   ];
   const isAllowed = allowedOrigins.includes(origin);
 
