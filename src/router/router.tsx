@@ -62,10 +62,8 @@ function NoteDetailWrapper() {
 }
 
 export const createRouter = () => createBrowserRouter([
-  // Pilot root: send clinicians straight to login (Private Practice workflow)
-  { path: '/', element: <LoginPage /> },
-  // Keep UnifiedLandingPage for future marketing/enterprise entry under a non-root path
-  { path: '/unified', element: <UnifiedLandingPage /> }, // Optional: explicit access if needed
+  // Root: unified landing (Hospital Patient / Private Practice / Get Started)
+  { path: '/', element: <UnifiedLandingPage /> }, // Main landing page
   { path: '/login', element: <LoginPage /> }, // Login page
   { path: '/register', element: <RegisterPage /> },
   // WO-ONB-UNIFY-01: Redirigir /onboarding a /professional-onboarding (único proceso de onboarding)
