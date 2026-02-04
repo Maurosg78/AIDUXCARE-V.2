@@ -42,7 +42,7 @@ const LoginPage: React.FC = () => {
     if (hasRedirectedRef.current) {
       return;
     }
-    
+
     // ✅ CRITICAL: Only redirect if we're waiting AND profile is actually loaded
     // Check both: !profileLoading (finished loading) AND profile exists
     if (isWaitingForProfile && user) {
@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
         logger.info("[LOGIN] Profile still loading, waiting...");
         return;
       }
-      
+
       // If profile error, let AuthGuard handle it
       if (profileError) {
         logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
       // Profile is loaded, proceed with redirect
       hasRedirectedRef.current = true;
       setIsWaitingForProfile(false);
-      
+
       if (isProfileComplete(profile)) {
         logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
           uid: user?.uid,
@@ -163,31 +163,31 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     // ✅ CRITICAL: Prevent duplicate login attempts
     if (isLoggingIn) {
       logger.warn("[LOGIN] Login already in progress, ignoring duplicate request");
       return;
     }
-    
+
     // ✅ CRITICAL FIX: Manual validation in English (compliance requirement)
     if (!email.trim()) {
       setError("Please enter your email address");
       return;
     }
-    
+
     if (!password.trim()) {
       setError("Please enter your password");
       return;
     }
-    
+
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError("Please enter a valid email address");
       return;
     }
-    
+
     setIsLoggingIn(true);
     setLoading(true);
     setError("");
@@ -198,14 +198,19 @@ const LoginPage: React.FC = () => {
       logger.info("[LOGIN] Attempting sign-in", { email });
       await login(email, password);
 
+      // 🔎 Legacy email-activation path (kept for backwards compatibility)
+      // For the official pilot we DO NOT block login if there is no legacy
+      // professional document; onboarding + ProfessionalProfileContext own the truth.
       const professional = await emailActivationService.getProfessional(email);
 
       if (!professional) {
-        setError("Email not registered. Complete the onboarding process first.");
-        return;
+        logger.info("[LOGIN] No legacy professional document found in users collection, relying on profile context + onboarding", {
+          email,
+        });
+        // Do NOT block – let profile loader + onboarding handle new pilot users
       }
 
-      if (professional.isActive === false) {
+      if (professional && professional.isActive === false) {
         setError("Your account is pending activation. Check your inbox.");
         return;
       }
@@ -213,7 +218,7 @@ const LoginPage: React.FC = () => {
       // Enterprise-grade: Use uid directly to avoid Firestore rules issues
       const currentUser = auth.currentUser;
       await emailActivationService.updateLastLogin(email, currentUser?.uid);
-      
+
       // WO-AUTH-GATE-LOOP-06 ToDo 3: Landing post-login según registrationStatus
       // ✅ CRITICAL FIX: Always use useEffect to handle redirect
       // This ensures we wait for profile to be fully loaded, not just profileLoading === false
@@ -242,7 +247,7 @@ const LoginPage: React.FC = () => {
           <p className="text-[10px] font-light text-gray-500 uppercase tracking-[0.02em] mb-4 font-apple">
             SECURE PROFESSIONAL ACCESS • PHIPA COMPLIANT
           </p>
-          
+
           <h1 className="text-3xl sm:text-4xl font-light mb-3 tracking-[-0.02em] leading-[1.1] font-apple">
             Welcome to{' '}
             <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
@@ -250,7 +255,7 @@ const LoginPage: React.FC = () => {
             </span>
             <span className="ml-2 text-2xl">🍁</span>
           </h1>
-          
+
           <p className="text-lg text-gray-600 font-light leading-[1.3] font-apple">
             Your Best Medico-Legal Copilot
           </p>
@@ -303,7 +308,7 @@ const LoginPage: React.FC = () => {
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
-            
+
             <div className="relative">
               <label htmlFor="password" className="block text-sm font-normal text-gray-700 mb-2 font-apple">
                 Password
@@ -317,7 +322,7 @@ const LoginPage: React.FC = () => {
                   required
                   className="w-full h-11 px-4 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-[15px] bg-white font-apple font-light"
                   placeholder="••••••••"
-                  val             onChange={(event) => setPassword(event.target.value)}
+                  val onChange={(event) => setPassword(event.target.value)}
                   onKeyDown={(event) => {
                     const capsLockOn = event.getModifierState && event.getModifierState('CapsLock');
                     setCapsLockActive(capsLockOn);
@@ -351,7 +356,7 @@ const LoginPage: React.FC = () => {
             >
               {loading ? "Signing in…" : "Sign In"}
             </Button>
-            
+
             <div className="text-center">
               <Link
                 to="/forgot-password"
