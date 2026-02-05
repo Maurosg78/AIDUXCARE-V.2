@@ -20,6 +20,8 @@ interface ConsentGateScreenProps {
   consentResolution: ConsentResolution;
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback para check inmediato cuando se declina
   onConsentDeclined?: () => Promise<void>;
+  // ✅ WO-CONSENT-UX: Allow safe escape from gate without starting session
+  onCancel?: () => void;
 }
 
 function ConsentGateScreen({
@@ -28,7 +30,8 @@ function ConsentGateScreen({
   patientPhone,
   clinicName = 'AiDuxCare Clinic',
   consentResolution,
-  onConsentDeclined
+  onConsentDeclined,
+  onCancel
 }: ConsentGateScreenProps) {
   const { user } = useAuth();
   const [smsSending, setSmsSending] = useState(false);
@@ -218,6 +221,16 @@ function ConsentGateScreen({
                   </p>
                 </div>
               </div>
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="ml-4 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white hover:bg-white/10 px-2 py-1 rounded-full transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Cancel session</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -272,7 +285,10 @@ function ConsentGateScreen({
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-green-700">
                       <p className="font-medium">SMS sent successfully!</p>
-                      <p className="text-green-600 mt-1">Patient will receive a secure consent link.</p>
+                      <p className="text-green-600 mt-1">
+                        Patient will receive a secure consent link. If they do not see the message within a few
+                        minutes, ask them to check spam / unknown senders and confirm the phone number is correct.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -341,7 +357,12 @@ function ConsentGateScreen({
                   <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 animate-pulse" />
                   <div className="flex-1">
                     <p className="text-sm text-blue-900 font-medium">Consent request has been sent to the patient via SMS.</p>
-                    <p className="text-xs text-blue-700 mt-1">Waiting for patient response. This modal will close automatically when consent is received.</p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Waiting for patient response. This modal will close automatically when consent is received.
+                      If the patient reports not seeing the SMS, ask them to check spam / unknown senders on their
+                      phone, confirm the phone number, or use the options below to re-send the SMS or switch to
+                      verbal consent.
+                    </p>
                   </div>
                 </div>
 

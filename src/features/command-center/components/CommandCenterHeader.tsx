@@ -10,8 +10,9 @@
 
 import React, { useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, Users, LogOut } from 'lucide-react';
+import { CheckCircle, Users, LogOut, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
+import { useIsAdmin } from '../../../hooks/useIsAdmin';
 import { useProfessionalProfile as useProfessionalProfileContext } from '../../../context/ProfessionalProfileContext';
 import { deriveClinicianDisplayName } from '../../../utils/clinicProfile';
 import { getAuth, signOut } from 'firebase/auth';
@@ -29,6 +30,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = useIsAdmin();
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const isCommandCenter = location.pathname === '/command-center';
 
@@ -78,6 +80,17 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             >
               <Users className="w-4 h-4" />
               Command Center
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link
+              to="/feedback-review"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-apple"
+              title="Revisar feedback pendiente"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Feedback pendiente
             </Link>
           )}
 

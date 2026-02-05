@@ -95,6 +95,8 @@ firebase
 
 # Local backups (never commit)
 backups/
+# Exportaciones de feedback (contienen texto de usuarios)
+scripts/exports/
 
 **/.pnpm-store/
 **/.pnpm-debug.log*

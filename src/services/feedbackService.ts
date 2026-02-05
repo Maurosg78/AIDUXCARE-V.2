@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import logger from '@/shared/utils/logger';
 
@@ -65,6 +65,12 @@ export interface UserFeedback {
   // 🔴 NUEVO: Auto-categorización
   autoTags?: string[];
   calculatedPriority?: number; // 1-10
+
+  // Admin: resolución y solución propuesta (solo lectura/escritura admin)
+  resolved?: boolean;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+  solutionProposal?: string; // Solución expuesta para revisión e implementación
 }
 
 export class FeedbackService {
@@ -448,6 +454,49 @@ export class FeedbackService {
     }
 
     return Math.min(Math.round(priority * 10) / 10, 10); // Cap at 10, round to 1 decimal
+  }
+
+  /**
+   * Listar feedback no resueltos (solo admins; reglas Firestore).
+   * Ordenado por prioridad/severidad y fecha, para revisión diaria.
+   */
+  static async listUnresolvedFeedback(maxItems = 80): Promise<Array<{ id: string } & UserFeedback>> {
+    const q = query(
+      collection(db, this.COLLECTION_NAME),
+      orderBy('timestamp', 'desc'),
+      limit(maxItems)
+    );
+    const snap = await getDocs(q);
+    const list: Array<{ id: string } & UserFeedback> = [];
+    snap.docs.forEach((d) => {
+      const data = d.data();
+      if (data.resolved === true) return;
+      const timestamp = data.timestamp instanceof Timestamp ? data.timestamp.toDate() : (data.timestamp as Date);
+      list.push({
+        id: d.id,
+        ...data,
+        timestamp,
+      } as { id: string } & UserFeedback);
+    });
+    list.sort((a, b) => (b.calculatedPriority ?? 0) - (a.calculatedPriority ?? 0));
+    return list;
+  }
+
+  /**
+   * Actualizar feedback como admin (solución propuesta, marcar resuelto).
+   * Solo usuarios con claim admin pueden llamar esto; las reglas Firestore lo exigen.
+   */
+  static async updateFeedbackAdmin(
+    feedbackId: string,
+    updates: { solutionProposal?: string; resolved?: boolean; resolvedBy?: string }
+  ): Promise<void> {
+    const ref = doc(db, this.COLLECTION_NAME, feedbackId);
+    const payload: Record<string, unknown> = { ...updates };
+    if (updates.resolved === true) {
+      payload.resolvedAt = serverTimestamp();
+    }
+    await updateDoc(ref, this.cleanUndefined(payload) as Record<string, unknown>);
+    logger.info('[FEEDBACK] Admin update', { feedbackId, keys: Object.keys(updates) });
   }
 
   /**

@@ -149,7 +149,10 @@ service cloud.firestore {
       // Only admins or backend can read
       allow read: if request.auth != null
                   && request.auth.token.admin == true;
-      allow update, delete: if false;
+      // Admins can update (e.g. resolved, resolvedAt, resolvedBy); no delete
+      allow update: if request.auth != null
+                    && request.auth.token.admin == true;
+      allow delete: if false;
     }
 
     // ----------------------------

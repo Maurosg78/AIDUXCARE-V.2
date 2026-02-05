@@ -4082,6 +4082,11 @@ const ProfessionalWorkflowPage = () => {
             console.warn('[WORKFLOW] ⚠️ Declined not detected yet - polling will retry');
           }
         }}
+        // ✅ WO-CONSENT-UX: Allow clinician to safely exit without starting a session
+        onCancel={() => {
+          console.log('[WORKFLOW] Consent gate cancelled by user - returning to command-center');
+          navigate('/command-center');
+        }}
       />
     );
   }
@@ -4232,8 +4237,8 @@ const ProfessionalWorkflowPage = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 */}
-              <div className="bg-white border border-blue-200 rounded-lg p-6">
+              {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 + WO-CONSENT-UX/FB-060 (sticky header to avoid invisible patient) */}
+              <div className="sticky top-4 z-30 bg-slate-50/95 border border-blue-200 rounded-lg p-6 backdrop-blur">
                 <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {/* Patient Info */}

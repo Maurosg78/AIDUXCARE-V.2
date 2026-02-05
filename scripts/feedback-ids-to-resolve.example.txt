@@ -1,0 +1,10 @@
+# Lista de IDs de user_feedback para marcar como resueltos.
+# Una ID por línea. Líneas vacías y las que empiezan con # se ignoran.
+#
+# Uso:
+#   1. Copia este archivo a scripts/exports/feedback-ids-to-resolve.txt (o usa cualquier ruta).
+#   2. Pega los IDs que quieras marcar como resueltos (por ejemplo desde el JSON de export).
+#   3. Ejecuta: node scripts/mark-feedback-resolved.cjs --file scripts/exports/feedback-ids-to-resolve.txt
+#
+# Alternativa rápida para bugs antiguos de desarrollo (localhost):
+#   node scripts/mark-feedback-resolved.cjs --from-export scripts/exports/user_feedback_XXX.json --filter localhost

@@ -33,6 +33,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetCompletePage } from '../pages/ResetCompletePage';
 import TechDashboard from '../pages/Dashboard/TechDashboard';
 import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
+import { FeedbackReviewPage } from '../pages/FeedbackReviewPage';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 // LayoutWrapper simple
@@ -82,6 +83,7 @@ export const createRouter = () => createBrowserRouter([
     path: '/command-center',
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>
   },
+  { path: '/feedback-review', element: <AuthGuard><LayoutWrapper><FeedbackReviewPage /></LayoutWrapper></AuthGuard> },
   { path: '/patients', element: <AuthGuard><LayoutWrapper><PatientListPage /></LayoutWrapper></AuthGuard> },
   { path: '/patients/:id/history', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> }, // ✅ Must be before /patients/:id to match correctly
   { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDetailPage /></LayoutWrapper></AuthGuard> },
