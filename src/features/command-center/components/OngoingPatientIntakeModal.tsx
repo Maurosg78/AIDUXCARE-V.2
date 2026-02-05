@@ -98,7 +98,13 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
   const lastNameInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
   const birthDateInputRef = useRef<HTMLInputElement | null>(null);
-  const [chiefComplaint, setChiefComplaint] = useState('');
+  const primaryConcernInputRef = useRef<HTMLInputElement | null>(null);
+  const impactNotesRef = useRef<HTMLTextAreaElement | null>(null);
+  const antecedentesPreviosRef = useRef<HTMLTextAreaElement | null>(null);
+  const objectiveFindingsRef = useRef<HTMLTextAreaElement | null>(null);
+  const clinicalImpressionRef = useRef<HTMLTextAreaElement | null>(null);
+  const sessionNotesRef = useRef<HTMLTextAreaElement | null>(null);
+  const plannedNextFocusRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [form, setForm] = useState<OngoingFormData>({});
 
@@ -108,9 +114,6 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     if (isOpen) {
       setCurrentPatientId(initialPatientId);
       setCurrentPatientName(initialPatientName);
-      if (!initialPatientId) {
-        setChiefComplaint('');
-      }
       setForm({});
       setAttachments([]);
       setAttachmentError(null);
@@ -129,18 +132,11 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
         const att = await ClinicalAttachmentService.upload(file, user.uid);
         setAttachments((prev) => [...prev, att]);
         const excerpt = att.extractedText?.trim();
-        if (excerpt) {
-          setForm((prev) => {
-            const curr = prev.antecedentesPrevios ?? '';
-            const sep = curr ? '\n\n' : '';
-            return { ...prev, antecedentesPrevios: curr + sep + `[${att.name}]\n${excerpt.slice(0, 2000)}` };
-          });
-        } else {
-          setForm((prev) => {
-            const curr = prev.antecedentesPrevios ?? '';
-            const sep = curr ? '\n\n' : '';
-            return { ...prev, antecedentesPrevios: curr + sep + `[Attached: ${att.name}]` };
-          });
+        const toAppend = excerpt ? `[${att.name}]\n${excerpt.slice(0, 2000)}` : `[Attached: ${att.name}]`;
+        const el = antecedentesPreviosRef.current;
+        if (el) {
+          const curr = el.value ?? '';
+          el.value = curr ? curr + '\n\n' + toAppend : toAppend;
         }
       } catch (err) {
         logger.error('OngoingPatientIntakeModal upload', err);
@@ -158,7 +154,13 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
 
   const getFormData = (): OngoingFormData => ({
     ...form,
-    chiefComplaint: form.chiefComplaint || chiefComplaint,
+    chiefComplaint: (form.chiefComplaint || primaryConcernInputRef.current?.value) ?? '',
+    impactNotes: impactNotesRef.current?.value ?? '',
+    antecedentesPrevios: antecedentesPreviosRef.current?.value ?? '',
+    objectiveFindings: objectiveFindingsRef.current?.value ?? '',
+    clinicalImpression: clinicalImpressionRef.current?.value ?? '',
+    sessionNotes: sessionNotesRef.current?.value ?? '',
+    plannedNextFocus: plannedNextFocusRef.current?.value ?? '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,7 +174,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
       const ln = lastNameInputRef.current?.value.trim() ?? '';
       const ph = phoneInputRef.current?.value.trim() ?? '';
       const bd = birthDateInputRef.current?.value.trim() ?? '';
-      const cc = (form.chiefComplaint ?? chiefComplaint).trim();
+      const cc = (getFormData().chiefComplaint ?? '').trim();
       if (!fn || !ln) {
         setError('First and last name are required.');
         return;
@@ -308,14 +310,16 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     rows = 2,
     optional = true,
     withDictation = false,
+    textareaRef,
   }: {
     label: string;
-    value: string;
-    onChange: (v: string) => void;
+    value?: string;
+    onChange?: (v: string) => void;
     placeholder?: string;
     rows?: number;
     optional?: boolean;
     withDictation?: boolean;
+    textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   }) => (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -323,14 +327,16 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
       </label>
       <div className="flex gap-2">
         <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          ref={textareaRef}
+          {...(value !== undefined && onChange
+            ? { value, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value) }
+            : {})}
           placeholder={placeholder}
           rows={rows}
           className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
           disabled={submitting}
         />
-        {withDictation && (
+        {withDictation && value !== undefined && onChange && (
           <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" className="self-start" />
         )}
       </div>
@@ -398,10 +404,8 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             <Collapsible title="Chief complaint & subjective" open={true} onToggle={() => toggle('subjective')}>
               <Input
                 label="Primary concern"
-                value={form.chiefComplaint ?? chiefComplaint}
-                onChange={(v) => setForm((p) => ({ ...p, chiefComplaint: v }))}
+                inputRef={primaryConcernInputRef}
                 placeholder="e.g. Low back pain, 6 months"
-                withDictation
               />
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 shrink-0">
@@ -426,22 +430,18 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               </div>
               <TextArea
                 label="Impact notes"
-                value={form.impactNotes ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, impactNotes: v }))}
+                textareaRef={impactNotesRef}
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
-                withDictation
               />
             </Collapsible>
 
             <Collapsible title="Previous history" open={openSections.antecedentes} onToggle={() => toggle('antecedentes')}>
               <TextArea
                 label="History, imaging, onset"
-                value={form.antecedentesPrevios ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, antecedentesPrevios: v }))}
+                textareaRef={antecedentesPreviosRef}
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
-                withDictation
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
@@ -488,33 +488,32 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             <Collapsible title="Objective" open={openSections.objective} onToggle={() => toggle('objective')}>
               <TextArea
                 label="Findings (observation, ROM, strength, neuro)"
-                value={form.objectiveFindings ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, objectiveFindings: v }))}
+                textareaRef={objectiveFindingsRef}
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
-                withDictation
               />
             </Collapsible>
 
             <Collapsible title="Clinical impression" open={openSections.impression} onToggle={() => toggle('impression')}>
-              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation />
+              <TextArea
+                label="Findings suggest… (no diagnosis)"
+                textareaRef={clinicalImpressionRef}
+                placeholder="Interpretative, not diagnostic"
+                rows={2}
+              />
             </Collapsible>
 
             <Collapsible title="Plan / next focus" open={openSections.plan} onToggle={() => toggle('plan')}>
               <TextArea
                 label="Session notes"
-                value={form.sessionNotes ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, sessionNotes: v }))}
+                textareaRef={sessionNotesRef}
                 placeholder="Focus of session, advice given"
-                withDictation
               />
               <TextArea
                 label="Planned next focus"
-                value={form.plannedNextFocus ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, plannedNextFocus: v }))}
+                textareaRef={plannedNextFocusRef}
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
-                withDictation
               />
               <p className="text-xs text-slate-500">Chief complaint + (impression or plan) needed to create baseline.</p>
             </Collapsible>
@@ -526,10 +525,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             </button>
             <button
               type="submit"
-              disabled={
-                submitting ||
-                !hasMinimumForBaseline(getFormData())
-              }
+              disabled={submitting}
               className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-xl text-sm font-medium disabled:opacity-50"
             >
               {submitting ? 'Creating baseline…' : 'Create baseline & start session'}
