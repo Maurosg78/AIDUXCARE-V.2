@@ -1,6 +1,10 @@
 /**
  * Parses Ongoing intake form data into baseline SOAP strings.
  * Form designed for what baseline needs: S/O/A/P.
+ *
+ * This baseline is persisted (clinical_baselines) and then injected into the
+ * Vertex follow-up SOAP prompt via buildFollowUpPromptV3 (subjective, objective,
+ * assessment, plan). All sections should be filled so the prompt is fully hydrated.
  */
 
 export interface OngoingFormData {

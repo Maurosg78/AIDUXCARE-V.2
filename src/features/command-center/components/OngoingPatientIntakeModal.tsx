@@ -23,6 +23,8 @@ import {
 } from '../utils/ongoingFormToBaselineSOAP';
 
 const MIN_FIELD = 3;
+/** Minimum length for plan/next focus so baseline hydrates Vertex follow-up prompt properly. */
+const MIN_PLAN_LENGTH = 15;
 
 export interface OngoingPatientIntakeModalProps {
   isOpen: boolean;
@@ -223,10 +225,41 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     if (!patientId) return;
 
     const data = getFormData();
-    if (!hasMinimumForBaseline(data)) {
-      setError(
-        'To create a baseline and start follow-up: add Chief complaint and either Clinical impression or Plan/next focus.'
-      );
+    // All baseline fields are required so the baseline fully hydrates the Vertex follow-up prompt (buildFollowUpPromptV3).
+    const cc = (data.chiefComplaint ?? '').trim();
+    const impact = (data.impactNotes ?? '').trim();
+    const antecedentes = (data.antecedentesPrevios ?? '').trim();
+    const objective = (data.objectiveFindings ?? '').trim();
+    const impression = (data.clinicalImpression ?? '').trim();
+    const sessionNotes = (data.sessionNotes ?? '').trim();
+    const plannedFocus = (data.plannedNextFocus ?? '').trim();
+
+    if (cc.length < MIN_FIELD) {
+      setError('Primary concern (chief complaint) is required.');
+      return;
+    }
+    if (impact.length < MIN_FIELD) {
+      setError('Impact notes are required.');
+      return;
+    }
+    if (antecedentes.length < MIN_FIELD) {
+      setError('Previous history (history, imaging, onset) is required.');
+      return;
+    }
+    if (objective.length < MIN_FIELD) {
+      setError('Objective findings are required.');
+      return;
+    }
+    if (impression.length < MIN_FIELD) {
+      setError('Clinical impression is required.');
+      return;
+    }
+    if (sessionNotes.length < MIN_FIELD) {
+      setError('Session notes are required.');
+      return;
+    }
+    if (plannedFocus.length < MIN_PLAN_LENGTH) {
+      setError('Planned next focus is required (e.g. "Continue HEP 2×/day; reassess in 2 weeks").');
       return;
     }
 
@@ -368,7 +401,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">{error}</div>
             )}
-            <p className="text-sm text-slate-600">Fill what you have. Chief complaint + (impression or plan) needed to create baseline and start follow-up.</p>
+            <p className="text-sm text-slate-600">All sections are required. This baseline feeds the follow-up SOAP prompt (Vertex), so complete each part for accurate future notes.</p>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
@@ -406,6 +439,8 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 label="Primary concern"
                 inputRef={primaryConcernInputRef}
                 placeholder="e.g. Low back pain, 6 months"
+                optional={false}
+                required
               />
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 shrink-0">
@@ -433,6 +468,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 textareaRef={impactNotesRef}
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
+                optional={false}
               />
             </Collapsible>
 
@@ -442,6 +478,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 textareaRef={antecedentesPreviosRef}
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
+                optional={false}
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
@@ -491,6 +528,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 textareaRef={objectiveFindingsRef}
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
+                optional={false}
               />
             </Collapsible>
 
@@ -500,6 +538,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 textareaRef={clinicalImpressionRef}
                 placeholder="Interpretative, not diagnostic"
                 rows={2}
+                optional={false}
               />
             </Collapsible>
 
@@ -508,14 +547,16 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 label="Session notes"
                 textareaRef={sessionNotesRef}
                 placeholder="Focus of session, advice given"
+                optional={false}
               />
               <TextArea
                 label="Planned next focus"
                 textareaRef={plannedNextFocusRef}
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
+                optional={false}
               />
-              <p className="text-xs text-slate-500">Chief complaint + (impression or plan) needed to create baseline.</p>
+              <p className="text-xs text-slate-500">All fields above are required so the baseline fully hydrates follow-up SOAP generation (Vertex).</p>
             </Collapsible>
           </div>
 
