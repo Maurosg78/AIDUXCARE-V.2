@@ -202,6 +202,15 @@ function ConsentGateScreen({
   // El parent ya decidió si renderizar el Gate basándose en consentResolution
   // Si llegamos aquí, es porque el dominio dice que debemos renderizar
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      console.log('[ConsentGate] Cancel without onCancel - navigating to command-center');
+      window.location.href = '/command-center';
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -221,16 +230,14 @@ function ConsentGateScreen({
                   </p>
                 </div>
               </div>
-              {onCancel && (
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  className="ml-4 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white hover:bg-white/10 px-2 py-1 rounded-full transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  <span>Cancel session</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="ml-4 inline-flex items-center gap-1 text-xs text-blue-100 hover:text-white hover:bg-white/10 px-2 py-1 rounded-full transition-colors"
+              >
+                <X className="w-3 h-3" />
+                <span>Cancel session</span>
+              </button>
             </div>
           </div>
 

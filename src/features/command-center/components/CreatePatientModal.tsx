@@ -208,10 +208,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[min(100vh-2rem,720px)] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200">
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-slate-900">New Patient</h2>
           <button
             onClick={onClose}
@@ -224,7 +224,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Error Message */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">

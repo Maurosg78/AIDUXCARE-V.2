@@ -4239,7 +4239,17 @@ const ProfessionalWorkflowPage = () => {
             <div className="space-y-6">
               {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 + WO-CONSENT-UX/FB-060 (sticky header to avoid invisible patient) */}
               <div className="sticky top-4 z-30 bg-slate-50/95 border border-blue-200 rounded-lg p-6 backdrop-blur">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
+                <div className="flex items-start justify-between mb-4 gap-3">
+                  <h2 className="text-lg font-semibold text-slate-900">Patient context</h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/command-center')}
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Back to Command Centre</span>
+                  </button>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {/* Patient Info */}
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">

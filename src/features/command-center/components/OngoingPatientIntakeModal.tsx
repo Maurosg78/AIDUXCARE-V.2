@@ -91,10 +91,13 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [birthDate, setBirthDate] = useState('');
+  // WO-ONGOING-INPUT-STABILITY (Windows):
+  // Usar inputs NO controlados para evitar pérdida de foco/caret en Windows.
+  // Leemos los valores directamente desde refs al enviar el formulario.
+  const firstNameInputRef = useRef<HTMLInputElement | null>(null);
+  const lastNameInputRef = useRef<HTMLInputElement | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
+  const birthDateInputRef = useRef<HTMLInputElement | null>(null);
   const [chiefComplaint, setChiefComplaint] = useState('');
 
   const [form, setForm] = useState<OngoingFormData>({});
@@ -106,10 +109,6 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
       setCurrentPatientId(initialPatientId);
       setCurrentPatientName(initialPatientName);
       if (!initialPatientId) {
-        setFirstName('');
-        setLastName('');
-        setPhone('');
-        setBirthDate('');
         setChiefComplaint('');
       }
       setForm({});
@@ -169,10 +168,10 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     let patientId = currentPatientId;
 
     if (isNewPatient && !patientId) {
-      const fn = firstName.trim();
-      const ln = lastName.trim();
-      const ph = phone.trim();
-      const bd = birthDate.trim();
+      const fn = firstNameInputRef.current?.value.trim() ?? '';
+      const ln = lastNameInputRef.current?.value.trim() ?? '';
+      const ph = phoneInputRef.current?.value.trim() ?? '';
+      const bd = birthDateInputRef.current?.value.trim() ?? '';
       const cc = (form.chiefComplaint ?? chiefComplaint).trim();
       if (!fn || !ln) {
         setError('First and last name are required.');
@@ -261,14 +260,16 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     placeholder,
     optional = true,
     withDictation = false,
+    inputRef,
     ...rest
   }: {
     label: string;
-    value: string;
-    onChange: (v: string) => void;
+    value?: string;
+    onChange?: (v: string) => void;
     placeholder?: string;
     optional?: boolean;
     withDictation?: boolean;
+    inputRef?: React.RefObject<HTMLInputElement>;
     [k: string]: unknown;
   }) => (
     <div>
@@ -277,14 +278,22 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
       </label>
       <div className="flex gap-2">
         <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          ref={inputRef}
+          // Para inputs controlados (cuando se pasa value/onChange), usamos el patrón clásico.
+          // Para los campos de nombre/phone/birthDate (Windows), los usaremos como NO controlados
+          // pasando solo defaultValue y leyendo desde ref en handleSubmit.
+          {...(value !== undefined && onChange
+            ? {
+              value,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value),
+            }
+            : {})}
           placeholder={placeholder}
           className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
           disabled={submitting}
           {...rest}
         />
-        {withDictation && (
+        {withDictation && value !== undefined && onChange && (
           <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" />
         )}
       </div>
@@ -357,10 +366,32 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
-                <Input label="First Name" value={firstName} onChange={setFirstName} optional={false} required />
-                <Input label="Last Name" value={lastName} onChange={setLastName} optional={false} required />
-                <Input label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" optional={false} required />
-                <Input label="Date of Birth" value={birthDate} onChange={setBirthDate} type="date" optional={false} required />
+                <Input
+                  label="First Name"
+                  inputRef={firstNameInputRef}
+                  optional={false}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  inputRef={lastNameInputRef}
+                  optional={false}
+                  required
+                />
+                <Input
+                  label="Phone"
+                  inputRef={phoneInputRef}
+                  placeholder="+1 (555) 123-4567"
+                  optional={false}
+                  required
+                />
+                <Input
+                  label="Date of Birth"
+                  inputRef={birthDateInputRef}
+                  type="date"
+                  optional={false}
+                  required
+                />
               </Collapsible>
             )}
 
@@ -497,7 +528,6 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               type="submit"
               disabled={
                 submitting ||
-                (isNewPatient && (!firstName.trim() || !lastName.trim() || !phone.trim() || !birthDate)) ||
                 !hasMinimumForBaseline(getFormData())
               }
               className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-xl text-sm font-medium disabled:opacity-50"
