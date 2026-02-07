@@ -513,7 +513,67 @@ const ProfessionalWorkflowPage = () => {
     detectWorkflow();
   }, [patientId, user?.uid, currentPatient, sessionTypeFromUrl]);
 
-  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits
+  // Follow-up path: load baseline for SOAP. Priority: (1) baselineFromOngoing from navigate state (Ongoing intake just completed), (2) getClinicalState from Firestore.
+  useEffect(() => {
+    const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
+    if (!isFollowUp || !patientId || !user?.uid) {
+      setFollowUpClinicalState(null);
+      setFollowUpBaselineChecked(false);
+      return;
+    }
+    setFollowUpClinicalState(null);
+    setFollowUpBaselineChecked(false);
+
+    const baselineFromOngoing = (location.state as { baselineFromOngoing?: { subjective: string; objective: string; assessment: string; plan: string } })?.baselineFromOngoing;
+    if (baselineFromOngoing && baselineFromOngoing.plan?.trim()) {
+      const baselineSOAP = {
+        subjective: baselineFromOngoing.subjective ?? '',
+        objective: baselineFromOngoing.objective ?? '',
+        assessment: baselineFromOngoing.assessment ?? '',
+        plan: baselineFromOngoing.plan ?? '',
+      };
+      setFollowUpClinicalState({ baselineSOAP });
+      setFollowUpBaselineChecked(true);
+      // WO-ONGOING-FB: Prefill SOAP note from baseline so user sees "nota" immediately (fixes "no genera nota" feedback).
+      setLocalSoapNote({
+        ...baselineSOAP,
+        requiresReview: false,
+        isReviewed: true,
+        aiGenerated: false,
+      });
+      setActiveTab('soap');
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+      return;
+    }
+
+    let cancelled = false;
+    getClinicalState(patientId, user.uid)
+      .then((state) => {
+        if (cancelled) return;
+        if (!state?.hasBaseline || !state.baselineSOAP) {
+          setFollowUpClinicalState(null);
+        } else {
+          setFollowUpClinicalState({
+            baselineSOAP: {
+              subjective: state.baselineSOAP.subjective ?? '',
+              objective: state.baselineSOAP.objective ?? '',
+              assessment: state.baselineSOAP.assessment ?? '',
+              plan: state.baselineSOAP.plan ?? '',
+            },
+          });
+        }
+        setFollowUpBaselineChecked(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFollowUpClinicalState(null);
+          setFollowUpBaselineChecked(true);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state]);
+
+  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
   useEffect(() => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
