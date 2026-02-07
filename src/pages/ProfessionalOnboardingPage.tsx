@@ -326,7 +326,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   // CTO SPEC: Validación de campos obligatorios según estructura canónica
   const canProceed = () => {
     switch (steps[currentStep].id) {
-      case 'identity':
+      case 'identity': {
         // WIZARD 1: Identidad profesional - campos obligatorios según CTO
         const hasBasicFields = !!(
           formData.firstName?.trim() && 
@@ -350,6 +350,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           );
         }
         return hasBasicFields;
+      }
       case 'practice':
         // WIZARD 2: Práctica clínica - campos obligatorios según CTO
         return !!(

@@ -162,8 +162,7 @@ export class HospitalPortalService {
     }
     
     // Special characters: !@#$%^&*()_+-=[]{};':"|,.<>/?
-    // Note: ] and [ must be escaped in character class, and - must be at start/end or escaped
-    const specialCharRegex = /[!@#$%^&*()_+=\[\]{};':"\\|,.<>/?]/;
+    const specialCharRegex = new RegExp('[!@#$%^&*()_+=\\[\\]{};\':"\\\\|,.<>/?]');
     if (!specialCharRegex.test(password)) {
       return { valid: false, error: 'Password must contain at least one special character' };
     }
