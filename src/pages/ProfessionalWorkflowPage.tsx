@@ -513,7 +513,9 @@ const ProfessionalWorkflowPage = () => {
     detectWorkflow();
   }, [patientId, user?.uid, currentPatient, sessionTypeFromUrl]);
 
-  // Follow-up path: load baseline for SOAP. Priority: (1) baselineFromOngoing from navigate state (Ongoing intake just completed), (2) getClinicalState from Firestore.
+  // Follow-up path only: load baseline for SOAP. Initial and follow-up use different prompts; this baseline
+  // hydrates ONLY the follow-up prompt (never the initial-assessment prompt). Priority: (1) baselineFromOngoing
+  // from navigate state (Ongoing intake just completed), (2) getClinicalState from Firestore.
   useEffect(() => {
     const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
     if (!isFollowUp || !patientId || !user?.uid) {
@@ -532,7 +534,7 @@ const ProfessionalWorkflowPage = () => {
         assessment: baselineFromOngoing.assessment ?? '',
         plan: baselineFromOngoing.plan ?? '',
       };
-      setFollowUpClinicalState({ baselineSOAP });
+      setFollowUpClinicalState({ baselineSOAP }); // Used only by follow-up SOAP generation (not initial).
       setFollowUpBaselineChecked(true);
       // WO-ONGOING-FB: Prefill SOAP note from baseline so user sees "nota" immediately (fixes "no genera nota" feedback).
       setLocalSoapNote({

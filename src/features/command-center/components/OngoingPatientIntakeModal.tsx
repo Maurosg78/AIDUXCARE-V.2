@@ -257,7 +257,9 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     if (!patientId) return;
 
     const data = getFormData();
-    // All baseline fields are required so the baseline fully hydrates the Vertex follow-up prompt (buildFollowUpPromptV3).
+    // IMPORTANT: Initial and follow-up use different prompts. This baseline is ONLY for the follow-up prompt
+    // (e.g. buildFollowUpPrompt / buildFollowUpPromptV3). It must never be used to hydrate the initial-assessment prompt.
+    // All baseline fields are required so the baseline fully hydrates the Vertex follow-up prompt.
     const cc = (data.chiefComplaint ?? '').trim();
     const impact = (data.impactNotes ?? '').trim();
     const antecedentes = (data.antecedentesPrevios ?? '').trim();
