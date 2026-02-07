@@ -4,6 +4,19 @@ Tras merge del fix WO-ONGOING-FB a `main`, ejecutar estos pasos.
 
 ---
 
+## 0. Rescatar feedbacks pendientes (exportar a JSON)
+
+Para tener una copia de los feedbacks no resueltos en Firebase antes de revisar en la UI:
+
+```bash
+cd functions && node scripts/list-unresolved-feedback.js
+```
+
+Requisito: `gcloud auth application-default login` (o `GOOGLE_APPLICATION_CREDENTIALS`).  
+El script escribe en `docs/audit-trail/feedback-pendientes-YYYY-MM-DD.json` e imprime un resumen en consola.
+
+---
+
 ## 1. Push a `main` (si no se hizo desde el IDE)
 
 ```bash
@@ -46,16 +59,22 @@ Commits / docs: PROPUESTA_CTO_ONGOING_PATIENT_FEEDBACK_FIX.md, OngoingPatientInt
 Desde la raíz del proyecto, con `main` actualizado y credenciales listas:
 
 ```bash
-# Build local, subir dist al VPS, reemplazar y reiniciar PM2 (pilot-web)
 ./scripts/deploy-pilot-vps.sh
 ```
 
-Requisitos:
+El script hace: `npm run build`, sube `./dist` a la VM como `dist.new`, en el VPS reemplaza `dist` por `dist.new` y ejecuta `pm2 restart pilot-web && pm2 save`.
 
-- `gcloud` instalado y autenticado.
-- Variables opcionales: `PILOT_VPS_INSTANCE`, `PILOT_VPS_ZONE`, `PILOT_VPS_PROJECT`, `PILOT_VPS_USER`.
+**Si el script no existe**, usar estos comandos (instancia real: `pilot-vps`, zone `us-central1-a`, project `aiduxcare-v2-uat-dev`):
 
-Tras el script, comprobar: https://pilot.aiduxcare.com (o tu URL de pilot).
+```bash
+npm run build
+gcloud compute scp --recurse ./dist pilot-vps:/var/www/pilot/dist.new --zone=us-central1-a --project=aiduxcare-v2-uat-dev
+gcloud compute ssh pilot-vps --zone=us-central1-a --project=aiduxcare-v2-uat-dev -- "cd /var/www/pilot && rm -rf dist.old && [ -d dist ] && mv dist dist.old; mv dist.new dist && pm2 restart pilot-web && pm2 save"
+```
+
+Requisitos: `gcloud` instalado y autenticado. Variables opcionales: `PILOT_VPS_INSTANCE`, `PILOT_VPS_ZONE`, `PILOT_VPS_PROJECT`.
+
+Tras el deploy, comprobar: https://pilot.aiduxcare.com (o tu URL de pilot).
 
 ---
 

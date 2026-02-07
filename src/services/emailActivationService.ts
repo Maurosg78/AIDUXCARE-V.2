@@ -364,24 +364,30 @@ export class EmailActivationService {
   }
 
   /**
-   * Actualiza último login
+   * Actualiza último login en users/{userId}.
+   * Preferir uid cuando esté disponible para evitar "Missing or insufficient permissions"
+   * (reglas Firestore: allow update solo si request.auth.uid == userId).
    */
-  public async updateLastLogin(email: string): Promise<void> {
+  public async updateLastLogin(email: string, uid?: string): Promise<void> {
     try {
-      const usersRef = collection(db, 'users');
-      const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
-      const snapshot = await getDocs(emailQuery);
-
-      if (!snapshot.empty) {
-        const docRef = doc(db, 'users', snapshot.docs[0].id);
-        await updateDoc(docRef, {
-          lastLogin: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-      }
+      const docId = uid ?? await this.resolveUserIdByEmail(email);
+      if (!docId) return;
+      const docRef = doc(db, 'users', docId);
+      await updateDoc(docRef, {
+        lastLogin: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Error actualizando último login:', error);
     }
+  }
+
+  /** Resuelve el document id de users por email (solo si no tenemos uid). */
+  private async resolveUserIdByEmail(email: string): Promise<string | null> {
+    const usersRef = collection(db, 'users');
+    const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
+    const snapshot = await getDocs(emailQuery);
+    return snapshot.empty ? null : snapshot.docs[0].id;
   }
 
   /**
