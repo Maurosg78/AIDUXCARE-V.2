@@ -72,6 +72,107 @@ function Collapsible({
   );
 }
 
+/** WO-ONGOING-INPUT-FOCUS-LAG-V1: defined at module level so identity is stable and inputs do not lose focus on keystroke. */
+function OngoingModalInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  optional = true,
+  withDictation = false,
+  submitting,
+  dictationLang,
+  ...rest
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  optional?: boolean;
+  withDictation?: boolean;
+  submitting: boolean;
+  dictationLang: 'en-CA' | 'es' | 'fr-CA';
+  [k: string]: unknown;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
+          disabled={submitting}
+          {...rest}
+        />
+        {withDictation && (
+          <DictationButton
+            value={value}
+            onChange={onChange}
+            disabled={submitting}
+            lang={dictationLang}
+            title={`Dictate. ${TRANSCRIPTION_HINT}`}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** WO-ONGOING-INPUT-FOCUS-LAG-V1: defined at module level so identity is stable and textareas do not lose focus on keystroke. */
+function OngoingModalTextArea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 2,
+  optional = true,
+  withDictation = false,
+  submitting,
+  dictationLang,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+  optional?: boolean;
+  withDictation?: boolean;
+  submitting: boolean;
+  dictationLang: 'en-CA' | 'es' | 'fr-CA';
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
+      </label>
+      <div className="flex gap-2">
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
+          disabled={submitting}
+        />
+        {withDictation && (
+          <DictationButton
+            value={value}
+            onChange={onChange}
+            disabled={submitting}
+            lang={dictationLang}
+            title={`Dictate. ${TRANSCRIPTION_HINT}`}
+            className="self-start"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps> = ({
   isOpen,
   onClose,
@@ -263,93 +364,6 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     }
   };
 
-  const Input = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    optional = true,
-    withDictation = false,
-    ...rest
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    optional?: boolean;
-    withDictation?: boolean;
-    [k: string]: unknown;
-  }) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
-      </label>
-      <div className="flex gap-2">
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
-          disabled={submitting}
-          {...rest}
-        />
-        {withDictation && (
-          <DictationButton
-            value={value}
-            onChange={onChange}
-            disabled={submitting}
-            lang={dictationLang}
-            title={`Dictate. ${TRANSCRIPTION_HINT}`}
-          />
-        )}
-      </div>
-    </div>
-  );
-
-  const TextArea = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    rows = 2,
-    optional = true,
-    withDictation = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    rows?: number;
-    optional?: boolean;
-    withDictation?: boolean;
-  }) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
-      </label>
-      <div className="flex gap-2">
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
-          disabled={submitting}
-        />
-        {withDictation && (
-          <DictationButton
-            value={value}
-            onChange={onChange}
-            disabled={submitting}
-            lang={dictationLang}
-            title={`Dictate. ${TRANSCRIPTION_HINT}`}
-            className="self-start"
-          />
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
@@ -400,20 +414,22 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
-                <Input label="First Name" value={firstName} onChange={setFirstName} optional={false} required />
-                <Input label="Last Name" value={lastName} onChange={setLastName} optional={false} required />
-                <Input label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" optional={false} required />
-                <Input label="Date of Birth" value={birthDate} onChange={setBirthDate} type="date" optional={false} required />
+                <OngoingModalInput label="First Name" value={firstName} onChange={setFirstName} optional={false} required submitting={submitting} dictationLang={dictationLang} />
+                <OngoingModalInput label="Last Name" value={lastName} onChange={setLastName} optional={false} required submitting={submitting} dictationLang={dictationLang} />
+                <OngoingModalInput label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" optional={false} required submitting={submitting} dictationLang={dictationLang} />
+                <OngoingModalInput label="Date of Birth" value={birthDate} onChange={setBirthDate} type="date" optional={false} required submitting={submitting} dictationLang={dictationLang} />
               </Collapsible>
             )}
 
             <Collapsible title="Chief complaint & subjective" open={true} onToggle={() => toggle('subjective')}>
-              <Input
+              <OngoingModalInput
                 label="Primary concern"
                 value={form.chiefComplaint ?? chiefComplaint}
                 onChange={(v) => setForm((p) => ({ ...p, chiefComplaint: v }))}
                 placeholder="e.g. Low back pain, 6 months"
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 shrink-0">
@@ -436,24 +452,28 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                   className="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-sm"
                 />
               </div>
-              <TextArea
+              <OngoingModalTextArea
                 label="Impact notes"
                 value={form.impactNotes ?? ''}
                 onChange={(v) => setForm((p) => ({ ...p, impactNotes: v }))}
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
             </Collapsible>
 
             <Collapsible title="Previous history" open={openSections.antecedentes} onToggle={() => toggle('antecedentes')}>
-              <TextArea
+              <OngoingModalTextArea
                 label="History, imaging, onset"
                 value={form.antecedentesPrevios ?? ''}
                 onChange={(v) => setForm((p) => ({ ...p, antecedentesPrevios: v }))}
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
@@ -498,35 +518,41 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             </Collapsible>
 
             <Collapsible title="Objective" open={openSections.objective} onToggle={() => toggle('objective')}>
-              <TextArea
+              <OngoingModalTextArea
                 label="Findings (observation, ROM, strength, neuro)"
                 value={form.objectiveFindings ?? ''}
                 onChange={(v) => setForm((p) => ({ ...p, objectiveFindings: v }))}
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
             </Collapsible>
 
             <Collapsible title="Clinical impression" open={openSections.impression} onToggle={() => toggle('impression')}>
-              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation />
+              <OngoingModalTextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation submitting={submitting} dictationLang={dictationLang} />
             </Collapsible>
 
             <Collapsible title="Plan / next focus" open={openSections.plan} onToggle={() => toggle('plan')}>
-              <TextArea
+              <OngoingModalTextArea
                 label="Session notes"
                 value={form.sessionNotes ?? ''}
                 onChange={(v) => setForm((p) => ({ ...p, sessionNotes: v }))}
                 placeholder="Focus of session, advice given"
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
-              <TextArea
+              <OngoingModalTextArea
                 label="Planned next focus"
                 value={form.plannedNextFocus ?? ''}
                 onChange={(v) => setForm((p) => ({ ...p, plannedNextFocus: v }))}
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
                 withDictation
+                submitting={submitting}
+                dictationLang={dictationLang}
               />
               <p className="text-xs text-slate-500">Chief complaint + (impression or plan) needed to create baseline.</p>
             </Collapsible>
