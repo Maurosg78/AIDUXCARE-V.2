@@ -5,16 +5,17 @@
  * Previous history section includes Add documents for images and reports.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+const { useState, useEffect, useRef } = React;
 import { X, FileText, ChevronDown, ChevronUp, UploadCloud, Loader2, Paperclip } from 'lucide-react';
-import { DictationButton } from '@/components/ui/DictationButton';
+import { DictationButton } from '../../../components/ui/DictationButton';
 import { getAuth } from 'firebase/auth';
-import { useAuth } from '@/hooks/useAuth';
-import { createBaselineFromMinimalSOAP } from '@/services/clinicalBaselineService';
-import PatientService from '@/services/patientService';
-import { patientsRepo } from '@/repositories/patientsRepo';
-import { ClinicalAttachmentService, ClinicalAttachment } from '@/services/clinicalAttachmentService';
-import logger from '@/shared/utils/logger';
+import { useAuth } from '../../../hooks/useAuth';
+import { createBaselineFromMinimalSOAP } from '../../../services/clinicalBaselineService';
+import PatientService from '../../../services/patientService';
+import { patientsRepo } from '../../../repositories/patientsRepo';
+import { ClinicalAttachmentService, ClinicalAttachment } from '../../../services/clinicalAttachmentService';
+import logger from '../../../shared/utils/logger';
 import {
   ongoingFormToBaselineSOAP,
   hasMinimumForBaseline,
@@ -23,6 +24,15 @@ import {
 } from '../utils/ongoingFormToBaselineSOAP';
 
 const MIN_FIELD = 3;
+
+/** WO-ONGOING-DICTATION-MULTILANG-V1: dictation language options (Web Speech API). Output remains en-CA. */
+const DICTATION_LANGUAGES = [
+  { label: 'English', value: 'en-CA' as const },
+  { label: 'Español', value: 'es' as const },
+  { label: 'Français', value: 'fr-CA' as const },
+] as const;
+
+const TRANSCRIPTION_HINT = 'Transcription will appear when you stop dictation.';
 
 export interface OngoingPatientIntakeModalProps {
   isOpen: boolean;
@@ -98,6 +108,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
   const [chiefComplaint, setChiefComplaint] = useState('');
 
   const [form, setForm] = useState<OngoingFormData>({});
+  const [dictationLang, setDictationLang] = useState<'en-CA' | 'es' | 'fr-CA'>('en-CA');
 
   const toggle = (k: string) => setOpenSections((p) => ({ ...p, [k]: !p[k] }));
 
@@ -120,7 +131,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
   }, [isOpen, initialPatientId, initialPatientName]);
 
   const handleAddDocuments = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     e.target.value = '';
     if (!files.length || !user?.uid) return;
     setAttachmentError(null);
@@ -200,11 +211,9 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
           status: 'active',
           firstName: fn,
           lastName: ln,
-          fullName,
           chiefComplaint: cc,
           phone: ph,
           birthDate: bd,
-          dateOfBirth: bd,
           clinical: { diagnoses: [], comorbidities: [], allergies: [] },
         });
         setCurrentPatientId(patientId);
@@ -285,7 +294,13 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
           {...rest}
         />
         {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" />
+          <DictationButton
+            value={value}
+            onChange={onChange}
+            disabled={submitting}
+            lang={dictationLang}
+            title={`Dictate. ${TRANSCRIPTION_HINT}`}
+          />
         )}
       </div>
     </div>
@@ -322,7 +337,14 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
           disabled={submitting}
         />
         {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" className="self-start" />
+          <DictationButton
+            value={value}
+            onChange={onChange}
+            disabled={submitting}
+            lang={dictationLang}
+            title={`Dictate. ${TRANSCRIPTION_HINT}`}
+            className="self-start"
+          />
         )}
       </div>
     </div>
@@ -354,6 +376,27 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">{error}</div>
             )}
             <p className="text-sm text-slate-600">Fill what you have. Chief complaint + (impression or plan) needed to create baseline and start follow-up.</p>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-sm font-medium text-slate-700 mb-2">Dictation language</p>
+              <div className="flex flex-wrap gap-2">
+                {DICTATION_LANGUAGES.map(({ label, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setDictationLang(value)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      dictationLang === value
+                        ? 'bg-primary-blue text-white'
+                        : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">{TRANSCRIPTION_HINT}</p>
+            </div>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
