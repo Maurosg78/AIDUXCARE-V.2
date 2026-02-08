@@ -453,6 +453,18 @@ service cloud.firestore {
     }
 
     // ----------------------------
+    // Clinical Baselines
+    // ----------------------------
+    // WO-IA-CLOSE-01 / WO-MINIMAL-BASELINE: Baselines from SOAP / ongoing intake
+    // Created by clinician (createdBy); read by same user or when loading patient data
+    match /clinical_baselines/{baselineId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
     // Treatment Plans
     // ----------------------------
     // Enterprise-grade: Treatment plan records for patient care continuity

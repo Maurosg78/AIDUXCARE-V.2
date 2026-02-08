@@ -94,6 +94,8 @@ function OngoingModalInput({
   dictationLang: 'en-CA' | 'es' | 'fr-CA';
   [k: string]: unknown;
 }) {
+  const [interim, setInterim] = React.useState('');
+  const displayValue = value + (interim ? (value.trim() ? ' ' : '') + interim : '');
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -101,8 +103,11 @@ function OngoingModalInput({
       </label>
       <div className="flex gap-2">
         <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={displayValue}
+          onChange={(e) => {
+            setInterim('');
+            onChange(e.target.value);
+          }}
           placeholder={placeholder}
           className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
           disabled={submitting}
@@ -115,6 +120,7 @@ function OngoingModalInput({
             disabled={submitting}
             lang={dictationLang}
             title={`Dictate. ${TRANSCRIPTION_HINT}`}
+            onInterim={setInterim}
           />
         )}
       </div>
@@ -144,6 +150,8 @@ function OngoingModalTextArea({
   submitting: boolean;
   dictationLang: 'en-CA' | 'es' | 'fr-CA';
 }) {
+  const [interim, setInterim] = React.useState('');
+  const displayValue = value + (interim ? (value.trim() ? ' ' : '') + interim : '');
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -151,8 +159,11 @@ function OngoingModalTextArea({
       </label>
       <div className="flex gap-2">
         <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={displayValue}
+          onChange={(e) => {
+            setInterim('');
+            onChange(e.target.value);
+          }}
           placeholder={placeholder}
           rows={rows}
           className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
@@ -166,6 +177,7 @@ function OngoingModalTextArea({
             lang={dictationLang}
             title={`Dictate. ${TRANSCRIPTION_HINT}`}
             className="self-start"
+            onInterim={setInterim}
           />
         )}
       </div>
