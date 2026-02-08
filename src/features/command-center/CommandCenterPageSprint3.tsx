@@ -6,20 +6,21 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
 import { usePendingNotesCount } from './hooks/usePendingNotesCount';
 import { usePatientsList } from './hooks/usePatientsList';
-import { Patient } from '@/services/patientService';
-import PatientService from '@/services/patientService';
+import { Patient } from '../../services/patientService';
+import PatientService from '../../services/patientService';
 
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
 import { TodayPatientsPanel, type TodayAppointment, type TodayQuickItem } from './components/TodayPatientsPanel';
 import type { StartSessionModalMode } from './components/StartSessionTwoStepModal';
 import { WorkWithPatientsPanel } from './components/WorkWithPatientsPanel';
+import { PatientSearchBar } from './components/PatientSearchBar';
 import { WorkQueuePanel, type WorkQueueSummary } from './components/WorkQueuePanel';
 import { PatientSelectorModal } from './components/PatientSelectorModal';
 import { StartSessionTwoStepModal } from './components/StartSessionTwoStepModal';
@@ -27,7 +28,7 @@ import { CreatePatientModal } from './components/CreatePatientModal';
 import { OngoingPatientIntakeModal } from './components/OngoingPatientIntakeModal';
 import { FloatingAssistant } from '../../components/FloatingAssistant';
 
-import logger from '@/shared/utils/logger';
+import logger from '../../shared/utils/logger';
 import {
   LAST_STARTED_KEY,
   getAndClearSessionCompleted,
@@ -45,6 +46,7 @@ const TODAY_LIST_STORAGE_KEY = (userId: string, date: Date) =>
 
 export const CommandCenterPageSprint3: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const isAuthenticated = !!user;
 
@@ -72,6 +74,21 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const { appointments, loading: appointmentsLoading, getAppointments } = useAppointmentSchedule();
   const pendingNotes = usePendingNotesCount();
   const { patients, refresh: refreshPatients } = usePatientsList();
+
+  // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from Patient History with "New ongoing/assessment" → open Ongoing modal
+  useEffect(() => {
+    const state = location.state as { openOngoingForPatientId?: string } | null;
+    const id = state?.openOngoingForPatientId;
+    if (!id || !user?.uid) return;
+    (async () => {
+      const patient = await PatientService.getPatientById(id);
+      if (patient) {
+        setSelectedPatient(patient);
+        setShowOngoingIntake(true);
+        navigate('/command-center', { replace: true, state: {} });
+      }
+    })();
+  }, [location.state, user?.uid, navigate]);
 
   // Load today's appointments
   useEffect(() => {
@@ -331,6 +348,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex flex-col gap-8">
+          {/* WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: Patient search bar — search → select → Patient History */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+            <h2 className="text-sm font-medium text-slate-700 mb-3 font-apple">Search patient</h2>
+            <PatientSearchBar />
+          </div>
+
           {/* Block 1: Today's Patients (WO-UX-01: empty state CTA scrolls to Work with patients) */}
           <TodayPatientsPanel
             appointments={todayAppointments}
