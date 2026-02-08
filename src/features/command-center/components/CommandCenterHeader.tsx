@@ -1,8 +1,7 @@
 /**
  * Command Center Header Component
  * 
- * Simple header matching Clinical Workflow style:
- * - AIDUXCARE (small uppercase) + 🍁
+ * Page-specific header (branding oficial en LayoutWrapper):
  * - Command Center — Canada
  * - Command Center button (if on workflow page) or Email verified status
  * - Token counter (optional, can be shown elsewhere)
@@ -53,11 +52,8 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        {/* Left: Brand + Page Title + Greeting */}
+        {/* Left: Page Title + Greeting (branding oficial en LayoutWrapper) */}
         <div>
-          <p className="text-[10px] uppercase tracking-[0.02em] text-slate-400 font-apple font-light">
-            AIDUXCARE <span className="ml-1">🍁</span>
-          </p>
           <div className="flex items-center gap-2">
             <p className="text-[15px] font-medium text-slate-800 font-apple">
               Command Center — Canada

@@ -7,7 +7,6 @@ import { CommandCenterPageSprint3 } from '../features/command-center/CommandCent
 import { WelcomePage } from '../pages/WelcomePage';
 import LoginPage from '../pages/LoginPage';
 import { PatientListPage } from '../pages/PatientsPage';
-import { PatientDetailPage } from '../pages/PatientDetailPage';
 import { PatientDashboardPage } from '../features/patient-dashboard/PatientDashboardPage';
 import { AppointmentListPage } from '../pages/AppointmentsPage';
 import { AppointmentDetailPage } from '../pages/AppointmentsPage';
@@ -36,17 +35,18 @@ import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
 import { FeedbackReviewPage } from '../pages/FeedbackReviewPage';
 import ErrorBoundary from '../components/ErrorBoundary';
 
-// LayoutWrapper simple
+// LayoutWrapper — Branding oficial: hoja de maple + AiDuxCare (gradient púrpura-azul), fijo en todas las pantallas
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
+      <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-semibold text-slate-900">AiDuxCare</h1>
-              </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                AiDuxCare
+              </h1>
+              <span className="text-xl" aria-hidden>🍁</span>
             </div>
           </div>
         </div>
@@ -85,8 +85,8 @@ export const createRouter = () => createBrowserRouter([
   },
   { path: '/feedback-review', element: <AuthGuard><LayoutWrapper><FeedbackReviewPage /></LayoutWrapper></AuthGuard> },
   { path: '/patients', element: <AuthGuard><LayoutWrapper><PatientListPage /></LayoutWrapper></AuthGuard> },
-  { path: '/patients/:id/history', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> }, // ✅ Must be before /patients/:id to match correctly
-  { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDetailPage /></LayoutWrapper></AuthGuard> },
+  { path: '/patients/:id/history', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> }, // alias: same content as /patients/:id
+  { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments', element: <AuthGuard><LayoutWrapper><AppointmentListPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments/:id', element: <AuthGuard><LayoutWrapper><AppointmentDetailPage /></LayoutWrapper></AuthGuard> },
   { path: '/notes', element: <AuthGuard><LayoutWrapper><NotesListPage /></LayoutWrapper></AuthGuard> },
