@@ -540,9 +540,10 @@ function parsePlanToStructured(planText: string): { inClinic: string[]; homeProg
 }
 
 /**
- * Parses Vertex AI response into SOAPNote structure
+ * Parses Vertex AI response into SOAPNote structure.
+ * Exported for WO-SOAP-PARSER-BASELINE-VALIDATION-TESTS-V1.
  */
-function parseSOAPResponse(
+export function parseSOAPResponse(
   vertexResponse: any,
   visitType: 'initial' | 'follow-up'
 ): SOAPNote {
@@ -571,6 +572,27 @@ function parseSOAPResponse(
       }
     } catch (e) {
       console.warn('[ClinicalNotes Service] Failed to parse JSON from candidate text');
+    }
+  }
+
+  // WO-VERTEX-RAW-FIX: When Vertex returns plain text (no JSON), parse Subjective/Objective/Assessment/Plan by headings
+  // so we get a usable baseline/plan instead of empty "Not documented." and todayFocus can be derived.
+  if (!soapData) {
+    const rawText =
+      (typeof vertexResponse.text === 'string' && vertexResponse.text) ||
+      vertexResponse.candidates?.[0]?.content?.parts?.[0]?.text ||
+      '';
+    if (rawText && typeof rawText === 'string' && rawText.trim().length > 0) {
+      const plainSoap = parsePlainSOAPSections(rawText);
+      if (plainSoap) {
+        soapData = {
+          subjective: plainSoap.subjective,
+          objective: plainSoap.objective,
+          assessment: plainSoap.assessment,
+          plan: plainSoap.plan,
+        };
+        console.log('[SOAP Builder] Used plain-text SOAP sections (Vertex returned no JSON)');
+      }
     }
   }
 
@@ -777,10 +799,13 @@ function isMeaningfulSection(text: string): boolean {
 /**
  * WO-FU-VERTEX-SPLIT-01: Parse plain SOAP sections when Vertex returns text (no JSON).
  * Tries: Subjective:/Objective:/Assessment:/Plan:, then S:/O:/A:/P:, then Spanish Subjetivo:/Objetivo:/Evaluación:/Plan:
+ * Exported for WO-SOAP-PARSER-BASELINE-VALIDATION-TESTS-V1.
  */
-function parsePlainSOAPSections(rawText: string): SOAPNote | null {
-  const trimmed = rawText.trim();
+export function parsePlainSOAPSections(rawText: string): SOAPNote | null {
+  let trimmed = rawText.trim();
   if (!trimmed) return null;
+  // Normalize markdown-style headers (e.g. **Subjective:**) so section regex can match
+  trimmed = trimmed.replace(/\*\*(\w+):\*\*/gi, '$1:');
 
   const headingSets: ReadonlyArray<[string, string, string, string]> = [
     ['Subjective', 'Objective', 'Assessment', 'Plan'],
