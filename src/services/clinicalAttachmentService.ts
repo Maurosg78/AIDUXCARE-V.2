@@ -24,11 +24,11 @@ export interface ClinicalAttachment {
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB per attachment
-const ALLOWED_MIME_PREFIXES = ['image/', 'application/pdf', 'text/'];
+const ALLOWED_MIME_PREFIXES = ['image/', 'audio/', 'application/pdf', 'text/'];
 const ATTACHMENT_ROOT = 'clinical-attachments';
 
 const isMimeAllowed = (mime: string | null) => {
-  if (!mime) return true; // allow unknown types but we still enforce size
+  if (!mime || mime === "") return true; // allow unknown (mobile audio, camera)
   return ALLOWED_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));
 };
 
@@ -43,7 +43,7 @@ export class ClinicalAttachmentService {
     }
 
     if (!isMimeAllowed(file.type)) {
-      throw new Error('Unsupported file type. Allowed: images, PDF, plain/text documents.');
+      throw new Error('Unsupported file type. Allowed: images, audio, PDF, and text documents.');
     }
 
     const timestamp = Date.now();
@@ -64,6 +64,12 @@ export class ClinicalAttachmentService {
     const downloadURL = await getDownloadURL(snapshot.ref);
 
     // Process file to extract text (PDFs, images, text files)
+    console.log("[ClinicalAttachment] Uploading file:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
     let processedFile: ProcessedFile;
     try {
       processedFile = await FileProcessorService.processFile(file, downloadURL);
