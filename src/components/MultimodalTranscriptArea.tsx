@@ -140,7 +140,7 @@ Después presione 'Analizar con IA' →"
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,audio/*,.pdf,.txt"
+        accept="image/*,audio/*,application/pdf,text/plain,.txt,.rtf,.doc,.docx,.pdf,.mp3,.m4a,.wav,.aac"
         onChange={handleFileSelect}
         className="hidden"
       />

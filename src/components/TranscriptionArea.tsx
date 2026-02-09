@@ -133,7 +133,7 @@ export const TranscriptionArea: React.FC<TranscriptionAreaProps> = ({
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,.pdf,.doc,.docx"
+            accept="image/*,audio/*,.pdf,.doc,.docx"
             onChange={handleFileUpload}
             className="hidden"
           />
