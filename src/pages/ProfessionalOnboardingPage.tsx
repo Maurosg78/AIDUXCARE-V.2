@@ -16,7 +16,8 @@ import { app } from '../core/firebase/firebaseClient';
 import { geolocationService } from '../services/geolocationService';
 import { professionalServicesService, ServiceAvailability } from '../services/ProfessionalServicesService';
 import { ProfessionalProfileService } from '../services/ProfessionalProfileService';
-import AiduxcareLogo from '../assets/logo/aiduxcare-logo.svg';
+const LOGO_SRC = '/aiduxcare-logo.svg';
+const FALLBACK_LOGO = '/logo.svg';
 
 interface OnboardingStep {
   id: string;
@@ -215,7 +216,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fdfc] px-4">
       <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-10 mt-12 border border-gray-100">
         <div className="flex flex-col items-center mb-8">
-          <img src={AiduxcareLogo} alt="AiDuxCare Logo" className="h-14 w-14 mb-4" />
+          <img
+            src={LOGO_SRC}
+            alt="AiDuxCare Logo"
+            className="h-14 w-14 mb-4"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement;
+              const next = el.src === FALLBACK_LOGO ? '' : FALLBACK_LOGO;
+              if (next) el.src = next;
+              else el.style.display = 'none';
+            }}
+          />
           <h1 className="text-3xl font-bold text-[#5DA5A3] mb-2 text-center">
             Registro Profesional AiDuxCare
           </h1>

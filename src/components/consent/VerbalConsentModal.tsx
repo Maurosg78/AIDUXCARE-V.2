@@ -1,0 +1,483 @@
+/**
+ * Verbal Consent Modal - PHIPA Compliant
+ * 
+ * Modal for obtaining verbal consent from patients for voice recording
+ * and AI processing of clinical notes.
+ * 
+ * Security audit logging:
+ * - A.8.2.3: Handling of assets (consent lifecycle)
+ * - A.12.4.1: Event logging (all consent operations)
+ * 
+ * PHIPA Compliance:
+ * - Verbal consent explicitly legal under PHIPA
+ * - Physiotherapist acts as authorized facilitator
+ * - Patient retains full control
+ */
+
+import React, { useState } from 'react';
+import { X, CheckCircle, AlertCircle, User, Clock, Shield } from 'lucide-react';
+import VerbalConsentService, { getVerbalConsentText, getDefaultConsentTextVersion, VerbalConsentDetails } from '../../services/verbalConsentService';
+// ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
+import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
+import type { ConsentTextVersion } from '../../core/consent/consentLanguagePolicy';
+
+export interface VerbalConsentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  patientId: string;
+  patientName?: string;
+  physiotherapistId: string;
+  physiotherapistName?: string;
+  hospitalId?: string;
+  onConsentObtained: (consentId: string) => void;
+  onConsentDenied?: () => void;
+}
+
+export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
+  isOpen,
+  onClose,
+  patientId,
+  patientName,
+  physiotherapistId,
+  physiotherapistName,
+  hospitalId,
+  onConsentObtained,
+  onConsentDenied,
+}) => {
+  const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
+  const [readStarted, setReadStarted] = useState(false);
+  const [patientResponse, setPatientResponse] = useState<'authorized' | 'denied' | 'unable_to_respond' | null>(null);
+  const [patientUnderstood, setPatientUnderstood] = useState(false);
+  const [voluntarilyGiven, setVoluntarilyGiven] = useState(false);
+  // ✅ WO-CONSENT-VERBAL-01: Required checkbox with exact text
+  const [physiotherapistConfirmed, setPhysiotherapistConfirmed] = useState(false);
+  const [witnessName, setWitnessName] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ✅ WO-CONSENT-VERBAL-01-LANG: Get consent text for current jurisdiction
+  const consentTextVersion = getDefaultConsentTextVersion();
+  const consentText = getVerbalConsentText(consentTextVersion);
+
+  if (!isOpen) return null;
+
+  const handleStartReading = () => {
+    setReadStarted(true);
+    setStep('response');
+  };
+
+  const handleResponseSelect = (response: 'authorized' | 'denied' | 'unable_to_respond') => {
+    setPatientResponse(response);
+    
+    if (response === 'authorized') {
+      setStep('confirm');
+    } else {
+      // Patient denied or unable to respond
+      handleSubmit(response);
+    }
+  };
+
+  const handleSubmit = async (response?: 'authorized' | 'denied' | 'unable_to_respond') => {
+    const finalResponse = response || patientResponse;
+    
+    if (!finalResponse) {
+      setError('Please select the patient\'s response');
+      return;
+    }
+
+    if (finalResponse === 'authorized') {
+      // ✅ WO-CONSENT-VERBAL-01: Require all confirmations including physiotherapist checkbox
+      if (!patientUnderstood || !voluntarilyGiven || !physiotherapistConfirmed) {
+        setError('You must confirm that the patient understood and gave consent voluntarily, and that you have read the consent text to the patient.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      if (finalResponse === 'authorized') {
+        // ✅ WO-CONSENT-VERBAL-01-LANG: Get text version for current jurisdiction
+        const textVersion = getDefaultConsentTextVersion();
+        const consentText = getVerbalConsentText(textVersion);
+        const jurisdiction = getCurrentJurisdiction();
+        
+        const consentDetails: Omit<VerbalConsentDetails, 'method'> = {
+          obtainedBy: physiotherapistName || physiotherapistId,
+          patientResponse: 'authorized',
+          fullTextRead: consentText,
+          patientUnderstood,
+          voluntarilyGiven,
+          witnessName: witnessName.trim() || undefined,
+          notes: notes.trim() || undefined,
+        };
+
+        const result = await VerbalConsentService.obtainConsent(
+          patientId,
+          physiotherapistId,
+          consentDetails,
+          { 
+            hospitalId,
+            textVersion, // ✅ WO-CONSENT-VERBAL-01-LANG
+            jurisdiction, // ✅ WO-CONSENT-VERBAL-01-LANG
+          }
+        );
+
+        if (result.success) {
+          if (typeof console !== 'undefined') console.log('[VerbalConsent] ✅ Consent granted and recorded');
+          onConsentObtained(result.consentId ?? '');
+          handleClose();
+        } else {
+          setError('Error registering consent. Please try again.');
+        }
+      } else {
+        // Consent denied or unable to respond
+        if (onConsentDenied) {
+          onConsentDenied();
+        }
+        handleClose();
+      }
+    } catch (err) {
+      console.error('[VerbalConsentModal] Error:', err);
+      setError(err instanceof Error ? err.message : 'Error processing consent');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    // Reset state
+    setStep('read');
+    setReadStarted(false);
+    setPatientResponse(null);
+    setPatientUnderstood(false);
+    setVoluntarilyGiven(false);
+    setPhysiotherapistConfirmed(false); // ✅ WO-CONSENT-VERBAL-01
+    setWitnessName('');
+    setNotes('');
+    setError(null);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield className="w-6 h-6" />
+            <div>
+              <h2 className="text-xl font-bold">Verbal Consent Required</h2>
+              <p className="text-blue-100 text-sm">
+                {patientName ? `Patient: ${patientName}` : `ID: ${patientId}`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-white hover:bg-blue-800 rounded-full p-2 transition"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {step === 'read' && (
+            <div className="space-y-6">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-yellow-800 mb-2">
+                      Important Instructions
+                    </h3>
+                    <p className="text-yellow-700 text-sm">
+                      You must read the complete consent text to the patient before continuing.
+                      This process is required by PHIPA and is legally valid.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <User className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900">
+                    Consent Text to Read
+                  </h3>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-line">
+                    {consentText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleClose}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStartReading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  I Have Read the Text to the Patient
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'response' && (
+            <div className="space-y-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-medium">Text read to patient</span>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4">
+                  What was the patient's response?
+                </h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleResponseSelect('authorized')}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
+                      patientResponse === 'authorized'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className={`w-5 h-5 ${
+                        patientResponse === 'authorized' ? 'text-green-600' : 'text-gray-400'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          ✅ YES - Patient authorized verbally
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          The patient understood and authorized recording and processing
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleResponseSelect('denied')}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
+                      patientResponse === 'denied'
+                        ? 'border-red-500 bg-red-50'
+                        : 'border-gray-200 hover:border-red-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <X className={`w-5 h-5 ${
+                        patientResponse === 'denied' ? 'text-red-600' : 'text-gray-400'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          ❌ NO - Patient did not authorize
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          The patient did not authorize recording
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleResponseSelect('unable_to_respond')}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
+                      patientResponse === 'unable_to_respond'
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-200 hover:border-yellow-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className={`w-5 h-5 ${
+                        patientResponse === 'unable_to_respond' ? 'text-yellow-600' : 'text-gray-400'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          ⚠️ Patient unable to decide (SDM required)
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          Legal representative or substitute decision maker required
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setStep('read')}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'confirm' && patientResponse === 'authorized' && (
+            <div className="space-y-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-medium">Patient authorized verbally</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* ✅ WO-CONSENT-VERBAL-01: Required checkbox with exact text */}
+                <div>
+                  <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={physiotherapistConfirmed}
+                      onChange={(e) => setPhysiotherapistConfirmed(e.target.checked)}
+                      className="mt-1 w-5 h-5 text-blue-600"
+                      required
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        I confirm that I have read this consent to the patient and verbal consent was obtained.
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        This confirmation is required before proceeding
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={patientUnderstood}
+                      onChange={(e) => setPatientUnderstood(e.target.checked)}
+                      className="mt-1 w-5 h-5 text-blue-600"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        I confirm that the patient understood the complete text
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        The patient demonstrated understanding of the consent
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={voluntarilyGiven}
+                      onChange={(e) => setVoluntarilyGiven(e.target.checked)}
+                      className="mt-1 w-5 h-5 text-blue-600"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        I confirm that consent was given voluntarily
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Without pressure or coercion
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Witnesses present (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={witnessName}
+                    onChange={(e) => setWitnessName(e.target.value)}
+                    placeholder="E.g.: Nurse Mary, Family member John"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional notes (optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Notes about consent obtaining..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setStep('response')}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  disabled={isSubmitting}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={!physiotherapistConfirmed || !patientUnderstood || !voluntarilyGiven || isSubmitting}
+                  className={`px-6 py-2 rounded-lg transition font-medium ${
+                    physiotherapistConfirmed && patientUnderstood && voluntarilyGiven && !isSubmitting
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isSubmitting ? 'Registering...' : 'Confirm & Continue'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-50 border-t p-4 rounded-b-lg">
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <Shield className="w-4 h-4" />
+            <span>
+              Verbal consent is valid under PHIPA. Once granted, it is valid for the entire treatment.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VerbalConsentModal;
+
+

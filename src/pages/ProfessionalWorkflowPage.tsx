@@ -9,6 +9,7 @@ import { useNiagaraProcessor } from '../hooks/useNiagaraProcessor';
 import { useTranscript } from '../hooks/useTranscript';
 import { useTimer } from '../hooks/useTimer';
 import sessionService from '../services/sessionService';
+import { ConsentGateWrapper } from '../components/consent/ConsentGateWrapper';
 
 const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<'analysis' | 'evaluation' | 'soap'>('analysis');
@@ -111,9 +112,16 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [soapNote]);
 
+  const patientName = `${selectedPatient.nombre ?? ''} ${selectedPatient.apellidos ?? ''}`.trim();
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm p-4">
+    <ConsentGateWrapper
+      patientId={selectedPatient.id}
+      patientName={patientName || undefined}
+      patientPhone={selectedPatient.telefono || undefined}
+    >
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">AiDuxCare - Flujo Profesional</h1>
           <span className="text-sm text-gray-600">mauricio@aiduxcare.com</span>
@@ -225,7 +233,8 @@ const ProfessionalWorkflowPage = () => {
           />
         )}
       </main>
-    </div>
+      </div>
+    </ConsentGateWrapper>
   );
 };
 

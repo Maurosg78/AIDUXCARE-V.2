@@ -1,4 +1,5 @@
 // TEST/EMU: permisivo (solo para emulador)
+// Consent path (PROD rule ready below): patients/{patientId}/consent_status/latest
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -32,6 +33,11 @@ service cloud.firestore {
 
       // Retención legal: no borrar notas clínicas
       allow delete: if false;
+    }
+
+    // WO-CONSENT-VERBAL-FIX: consentimiento verbal (single source of truth para gate)
+    match /patients/{patientId}/consent_status/{docId} {
+      allow read, write: if isAuthenticated();
     }
   }
 }
