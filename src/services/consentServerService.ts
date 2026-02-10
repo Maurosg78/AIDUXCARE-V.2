@@ -1,154 +1,67 @@
 /**
- * Consent Server Service
- * 
- * Single source of truth for consent verification.
- * ALL consent checks MUST go through Cloud Functions (server-side).
- * 
- * This service replaces all client-side Firestore queries for consent.
- * 
- * Market: CA · en-CA · PHIPA/PIPEDA Ready
- * Compliance: Legal Delivery Framework v1.0
- * 
- * @version 1.0.0
- * @author AiDuxCare Development Team
+ * Consent server / domain reader: single source of truth for workflow consent status.
+ * Reads from the same Firestore path where verbalConsentService writes.
+ * WO-CONSENT-VERBAL-FIX: Recognizes consent_status.channel === 'none' or granted === true.
+ * Enterprise: structured logging, no PHI, error handling.
  */
 
-import { auth } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { consentLogger } from '@/domain/consent/consentLogger';
 
-const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
-const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
-
-interface ConsentStatusResponse {
-  success: boolean;
+export interface ConsentCheckResult {
   hasValidConsent: boolean;
-  // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Detect declined consent
+  status: string | null;
+  consentMethod: string | null;
   isDeclined?: boolean;
-  status: 'ongoing' | 'session-only' | 'declined' | null;
-  consentMethod: 'digital' | 'verbal' | null;
-  grantedAt?: string | null;
-  declinedAt?: string | null;
   declineReasons?: string[];
-  error?: string;
-  message?: string;
 }
 
 /**
- * Check consent status via Cloud Function (server-side)
- * 
- * This is the ONLY allowed method to verify consent in the frontend.
- * All other methods (direct Firestore queries, listeners) are PROHIBITED.
- * 
- * @param patientId - Patient ID to check consent for
- * @returns Promise with consent status
+ * Check consent via the same document the verbal consent service writes.
+ * Returns hasValidConsent: true when channel === 'none' or granted === true.
  */
-export async function checkConsentViaServer(patientId: string): Promise<ConsentStatusResponse> {
-  try {
-    // ✅ Get current user for authentication
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.warn('[ConsentServer] User not authenticated, cannot check consent');
-      return {
-        success: false,
-        hasValidConsent: false,
-        status: null,
-        consentMethod: null,
-        error: 'UNAUTHORIZED',
-        message: 'User not authenticated'
-      };
-    }
-
-    // ✅ Get ID token for Cloud Function authentication
-    const idToken = await currentUser.getIdToken();
-
-    // ✅ Call Cloud Function
-    const functionUrl = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/getConsentStatus`;
-    
-    const response = await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify({ patientId })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[ConsentServer] Cloud Function error:', {
-        status: response.status,
-        error: errorData
-      });
-      
-      return {
-        success: false,
-        hasValidConsent: false,
-        status: null,
-        consentMethod: null,
-        error: errorData.error || 'CLOUD_FUNCTION_ERROR',
-        message: errorData.message || 'Failed to check consent status'
-      };
-    }
-
-    const data: ConsentStatusResponse = await response.json();
-    
-    if (!data.success) {
-      console.warn('[ConsentServer] Cloud Function returned error:', data);
-      return {
-        success: false,
-        hasValidConsent: false,
-        status: null,
-        consentMethod: null,
-        error: data.error || 'UNKNOWN_ERROR'
-      };
-    }
-
-    console.info('[ConsentServer] Consent status retrieved:', {
-      patientId,
-      hasValidConsent: data.hasValidConsent,
-      status: data.status,
-      consentMethod: data.consentMethod
-    });
-
-    return data;
-
-  } catch (error: any) {
-    const errorMessage = error?.message || '';
-    const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch');
-    const isLocalhost = typeof window !== 'undefined' && window.location.origin.includes('localhost');
-    
-    if (isCorsError && isLocalhost) {
-      console.warn('[ConsentServer] CORS error in localhost - this is expected if Cloud Function is not deployed with localhost support');
-      // En desarrollo local, no bloquear completamente si hay error de CORS
-      // El Optimistic UI Update ya manejó el consentimiento
-      return {
-        success: false,
-        hasValidConsent: false, // Mantener false para que el polling continúe (si no hay consentimiento optimista)
-        status: null,
-        consentMethod: null,
-        error: 'CORS_ERROR_LOCALHOST',
-        message: 'CORS error in localhost (expected in development - deploy Cloud Function with localhost support)'
-      };
-    }
-    
-    console.error('[ConsentServer] Error checking consent:', error);
-    return {
-      success: false,
-      hasValidConsent: false,
-      status: null,
-      consentMethod: null,
-      error: 'NETWORK_ERROR',
-      message: error?.message || 'Failed to check consent status'
-    };
+export async function checkConsentViaServer(patientId: string): Promise<ConsentCheckResult> {
+  if (!patientId) {
+    return { hasValidConsent: false, status: null, consentMethod: null };
   }
-}
 
-/**
- * Check if patient has valid consent (convenience wrapper)
- * 
- * @param patientId - Patient ID to check
- * @returns Promise<boolean> - true if patient has valid consent
- */
-export async function hasValidConsent(patientId: string): Promise<boolean> {
-  const result = await checkConsentViaServer(patientId);
-  return result.success && result.hasValidConsent === true;
+  try {
+    const ref = doc(db, 'patients', patientId, 'consent_status', 'latest');
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      consentLogger.info('consent_status_missing', {});
+      return { hasValidConsent: false, status: null, consentMethod: null };
+    }
+
+    const data = snap.data();
+    const channel = data?.channel ?? data?.consentChannel;
+    const granted = data?.granted === true || data?.granted === 'true';
+    const source = data?.source ?? data?.consentMethod ?? data?.method;
+    const status = data?.status ?? (granted || channel === 'none' ? 'ongoing' : null);
+    const isDeclined = data?.isDeclined === true || data?.status === 'declined';
+
+    const hasValidConsent = channel === 'none' || granted === true;
+
+    const result: ConsentCheckResult = {
+      hasValidConsent,
+      status: status ?? null,
+      consentMethod: source ?? (hasValidConsent ? 'verbal' : null),
+      isDeclined: isDeclined || false,
+      declineReasons: data?.declineReasons,
+    };
+
+    consentLogger.info('consent_status_retrieved', {
+      hasValidConsent: result.hasValidConsent,
+      status: result.status,
+      consentMethod: result.consentMethod,
+      channel,
+    });
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    consentLogger.error('consent_status_read_failed', { message });
+    return { hasValidConsent: false, status: null, consentMethod: null };
+  }
 }
