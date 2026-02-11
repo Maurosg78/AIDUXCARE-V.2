@@ -459,14 +459,12 @@ function parseSOAPResponse(
     return String(plan);
   };
 
-  // ✅ WO-PDF-004: Add logging for debugging
-  console.log('[SOAP Builder] Parsing SOAP response...');
-  console.log('[SOAP Builder] Treatment plan type:', typeof soapData?.plan);
-  if (typeof soapData?.plan === 'object') {
-    console.log('[SOAP Builder] Treatment plan is object, will serialize');
-  }
-  console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
-  console.log('[SOAP Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
+  // ✅ WO-PDF-004: Debug logging removed to comply with check-no-soap-logs policy
+  // console.log('[Note Builder] Parsing response...');
+  // console.log('[Note Builder] Treatment plan type:', typeof soapData?.plan);
+  // console.log('[Note Builder] Treatment plan is object, will serialize');
+  // console.log('[Note Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
+  // console.log('[Note Builder] Plan length:', formatTreatmentPlan(soapData?.plan).length, 'chars');
 
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {

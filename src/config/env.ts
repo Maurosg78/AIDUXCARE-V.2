@@ -9,7 +9,8 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Variables de APIs de IA
-export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+// Trim whitespace from API key to avoid 401 errors
+export const OPENAI_API_KEY = (import.meta.env.VITE_OPENAI_API_KEY || '').trim();
 export const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
 export const WHISPER_MODEL = import.meta.env.VITE_WHISPER_MODEL || 'whisper-1';
 export const OPENAI_TRANSCRIPT_URL = import.meta.env.VITE_OPENAI_TRANSCRIPT_URL || 'https://api.openai.com/v1/audio/transcriptions';

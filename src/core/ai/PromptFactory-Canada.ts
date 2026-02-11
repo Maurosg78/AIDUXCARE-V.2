@@ -96,6 +96,8 @@ const DEFAULT_INSTRUCTIONS_INITIAL = `Analyse the transcript as a clinical reaso
 
 CRITICAL: DO NOT generate a treatment plan at this stage. Treatment planning requires objective findings from physical examination (Subjective + Objective data). The treatment plan will be generated after physical examination is complete (second Vertex AI call during SOAP note generation). Focus this analysis on: clinical patterns, red flags, recommended physical tests, biopsychosocial factors, and preliminary diagnostic considerations.
 
+CRITICAL: DO NOT generate a treatment plan at this stage. Treatment planning requires objective findings from physical examination (Subjective + Objective data). The treatment plan will be generated after physical examination is complete (second Vertex AI call during SOAP note generation). Focus this analysis on: clinical patterns, red flags, recommended physical tests, biopsychosocial factors, and preliminary diagnostic considerations.
+
 CRITICAL DISTRIBUTION RULES:
 - chief_complaint: Current presenting symptoms with full detail
 - key_findings: Clinical observations NOT already in chief_complaint
