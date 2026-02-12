@@ -99,7 +99,7 @@ export class SMSService {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              to: validatedPhone,
+              phone: validatedPhone,
               message,
             }),
           }
