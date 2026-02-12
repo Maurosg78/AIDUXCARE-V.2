@@ -115,9 +115,14 @@ export default function PatientConsentPortalPage() {
         used: data.used || false,
       });
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[ConsentPortal] Error loading token:', err);
-      setError('Failed to load consent information');
+      const msg = err?.code === 'permission-denied' || err?.message?.includes('permission')
+        ? 'Access denied. The consent link may not work from this domain. Contact your clinic.'
+        : err?.code === 'unavailable' || err?.message?.includes('unavailable')
+          ? 'Unable to connect. Please check your connection and try again.'
+          : 'Failed to load consent information. The link may have expired.';
+      setError(msg);
       setLoading(false);
     }
   };

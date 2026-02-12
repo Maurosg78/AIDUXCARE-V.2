@@ -16,6 +16,7 @@ import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
 import { ConsentVerificationPage } from '../pages/ConsentVerificationPage';
 import { PatientConsentPortalPage } from '../pages/PatientConsentPortalPage';
+import DisclosurePage from '../pages/DisclosurePage';
 import ConsentSuccessPage from '../pages/ConsentSuccessPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import { ProfessionalOnboardingPage } from '../pages/ProfessionalOnboardingPage';
@@ -99,6 +100,7 @@ export const createRouter = () => createBrowserRouter([
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // ✅ Public consent link (no auth required) - ÚNICA ruta de verificación real
   { path: '/consent/success', element: <ConsentSuccessPage /> }, // ✅ Terminal success page (prevents back navigation)
+  { path: '/disclosure/:patientId', element: <DisclosurePage /> }, // ✅ Public disclosure document (SMS link after verbal consent)
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> }, // Alias for /privacy (SMS links use this)
   { path: '/hospital', element: <HospitalPortalLandingPage /> }, // Landing page with two cards
   { path: '/hospital/inpatient', element: <InpatientPortalPage /> }, // Inpatient portal with trace number
