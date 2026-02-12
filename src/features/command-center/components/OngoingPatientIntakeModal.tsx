@@ -24,6 +24,88 @@ import {
 
 const MIN_FIELD = 3;
 
+function Input({
+  label,
+  value,
+  onChange,
+  placeholder,
+  optional = true,
+  withDictation = false,
+  submitting,
+  ...rest
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  optional?: boolean;
+  withDictation?: boolean;
+  submitting?: boolean;
+  [k: string]: unknown;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
+          disabled={submitting}
+          {...rest}
+        />
+        {withDictation && (
+          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 2,
+  optional = true,
+  withDictation = false,
+  submitting,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+  optional?: boolean;
+  withDictation?: boolean;
+  submitting?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
+      </label>
+      <div className="flex gap-2">
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
+          disabled={submitting}
+        />
+        {withDictation && (
+          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" className="self-start" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export interface OngoingPatientIntakeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -254,80 +336,6 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     }
   };
 
-  const Input = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    optional = true,
-    withDictation = false,
-    ...rest
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    optional?: boolean;
-    withDictation?: boolean;
-    [k: string]: unknown;
-  }) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
-      </label>
-      <div className="flex gap-2">
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple"
-          disabled={submitting}
-          {...rest}
-        />
-        {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" />
-        )}
-      </div>
-    </div>
-  );
-
-  const TextArea = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    rows = 2,
-    optional = true,
-    withDictation = false,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    rows?: number;
-    optional?: boolean;
-    withDictation?: boolean;
-  }) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {optional && <span className="text-slate-400 font-normal">(optional)</span>}
-      </label>
-      <div className="flex gap-2">
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue font-apple resize-none"
-          disabled={submitting}
-        />
-        {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title="Dictate" className="self-start" />
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
@@ -357,10 +365,10 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
-                <Input label="First Name" value={firstName} onChange={setFirstName} optional={false} required />
-                <Input label="Last Name" value={lastName} onChange={setLastName} optional={false} required />
-                <Input label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" optional={false} required />
-                <Input label="Date of Birth" value={birthDate} onChange={setBirthDate} type="date" optional={false} required />
+                <Input label="First Name" value={firstName} onChange={setFirstName} optional={false} required submitting={submitting} />
+                <Input label="Last Name" value={lastName} onChange={setLastName} optional={false} required submitting={submitting} />
+                <Input label="Phone" value={phone} onChange={setPhone} placeholder="+1 (555) 123-4567" optional={false} required submitting={submitting} />
+                <Input label="Date of Birth" value={birthDate} onChange={setBirthDate} type="date" optional={false} required submitting={submitting} />
               </Collapsible>
             )}
 
@@ -371,6 +379,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 onChange={(v) => setForm((p) => ({ ...p, chiefComplaint: v }))}
                 placeholder="e.g. Low back pain, 6 months"
                 withDictation
+                submitting={submitting}
               />
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 shrink-0">
@@ -400,6 +409,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
                 withDictation
+                submitting={submitting}
               />
             </Collapsible>
 
@@ -411,6 +421,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
                 withDictation
+                submitting={submitting}
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-700 flex items-center gap-1">
@@ -462,11 +473,12 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
                 withDictation
+                submitting={submitting}
               />
             </Collapsible>
 
             <Collapsible title="Clinical impression" open={openSections.impression} onToggle={() => toggle('impression')}>
-              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation />
+              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation submitting={submitting} />
             </Collapsible>
 
             <Collapsible title="Plan / next focus" open={openSections.plan} onToggle={() => toggle('plan')}>
@@ -476,6 +488,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 onChange={(v) => setForm((p) => ({ ...p, sessionNotes: v }))}
                 placeholder="Focus of session, advice given"
                 withDictation
+                submitting={submitting}
               />
               <TextArea
                 label="Planned next focus"
@@ -484,6 +497,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
                 withDictation
+                submitting={submitting}
               />
               <p className="text-xs text-slate-500">Chief complaint + (impression or plan) needed to create baseline.</p>
             </Collapsible>

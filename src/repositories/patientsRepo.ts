@@ -30,6 +30,10 @@ export interface PatientCreateData extends Omit<Patient, 'id' | 'createdAt' | 'p
   chiefComplaint: string;
   ownerUid: string;
   status: 'active' | 'inactive';
+  /** Denormalized for display/search (firstName + lastName) */
+  fullName?: string;
+  /** Alias for birthDate (PatientService compatibility) */
+  dateOfBirth?: string;
 }
 
 class PatientsRepository {
