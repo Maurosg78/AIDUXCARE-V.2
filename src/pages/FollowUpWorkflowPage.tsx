@@ -604,6 +604,7 @@ const FollowUpWorkflowPage = () => {
             <ConsentGateScreen
               patientId={patientId}
               patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || undefined}
+              patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
               clinicName={clinicName ?? undefined}
               consentResolution={resolveConsentChannel({
                 hasValidConsent: false,
@@ -611,6 +612,8 @@ const FollowUpWorkflowPage = () => {
                 jurisdiction: 'CA-ON',
                 isFirstSession: clinicalState.isFirstSession,
               })}
+              physiotherapistId={user?.uid}
+              physiotherapistName={deriveClinicianDisplayName(professionalProfile, user)}
             />
           )}
 

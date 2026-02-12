@@ -5,7 +5,7 @@
  * Login → Command Centre → Pacientes del día → Elegir paciente → Elegir acción → Flujo clínico
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
@@ -340,6 +340,32 @@ export const CommandCenterPageSprint3: React.FC = () => {
     }
   };
 
+  const handleOngoingModalClose = useCallback(() => {
+    setShowOngoingIntake(false);
+    setSelectedPatient(null);
+  }, []);
+
+  const handleOngoingModalSuccess = useCallback(
+    (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
+      setShowOngoingIntake(false);
+      setSelectedPatient(null);
+      const isViewingToday =
+        selectedDate.getDate() === new Date().getDate() &&
+        selectedDate.getMonth() === new Date().getMonth() &&
+        selectedDate.getFullYear() === new Date().getFullYear();
+      if (isViewingToday) {
+        setTodayQuickList((prev) => [
+          ...prev,
+          { patientId, patientName: patientName || 'Patient', sessionType: 'ongoing' as const, status: 'pending' as const },
+        ]);
+      }
+      navigate(`/workflow?type=followup&patientId=${patientId}`, {
+        state: baselineSOAP ? { baselineFromOngoing: baselineSOAP } : undefined,
+      });
+    },
+    [selectedDate, navigate]
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Global */}
@@ -516,29 +542,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
       {showOngoingIntake && (
         <OngoingPatientIntakeModal
           isOpen={showOngoingIntake}
-          onClose={() => {
-            setShowOngoingIntake(false);
-            setSelectedPatient(null);
-          }}
+          onClose={handleOngoingModalClose}
           patientId={selectedPatient?.id}
           patientName={selectedPatient?.fullName || selectedPatient?.firstName}
-          onSuccess={(patientId, baselineSOAP, patientName) => {
-            setShowOngoingIntake(false);
-            setSelectedPatient(null);
-            const isViewingToday =
-              selectedDate.getDate() === new Date().getDate() &&
-              selectedDate.getMonth() === new Date().getMonth() &&
-              selectedDate.getFullYear() === new Date().getFullYear();
-            if (isViewingToday) {
-              setTodayQuickList((prev) => [
-                ...prev,
-                { patientId, patientName: patientName || 'Patient', sessionType: 'ongoing' as const, status: 'pending' as const },
-              ]);
-            }
-            navigate(`/workflow?type=followup&patientId=${patientId}`, {
-              state: baselineSOAP ? { baselineFromOngoing: baselineSOAP } : undefined,
-            });
-          }}
+          onSuccess={handleOngoingModalSuccess}
         />
       )}
 

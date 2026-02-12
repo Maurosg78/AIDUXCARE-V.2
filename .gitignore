@@ -53,6 +53,10 @@ coverage/
 .env.*.bak
 !.env.example
 
+# Firebase / GCP credentials (NEVER commit)
+serviceAccountKey.json
+*-service-account*.json
+
 # Temp files
 *.timestamp-*.mjs
 npm-install-log.txt

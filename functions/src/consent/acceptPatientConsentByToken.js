@@ -168,9 +168,28 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
       },
     };
 
-    // Write to patient_consent (canonical collection used by ConsentGateScreen)
+    // Write to patient_consent (canonical collection used by getConsentStatus)
     const consentId = `${tokenData.patientId}_${Date.now()}`;
     await db.collection('patient_consent').doc(consentId).set(consentRecord);
+
+    // ✅ WO-CONSENT-SYNC: Also write to consent_status/latest so checkConsentViaServer (workflow gate) recognizes it
+    // Domain expects: patients/{patientId}/consent_status/latest with channel==='none' or granted===true
+    if (decision === 'granted') {
+      const consentStatusRef = db.doc(`patients/${tokenData.patientId}/consent_status/latest`);
+      await consentStatusRef.set({
+        channel: 'none',
+        granted: true,
+        source: 'digital',
+        consentMethod: 'digital',
+        method: 'digital',
+        status: 'ongoing',
+        patientId: tokenData.patientId,
+        obtainedBy: 'patient_portal',
+        physiotherapistId: tokenData.physiotherapistId,
+        updatedAt: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+      }, { merge: true });
+    }
 
     // Audit log
     await db.collection('audit_logs').add({

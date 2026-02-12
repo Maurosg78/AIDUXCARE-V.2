@@ -4040,8 +4040,9 @@ const ProfessionalWorkflowPage = () => {
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
         clinicName={clinicName}
-        // ✅ WO-CONSENT-SINGLE-SOURCE-01: Pasar solo consentResolution (dominio decide todo)
         consentResolution={consentResolution}
+        physiotherapistId={user?.uid}
+        physiotherapistName={clinicianDisplayName}
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback para check inmediato cuando se declina
         onConsentDeclined={async () => {
           console.log('[WORKFLOW] Consent declined - triggering immediate check');

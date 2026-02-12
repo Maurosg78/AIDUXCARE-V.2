@@ -5,7 +5,7 @@
  * Previous history section includes Add documents for images and reports.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, FileText, ChevronDown, ChevronUp, UploadCloud, Loader2, Paperclip } from 'lucide-react';
 import { DictationButton } from '@/components/ui/DictationButton';
 import { getAuth } from 'firebase/auth';
@@ -24,7 +24,7 @@ import {
 
 const MIN_FIELD = 3;
 
-function Input({
+const Input = React.memo(function Input({
   label,
   value,
   onChange,
@@ -63,9 +63,9 @@ function Input({
       </div>
     </div>
   );
-}
+});
 
-function TextArea({
+const TextArea = React.memo(function TextArea({
   label,
   value,
   onChange,
@@ -104,7 +104,7 @@ function TextArea({
       </div>
     </div>
   );
-}
+});
 
 export interface OngoingPatientIntakeModalProps {
   isOpen: boolean;
@@ -144,7 +144,7 @@ function Collapsible({
   );
 }
 
-export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps> = ({
+const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> = ({
   isOpen,
   onClose,
   patientId: initialPatientId,
@@ -182,6 +182,19 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
   const [form, setForm] = useState<OngoingFormData>({});
 
   const toggle = (k: string) => setOpenSections((p) => ({ ...p, [k]: !p[k] }));
+
+  const formChange = useMemo(
+    () => ({
+      chiefComplaint: (v: string) => setForm((p) => ({ ...p, chiefComplaint: v })),
+      impactNotes: (v: string) => setForm((p) => ({ ...p, impactNotes: v })),
+      antecedentesPrevios: (v: string) => setForm((p) => ({ ...p, antecedentesPrevios: v })),
+      objectiveFindings: (v: string) => setForm((p) => ({ ...p, objectiveFindings: v })),
+      clinicalImpression: (v: string) => setForm((p) => ({ ...p, clinicalImpression: v })),
+      sessionNotes: (v: string) => setForm((p) => ({ ...p, sessionNotes: v })),
+      plannedNextFocus: (v: string) => setForm((p) => ({ ...p, plannedNextFocus: v })),
+    }),
+    []
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -376,7 +389,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <Input
                 label="Primary concern"
                 value={form.chiefComplaint ?? chiefComplaint}
-                onChange={(v) => setForm((p) => ({ ...p, chiefComplaint: v }))}
+                onChange={formChange.chiefComplaint}
                 placeholder="e.g. Low back pain, 6 months"
                 withDictation
                 submitting={submitting}
@@ -405,7 +418,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <TextArea
                 label="Impact notes"
                 value={form.impactNotes ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, impactNotes: v }))}
+                onChange={formChange.impactNotes}
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
                 withDictation
@@ -417,7 +430,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <TextArea
                 label="History, imaging, onset"
                 value={form.antecedentesPrevios ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, antecedentesPrevios: v }))}
+                onChange={formChange.antecedentesPrevios}
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
                 withDictation
@@ -469,7 +482,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <TextArea
                 label="Findings (observation, ROM, strength, neuro)"
                 value={form.objectiveFindings ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, objectiveFindings: v }))}
+                onChange={formChange.objectiveFindings}
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
                 withDictation
@@ -478,14 +491,14 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
             </Collapsible>
 
             <Collapsible title="Clinical impression" open={openSections.impression} onToggle={() => toggle('impression')}>
-              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={(v) => setForm((p) => ({ ...p, clinicalImpression: v }))} placeholder="Interpretative, not diagnostic" rows={2} withDictation submitting={submitting} />
+              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={formChange.clinicalImpression} placeholder="Interpretative, not diagnostic" rows={2} withDictation submitting={submitting} />
             </Collapsible>
 
             <Collapsible title="Plan / next focus" open={openSections.plan} onToggle={() => toggle('plan')}>
               <TextArea
                 label="Session notes"
                 value={form.sessionNotes ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, sessionNotes: v }))}
+                onChange={formChange.sessionNotes}
                 placeholder="Focus of session, advice given"
                 withDictation
                 submitting={submitting}
@@ -493,7 +506,7 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
               <TextArea
                 label="Planned next focus"
                 value={form.plannedNextFocus ?? ''}
-                onChange={(v) => setForm((p) => ({ ...p, plannedNextFocus: v }))}
+                onChange={formChange.plannedNextFocus}
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
                 withDictation
@@ -524,3 +537,5 @@ export const OngoingPatientIntakeModal: React.FC<OngoingPatientIntakeModalProps>
     </div>
   );
 };
+
+export const OngoingPatientIntakeModal = React.memo(OngoingPatientIntakeModalInner);
