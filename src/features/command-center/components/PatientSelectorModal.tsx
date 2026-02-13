@@ -91,7 +91,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
                 <button
                   key={patient.id}
                   onClick={() => handleSelect(patient)}
-                  className="w-full p-4 bg-white border border-gray-200 hover:border-primary-blue/50 hover:bg-primary-blue/5 rounded-xl transition-all duration-200 text-left"
+                  className="w-full p-5 min-h-[56px] bg-white border border-gray-200 hover:border-primary-blue/50 hover:bg-primary-blue/5 rounded-xl transition-all duration-200 text-left"
                 >
                   <div className="font-semibold text-gray-900 font-apple">
                     {patient.fullName || `${patient.firstName} ${patient.lastName || ''}`}

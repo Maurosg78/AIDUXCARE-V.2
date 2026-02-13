@@ -597,6 +597,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
   const healthProfessions: string[] = [
     'Physiotherapist',
     'Physical Therapist',
+    'Chiropractor',
     'Occupational Therapist',
     'Speech Therapist',
     'Registered Nurse',

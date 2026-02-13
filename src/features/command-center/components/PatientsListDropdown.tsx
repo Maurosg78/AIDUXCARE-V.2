@@ -118,7 +118,7 @@ export const PatientsListDropdown: React.FC<PatientsListDropdownProps> = ({
                     key={patient.id}
                     role="option"
                     onClick={() => handlePatientClick(patient.id)}
-                    className="px-4 py-3 hover:bg-primary-light cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                    className="px-5 py-4 min-h-[56px] hover:bg-primary-light cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">

@@ -277,7 +277,7 @@ export default function PatientConsentPortalPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex items-center justify-center p-4">
         <div className="text-center">
           <Clock className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading consent information...</p>
@@ -345,10 +345,10 @@ export default function PatientConsentPortalPage() {
 
   // Main consent form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple rounded-t-2xl p-6 text-white shadow-xl">
           <div className="flex items-center gap-3 mb-3">
             <Shield className="w-8 h-8" />
             <h1 className="text-2xl font-bold">Consent for AI-Assisted Clinical Documentation</h1>
@@ -366,12 +366,12 @@ export default function PatientConsentPortalPage() {
         {/* Content */}
         <div className="bg-white rounded-b-2xl shadow-xl p-6 space-y-6">
           {/* Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-900">
+              <FileText className="w-5 h-5 text-primary-purple flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-indigo-900">
                 <p className="font-medium mb-2">Please read the consent statement below carefully:</p>
-                <ul className="list-disc list-inside space-y-1 text-blue-800">
+                <ul className="list-disc list-inside space-y-1 text-indigo-800">
                   <li>This explains how your health information will be used</li>
                   <li>You can accept or decline this consent</li>
                   <li>Your decision will be recorded for compliance purposes</li>
@@ -490,7 +490,7 @@ export default function PatientConsentPortalPage() {
               <button
                 onClick={handleAcceptConsent}
                 disabled={submitting}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold py-6 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
+                className="w-full bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-gray-300 text-white font-semibold py-6 px-6 rounded-xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
               >
                 {submitting ? (
                   <>
@@ -517,7 +517,7 @@ export default function PatientConsentPortalPage() {
               <button
                 onClick={() => setShowDeclineForm(true)}
                 disabled={submitting}
-                className="w-full bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-800 font-semibold py-6 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-lg border-2 border-gray-300"
+                className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 disabled:bg-gray-50 text-indigo-900 font-semibold py-6 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-lg border-2 border-indigo-200"
               >
                 <XCircle className="w-6 h-6" />
                 I Decline Consent

@@ -18,6 +18,7 @@ import logger from '@/shared/utils/logger';
 import {
   ongoingFormToBaselineSOAP,
   hasMinimumForBaseline,
+  hasAllRequiredForBaseline,
   isPlanGeneric,
   type OngoingFormData,
 } from '../utils/ongoingFormToBaselineSOAP';
@@ -317,9 +318,9 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
     if (!patientId) return;
 
     const data = getFormData();
-    if (!hasMinimumForBaseline(data)) {
+    if (!hasAllRequiredForBaseline(data)) {
       setError(
-        'To create a baseline and start follow-up: add Chief complaint and either Clinical impression or Plan/next focus.'
+        'All fields are required: Primary concern, Impact notes, History, Objective, Clinical impression, Session notes, and Planned next focus (minimum 3 characters each).'
       );
       return;
     }
@@ -374,7 +375,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">{error}</div>
             )}
-            <p className="text-sm text-slate-600">Fill what you have. Chief complaint + (impression or plan) needed to create baseline and start follow-up.</p>
+            <p className="text-sm text-slate-600">All fields are required to create a complete baseline. Minimum 3 characters per field.</p>
 
             {isNewPatient && (
               <Collapsible title="Patient record" open={openSections.patientRecord} onToggle={() => toggle('patientRecord')}>
@@ -391,6 +392,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 value={form.chiefComplaint ?? chiefComplaint}
                 onChange={formChange.chiefComplaint}
                 placeholder="e.g. Low back pain, 6 months"
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
@@ -421,6 +423,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 onChange={formChange.impactNotes}
                 placeholder="Pain description, aggravating/easing factors, limitations, goals"
                 rows={2}
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
@@ -433,6 +436,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 onChange={formChange.antecedentesPrevios}
                 placeholder="Medical history, imaging, onset, relevant context…"
                 rows={2}
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
@@ -485,13 +489,14 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 onChange={formChange.objectiveFindings}
                 placeholder="Observation, ROM, strength, neurological findings…"
                 rows={2}
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
             </Collapsible>
 
             <Collapsible title="Clinical impression" open={openSections.impression} onToggle={() => toggle('impression')}>
-              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={formChange.clinicalImpression} placeholder="Interpretative, not diagnostic" rows={2} withDictation submitting={submitting} />
+              <TextArea label="Findings suggest… (no diagnosis)" value={form.clinicalImpression ?? ''} onChange={formChange.clinicalImpression} placeholder="Interpretative, not diagnostic" rows={2} optional={false} withDictation submitting={submitting} />
             </Collapsible>
 
             <Collapsible title="Plan / next focus" open={openSections.plan} onToggle={() => toggle('plan')}>
@@ -500,6 +505,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 value={form.sessionNotes ?? ''}
                 onChange={formChange.sessionNotes}
                 placeholder="Focus of session, advice given"
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
@@ -509,10 +515,10 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
                 onChange={formChange.plannedNextFocus}
                 placeholder="e.g. Continue HEP 2×/day; reassess in 2 weeks"
                 rows={2}
+                optional={false}
                 withDictation
                 submitting={submitting}
               />
-              <p className="text-xs text-slate-500">Chief complaint + (impression or plan) needed to create baseline.</p>
             </Collapsible>
           </div>
 
@@ -525,11 +531,18 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
               disabled={
                 submitting ||
                 (isNewPatient && (!firstName.trim() || !lastName.trim() || !phone.trim() || !birthDate)) ||
-                !hasMinimumForBaseline(getFormData())
+                !hasAllRequiredForBaseline(getFormData())
               }
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-xl text-sm font-medium disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {submitting ? 'Creating baseline…' : 'Create baseline & start session'}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating baseline…
+                </>
+              ) : (
+                'Create baseline & start session'
+              )}
             </button>
           </div>
         </form>

@@ -65,6 +65,20 @@ export function hasMinimumForBaseline(form: OngoingFormData): boolean {
   return false;
 }
 
+/** WO-PILOT-FIX-04: All fields required for baseline. Min 3 chars each. */
+export function hasAllRequiredForBaseline(form: OngoingFormData): boolean {
+  const min = 3;
+  return (
+    t(form.chiefComplaint).length >= min &&
+    t(form.impactNotes).length >= min &&
+    t(form.antecedentesPrevios).length >= min &&
+    t(form.objectiveFindings).length >= min &&
+    t(form.clinicalImpression).length >= min &&
+    t(form.sessionNotes).length >= min &&
+    t(form.plannedNextFocus).length >= min
+  );
+}
+
 const GENERIC_PLAN = /^(paciente en tratamiento|en tratamiento|n\/a)\.?$/i;
 
 export function isPlanGeneric(plan: string): boolean {

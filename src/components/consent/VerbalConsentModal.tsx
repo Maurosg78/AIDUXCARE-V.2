@@ -165,19 +165,19 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg flex items-center justify-between">
+        <div className="sticky top-0 bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple text-white p-6 rounded-t-lg flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6" />
             <div>
               <h2 className="text-xl font-bold">Verbal Consent Required</h2>
-              <p className="text-blue-100 text-sm">
+              <p className="text-indigo-100 text-sm">
                 {patientName ? `Patient: ${patientName}` : `ID: ${patientId}`}
               </p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-white hover:bg-blue-800 rounded-full p-2 transition"
+            className="text-white/90 hover:bg-white/20 rounded-full p-2 transition"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -188,14 +188,14 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
         <div className="p-6">
           {step === 'read' && (
             <div className="space-y-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-primary-blue mt-0.5" />
                   <div>
-                    <h3 className="font-semibold text-yellow-800 mb-2">
+                    <h3 className="font-semibold text-indigo-900 mb-2">
                       Important Instructions
                     </h3>
-                    <p className="text-yellow-700 text-sm">
+                    <p className="text-indigo-700 text-sm">
                       You must read the complete consent text to the patient before continuing.
                       This process is required by PHIPA and is legally valid.
                     </p>
@@ -226,7 +226,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                 </button>
                 <button
                   onClick={handleStartReading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="px-6 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-medium shadow-md"
                 >
                   I Have Read the Text to the Patient
                 </button>
@@ -416,7 +416,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                     value={witnessName}
                     onChange={(e) => setWitnessName(e.target.value)}
                     placeholder="E.g.: Nurse Mary, Family member John"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
                   />
                 </div>
 
@@ -429,7 +429,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Notes about consent obtaining..."
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
                   />
                 </div>
               </div>
@@ -453,7 +453,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                   disabled={!physiotherapistConfirmed || !patientUnderstood || !voluntarilyGiven || isSubmitting}
                   className={`px-6 py-2 rounded-lg transition font-medium ${
                     physiotherapistConfirmed && patientUnderstood && voluntarilyGiven && !isSubmitting
-                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white hover:from-primary-blue-hover hover:to-primary-purple-hover shadow-md'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -465,8 +465,8 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 border-t p-4 rounded-b-lg">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+        <div className="bg-gradient-to-r from-indigo-50/50 to-purple-50/50 border-t border-indigo-100 p-4 rounded-b-lg">
+          <div className="flex items-center gap-2 text-xs text-indigo-700">
             <Shield className="w-4 h-4" />
             <span>
               Verbal consent is valid under PHIPA. Once granted, it is valid for the entire treatment.

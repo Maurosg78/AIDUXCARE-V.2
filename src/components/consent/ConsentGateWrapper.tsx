@@ -113,7 +113,7 @@ export const ConsentGateWrapper: React.FC<ConsentGateWrapperProps> = ({
           <button
             type="button"
             onClick={handleRecordNewConsent}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg text-sm font-medium hover:from-primary-blue-hover hover:to-primary-purple-hover shadow-md"
           >
             Record new consent
           </button>

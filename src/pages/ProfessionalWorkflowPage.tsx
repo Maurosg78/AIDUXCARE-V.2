@@ -4160,7 +4160,11 @@ const ProfessionalWorkflowPage = () => {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div>
             <p className="text-[10px] uppercase tracking-[0.02em] text-slate-400 font-apple font-light">AiduxCare <span className="ml-1">🍁</span></p>
-            <p className="text-[15px] font-medium text-slate-800 font-apple">Clinical Workflow — Canada</p>
+            <p className="text-[15px] font-medium text-slate-800 font-apple">
+              {currentPatient
+                ? `${visitType === 'initial' ? 'Initial Assessment' : 'Follow-up'} — ${currentPatient.fullName || `${currentPatient.firstName || ''} ${currentPatient.lastName || ''}`.trim() || 'Patient'}`
+                : 'Clinical Workflow — Canada'}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <Link

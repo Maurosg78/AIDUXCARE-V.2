@@ -1,7 +1,10 @@
 // @ts-nocheck
 import React from 'react';
-import { createBrowserRouter, useParams, Navigate } from 'react-router-dom';
+import { createBrowserRouter, useParams, Navigate, useNavigate } from 'react-router-dom';
+import { getAuth, signOut } from 'firebase/auth';
+import { LogOut } from 'lucide-react';
 import { AuthGuard } from '../components/AuthGuard';
+import { useAuth } from '../hooks/useAuth';
 import { AuthOnlyGuard } from '../components/AuthOnlyGuard';
 import { CommandCenterPageSprint3 } from '../features/command-center/CommandCenterPageSprint3';
 import { WelcomePage } from '../pages/WelcomePage';
@@ -37,18 +40,41 @@ import { FeedbackReviewPage } from '../pages/FeedbackReviewPage';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 // LayoutWrapper — Branding oficial: hoja de maple + AiDuxCare (gradient púrpura-azul), fijo en todas las pantallas
+// WO-PILOT-FIX-03: Logout button visible on every authenticated page
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(getAuth());
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 AiDuxCare
               </h1>
               <span className="text-xl" aria-hidden>🍁</span>
             </div>
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </nav>

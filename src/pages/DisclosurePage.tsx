@@ -28,10 +28,10 @@ export default function DisclosurePage() {
   }, [patientId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-6 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple rounded-t-2xl p-6 text-white shadow-xl">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8" />
             <h1 className="text-2xl font-bold">Consent Disclosure Document</h1>
@@ -43,12 +43,12 @@ export default function DisclosurePage() {
 
         {/* Content */}
         <div className="bg-white rounded-b-2xl shadow-xl p-6 space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-900">
+              <FileText className="w-5 h-5 text-primary-purple flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-indigo-900">
                 <p className="font-medium mb-2">Please read the disclosure statement below:</p>
-                <ul className="list-disc list-inside space-y-1 text-blue-800">
+                <ul className="list-disc list-inside space-y-1 text-indigo-800">
                   <li>This explains how your health information will be used</li>
                   <li>You may withdraw consent at any time by contacting your provider</li>
                   <li>For more details, see our <Link to="/privacy-policy" className="underline font-medium" target="_blank" rel="noopener noreferrer">Privacy Policy</Link></li>
@@ -71,8 +71,8 @@ export default function DisclosurePage() {
               onClick={() => setAcknowledged(true)}
               className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg font-medium transition-colors ${
                 acknowledged
-                  ? 'bg-green-100 text-green-800 cursor-default'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  ? 'bg-indigo-100 text-indigo-800 cursor-default'
+                  : 'bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white shadow-md'
               }`}
               disabled={acknowledged}
             >

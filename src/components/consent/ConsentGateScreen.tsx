@@ -92,7 +92,7 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
         physiotherapistName ?? 'Physiotherapist'
       );
       const tokenDoc = await PatientConsentService.getConsentByToken(token);
-      const physioName = tokenDoc?.physiotherapistName?.trim() || physiotherapistName ?? 'Physiotherapist';
+      const physioName = tokenDoc?.physiotherapistName?.trim() || physiotherapistName || 'Physiotherapist';
       let formattedPhone = patientPhone.trim().replace(/[^\d+]/g, '');
       if (formattedPhone.length === 10) formattedPhone = `+1${formattedPhone}`;
       else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) formattedPhone = `+${formattedPhone}`;
@@ -112,10 +112,12 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-slate-200 p-8">
-        <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Consent required</h2>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-indigo-200/60 p-8">
+        <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-gradient-to-br from-primary-blue to-primary-purple flex items-center justify-center">
+          <Shield className="w-7 h-7 text-white" />
+        </div>
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple bg-clip-text text-transparent mb-2 text-center">Consent required</h2>
         <p className="text-slate-600 text-sm mb-6 text-center">
           Patient consent is required before using the clinical workflow (including voice recording and attachments).
         </p>
@@ -125,7 +127,7 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
             type="button"
             onClick={handleOpenCanonicalForm}
             disabled={formLoading || !physiotherapistId}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-blue to-indigo-500 text-white rounded-lg font-medium hover:from-primary-blue-hover hover:to-indigo-600 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileText className="w-4 h-4" />
             {formLoading ? 'Opening...' : 'Fill consent form (in-clinic)'}
@@ -135,19 +137,19 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
             type="button"
             onClick={handleSendSMS}
             disabled={smsLoading || !patientPhone?.trim() || !physiotherapistId}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-800 border border-slate-300 rounded-lg font-medium hover:bg-slate-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-500 to-primary-purple text-white rounded-lg font-medium hover:from-indigo-600 hover:to-primary-purple-hover transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Smartphone className="w-4 h-4" />
             {smsLoading ? 'Sending...' : 'Send SMS link'}
           </button>
           {!patientPhone?.trim() && (
-            <p className="text-xs text-amber-600 -mt-1">Patient phone required for SMS</p>
+            <p className="text-xs text-indigo-600 -mt-1">Patient phone required for SMS</p>
           )}
 
           <button
             type="button"
             onClick={() => setShowVerbalModal(true)}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-800 border border-slate-300 rounded-lg font-medium hover:bg-slate-200 transition"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-purple to-fuchsia-600 text-white rounded-lg font-medium hover:from-primary-purple-hover hover:to-fuchsia-700 transition shadow-md"
           >
             <MessageCircle className="w-4 h-4" />
             Obtain verbal consent
@@ -158,7 +160,7 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
           <p className="mt-3 text-sm text-red-600">{smsError}</p>
         )}
 
-        <p className="mt-4 text-xs text-slate-500 text-center">
+        <p className="mt-4 text-xs text-indigo-600/80 text-center">
           After patient completes the form or gives verbal consent, this page will update automatically.
         </p>
 
@@ -166,7 +168,7 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="mt-4 w-full py-2 text-sm text-slate-500 hover:text-slate-700"
+            className="mt-4 w-full py-2 text-sm text-slate-500 hover:text-primary-purple transition-colors"
           >
             Cancel — Return to command center
           </button>

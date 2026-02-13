@@ -65,7 +65,7 @@ export const PatientSearchBar: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSelect(patient)}
-                    className="w-full px-4 py-3 text-left hover:bg-slate-50 font-apple text-slate-900"
+                    className="w-full px-5 py-4 min-h-[52px] rounded-lg text-left hover:bg-slate-50 font-apple text-slate-900"
                   >
                     {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown'}
                     {patient.email && (

@@ -34,7 +34,7 @@ export const DeclinedConsentModal: React.FC<DeclinedConsentModalProps> = ({
           <button
             type="button"
             onClick={onRecordNewConsent}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg text-sm font-medium hover:from-primary-blue-hover hover:to-primary-purple-hover shadow-md"
           >
             Record new consent
           </button>
