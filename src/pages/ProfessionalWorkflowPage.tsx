@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, FileText, Users, Plus, Info } from "lucide-react";
+import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, FileText, Users, Plus, Info, LogOut, ArrowLeft } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
 import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
@@ -57,10 +57,12 @@ import {
 } from "@/core/msk-tests/library/mskTestLibrary";
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from "@/utils/sortPhysicalTestsByImportance";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
+import { getTimeBasedGreeting } from "@/utils/timeGreeting";
 import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
 import type { Session } from "../services/sessionComparisonService";
+import { getAuth, signOut } from "firebase/auth";
 import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import tokenTrackingService from "../services/tokenTrackingService";
@@ -295,6 +297,13 @@ const ProfessionalWorkflowPage = () => {
   /** WO-MINIMAL-BASELINE: Modal "Resumen clínico inicial" for existing patients without baseline. */
   const [showInitialSummaryModal, setShowInitialSummaryModal] = useState(false);
 
+  // WO-PILOT-FIX-07: Time-based greeting for header
+  const [greeting, setGreeting] = useState(getTimeBasedGreeting());
+  useEffect(() => {
+    const interval = setInterval(() => setGreeting(getTimeBasedGreeting()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
   const [workflowMetrics, setWorkflowMetrics] = useState<WorkflowMetrics | null>(null);
@@ -483,6 +492,16 @@ const ProfessionalWorkflowPage = () => {
     () => deriveClinicianDisplayName(safeProfile, user),
     [safeProfile, user]
   );
+
+  // WO-PILOT-FIX-07: Logout handler for header
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut(getAuth());
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('[WORKFLOW] Error during logout:', error);
+    }
+  }, [navigate]);
 
   // ✅ P2.1: Use getPublicBaseUrl for mobile-accessible links
   const consentBaseUrl = useMemo(() => {
@@ -4156,41 +4175,60 @@ const ProfessionalWorkflowPage = () => {
           return baselineId;
         }}
       />
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.02em] text-slate-400 font-apple font-light">AiduxCare <span className="ml-1">🍁</span></p>
-            <p className="text-[15px] font-medium text-slate-800 font-apple">
-              {currentPatient
-                ? `${visitType === 'initial' ? 'Initial Assessment' : 'Follow-up'} — ${currentPatient.fullName || `${currentPatient.firstName || ''} ${currentPatient.lastName || ''}`.trim() || 'Patient'}`
-                : 'Clinical Workflow — Canada'}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/command-center"
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors"
-            >
-              <Users className="w-4 h-4" />
-              Command Center
-            </Link>
-            <div className="flex items-center gap-3 text-sm">
-              {/* ✅ CRITICAL FIX: Show professional information */}
-              {clinicianDisplayName && (
-                <div className="flex items-center gap-2 text-slate-700">
-                  <Users className="w-4 h-4 text-slate-500" />
-                  <span className="font-medium">{clinicianDisplayName}</span>
-                  {clinicName && <span className="text-slate-500">· {clinicName}</span>}
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-slate-500">
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
-                Email verified · Access granted
+      {/* WO-PILOT-FIX-07: Two-line header - Professional identity + Session context */}
+      <header className="border-b border-slate-200 bg-white px-6 py-4">
+        <div className="mx-auto max-w-6xl flex flex-col gap-2">
+          {/* LINE 1: Professional Identity & Context */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <span className="text-sm text-slate-900 font-medium font-apple">
+                  {greeting}, {clinicianDisplayName}
+                </span>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors font-apple"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+
+          {/* LINE 2: Session Context */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold text-slate-900 font-apple">
+                {currentPatient
+                  ? visitType === 'initial'
+                    ? 'Initial Assessment'
+                    : 'Follow-up'
+                  : 'Clinical Workflow'}
+              </span>
+              {currentPatient && (
+                <>
+                  <span className="text-slate-400">—</span>
+                  <span className="text-base text-slate-700 font-apple">
+                    {currentPatient.fullName ||
+                      `${currentPatient.firstName || ''} ${currentPatient.lastName || ''}`.trim() ||
+                      'Patient'}
+                  </span>
+                </>
+              )}
+            </div>
+            <Link
+              to="/command-center"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-primary-blue hover:bg-blue-50 rounded-lg transition-colors font-apple"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Command Center
+            </Link>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-10">
         {/* ✅ WORKFLOW OPTIMIZATION: Workflow Selector */}
