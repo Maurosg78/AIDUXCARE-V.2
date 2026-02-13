@@ -81,7 +81,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {patientInfo.name}, {patientInfo.age} años
+              {patientInfo.name}, {patientInfo.age} years
             </h1>
             <p className="text-sm text-gray-600">
               <span className="font-medium">Dx:</span> {patientInfo.diagnosis} 
@@ -92,11 +92,11 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-600">
-            Sesiones: <span className="font-bold text-lg">{previousSessions?.length || 1}</span>
+            Sessions: <span className="font-bold text-lg">{previousSessions?.length || 1}</span>
           </p>
           <p className="text-sm">
-            Estado: <span className="font-medium text-green-600">
-              {isFirstVisit ? 'Evaluación inicial' : 'En tratamiento'}
+            Status: <span className="font-medium text-green-600">
+              {isFirstVisit ? 'Initial assessment' : 'In treatment'}
             </span>
           </p>
         </div>
@@ -110,12 +110,12 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
           <div className="flex items-center gap-2 mb-3">
             <Activity className="w-5 h-5 text-blue-500" />
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-              {isFirstVisit ? 'Primera Consulta' : 'Última Sesión'}
+              {isFirstVisit ? 'First visit' : 'Last session'}
             </h3>
           </div>
           <div className="bg-blue-50 rounded-lg p-3">
             <p className="text-sm text-gray-600 italic">
-              {isFirstVisit ? 'Registrando información inicial...' : 'Datos de sesión previa'}
+              {isFirstVisit ? 'Recording initial information...' : 'Previous session data'}
             </p>
           </div>
         </div>
@@ -125,7 +125,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
           <div className="flex items-center gap-2 mb-3">
             <Pill className="w-5 h-5 text-green-500" />
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-              Farmacología Actual
+              Current medication
             </h3>
           </div>
           <div className="space-y-2">

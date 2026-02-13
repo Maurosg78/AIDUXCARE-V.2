@@ -4267,7 +4267,7 @@ const ProfessionalWorkflowPage = () => {
                   onClick={() => setShowInitialSummaryModal(true)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
                 >
-                  Establecer resumen clínico inicial
+                  Set initial clinical summary
                 </button>
                 <button
                   type="button"

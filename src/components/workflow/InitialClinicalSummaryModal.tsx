@@ -1,6 +1,6 @@
 /**
  * WO-MINIMAL-BASELINE: Modal para establecer "Resumen clínico inicial" en pacientes existentes.
- * Permite pegar notas del EMR (vía principal) o un solo campo "Estado actual del tratamiento" (secundaria).
+ * Permite pegar notas del EMR (vía principal) o un solo campo "Current treatment status" (secundaria).
  * Requiere Plan explícito (guard-rail); copy alineado con docs/product/BASELINE_PACIENTES_EXISTENTES.md.
  */
 
@@ -20,13 +20,13 @@ export interface InitialClinicalSummaryModalProps {
 }
 
 const PASTE_PLACEHOLDER =
-  'Pega aquí una sesión reciente (o varias) que tengas de este paciente en tu EMR o en tus notas. Con eso generamos el contexto para los próximos follow-ups.';
+  'Paste a recent session (or several) you have for this patient from your EMR or notes. We use this to generate context for upcoming follow-ups.';
 const FORM_PLACEHOLDER =
-  'Describe el estado actual del tratamiento: condición, hallazgos relevantes y qué tratamiento está en curso.';
+  'Describe the current treatment status: condition, relevant findings, and what treatment is in progress.';
 const DISCLAIMER =
-  'Este resumen no reemplaza una evaluación inicial. Es solo un punto de partida para documentar follow-ups de pacientes ya en tratamiento.';
+  'This summary does not replace an initial assessment. It is only a starting point to document follow-ups for patients already in treatment.';
 const PLAN_REQUIRED_MSG =
-  'Para poder generar follow-ups, necesitamos saber qué tratamiento está en curso.';
+  'To generate follow-ups, we need to know what treatment is in progress.';
 
 export function InitialClinicalSummaryModal({
   isOpen,
@@ -49,7 +49,7 @@ export function InitialClinicalSummaryModal({
   const handleSubmit = useCallback(async () => {
     const text = currentText.trim();
     if (!text) {
-      setError('Escribe o pega el contenido antes de continuar.');
+      setError('Please type or paste content before continuing.');
       return;
     }
     setError(null);
@@ -61,7 +61,7 @@ export function InitialClinicalSummaryModal({
       setPasteText('');
       setFormText('');
     } catch (e: any) {
-      setError(e?.message ?? 'Error al guardar el resumen. Vuelve a intentarlo.');
+      setError(e?.message ?? 'Error saving summary. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -89,13 +89,13 @@ export function InitialClinicalSummaryModal({
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Resumen clínico inicial</h2>
+                <h2 className="text-xl font-bold">Initial clinical summary</h2>
                 <p className="text-sm text-slate-200 mt-1">
-                  ¿Este paciente ya está en tratamiento contigo? Para poder hacer follow-ups en la app necesitamos un resumen clínico inicial.
+                  Is this patient already in treatment with you? To run follow-ups in the app we need an initial clinical summary.
                 </p>
                 {patientName && (
                   <p className="text-sm text-slate-300 mt-2">
-                    <strong>Paciente:</strong> {patientName}
+                    <strong>Patient:</strong> {patientName}
                   </p>
                 )}
               </div>
@@ -105,7 +105,7 @@ export function InitialClinicalSummaryModal({
               onClick={handleClose}
               disabled={loading}
               className="text-slate-300 hover:text-white p-1 rounded"
-              aria-label="Cerrar"
+              aria-label="Close"
             >
               ×
             </button>
@@ -131,7 +131,7 @@ export function InitialClinicalSummaryModal({
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Pegar desde EMR / notas
+            Paste from EMR / notes
           </button>
           <button
             type="button"
@@ -142,7 +142,7 @@ export function InitialClinicalSummaryModal({
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Estado actual del tratamiento
+            Current treatment status
           </button>
         </div>
 
@@ -171,7 +171,7 @@ export function InitialClinicalSummaryModal({
             disabled={loading}
             className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50"
           >
-            Cancelar
+            Cancel
           </button>
           <button
             type="button"
@@ -182,10 +182,10 @@ export function InitialClinicalSummaryModal({
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Guardando…
+                Saving…
               </>
             ) : (
-              'Establecer resumen y continuar'
+              'Set summary and continue'
             )}
           </button>
         </div>

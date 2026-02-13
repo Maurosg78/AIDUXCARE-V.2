@@ -18,9 +18,9 @@ interface ClinicalFiltersProps {
 
 const AVAILABLE_FIELDS = [
   { id: 'anamnesis', label: 'Anamnesis' },
-  { id: 'diagnostico', label: 'Diagnóstico' },
+  { id: 'diagnostico', label: 'Diagnosis' },
   { id: 'plan', label: 'Plan' },
-  { id: 'evolucion', label: 'Evolución' }
+  { id: 'evolucion', label: 'Progress' }
 ];
 
 const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
@@ -61,10 +61,10 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
     <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-gray-900">
-          Filtros Clínicos
+          Clinical filters
         </h3>
         <span className="text-sm text-gray-600">
-          Mostrando {filteredVisits} de {totalVisits} visitas
+          Showing {filteredVisits} of {totalVisits} visits
         </span>
       </div>
 
@@ -72,7 +72,7 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
         {/* Campos clínicos */}
         <div>
           <label htmlFor="fields-ia" className="block text-sm font-medium text-gray-700 mb-2">
-            Campos Impactados por IA
+            AI-impacted fields
           </label>
           <div className="flex flex-wrap gap-2" id="fields-ia">
             {AVAILABLE_FIELDS.map(field => (
@@ -102,7 +102,7 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
               className="h-4 w-4 text-blue-600 rounded border-gray-300"
             />
             <span className="ml-2 text-sm text-gray-700">
-              Solo visitas con resumen clínico generado
+              Only visits with clinical summary generated
             </span>
           </label>
         </div>
@@ -111,7 +111,7 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
-              Desde
+              From
             </label>
             <input
               type="date"
@@ -123,7 +123,7 @@ const ClinicalFilters: React.FC<ClinicalFiltersProps> = ({
           </div>
           <div>
             <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">
-              Hasta
+              To
             </label>
             <input
               type="date"

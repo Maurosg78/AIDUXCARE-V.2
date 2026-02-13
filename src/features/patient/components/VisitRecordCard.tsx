@@ -61,7 +61,7 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, patientId, sum
       {summary ? (
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Resumen Clínico
+            Clinical summary
           </h4>
           <div className="bg-gray-50 rounded-md p-3 text-sm text-gray-600">
             {summary.summary_text}
@@ -69,7 +69,7 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, patientId, sum
         </div>
       ) : (
         <div className="mb-4 text-sm text-gray-500 italic">
-          Sin resumen clínico
+          No clinical summary
         </div>
       )}
 

@@ -106,5 +106,41 @@ src/components/consent/VerbalConsentModal.tsx
 
 ---
 
+## 7. Nuevo feedback recibido (pendiente de WO)
+
+**Export:** `user_feedback_aiduxcare-v2-uat-dev_2026-02-13T11-50-03.json`  
+**Ítems no resueltos en Firestore:** 7 (6 ya implementados, 1 nuevo)
+
+### Feedback nuevo — requiere análisis CTO
+
+| ID | Severidad | Tipo | Prioridad calc. |
+|----|-----------|------|-----------------|
+| **53jMoePBudigRHUcnrvM** | Medio | Sugerencia | 2.5 |
+
+**Descripción (usuario):**
+> "Si el paciente ya tiene un ongoing creado, no es necesario marcar en su historia el initial assessment como '?'. Simplemente un guión u otro símbolo en verde para que se sepa que no es bloqueante. Sería importante resolver cómo se marcan y diferencian los distintos initial assessment para paciente que vuelven a la consulta por otra patología."
+
+**Contexto:**
+- **Página:** `/patients/{id}/history` (historia del paciente)
+- **Problema:** En la vista de historia del paciente, cuando el paciente ya tiene un baseline/ongoing creado, el initial assessment se muestra con "?" (probablemente indicando estado incompleto o pendiente). El usuario considera que eso genera confusión porque no es bloqueante.
+- **Propuesta del usuario:** Usar un guión u otro símbolo en verde para indicar que no es bloqueante.
+- **Caso de uso adicional:** Pacientes que vuelven por otra patología — cómo marcar y diferenciar múltiples initial assessments en la misma historia.
+
+**Área técnica estimada:** Patient dashboard / Patient history / VisitRecordCard o componentes que renderizan la lista de visitas y su estado.
+
+**Acción sugerida:** Crear WO para revisar la lógica de visualización de estados en la historia del paciente (initial vs ongoing vs follow-up) y el significado del "?".
+
+---
+
+### Los otros 6 ítems — ya implementados (marcar resueltos en Firestore)
+
+Los 6 ítems restantes corresponden a WO-01 a WO-06. El código ya está implementado; falta marcarlos como `resolved` en Firestore:
+
+```bash
+node scripts/mark-feedback-resolved.cjs hq7ezKxBeF469uVTThUu g4IwSp2J864mviKnd4Ar g0gkw7PAR97VB5dOFAkt OEJwWDJOg3b3vVyq5zLS JfCq4oAQDOPfvrVsqyHL 0i0Tl9se80Lp541AIJAL
+```
+
+---
+
 **Responsable:** CTO  
 **Revisado por:** CEO

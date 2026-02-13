@@ -1,114 +1,85 @@
-# Informe de feedback pendiente — AiDuxCare Pilot
+# Informe de feedback — AiDuxCare Pilot
 
 **Fecha del informe:** 13 de febrero de 2026  
 **Export usado:** `user_feedback_aiduxcare-v2-uat-dev_2026-02-13T08-26-07.json`  
-**Total ítems pendientes:** 6  
+**Estado:** ✅ Todos los ítems revisados y resueltos (13 feb 2026)
 
 ---
 
-## Resumen por severidad
+## Resumen
 
-| Severidad | Cantidad |
-|-----------|----------|
-| Crítico   | 0        |
-| Alto      | 0        |
-| Medio     | 3        |
-| Bajo      | 3        |
+| Severidad | Cantidad | Estado |
+|-----------|----------|--------|
+| Crítico   | 0        | —      |
+| Alto      | 0        | —      |
+| Medio     | 3        | ✅ Revisado OK |
+| Bajo      | 3        | ✅ Revisado OK |
 
-## Resumen por tipo
-
-| Tipo       | Cantidad |
-|------------|----------|
-| Bug        | 2        |
-| Sugerencia | 4        |
+**Total:** 6 ítems — **6 resueltos**
 
 ---
 
-## Ítems pendientes (ordenados por prioridad)
+## Ítems (todos resueltos)
 
-### 1. Medio — Sugerencia | Prioridad: 4.0
+### 1. Medio — Sugerencia | ✅ Revisado OK
 
 - **ID:** `g0gkw7PAR97VB5dOFAkt`
-- **URL:** https://pilot.aiduxcare.com/workflow?type=initial&patientId=UAq8lyrtl3LnlkXsgohE
-- **Tags:** ui-confusion, onboarding, analysis-step
-
-**Descripción:**
-
-> Despues del command center no tengo idea de que paciente estoy tratando, en todo el workflow se hace mención al paciente en tratamiento y esto confunde
+- **Descripción:** "Despues del command center no tengo idea de que paciente estoy tratando..."
+- **Resolución:** WO-PILOT-FIX-02 — Nombre del paciente visible en header del workflow
 
 ---
 
-### 2. Medio — Bug | Prioridad: 2.7
+### 2. Medio — Bug | ✅ Revisado OK
 
 - **ID:** `g4IwSp2J864mviKnd4Ar`
-- **URL:** https://pilot.aiduxcare.com/command-center
-- **Tags:** onboarding
-
-**Descripción:**
-
-> hay que eliminar los opcionales de el formulario de ongoing todos son necesarios para crear el baseline
+- **Descripción:** "hay que eliminar los opcionales de el formulario de ongoing todos son necesarios..."
+- **Resolución:** WO-PILOT-FIX-04 — Todos los campos del formulario Ongoing obligatorios
 
 ---
 
-### 3. Medio — Bug | Prioridad: 2.7
+### 3. Medio — Bug | ✅ Revisado OK
 
 - **ID:** `0i0Tl9se80Lp541AIJAL`
-- **URL:** https://pilot.aiduxcare.com/command-center
-- **Tags:** onboarding
-
-**Descripción:**
-
-> volver a crear el spinner de carga para espera de baseline
+- **Descripción:** "volver a crear el spinner de carga para espera de baseline"
+- **Resolución:** WO-PILOT-FIX-05 — Spinner "Creating baseline…" en botón submit
 
 ---
 
-### 4. Bajo — Sugerencia | Prioridad: 2.3
+### 4. Bajo — Sugerencia | ✅ Revisado OK
 
 - **ID:** `hq7ezKxBeF469uVTThUu`
-- **URL:** https://pilot.aiduxcare.com/workflow?type=initial&patientId=2XJ7xmyZpYwKO5L19zBa
-- **Tags:** ui-confusion, onboarding, analysis-step
-
-**Descripción:**
-
-> si uno quisiera salirse de la aplicación en cualquier momento, no se puede el unico log out esta en command center, podemos poner un pequeño boton arriba a la derecha
+- **Descripción:** "log out solo en command center, podemos poner un pequeño boton arriba a la derecha"
+- **Resolución:** WO-PILOT-FIX-03 — Botón Logout global en LayoutWrapper (visible en todas las páginas)
 
 ---
 
-### 5. Bajo — Sugerencia | Prioridad: 2.3
+### 5. Bajo — Sugerencia | ✅ Revisado OK
 
 - **ID:** `OEJwWDJOg3b3vVyq5zLS`
-- **URL:** https://pilot.aiduxcare.com/workflow?type=initial&patientId=2XJ7xmyZpYwKO5L19zBa
-- **Tags:** ui-confusion, onboarding, analysis-step
-
-**Descripción:**
-
-> sería bueno incorporar el titulo del profesional PT. Mauricio Sobarzo, es un area de trabajo formal y debemos tratarlos como tal (luego ocupamos el acrónimo del los profesionales respectivos)
+- **Descripción:** "incorporar el titulo del profesional PT. Mauricio Sobarzo..."
+- **Resolución:** WO-PILOT-FIX-01 — Títulos profesionales (PT., Dr., OT., etc.) en deriveClinicianDisplayName
 
 ---
 
-### 6. Bajo — Sugerencia | Prioridad: 0.8
+### 6. Bajo — Sugerencia | ✅ Revisado OK
 
 - **ID:** `JfCq4oAQDOPfvrVsqyHL`
-- **URL:** https://pilot.aiduxcare.com/command-center
-- **Tags:** ui-confusion, onboarding
-
-**Descripción:**
-
-> la barra que selecciona pacientes cuesta seleccionarlo el area activa es pequeña y suele devolverse al buscador una vez uno apreta el boton, como si se apretara fuera del area linkeada
+- **Descripción:** "la barra que selecciona pacientes cuesta seleccionarlo el area activa es pequeña..."
+- **Resolución:** WO-PILOT-FIX-06 — Área clickeable aumentada (py-4, min-h-[52px/56px], px-5)
 
 ---
 
-## Acciones recomendadas
+## Acciones ejecutadas
 
-| Prioridad | Acción sugerida |
-|-----------|-----------------|
-| 1 | Mejorar visibilidad del paciente actual en el workflow (header, breadcrumb) |
-| 2 | Revisar campos opcionales en formulario OngoingPatientIntakeModal |
-| 3 | Restaurar o implementar spinner de carga al crear baseline |
-| 4 | Evaluar botón de logout global en header (visible en workflow) |
-| 5 | Mostrar título profesional (PT. Nombre) en área de trabajo |
-| 6 | Aumentar área clickeable de la barra de selección de pacientes |
+| # | Acción | WO | Estado |
+|---|--------|-----|--------|
+| 1 | Nombre paciente en header workflow | WO-02 | ✅ |
+| 2 | Campos obligatorios formulario Ongoing | WO-04 | ✅ |
+| 3 | Spinner carga al crear baseline | WO-05 | ✅ |
+| 4 | Logout global en header | WO-03 | ✅ |
+| 5 | Título profesional (PT. Nombre) | WO-01 | ✅ |
+| 6 | Área clickeable selector pacientes | WO-06 | ✅ |
 
 ---
 
-*Generado automáticamente. Para actualizar: `node scripts/export-user-feedback.cjs --csv --unresolved-only`*
+*Actualizado 13 feb 2026 — Todos los feedback pendientes marcados como revisados y OK.*

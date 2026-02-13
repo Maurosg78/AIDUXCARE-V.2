@@ -312,29 +312,29 @@ export default function PatientConsentPortalPage() {
           {consentDecision === 'accept' ? (
             <>
               <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consentimiento Ya Registrado</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Already Recorded</h1>
               <p className="text-gray-600 mb-6">
-                Este enlace de consentimiento ya fue utilizado. Puede cerrar esta página de forma segura.
+                This consent link has already been used. You can safely close this page.
               </p>
               <button
                 onClick={() => window.location.replace(`${window.location.origin}/consent/success?decision=accept`)}
                 className="mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
               >
-                Ver Confirmación
+                View confirmation
               </button>
             </>
           ) : (
             <>
               <XCircle className="w-20 h-20 text-orange-600 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consentimiento Ya Registrado</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Already Recorded</h1>
               <p className="text-gray-600 mb-6">
-                Este enlace de consentimiento ya fue utilizado. Puede cerrar esta página de forma segura.
+                This consent link has already been used. You can safely close this page.
               </p>
               <button
                 onClick={() => window.location.replace(`${window.location.origin}/consent/success?decision=declined`)}
                 className="mt-4 bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
               >
-                Ver Confirmación
+                View confirmation
               </button>
             </>
           )}
