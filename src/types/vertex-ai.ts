@@ -106,6 +106,18 @@ export interface SOAPNote {
     violations: string[];
     warnings: string[];
   };
+
+  // ✅ WO-PHASE1C-PART2: Defer treatment (red flags → medical review)
+  status?: 'draft' | 'completed' | 'deferred_pending_medical_review';
+  deferralInfo?: {
+    deferredAt: string; // ISO timestamp
+    deferredBy: string; // userId
+    reason: string;
+    redFlagFindings: string[];
+    medicalClearanceReceived?: boolean;
+    clearedBy?: string;
+    clearedAt?: string;
+  };
 }
 
 export interface PhysicalExamResult {

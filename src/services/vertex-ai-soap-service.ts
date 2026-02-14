@@ -252,6 +252,30 @@ export async function generateSOAPNote(
       });
     }
 
+    // WO-PHASE1C-003: Append red flag override instruction when clinician has evaluated
+    if (options?.redFlagOverride && options.redFlagOverride.findings.length > 0 && options.redFlagOverride.clinicianReasoning?.trim()) {
+      const { findings, clinicianReasoning } = options.redFlagOverride;
+      prompt += `
+
+OVERRIDE INSTRUCTION — CLINICIAN EVALUATION:
+
+The clinician has evaluated the following findings and determined they do NOT constitute
+red flags requiring urgent medical referral at this time:
+
+${findings.map((f) => `- ${f}`).join('\n')}
+
+Clinician's clinical reasoning:
+${clinicianReasoning.trim()}
+
+IMPORTANT:
+- Do NOT recommend urgent medical review/referral for these findings
+- Treat these symptoms as monitored findings within expected clinical pattern
+- Include the clinician's reasoning in the Assessment section
+- Suggest appropriate monitoring and follow-up timeline
+- Document that clinician has assumed clinical responsibility for this determination
+`;
+    }
+
     // ✅ WORKFLOW OPTIMIZATION: Calculate token optimization if using optimized prompt
     let tokenOptimization;
     if (useOptimized && context.visitType === 'follow-up') {

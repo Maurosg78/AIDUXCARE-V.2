@@ -27,6 +27,11 @@ export interface SOAPPromptOptions {
   useOptimizedPrompt?: boolean;
   /** Optional: adapt role line and context to clinician profile */
   professionalProfile?: ProfessionalProfile | null;
+  /** WO-PHASE1C-003: Red flag override — clinician has evaluated findings and determined no urgent referral */
+  redFlagOverride?: {
+    findings: string[];
+    clinicianReasoning: string;
+  };
 }
 
 /** Returns role phrase for SOAP prompt first line (e.g. "a registered physiotherapist") from profile. */

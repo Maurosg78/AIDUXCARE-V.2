@@ -323,6 +323,8 @@ const ProfessionalWorkflowPage = () => {
   const [overrideRedFlags, setOverrideRedFlags] = useState(false);
   const [overrideReasoning, setOverrideReasoning] = useState('');
   const [redFlagOverrideApplied, setRedFlagOverrideApplied] = useState(false);
+  const [redFlagAction, setRedFlagAction] = useState<'override' | 'defer'>('override');
+  const [showDeferralConfirmation, setShowDeferralConfirmation] = useState(false);
   const [isRegeneratingSOAP, setIsRegeneratingSOAP] = useState(false);
   const [savingSession, setSavingSession] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -3237,6 +3239,9 @@ const ProfessionalWorkflowPage = () => {
 
       setSoapGenerationEndTime(new Date());
       setLocalSoapNote(soapWithReviewFlags);
+      setRedFlagOverrideApplied(false);
+      setOverrideRedFlags(false);
+      setOverrideReasoning('');
       setSoapStatus('draft');
       setActiveTab("soap");
 
@@ -3369,9 +3374,9 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [followUpClinicalState, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile]);
 
-  // WO-PHASE1C-PART2: Detect red flags in generated SOAP
+  // WO-PHASE1C-PART2 + WO-PHASE1C-003: Detect red flags in generated SOAP (INITIAL + FOLLOW-UP)
   useEffect(() => {
-    if (visitType !== 'follow-up' || !localSoapNote || redFlagOverrideApplied) {
+    if (!localSoapNote || redFlagOverrideApplied) {
       setSoapContainsRedFlags(false);
       return;
     }
@@ -3387,7 +3392,10 @@ const ProfessionalWorkflowPage = () => {
       text.includes('recommend urgent referral') ||
       text.includes('medical review/referral');
     setSoapContainsRedFlags(hasRedFlags);
-    if (!hasRedFlags) {
+    if (hasRedFlags) {
+      setRedFlagAction('override');
+      setOverrideReasoning('');
+    } else {
       setOverrideRedFlags(false);
       setOverrideReasoning('');
     }
@@ -3421,53 +3429,126 @@ const ProfessionalWorkflowPage = () => {
     return findings.length > 0 ? findings : ['Findings flagged for medical review in original SOAP'];
   }, []);
 
-  /** WO-PHASE1C-PART2: Regenerate SOAP with red flag override */
+  /** WO-PHASE1C-PART2 + WO-PHASE1C-003: Regenerate SOAP with red flag override (INITIAL + FOLLOW-UP) */
   const handleRegenerateWithoutRedFlags = useCallback(async () => {
-    if (!overrideRedFlags || overrideReasoning.trim().length < 20 || !followUpClinicalState?.baselineSOAP) return;
+    if (redFlagAction !== 'override' || overrideReasoning.trim().length < 20 || !localSoapNote) return;
+    if (visitType === 'follow-up' && !followUpClinicalState?.baselineSOAP) return;
     setIsRegeneratingSOAP(true);
     setAnalysisError(null);
     try {
       const redFlagFindings = extractRedFlagFindings(localSoapNote);
-      const fullPrompt = buildFollowUpPromptV3({
-        baselineSOAP: followUpClinicalState.baselineSOAP,
-        clinicalUpdate: (transcript?.trim() ?? '') || '',
-        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
-        inClinicAdjustmentsNotes: inClinicAdjustmentsNotes?.trim() || undefined,
-        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
-        professionalProfile: professionalProfile || undefined,
-        redFlagOverride: { findings: redFlagFindings, clinicianReasoning: overrideReasoning.trim() },
-      });
-      const { soap } = await generateFollowUpSOAPV2Raw(fullPrompt);
-      const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
-      if (!soap || !hasStructuredContent) {
-        setAnalysisError('SOAP regeneration returned no content. Please try again.');
-        return;
-      }
-      setLocalSoapNote({
-        ...soap,
-        requiresReview: true,
-        isReviewed: false,
-        aiGenerated: true,
-        aiProcessor: 'AiduxCare Clinical AI',
-        processedAt: new Date(),
-      });
-      setRedFlagOverrideApplied(true);
-      setSuccessMessage('SOAP regenerated without red flag alert. Clinician reasoning documented.');
-      setTimeout(() => setSuccessMessage(null), 5000);
-      if (user?.uid && patientIdFromUrl) {
-        await FirestoreAuditLogger.logEvent({
-          type: 'red_flag_override',
-          userId: user.uid,
-          userRole: 'professional',
-          patientId: patientIdFromUrl,
-          metadata: {
-            redFlagFindings,
-            clinicianReasoning: overrideReasoning.trim(),
-            originalSOAPPreview: JSON.stringify(localSoapNote).substring(0, 500),
-            workflowType: 'follow-up',
-            timestamp: new Date().toISOString(),
+
+      if (visitType === 'initial') {
+        // WO-PHASE1C-003: INITIAL branch — use vertex-ai-soap-service with redFlagOverride
+        if (!niagaraResults) {
+          setAnalysisError('Cannot regenerate: analysis data is required. Please generate SOAP again first.');
+          return;
+        }
+        const unifiedData: UnifiedClinicalData = {
+          tab1: {
+            transcript: transcript || '',
+            analysis: niagaraResults,
+            attachments: attachments,
           },
+          tab2: {
+            evaluationTests: filteredEvaluationTests,
+            library: MSK_TEST_LIBRARY,
+          },
+          visit: {
+            type: 'initial',
+            patientId: patientIdFromUrl || demoPatient.id,
+            patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
+          },
+        };
+        const organized = organizeSOAPData(unifiedData);
+        if (todayFocus.length > 0) {
+          organized.context.todayFocus = todayFocus.map((item) => ({
+            id: item.id,
+            label: item.label,
+            notes: item.notes,
+            source: 'plan' as const,
+          }));
+        }
+        const analysisLevel = workflowRoute?.analysisLevel || 'full';
+        const response = await generateSOAPNoteFromService(organized.context, {
+          analysisLevel,
+          sessionType: currentSessionType,
+          professionalProfile: professionalProfile || undefined,
+          redFlagOverride: { findings: redFlagFindings, clinicianReasoning: overrideReasoning.trim() },
         });
+        if (!response?.soap) {
+          setAnalysisError('SOAP regeneration returned no content. Please try again.');
+          return;
+        }
+        setLocalSoapNote({
+          ...response.soap,
+          requiresReview: true,
+          isReviewed: false,
+          aiGenerated: true,
+          aiProcessor: 'AiduxCare Clinical AI',
+          processedAt: new Date(),
+        });
+        setRedFlagOverrideApplied(true);
+        setSuccessMessage('SOAP regenerated without red flag alert. Clinician reasoning documented.');
+        setTimeout(() => setSuccessMessage(null), 5000);
+        if (user?.uid && patientIdFromUrl) {
+          await FirestoreAuditLogger.logEvent({
+            type: 'red_flag_override',
+            userId: user.uid,
+            userRole: 'professional',
+            patientId: patientIdFromUrl,
+            metadata: {
+              redFlagFindings,
+              clinicianReasoning: overrideReasoning.trim(),
+              originalSOAPPreview: JSON.stringify(localSoapNote).substring(0, 500),
+              workflowType: 'initial',
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
+      } else {
+        // FOLLOW-UP: existing logic (buildFollowUpPromptV3 + generateFollowUpSOAPV2Raw)
+        const fullPrompt = buildFollowUpPromptV3({
+          baselineSOAP: followUpClinicalState!.baselineSOAP,
+          clinicalUpdate: (transcript?.trim() ?? '') || '',
+          inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
+          inClinicAdjustmentsNotes: inClinicAdjustmentsNotes?.trim() || undefined,
+          homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
+          professionalProfile: professionalProfile || undefined,
+          redFlagOverride: { findings: redFlagFindings, clinicianReasoning: overrideReasoning.trim() },
+        });
+        const { soap } = await generateFollowUpSOAPV2Raw(fullPrompt);
+        const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
+        if (!soap || !hasStructuredContent) {
+          setAnalysisError('SOAP regeneration returned no content. Please try again.');
+          return;
+        }
+        setLocalSoapNote({
+          ...soap,
+          requiresReview: true,
+          isReviewed: false,
+          aiGenerated: true,
+          aiProcessor: 'AiduxCare Clinical AI',
+          processedAt: new Date(),
+        });
+        setRedFlagOverrideApplied(true);
+        setSuccessMessage('SOAP regenerated without red flag alert. Clinician reasoning documented.');
+        setTimeout(() => setSuccessMessage(null), 5000);
+        if (user?.uid && patientIdFromUrl) {
+          await FirestoreAuditLogger.logEvent({
+            type: 'red_flag_override',
+            userId: user.uid,
+            userRole: 'professional',
+            patientId: patientIdFromUrl,
+            metadata: {
+              redFlagFindings,
+              clinicianReasoning: overrideReasoning.trim(),
+              originalSOAPPreview: JSON.stringify(localSoapNote).substring(0, 500),
+              workflowType: 'follow-up',
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
       }
     } catch (err: any) {
       const message = err?.message || 'Error regenerating SOAP. Please try again.';
@@ -3476,7 +3557,42 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsRegeneratingSOAP(false);
     }
-  }, [overrideRedFlags, overrideReasoning, followUpClinicalState, localSoapNote, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile, extractRedFlagFindings, user?.uid, patientIdFromUrl]);
+  }, [redFlagAction, overrideReasoning, followUpClinicalState, localSoapNote, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile, extractRedFlagFindings, user?.uid, patientIdFromUrl, visitType, niagaraResults, filteredEvaluationTests, todayFocus, attachments, currentPatient, workflowRoute, currentSessionType]);
+
+  /** WO-PHASE1C-PART2: Defer treatment — save SOAP as-is with referral recommendation, mark deferred */
+  const handleDeferTreatment = useCallback(async () => {
+    if (!localSoapNote || !user?.uid || !patientIdFromUrl) return;
+    try {
+      const redFlagFindings = extractRedFlagFindings(localSoapNote);
+      const soapWithDeferral: SOAPNote = {
+        ...localSoapNote,
+        status: 'deferred_pending_medical_review',
+        deferralInfo: {
+          deferredAt: new Date().toISOString(),
+          deferredBy: user.uid,
+          reason: 'Red flags detected - pending medical clearance',
+          redFlagFindings,
+        },
+      };
+      await handleSaveSOAP(soapWithDeferral, 'finalized');
+      setRedFlagOverrideApplied(true);
+      await FirestoreAuditLogger.logEvent({
+        type: 'treatment_deferred',
+        userId: user.uid,
+        userRole: 'professional',
+        patientId: patientIdFromUrl,
+        metadata: {
+          reason: 'red_flags_pending_medical_review',
+          findings: redFlagFindings,
+          workflowType: visitType || 'follow-up',
+        },
+      });
+      setShowDeferralConfirmation(true);
+    } catch (err: any) {
+      console.error('[DEFER-TREATMENT] Error:', err);
+      setAnalysisError('Error saving deferred SOAP. Please try again.');
+    }
+  }, [localSoapNote, user?.uid, patientIdFromUrl, visitType, extractRedFlagFindings]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -3560,8 +3676,9 @@ const ProfessionalWorkflowPage = () => {
   ]);
 
   const handleSaveSOAP = async (soap: SOAPNote, status: SOAPStatus) => {
-    // ✅ DÍA 2: CPO Review Gate - Bloquear finalización sin review
-    if (status === 'finalized') {
+    // ✅ DÍA 2: CPO Review Gate - Bloquear finalización sin review (bypass for deferred)
+    const isDeferred = soap.status === 'deferred_pending_medical_review';
+    if (status === 'finalized' && !isDeferred) {
       // Check si requiere review y no fue reviewado
       if (soap.requiresReview && !soap.isReviewed) {
         setAnalysisError(
@@ -3601,6 +3718,9 @@ const ProfessionalWorkflowPage = () => {
       ...(soap.aiGenerated !== undefined && { aiGenerated: soap.aiGenerated }),
       ...(soap.aiProcessor && { aiProcessor: soap.aiProcessor }),
       ...(soap.processedAt && { processedAt: soap.processedAt }),
+      // ✅ WO-PHASE1C-PART2: Defer treatment metadata
+      ...(soap.status && { status: soap.status }),
+      ...(soap.deferralInfo && { deferralInfo: soap.deferralInfo }),
     };
 
     // Clean transcriptionMeta to remove undefined values
@@ -4719,60 +4839,89 @@ const ProfessionalWorkflowPage = () => {
                     </div>
                   )}
                 </div>
-                {/* WO-PHASE1C-PART2: Red flag override block — only when SOAP contains red flags and override not applied */}
-                {visitType === 'follow-up' && soapContainsRedFlags && !redFlagOverrideApplied && localSoapNote && (
+                {/* WO-PHASE1C-PART2: Red flag override/defer block — only when SOAP contains red flags and override not applied */}
+                {soapContainsRedFlags && !redFlagOverrideApplied && localSoapNote && (
                   <div className="mt-4 p-4 border-2 border-amber-500 bg-amber-50 rounded-lg">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-amber-900 mb-2">Clinical Evaluation Required</h4>
                         <p className="text-sm text-amber-800 mb-3">
-                          This SOAP note recommends urgent medical referral based on red flag symptoms.
-                          If you have clinically evaluated these findings and determined urgent referral
-                          is not indicated, you may override this recommendation.
+                          This SOAP note recommends medical review based on red flag symptoms. Choose how to proceed:
                         </p>
-                        <label className="flex items-start gap-2 mb-3 cursor-pointer">
+                        <label className="flex items-start gap-2 mb-3 p-3 bg-white rounded border border-amber-300 cursor-pointer">
                           <input
-                            type="checkbox"
-                            checked={overrideRedFlags}
-                            onChange={(e) => setOverrideRedFlags(e.target.checked)}
+                            type="radio"
+                            name="redFlagAction"
+                            value="override"
+                            checked={redFlagAction === 'override'}
+                            onChange={() => setRedFlagAction('override')}
                             className="mt-1"
                           />
-                          <span className="text-sm font-medium text-amber-900">
-                            I have clinically evaluated these findings and determined urgent
-                            referral is not indicated at this time
-                          </span>
-                        </label>
-                        {overrideRedFlags && (
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-amber-900 mb-1">
-                              Clinical reasoning (required):
-                            </label>
-                            <textarea
-                              value={overrideReasoning}
-                              onChange={(e) => setOverrideReasoning(e.target.value)}
-                              placeholder="Example: Bladder control issues are expected 2 weeks post-partum. Weight loss is intentional per patient discussion. Night pain controlled with positioning modifications. No urgent referral indicated."
-                              rows={4}
-                              className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                            />
-                            {overrideReasoning.trim().length > 0 && overrideReasoning.trim().length < 20 && (
-                              <p className="text-xs text-amber-700 mt-1">
-                                Please provide detailed clinical reasoning (minimum 20 characters)
-                              </p>
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-amber-900 block mb-1">
+                              Continue physiotherapy (I have evaluated these findings)
+                            </span>
+                            {redFlagAction === 'override' && (
+                              <div className="mt-2">
+                                <label className="block text-xs font-medium text-amber-900 mb-1">
+                                  Clinical reasoning (required):
+                                </label>
+                                <textarea
+                                  value={overrideReasoning}
+                                  onChange={(e) => setOverrideReasoning(e.target.value)}
+                                  placeholder="Example: Progressive leg weakness expected 3 weeks post-ACL reconstruction. Bladder control issues related to epidural anesthesia, resolving per patient report..."
+                                  rows={3}
+                                  className="w-full px-3 py-2 border border-amber-300 rounded text-sm"
+                                />
+                                {overrideReasoning.trim().length > 0 && overrideReasoning.trim().length < 20 && (
+                                  <p className="text-xs text-amber-700 mt-1">Minimum 20 characters required</p>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                        <button
-                          onClick={handleRegenerateWithoutRedFlags}
-                          disabled={!overrideRedFlags || overrideReasoning.trim().length < 20 || isRegeneratingSOAP}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            overrideRedFlags && overrideReasoning.trim().length >= 20
-                              ? 'bg-amber-600 text-white hover:bg-amber-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }`}
-                        >
-                          {isRegeneratingSOAP ? 'Regenerating SOAP...' : 'Regenerate SOAP without red flag alert'}
-                        </button>
+                        </label>
+                        <label className="flex items-start gap-2 mb-3 p-3 bg-white rounded border border-amber-300 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="redFlagAction"
+                            value="defer"
+                            checked={redFlagAction === 'defer'}
+                            onChange={() => setRedFlagAction('defer')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-amber-900 block mb-1">
+                              Defer physiotherapy pending medical review
+                            </span>
+                            <span className="text-xs text-amber-700">
+                              Patient will be reassessed after medical clearance. SOAP saved with referral recommendation.
+                            </span>
+                          </div>
+                        </label>
+                        <div className="flex gap-2 mt-3">
+                          {redFlagAction === 'override' && (
+                            <button
+                              onClick={handleRegenerateWithoutRedFlags}
+                              disabled={overrideReasoning.trim().length < 20 || isRegeneratingSOAP}
+                              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                overrideReasoning.trim().length >= 20
+                                  ? 'bg-amber-600 text-white hover:bg-amber-700'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                            >
+                              {isRegeneratingSOAP ? 'Regenerating...' : 'Regenerate SOAP (continue treatment)'}
+                            </button>
+                          )}
+                          {redFlagAction === 'defer' && (
+                            <button
+                              onClick={handleDeferTreatment}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                            >
+                              Save SOAP & Defer Treatment
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -5028,8 +5177,96 @@ const ProfessionalWorkflowPage = () => {
               </Suspense>
             )}
             {activeTab === "soap" && (
-              <Suspense fallback={<LoadingSpinner />}>
-                <SOAPTab
+              <>
+                {/* WO-PHASE1C-003: Red flag override/defer block for INITIAL */}
+                {soapContainsRedFlags && !redFlagOverrideApplied && localSoapNote && (
+                  <div className="mb-4 p-4 border-2 border-amber-500 bg-amber-50 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-amber-900 mb-2">Clinical Evaluation Required</h4>
+                        <p className="text-sm text-amber-800 mb-3">
+                          This SOAP note recommends medical review based on red flag symptoms. Choose how to proceed:
+                        </p>
+                        <label className="flex items-start gap-2 mb-3 p-3 bg-white rounded border border-amber-300 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="redFlagActionInitial"
+                            value="override"
+                            checked={redFlagAction === 'override'}
+                            onChange={() => setRedFlagAction('override')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-amber-900 block mb-1">
+                              Continue physiotherapy (I have evaluated these findings)
+                            </span>
+                            {redFlagAction === 'override' && (
+                              <div className="mt-2">
+                                <label className="block text-xs font-medium text-amber-900 mb-1">
+                                  Clinical reasoning (required):
+                                </label>
+                                <textarea
+                                  value={overrideReasoning}
+                                  onChange={(e) => setOverrideReasoning(e.target.value)}
+                                  placeholder="Example: Post-concussion symptoms expected 2 weeks after MVA. Neurology already consulted. Symptoms improving per patient report."
+                                  rows={3}
+                                  className="w-full px-3 py-2 border border-amber-300 rounded text-sm"
+                                />
+                                {overrideReasoning.trim().length > 0 && overrideReasoning.trim().length < 20 && (
+                                  <p className="text-xs text-amber-700 mt-1">Minimum 20 characters required</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-2 mb-3 p-3 bg-white rounded border border-amber-300 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="redFlagActionInitial"
+                            value="defer"
+                            checked={redFlagAction === 'defer'}
+                            onChange={() => setRedFlagAction('defer')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-amber-900 block mb-1">
+                              Defer physiotherapy pending medical review
+                            </span>
+                            <span className="text-xs text-amber-700">
+                              Patient will be reassessed after medical clearance. SOAP saved with referral recommendation.
+                            </span>
+                          </div>
+                        </label>
+                        <div className="flex gap-2 mt-3">
+                          {redFlagAction === 'override' && (
+                            <button
+                              onClick={handleRegenerateWithoutRedFlags}
+                              disabled={overrideReasoning.trim().length < 20 || isRegeneratingSOAP}
+                              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                overrideReasoning.trim().length >= 20
+                                  ? 'bg-amber-600 text-white hover:bg-amber-700'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                            >
+                              {isRegeneratingSOAP ? 'Regenerating...' : 'Regenerate SOAP (continue treatment)'}
+                            </button>
+                          )}
+                          {redFlagAction === 'defer' && (
+                            <button
+                              onClick={handleDeferTreatment}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                            >
+                              Save SOAP & Defer Treatment
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <Suspense fallback={<LoadingSpinner />}>
+                  <SOAPTab
                   localSoapNote={localSoapNote}
                   soapStatus={soapStatus}
                   visitType={visitType}
@@ -5062,6 +5299,7 @@ const ProfessionalWorkflowPage = () => {
                   }}
                 />
               </Suspense>
+              </>
             )}
           </>
         )}
@@ -5069,6 +5307,56 @@ const ProfessionalWorkflowPage = () => {
 
       {/* Feedback Widget - Always visible for beta testing */}
       <FeedbackWidget />
+
+      {/* WO-PHASE1C-PART2: Deferral confirmation modal — shown after Save SOAP & Defer Treatment */}
+      {showDeferralConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md shadow-xl">
+            <div className="flex items-start gap-3 mb-4">
+              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Treatment Deferred - SOAP Saved</h3>
+                <p className="text-sm text-gray-600">
+                  Patient record updated with medical referral recommendation. Treatment will resume after medical clearance.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <button
+                type="button"
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                onClick={() => setShowDeferralConfirmation(false)}
+              >
+                Generate Referral Letter
+              </button>
+              <button
+                type="button"
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                onClick={() => setShowDeferralConfirmation(false)}
+              >
+                Email SOAP to MD
+              </button>
+              <button
+                type="button"
+                className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                onClick={() => setShowDeferralConfirmation(false)}
+              >
+                Schedule Follow-up (post-clearance)
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDeferralConfirmation(false);
+                navigate('/command-center');
+              }}
+              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+            >
+              Return to Command Center
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Initial Plan Modal for existing patients without initial assessment */}
       {currentPatient && (
