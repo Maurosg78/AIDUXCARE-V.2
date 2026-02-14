@@ -1,5 +1,6 @@
 /**
  * WO-FU-VERTEX-SPLIT-01 / PROMPT FINAL FOLLOW-UP SOAP (V3)
+ * WO-PHASE1B: Enhanced with professional profile, in-clinic adjustment notes, item notes.
  *
  * Follow-up is a PARALLEL PATH. It does NOT use Niagara/analyze (no highlights, no physical tests, no biopsychosocial).
  *
@@ -15,6 +16,13 @@
  * - inClinicItems, homeProgram: tratamientos en consulta + ejercicios domiciliarios.
  */
 
+import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import {
+  buildCapabilityContext,
+  buildProfessionalContext,
+  buildPracticePreferencesContext,
+} from '@/core/ai/PromptFactory-Canada';
+
 export interface FollowUpPromptV3BaselineSOAP {
   subjective: string;
   objective: string;
@@ -24,15 +32,36 @@ export interface FollowUpPromptV3BaselineSOAP {
   encounterId?: string;
 }
 
+/** Item with optional notes (WO-PHASE1B). */
+export interface FollowUpPromptItem {
+  label: string;
+  notes?: string;
+}
+
 export interface FollowUpPromptV3Input {
   /** Baseline from previous evaluation (clinicalState.baselineSOAP). Required. */
   baselineSOAP: FollowUpPromptV3BaselineSOAP;
   /** Today's clinical update (transcript). Required. */
   clinicalUpdate: string;
-  /** In-clinic treatment performed today. Optional. */
-  inClinicItems?: string[];
-  /** Home exercise program (current or adjusted). Optional. */
-  homeProgram?: string[];
+  /** In-clinic treatment performed today. Optional. Supports string[] or {label, notes}[]. */
+  inClinicItems?: (string | FollowUpPromptItem)[];
+  /** WO-PHASE1B: Treatment adjustments/modifications documented today. */
+  inClinicAdjustmentsNotes?: string;
+  /** Home exercise program (current or adjusted). Optional. Supports string[] or {label, notes}[]. */
+  homeProgram?: (string | FollowUpPromptItem)[];
+  /** WO-PHASE1B: Professional profile for personalized AI response. */
+  professionalProfile?: ProfessionalProfile | null;
+}
+
+/** WO-PHASE1B: Check if profile can use personalization (consent). */
+function canUsePersonalization(profile: ProfessionalProfile | null | undefined): boolean {
+  return (profile as { dataUseConsent?: { personalizationFromClinicianInputs?: boolean } })?.dataUseConsent
+    ?.personalizationFromClinicianInputs !== false;
+}
+
+/** Normalize item to { label, notes } for prompt. */
+function normalizeItem(item: string | FollowUpPromptItem): { label: string; notes?: string } {
+  return typeof item === 'string' ? { label: item } : { label: item.label, notes: item.notes };
 }
 
 /**
@@ -45,7 +74,9 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     baselineSOAP,
     clinicalUpdate,
     inClinicItems = [],
+    inClinicAdjustmentsNotes,
     homeProgram = [],
+    professionalProfile,
   } = input;
 
   if (!baselineSOAP) {
@@ -57,33 +88,67 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
   const ass = (baselineSOAP.assessment ?? '').trim() || 'Not documented.';
   const plan = (baselineSOAP.plan ?? '').trim() || 'Not documented.';
 
+  // WO-PHASE1B: Professional profile sections (if profile exists and consent allows)
+  let profilePrefix = '';
+  if (professionalProfile && canUsePersonalization(professionalProfile)) {
+    const cap = buildCapabilityContext(professionalProfile);
+    const prof = buildProfessionalContext(professionalProfile);
+    const prefs = buildPracticePreferencesContext(professionalProfile);
+    if (cap || prof || prefs) {
+      profilePrefix = [cap, prof, prefs].filter(Boolean).join('\n\n') + '\n\n';
+    }
+  }
+
+  // WO-PHASE1B: In-clinic with item notes
+  const inClinicNormalized = inClinicItems.map(normalizeItem);
   const inClinicSection =
-    inClinicItems.length > 0
+    inClinicNormalized.length > 0
       ? `CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (if provided)
 
 Only consider these items if present.
 Do NOT assume additional interventions.
 
 In-clinic treatment performed today:
-${inClinicItems.map((item) => `${item}`).join('\n\n')}
+${inClinicNormalized
+  .map(
+    (item) =>
+      `- ${item.label}${item.notes?.trim() ? `\n  Notes: ${item.notes.trim()}` : ''}`
+  )
+  .join('\n\n')}
 
 `
       : '';
 
+  // WO-PHASE1B: In-clinic adjustments section
+  const adjustmentsSection =
+    inClinicAdjustmentsNotes?.trim()
+      ? `CONTEXT — IN-CLINIC ADJUSTMENTS / UPDATES TODAY:
+${inClinicAdjustmentsNotes.trim()}
+
+`
+      : '';
+
+  // WO-PHASE1B: HEP with item notes
+  const hepNormalized = homeProgram.map(normalizeItem);
   const hepSection =
-    homeProgram.length > 0
+    hepNormalized.length > 0
       ? `CONTEXT — HOME EXERCISE PROGRAM (if provided)
 
 This represents the current or adjusted home program.
 Do NOT invent new home exercises unless clearly justified by the update.
 
 Home exercise program:
-${homeProgram.map((item) => `${item}`).join('\n\n')}
+${hepNormalized
+  .map(
+    (item) =>
+      `- ${item.label}${item.notes?.trim() ? `\n  Notes: ${item.notes.trim()}` : ''}`
+  )
+  .join('\n\n')}
 
 `
       : '';
 
-  return `PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
+  return `${profilePrefix}PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
 SYSTEM / INSTRUCTION
 
@@ -137,7 +202,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${inClinicSection}${hepSection}TASK
+${inClinicSection}${adjustmentsSection}${hepSection}TASK
 
 Using only the information above:
 

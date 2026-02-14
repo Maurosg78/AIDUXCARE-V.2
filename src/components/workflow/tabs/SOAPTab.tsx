@@ -99,6 +99,8 @@ export interface SOAPTabProps {
   handleAttachmentRemove?: (attachment: ClinicalAttachment) => Promise<void>;
   /** When provided, shows "Volver al Command Center" after finalization. */
   onBackToCommandCenter?: () => void;
+  /** WO-PHASE1B: For follow-up, button enabled only when this is true (at least one section has content). */
+  followUpHasContent?: boolean;
 }
 
 export const SOAPTab: React.FC<SOAPTabProps> = ({
@@ -150,6 +152,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleAttachmentUpload,
   handleAttachmentRemove,
   onBackToCommandCenter,
+  followUpHasContent,
 }) => {
   return (
     <div className="space-y-6">
@@ -206,14 +209,21 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
               </p>
             )}
             {/* WO-07: Botón Generate SOAP al final de página (no sticky) */}
+            {/* WO-PHASE1B: For follow-up, gate on followUpHasContent (at least one section: transcript, in-clinic, or HEP) */}
             <button
               onClick={handleGenerateSoap}
               disabled={
-                !niagaraResults ||
-                (visitType !== 'follow-up' && physicalExamResults.length === 0) ||
-                isGeneratingSOAP
+                visitType === 'follow-up'
+                  ? !followUpHasContent || isGeneratingSOAP
+                  : !niagaraResults ||
+                    physicalExamResults.length === 0 ||
+                    isGeneratingSOAP
               }
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover transition ${
+                visitType === 'follow-up' && !followUpHasContent
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
             >
               {isGeneratingSOAP ? (
                 <>
@@ -227,6 +237,11 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                 </>
               )}
             </button>
+            {visitType === 'follow-up' && !followUpHasContent && (
+              <p className="text-xs text-amber-600 mt-2">
+                Complete at least one section above (audio, in-clinic treatment, or home program) to generate SOAP.
+              </p>
+            )}
             {analysisError && (
               <ErrorMessage
                 message={analysisError}

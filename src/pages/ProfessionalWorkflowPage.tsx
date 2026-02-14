@@ -290,6 +290,8 @@ const ProfessionalWorkflowPage = () => {
   // WO-FU-PLAN-SPLIT-01: In-clinic vs HEP — FOLLOW-UP ONLY; poblado solo cuando visitType === 'follow-up'
   const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  /** WO-PHASE1B: Treatment adjustments/modifications documented today (in-clinic block). */
+  const [inClinicAdjustmentsNotes, setInClinicAdjustmentsNotes] = useState<string>('');
   // Follow-up path: baseline for SOAP (no Niagara). Single source of truth — loaded when visitType === 'follow-up'.
   const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
   /** True once getClinicalState has settled for follow-up; used to gate "no baseline → cannot start follow-up". */
@@ -1240,6 +1242,11 @@ const ProfessionalWorkflowPage = () => {
           console.log('[WORKFLOW] ✅ Restored transcript');
         }
 
+        // WO-PHASE1B: Restore in-clinic adjustment notes (follow-up)
+        if (savedState.inClinicAdjustmentsNotes && typeof savedState.inClinicAdjustmentsNotes === 'string') {
+          setInClinicAdjustmentsNotes(savedState.inClinicAdjustmentsNotes);
+        }
+
         // WO-IA-CLOSE-01: Restore initial assessment closed state (clear when not in savedState to avoid bleed between patients)
         setInitialAssessmentClosedAt(savedState.initialAssessmentClosedAt != null && savedState.initialAssessmentClosedAt !== '' ? savedState.initialAssessmentClosedAt : null);
         setBaselineIdFromSession(savedState.baselineId != null && savedState.baselineId !== '' ? savedState.baselineId : null);
@@ -1368,6 +1375,7 @@ const ProfessionalWorkflowPage = () => {
           visitType: visitType,
           timestamp: new Date().toISOString(),
           version: '1.0',
+          inClinicAdjustmentsNotes: inClinicAdjustmentsNotes || '',
           ...(initialAssessmentClosedAt != null && { initialAssessmentClosedAt }),
           ...(baselineIdFromSession != null && { baselineId: baselineIdFromSession }),
         };
@@ -3311,9 +3319,10 @@ const ProfessionalWorkflowPage = () => {
     }
     const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
     const hasChecklist = inClinicItems.length > 0 || homeProgramItems.length > 0;
+    const hasAdjustmentNotes = inClinicAdjustmentsNotes && inClinicAdjustmentsNotes.trim().length > 0;
     const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
-    if (!hasChecklist && !hasClinicalUpdate) {
-      setAnalysisError('Add at least one confirmed treatment or a clinical update to generate the SOAP note.');
+    if (!hasChecklist && !hasClinicalUpdate && !hasAdjustmentNotes) {
+      setAnalysisError('Add at least one confirmed treatment, a clinical update, or adjustment notes to generate the SOAP note.');
       return;
     }
     setAnalysisError(null);
@@ -3324,8 +3333,10 @@ const ProfessionalWorkflowPage = () => {
       const fullPrompt = buildFollowUpPromptV3({
         baselineSOAP: baseline,
         clinicalUpdate: followUpClinicalUpdate,
-        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
-        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
+        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
+        inClinicAdjustmentsNotes: inClinicAdjustmentsNotes?.trim() || undefined,
+        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => ({ label: i.label, notes: i.notes })) : undefined,
+        professionalProfile: professionalProfile || undefined,
       });
       const { raw, soap } = await generateFollowUpSOAPV2Raw(fullPrompt);
       const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
@@ -3357,7 +3368,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [followUpClinicalState, transcript, inClinicItems, homeProgramItems]);
+  }, [followUpClinicalState, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -4449,40 +4460,7 @@ const ProfessionalWorkflowPage = () => {
                 </div>
               </div>
 
-              {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}
-              {visitType === 'follow-up' && (inClinicItems.length > 0 || homeProgramItems.length > 0) && (
-                <>
-                  {inClinicItems.length > 0 && (
-                    <div className="bg-white border border-blue-200 rounded-lg p-6">
-                      <div className="flex items-start gap-3 mb-4">
-                        <span className="text-2xl">🗓️</span>
-                        <div className="flex-1">
-                          <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                            Today&apos;s in-clinic treatment
-                          </h2>
-                          <p className="text-sm text-slate-600">
-                            Confirm or adjust what was planned previously.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-blue-600">
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Today&apos;s treatment confirmed</span>
-                        </div>
-                      </div>
-                      <SuggestedFocusEditor
-                        items={inClinicItems}
-                        onChange={setInClinicItems}
-                        onFinishSession={undefined}
-                        hideHeader={true}
-                      />
-                    </div>
-                  )}
-                  {homeProgramItems.length > 0 && (
-                    <HomeProgramBlock items={homeProgramItems} onChange={setHomeProgramItems} />
-                  )}
-                </>
-              )}
-
+              {/* WO-PHASE1B: Order 1 — Clinical notes (Audio/Transcript) FIRST */}
               {/* Bloque 2: Clinical notes / Follow-up clinical update */}
               <div className="bg-white border border-blue-200 rounded-lg p-6">
                 {/* WO-06.1: Micro-copy de continuidad (solo follow-up) */}
@@ -4578,6 +4556,54 @@ const ProfessionalWorkflowPage = () => {
                 </Suspense>
               </div>
 
+              {/* WO-PHASE1B: Order 2 — In-Clinic + HEP (always show for follow-up) */}
+              {visitType === 'follow-up' && (
+                <>
+                  <div className="bg-white border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <span className="text-2xl">🗓️</span>
+                      <div className="flex-1">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                          Today&apos;s in-clinic treatment
+                        </h2>
+                        <p className="text-sm text-slate-600">
+                          Confirm or adjust what was planned previously.
+                        </p>
+                      </div>
+                      {inClinicItems.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm text-blue-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Today&apos;s treatment confirmed</span>
+                        </div>
+                      )}
+                    </div>
+                    <SuggestedFocusEditor
+                      items={inClinicItems}
+                      onChange={setInClinicItems}
+                      onFinishSession={undefined}
+                      hideHeader={true}
+                      allowAdd={true}
+                    />
+                    <div className="mt-4 border-t border-slate-200 pt-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Treatment adjustments or notes
+                      </label>
+                      <textarea
+                        value={inClinicAdjustmentsNotes}
+                        onChange={(e) => setInClinicAdjustmentsNotes(e.target.value)}
+                        placeholder="Document any modifications to today's treatment plan based on patient response..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        This will be included in the SOAP generation for more accurate documentation.
+                      </p>
+                    </div>
+                  </div>
+                  <HomeProgramBlock items={homeProgramItems} onChange={setHomeProgramItems} allowAdd={true} />
+                </>
+              )}
+
               <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
                 <div className="flex items-start gap-3 mb-4">
                   <span className="text-2xl">📝</span>
@@ -4614,7 +4640,7 @@ const ProfessionalWorkflowPage = () => {
                     workflowRoute={workflowRoute}
                     soapTokenOptimization={soapTokenOptimization}
                     niagaraResults={visitType === 'follow-up' ? null : niagaraResults}
-                    followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
+                    followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || (inClinicAdjustmentsNotes && inClinicAdjustmentsNotes.trim().length > 0) || homeProgramItems.length > 0) : undefined}
                     transcript={transcript}
                     physicalExamResults={physicalExamResults}
                     treatmentReminder={treatmentReminder}

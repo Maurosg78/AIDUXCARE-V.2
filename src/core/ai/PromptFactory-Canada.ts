@@ -276,8 +276,9 @@ Use full words, avoid abbreviations per CAPR/CPO standards. Remember: you are ex
 /**
  * Builds capability context (experience level, domain focus, output style).
  * Maximum 4 lines. Affects PRIORITY and LANGUAGE, not total text length.
+ * WO-PHASE1B: Exported for use in follow-up prompt (buildFollowUpPromptV3).
  */
-const buildCapabilityContext = (profile?: ProfessionalProfile | null): string => {
+export const buildCapabilityContext = (profile?: ProfessionalProfile | null): string => {
   const capabilities = deriveProfessionalCapabilities(profile);
 
   if (!profile || capabilities.seniority === 'mid' && capabilities.domainFocus === 'general') {
@@ -298,7 +299,8 @@ const buildCapabilityContext = (profile?: ProfessionalProfile | null): string =>
 `;
 };
 
-const buildProfessionalContext = (profile?: ProfessionalProfile | null): string => {
+/** WO-PHASE1B: Exported for use in follow-up prompt (buildFollowUpPromptV3). */
+export const buildProfessionalContext = (profile?: ProfessionalProfile | null): string => {
   if (!profile) {
     console.log('🔍 [PROMPT] No professional profile provided');
     return '';
@@ -377,8 +379,9 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
  * Build practice preferences context for prompt injection
  * WO-PERS-ONB-PROMPT-01: Inyecta preferencias de práctica del usuario
  * WO-AUTH-GUARD-ONB-DATA-01: Respeta consentimiento personalizationFromClinicianInputs
+ * WO-PHASE1B: Exported for use in follow-up prompt (buildFollowUpPromptV3).
  */
-const buildPracticePreferencesContext = (profile?: ProfessionalProfile | null): string => {
+export const buildPracticePreferencesContext = (profile?: ProfessionalProfile | null): string => {
   // WO-AUTH-GUARD-ONB-DATA-01: Verificar consentimiento antes de inyectar
   // T7: Removed @ts-expect-error - field is now properly typed
   const consent = (profile as any)?.dataUseConsent;
