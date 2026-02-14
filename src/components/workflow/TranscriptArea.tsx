@@ -85,6 +85,9 @@ export interface TranscriptAreaProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
+
+  /** WO-PHASE1B: For follow-up, hide "Analyze with AI" — only Generate SOAP at end of 3 steps */
+  visitType?: 'initial' | 'follow-up';
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -110,6 +113,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
+  visitType,
 }) => {
   // Local state for immediate UI updates
   const [localTranscript, setLocalTranscript] = useState(transcript);
@@ -398,7 +402,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           </div>
         )}
 
-        {/* ✅ Botón "Analyze with AI" siempre aparece después de la sección de attachments */}
+        {/* ✅ WO-PHASE1B: For follow-up, hide "Analyze with AI" — only Generate SOAP at end (audio → in-clinic → HEP) */}
+        {visitType !== 'follow-up' && (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <button
             onClick={handleAnalyzeWithVertex}
@@ -427,6 +432,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
                   : 'Enter a transcript or upload attachments to analyze'}
           </p>
         </div>
+        )}
       </div>
     </div>
   );
@@ -443,7 +449,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     prevProps.mode === nextProps.mode &&
     prevProps.attachments.length === nextProps.attachments.length &&
     prevProps.isUploadingAttachment === nextProps.isUploadingAttachment &&
-    prevProps.attachmentError === nextProps.attachmentError
+    prevProps.attachmentError === nextProps.attachmentError &&
+    prevProps.visitType === nextProps.visitType
   );
 });
 

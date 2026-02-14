@@ -62,6 +62,17 @@ export const PatientHistoryHierarchical: React.FC<Props> = ({
     }
   };
 
+  /** WO-PHASE1B: Fallback when chiefComplaint empty — avoid "empty" follow cards */
+  const getVisitSummary = (visit: EpisodeVisit): string => {
+    if (visit.chiefComplaint?.trim()) return visit.chiefComplaint.trim();
+    if (visit.diagnosis?.trim()) return visit.diagnosis.trim();
+    const plan = visit.soap?.plan?.trim();
+    if (plan) return plan.length > 80 ? plan.slice(0, 80) + '…' : plan;
+    const subj = visit.soap?.subjective?.trim();
+    if (subj) return subj.length > 80 ? subj.slice(0, 80) + '…' : subj;
+    return visit.type === 'initial' ? 'Initial assessment' : 'Follow-up visit';
+  };
+
   const renderVisitRow = (visit: EpisodeVisit, isInitial = false) => {
     const isFinalized = visit.soapNote?.status === 'finalized';
     const statusColor = isFinalized ? 'text-green-600' : 'text-yellow-600';
@@ -91,11 +102,9 @@ export const PatientHistoryHierarchical: React.FC<Props> = ({
             <div className="text-sm font-medium text-slate-900">
               {isInitial ? 'Initial Assessment' : 'Follow-up'}
             </div>
-            {visit.chiefComplaint && (
-              <div className="text-xs text-slate-600 mt-1 line-clamp-1">
-                {visit.chiefComplaint}
-              </div>
-            )}
+            <div className="text-xs text-slate-600 mt-1 line-clamp-1">
+              {getVisitSummary(visit)}
+            </div>
           </div>
 
           <div className="text-xs text-slate-500">
@@ -219,10 +228,10 @@ export const PatientHistoryHierarchical: React.FC<Props> = ({
                 <div className="text-sm font-medium text-slate-900">
                   Previous Documentation
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-xs text-slate-500 mt-1" title="These visits were documented before the patient had an initial assessment in AiDuxCare">
                   {orphanedFollowUps.length} visit
                   {orphanedFollowUps.length !== 1 ? 's' : ''} without initial
-                  assessment
+                  assessment in system
                 </div>
               </div>
             </div>
