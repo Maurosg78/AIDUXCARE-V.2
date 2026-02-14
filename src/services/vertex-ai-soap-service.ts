@@ -887,11 +887,77 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   let planItems: FollowUpPlanItem[] | null = null;
   let alerts: FollowUpAlerts | null = null;
 
-  // WO-FU-VERTEX-SPLIT-01: Prompt V3 requests plain SOAP only — try plain sections first
-  const plainSoap = parsePlainSOAPSections(rawText);
-  console.log('[FOLLOWUP-RAW] parsePlainSOAPSections result:', plainSoap ? 'MATCHED' : 'NULL');
-  if (plainSoap) {
-    soap = plainSoap;
+  // WO-FU-VERTEX-SPLIT-01: Vertex sometimes returns JSON despite prompt requesting plain text.
+  // Try JSON parse FIRST when response looks like JSON (starts with {) to avoid parsePlainSOAPSections
+  // incorrectly matching or returning empty S/O/A with only Plan.
+  const trimmed = rawText.trim();
+  const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('```');
+  if (looksLikeJson) {
+    try {
+      let soapData: any = null;
+      const soapNoteBlock = rawText.match(/SOAP_NOTE\s*\{[\s\S]*?\}\s*(?=ALERTS|$)/i);
+      if (soapNoteBlock) {
+        const jsonStr = soapNoteBlock[0].replace(/^SOAP_NOTE\s*/i, '').trim();
+        soapData = JSON.parse(jsonStr);
+      } else {
+        const extractJsonString = (s: string): string => {
+          const t = s.trim();
+          const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
+          if (codeBlock) return codeBlock[1].trim();
+          const firstBrace = t.indexOf('{');
+          if (firstBrace < 0) return t;
+          let depth = 0;
+          let end = -1;
+          for (let i = firstBrace; i < t.length; i++) {
+            if (t[i] === '{') depth++;
+            else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+          }
+          if (end >= 0) return t.slice(firstBrace, end + 1);
+          return t.slice(firstBrace);
+        };
+        const jsonStr = extractJsonString(trimmed);
+        soapData = JSON.parse(jsonStr);
+      }
+      if (soapData && typeof soapData === 'object') {
+        const subj = soapData.Subjective ?? soapData.subjective;
+        const obj = soapData.Objective ?? soapData.objective;
+        const ass = soapData.Assessment ?? soapData.assessment;
+        const planRaw = soapData.Plan ?? soapData.plan;
+        const plan =
+          typeof planRaw === 'string'
+            ? planRaw
+            : Array.isArray(planRaw)
+              ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
+              : 'Not documented.';
+        soap = {
+          subjective: String(subj ?? 'Not documented.'),
+          objective: String(obj ?? 'Not documented.'),
+          assessment: String(ass ?? 'Not documented.'),
+          plan: plan || 'Not documented.',
+        };
+        const planArr = Array.isArray(planRaw) ? planRaw : soapData.plan;
+        if (Array.isArray(planArr) && planArr.length > 0) {
+          planItems = planArr.map((p: any) => ({
+            id: p.id ?? String(Math.random()).slice(2, 9),
+            action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
+            status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
+            notes: p.notes,
+          }));
+        }
+        console.log('[FOLLOWUP-RAW] parsed JSON (response looked like JSON)');
+      }
+    } catch (e) {
+      console.warn('[SOAP Service] JSON parse failed, falling back to plain:', e);
+    }
+  }
+
+  // WO-FU-VERTEX-SPLIT-01: If not JSON or JSON failed, try plain SOAP sections
+  if (!soap) {
+    const plainSoap = parsePlainSOAPSections(rawText);
+    console.log('[FOLLOWUP-RAW] parsePlainSOAPSections result:', plainSoap ? 'MATCHED' : 'NULL');
+    if (plainSoap) {
+      soap = plainSoap;
+    }
   }
 
   if (!soap) {
