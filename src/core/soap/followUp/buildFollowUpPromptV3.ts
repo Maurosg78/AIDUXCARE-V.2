@@ -1,6 +1,7 @@
 /**
  * WO-FU-VERTEX-SPLIT-01 / PROMPT FINAL FOLLOW-UP SOAP (V3)
  * WO-PHASE1B: Enhanced with professional profile, in-clinic adjustment notes, item notes.
+ * WO-PHASE1C: P0 Red flags screening + P1 CPO context (promesa iBooks).
  *
  * Follow-up is a PARALLEL PATH. It does NOT use Niagara/analyze (no highlights, no physical tests, no biopsychosocial).
  *
@@ -148,11 +149,42 @@ ${hepNormalized
 `
       : '';
 
-  return `${profilePrefix}PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
+  // WO-PHASE1C P0: Red flags screening — must be between clinical update and TASK
+  const safetyCheckSection = `CRITICAL SAFETY CHECK — RED FLAGS / YELLOW FLAGS
+
+Review today's clinical update for NEW red flags or yellow flags that were NOT present at baseline.
+If the patient reports any of the following, you MUST document them clearly and recommend medical review/referral:
+
+Red flags (urgent — document and recommend referral):
+- Neurological changes: new weakness, numbness, incontinence, saddle anesthesia
+- Night pain (especially if new or worsening)
+- Unexplained weight loss
+- Symptom escalation despite treatment
+- Systemic signs: fever, infection
+- Major trauma, progressive weakness
+- Cancer history with new symptoms
+- Medication interactions (NSAIDs + SSRIs/SNRIs)
+
+Yellow flags (monitor — document for clinical awareness):
+- Fear avoidance, catastrophizing
+- Work/compensation concerns
+- Poor adherence patterns
+- Psychosocial barriers to recovery
+
+Wording: Use "Clinical concern: [finding]. Recommend medical review/referral based on red flags."
+Do NOT use diagnostic language. Do NOT ignore red flags in the update.
+If no new flags: Omit this section. Do NOT invent flags.
+
+`;
+
+  const prompt = `${profilePrefix}PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
 SYSTEM / INSTRUCTION
 
-You are a licensed clinical documentation assistant supporting a follow-up visit.
+You are a clinical documentation assistant for a registered physiotherapist in Ontario, Canada.
+Scope: CPO (College of Physiotherapists of Ontario) regulated practice.
+Ensure all suggestions and documentation are within physiotherapy scope per CPO standards.
+This is a follow-up visit — focus on changes and progress, not re-evaluation.
 
 This is NOT an initial assessment.
 
@@ -202,7 +234,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${inClinicSection}${adjustmentsSection}${hepSection}TASK
+${safetyCheckSection}${inClinicSection}${adjustmentsSection}${hepSection}TASK
 
 Using only the information above:
 
@@ -250,4 +282,14 @@ Do NOT return analysis, highlights, or recommendations sections
 Do NOT include explanations or meta commentary
 
 Return SOAP only`;
+
+  // WO-PHASE1C: Log temporal para validar que la sección se inyecta
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      '[buildFollowUpPromptV3] Prompt includes CRITICAL SAFETY CHECK:',
+      prompt.includes('CRITICAL SAFETY CHECK')
+    );
+  }
+
+  return prompt;
 }
