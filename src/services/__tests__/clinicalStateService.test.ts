@@ -204,4 +204,88 @@ describe('ClinicalStateService', () => {
       expect(state.isFirstSession).toBe(false);
     });
   });
+
+  describe('FIX-PHASE0-BASELINE-HYDRATION: Same-day multiple FOLLOWUPs (Bug Zuw7dUjc9dEN8CQPGGkH)', () => {
+    it('should use FOLLOWUP #1 as baseline for FOLLOWUP #2 (same day)', async () => {
+      const patientId = 'test-patient-123';
+      const userId = 'test-user-456';
+
+      mockGetPatientById.mockResolvedValue({
+        id: patientId,
+        fullName: 'Test Patient',
+        activeBaselineId: 'baseline-initial-2-weeks-ago',
+      } as any);
+
+      const followup1Note = {
+        id: 'note-followup1-today',
+        patientId,
+        sessionId: 'session-followup1',
+        soapData: {
+          subjective: 'FOLLOWUP #1: Paciente refiere empeoramiento del dolor lumbar tras ejercicios',
+          objective: 'FOLLOWUP #1: ROM limitado, dolor a palpación L4-L5',
+          assessment: 'FOLLOWUP #1: Lumbalgia mecánica, respuesta inadecuada al tratamiento inicial',
+          plan: 'FOLLOWUP #1: Modificar ejercicios, agregar terapia manual',
+        },
+        visitType: 'follow-up',
+        createdAt: '2026-02-13T09:00:00.000Z',
+      };
+
+      const initialNote = {
+        id: 'note-initial-2-weeks-ago',
+        patientId,
+        sessionId: 'session-initial',
+        soapData: {
+          subjective: 'INITIAL: Dolor lumbar crónico desde hace 6 meses',
+          objective: 'INITIAL: ROM completo, sin limitaciones',
+          assessment: 'INITIAL: Lumbalgia mecánica inespecífica',
+          plan: 'INITIAL: Ejercicios de estabilización lumbar',
+        },
+        visitType: 'initial',
+        createdAt: '2026-01-30T10:00:00.000Z',
+      };
+
+      mockGetNotesByPatient.mockResolvedValue([followup1Note as any, initialNote as any]);
+
+      const state = await getClinicalState(patientId, userId);
+
+      expect(state.hasBaseline).toBe(true);
+      expect(state.baselineSOAP).toBeDefined();
+      expect(state.baselineSOAP?.subjective).toContain('FOLLOWUP #1');
+      expect(state.baselineSOAP?.plan).toContain('Modificar ejercicios');
+      expect(state.baselineSOAP?.subjective).not.toContain('INITIAL');
+      expect(new Date(state.baselineSOAP!.date).toISOString()).toBe('2026-02-13T09:00:00.000Z');
+    });
+
+    it('should fall back to activeBaselineId only when no notes exist', async () => {
+      const patientId = 'test-patient-123';
+      const userId = 'test-user-456';
+      const activeBaselineId = 'baseline-123';
+
+      mockGetPatientById.mockResolvedValue({
+        id: patientId,
+        fullName: 'Test Patient',
+        activeBaselineId,
+      } as any);
+
+      mockGetNotesByPatient.mockResolvedValue([]);
+
+      mockGetBaselineById.mockResolvedValue({
+        id: activeBaselineId,
+        patientId,
+        sourceSoapId: 'soap-123',
+        snapshot: {
+          primaryAssessment: 'Fallback baseline assessment',
+          keyFindings: ['Fallback subjective', 'Fallback objective'],
+          planSummary: 'Fallback plan',
+        },
+        createdAt: new Date('2026-01-01'),
+        createdBy: userId,
+      } as any);
+
+      const state = await getClinicalState(patientId, userId);
+
+      expect(state.hasBaseline).toBe(true);
+      expect(state.baselineSOAP?.assessment).toContain('Fallback');
+    });
+  });
 });

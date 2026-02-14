@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Play, History } from 'lucide-react';
 
@@ -6,6 +6,8 @@ import ClinicalAssistantPanel from "../../shared/components/Assistant/ClinicalAs
 
 import { PatientHeaderCard } from './components/PatientHeaderCard';
 import { LastTherapyCard } from './components/LastTherapyCard';
+import { PatientHistoryHierarchical } from './components/PatientHistoryHierarchical';
+import { inferEpisodes } from './utils/inferEpisodes';
 import { usePatientCore } from './hooks/usePatientCore';
 import { useActiveEpisode } from './hooks/useActiveEpisode';
 import { useLastEncounter } from './hooks/useLastEncounter';
@@ -33,6 +35,15 @@ export const PatientDashboardPage: React.FC = () => {
     };
     checkBaseline();
   }, [patientId]);
+
+  // PHASE 1A: Hierarchical visit history (episodes + orphaned)
+  const episodesResult = useMemo(
+    () =>
+      patientVisits.data && patientVisits.data.length > 0
+        ? inferEpisodes(patientVisits.data)
+        : { episodes: [], orphanedFollowUps: [] },
+    [patientVisits.data]
+  );
 
   // const pendingReportsCount = usePendingReportsCountByPatient(patientId!); // TODO: Mostrar en UI
 
@@ -132,14 +143,29 @@ export const PatientDashboardPage: React.FC = () => {
             </div>
             <div className="text-center">
               {(() => {
+                // Feedback 53jMoePB: When patient has ongoing, don't show "?" — use dash in green (not blocking)
                 const hasClosedInitial = patientVisits.data?.some(v =>
-                  v.type === 'initial' &&
-                  v.soapNote?.status === 'finalized' &&
-                  hasActiveBaseline
+                  v.type === 'initial' && v.soapNote?.status === 'finalized'
                 );
-                const hasInitialPending = patientVisits.data?.some(v => v.type === 'initial');
-                const symbol = hasClosedInitial ? '✓' : hasInitialPending ? '⟳' : '?';
-                const colorClass = hasClosedInitial ? 'text-green-600' : hasInitialPending ? 'text-yellow-600' : 'text-yellow-600';
+                const hasInitialPending = patientVisits.data?.some(v =>
+                  v.type === 'initial' && v.soapNote?.status !== 'finalized'
+                );
+                let symbol: string;
+                let colorClass: string;
+                if (hasClosedInitial) {
+                  symbol = '✓';
+                  colorClass = 'text-green-600';
+                } else if (hasActiveBaseline) {
+                  // Patient has ongoing — not blocking; use dash in green per user feedback
+                  symbol = '–';
+                  colorClass = 'text-green-600';
+                } else if (hasInitialPending) {
+                  symbol = '⟳';
+                  colorClass = 'text-yellow-600';
+                } else {
+                  symbol = '?';
+                  colorClass = 'text-yellow-600';
+                }
                 return (
                   <>
                     <div className={`text-2xl font-bold ${colorClass}`}>{symbol}</div>
@@ -179,107 +205,11 @@ export const PatientDashboardPage: React.FC = () => {
               ))}
             </div>
           ) : patientVisits.data && patientVisits.data.length > 0 ? (
-            <div className="space-y-4">
-              {patientVisits.data.map((visit) => {
-                // WO-STATE-ALIGN-01: Resumible = initial + SOAP not finalized + session/encounter (id is sessionId)
-                const isResumableInitial = visit.type === 'initial' && visit.soapNote?.status !== 'finalized' && (visit.source === 'session' || visit.source === 'encounter');
-                // Single source of truth: initial closed = hasActiveBaseline (from "Close Initial Assessment" button). Don't show Pending Closure when baseline says closed.
-                const initialClosedByBaseline =
-                  visit.type === 'initial' && (hasActiveBaseline || visit.soapNote?.status === 'finalized');
-                const showPendingClosure = (visit.status === 'draft' || (visit.status === 'completed' && visit.soapNote?.status !== 'finalized')) && !initialClosedByBaseline;
-                const handleVisitClick = () => {
-                  if (visit.source === 'consultation') {
-                    navigate(`/notes/${visit.id}`);
-                  } else if (isResumableInitial) {
-                    navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
-                  } else {
-                    // Encounter/session already finalized — could open detail; for now no-op
-                    console.log('View encounter/session:', visit.id);
-                  }
-                };
-                return (
-                <div
-                  key={visit.id}
-                  onClick={handleVisitClick}
-                  className="bg-slate-50 rounded-lg border border-slate-200 p-4 hover:border-brand-in-500 hover:shadow-md transition-all cursor-pointer"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          visit.type === 'initial' ? 'bg-green-500' : 'bg-blue-500'
-                        }`}></div>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {visit.type === 'initial' ? 'Initial Evaluation' : 'Follow-up Visit'}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {new Date(visit.date).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
-                        </span>
-                        {showPendingClosure && (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-                            Pending Closure
-                          </span>
-                        )}
-                        {initialClosedByBaseline && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            Closed
-                          </span>
-                        )}
-                        {visit.status === 'signed' && !initialClosedByBaseline && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            Signed
-                          </span>
-                        )}
-                        {visit.type === 'follow-up' && visit.soapNote?.status === 'finalized' && !showPendingClosure && visit.status !== 'signed' && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            Closed
-                          </span>
-                        )}
-                      </div>
-
-                      {visit.chiefComplaint && (
-                        <p className="text-sm text-slate-700 mb-2 line-clamp-2">
-                          <span className="font-medium">Chief Complaint:</span> {visit.chiefComplaint}
-                        </p>
-                      )}
-
-                      {visit.diagnosis && (
-                        <p className="text-sm text-slate-600 mb-2 line-clamp-1">
-                          <span className="font-medium">Assessment:</span> {visit.diagnosis}
-                        </p>
-                      )}
-
-                      {visit.soap?.plan && (
-                        <p className="text-sm text-slate-600 line-clamp-1">
-                          <span className="font-medium">Plan:</span> {visit.soap.plan.substring(0, 100)}...
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="ml-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (visit.source === 'consultation') {
-                            navigate(`/notes/${visit.id}`);
-                          } else if (isResumableInitial) {
-                            navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
-                          }
-                        }}
-                        className="text-sm text-brand-in-500 hover:text-brand-in-600 font-medium"
-                      >
-                        View SOAP →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-              })}
-            </div>
+            <PatientHistoryHierarchical
+              episodes={episodesResult.episodes}
+              orphanedFollowUps={episodesResult.orphanedFollowUps}
+              patientId={patientId}
+            />
           ) : (
             <div className="text-center py-12 bg-slate-50 rounded-lg border border-slate-200">
               <p className="text-slate-600 mb-2">No visit history found</p>

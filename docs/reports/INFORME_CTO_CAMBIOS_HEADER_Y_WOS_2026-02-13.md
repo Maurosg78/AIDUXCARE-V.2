@@ -128,7 +128,11 @@ src/components/consent/VerbalConsentModal.tsx
 
 **Área técnica estimada:** Patient dashboard / Patient history / VisitRecordCard o componentes que renderizan la lista de visitas y su estado.
 
-**Acción sugerida:** Crear WO para revisar la lógica de visualización de estados en la historia del paciente (initial vs ongoing vs follow-up) y el significado del "?".
+**Acción sugerida:** ~~Crear WO~~ **✅ RESUELTO** — Ver `docs/reports/WO-FEEDBACK-53jMoePB-COMPLETADO.md`
+
+**Implementación:** Cuando el paciente tiene ongoing (`hasActiveBaseline`), se muestra "–" (guión) en verde en lugar de "?" para indicar que no es bloqueante.
+
+**Rollback si hay problemas:** `git reset --hard pre-feedback-53jMoePB-2026-02-13`
 
 ---
 
@@ -137,7 +141,8 @@ src/components/consent/VerbalConsentModal.tsx
 Los 6 ítems restantes corresponden a WO-01 a WO-06. El código ya está implementado; falta marcarlos como `resolved` en Firestore:
 
 ```bash
-node scripts/mark-feedback-resolved.cjs hq7ezKxBeF469uVTThUu g4IwSp2J864mviKnd4Ar g0gkw7PAR97VB5dOFAkt OEJwWDJOg3b3vVyq5zLS JfCq4oAQDOPfvrVsqyHL 0i0Tl9se80Lp541AIJAL
+# Los 6 anteriores + el nuevo 53jMoePB (ya implementado)
+node scripts/mark-feedback-resolved.cjs hq7ezKxBeF469uVTThUu g4IwSp2J864mviKnd4Ar g0gkw7PAR97VB5dOFAkt OEJwWDJOg3b3vVyq5zLS JfCq4oAQDOPfvrVsqyHL 0i0Tl9se80Lp541AIJAL 53jMoePBudigRHUcnrvM
 ```
 
 ---
