@@ -3765,6 +3765,40 @@ const ProfessionalWorkflowPage = () => {
           }
         }
 
+        // FIX-PHASE0-BASELINE-HYDRATION: Update clinical baseline when FOLLOWUP is finalized
+        // This ensures next FOLLOWUP loads the most recent baseline (not old INITIAL in Spanish)
+        if (visitType === 'follow-up' && user?.uid && result.noteId) {
+          try {
+            const { createBaseline } = await import('../services/clinicalBaselineService');
+            const { PatientService } = await import('../services/patientService');
+
+            const baselineId = await createBaseline({
+              patientId,
+              sourceSoapId: result.noteId,
+              sourceSessionId: sessionId,
+              snapshot: {
+                primaryAssessment: soapDataToSave.assessment || '',
+                keyFindings: [
+                  soapDataToSave.subjective || '',
+                  soapDataToSave.objective || '',
+                ].filter(Boolean),
+                planSummary: soapDataToSave.plan || '',
+              },
+              createdBy: user.uid,
+            });
+
+            await PatientService.updatePatient(patientId, { activeBaselineId: baselineId });
+
+            console.log('[Workflow] ✅ Clinical baseline updated from FOLLOWUP:', {
+              baselineId,
+              noteId: result.noteId,
+              language: 'canonical (English)',
+            });
+          } catch (baselineErr) {
+            console.error('[Workflow] Failed to update baseline from FOLLOWUP (non-blocking):', baselineErr);
+          }
+        }
+
         // WO-INITIAL-CREATES-ENCOUNTER: create exactly 1 encounter on initial assessment completion (Session 1)
         if (visitType === 'initial' && user?.uid) {
           try {
