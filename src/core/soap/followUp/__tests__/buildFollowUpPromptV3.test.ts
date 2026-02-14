@@ -104,4 +104,42 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('This is NOT an initial assessment');
     expect(prompt).toContain('follow-up');
   });
+
+  // WO-PHASE1C P0: Red flags screening
+  it('includes CRITICAL SAFETY CHECK section for red/yellow flags', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Patient reports 50% improvement.',
+    });
+    expect(prompt).toContain('CRITICAL SAFETY CHECK');
+    expect(prompt).toContain('red flags');
+    expect(prompt).toContain('yellow flags');
+    expect(prompt).toContain('Clinical concern:');
+    expect(prompt).toContain('Recommend medical review/referral');
+    expect(prompt).toContain('Do NOT invent flags');
+  });
+
+  // WO-PHASE1C P0: Test scenario — clinical update with red flag content
+  it('includes safety check when clinical update contains red flag keywords', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Patient reports new night pain and 5kg weight loss in 2 weeks',
+    });
+    expect(prompt).toContain('CRITICAL SAFETY CHECK');
+    expect(prompt).toContain('Patient reports new night pain and 5kg weight loss in 2 weeks');
+    expect(prompt).toContain('Night pain');
+    expect(prompt).toContain('Unexplained weight loss');
+  });
+
+  // WO-PHASE1C P1: CPO context
+  it('includes CPO and Ontario context in SYSTEM/INSTRUCTION', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+    });
+    expect(prompt).toContain('Ontario, Canada');
+    expect(prompt).toContain('CPO');
+    expect(prompt).toContain('College of Physiotherapists of Ontario');
+    expect(prompt).toContain('physiotherapy scope');
+  });
 });
