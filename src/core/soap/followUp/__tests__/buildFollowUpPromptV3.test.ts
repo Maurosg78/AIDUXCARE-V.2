@@ -142,4 +142,31 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('College of Physiotherapists of Ontario');
     expect(prompt).toContain('physiotherapy scope');
   });
+
+  // WO-PHASE1C-PART2: Red flag override
+  it('includes OVERRIDE INSTRUCTION when redFlagOverride provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Patient reports night pain.',
+      redFlagOverride: {
+        findings: ['Night pain increase', 'Unintentional weight loss'],
+        clinicianReasoning: 'Bladder control issues expected 2 weeks post-partum. Weight loss intentional per patient.',
+      },
+    });
+    expect(prompt).toContain('OVERRIDE INSTRUCTION — CLINICIAN EVALUATION');
+    expect(prompt).toContain('Night pain increase');
+    expect(prompt).toContain('Unintentional weight loss');
+    expect(prompt).toContain('Bladder control issues expected 2 weeks post-partum');
+    expect(prompt).toContain('Do NOT recommend urgent medical review/referral for these findings');
+    expect(prompt).toContain('Include the clinician\'s reasoning in the Assessment section');
+  });
+
+  it('omits override section when redFlagOverride has empty findings', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      redFlagOverride: { findings: [], clinicianReasoning: 'Some reason' },
+    });
+    expect(prompt).not.toContain('OVERRIDE INSTRUCTION');
+  });
 });

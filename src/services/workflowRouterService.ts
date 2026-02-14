@@ -27,7 +27,7 @@ export interface WorkflowRoute {
   type: WorkflowType;
   skipTabs: string[]; // Tabs to skip for this workflow
   directToTab: string; // Tab to navigate to directly
-  analysisLevel: 'full' | 'optimized';
+  analysisLevel: 'full' | 'optimized' | 'follow-up';
   auditLog: WorkflowDecisionLog;
 }
 

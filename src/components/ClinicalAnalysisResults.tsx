@@ -19,6 +19,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   onSelectionChange,
   visitType = 'initial'
 }) => {
+  const isFollowUp = String(visitType ?? 'initial') === 'follow-up';
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
   
   // ✅ FASE 1: Sort physical tests by importance and show ONLY top 5 in Phase 1
@@ -180,7 +181,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   if (!editedResults) return null;
 
   // Follow-up path: do NOT show Highlights or Biopsychosocial. Only SOAP from Documentation.
-  if (visitType === 'follow-up') {
+  if (isFollowUp) {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
         Generate your SOAP note in the Documentation section below. Follow-up uses baseline, treatments, and clinical notes only — no separate analysis sections.
@@ -196,7 +197,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     <div className="flex flex-col gap-4">
       
       {/* WO-07: Medico-legal Alerts - OCULTO en follow-up (ruido innecesario) */}
-      {visitType !== 'follow-up' && (
+      {!isFollowUp && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -268,10 +269,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             </span>
             <div>
               <h3 className="text-base font-semibold text-slate-900">
-                {visitType === 'follow-up' ? 'Follow-up analysis' : 'Conversation Highlights'}
+                {isFollowUp ? 'Follow-up analysis' : 'Conversation Highlights'}
               </h3>
               <p className="text-xs text-slate-500">
-                {visitType === 'follow-up' ? 'Chief complaint, key findings, and summary from this visit.' : 'Capture chief complaint, key findings, and medication.'}
+                {isFollowUp ? 'Chief complaint, key findings, and summary from this visit.' : 'Capture chief complaint, key findings, and medication.'}
               </p>
             </div>
           </div>
@@ -291,7 +292,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         </div>
 
-        {visitType === 'follow-up' && editedResults.motivo_consulta && (
+        {isFollowUp && editedResults.motivo_consulta && (
           <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Summary</p>
             <p className="text-sm text-slate-800">{editedResults.motivo_consulta}</p>
@@ -340,7 +341,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       </div>
 
       {/* Recommended Physical Tests: only for initial (follow-up skips suggestions) */}
-      {visitType !== 'follow-up' && (
+      {!isFollowUp && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">

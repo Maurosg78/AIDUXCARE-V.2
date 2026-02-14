@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../shared/ui';
 import { ClipboardCheck, CheckCircle, XCircle, AlertCircle, Save } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export const PhysicalEvaluationTab: React.FC<PhysicalEvaluationTabProps> = ({
   patientData,
   onSaveResults
 }) => {
+  const { t } = useTranslation();
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   
@@ -58,7 +60,7 @@ export const PhysicalEvaluationTab: React.FC<PhysicalEvaluationTabProps> = ({
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-4">
           <ClipboardCheck className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold">${t("workflow.physicalEvaluation")}</h2>
+          <h2 className="text-xl font-semibold">{t("workflow.physicalEvaluation")}</h2>
           <span className="ml-auto text-sm text-gray-500">
             {Object.keys(testResults).length} de {selectedTests.length} completados
           </span>

@@ -45,7 +45,7 @@ export interface SOAPGenerationResponse {
       hasRepetition: boolean;
     };
     quality?: {
-      level: 'ok' | 'degraded';
+      level: 'ok' | 'degraded' | 'unsafe';
       flags: string[];
     };
   };

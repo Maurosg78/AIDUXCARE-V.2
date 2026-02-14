@@ -52,6 +52,11 @@ export interface FollowUpPromptV3Input {
   homeProgram?: (string | FollowUpPromptItem)[];
   /** WO-PHASE1B: Professional profile for personalized AI response. */
   professionalProfile?: ProfessionalProfile | null;
+  /** WO-PHASE1C-PART2: Red flag override — clinician has evaluated findings and determined no urgent referral. */
+  redFlagOverride?: {
+    findings: string[];
+    clinicianReasoning: string;
+  };
 }
 
 /** WO-PHASE1B: Check if profile can use personalization (consent). */
@@ -78,6 +83,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     inClinicAdjustmentsNotes,
     homeProgram = [],
     professionalProfile,
+    redFlagOverride,
   } = input;
 
   if (!baselineSOAP) {
@@ -177,6 +183,30 @@ If no new flags: Omit this section. Do NOT invent flags.
 
 `;
 
+  // WO-PHASE1C-PART2: Override instruction when clinician has evaluated and determined no urgent referral
+  const overrideSection =
+    redFlagOverride && redFlagOverride.findings.length > 0 && redFlagOverride.clinicianReasoning?.trim()
+      ? `
+OVERRIDE INSTRUCTION — CLINICIAN EVALUATION:
+
+The clinician has evaluated the following findings and determined they do NOT constitute
+red flags requiring urgent medical referral at this time:
+
+${redFlagOverride.findings.map((f) => `- ${f}`).join('\n')}
+
+Clinician's clinical reasoning:
+${redFlagOverride.clinicianReasoning.trim()}
+
+IMPORTANT:
+- Do NOT recommend urgent medical review/referral for these findings
+- Treat these symptoms as monitored findings within expected recovery pattern
+- Include the clinician's reasoning in the Assessment section
+- Suggest appropriate monitoring and follow-up timeline
+- Document that clinician has assumed clinical responsibility for this determination
+
+`
+      : '';
+
   const prompt = `${profilePrefix}PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
 SYSTEM / INSTRUCTION
@@ -234,7 +264,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${safetyCheckSection}${inClinicSection}${adjustmentsSection}${hepSection}TASK
+${overrideSection}${safetyCheckSection}${inClinicSection}${adjustmentsSection}${hepSection}TASK
 
 Using only the information above:
 

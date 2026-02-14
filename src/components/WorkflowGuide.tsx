@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, CheckCircle, Circle } from 'lucide-react';
 
 interface WorkflowGuideProps {
@@ -6,6 +7,7 @@ interface WorkflowGuideProps {
 }
 
 export const WorkflowGuide: React.FC<WorkflowGuideProps> = ({ currentStep }) => {
+  const { t } = useTranslation();
   const steps = [
     { 
       id: 1, 
