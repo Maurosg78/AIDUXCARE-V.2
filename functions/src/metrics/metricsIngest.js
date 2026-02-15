@@ -19,16 +19,23 @@ const FORBIDDEN_KEYS = new Set([
   'patientId', 'patient_id', 'uid', 'userId', 'user_id'
 ]);
 
-// Whitelist of allowed event names (WO-00 + WO-01)
+// Whitelist of allowed event names (WO-METRICS-02: standardized metrics_* prefix)
 const ALLOWED_EVENTS = new Set([
+  // Test events
   'metrics_smoke_test',
-  'workflow_session_started',
-  'workflow_tab_viewed',
-  'workflow_session_completed',
-  'workflow_session_abandoned',
-  'workflow_heartbeat',
-  'soap_generate_clicked',
-  'soap_generated_success',
+
+  // Workflow lifecycle (standardized naming)
+  'metrics_workflow_started', // was: workflow_session_started
+  'metrics_workflow_heartbeat', // was: workflow_heartbeat
+  'metrics_workflow_completed', // was: workflow_session_completed
+  'metrics_workflow_abandoned', // was: workflow_session_abandoned
+
+  // Workflow interaction
+  'metrics_workflow_tab_viewed', // was: workflow_tab_viewed
+
+  // SOAP generation
+  'metrics_soap_generate_clicked', // was: soap_generate_clicked
+  'metrics_soap_generated_success', // was: soap_generated_success
 ]);
 
 // Whitelist of allowed metrics keys (WO-00 + WO-01)

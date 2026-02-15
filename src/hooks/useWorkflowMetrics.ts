@@ -55,7 +55,7 @@ export function useWorkflowMetrics({
     tracker.start();
 
     track({
-      eventName: 'workflow_session_started',
+      eventName: 'metrics_workflow_started',
       workflowSessionId,
       visitType,
       jurisdiction: 'CA-ON',
@@ -64,7 +64,7 @@ export function useWorkflowMetrics({
 
     tracker.startHeartbeat((activeSinceLastBeatMs) => {
       track({
-        eventName: 'workflow_heartbeat',
+        eventName: 'metrics_workflow_heartbeat',
         workflowSessionId,
         visitType,
         metrics: { activeSinceLastBeatMs, schemaVersion: 1 },
@@ -84,7 +84,7 @@ export function useWorkflowMetrics({
     lastTabRef.current = activeTab;
 
     track({
-      eventName: 'workflow_tab_viewed',
+      eventName: 'metrics_workflow_tab_viewed',
       workflowSessionId,
       visitType,
       context: { tab: activeTab },
@@ -96,7 +96,7 @@ export function useWorkflowMetrics({
     if (!workflowSessionId) return;
     getTracker().recordActivity();
     track({
-      eventName: 'soap_generate_clicked',
+      eventName: 'metrics_soap_generate_clicked',
       workflowSessionId,
       visitType,
       metrics: { schemaVersion: 1 },
@@ -107,7 +107,7 @@ export function useWorkflowMetrics({
     (latencyMs: number) => {
       if (!workflowSessionId) return;
       track({
-        eventName: 'soap_generated_success',
+        eventName: 'metrics_soap_generated_success',
         workflowSessionId,
         visitType,
         metrics: { latencyMs, schemaVersion: 1 },
@@ -125,7 +125,7 @@ export function useWorkflowMetrics({
     const totalDurationMs = tracker.getTotalDurationMs();
 
     track({
-      eventName: 'workflow_session_completed',
+      eventName: 'metrics_workflow_completed',
       workflowSessionId,
       visitType,
       metrics: {
