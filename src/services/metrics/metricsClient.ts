@@ -1,12 +1,19 @@
 /**
  * WO-METRICS-00: Metrics client - calls metricsIngest Cloud Function
  * Auto-attaches appVersion, env, browserSessionId. Never sends UID.
+ *
+ * Uses fetch (HTTP) instead of Firebase Functions SDK to avoid
+ * "Service functions is not available" in production builds.
+ * Same pattern as FirebaseWhisperService.
  */
 
-import { httpsCallable } from 'firebase/functions';
-import { getFunctionsInstance } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { APP_VERSION, APP_ENV } from '@/utils/buildInfo';
 import { getOrCreateBrowserSessionId } from './sessionIds';
+
+const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
+const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
+const METRICS_INGEST_URL = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/metricsIngest`;
 
 const MAX_STRING_LENGTH = 64;
 const FORBIDDEN_KEYS = new Set([
@@ -14,16 +21,6 @@ const FORBIDDEN_KEYS = new Set([
   'assessment', 'plan', 'prompt', 'content', 'email', 'phone', 'name',
   'patientId', 'patient_id', 'uid', 'userId', 'user_id',
 ]);
-
-let metricsIngestFn: ReturnType<typeof httpsCallable> | null = null;
-
-function getMetricsIngest() {
-  if (!metricsIngestFn) {
-    const functions = getFunctionsInstance();
-    metricsIngestFn = httpsCallable(functions, 'metricsIngest', { timeout: 10000 });
-  }
-  return metricsIngestFn;
-}
 
 function validatePayload(payload: Record<string, unknown>): boolean {
   for (const [k, v] of Object.entries(payload)) {
@@ -50,11 +47,17 @@ export interface TrackPayload {
 }
 
 /**
- * Track a metrics event via Cloud Function.
+ * Track a metrics event via Cloud Function (HTTP fetch).
  * Non-blocking: never throws to caller.
+ * Requires authenticated user (metricsIngest rejects unauthenticated).
  */
 export async function track(payload: TrackPayload): Promise<void> {
   try {
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      return; // metricsIngest requires auth; skip silently
+    }
+
     const { context, metrics, ...rest } = payload;
     const fullPayload = {
       ...rest,
@@ -72,8 +75,22 @@ export async function track(payload: TrackPayload): Promise<void> {
       return;
     }
 
-    const fn = getMetricsIngest();
-    await fn(fullPayload);
+    const idToken = await currentUser.getIdToken();
+    const response = await fetch(METRICS_INGEST_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ data: fullPayload }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json?.error) {
+      const errMsg = json?.error?.message || json?.message || `HTTP ${response.status}`;
+      console.warn('[metrics] track failed (non-blocking):', errMsg);
+    }
   } catch (err) {
     console.warn('[metrics] track failed (non-blocking):', err);
   }
