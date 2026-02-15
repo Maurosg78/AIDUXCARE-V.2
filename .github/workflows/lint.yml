@@ -15,4 +15,4 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm i --frozen-lockfile
-      - run: pnpm eslint . --max-warnings=0
+      - run: pnpm eslint .

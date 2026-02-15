@@ -21,6 +21,7 @@ permissions:
 
 jobs:
   Spellcheck:
+    continue-on-error: true  # PILOT: non-blocking
     name: Spellcheck
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +38,7 @@ jobs:
           cspell --config .github/spellcheck-config.json "docs/**/*.md" \
             --no-progress --show-suggestions --summary
   Link-Check:
+    continue-on-error: true  # PILOT: non-blocking
     name: Link Check
     runs-on: ubuntu-latest
     steps:

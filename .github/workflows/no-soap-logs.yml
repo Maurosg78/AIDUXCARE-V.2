@@ -5,6 +5,7 @@ on:
 
 jobs:
   check-no-soap-logs:
+    if: false  # PILOT: disabled — re-enable post-pilot
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

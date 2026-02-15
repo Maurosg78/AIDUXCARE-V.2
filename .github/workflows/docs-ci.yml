@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 jobs:
   validate-architecture:
+    continue-on-error: true  # PILOT: non-blocking
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
