@@ -2,6 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, Analytics } from "firebase/analytics";
+import "firebase/functions"; // Force full module import to register service
 import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions";
 import {
   initializeAuth,
@@ -159,9 +160,14 @@ if (!__IS_TEST__) {
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
 
-  // Functions: lazy init only (getFirebaseFunctions). Skip eager init to avoid
-  // "Service functions is not available" warning in prod. metricsClient uses fetch.
-  // Vertex AI / other callables init on first use.
+  // Initialize Functions eagerly (required for module load order - removing causes "Cannot access 'q' before initialization")
+  try {
+    if (typeof getFunctions === 'function') {
+      _functions = getFunctions(_app, 'northamerica-northeast1');
+    }
+  } catch {
+    // Non-blocking: metricsClient uses fetch, not SDK
+  }
 
   if (typeof window !== 'undefined' && _db) {
     console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);
