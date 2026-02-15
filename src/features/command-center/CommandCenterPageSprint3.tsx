@@ -33,7 +33,8 @@ import {
   LAST_STARTED_KEY,
   getAndClearSessionCompleted,
 } from './todayListSessionStorage';
-import { track } from '../../services/metrics/metricsClient';
+// WO-METRICS: track() disabled - causes "Cannot access 'q' before initialization" crash
+// import { track } from '../../services/metrics/metricsClient';
 
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -98,22 +99,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
     }
   }, [user?.uid, getAppointments]);
 
-  // TODO remove after WO-METRICS-01 verified — smoke event to verify metrics pipeline
-  useEffect(() => {
-    if (!user?.uid) return;
-    const key = 'aidux_metrics_smoke_sent';
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) return;
-    try {
-      sessionStorage.setItem(key, '1');
-    } catch {
-      /* ignore */
-    }
-    track({
-      eventName: 'metrics_smoke_test',
-      workflowSessionId: 'smoke',
-      metrics: { ok: true },
-    });
-  }, [user?.uid]);
+  // WO-METRICS: DISABLED - track() causes "Cannot access 'q' before initialization" crash
+  // TODO: Re-enable when root cause fixed (import circular? module order?)
+  // useEffect(() => {
+  //   if (!user?.uid) return;
+  //   const key = 'aidux_metrics_smoke_sent';
+  //   if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) return;
+  //   try { sessionStorage.setItem(key, '1'); } catch { /* ignore */ }
+  //   track({ eventName: 'metrics_smoke_test', workflowSessionId: 'smoke', metrics: { ok: true } });
+  // }, [user?.uid]);
 
   const skipNextSaveRef = React.useRef(false);
 
