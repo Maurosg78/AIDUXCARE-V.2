@@ -114,6 +114,7 @@ import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
+import { useWorkflowMetrics } from "@/hooks/useWorkflowMetrics";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -352,6 +353,29 @@ const ProfessionalWorkflowPage = () => {
 
   // Value Metrics Tracking - Timestamps
   const [sessionStartTime] = useState<Date>(new Date());
+
+  // WO-METRICS-01: Workflow behavioral metrics (events + active time + heartbeat)
+  const workflowSessionIdForMetrics =
+    sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+  const isWorkflowActiveForMetrics =
+    !!workflowRoute &&
+    !!patientIdFromUrl &&
+    !!user?.uid &&
+    workflowConsentStatus?.hasValidConsent === true;
+  const visitTypeForMetrics: 'initial' | 'follow-up' | 'discharge' =
+    visitType === 'discharge' ? 'discharge' : visitType === 'follow-up' ? 'follow-up' : 'initial';
+
+  const {
+    recordActivity: recordMetricsActivity,
+    fireSoapGenerateClicked: fireMetricsSoapGenerateClicked,
+    fireSoapGeneratedSuccess: fireMetricsSoapGeneratedSuccess,
+    fireWorkflowSessionCompleted: fireMetricsWorkflowSessionCompleted,
+  } = useWorkflowMetrics({
+    workflowSessionId: workflowSessionIdForMetrics,
+    visitType: visitTypeForMetrics,
+    isActive: isWorkflowActiveForMetrics,
+    activeTab,
+  });
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<Date | null>(null);
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
@@ -3122,6 +3146,9 @@ const ProfessionalWorkflowPage = () => {
         hasEvaluationData: (organized.structuredData?.physicalExamResults?.length || 0) > 0,
         testsCount: organized.structuredData?.physicalExamResults?.length || 0,
       });
+      // WO-METRICS-01: soap_generate_clicked + latency for soap_generated_success
+      fireMetricsSoapGenerateClicked();
+      const soapStartMs = Date.now();
       const response = await generateSOAPNoteFromService(organized.context, {
         analysisLevel,
         sessionType: currentSessionType,
@@ -3131,6 +3158,9 @@ const ProfessionalWorkflowPage = () => {
       if (!response || !response.soap) {
         throw new Error('Failed to generate SOAP note: empty response from AI system');
       }
+
+      // WO-METRICS-01: soap_generated_success with latencyMs
+      fireMetricsSoapGeneratedSuccess(Date.now() - soapStartMs);
 
       // ✅ WORKFLOW OPTIMIZATION: Track SOAP generation with token metrics
       const sessionIdForMetrics = sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
@@ -3331,6 +3361,7 @@ const ProfessionalWorkflowPage = () => {
     const startTime = Date.now();
     try {
       await trackSOAPGenerationStarted({ visitType: 'follow-up', source: 'followup_single_call' });
+      fireMetricsSoapGenerateClicked();
       const fullPrompt = buildFollowUpPromptV3({
         baselineSOAP: baseline,
         clinicalUpdate: followUpClinicalUpdate,
@@ -3363,6 +3394,7 @@ const ProfessionalWorkflowPage = () => {
         soapLength: JSON.stringify(soap).length,
         source: 'followup_single_call',
       });
+      fireMetricsSoapGeneratedSuccess(Date.now() - startTime);
       setActiveTab('soap');
       document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err: any) {
@@ -3372,7 +3404,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [followUpClinicalState, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile]);
+  }, [followUpClinicalState, transcript, inClinicItems, inClinicAdjustmentsNotes, homeProgramItems, professionalProfile, fireMetricsSoapGenerateClicked, fireMetricsSoapGeneratedSuccess]);
 
   // WO-PHASE1C-PART2 + WO-PHASE1C-003: Detect red flags in generated SOAP (INITIAL + FOLLOW-UP)
   useEffect(() => {
@@ -3849,6 +3881,9 @@ const ProfessionalWorkflowPage = () => {
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
+
+    // WO-METRICS-01: workflow_session_completed with activeMs, idleMs, totalDurationMs
+    fireMetricsWorkflowSessionCompleted();
 
     // ✅ HOSPITAL PORTAL: Show share menu after finalization
     // The share menu will allow physiotherapists to share the note securely
@@ -4403,7 +4438,12 @@ const ProfessionalWorkflowPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div
+      className="min-h-screen bg-slate-50"
+      onKeyDown={recordMetricsActivity}
+      onClick={recordMetricsActivity}
+      onPaste={recordMetricsActivity}
+    >
       <CloseInitialAssessmentConfirmModal
         isOpen={showCloseInitialConfirmModal}
         onClose={() => {

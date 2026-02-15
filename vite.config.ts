@@ -75,6 +75,10 @@ export default defineConfig({
     exclude: ["@firebase/util"],
     force: false,
   },
+  define: {
+    // WO-METRICS-00: Inject build SHA for metrics (BUILD_SHA, GITHUB_SHA, or empty in local)
+    __BUILD_SHA__: JSON.stringify(process.env.BUILD_SHA || process.env.GITHUB_SHA || ''),
+  },
   build: {
     outDir: "dist",
     assetsDir: "assets",

@@ -572,6 +572,10 @@ exports.acceptPatientConsentByToken = acceptPatientConsentByToken.acceptPatientC
 const getConsentStatus = require('./src/consent/getConsentStatus');
 exports.getConsentStatus = getConsentStatus.getConsentStatus;
 
+// WO-METRICS-00: Metrics ingest (HMAC userIdHash, no PHI)
+const metricsIngest = require('./src/metrics/metricsIngest');
+exports.metricsIngest = metricsIngest.metricsIngest;
+
 /**
  * Consent verification endpoint (token-based)
  * 
