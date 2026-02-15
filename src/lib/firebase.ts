@@ -2,7 +2,6 @@ import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, Analytics } from "firebase/analytics";
-import "firebase/functions"; // ✅ CRITICAL: Force full module import to register service
 import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions";
 import {
   initializeAuth,
@@ -160,23 +159,9 @@ if (!__IS_TEST__) {
   _db = initializeFirestore(_app, { experimentalForceLongPolling: true });
   _storage = getStorage(_app);
 
-  // ✅ CRITICAL FIX: Initialize Functions EAGERLY at module load
-  try {
-    // ✅ CRITICAL: Verify getFunctions is available (SDK loaded)
-    if (typeof getFunctions === 'function') {
-      _functions = getFunctions(_app, 'northamerica-northeast1');
-      console.info("✅ Firebase Functions initialized eagerly:", {
-        projectId: _app.options.projectId,
-        region: 'northamerica-northeast1',
-        appName: _app.name
-      });
-    } else {
-      console.warn("⚠️ Firebase Functions SDK not available at module load, will retry on first use");
-    }
-  } catch (error: any) {
-    // Non-blocking: Functions may be unavailable (e.g. not enabled for project). Retry on first use.
-    console.warn("⚠️ Firebase Functions not available in this environment:", error?.message || String(error));
-  }
+  // Functions: lazy init only (getFirebaseFunctions). Skip eager init to avoid
+  // "Service functions is not available" warning in prod. metricsClient uses fetch.
+  // Vertex AI / other callables init on first use.
 
   if (typeof window !== 'undefined' && _db) {
     console.info("[PROOF] Firestore database initialized for project:", _app.options.projectId);
