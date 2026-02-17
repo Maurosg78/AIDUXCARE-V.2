@@ -303,6 +303,9 @@ Plan:
 
 FINAL REMINDERS (NON-NEGOTIABLE)
 
+LANGUAGE: Output ALL clinical content in Canadian English (en-CA).
+If baseline plan, in-clinic items, or home program items contain Spanish or any other language, translate them to professional Canadian English in your output. Do not preserve Spanish clinical labels.
+
 This is a follow-up, not an initial assessment
 
 Do NOT copy the baseline sections verbatim. Your output will be rejected if it repeats large portions of the baseline. Each section must describe ONLY what is new or changed today.
