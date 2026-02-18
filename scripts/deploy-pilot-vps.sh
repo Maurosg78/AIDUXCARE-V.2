@@ -1,23 +1,33 @@
 #!/bin/bash
 # Deploy a pilot VPS - AiDuxCare
-# Uso: ejecutar desde tu máquina local (conecta por SSH y despliega)
+# Uso: ejecutar desde tu máquina local (conecta por gcloud compute ssh)
+# Requiere: gcloud auth login + gcloud config set project aiduxcare-v2-uat-dev
 
 set -e
 
-VPS_USER="mauriciosobarzo"
-VPS_IP="35.239.23.162"
+INSTANCE_NAME="pilot-vps"
+ZONE="us-central1-a"
+PROJECT="aiduxcare-v2-uat-dev"
 PROJECT_PATH="/var/www/pilot"
-BRANCH="release/pilot-cmdctr-searchbar-20260209"
+BRANCH="fix/followup-language-en-ca"
 PM2_APP="pilot-web"
 
 echo "=== Deploy AiDuxCare Pilot VPS ==="
-echo "VPS: $VPS_USER@$VPS_IP"
+echo "Instance: $INSTANCE_NAME (zone: $ZONE, project: $PROJECT)"
 echo "Path: $PROJECT_PATH"
 echo "Branch: $BRANCH"
 echo ""
 
-# 1. Conectar y ejecutar comandos remotos
-ssh $VPS_USER@$VPS_IP << EOF
+# 0. Verificar que gcloud está configurado
+if ! command -v gcloud &>/dev/null; then
+  echo "ERROR: gcloud CLI no encontrado. Instala: https://cloud.google.com/sdk/docs/install"
+  exit 1
+fi
+echo ">>> Usando gcloud compute ssh (evita Permission denied con SSH directo)"
+echo ""
+
+# 1. Conectar y ejecutar comandos remotos vía gcloud compute ssh
+gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT" -- -T << EOF
   set -e
   echo ">>> Conectado al VPS"
   

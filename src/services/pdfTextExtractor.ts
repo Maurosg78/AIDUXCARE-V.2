@@ -27,22 +27,27 @@ export function isValidPDF(file: File): boolean {
     return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+const PDF_EXTRACTION_TIMEOUT_MS = 30_000; // 30s max to avoid infinite loading
+
 /**
  * Extracts text content from a PDF file
+ * WO-PDF-002: Timeout + CDN worker fallback for production (fixes "PDFs stuck loading")
  */
 export async function extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
     console.log(`[PDFExtractor] Starting extraction from: ${file.name}`);
 
-    try {
-        // ✅ Correct for pdfjs-dist 5.x in Vite: import the package entry
+    const extractWithTimeout = async (): Promise<PDFExtractionResult> => {
         const pdfjsLib: any = await import("pdfjs-dist");
 
-        // ✅ Worker (bundled by Vite)
+        // ✅ WO-PDF-002: Worker for production - Vite ?url (bundled) or CDN fallback
         if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-                "pdfjs-dist/build/pdf.worker.min.mjs",
-                import.meta.url
-            ).toString();
+            try {
+                const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+                pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
+            } catch {
+                const version = (pdfjsLib as { version?: string }).version || "5.4.530";
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+            }
         }
 
         const arrayBuffer = await file.arrayBuffer();
@@ -101,6 +106,13 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
             pageCount: pdf.numPages,
             metadata: metadataObj,
         };
+    };
+
+    try {
+        const timeoutPromise = new Promise<PDFExtractionResult>((_, reject) =>
+            setTimeout(() => reject(new Error("PDF extraction timed out (30s). File may be too large or complex.")), PDF_EXTRACTION_TIMEOUT_MS)
+        );
+        return await Promise.race([extractWithTimeout(), timeoutPromise]);
     } catch (error) {
         console.error("[PDFExtractor] Error extracting PDF:", error);
         const message = error instanceof Error ? error.message : String(error);
