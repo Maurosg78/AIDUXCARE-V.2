@@ -209,9 +209,9 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[calc(100vh-120px)] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-slate-900">New Patient</h2>
           <button
             onClick={onClose}
@@ -224,7 +224,8 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {/* Error Message */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -458,9 +459,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               </div>
             </div>
           )}
+          </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          {/* Actions - fixed at bottom */}
+          <div className="flex gap-3 p-4 border-t border-slate-200 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

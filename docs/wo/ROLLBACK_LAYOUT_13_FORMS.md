@@ -11,12 +11,13 @@
 
 - `src/features/command-center/components/PatientForm.tsx`
 - `src/features/command-center/components/OngoingPatientIntakeModal.tsx`
+- `src/features/command-center/components/CreatePatientModal.tsx` (Initial Assessment / Ongoing create patient — el que abre al hacer clic en las tarjetas)
 
 ## Si algo falla, revertir con:
 
 ```bash
 # Opción 1: Revertir solo estos archivos al commit anterior
-git checkout 88ce790c -- src/features/command-center/components/PatientForm.tsx src/features/command-center/components/OngoingPatientIntakeModal.tsx
+git checkout 88ce790c -- src/features/command-center/components/PatientForm.tsx src/features/command-center/components/OngoingPatientIntakeModal.tsx src/features/command-center/components/CreatePatientModal.tsx
 
 # Opción 2: Si ya hiciste commit del fix, revertir el commit
 git revert <commit-del-fix> --no-edit
@@ -34,3 +35,8 @@ git revert <commit-del-fix> --no-edit
 - `p-5` → `p-4` (header, content, footer)
 - `flex-shrink-0` en footer (botones siempre visibles)
 - `min-h-0` en content div (permite scroll correcto en flex)
+
+### CreatePatientModal (Initial Assessment / Ongoing — crear paciente)
+- Añadido `max-h-[calc(100vh-120px)] flex flex-col overflow-hidden` al modal
+- Form dividido: content scrollable (`overflow-y-auto`) + footer fijo (`flex-shrink-0`)
+- `p-5` → `p-4`, `space-y-4` → `space-y-3`
