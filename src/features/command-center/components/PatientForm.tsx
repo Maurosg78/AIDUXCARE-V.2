@@ -251,10 +251,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   };
 
   const renderStep1 = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-internal-text">Datos Personales</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-semibold text-internal-text">Datos Personales</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label htmlFor="firstName" className="block text-sm font-medium text-internal-text mb-2">
             Nombre *
@@ -416,10 +416,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   );
 
   const renderStep2 = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-internal-text">Datos Clínicos y Derivación</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-semibold text-internal-text">Datos Clínicos y Derivación</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="md:col-span-2">
           <label htmlFor="medicalHistory" className="block text-sm font-medium text-internal-text mb-2">
             Historial Médico *
@@ -538,10 +538,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-internal-text">Datos de Seguro y Facturación</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-semibold text-internal-text">Datos de Seguro y Facturación</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label htmlFor="insuranceProvider" className="block text-sm font-medium text-internal-text mb-2">
             Aseguradora
@@ -650,10 +650,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   );
 
   const renderStep4 = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-internal-text">Datos Adicionales</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-semibold text-internal-text">Datos Adicionales</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label htmlFor="occupation" className="block text-sm font-medium text-internal-text mb-2">
             Ocupación
@@ -758,9 +758,9 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       </div>
 
       {/* Contacto de Emergencia */}
-      <div className="border-t pt-6">
-        <h4 className="text-md font-semibold text-internal-text mb-4">Contacto de Emergencia</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="border-t pt-4">
+        <h4 className="text-md font-semibold text-internal-text mb-3">Contacto de Emergencia</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label htmlFor="emergencyContactName" className="block text-sm font-medium text-internal-text mb-2">
               Nombre del Contacto
@@ -824,12 +824,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-internal-text">
+    <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[calc(100vh-120px)] flex flex-col overflow-hidden">
+        {/* Header - fixed */}
+        <div className="flex justify-between items-center p-3 border-b border-gray-200 flex-shrink-0">
+            <h2 className="text-xl font-bold text-internal-text">
               Nuevo{' '}
               <span className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
                 Paciente
@@ -845,22 +844,22 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             </button>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-internal-text">Paso {currentStep} de {totalSteps}</span>
-              <span className="text-sm text-gray-500">{Math.round((currentStep / totalSteps) * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-              ></div>
-            </div>
+        {/* Progress Bar */}
+        <div className="px-3 pb-2 flex-shrink-0">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium text-internal-text">Paso {currentStep} de {totalSteps}</span>
+            <span className="text-sm text-gray-500">{Math.round((currentStep / totalSteps) * 100)}%</span>
           </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div 
+              className="bg-gradient-to-r from-red-500 via-pink-500 via-purple-500 to-blue-500 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            ></div>
+          </div>
+        </div>
 
-          {/* Form Content */}
-          <div className="mb-6">
+        {/* Form Content - scrollable, buttons stay visible (13" fix: compact padding) */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
@@ -869,13 +868,14 @@ export const PatientForm: React.FC<PatientFormProps> = ({
 
           {/* Error Message */}
           {errors.submit && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-internal-error">{errors.submit}</p>
             </div>
           )}
+        </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
+        {/* Navigation - fixed at bottom, always visible */}
+        <div className="flex justify-between p-3 border-t border-gray-200 bg-white flex-shrink-0">
             {currentStep > 1 && (
               <button
                 onClick={prevStep}
@@ -910,7 +910,6 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 </button>
               )}
             </div>
-          </div>
         </div>
       </div>
     </div>

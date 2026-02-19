@@ -352,8 +352,8 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-slate-200 flex-shrink-0">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100vh-120px)] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 flex-shrink-0">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary-blue" />
             <h2 className="text-xl font-semibold text-slate-900 font-apple">
@@ -365,13 +365,13 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
           </button>
         </div>
         {(currentPatientName ?? initialPatientName) && (
-          <p className="px-5 pt-1 text-sm text-slate-600 font-apple">
+          <p className="px-4 pt-1 text-sm text-slate-600 font-apple flex-shrink-0">
             Patient: <span className="font-medium">{currentPatientName ?? initialPatientName}</span>
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="p-5 space-y-3 overflow-y-auto flex-1">
+          <div className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">{error}</div>
             )}
@@ -522,7 +522,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
             </Collapsible>
           </div>
 
-          <div className="p-5 border-t flex gap-3">
+          <div className="p-4 border-t flex gap-3 flex-shrink-0">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50" disabled={submitting}>
               Cancel
             </button>
