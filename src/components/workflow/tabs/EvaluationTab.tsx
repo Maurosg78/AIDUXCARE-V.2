@@ -3,16 +3,21 @@
  * 
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles physical evaluation test selection and documentation.
+ * WO-001: Red Flags Warning — capture justification here to avoid re-asking in SOAP.
  * 
  * @compliance PHIPA compliant, ISO 27001 auditable
  */
 
-import React, { useMemo } from 'react';
-import { Stethoscope, Loader2, FileText, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { Stethoscope, Loader2, FileText, ChevronRight, AlertTriangle } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
 import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDefinitions } from '../../../core/msk-tests/library/mskTestLibrary';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
+import { useSession } from '../../../context/SessionContext';
+import type { RedFlagAcknowledgement, RedFlagDecision } from '../../../types/redflags';
+import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
+import { Timestamp } from 'firebase/firestore';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 
@@ -184,6 +189,9 @@ export interface EvaluationTabProps {
   // Workflow
   sessionTypeFromUrl: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
   workflowRoute: WorkflowRoute | null;
+  
+  // WO-001: Red flags from analysis (to show acknowledgement + justification)
+  niagaraResults: ClinicalAnalysis | null;
 }
 
 export const EvaluationTab: React.FC<EvaluationTabProps> = ({
@@ -216,7 +224,86 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   isGeneratingSOAP,
   sessionTypeFromUrl,
   workflowRoute,
+  niagaraResults,
 }) => {
+  const { sessionData, updateSessionData } = useSession();
+  const redFlags = niagaraResults?.red_flags ?? [];
+  const existingAcknowledgements: RedFlagAcknowledgement[] = sessionData?.analysis?.redFlagsAcknowledgements ?? [];
+
+  // WO-001: Per-flag decision and justification (local state, then persist)
+  const [decisions, setDecisions] = useState<Record<string, RedFlagDecision>>(() => {
+    const map: Record<string, RedFlagDecision> = {};
+    existingAcknowledgements.forEach((ack) => {
+      if (ack.decision) map[ack.flagId] = ack.decision;
+    });
+    return map;
+  });
+  const [justifications, setJustifications] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    existingAcknowledgements.forEach((ack) => {
+      if (ack.justification) map[ack.flagId] = ack.justification;
+    });
+    return map;
+  });
+
+  const handleRedFlagDecision = useCallback((flagId: string, decision: RedFlagDecision) => {
+    setDecisions((prev) => ({ ...prev, [flagId]: decision }));
+    if (decision === 'refer') {
+      setJustifications((prev) => {
+        const next = { ...prev };
+        delete next[flagId];
+        return next;
+      });
+    }
+  }, []);
+
+  const handleJustificationChange = useCallback((flagId: string, text: string) => {
+    setJustifications((prev) => ({ ...prev, [flagId]: text }));
+  }, []);
+
+  const saveRedFlagsAcknowledgements = useCallback(() => {
+    const byFlagId = new Map<string, RedFlagAcknowledgement>(
+      existingAcknowledgements.map((a) => [a.flagId, a])
+    );
+    redFlags.forEach((_, index) => {
+      const flagId = `rf_${index}`;
+      const decision = decisions[flagId];
+      if (!decision) return;
+      const justification = justifications[flagId]?.trim();
+      const existing = byFlagId.get(flagId);
+      byFlagId.set(flagId, {
+        flagId,
+        acknowledged: true,
+        acknowledgedAt: existing?.acknowledgedAt ?? Timestamp.now(),
+        decision,
+        justification: decision === 'treat_with_monitoring' ? (justification || undefined) : undefined,
+        justifiedAt: justification ? Timestamp.now() : existing?.justifiedAt,
+      });
+    });
+    updateSessionData('analysis', { redFlagsAcknowledgements: Array.from(byFlagId.values()) });
+  }, [redFlags, decisions, justifications, existingAcknowledgements, updateSessionData]);
+
+  const hasSyncedFromSession = useRef(false);
+  // Sync from persisted acknowledgements once when session is restored (e.g. loadPreviousSession)
+  useEffect(() => {
+    if (redFlags.length === 0 || existingAcknowledgements.length === 0 || hasSyncedFromSession.current) return;
+    hasSyncedFromSession.current = true;
+    setDecisions((prev) => {
+      const next = { ...prev };
+      existingAcknowledgements.forEach((ack) => {
+        if (ack.decision) next[ack.flagId] = ack.decision;
+      });
+      return next;
+    });
+    setJustifications((prev) => {
+      const next = { ...prev };
+      existingAcknowledgements.forEach((ack) => {
+        if (ack.justification) next[ack.flagId] = ack.justification;
+      });
+      return next;
+    });
+  }, [redFlags.length, existingAcknowledgements.length]);
+
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
 
@@ -352,6 +439,80 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           </p>
         </div>
       </header>
+
+      {/* WO-001: Red Flags Warning — capture decision + justification here (no repeat in SOAP) */}
+      {redFlags.length > 0 && (
+        <section className="rounded-xl border-2 border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <h3 className="font-semibold text-amber-900">Red flags — acknowledge and document</h3>
+          </div>
+          <p className="text-sm text-amber-800 mb-4">
+            For each red flag, choose to refer or treat with monitoring. If treating with monitoring, add a brief clinical justification. It will be reused in your SOAP note.
+          </p>
+          <div className="space-y-4">
+            {redFlags.map((flag, index) => {
+              const flagId = `rf_${index}`;
+              const decision = decisions[flagId];
+              const justification = justifications[flagId] ?? '';
+              return (
+                <div key={flagId} className="rounded-lg border border-amber-200 bg-white p-4">
+                  <h4 className="font-semibold text-red-700 text-sm mb-2">{flag}</h4>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRedFlagDecision(flagId, 'refer');
+                        setTimeout(saveRedFlagsAcknowledgements, 0);
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                        decision === 'refer'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Refer to specialist
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRedFlagDecision(flagId, 'treat_with_monitoring');
+                        setTimeout(saveRedFlagsAcknowledgements, 0);
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                        decision === 'treat_with_monitoring'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Treat with monitoring
+                    </button>
+                  </div>
+                  {decision === 'treat_with_monitoring' && (
+                    <div className="mt-3">
+                      <label htmlFor={`justification-${flagId}`} className="block text-xs font-medium text-slate-700 mb-1">
+                        Clinical justification for treating despite red flag
+                      </label>
+                      <textarea
+                        id={`justification-${flagId}`}
+                        value={justification}
+                        onChange={(e) => handleJustificationChange(flagId, e.target.value)}
+                        onBlur={saveRedFlagsAcknowledgements}
+                        placeholder="Explain your clinical reasoning for proceeding with treatment..."
+                        rows={3}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        This justification will be included in your SOAP note.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-6">

@@ -40,6 +40,8 @@ export interface SOAPContext {
     lastVisitDate?: string;
     ongoingTreatment?: string;
   };
+  /** WO-001: Clinician justifications for red flags (captured in Physical Evaluation step) */
+  redFlagsJustifications?: Record<string, string>;
 }
 
 export interface VisitTypeDetectionResult {
@@ -94,7 +96,8 @@ export function detectVisitType(
 }
 
 /**
- * Builds SOAP context from Tab 1 (Analysis) and Tab 2 (Physical Evaluation) data
+ * Builds SOAP context from Tab 1 (Analysis) and Tab 2 (Physical Evaluation) data.
+ * WO-001: Optional redFlagsJustifications (flagId -> text) from Physical Evaluation step.
  */
 export function buildSOAPContext(
   transcript: string,
@@ -105,7 +108,8 @@ export function buildSOAPContext(
     previousVisits?: number;
     lastVisitDate?: string;
     ongoingTreatment?: string;
-  }
+  },
+  redFlagsJustifications?: Record<string, string>
 ): SOAPContext {
   const context: SOAPContext = {
     visitType,
@@ -131,6 +135,7 @@ export function buildSOAPContext(
       summary: undefined, // Will be set by caller if needed
     },
     patientContext,
+    ...(redFlagsJustifications && Object.keys(redFlagsJustifications).length > 0 && { redFlagsJustifications }),
   };
 
   return context;

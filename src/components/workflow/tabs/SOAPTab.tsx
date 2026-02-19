@@ -56,6 +56,8 @@ export interface SOAPTabProps {
   niagaraResults: ClinicalAnalysis | null;
   transcript: string;
   physicalExamResults: any[];
+  /** WO-001: Red flag justifications from Physical Evaluation step (pre-fill, no repeat) */
+  redFlagsAcknowledgements?: Array<{ flagId: string; justification?: string }>;
   
   // Treatment reminder
   treatmentReminder: string | null;
@@ -117,6 +119,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   niagaraResults,
   transcript,
   physicalExamResults,
+  redFlagsAcknowledgements,
   treatmentReminder,
   analysisError,
   successMessage,
@@ -280,6 +283,25 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           </div>
         </ErrorBoundary>
       )}
+
+      {/* WO-001: Red flag justifications from Physical Evaluation — no repeat, pre-fill note */}
+      {(niagaraResults?.red_flags?.length ?? 0) > 0 && (redFlagsAcknowledgements ?? []).some((a) => a.justification) ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-emerald-900 mb-2">Red flag justifications (from Physical Evaluation)</h3>
+          <p className="text-xs text-emerald-800 mb-3">
+            These justifications will be included in your SOAP note. To change them, go back to step 2.
+          </p>
+          <ul className="space-y-2">
+            {(redFlagsAcknowledgements ?? [])
+              .filter((a) => a.justification)
+              .map((ack, i) => (
+                <li key={ack.flagId} className="text-sm text-emerald-900 pl-3 border-l-2 border-emerald-300 italic">
+                  {ack.justification}
+                </li>
+              ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* Context Summary */}
       {niagaraResults && (

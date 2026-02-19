@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, FileText, Users, Plus, Info } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
+import { useSession } from "../context/SessionContext";
 import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
@@ -256,6 +257,7 @@ const ProfessionalWorkflowPage = () => {
   const [copyConsentFeedback, setCopyConsentFeedback] = useState<'idle' | 'success' | 'error'>('idle');
 
   const { sharedState, updatePhysicalEvaluation } = useSharedWorkflowState();
+  const { sessionData } = useSession(); // WO-001: red flag justifications for SOAP
   const { user } = useAuth(); // Must be called before useEffect that uses it
   const { profile: professionalProfile } = useProfessionalProfileContext();
 
@@ -2241,12 +2243,18 @@ const ProfessionalWorkflowPage = () => {
       setIsGeneratingSOAP(true);
       setAnalysisError(null);
 
-      // Step 1: Organize unified data from Tab 1 and Tab 2
+      // Step 1: Organize unified data from Tab 1 and Tab 2 (WO-001: include red flag justifications)
+      const acknowledgements = sessionData?.analysis?.redFlagsAcknowledgements ?? [];
+      const redFlagsJustifications: Record<string, string> = {};
+      acknowledgements.forEach((ack: { flagId: string; justification?: string }) => {
+        if (ack.justification) redFlagsJustifications[ack.flagId] = ack.justification;
+      });
       const unifiedData: UnifiedClinicalData = {
         tab1: {
           transcript: transcript || '',
           analysis: niagaraResults,
           attachments: attachments,
+          ...(Object.keys(redFlagsJustifications).length > 0 && { redFlagsJustifications }),
         },
         tab2: {
           evaluationTests: filteredEvaluationTests, // ✅ P1.1: Use filtered tests (only matching region)
@@ -3069,6 +3077,7 @@ const ProfessionalWorkflowPage = () => {
               isGeneratingSOAP={isGeneratingSOAP}
               sessionTypeFromUrl={sessionTypeFromUrl}
               workflowRoute={workflowRoute}
+              niagaraResults={niagaraResults}
             />
           </Suspense>
         )}
@@ -3093,6 +3102,7 @@ const ProfessionalWorkflowPage = () => {
               niagaraResults={niagaraResults}
               transcript={transcript}
               physicalExamResults={physicalExamResults}
+              redFlagsAcknowledgements={sessionData?.analysis?.redFlagsAcknowledgements ?? undefined}
               treatmentReminder={treatmentReminder}
               analysisError={analysisError}
               successMessage={successMessage}

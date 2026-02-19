@@ -48,6 +48,10 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     physicalEvaluation: {
       selectedTests: []
     },
+    /** WO-001: Red flag acknowledgements + justification (captured in Physical Evaluation, pre-fill in SOAP) */
+    analysis: {
+      redFlagsAcknowledgements: []
+    },
     metadata: {
       startTime: new Date().toISOString(),
       lastSaved: null,

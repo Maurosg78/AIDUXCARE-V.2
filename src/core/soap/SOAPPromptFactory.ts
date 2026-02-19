@@ -26,6 +26,15 @@ export interface SOAPPromptOptions {
   useOptimizedPrompt?: boolean;
 }
 
+/** WO-001: Format clinician red-flag justifications for prompt (no repeat in SOAP step) */
+function formatRedFlagJustifications(context: SOAPContext): string {
+  const justifications = context.redFlagsJustifications;
+  if (!justifications || Object.keys(justifications).length === 0) return '';
+  return `\nRED FLAG JUSTIFICATIONS (clinician documented – include in Assessment/Plan when relevant):\n${Object.entries(justifications)
+    .map(([, text]) => `- ${text}`)
+    .join('\n')}\n`;
+}
+
 /**
  * Builds prompt for Initial Assessment SOAP note
  */
@@ -153,6 +162,7 @@ ${context.analysis.medications.join('\n- ') || 'None documented'}
 
 RED FLAGS:
 ${context.analysis.redFlags.length > 0 ? context.analysis.redFlags.join('\n- ') : 'None identified'}
+${formatRedFlagJustifications(context)}
 
 YELLOW FLAGS:
 ${context.analysis.yellowFlags.length > 0 ? context.analysis.yellowFlags.join('\n- ') : 'None identified'}
@@ -334,6 +344,7 @@ ${context.analysis.medications.join('\n- ') || 'No changes'}
 
 RED FLAGS:
 ${context.analysis.redFlags.length > 0 ? context.analysis.redFlags.join('\n- ') : 'None identified'}
+${formatRedFlagJustifications(context)}
 
 YELLOW FLAGS:
 ${context.analysis.yellowFlags.length > 0 ? context.analysis.yellowFlags.join('\n- ') : 'None identified'}
@@ -541,6 +552,7 @@ ${context.analysis.medications.join('\n- ') || 'None documented'}
 
 RED FLAGS:
 ${context.analysis.redFlags.length > 0 ? context.analysis.redFlags.join('\n- ') : 'None identified'}
+${formatRedFlagJustifications(context)}
 
 YELLOW FLAGS:
 ${context.analysis.yellowFlags.length > 0 ? context.analysis.yellowFlags.join('\n- ') : 'None identified'}

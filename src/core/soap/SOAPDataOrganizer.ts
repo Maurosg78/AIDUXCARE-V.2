@@ -25,6 +25,8 @@ export interface UnifiedClinicalData {
     transcript: string;
     analysis: ClinicalAnalysis | null;
     attachments?: any[]; // Clinical attachments (lab results, images, etc.)
+    /** WO-001: Red flag justifications (flagId -> text) from Physical Evaluation step */
+    redFlagsJustifications?: Record<string, string>;
   };
   
   // Tab 2: Physical Evaluation Data
@@ -85,7 +87,7 @@ export function organizeSOAPData(
   // Step 3: Build structured JSON string (source of truth for Vertex)
   const physicalEvaluationStructured = JSON.stringify(physicalExamResults, null, 2);
 
-  // Step 4: Build complete SOAP context
+  // Step 4: Build complete SOAP context (WO-001: include red flag justifications when present)
   const context = buildSOAPContext(
     tab1.transcript,
     tab1.analysis,
@@ -94,7 +96,8 @@ export function organizeSOAPData(
     {
       previousVisits: visit.previousVisits,
       lastVisitDate: visit.lastVisitDate,
-    }
+    },
+    tab1.redFlagsJustifications
   );
 
   // Add summary to context
