@@ -7,7 +7,7 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, Save, CheckCircle, AlertCircle, Loader2, RefreshCw, Eye, Copy, Download, Check, X, Share2 } from 'lucide-react';
 import type { SOAPNote } from '../types/vertex-ai';
 import { AnalyticsService } from '../services/analyticsService';
@@ -41,6 +41,9 @@ export interface SOAPEditorProps {
     reduction: number;
     reductionPercent: number;
   };
+  /** WO-METRICS-PILOT-01: Telemetry block callbacks (initial only, S/O/A/P) */
+  onBlockRendered?: (blockId: string, originalChars: number) => void;
+  onBlockAccepted?: (blockId: string, mode: 'as_is' | 'after_edit', finalChars: number, deltaAdded: number, deltaRemoved: number) => void;
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -61,6 +64,8 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   className = '',
   isOptimized = false,
   tokenOptimization,
+  onBlockRendered,
+  onBlockAccepted,
 }) => {
   // Follow-up: one block only (no Niagara, no 4-section mapping). Cannot show S/O/A/P split.
   const showSingleBlock = singleBlockMode || visitType === 'follow-up';
@@ -71,6 +76,27 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isEditingFinalized, setIsEditingFinalized] = useState(false);
+
+  // WO-METRICS-PILOT-01: Anti-duplicados — solo markBlockRendered cuando bloque pasa vacío → contenido por primera vez
+  const lastOriginalTextRef = useRef<Record<string, string>>({});
+  const SECTION_TO_BLOCK: Record<string, string> = { subjective: 'soap_subjective', objective: 'soap_objective', assessment: 'soap_assessment', plan: 'soap_plan' };
+
+  useEffect(() => {
+    if (showSingleBlock || !soap || !onBlockRendered) return;
+    for (const section of ['subjective', 'objective', 'assessment', 'plan'] as const) {
+      const blockId = SECTION_TO_BLOCK[section];
+      const originalText = soap[section] ?? '';
+      if (originalText.length > 0) {
+        const prev = lastOriginalTextRef.current[blockId] ?? '';
+        if (prev.length === 0) {
+          onBlockRendered(blockId, originalText.length);
+          lastOriginalTextRef.current[blockId] = originalText;
+        } else {
+          lastOriginalTextRef.current[blockId] = originalText;
+        }
+      }
+    }
+  }, [soap, showSingleBlock, onBlockRendered]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -127,6 +153,20 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     }
     
     if (showFinalizeConfirm) {
+      // WO-METRICS-PILOT-01: markBlockAccepted antes de finalizar (solo si hubo SOAP generado)
+      if (onBlockAccepted && !showSingleBlock) {
+        for (const section of ['subjective', 'objective', 'assessment', 'plan'] as const) {
+          const blockId = SECTION_TO_BLOCK[section];
+          const originalLen = lastOriginalTextRef.current[blockId]?.length ?? 0;
+          if (originalLen === 0) continue;
+          const finalText = editedSOAP[section] ?? '';
+          const finalLen = finalText.length;
+          const deltaAdded = Math.max(finalLen - originalLen, 0);
+          const deltaRemoved = Math.max(originalLen - finalLen, 0);
+          const mode: 'as_is' | 'after_edit' = finalLen === originalLen ? 'as_is' : 'after_edit';
+          onBlockAccepted(blockId, mode, finalLen, deltaAdded, deltaRemoved);
+        }
+      }
       // ✅ DÍA 2: Asegurar que isReviewed está actualizado antes de finalizar
       const soapToFinalize = {
         ...editedSOAP,
@@ -545,6 +585,8 @@ ${'='.repeat(60)}`;
   };
 
   // ✅ WO-PHASE3-CRITICAL-FIXES: Calculate SOAP completeness
+  // ✅ WO-SOAP-UX-02: Section indicators (S/O/A/P) are completeness cues, NOT validation checklists.
+  // No word counters, no intrusive validation. SOAP feels like clinical document.
   const calculateCompleteness = (soap: SOAPNote): {
     overall: number;
     sections: Partial<Record<keyof SOAPNote, number>>;

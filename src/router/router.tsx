@@ -89,7 +89,8 @@ function NoteDetailWrapper() {
   return <NoteDetailPage id={id || ''} />;
 }
 
-export const createRouter = () => createBrowserRouter([
+export const createRouter = () => createBrowserRouter(
+  [
   // Root: unified landing (Hospital Patient / Private Practice / Get Started)
   { path: '/', element: <UnifiedLandingPage /> }, // Main landing page
   { path: '/login', element: <LoginPage /> }, // Login page
@@ -134,7 +135,9 @@ export const createRouter = () => createBrowserRouter([
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/terms', element: <TermsOfServicePage /> },
   { path: '/public', element: <PublicLandingPage /> },
-]);
+],
+  { future: { v7_startTransition: true } }
+);
 
 // Mantener exportación por defecto para compatibilidad
 const router = createRouter();

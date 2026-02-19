@@ -71,6 +71,8 @@ CLINICAL DOCUMENTATION STANDARDS - EMR-READY:
 
 You are creating professional SOAP documentation for EMR transfer. Follow clinical documentation best practices:
 
+✅ WO-SOAP-UX-02: Use concise clinical language. Avoid repetition. Avoid verbose narrative.
+✅ Limit each section to clinically necessary content. Do not restate lab values unless clinically relevant.
 ✅ CONCISE but complete - Each section serves its SPECIFIC purpose
 ✅ NO repetition between sections - Each section adds NEW clinical information
 ✅ Use standard medical terminology and abbreviations (ROM, B/L, R/L, /10)
@@ -274,6 +276,8 @@ CLINICAL DOCUMENTATION STANDARDS - EMR-READY:
 
 You are creating professional SOAP documentation for EMR transfer. Follow clinical documentation best practices:
 
+✅ WO-SOAP-UX-02: Use concise clinical language. Avoid repetition. Avoid verbose narrative.
+✅ Limit each section to clinically necessary content. Do not restate lab values unless clinically relevant.
 ✅ CONCISE but complete - Each section serves its SPECIFIC purpose
 ✅ NO repetition between sections - Each section adds NEW clinical information
 ✅ Use standard medical terminology and abbreviations (ROM, B/L, R/L, /10)
@@ -509,6 +513,8 @@ CLINICAL DOCUMENTATION STANDARDS - EMR-READY:
 
 You are creating professional SOAP documentation for EMR transfer. Follow clinical documentation best practices:
 
+✅ WO-SOAP-UX-02: Use concise clinical language. Avoid repetition. Avoid verbose narrative.
+✅ Limit each section to clinically necessary content. Do not restate lab values unless clinically relevant.
 ✅ CONCISE but complete - Each section serves its SPECIFIC purpose
 ✅ NO repetition between sections - Each section adds NEW clinical information
 ✅ Use standard medical terminology and abbreviations (ROM, B/L, R/L, /10)

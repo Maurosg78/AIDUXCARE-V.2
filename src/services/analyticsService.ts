@@ -746,6 +746,15 @@ export class AnalyticsService {
    */
   static async trackValueMetrics(metrics: Omit<ValueMetricsEvent, 'timestamp'>): Promise<void> {
     try {
+      // Graceful skip when salt not configured (avoids ANALYTICS_USER_SALT error)
+      const { isAnalyticsSaltConfigured } = await import('./pseudonymizationService');
+      if (!isAnalyticsSaltConfigured()) {
+        if (import.meta.env.DEV) {
+          console.debug('[VALUE METRICS] Skipped: VITE_ANALYTICS_USER_SALT not configured');
+        }
+        return;
+      }
+
       // Import validators (dynamic to avoid circular deps)
       const { validateAnalyticsQuery, validateKAnonymity } = await import('./analyticsValidationService');
       const { pseudonymizeUserId } = await import('./pseudonymizationService');

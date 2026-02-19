@@ -39,10 +39,11 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 // Whitelist of allowed metrics keys (WO-00 + WO-01)
+// Keys must be lowercase — validateMetrics uses key.toLowerCase() for lookup
 const ALLOWED_METRICS_KEYS = new Set([
   'ok', 'ms', 'bytes', 'count', 'flag', 'model', 'tab', 'route',
-  'latencyMs', 'activeMs', 'idleMs', 'totalDurationMs', 'activeSinceLastBeatMs',
-  'schemaVersion',
+  'latencyms', 'activems', 'idlems', 'totaldurationms', 'activesincelastbeatms',
+  'schemaversion',
 ]);
 
 function hmacSha256Hex(message, pepper) {

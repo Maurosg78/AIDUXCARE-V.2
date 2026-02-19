@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight, AlertTriangle } from 'lucide-react';
 import type { Patient } from '../../../services/patientService';
 import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
 import { ClinicalAnalysisResults } from '../../ClinicalAnalysisResults';
@@ -121,6 +121,11 @@ export interface AnalysisTabProps {
   setSelectedEntityIds: (ids: string[]) => void;
   continueToEvaluation: () => void;
   
+  /** WO-001: Red flags from analysis — require acknowledgement before continuing */
+  redFlags?: string[];
+  redFlagsAcknowledgements?: Record<string, { decision: 'refer' | 'treat_with_monitoring'; justification?: string }>;
+  setRedFlagsAcknowledgements?: (value: Record<string, { decision: 'refer' | 'treat_with_monitoring'; justification?: string }>) => void;
+  
   // Messages
   analysisError: string | null;
   successMessage: string | null;
@@ -193,6 +198,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   selectedEntityIds,
   setSelectedEntityIds,
   continueToEvaluation,
+  redFlags = [],
+  redFlagsAcknowledgements = {},
+  setRedFlagsAcknowledgements,
   analysisError,
   successMessage,
   setAnalysisError,
@@ -384,6 +392,86 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               visitType={visitType}
             />
           </div>
+          {/* WO-001: Red flags acknowledgement — capture justification before Physical Evaluation */}
+          {redFlags.length > 0 && setRedFlagsAcknowledgements && (
+            <div className="mt-4 p-4 border-2 border-amber-500 bg-amber-50 rounded-xl">
+              <div className="flex items-start gap-3 mb-4">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-amber-900">Red flags detected</h4>
+                  <p className="text-sm text-amber-800 mt-1">
+                    Acknowledge each finding and decide how to proceed. If treating with monitoring, provide your clinical justification.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {redFlags.map((flag) => {
+                  const ack = redFlagsAcknowledgements[flag];
+                  const decision = ack?.decision;
+                  const justification = ack?.justification ?? '';
+                  const needsJustification = decision === 'treat_with_monitoring' && justification.trim().length < 20;
+                  return (
+                    <div key={flag} className="p-3 bg-white rounded-lg border border-amber-200">
+                      <h5 className="font-medium text-amber-900 mb-2">{flag}</h5>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <button
+                          type="button"
+                          onClick={() => setRedFlagsAcknowledgements((prev) => ({
+                            ...prev,
+                            [flag]: { decision: 'refer' },
+                          }))}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            decision === 'refer'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Refer to specialist
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRedFlagsAcknowledgements((prev) => ({
+                            ...prev,
+                            [flag]: { decision: 'treat_with_monitoring', justification: prev[flag]?.justification ?? '' },
+                          }))}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            decision === 'treat_with_monitoring'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          Treat with monitoring
+                        </button>
+                      </div>
+                      {decision === 'treat_with_monitoring' && (
+                        <div>
+                          <label className="block text-xs font-medium text-amber-900 mb-1">
+                            Clinical justification (required, min 20 characters):
+                          </label>
+                          <textarea
+                            value={justification}
+                            onChange={(e) => setRedFlagsAcknowledgements((prev) => ({
+                              ...prev,
+                              [flag]: { decision: 'treat_with_monitoring', justification: e.target.value },
+                            }))}
+                            placeholder="Explain your clinical reasoning for proceeding with treatment..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-amber-300 rounded text-sm"
+                          />
+                          {needsJustification && (
+                            <p className="text-xs text-amber-700 mt-1">Minimum 20 characters required</p>
+                          )}
+                          <p className="text-xs text-slate-500 mt-1">
+                            This justification will be included in your SOAP note.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div>
               <p className="text-sm text-slate-600">
@@ -393,8 +481,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             <button
               onClick={continueToEvaluation}
               disabled={
-                (interactiveResults.physicalTests?.length ?? 0) > 0 &&
-                !selectedEntityIds.some((id) => id.startsWith("physical-"))
+                ((interactiveResults.physicalTests?.length ?? 0) > 0 &&
+                  !selectedEntityIds.some((id) => id.startsWith("physical-"))) ||
+                (redFlags.length > 0 &&
+                  !redFlags.every((flagId) => {
+                    const ack = redFlagsAcknowledgements[flagId];
+                    if (!ack) return false;
+                    if (ack.decision === 'refer') return true;
+                    if (ack.decision === 'treat_with_monitoring') return (ack.justification?.trim?.()?.length ?? 0) >= 20;
+                    return false;
+                  }))
               }
               className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
             >

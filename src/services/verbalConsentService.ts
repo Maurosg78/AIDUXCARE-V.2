@@ -107,8 +107,11 @@ export async function obtainConsent(
 }
 
 /**
- * Check if the patient has valid verbal (or digital) consent by reading the same doc.
- * Used by initial workflow check; for workflow gate the page uses checkConsentViaServer.
+ * Check if the patient has valid verbal (or digital) consent.
+ * Uses consentServerService (single source of truth) so it matches the workflow gate:
+ * - consent_status/latest (verbal)
+ * - patient_consent fallback (digital/SMS portal)
+ * WO-CONSENT-SYNC: Aligns PersistenceService.saveSOAPNote with workflow consent resolution.
  */
 export async function hasValidConsent(
   patientId: string,
@@ -117,12 +120,9 @@ export async function hasValidConsent(
 ): Promise<boolean> {
   if (!patientId) return false;
   try {
-    const { getDoc } = await import('firebase/firestore');
-    const ref = doc(db, ...CONSENT_DOC_PATH(patientId));
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return false;
-    const data = snap.data();
-    return data?.channel === 'none' || data?.granted === true;
+    const { checkConsentViaServer } = await import('@/services/consentServerService');
+    const result = await checkConsentViaServer(patientId);
+    return result.hasValidConsent;
   } catch (err) {
     consentLogger.warn('has_valid_consent_check_failed', {
       message: err instanceof Error ? err.message : String(err),

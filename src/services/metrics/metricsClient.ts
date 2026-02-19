@@ -46,12 +46,19 @@ export interface TrackPayload {
   metrics?: Record<string, number | boolean | string>;
 }
 
+/** Kill switch: when true, track() is a no-op (legacy metrics disabled). Use telemetry_sessions instead. */
+const LEGACY_METRICS_DISABLED =
+  import.meta.env.VITE_DISABLE_LEGACY_METRICS === 'true' || import.meta.env.VITE_DISABLE_LEGACY_METRICS === true;
+
 /**
  * Track a metrics event via Cloud Function (HTTP fetch).
  * Non-blocking: never throws to caller.
  * Requires authenticated user (metricsIngest rejects unauthenticated).
+ * No-op when VITE_DISABLE_LEGACY_METRICS=true (pilot: use telemetry_sessions only).
  */
 export async function track(payload: TrackPayload): Promise<void> {
+  if (LEGACY_METRICS_DISABLED) return;
+
   try {
     const currentUser = auth?.currentUser;
     if (!currentUser) {
@@ -59,13 +66,17 @@ export async function track(payload: TrackPayload): Promise<void> {
     }
 
     const { context, metrics, ...rest } = payload;
+    // Strip schemaVersion from metrics — backend adds it; avoids 400 if backend whitelist mismatch
+    const safeMetrics = metrics
+      ? Object.fromEntries(Object.entries(metrics).filter(([k]) => k.toLowerCase() !== 'schemaversion'))
+      : undefined;
     const fullPayload = {
       ...rest,
       appVersion: APP_VERSION,
       env: APP_ENV,
       browserSessionId: getOrCreateBrowserSessionId(),
       ...(context && { context }),
-      ...(metrics && { metrics }),
+      ...(safeMetrics && Object.keys(safeMetrics).length > 0 && { metrics: safeMetrics }),
     };
 
     if (metrics && !validatePayload(metrics as Record<string, unknown>)) {

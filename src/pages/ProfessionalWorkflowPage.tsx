@@ -334,6 +334,9 @@ const ProfessionalWorkflowPage = () => {
   const [overrideReasoning, setOverrideReasoning] = useState('');
   const [redFlagOverrideApplied, setRedFlagOverrideApplied] = useState(false);
   const [redFlagAction, setRedFlagAction] = useState<'override' | 'defer'>('override');
+  /** WO-001: Red flag acknowledgements captured in Analysis tab (decision + justification) — no repeat in SOAP */
+  const [redFlagsAcknowledgements, setRedFlagsAcknowledgements] = useState<Record<string, { decision: 'refer' | 'treat_with_monitoring'; justification?: string }>>({});
+
   const [showDeferralConfirmation, setShowDeferralConfirmation] = useState(false);
   const [isRegeneratingSOAP, setIsRegeneratingSOAP] = useState(false);
   const [savingSession, setSavingSession] = useState(false);
@@ -1429,6 +1432,8 @@ const ProfessionalWorkflowPage = () => {
           inClinicAdjustmentsNotes: inClinicAdjustmentsNotes || '',
           ...(initialAssessmentClosedAt != null && { initialAssessmentClosedAt }),
           ...(baselineIdFromSession != null && { baselineId: baselineIdFromSession }),
+          /** WO-001A: Red flag acknowledgements (decision + justification) for resume */
+          ...(Object.keys(redFlagsAcknowledgements).length > 0 && { redFlagsAcknowledgements }),
         };
 
         // Create a stable key to compare states
@@ -1441,6 +1446,7 @@ const ProfessionalWorkflowPage = () => {
           visitType: visitType,
           initialAssessmentClosedAt,
           baselineIdFromSession,
+          redFlagsAcknowledgementsKey: JSON.stringify(redFlagsAcknowledgements),
         });
 
         // Only save if state actually changed
@@ -3201,12 +3207,29 @@ const ProfessionalWorkflowPage = () => {
         hasEvaluationData: (organized.structuredData?.physicalExamResults?.length || 0) > 0,
         testsCount: organized.structuredData?.physicalExamResults?.length || 0,
       });
+      // WO-001: Pass redFlagOverride on first generation when clinician acknowledged flags in Analysis tab
+      const redFlagOverrideForInitial = (() => {
+        const flags = niagaraResults?.red_flags ?? [];
+        if (flags.length === 0) return undefined;
+        const treatFlags = flags.filter((f) => redFlagsAcknowledgements[f]?.decision === 'treat_with_monitoring');
+        if (treatFlags.length === 0) return undefined;
+        const justifications = treatFlags
+          .map((f) => redFlagsAcknowledgements[f]?.justification?.trim())
+          .filter((j): j is string => (j?.length ?? 0) >= 20);
+        if (justifications.length === 0) return undefined;
+        return {
+          findings: treatFlags,
+          clinicianReasoning: justifications.join('\n\n'),
+        };
+      })();
+
       // WO-METRICS-01: soap_generate_clicked + latency for soap_generated_success
       fireMetricsSoapGenerateClicked();
       const response = await generateSOAPNoteFromService(organized.context, {
         analysisLevel,
         sessionType: currentSessionType,
         professionalProfile: professionalProfile || undefined,
+        redFlagOverride: redFlagOverrideForInitial,
       });
 
       if (!response || !response.soap) {
@@ -3521,12 +3544,41 @@ const ProfessionalWorkflowPage = () => {
     setSoapContainsRedFlags(hasRedFlags);
     if (hasRedFlags) {
       setRedFlagAction('override');
-      setOverrideReasoning('');
+      // WO-001: Pre-fill overrideReasoning from early acknowledgements (captured in Analysis tab)
+      const combined = Object.values(redFlagsAcknowledgements)
+        .filter((a) => a.decision === 'treat_with_monitoring' && (a.justification?.trim?.()?.length ?? 0) >= 20)
+        .map((a) => a.justification!.trim())
+        .join('\n\n');
+      setOverrideReasoning(combined || '');
     } else {
       setOverrideRedFlags(false);
       setOverrideReasoning('');
     }
-  }, [localSoapNote, visitType, redFlagOverrideApplied]);
+  }, [localSoapNote, visitType, redFlagOverrideApplied, redFlagsAcknowledgements]);
+
+  /** WO-001: Early justification from Analysis tab — for "Use previous justification" checkbox */
+  const earlyRedFlagJustification = useMemo(() => {
+    const parts = Object.entries(redFlagsAcknowledgements)
+      .filter(([, a]) => a.decision === 'treat_with_monitoring' && (a.justification?.trim?.()?.length ?? 0) >= 20)
+      .map(([, a]) => a.justification!.trim());
+    return parts.join('\n\n');
+  }, [redFlagsAcknowledgements]);
+
+  /** WO-001: Use previous justification checkbox — default true when we have early justification */
+  const [usePreviousRedFlagJustification, setUsePreviousRedFlagJustification] = useState(true);
+
+  /** WO-001: Reset acknowledgements when analysis changes (new red_flags) */
+  const redFlagsKey = JSON.stringify(niagaraResults?.red_flags ?? []);
+  useEffect(() => {
+    setRedFlagsAcknowledgements({});
+  }, [redFlagsKey]);
+
+  /** WO-001: When SOAP shows red flags and we have early justification, default to use previous */
+  useEffect(() => {
+    if (soapContainsRedFlags && earlyRedFlagJustification) {
+      setUsePreviousRedFlagJustification(true);
+    }
+  }, [soapContainsRedFlags, earlyRedFlagJustification]);
 
   /** WO-PHASE1C-PART2: Extract red flag findings from SOAP for override context */
   const extractRedFlagFindings = useCallback((soap: SOAPNote | null): string[] => {
@@ -3579,8 +3631,12 @@ const ProfessionalWorkflowPage = () => {
   }, []);
 
   /** WO-PHASE1C-PART2 + WO-PHASE1C-003: Regenerate SOAP with red flag override (INITIAL + FOLLOW-UP) */
+  /** WO-001: Use early justification when "Use previous justification" is checked */
+  const effectiveOverrideReasoning = usePreviousRedFlagJustification && earlyRedFlagJustification
+    ? earlyRedFlagJustification
+    : overrideReasoning.trim();
   const handleRegenerateWithoutRedFlags = useCallback(async () => {
-    if (redFlagAction !== 'override' || overrideReasoning.trim().length < 20 || !localSoapNote) return;
+    if (redFlagAction !== 'override' || effectiveOverrideReasoning.length < 20 || !localSoapNote) return;
     try {
       getTelemetrySessionClient().incRegenerate();
     } catch {
@@ -3628,7 +3684,7 @@ const ProfessionalWorkflowPage = () => {
           analysisLevel,
           sessionType: currentSessionType,
           professionalProfile: professionalProfile || undefined,
-          redFlagOverride: { findings: redFlagFindings, clinicianReasoning: overrideReasoning.trim() },
+          redFlagOverride: { findings: redFlagFindings, clinicianReasoning: effectiveOverrideReasoning },
         });
         if (!response?.soap) {
           setAnalysisError('SOAP regeneration returned no content. Please try again.');
@@ -5035,6 +5091,9 @@ const ProfessionalWorkflowPage = () => {
                     selectedEntityIds={selectedEntityIds}
                     setSelectedEntityIds={setSelectedEntityIds}
                     continueToEvaluation={continueToEvaluation}
+                    redFlags={niagaraResults?.red_flags ?? []}
+                    redFlagsAcknowledgements={redFlagsAcknowledgements}
+                    setRedFlagsAcknowledgements={setRedFlagsAcknowledgements}
                     analysisError={analysisError}
                     successMessage={successMessage}
                     setAnalysisError={setAnalysisErrorWithRecovery}
@@ -5406,6 +5465,9 @@ const ProfessionalWorkflowPage = () => {
                   selectedEntityIds={selectedEntityIds}
                   setSelectedEntityIds={setSelectedEntityIds}
                   continueToEvaluation={continueToEvaluation}
+                  redFlags={niagaraResults?.red_flags ?? []}
+                  redFlagsAcknowledgements={redFlagsAcknowledgements}
+                  setRedFlagsAcknowledgements={setRedFlagsAcknowledgements}
                   analysisError={analysisError}
                   successMessage={successMessage}
                   setAnalysisError={setAnalysisErrorWithRecovery}
@@ -5413,6 +5475,7 @@ const ProfessionalWorkflowPage = () => {
                   onTodayFocusChange={setTodayFocus}
                   onFinishSession={undefined}
                   hideHeader={false}
+                  todayFocusBlockRenderedByParent={visitType === 'follow-up'}
                   resumeLoadFailed={resumeLoadFailed}
                 />
               </Suspense>

@@ -13,6 +13,7 @@ import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
 import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from '../types/vertex-ai';
 import type { SessionType } from './sessionTypeService';
 import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
+import { runInvisibleValidation } from './soap/soapInvisibleValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
@@ -43,6 +44,13 @@ export interface SOAPGenerationResponse {
       totalCharacters: number;
       isValid: boolean;
       hasRepetition: boolean;
+    };
+    /** WO-SOAP-UX-02: Invisible validation - internal only, never shown to user */
+    invisibleValidation?: {
+      regionCoherence: number;
+      exceedsGuidelineLength: boolean;
+      hasRedundancy: boolean;
+      ncr: number | null;
     };
     quality?: {
       level: 'ok' | 'degraded' | 'unsafe';
@@ -482,6 +490,16 @@ IMPORTANT:
       console.warn('[SOAP Service] Repetition detected - consider editing:', validation.repetitionCheck.repeatedPhrases);
     }
 
+    // WO-SOAP-UX-02: Invisible validation (internal only - never shown to user)
+    const invisibleResult = runInvisibleValidation(soapNote, {
+      physicalExamResults: context.physicalEvaluation?.tests as any,
+      originalTranscriptChars: context.transcript?.length ?? 0,
+    });
+    const ncr =
+      invisibleResult.ncrInput.originalTranscriptChars > 0
+        ? invisibleResult.ncrInput.finalChars / invisibleResult.ncrInput.originalTranscriptChars
+        : null;
+
     return {
       soap: soapNote,
       metadata: {
@@ -505,6 +523,12 @@ IMPORTANT:
             ...(preSOAPQuality.level === 'degraded' ? [preSOAPQuality.reason] : []),
             ...(postSOAPResult?.flags || []),
           ],
+        },
+        invisibleValidation: {
+          regionCoherence: invisibleResult.regionCoherence,
+          exceedsGuidelineLength: invisibleResult.exceedsGuidelineLength,
+          hasRedundancy: invisibleResult.hasRedundancy,
+          ncr,
         },
       },
     };

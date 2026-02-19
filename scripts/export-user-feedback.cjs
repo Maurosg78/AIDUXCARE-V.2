@@ -6,7 +6,9 @@
  * Sirve para rescatar sugerencias y feedback del piloto.
  *
  * Uso:
- *   node scripts/export-user-feedback.cjs [--csv] [--unresolved-only | --resolved-only] [--project PROYECTO]
+ *   node scripts/export-user-feedback.cjs [--csv] [--report] [--unresolved-only | --resolved-only] [--project PROYECTO]
+ *
+ *   --report: genera informe CTO en docs/reports/ (requiere --unresolved-only)
  *
  * Credenciales (una de las dos):
  *   - GOOGLE_APPLICATION_CREDENTIALS=ruta/real/al/service-account.json
@@ -62,6 +64,120 @@ function toPlain(obj) {
   return obj;
 }
 
+const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+const SEVERITY_LABEL = { critical: 'Crítico', high: 'Alto', medium: 'Medio', low: 'Bajo' };
+const TYPE_LABEL = { bug: 'Bug', suggestion: 'Sugerencia', question: 'Pregunta', other: 'Otro' };
+
+function priorityScore(row) {
+  const sev = SEVERITY_ORDER[row.severity] ?? 4;
+  const calc = row.calculatedPriority ?? 0;
+  const time = row.timestamp ? new Date(row.timestamp).getTime() : 0;
+  return 100 - sev * 20 + calc + time / 1e12;
+}
+
+function generateCtoReport(rows, projectId, baseName) {
+  const sorted = [...rows].sort((a, b) => priorityScore(b) - priorityScore(a));
+  const bySeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+  rows.forEach((r) => {
+    if (bySeverity[r.severity] !== undefined) bySeverity[r.severity]++;
+  });
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  let md = `# Informe de feedback pendiente — AiDuxCare Pilot
+
+**Fecha del informe:** ${dateStr}  
+**Export usado:** \`${baseName}.json\`  
+**Proyecto:** ${projectId}  
+**Estado:** ⏳ Pendientes por resolver
+
+---
+
+## Resumen
+
+| Severidad | Cantidad | Estado |
+|-----------|----------|--------|
+| Crítico   | ${bySeverity.critical} | ${bySeverity.critical > 0 ? '🔴 Por resolver' : '—'} |
+| Alto      | ${bySeverity.high} | ${bySeverity.high > 0 ? '🟠 Por resolver' : '—'} |
+| Medio     | ${bySeverity.medium} | ${bySeverity.medium > 0 ? '🟡 Por resolver' : '—'} |
+| Bajo      | ${bySeverity.low} | ${bySeverity.low > 0 ? '🟢 Por resolver' : '—'} |
+
+**Total:** ${rows.length} ítems pendientes
+
+---
+
+## Ítems (ordenados por prioridad)
+
+`;
+
+  function formatTimestamp(ts) {
+    if (!ts) return '—';
+    if (typeof ts === 'string') return ts.slice(0, 19).replace('T', ' ');
+    if (ts && typeof ts.toDate === 'function') return ts.toDate().toISOString().slice(0, 19).replace('T', ' ');
+    if (ts && (ts.seconds || ts._seconds)) return new Date((ts.seconds || ts._seconds) * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    return '—';
+  }
+
+  sorted.forEach((item, idx) => {
+    const desc = (item.description || '').replace(/\n/g, ' ').slice(0, 200);
+    const url = (item.url || '').replace(/^https?:\/\/[^/]+/, '').slice(0, 60);
+    md += `### ${idx + 1}. ${SEVERITY_LABEL[item.severity] || item.severity} — ${TYPE_LABEL[item.type] || item.type} | ⏳ Pendiente
+
+- **ID:** \`${item.id}\`
+- **Descripción:** "${desc}${desc.length >= 200 ? '…' : ''}"
+- **URL:** ${url || '—'}
+- **Prioridad calculada:** ${item.calculatedPriority ?? '—'}
+- **Tags:** ${(item.autoTags || []).join(', ') || '—'}
+- **Fecha:** ${formatTimestamp(item.timestamp)}
+
+**Solución propuesta (para CTO):** _[pendiente]_
+
+---
+
+`;
+  });
+
+  md += `## Estrategia de trabajo (para CTO)
+
+### Priorización
+1. **Crítico/Alto** → Sprint actual (bloquean workflow o experiencia)
+2. **Medio** → Próximo sprint (mejoras importantes)
+3. **Bajo** → Backlog (cuando haya capacidad)
+
+### Flujo de resolución
+| Paso | Acción | Herramienta |
+|------|--------|-------------|
+| 1 | Revisar ítem | App \`/feedback-review\` (admin) |
+| 2 | Anotar solución propuesta | Firestore o este informe |
+| 3 | Crear WO/ticket | Repo o Jira |
+| 4 | Implementar fix | Branch + PR |
+| 5 | Marcar resuelto | \`node scripts/mark-feedback-resolved.cjs <id>\` |
+
+### Comandos útiles
+\`\`\`bash
+# Exportar pendientes + generar este informe
+node scripts/export-user-feedback.cjs --unresolved-only --report --csv
+
+# Marcar como resuelto (uno o varios)
+node scripts/mark-feedback-resolved.cjs <id1> <id2>
+\`\`\`
+
+---
+
+## Próximos pasos
+
+1. Revisar cada ítem en la app: \`/feedback-review\` (requiere admin)
+2. Anotar solución propuesta en el informe o en Firestore
+3. Crear WOs/tickets para implementación
+4. Marcar como resuelto cuando se implemente: \`node scripts/mark-feedback-resolved.cjs <id>\`
+
+---
+
+*Generado por scripts/export-user-feedback.cjs --unresolved-only --report*
+`;
+
+  return md;
+}
+
 function rowToCsvRow(row) {
   const esc = (v) => {
     if (v == null) return '';
@@ -88,6 +204,7 @@ function rowToCsvRow(row) {
 async function main() {
   const args = process.argv.slice(2);
   const outCsv = args.includes('--csv');
+  const outReport = args.includes('--report');
   const unresolvedOnly = args.includes('--unresolved-only');
   const resolvedOnly = args.includes('--resolved-only');
   const projectIdx = args.indexOf('--project');
@@ -133,6 +250,18 @@ async function main() {
     const csvPath = resolve(outDir, `${baseName}.csv`);
     fs.writeFileSync(csvPath, csvLines.join('\n'), 'utf8');
     console.log('CSV guardado:', csvPath);
+  }
+
+  if (outReport && unresolvedOnly && rows.length > 0) {
+    const reportsDir = resolve(process.cwd(), 'docs', 'reports');
+    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+    const reportName = `INFORME_FEEDBACK_PENDIENTES_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.md`;
+    const reportPath = resolve(reportsDir, reportName);
+    const reportMd = generateCtoReport(rows, projectId, baseName);
+    fs.writeFileSync(reportPath, reportMd, 'utf8');
+    console.log('Informe CTO guardado:', reportPath);
+  } else if (outReport && !unresolvedOnly) {
+    console.warn('⚠️  --report requiere --unresolved-only. Informe no generado.');
   }
 }
 

@@ -101,6 +101,9 @@ export interface SOAPTabProps {
   onBackToCommandCenter?: () => void;
   /** WO-PHASE1B: For follow-up, button enabled only when this is true (at least one section has content). */
   followUpHasContent?: boolean;
+  /** WO-METRICS-PILOT-01: Telemetry block callbacks (initial only) */
+  onBlockRendered?: (blockId: string, originalChars: number) => void;
+  onBlockAccepted?: (blockId: string, mode: 'as_is' | 'after_edit', finalChars: number, deltaAdded: number, deltaRemoved: number) => void;
 }
 
 export const SOAPTab: React.FC<SOAPTabProps> = ({
@@ -153,6 +156,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleAttachmentRemove,
   onBackToCommandCenter,
   followUpHasContent,
+  onBlockRendered,
+  onBlockAccepted,
 }) => {
   return (
     <div className="space-y-6">
@@ -284,6 +289,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             isOptimized={workflowRoute?.analysisLevel === 'optimized'}
             tokenOptimization={soapTokenOptimization}
             onBackToCommandCenter={onBackToCommandCenter}
+            onBlockRendered={onBlockRendered}
+            onBlockAccepted={onBlockAccepted}
           />
 
           {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}

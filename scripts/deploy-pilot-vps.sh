@@ -35,10 +35,11 @@ gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --project="$PROJECT" -- -T <<
   cd $PROJECT_PATH
   echo ">>> Directorio: \$(pwd)"
   
-  # 3. Pull de los cambios
+  # 3. Pull de los cambios (descartar cambios locales en VPS)
   git fetch origin
-  git checkout $BRANCH
-  git pull origin $BRANCH
+  git reset --hard HEAD
+  git clean -fd
+  git checkout -B $BRANCH origin/$BRANCH
   echo ">>> Branch $BRANCH actualizado"
   
   # 4. Instalar dependencias (si hay nuevas)

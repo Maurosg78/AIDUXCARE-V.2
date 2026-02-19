@@ -20,6 +20,15 @@ async function sha256Hash(data: string): Promise<string> {
 }
 
 /**
+ * Check if analytics user salt is configured (for graceful skip when not set)
+ */
+export function isAnalyticsSaltConfigured(): boolean {
+  const salt = import.meta.env.VITE_ANALYTICS_USER_SALT
+    || (typeof process !== 'undefined' ? process.env?.ANALYTICS_USER_SALT : undefined);
+  return Boolean(salt && salt.length >= 32);
+}
+
+/**
  * Pseudonymize user ID for analytics
  * 
  * REQUIREMENTS:
@@ -34,7 +43,9 @@ async function sha256Hash(data: string): Promise<string> {
  */
 export async function pseudonymizeUserId(userId: string): Promise<string> {
   // CRITICAL: Salt must be stored in environment variable, never hardcoded
-  const salt = import.meta.env.VITE_ANALYTICS_USER_SALT || process.env.ANALYTICS_USER_SALT;
+  // Use import.meta.env (Vite/browser); process.env only in Node (SSR/build) - process is undefined in browser
+  const salt = import.meta.env.VITE_ANALYTICS_USER_SALT
+    || (typeof process !== 'undefined' ? process.env?.ANALYTICS_USER_SALT : undefined);
   if (!salt) {
     throw new Error('ANALYTICS_USER_SALT environment variable not set');
   }
@@ -62,7 +73,8 @@ export async function pseudonymizeUserId(userId: string): Promise<string> {
  * @throws Error if salt is not configured or invalid
  */
 export async function pseudonymizeTestId(testId: string): Promise<string> {
-  const salt = import.meta.env.VITE_ANALYTICS_TEST_SALT || process.env.ANALYTICS_TEST_SALT;
+  const salt = import.meta.env.VITE_ANALYTICS_TEST_SALT
+    || (typeof process !== 'undefined' ? process.env?.ANALYTICS_TEST_SALT : undefined);
   if (!salt || salt.length < 32) {
     throw new Error('ANALYTICS_TEST_SALT must be set and at least 32 characters');
   }
@@ -93,7 +105,8 @@ export async function pseudonymizeStoragePath(storagePath: string): Promise<stri
   // Build anonymized path (no user/patient IDs)
   const anonymizedPath = `${rootDir}/[REDACTED]/[REDACTED].${fileExt}`;
   
-  const salt = import.meta.env.VITE_ANALYTICS_PATH_SALT || process.env.ANALYTICS_PATH_SALT;
+  const salt = import.meta.env.VITE_ANALYTICS_PATH_SALT
+    || (typeof process !== 'undefined' ? process.env?.ANALYTICS_PATH_SALT : undefined);
   if (!salt || salt.length < 32) {
     throw new Error('ANALYTICS_PATH_SALT must be set and at least 32 characters');
   }
