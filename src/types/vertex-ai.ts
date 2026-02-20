@@ -16,6 +16,7 @@ export interface RedFlag {
 
 export interface PhysicalTest {
   name: string;
+  description?: string;
   rationale: string;
   sensitivity: number | null;
   specificity: number | null;

@@ -34,3 +34,11 @@
 - Creación de `PROJECT_HANDBOOK.md`
 - Adición de procesos: `DOR_DOD_DEFINITIONS.md`, `COMPLIANCE_CHECKLIST.md`, `RELEASE_PROCESS.md`
 - Establecida estructura base de documentación en `/docs/`
+
+## WO-004 — 2026-02-20 — Physical Test Descriptions from Vertex AI
+- **Vertex AI now provides clinical descriptions** for all recommended physical tests. Schema updated to include `description` field with standardized format: patient position, examiner action, positive finding, clinical indication.
+- **Prompt instructions added:** Vertex generates 50-100 word descriptions for each test (e.g., "Patient supine, examiner lifts leg with knee extended. Positive if radicular pain before 70°. Tests L4-S1 nerve root tension.").
+- **Type system updated:** `PhysicalTest` interface includes optional `description` field.
+- **UI already supports display:** EvaluationTab shows description below test name when available.
+- **Scalability:** Solution works for ANY test Vertex suggests, not limited to predefined library. Supports future expansion to other specialties and professions.
+- Resolves feedback ID: `pb2twF9E4SotkWMKUQVA`.
