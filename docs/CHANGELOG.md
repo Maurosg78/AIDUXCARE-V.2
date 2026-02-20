@@ -1,5 +1,14 @@
 # Docs/Process Changelog — Aidux North
 
+## WO-005 — 2026-02-20 — Consent Text Review & Expansion
+- **Expanded verbal consent text** to include ALL mandatory PHIPA disclosures. Previous minimal text was insufficient and contained incorrect information (stated "Canadian servers" when processing occurs in US).
+- **New disclosures added:** Specific third-party processors (OpenAI Whisper API, Google Vertex AI Gemini), processing location (US us-central1), CLOUD Act exposure, data retention period (10 years), contact information (compliance@aiduxcare.com).
+- **Removed incorrect statement:** "servidores canadienses" (Canadian servers) - replaced with accurate US processing disclosure.
+- **Compliance:** Now meets PHIPA s.18 requirements for "knowledgeable consent" - patients receive complete information before consenting.
+- **Documentation:** Created `docs/compliance/CONSENT_REQUIREMENTS.md` with full analysis, comparison of verbal text vs SMS vs full document, PHIPA requirements checklist, and decision rationale.
+- **Impact:** Reduced legal risk, improved patient understanding, compliant with PHIPA mandatory disclosures.
+- Resolves feedback ID: `RPYKJoZTmCzHgYJMf0hQ`.
+
 ## WO-003 — 2026-02-20 — Treatment Modalities Categorization
 - **Correct categorization** of physical treatment modalities as in-clinic vs home-based. Physical modalities (ultrasound, TENS, laser, shockwave, EMS, Tecar) require clinic equipment and are now correctly identified as clinic-only treatments, not home exercises.
 - **New utility:** `src/utils/treatmentCategories.ts` — `CLINIC_MODALITIES` and `HOME_EXERCISES` constants, `categorizeTreatmentModality()` function, `filterHomeExercises()` and `filterClinicModalities()` helpers.

@@ -99,12 +99,26 @@ export interface ConsentVerificationResult {
 
 /**
  * Consent text that must be read to patient (PHIPA compliant)
+ * 
+ * WO-005: Expanded to include ALL mandatory PHIPA disclosures:
+ * - Specific third-party processors (OpenAI, Google)
+ * - Processing location (US)
+ * - CLOUD Act exposure
+ * - Data retention period
+ * - Contact information
+ * - Removed incorrect "Canadian servers" statement
  */
 export const VERBAL_CONSENT_TEXT = `
-Vamos a grabar nuestra sesión de fisioterapia para generar 
-automáticamente las notas médicas usando inteligencia artificial.
-La grabación se mantiene segura en servidores canadienses.
-¿Autoriza esta grabación y procesamiento de sus datos?
+Necesito grabar nuestra sesión de fisioterapia para generar automáticamente las notas clínicas usando inteligencia artificial.
+
+DISCLOSURES IMPORTANTES:
+- El audio será procesado por OpenAI (Whisper API) y Google Vertex AI (Gemini) en Estados Unidos
+- Las autoridades estadounidenses pueden acceder a estos datos bajo la ley CLOUD Act de EE.UU.
+- Las grabaciones y notas se conservarán por 10 años según los requisitos del Colegio de Fisioterapeutas
+- Puede rechazar la grabación sin afectar la calidad de su atención
+- ¿Preguntas? Contacte compliance@aiduxcare.com
+
+¿Autoriza esta grabación y procesamiento de sus datos de salud?
 `.trim();
 
 export class VerbalConsentService {
