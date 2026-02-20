@@ -1,5 +1,12 @@
 # Docs/Process Changelog — Aidux North
 
+## WO-003 — 2026-02-20 — Treatment Modalities Categorization
+- **Correct categorization** of physical treatment modalities as in-clinic vs home-based. Physical modalities (ultrasound, TENS, laser, shockwave, EMS, Tecar) require clinic equipment and are now correctly identified as clinic-only treatments, not home exercises.
+- **New utility:** `src/utils/treatmentCategories.ts` — `CLINIC_MODALITIES` and `HOME_EXERCISES` constants, `categorizeTreatmentModality()` function, `filterHomeExercises()` and `filterClinicModalities()` helpers.
+- **Updated extraction:** `treatmentPlanService.extractHomeExercises()` now filters out clinic modalities; `extractModalities()` correctly identifies clinic-only equipment and also checks "Home Exercises" section for mis-categorized modalities.
+- **Impact:** Treatment time calculations now correctly separate clinic time (modalities) from home exercise time. Reports and treatment plans accurately reflect what patients can do at home vs what requires clinic visits.
+- Resolves feedback ID: `yYYPcCr6boMRsvx1fCuM`.
+
 ## WO-002 — 2026-02-20 — SOAP Partial Updates (No Regenerar al Justificar Red Flags)
 - **Partial SOAP updates** when justifying red flags after SOAP generation. System updates only the Red Flags Clinical Reasoning section, preserving user manual edits to other sections (Subjective, Objective, Assessment, Plan).
 - **New service:** `soapPartialUpdateService.ts` — parses SOAP sections, updates only red flags reasoning, reconstructs SOAP preserving all other content.

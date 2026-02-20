@@ -10,6 +10,7 @@
 import { collection, doc, setDoc, getDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { serverTimestamp } from 'firebase/firestore';
+import { filterHomeExercises, categorizeTreatmentModality } from '../utils/treatmentCategories';
 
 export interface TreatmentPlan {
   id: string;
@@ -278,6 +279,7 @@ class TreatmentPlanService {
   /**
    * Extract modalities from plan text (structured format)
    * Supports both structured format (with "Modalities:" header) and legacy format
+   * WO-003: Ensure clinic-only modalities (ultrasound, TENS, laser, shockwave) are correctly identified
    */
   private extractModalities(planText: string): string[] {
     const modalities: string[] = [];
@@ -293,7 +295,7 @@ class TreatmentPlanService {
         return []; // No modalities
       }
       
-      // Extract specific modalities
+      // Extract specific modalities (WO-003: clinic-only equipment)
       if (modalitiesText.includes('tens') || modalitiesText.includes('transcutaneous electrical')) {
         modalities.push('TENS');
       }
@@ -308,6 +310,14 @@ class TreatmentPlanService {
       }
       if (modalitiesText.includes('shockwave') || modalitiesText.includes('eswt')) {
         modalities.push('Shockwave therapy');
+      }
+      // WO-003: Add laser therapy (clinic-only)
+      if (modalitiesText.includes('laser') || modalitiesText.includes('lllt') || modalitiesText.includes('cold laser')) {
+        modalities.push('Laser therapy');
+      }
+      // WO-003: Add EMS (clinic-only)
+      if (modalitiesText.includes('ems') || modalitiesText.includes('electrical muscle stimulation')) {
+        modalities.push('EMS');
       }
     } else {
       // Fallback to legacy format: search entire text
@@ -326,6 +336,45 @@ class TreatmentPlanService {
       if (text.includes('shockwave') || text.includes('eswt')) {
         modalities.push('Shockwave therapy');
       }
+      // WO-003: Add laser therapy (clinic-only)
+      if (text.includes('laser') || text.includes('lllt') || text.includes('cold laser')) {
+        modalities.push('Laser therapy');
+      }
+      // WO-003: Add EMS (clinic-only)
+      if (text.includes('ems') || text.includes('electrical muscle stimulation')) {
+        modalities.push('EMS');
+      }
+    }
+
+    // WO-003: Also check if any items in "Home Exercises" section are actually clinic modalities
+    // and move them to modalities (this handles cases where AI incorrectly categorizes)
+    const homeExercisesMatch = planText.match(/home\s+exercises?:\s*([^\n]+(?:\n(?!-?\s*(?:Patient|Goals?|Follow-up|Next|Modalities?|Interventions?))[^\n]+)*)/i);
+    if (homeExercisesMatch) {
+      const homeExercisesText = homeExercisesMatch[1];
+      const homeItems = homeExercisesText
+        .split(/\n\s*[-•*]\s*|\n\s*\d+\.\s*|,\s*(?=[A-Z])/)
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+      
+      // Check each item - if it's a clinic modality, add to modalities instead
+      homeItems.forEach(item => {
+        const category = categorizeTreatmentModality(item);
+        if (category === 'clinic') {
+          // Extract modality name (normalize)
+          const normalized = item.toLowerCase();
+          if (normalized.includes('ultrasound') || normalized.includes(' us ')) {
+            if (!modalities.includes('US')) modalities.push('US');
+          } else if (normalized.includes('tens')) {
+            if (!modalities.includes('TENS')) modalities.push('TENS');
+          } else if (normalized.includes('laser')) {
+            if (!modalities.includes('Laser therapy')) modalities.push('Laser therapy');
+          } else if (normalized.includes('shockwave')) {
+            if (!modalities.includes('Shockwave therapy')) modalities.push('Shockwave therapy');
+          } else if (normalized.includes('ems') || normalized.includes('electrical muscle')) {
+            if (!modalities.includes('EMS')) modalities.push('EMS');
+          }
+        }
+      });
     }
 
     return modalities;
@@ -456,6 +505,7 @@ class TreatmentPlanService {
 
   /**
    * Extract home exercises from plan text (structured format)
+   * WO-003: Filter out clinic modalities (ultrasound, TENS, laser, etc.) - these are NOT home exercises
    */
   private extractHomeExercises(planText: string): string[] {
     const exercises: string[] = [];
@@ -476,7 +526,11 @@ class TreatmentPlanService {
       exercises.push(...exerciseList);
     }
     
-    return exercises.slice(0, 10); // Limit to 10 exercises
+    // WO-003: Filter out clinic modalities (ultrasound, TENS, laser, shockwave, etc.)
+    // These require clinic equipment and should NOT be in home exercises
+    const filteredExercises = filterHomeExercises(exercises);
+    
+    return filteredExercises.slice(0, 10); // Limit to 10 exercises
   }
 
   /**

@@ -26,6 +26,7 @@ import type {
   MVACompliance,
   MVAValidationResult,
 } from '../types/mva';
+import { filterHomeExercises } from '../utils/treatmentCategories';
 
 /**
  * MVA Template Service
@@ -890,6 +891,7 @@ export class MVATemplateService {
   
   /**
    * Extract exercises from plan
+   * WO-003: Filter out clinic modalities (ultrasound, TENS, laser, etc.) - these are NOT home exercises
    */
   private static extractExercises(plan: string): string[] {
     const exercises: string[] = [];
@@ -910,7 +912,10 @@ export class MVATemplateService {
       }
     }
     
-    return exercises.length > 0 ? exercises : ['Home exercise program as prescribed'];
+    // WO-003: Filter out clinic modalities (ultrasound, TENS, laser, shockwave, etc.)
+    const filteredExercises = filterHomeExercises(exercises);
+    
+    return filteredExercises.length > 0 ? filteredExercises : ['Home exercise program as prescribed'];
   }
   
   /**

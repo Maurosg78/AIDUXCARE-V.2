@@ -25,6 +25,7 @@ import type {
   WSIBCompliance,
   WSIBValidationResult,
 } from '../types/wsib';
+import { filterHomeExercises } from '../utils/treatmentCategories';
 
 /**
  * WSIB Template Service
@@ -504,6 +505,10 @@ export class WSIBTemplateService {
     return modalities;
   }
   
+  /**
+   * Extract exercises from plan
+   * WO-003: Filter out clinic modalities (ultrasound, TENS, laser, etc.) - these are NOT home exercises
+   */
   private static extractExercises(plan: string): string[] {
     const exercises: string[] = [];
     const exercisePattern = /(?:exercise|stretch|strengthen).*?:(.+)/gi;
@@ -515,7 +520,8 @@ export class WSIBTemplateService {
       }
     }
     
-    return exercises;
+    // WO-003: Filter out clinic modalities (ultrasound, TENS, laser, shockwave, etc.)
+    return filterHomeExercises(exercises);
   }
   
   private static extractExpectedOutcome(plan: string, assessment: string): string | null {
