@@ -7,8 +7,8 @@
  * @compliance PHIPA compliant, ISO 27001 auditable
  */
 
-import React from 'react';
-import { FileText, Loader2, ClipboardList } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { FileText, Loader2, ClipboardList, AlertTriangle } from 'lucide-react';
 import type { SOAPNote, SOAPStatus } from '../../../components/SOAPEditor';
 import { SOAPEditor } from '../../../components/SOAPEditor';
 import { ErrorMessage } from '../../ui/ErrorMessage';
@@ -22,6 +22,10 @@ import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import type { ClinicalAttachment } from '../../../services/clinicalAttachmentService';
 import type { WhisperSupportedLanguage } from '../../../services/OpenAIWhisperService';
+import { updateSOAPNoteRedFlags } from '../../../services/soapPartialUpdateService';
+import type { RedFlagJustification } from '../../../services/soapPartialUpdateService';
+import { Timestamp } from 'firebase/firestore';
+import { useSession } from '../../../context/SessionContext';
 
 export interface SOAPTabProps {
   // SOAP note state
@@ -149,6 +153,100 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleAttachmentUpload,
   handleAttachmentRemove,
 }) => {
+  const { sessionData, updateSessionData } = useSession();
+  const redFlags = niagaraResults?.red_flags ?? [];
+  
+  // WO-002: State for red flags justifications added AFTER SOAP generation
+  const [postSOAPJustifications, setPostSOAPJustifications] = useState<Record<string, string>>({});
+  const [editingFlagId, setEditingFlagId] = useState<string | null>(null);
+
+  // Find red flags without justification (from EvaluationTab or post-SOAP)
+  const redFlagsWithoutJustification = redFlags
+    .map((flag, index) => {
+      const flagId = `rf_${index}`;
+      const existingAck = redFlagsAcknowledgements?.find(a => a.flagId === flagId);
+      const postSOAPJustif = postSOAPJustifications[flagId];
+      return {
+        flagId,
+        flagText: flag,
+        hasJustification: !!(existingAck?.justification || postSOAPJustif),
+      };
+    })
+    .filter(rf => !rf.hasJustification);
+
+  // WO-002: Handle red flag justification AFTER SOAP generation (partial update)
+  const handlePostSOAPRedFlagJustification = useCallback(async (flagId: string, justification: string) => {
+    if (!localSoapNote) return;
+
+    try {
+      // 1. Save justification to local state
+      setPostSOAPJustifications(prev => ({ ...prev, [flagId]: justification }));
+      setEditingFlagId(null);
+
+      // 2. Update session data (for persistence)
+      const existingAcknowledgements = sessionData?.analysis?.redFlagsAcknowledgements ?? [];
+      const updatedAcknowledgements = [...existingAcknowledgements];
+      const existingIndex = updatedAcknowledgements.findIndex(a => a.flagId === flagId);
+      
+      const flagIndex = parseInt(flagId.replace('rf_', ''));
+      const flagTitle = redFlags[flagIndex] || flagId;
+      
+      const newAck = {
+        flagId,
+        acknowledged: true,
+        acknowledgedAt: Timestamp.now(),
+        decision: 'treat_with_monitoring' as const,
+        justification,
+        justifiedAt: Timestamp.now(),
+      };
+
+      if (existingIndex >= 0) {
+        updatedAcknowledgements[existingIndex] = newAck;
+      } else {
+        updatedAcknowledgements.push(newAck);
+      }
+
+      updateSessionData('analysis', { redFlagsAcknowledgements: updatedAcknowledgements });
+
+      // 3. WO-002: Partial update - only update red flags section, preserve user edits
+      // Combine all justifications (from EvaluationTab + post-SOAP)
+      const allJustifications = new Map<string, RedFlagJustification>();
+      
+      // Add existing justifications from EvaluationTab
+      (redFlagsAcknowledgements ?? []).forEach(a => {
+        if (a.justification) {
+          const idx = parseInt(a.flagId.replace('rf_', ''));
+          allJustifications.set(a.flagId, {
+            flagId: a.flagId,
+            flagTitle: redFlags[idx] || a.flagId,
+            justification: a.justification,
+            justifiedAt: Timestamp.now(),
+          });
+        }
+      });
+      
+      // Add/update with new post-SOAP justification
+      allJustifications.set(flagId, {
+        flagId,
+        flagTitle,
+        justification,
+        justifiedAt: Timestamp.now(),
+      });
+      
+      const redFlagJustifications = Array.from(allJustifications.values());
+
+      const updatedSOAP = updateSOAPNoteRedFlags(localSoapNote, redFlagJustifications);
+
+      // 4. Save updated SOAP (preserves user manual edits)
+      await handleSaveSOAP(updatedSOAP as SOAPNote, soapStatus);
+
+      setSuccessMessage('Red flag justification added. SOAP note updated (your manual edits preserved).');
+    } catch (error) {
+      console.error('[SOAPTab] Error updating red flag justification:', error);
+      setAnalysisError('Failed to update red flag justification. Please try again.');
+    }
+  }, [localSoapNote, redFlags, redFlagsAcknowledgements, sessionData, updateSessionData, handleSaveSOAP, soapStatus, setSuccessMessage, setAnalysisError]);
+
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
@@ -302,6 +400,83 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           </ul>
         </div>
       ) : null}
+
+      {/* WO-002: Red flags without justification AFTER SOAP generation — allow justification without regenerating */}
+      {localSoapNote && redFlagsWithoutJustification.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <h3 className="font-semibold text-amber-900">Red flags — add clinical justification</h3>
+          </div>
+          <p className="text-sm text-amber-800 mb-4">
+            Add clinical justification for treating despite these red flags. Your SOAP note will be updated without regenerating (your manual edits will be preserved).
+          </p>
+          <div className="space-y-4">
+            {redFlagsWithoutJustification.map((rf) => {
+              const isEditing = editingFlagId === rf.flagId;
+              const currentJustification = postSOAPJustifications[rf.flagId] || '';
+              
+              return (
+                <div key={rf.flagId} className="rounded-lg border border-amber-200 bg-white p-4">
+                  <h4 className="font-semibold text-red-700 text-sm mb-2">{rf.flagText}</h4>
+                  {!isEditing && !currentJustification ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditingFlagId(rf.flagId)}
+                      className="text-xs text-amber-700 hover:text-amber-900 underline"
+                    >
+                      Add clinical justification
+                    </button>
+                  ) : (
+                    <div className="mt-2">
+                      <label htmlFor={`justification-${rf.flagId}`} className="block text-xs font-medium text-slate-700 mb-1">
+                        Clinical justification (optional):
+                      </label>
+                      <textarea
+                        id={`justification-${rf.flagId}`}
+                        value={currentJustification}
+                        onChange={(e) => setPostSOAPJustifications(prev => ({ ...prev, [rf.flagId]: e.target.value }))}
+                        placeholder="Explain your clinical reasoning for proceeding with treatment..."
+                        rows={3}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        This justification will be included in your SOAP note if provided.
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => handlePostSOAPRedFlagJustification(rf.flagId, currentJustification)}
+                          disabled={!currentJustification.trim()}
+                          className="rounded-full px-3 py-1.5 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          Save justification
+                        </button>
+                        {isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingFlagId(null);
+                              setPostSOAPJustifications(prev => {
+                                const next = { ...prev };
+                                delete next[rf.flagId];
+                                return next;
+                              });
+                            }}
+                            className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Context Summary */}
       {niagaraResults && (
