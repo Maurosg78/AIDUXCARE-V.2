@@ -95,3 +95,4 @@ backups/
 
 **/.pnpm-store/
 **/.pnpm-debug.log*
+vite
