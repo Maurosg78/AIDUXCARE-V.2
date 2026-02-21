@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import HospitalPortalService from "../services/hospitalPortalService";
 import { useNavigate } from 'react-router-dom';
-import { Building2, User, ArrowRight, Shield, AlertCircle, FileText } from 'lucide-react';
+import { Building2, User, UserPlus, ArrowRight, Shield, AlertCircle, FileText, Check } from 'lucide-react';
 
 const HospitalPortalLandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -78,41 +78,40 @@ const HospitalPortalLandingPage: React.FC = () => {
   };
 
   const handleOutpatientLogin = () => {
-    // Navigate to existing login page (with registration option)
     navigate('/login');
+  };
+
+  const handleGetStarted = () => {
+    navigate('/professional-onboarding');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F7F7F7] via-white to-[#F7F7F7] flex items-center justify-center p-4">
       <div className="max-w-5xl w-full">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-[#2C3E50] to-[#34495E] rounded-lg p-2">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-4xl font-light text-[#2C3E50] tracking-tight">
-              AiDuxCare
-            </h1>
-          </div>
-          
-          <p className="text-xl text-[#475569] mb-4 font-light leading-relaxed">
-            Your Best Clinical and Legal Copilot
+        {/* Header - Welcome to AiduxCare (match third image) */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-light text-[#2C3E50] tracking-tight mb-3 flex items-center justify-center gap-2 flex-wrap">
+            Welcome to{' '}
+            <span className="bg-gradient-to-r from-[#2563eb] to-[#7c3aed] bg-clip-text text-transparent font-medium">
+              AiduxCare
+            </span>
+            <span className="text-2xl" aria-hidden>🍁</span>
+          </h1>
+          <p className="text-lg text-[#475569] font-light leading-relaxed mb-4">
+            Your Best Medico-Legal Copilot
           </p>
-          
           <p className="text-sm text-[#95A5A6] mb-6 font-light">
             Choose your workflow
           </p>
-          
-          {/* Compliance Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#A8E6CF]/20 to-[#C4F1DE]/20 border border-[#A8E6CF]/30 rounded-full text-xs font-medium text-[#2C3E50]">
-            <Shield className="w-3.5 h-3.5" />
-            <span>PHIPA • PIPEDA • CPO Compliant • Built under Strict ISO Hospital Standards</span>
+          {/* Green banner - Canadian privacy (match third image) */}
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#ECFDF5] border border-[#A7F3D0]/60 rounded-lg text-sm font-medium text-[#065F46]">
+            <Check className="w-4 h-4 text-[#059669]" />
+            <span>Designed for Canadian privacy workflows • Audit logging • Encryption in transit and at rest</span>
           </div>
         </div>
 
-        {/* Two Cards */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {/* Three Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           {/* IN-PATIENT Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-[#BDC3C7]/20 hover:border-[#2C3E50]/30 transition-all">
             <div className="text-center mb-6">
@@ -157,6 +156,7 @@ const HospitalPortalLandingPage: React.FC = () => {
                     setInpatientError(null);
                   }}
                   placeholder="Enter password for this visit code"
+                  autoComplete="current-password"
                   required
                   className="w-full px-4 py-3 border border-[#BDC3C7]/40 rounded-lg focus:ring-2 focus:ring-[#2C3E50] focus:border-[#2C3E50] bg-white text-[#2C3E50] font-light"
                 />
@@ -233,6 +233,26 @@ const HospitalPortalLandingPage: React.FC = () => {
               <p className="text-xs text-[#95A5A6] text-center font-light">
                 Command Center → Workflow → SOAP Note
               </p>
+            </div>
+          </div>
+
+          {/* Get Started Card */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-[#BDC3C7]/20 hover:border-[#6366f1]/30 transition-all">
+            <div className="text-center mb-6">
+              <div className="bg-gradient-to-br from-[#6366f1]/10 to-[#8b5cf6]/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <UserPlus className="w-8 h-8 text-[#6366f1]" />
+              </div>
+              <h2 className="text-2xl font-medium text-[#2C3E50] mb-2">Get Started</h2>
+              <p className="text-sm text-[#95A5A6] font-light">New to AiduxCare?</p>
+            </div>
+            <div className="space-y-4">
+              <button
+                onClick={handleGetStarted}
+                className="w-full px-6 py-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white rounded-lg font-medium hover:from-[#4f46e5] hover:to-[#7c3aed] transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>Sign Up Here</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
