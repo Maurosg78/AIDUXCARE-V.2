@@ -1424,6 +1424,44 @@ const ProfessionalWorkflowPage = () => {
     };
   }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
+  // WO-BUG-011: Auto-save transcript to Firestore every 30s while recording (survives browser close)
+  useEffect(() => {
+    if (!isRecording || !transcript?.trim()) return;
+
+    const autoSaveToFirestore = async () => {
+      try {
+        const userId = user?.uid;
+        if (!userId) return;
+
+        const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+        const payload = {
+          transcript,
+          transcriptAutoSavedAt: new Date().toISOString(),
+          patientId,
+          userId,
+          status: 'recording_in_progress',
+        };
+
+        if (sessionId) {
+          await sessionService.updateSession(sessionId, payload);
+        } else {
+          await sessionService.createSessionWithId(currentSessionId, payload);
+          setSessionId(currentSessionId);
+        }
+
+        console.log('[AutoSave] Transcript guardado en Firestore:', {
+          sessionId: currentSessionId,
+          transcriptLength: transcript.length,
+        });
+      } catch (error) {
+        console.warn('[AutoSave] No se pudo guardar transcript en Firestore:', error);
+      }
+    };
+
+    const interval = setInterval(autoSaveToFirestore, 30000);
+    return () => clearInterval(interval);
+  }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid]);
+
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
   const lastSharedStateRef = useRef<string>(''); // Track last sharedState to prevent unnecessary updates
