@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { FirebaseWhisperService, WhisperTranscriptionResult } from '../services/FirebaseWhisperService';
 import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
+import { hasMediaRecorderSupport } from '../utils/mobileDetection';
 
 type TranscriptMeta = {
   detectedLanguage: string | null;
@@ -106,7 +107,10 @@ export const useTranscript = () => {
       
       // Start Whisper transcription (primary method)
       if (!navigator?.mediaDevices?.getUserMedia) {
-        throw new Error('El navegador no soporta captura de audio');
+        throw new Error('Tu navegador no soporta grabación de audio. Por favor usa Chrome o Firefox.');
+      }
+      if (!hasMediaRecorderSupport()) {
+        throw new Error('Tu navegador no soporta el formato de audio requerido. Por favor usa Chrome o Firefox.');
       }
 
       // ✅ SPRINT 2 P3: Single getUserMedia call - reuse stream for MediaRecorder
@@ -511,7 +515,19 @@ export const useTranscript = () => {
       streamRef.current = null;
       setAudioStream(null);
     }
-      setError(err instanceof Error ? err.message : 'Error iniciando grabación');
+      let errorMessage = 'Error iniciando grabación. Por favor recarga la página e intenta nuevamente.';
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.message.includes('Permission denied') || err.message.includes('not allowed')) {
+          errorMessage = 'Acceso al micrófono denegado. Por favor permite el acceso en la configuración de tu navegador y recarga la página.';
+        } else if (err.name === 'NotFoundError') {
+          errorMessage = 'No se encontró micrófono. Por favor conecta un micrófono e intenta nuevamente.';
+        } else if (err.name === 'NotReadableError') {
+          errorMessage = 'El micrófono está siendo usado por otra aplicación. Ciérrala e intenta nuevamente.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      setError(errorMessage);
       setIsRecording(false);
     }
   }, [appendTranscript, languagePreference, mode, isWebSpeechAvailable, getSpeechRecognitionLang, isRecording]);
