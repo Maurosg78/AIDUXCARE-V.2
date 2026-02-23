@@ -175,7 +175,7 @@ if (!__IS_TEST__) {
     }
   } catch (error: any) {
     // Non-blocking: Functions may be unavailable (e.g. not enabled for project). Retry on first use.
-    console.warn("⚠️ Firebase Functions not available in this environment:", error?.message || String(error));
+    console.warn("⚠️ Firebase Functions not available in this environment:", error?.message || String(error), "— Storage and Firestore are unaffected; attachment uploads use Storage only.");
   }
 
   if (typeof window !== 'undefined' && _db) {

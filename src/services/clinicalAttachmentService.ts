@@ -14,11 +14,34 @@ export interface ClinicalAttachment {
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB per attachment
-const ALLOWED_MIME_PREFIXES = ['image/', 'application/pdf', 'text/'];
+// PDF (including x-pdf), images, text, RTF, Word (.doc/.docx). Matches TranscriptArea accept + common variants.
+const ALLOWED_MIME_PREFIXES = [
+  'image/',
+  'application/pdf',
+  'application/x-pdf',
+  'text/',
+  'application/rtf',
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.', // .docx, .xlsx, etc.
+];
 const ATTACHMENT_ROOT = 'clinical-attachments';
 
+/** Infer MIME from file extension when browser sends empty or wrong type (e.g. some PDFs). */
+function inferMimeFromName(fileName: string): string | null {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (!ext) return null;
+  const map: Record<string, string> = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    rtf: 'application/rtf',
+    txt: 'text/plain',
+  };
+  return map[ext] ?? null;
+}
+
 const isMimeAllowed = (mime: string | null) => {
-  if (!mime) return true; // allow unknown types but we still enforce size
+  if (!mime) return false; // require type or inferred type below
   return ALLOWED_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));
 };
 
@@ -32,8 +55,9 @@ export class ClinicalAttachmentService {
       throw new Error('Attachment exceeds the 25 MB limit. Compress or split the file.');
     }
 
-    if (!isMimeAllowed(file.type)) {
-      throw new Error('Unsupported file type. Allowed: images, PDF, plain/text documents.');
+    const effectiveMime = file.type?.trim() || inferMimeFromName(file.name);
+    if (!effectiveMime || !isMimeAllowed(effectiveMime)) {
+      throw new Error('Unsupported file type. Allowed: images, PDF, Word (.doc/.docx), RTF, plain text.');
     }
 
     const timestamp = Date.now();
@@ -43,7 +67,7 @@ export class ClinicalAttachmentService {
 
     const storageRef = ref(storage, storagePath);
     const snapshot = await uploadBytes(storageRef, file, {
-      contentType: file.type || 'application/octet-stream',
+      contentType: effectiveMime,
       customMetadata: {
         originalName: file.name,
         uploadedBy: userId,
@@ -57,7 +81,7 @@ export class ClinicalAttachmentService {
       id: attachmentId,
       name: file.name,
       size: file.size,
-      contentType: file.type || null,
+      contentType: effectiveMime,
       storagePath,
       downloadURL,
       uploadedAt: new Date(timestamp).toISOString(),
