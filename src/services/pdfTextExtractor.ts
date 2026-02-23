@@ -31,6 +31,7 @@ export function isValidPDF(file: File): boolean {
  * Extracts text content from a PDF file
  */
 export async function extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
+    console.log("[PDFExtractor] START", file.name);
     console.log(`[PDFExtractor] Starting extraction from: ${file.name}`);
 
     try {
@@ -57,10 +58,12 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
         const arrayBuffer = await file.arrayBuffer();
 
         console.log("[PDF] workerSrc =", pdfjsLib.GlobalWorkerOptions.workerSrc);
+        console.log("[PDFExtractor] Before getDocument");
 
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
 
+        console.log("[PDFExtractor] Document loaded");
         console.log(`[PDFExtractor] PDF loaded: ${pdf.numPages} pages`);
 
         const metadata = await pdf.getMetadata().catch(() => null);
@@ -106,6 +109,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
         }
 
         console.log(`[PDFExtractor] ✅ Extracted ${extractedText.length} characters from ${pdf.numPages} pages`);
+        console.log("[PDFExtractor] Extraction finished");
 
         return {
             text: extractedText,
@@ -113,6 +117,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
             metadata: metadataObj,
         };
     } catch (error) {
+        console.error("[PDFExtractor] ERROR", error);
         console.error("[PDFExtractor] Error extracting PDF:", error);
         const message = error instanceof Error ? error.message : String(error);
 

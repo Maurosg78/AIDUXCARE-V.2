@@ -35,14 +35,18 @@ export class FileProcessorService {
       downloadURL,
     };
 
+    console.log("[FileProcessor] START", file.name, file.type);
     console.log(`[FileProcessor] Processing: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
 
     // Procesar PDFs
+    console.log("[FileProcessor] Checking PDF branch", file.type);
     if (isValidPDF(file)) {
       try {
+        console.log("[FileProcessor] Entering PDF branch");
         console.log(`[FileProcessor] 📄 Extracting text from PDF: ${file.name}`);
         
         const pdfResult = await extractTextFromPDF(file);
+        console.log("[FileProcessor] PDF extraction resolved");
         
         if (pdfResult.error) {
           console.error(`[FileProcessor] PDF extraction error:`, pdfResult.error);
@@ -73,6 +77,7 @@ export class FileProcessorService {
           metadata: pdfResult.metadata,
         };
       } catch (error) {
+        console.error("[FileProcessor] ERROR", error);
         console.error(`[FileProcessor] Error processing PDF:`, error);
         return {
         ...baseResult,

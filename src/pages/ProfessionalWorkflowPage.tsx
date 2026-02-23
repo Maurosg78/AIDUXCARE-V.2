@@ -13,6 +13,7 @@ import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
 import type { SOAPNote } from "../types/vertex-ai";
 import { ClinicalAnalysisResults } from "../components/ClinicalAnalysisResults";
 import ClinicalAttachmentService, { ClinicalAttachment } from "../services/clinicalAttachmentService";
+import { FileProcessorService } from "../services/FileProcessorService";
 import { matchTestName } from "@/core/msk-tests/matching/fuzzyMatch";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
@@ -2717,6 +2718,32 @@ const ProfessionalWorkflowPage = () => {
       }
 
       setAttachments((prev) => [...prev, ...uploads]);
+
+      for (let i = 0; i < uploads.length; i++) {
+        const file = files[i];
+        const attachment = uploads[i];
+        try {
+          console.log("[Workflow] Starting processing:", attachment.name);
+          const result = await FileProcessorService.processFile(file, attachment.downloadURL);
+          setAttachments((prev) =>
+            prev.map((a) =>
+              a.id === attachment.id
+                ? { ...a, extractedText: result.extractedText ?? "", error: result.error }
+                : a
+            )
+          );
+          console.log("[Workflow] Processing completed:", attachment.name);
+        } catch (error) {
+          console.error("[Workflow] Processing error:", error);
+          setAttachments((prev) =>
+            prev.map((a) =>
+              a.id === attachment.id
+                ? { ...a, error: error instanceof Error ? error.message : "Processing failed" }
+                : a
+            )
+          );
+        }
+      }
     } catch (error) {
       console.error("Attachment upload failed", error);
       setAttachmentError(

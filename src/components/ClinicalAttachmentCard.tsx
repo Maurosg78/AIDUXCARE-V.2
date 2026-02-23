@@ -13,6 +13,11 @@ export function ClinicalAttachmentCard({
   onDelete,
   isRemoving = false
 }: ClinicalAttachmentCardProps) {
+  // WO-PDF-STUCK-001: instrumental logs (temporary)
+  if (!attachment.extractedText && !attachment.error) {
+    console.log("[AttachmentCard] Upload triggered", attachment.name, attachment.contentType);
+  }
+
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -88,7 +93,9 @@ export function ClinicalAttachmentCard({
       )}
 
       {!attachment.extractedText && !attachment.error && (
-        <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+        <>
+          {console.log("[AttachmentCard] Setting status = processing")}
+          <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
           <div className="flex items-center gap-2">
             <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
             <div className="flex-1">
@@ -105,6 +112,7 @@ export function ClinicalAttachmentCard({
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Download Link */}
