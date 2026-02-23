@@ -37,15 +37,26 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
         // ✅ Correct for pdfjs-dist 5.x in Vite: import the package entry
         const pdfjsLib: any = await import("pdfjs-dist");
 
-        // ✅ Worker (bundled by Vite)
-        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-                "pdfjs-dist/build/pdf.worker.min.mjs",
-                import.meta.url
-            ).toString();
+        // ✅ Vite: worker como asset URL
+        const workerUrl = new URL(
+            "pdfjs-dist/build/pdf.worker.min.mjs",
+            import.meta.url
+        ).toString();
+
+        // En algunos builds, esta forma sigue siendo frágil. Mejor: import con ?url.
+        // Pero como aquí estás dentro de un dynamic import, hacemos fallback robusto:
+        try {
+            // @ts-ignore
+            const w: any = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+            if (w?.default) pdfjsLib.GlobalWorkerOptions.workerSrc = w.default;
+            else pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+        } catch {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
         }
 
         const arrayBuffer = await file.arrayBuffer();
+
+        console.log("[PDF] workerSrc =", pdfjsLib.GlobalWorkerOptions.workerSrc);
 
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
