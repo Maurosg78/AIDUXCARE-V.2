@@ -11,13 +11,18 @@ interface ClinicalAnalysisResultsProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   visitType?: 'initial' | 'follow-up'; // WO-07: Para ocultar secciones innecesarias en follow-up
+  /** WO-BUG-009: Resumen de solo lectura; red flags decididos en AnalysisTab */
+  selectedRedFlagIds?: string[];
+  redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
 }
 
 export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = ({
   results,
   selectedIds,
   onSelectionChange,
-  visitType = 'initial'
+  visitType = 'initial',
+  selectedRedFlagIds,
+  redFlagsDetected = [],
 }) => {
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
   
@@ -92,11 +97,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     
     switch(section) {
       case 'alerts':
-        const alertIds: string[] = [];
-        editedResults?.redFlags?.forEach((_, i) => alertIds.push(`red-${i}`));
-        editedResults?.entities?.filter(e => e.type === 'medication')
-          .forEach(e => e.id && alertIds.push(e.id));
-        idsToSelect = alertIds;
+        // WO-BUG-009: Solo medicamentos; red flags se deciden en AnalysisTab
+        idsToSelect = editedResults?.entities?.filter(e => e.type === 'medication').map(e => e.id).filter(Boolean) || [];
         break;
         
       case 'clinical':
@@ -144,8 +146,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     
     switch(section) {
       case 'alerts':
-        idsToRemove = selectedIds.filter(id => 
-          id.startsWith('red-') || 
+        idsToRemove = selectedIds.filter(id =>
           editedResults?.entities?.find(e => e.id === id && e.type === 'medication')
         );
         break;
@@ -195,32 +196,16 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   return (
     <div className="flex flex-col gap-4">
       
-      {/* WO-07: Medico-legal Alerts - OCULTO en follow-up (ruido innecesario) */}
+      {/* WO-BUG-009: Medico-legal Summary — criticalMeds editables; red flags solo lectura desde AnalysisTab */}
       {visitType !== 'follow-up' && (
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-500">
-              <AlertCircle className="w-4 h-4" />
-            </span>
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">Medico-legal Alerts</h3>
-              <p className="text-xs text-slate-500">Document high-risk findings and compliance notes.</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleSelectAll('alerts')}
-              className="px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-[#e6ddff] to-[#d7ecff] text-slate-700 border border-transparent hover:shadow-sm"
-            >
-              Select all
-            </button>
-            <button
-              onClick={() => handleSelectNone('alerts')}
-              className="px-3 py-1 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-            >
-              Clear
-            </button>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-500">
+            <AlertCircle className="w-4 h-4" />
+          </span>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Medico-legal Summary</h3>
+            <p className="text-xs text-slate-500">Compliance notes and red flags selected in the analysis step.</p>
           </div>
         </div>
 
@@ -236,26 +221,40 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               className="p-2 bg-slate-50 border border-rose-200 rounded-lg"
             />
           ))}
-          
-          {editedResults.redFlags?.map((flag, i) => (
-            <EditableCheckbox
-              key={`red-${i}`}
-              id={`red-${i}`}
-              text={flag}
-              checked={selectedIds.includes(`red-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-              className="p-2 border border-slate-200 rounded-lg"
-            />
-          ))}
         </div>
-        
-        <div className="mt-3">
-          <AddCustomItemButton
-            onAdd={(text) => addCustomItem('redFlags', text)}
-            placeholder="Add medico-legal alert..."
-          />
-        </div>
+
+        {selectedRedFlagIds != null && selectedRedFlagIds.length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs font-medium text-slate-600 mb-2">Red flags selected for this case</p>
+            <ul className="space-y-1.5">
+              {selectedRedFlagIds.map((id) => {
+                const meta = redFlagsDetected.find((f) => f.id === id);
+                const label = meta?.description ?? id;
+                const severity = meta?.severity;
+                return (
+                  <li key={id} className="flex items-center gap-2 text-sm text-slate-800">
+                    <span>{label}</span>
+                    {severity && (
+                      <span
+                        className={
+                          severity === 'immediate'
+                            ? 'text-xs px-2 py-0.5 rounded bg-red-600 text-white'
+                            : severity === 'today'
+                              ? 'text-xs px-2 py-0.5 rounded bg-amber-500 text-white'
+                              : severity === 'monitor'
+                                ? 'text-xs px-2 py-0.5 rounded bg-slate-500 text-white'
+                                : 'text-xs px-2 py-0.5 rounded bg-slate-400 text-white'
+                        }
+                      >
+                        {severity}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
       )}
 

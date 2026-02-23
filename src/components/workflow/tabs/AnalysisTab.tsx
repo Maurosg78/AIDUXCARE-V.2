@@ -387,6 +387,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               selectedIds={selectedEntityIds}
               onSelectionChange={setSelectedEntityIds}
               visitType={visitType}
+              selectedRedFlagIds={selectedRedFlagIds}
+              redFlagsDetected={redFlagsDetected}
             />
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
