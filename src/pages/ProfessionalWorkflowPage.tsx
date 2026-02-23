@@ -281,6 +281,7 @@ const ProfessionalWorkflowPage = () => {
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
+  const [selectedRedFlagIds, setSelectedRedFlagIds] = useState<string[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
@@ -1363,6 +1364,8 @@ const ProfessionalWorkflowPage = () => {
           evaluationTests: evaluationTests || [],
           activeTab: activeTab,
           selectedEntityIds: selectedEntityIds || [],
+          redFlagsDetected: niagaraResults?.red_flags ?? [],
+          redFlagsAccepted: selectedRedFlagIds ?? [],
           localSoapNote: localSoapNote || null,
           soapStatus: soapStatus,
           visitType: visitType,
@@ -1378,6 +1381,7 @@ const ProfessionalWorkflowPage = () => {
           testCount: evaluationTests.length,
           activeTab: activeTab,
           selectedEntityIdsCount: selectedEntityIds.length,
+          redFlagsAcceptedCount: selectedRedFlagIds.length,
           soapStatus: soapStatus,
           visitType: visitType,
           initialAssessmentClosedAt,
@@ -1422,7 +1426,7 @@ const ProfessionalWorkflowPage = () => {
       // Final save on cleanup
       saveWorkflowState();
     };
-  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
+  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
   // WO-BUG-011: Auto-save transcript to Firestore every 30s while recording (survives browser close)
   useEffect(() => {
@@ -3627,6 +3631,8 @@ const ProfessionalWorkflowPage = () => {
         evaluationTests: evaluationTests || [],
         activeTab,
         selectedEntityIds: selectedEntityIds || [],
+        redFlagsDetected: niagaraResults?.red_flags ?? [],
+        redFlagsAccepted: selectedRedFlagIds ?? [],
         localSoapNote: localSoapNote || null,
         soapStatus,
         visitType: visitType || 'initial',
@@ -3644,7 +3650,7 @@ const ProfessionalWorkflowPage = () => {
       const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
       setAnalysisError(message);
     }
-  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, visitType, currentPatient]);
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
@@ -4578,6 +4584,8 @@ const ProfessionalWorkflowPage = () => {
                     hideHeader={true}
                     todayFocusBlockRenderedByParent={visitType === 'follow-up'}
                     resumeLoadFailed={resumeLoadFailed}
+                    selectedRedFlagIds={selectedRedFlagIds}
+                    onRedFlagSelectionChange={setSelectedRedFlagIds}
                   />
                 </Suspense>
               </div>
@@ -4811,6 +4819,8 @@ const ProfessionalWorkflowPage = () => {
                   onFinishSession={undefined}
                   hideHeader={false}
                   resumeLoadFailed={resumeLoadFailed}
+                  selectedRedFlagIds={selectedRedFlagIds}
+                  onRedFlagSelectionChange={setSelectedRedFlagIds}
                 />
               </Suspense>
             )}

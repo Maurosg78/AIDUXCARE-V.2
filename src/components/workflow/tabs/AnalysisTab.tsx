@@ -137,6 +137,9 @@ export interface AnalysisTabProps {
   todayFocusBlockRenderedByParent?: boolean;
   /** When resume failed (session not found), show links to view note or go back to Patient History */
   resumeLoadFailed?: { sessionId: string; patientId: string } | null;
+  // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
+  selectedRedFlagIds: string[];
+  onRedFlagSelectionChange: (ids: string[]) => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -202,6 +205,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   hideHeader = false,
   todayFocusBlockRenderedByParent = false,
   resumeLoadFailed = null,
+  selectedRedFlagIds,
+  onRedFlagSelectionChange,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -402,6 +407,51 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               Continue to physical evaluation
             </button>
           </div>
+
+          {/* WO-BUG-008: Red flags — show all detected, physio selects which apply */}
+          {interactiveResults?.redFlags?.length > 0 && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
+              <h3 className="text-sm font-semibold text-red-900 mb-3">⚠️ Red Flags detected</h3>
+              <div className="space-y-3">
+                {(interactiveResults.redFlags as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
+                  const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
+                  const label = typeof flag === 'string' ? flag : (flag?.label ?? '');
+                  const evidence = typeof flag === 'object' && flag && 'evidence' in flag ? (flag as { evidence?: string }).evidence : undefined;
+                  const suggestedAction = typeof flag === 'object' && flag && 'suggested_action' in flag ? (flag as { suggested_action?: string }).suggested_action : undefined;
+                  const urgency = typeof flag === 'object' && flag && 'urgency' in flag ? (flag as { urgency?: string }).urgency : undefined;
+                  const isChecked = selectedRedFlagIds.includes(id);
+                  const urgencyBadgeClass = urgency === 'immediate' ? 'bg-red-600 text-white' : urgency === 'today' ? 'bg-amber-500 text-white' : urgency === 'monitor' ? 'bg-slate-500 text-white' : '';
+                  return (
+                    <label
+                      key={`redflag-${idx}-${id}`}
+                      className="flex items-start gap-3 rounded-lg border border-red-200 bg-white p-3 cursor-pointer hover:bg-red-50/50 transition"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
+                          onRedFlagSelectionChange(next);
+                        }}
+                        className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-red-900">{label}</span>
+                        {urgency && (
+                          <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
+                        )}
+                        {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
+                        {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs text-slate-600">
+                Select the red flags relevant to this case. All detected flags are recorded for clinical quality tracking.
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
