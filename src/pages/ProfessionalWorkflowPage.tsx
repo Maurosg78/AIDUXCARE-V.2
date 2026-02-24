@@ -283,6 +283,10 @@ const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [selectedRedFlagIds, setSelectedRedFlagIds] = useState<string[]>([]);
+  const [redFlagDecisions, setRedFlagDecisions] = useState<Record<string, {
+    decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
+    continuationNote?: string;
+  }>>({});
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
@@ -4613,6 +4617,8 @@ const ProfessionalWorkflowPage = () => {
                     resumeLoadFailed={resumeLoadFailed}
                     selectedRedFlagIds={selectedRedFlagIds}
                     onRedFlagSelectionChange={setSelectedRedFlagIds}
+                    redFlagDecisions={redFlagDecisions}
+                    onRedFlagDecisionChange={setRedFlagDecisions}
                   />
                 </Suspense>
               </div>
@@ -4848,6 +4854,8 @@ const ProfessionalWorkflowPage = () => {
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
+                  redFlagDecisions={redFlagDecisions}
+                  onRedFlagDecisionChange={setRedFlagDecisions}
                 />
               </Suspense>
             )}
