@@ -33,6 +33,11 @@ const demoPatient = {
   specialty: "Physiotherapy",
 };
 
+interface RedFlagDecision {
+  decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
+  continuationNote?: string;
+}
+
 export interface AnalysisTabProps {
   // Patient data
   currentPatient: Patient | null;
@@ -140,6 +145,8 @@ export interface AnalysisTabProps {
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
   selectedRedFlagIds: string[];
   onRedFlagSelectionChange: (ids: string[]) => void;
+  redFlagDecisions?: Record<string, RedFlagDecision>;
+  onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -207,6 +214,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
+  redFlagDecisions = {},
+  onRedFlagDecisionChange,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -410,7 +419,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </button>
           </div>
 
-          {/* WO-BUG-008: Red flags — show all detected, physio selects which apply */}
+          {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
           {interactiveResults?.redFlags?.length > 0 && (
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
               <h3 className="text-sm font-semibold text-red-900 mb-3">⚠️ Red Flags detected</h3>
@@ -426,29 +435,118 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   return (
                     <label
                       key={`redflag-${idx}-${id}`}
-                      className="flex items-start gap-3 rounded-lg border border-red-200 bg-white p-3 cursor-pointer hover:bg-red-50/50 transition"
+                      className="flex flex-col gap-2 rounded-lg border border-red-200 bg-white p-3 cursor-pointer hover:bg-red-50/50 transition"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
-                          onRedFlagSelectionChange(next);
-                        }}
-                        className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-red-900">{label}</span>
-                        {urgency && (
-                          <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
-                        )}
-                        {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
-                        {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
+                            onRedFlagSelectionChange(next);
+                          }}
+                          className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-red-900">{label}</span>
+                          {urgency && (
+                            <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
+                          )}
+                          {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
+                          {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                        </div>
                       </div>
+
+                      {isChecked && (
+                        <div className="mt-2 ml-7 space-y-2">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Clinical decision for this red flag:
+                            </label>
+                            <div className="flex flex-col gap-1">
+                              <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`decision-${id}`}
+                                  value="continue"
+                                  checked={redFlagDecisions[id]?.decision === 'continue'}
+                                  onChange={() =>
+                                    onRedFlagDecisionChange?.({
+                                      ...redFlagDecisions,
+                                      [id]: { decision: 'continue' },
+                                    })
+                                  }
+                                />
+                                Continue — does not alter treatment plan
+                              </label>
+
+                              <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`decision-${id}`}
+                                  value="referral_stop"
+                                  checked={redFlagDecisions[id]?.decision === 'referral_stop'}
+                                  onChange={() =>
+                                    onRedFlagDecisionChange?.({
+                                      ...redFlagDecisions,
+                                      [id]: { decision: 'referral_stop' },
+                                    })
+                                  }
+                                />
+                                Referral + Stop — generate report, pause physiotherapy
+                              </label>
+
+                              <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={`decision-${id}`}
+                                  value="referral_continue_partial"
+                                  checked={redFlagDecisions[id]?.decision === 'referral_continue_partial'}
+                                  onChange={() =>
+                                    onRedFlagDecisionChange?.({
+                                      ...redFlagDecisions,
+                                      [id]: {
+                                        decision: 'referral_continue_partial',
+                                        continuationNote: redFlagDecisions[id]?.continuationNote,
+                                      },
+                                    })
+                                  }
+                                />
+                                Referral + Continue partially — generate report, continue safe modalities
+                              </label>
+
+                              {redFlagDecisions[id]?.decision === 'referral_continue_partial' && (
+                                <textarea
+                                  className="mt-1 w-full text-xs border border-amber-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
+                                  rows={2}
+                                  placeholder="Optional: describe safe modalities to continue (e.g. TENS, massage therapy for pain management)"
+                                  value={redFlagDecisions[id]?.continuationNote ?? ''}
+                                  onChange={(e) =>
+                                    onRedFlagDecisionChange?.({
+                                      ...redFlagDecisions,
+                                      [id]: {
+                                        decision: 'referral_continue_partial',
+                                        continuationNote: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </label>
                   );
                 })}
               </div>
+
+              {Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop') && (
+                <div className="mt-3 p-3 rounded-lg bg-red-100 border border-red-300 text-xs text-red-800 font-medium">
+                  ⛔ A medical referral report will be generated. Physiotherapy treatment will be paused pending specialist response.
+                </div>
+              )}
+
               <p className="mt-3 text-xs text-slate-600">
                 Select the red flags relevant to this case. All detected flags are recorded for clinical quality tracking.
               </p>
