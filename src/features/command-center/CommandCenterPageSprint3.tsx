@@ -291,15 +291,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
         if (newPatient) {
           setSelectedPatient(newPatient);
           if (isViewingToday) {
-            setTodayQuickList((prev) => [
-              ...prev,
-              {
+            setTodayQuickList((prev) =>
+              addToListSafe(prev, {
                 patientId: newPatient.id,
                 patientName: newPatient.fullName || newPatient.firstName || 'Patient',
                 sessionType: 'ongoing' as const,
                 status: 'pending' as const,
-              },
-            ]);
+              }),
+            );
           }
           setShowOngoingIntake(true);
         }
@@ -310,15 +309,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
         const newPatient = await PatientService.getPatientById(patientId);
         const patientName = newPatient?.fullName || newPatient?.firstName || 'Patient';
         if (isViewingToday) {
-          setTodayQuickList((prev) => [
-            ...prev,
-            {
+          setTodayQuickList((prev) =>
+            addToListSafe(prev, {
               patientId,
               patientName,
               sessionType: sessionType === 'initial' ? 'initial' : 'followup',
               status: 'pending' as const,
-            },
-          ]);
+            }),
+          );
         }
         navigate(`/workflow?type=${sessionType}&patientId=${patientId}`);
         return;
@@ -345,6 +343,20 @@ export const CommandCenterPageSprint3: React.FC = () => {
     setSelectedPatient(null);
   }, []);
 
+  const addToListSafe = useCallback((
+    prev: TodayQuickItem[],
+    newItem: TodayQuickItem
+  ): TodayQuickItem[] => {
+    const alreadyExists = prev.some(
+      (i) =>
+        i.patientId === newItem.patientId &&
+        i.sessionType === newItem.sessionType &&
+        i.status !== 'done'
+    );
+    if (alreadyExists) return prev;
+    return [...prev, newItem];
+  }, []);
+
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
@@ -354,10 +366,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
         selectedDate.getMonth() === new Date().getMonth() &&
         selectedDate.getFullYear() === new Date().getFullYear();
       if (isViewingToday) {
-        setTodayQuickList((prev) => [
-          ...prev,
-          { patientId, patientName: patientName || 'Patient', sessionType: 'ongoing' as const, status: 'pending' as const },
-        ]);
+        setTodayQuickList((prev) =>
+          addToListSafe(prev, {
+            patientId,
+            patientName: patientName || 'Patient',
+            sessionType: 'ongoing' as const,
+            status: 'pending' as const,
+          }),
+        );
       }
       navigate(`/workflow?type=followup&patientId=${patientId}`, {
         state: baselineSOAP ? { baselineFromOngoing: baselineSOAP } : undefined,
@@ -498,15 +514,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
         onAddToToday={
           startSessionModalMode === 'add_to_today'
             ? (patient, type) => {
-              setTodayQuickList((prev) => [
-                ...prev,
-                {
+              setTodayQuickList((prev) =>
+                addToListSafe(prev, {
                   patientId: patient.id,
                   patientName: patient.fullName || patient.firstName || 'Patient',
                   sessionType: type,
                   status: 'pending' as const,
-                },
-              ]);
+                }),
+              );
               setShowStartSessionModal(false);
               setStartSessionModalStep(1);
               setStartSessionModalPatient(null);
