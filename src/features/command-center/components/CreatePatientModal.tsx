@@ -30,6 +30,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
     birthDate: '',
     chiefComplaint: '',
     isReferral: false,
+    referringDoctor: '',
     referralDiagnosis: '',
     suspectedDiagnosis: '',
   });
@@ -58,6 +59,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
         birthDate: '',
         chiefComplaint: '',
         isReferral: false,
+        referringDoctor: '',
         referralDiagnosis: '',
         suspectedDiagnosis: '',
       });
@@ -152,10 +154,15 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
       }
 
       // Add referral/suspected diagnosis fields
-      if (formData.isReferral && formData.referralDiagnosis?.trim()) {
-        payload.referralDiagnosis = formData.referralDiagnosis.trim();
-        payload.referralReason = formData.referralDiagnosis.trim(); // Also save to referralReason for compatibility
-      } else if (!formData.isReferral && formData.suspectedDiagnosis?.trim()) {
+      if (formData.isReferral) {
+        if (formData.referralDiagnosis?.trim()) {
+          payload.referralDiagnosis = formData.referralDiagnosis.trim();
+          payload.referralReason = formData.referralDiagnosis.trim(); // Also save to referralReason for compatibility
+        }
+        if (formData.referringDoctor?.trim()) {
+          payload.referringDoctor = formData.referringDoctor.trim();
+        }
+      } else if (formData.suspectedDiagnosis?.trim()) {
         payload.suspectedDiagnosis = formData.suspectedDiagnosis.trim();
       }
 
@@ -405,31 +412,48 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
             </label>
           </div>
 
-          {/* Referral Diagnosis (shown when isReferral is true) */}
+          {/* Referring physician + Referral Diagnosis (shown when isReferral is true) */}
           {formData.isReferral && (
-            <div>
-              <label htmlFor="referralDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
-                Referral Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
-              </label>
-              <div className="flex gap-2">
+            <>
+              <div>
+                <label htmlFor="referringDoctor" className="block text-sm font-medium text-slate-700 mb-1">
+                  Referring Physician <span className="text-slate-400 text-xs font-normal">(optional)</span>
+                </label>
                 <input
                   type="text"
-                  id="referralDiagnosis"
-                  name="referralDiagnosis"
-                  value={formData.referralDiagnosis}
-                  onChange={handleInputChange}
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                  placeholder="Diagnosis from referring physician..."
+                  id="referringDoctor"
+                  name="referringDoctor"
+                  value={formData.referringDoctor}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, referringDoctor: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                  placeholder="Dr. Smith (optional)"
                   disabled={isSubmitting}
-                />
-                <DictationButton
-                  value={formData.referralDiagnosis}
-                  onChange={(v) => setFormData((p) => ({ ...p, referralDiagnosis: v }))}
-                  disabled={isSubmitting}
-                  title="Dictate referral diagnosis"
                 />
               </div>
-            </div>
+              <div>
+                <label htmlFor="referralDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
+                  Referral Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    id="referralDiagnosis"
+                    name="referralDiagnosis"
+                    value={formData.referralDiagnosis}
+                    onChange={handleInputChange}
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                    placeholder="Diagnosis from referring physician..."
+                    disabled={isSubmitting}
+                  />
+                  <DictationButton
+                    value={formData.referralDiagnosis}
+                    onChange={(v) => setFormData((p) => ({ ...p, referralDiagnosis: v }))}
+                    disabled={isSubmitting}
+                    title="Dictate referral diagnosis"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {/* Suspected Diagnosis (shown when isReferral is false) */}
