@@ -147,6 +147,8 @@ export interface AnalysisTabProps {
   onRedFlagSelectionChange: (ids: string[]) => void;
   redFlagDecisions?: Record<string, RedFlagDecision>;
   onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
+  // WO-PART-C-REFERRAL-REPORT: Optional callback to trigger medical referral report generation
+  onGenerateReferralReport?: () => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -216,6 +218,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onRedFlagSelectionChange,
   redFlagDecisions = {},
   onRedFlagDecisionChange,
+  onGenerateReferralReport,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -544,6 +547,22 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               {Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop') && (
                 <div className="mt-3 p-3 rounded-lg bg-red-100 border border-red-300 text-xs text-red-800 font-medium">
                   ⛔ A medical referral report will be generated. Physiotherapy treatment will be paused pending specialist response.
+                </div>
+              )}
+
+              {Object.values(redFlagDecisions).some(
+                (d) =>
+                  d.decision === 'referral_stop' || d.decision === 'referral_continue_partial'
+              ) && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => onGenerateReferralReport?.()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition shadow-sm"
+                  >
+                    <span>📋</span>
+                    <span>Generate Medical Referral Report</span>
+                  </button>
                 </div>
               )}
 

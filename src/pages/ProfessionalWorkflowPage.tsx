@@ -78,6 +78,8 @@ import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clini
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
 import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
 import { InitialClinicalSummaryModal } from "../components/workflow/InitialClinicalSummaryModal";
+import ReferralReportModal from "../components/ReferralReportModal";
+import type { ReferralReportData } from "../services/referralReportGenerator";
 import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-service";
 // FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
 // import WorkflowSelector, { type WorkflowSelectorProps } from "../components/workflow/WorkflowSelector";
@@ -2976,11 +2978,100 @@ const ProfessionalWorkflowPage = () => {
   // Physio notes for TODAY'S PLAN section
   const [physioNotes, setPhysioNotes] = useState<string>('');
 
+  // WO-PART-C-REFERRAL-REPORT: Referral report modal state
+  const [referralReportOpen, setReferralReportOpen] = useState(false);
+
   // Initial Plan Modal state (for existing patients without initial assessment)
   const [isInitialPlanModalOpen, setIsInitialPlanModalOpen] = useState(false);
 
   // Universal Share Menu state
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+
+  const buildReferralReportData = useCallback((): ReferralReportData | null => {
+    if (!currentPatient || !interactiveResults) {
+      return null;
+    }
+
+    const patientName =
+      (currentPatient as any).fullName ||
+      [currentPatient.firstName, currentPatient.lastName].filter(Boolean).join(" ") ||
+      "Unknown patient";
+
+    let patientDOB: string | undefined;
+    const dobRaw = (currentPatient as any).dateOfBirth;
+    if (dobRaw instanceof Date) {
+      patientDOB = dobRaw.toLocaleDateString("en-CA");
+    } else if (dobRaw && typeof dobRaw === "object" && "toDate" in dobRaw) {
+      patientDOB = (dobRaw as any).toDate().toLocaleDateString("en-CA");
+    } else if (typeof dobRaw === "string") {
+      patientDOB = dobRaw;
+    }
+
+    const sessionDate = new Date().toLocaleDateString("en-CA");
+    const physiotherapistName = user?.displayName || deriveClinicianDisplayName(undefined, user);
+    const referringDoctor = (currentPatient as any).referringDoctor;
+
+    const redFlagsSource = (interactiveResults as any).redFlags as
+      | (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]
+      | undefined;
+
+    const redFlags =
+      redFlagsSource?.flatMap((flag, idx) => {
+        const id = typeof flag === "string" ? flag : (flag?.label ?? `red-${idx}`);
+        const decision = redFlagDecisions[id]?.decision;
+        if (decision !== "referral_stop" && decision !== "referral_continue_partial") {
+          return [];
+        }
+        if (!selectedRedFlagIds.includes(id)) {
+          return [];
+        }
+
+        const label = typeof flag === "string" ? flag : (flag?.label ?? id);
+        const evidence =
+          typeof flag === "object" && flag && "evidence" in flag
+            ? (flag as { evidence?: string }).evidence
+            : undefined;
+        const urgency =
+          typeof flag === "object" && flag && "urgency" in flag
+            ? (flag as { urgency?: string }).urgency
+            : undefined;
+
+        return [
+          {
+            label,
+            decision,
+            continuationNote: redFlagDecisions[id]?.continuationNote,
+            urgency,
+            evidence,
+          } as ReferralReportData["redFlags"][number],
+        ];
+      }) ?? [];
+
+    const chiefComplaint =
+      (interactiveResults as any).chief_complaint ||
+      (interactiveResults as any).chiefComplaint ||
+      undefined;
+
+    const clinicalNotes = physioNotes || undefined;
+
+    return {
+      patientName,
+      patientDOB,
+      sessionDate,
+      physiotherapistName,
+      referringDoctor,
+      redFlags,
+      chiefComplaint,
+      clinicalNotes,
+    };
+  }, [
+    currentPatient,
+    interactiveResults,
+    physioNotes,
+    redFlagDecisions,
+    selectedRedFlagIds,
+    user,
+  ]);
 
   // Detect visit type on mount or when data changes
   useEffect(() => {
@@ -4619,6 +4710,7 @@ const ProfessionalWorkflowPage = () => {
                     onRedFlagSelectionChange={setSelectedRedFlagIds}
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
+                    onGenerateReferralReport={() => setReferralReportOpen(true)}
                   />
                 </Suspense>
               </div>
@@ -4856,6 +4948,7 @@ const ProfessionalWorkflowPage = () => {
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
+                  onGenerateReferralReport={() => setReferralReportOpen(true)}
                 />
               </Suspense>
             )}
@@ -4937,6 +5030,12 @@ const ProfessionalWorkflowPage = () => {
 
       {/* Feedback Widget - Always visible for beta testing */}
       <FeedbackWidget />
+
+      <ReferralReportModal
+        isOpen={referralReportOpen}
+        onClose={() => setReferralReportOpen(false)}
+        reportData={buildReferralReportData()}
+      />
 
       {/* Initial Plan Modal for existing patients without initial assessment */}
       {currentPatient && (
