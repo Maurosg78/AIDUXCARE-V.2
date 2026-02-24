@@ -61,15 +61,17 @@ export const PatientSearchBar: React.FC = () => {
           ) : (
             <ul className="py-2">
               {filteredPatients.map((patient) => (
-                <li key={patient.id}>
+                <li key={patient.id} className="px-2">
                   <button
                     type="button"
                     onClick={() => handleSelect(patient)}
-                    className="w-full px-5 py-4 min-h-[52px] rounded-lg text-left hover:bg-slate-50 font-apple text-slate-900"
+                    className="w-full px-4 py-3 min-h-[56px] rounded-lg text-left hover:bg-slate-50 active:bg-slate-100 font-apple text-slate-900 flex flex-col justify-center"
                   >
-                    {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown'}
+                    <span className="block text-sm font-medium leading-snug">
+                      {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown'}
+                    </span>
                     {patient.email && (
-                      <span className="block text-xs text-slate-500 mt-0.5">{patient.email}</span>
+                      <span className="block text-xs text-slate-500 mt-0.5 leading-tight">{patient.email}</span>
                     )}
                   </button>
                 </li>
