@@ -1,4 +1,3 @@
-/* @ts-nocheck */
 import React, { useMemo } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
 import { EditableCheckbox } from './EditableCheckbox';
@@ -10,7 +9,7 @@ interface ClinicalAnalysisResultsProps {
   results: any;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
-  visitType?: 'initial' | 'follow-up'; // WO-07: Para ocultar secciones innecesarias en follow-up
+  visitType?: 'initial' | 'follow-up';
   /** WO-BUG-009: Resumen de solo lectura; red flags decididos en AnalysisTab */
   selectedRedFlagIds?: string[];
   redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
@@ -25,63 +24,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   redFlagsDetected = [],
 }) => {
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
-  
-  // ✅ FASE 1: Sort physical tests by importance and show ONLY top 5 in Phase 1
-  // Tests 6+ will appear in sidebar in Phase 2 (EvaluationTab)
+
   const physicalTests = useMemo(() => {
-    // ✅ CRITICAL: Use results.physicalTests (from interactiveResults) which is already limited to top 5
-    // NOT results.evaluaciones_fisicas_sugeridas which contains all tests
     const rawTests = editedResults?.physicalTests || [];
-    
-    console.log('[ClinicalAnalysisResults] Raw physicalTests from editedResults:', {
-      count: rawTests.length,
-      tests: rawTests.map((t: any) => ({ 
-        name: t.name || t.test, 
-        originalIndex: t.originalIndex,
-        sensitivity: t.sensitivity,
-        specificity: t.specificity,
-        sensitivityQualitative: t.sensitivityQualitative,
-        specificityQualitative: t.specificityQualitative,
-        evidence_level: t.evidence_level || t.evidencia
-      }))
-    });
-    
-    // ✅ NOTE: interactiveResults.physicalTests is already limited to top 5 in ProfessionalWorkflowPage
-    // But we still need to sort them by importance (average score) in case they weren't sorted correctly
     const sorted = sortPhysicalTestsByImportance(rawTests);
-    
-    // ✅ FASE 1 FIX: Limit to top 5 tests for Phase 1 display
-    // Tests 6+ will be available in sidebar during Phase 2 (EvaluationTab)
-    const { topTests, remainingTests } = getTopPhysicalTests(sorted, 5);
-    
-    // ✅ CRITICAL: Ensure we have exactly 5 or fewer tests
-    // Use slice to guarantee exactly 5 tests, even if getTopPhysicalTests returns more
-    const finalTests = Array.isArray(topTests) ? topTests.slice(0, 5) : [];
-    
-    // ✅ VALIDATION: Ensure we have exactly 5 or fewer tests
-    if (finalTests.length > 5) {
-      console.error('[ClinicalAnalysisResults] ❌ ERROR: finalTests has more than 5 tests, forcing to exactly 5');
-      finalTests.splice(5); // Force to exactly 5
-    }
-    
-    console.log('[ClinicalAnalysisResults] Limited to top 5:', {
-      totalTestsFromEditedResults: rawTests.length,
-      topTestsCount: topTests.length,
-      finalTestsCount: finalTests.length,
-      remainingTestsCount: remainingTests.length,
-      topTestsNames: finalTests.map((t: any) => ({ 
-        name: t.name || t.test, 
-        originalIndex: t.originalIndex,
-        avgScore: t.sensitivity && t.specificity ? ((t.sensitivity + t.specificity) / 2).toFixed(2) : 'N/A'
-      }))
-    });
-    
-    // ✅ ASSERTION: Final validation before returning
-    if (finalTests.length > 5) {
-      console.error('[ClinicalAnalysisResults] ❌ CRITICAL ERROR: finalTests still has more than 5 tests after all validations!');
-    }
-    
-    return finalTests;
+    const { topTests } = getTopPhysicalTests(sorted, 5);
+    return Array.isArray(topTests) ? topTests.slice(0, 5) : [];
   }, [editedResults?.physicalTests]);
 
   const handleToggle = (id: string) => {
@@ -94,76 +42,64 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const handleSelectAll = (section: string) => {
     let idsToSelect: string[] = [];
-    
-    switch(section) {
+
+    switch (section) {
       case 'alerts':
-        // WO-BUG-009: Solo medicamentos; red flags se deciden en AnalysisTab
-        idsToSelect = editedResults?.entities?.filter(e => e.type === 'medication').map(e => e.id).filter(Boolean) || [];
+        idsToSelect = editedResults?.entities?.filter((e: any) => e.type === 'medication').map((e: any) => e.id).filter(Boolean) || [];
         break;
-        
       case 'clinical':
-        idsToSelect = editedResults?.entities?.map(e => e.id).filter(Boolean) || [];
+        idsToSelect = editedResults?.entities?.map((e: any) => e.id).filter(Boolean) || [];
         break;
-        
       case 'physical':
-        // ✅ FIX: physicalTests already contains only top 5 (from useMemo above)
-        // So we can directly map all physicalTests - they're already the top 5
-        idsToSelect = physicalTests.map((test) => {
-          if (typeof test === "object" && test.originalIndex !== undefined) {
+        idsToSelect = physicalTests.map((test: any) => {
+          if (typeof test === 'object' && test.originalIndex !== undefined) {
             return `physical-${test.originalIndex}`;
           }
-          // Fallback: find index if originalIndex not available
-          const index = physicalTests.findIndex(t => 
+          const index = physicalTests.findIndex((t: any) =>
             (typeof t === 'string' && typeof test === 'string' && t === test) ||
             (typeof t === 'object' && typeof test === 'object' && t.name === test.name)
           );
           return `physical-${index >= 0 ? index : 0}`;
         });
         break;
-        
       case 'psychosocial':
         const psychosocialIds: string[] = [];
-        editedResults?.biopsychosocial_occupational?.forEach((_, i) => psychosocialIds.push(`occupational-${i}`));
-        editedResults?.biopsychosocial_protective?.forEach((_, i) => psychosocialIds.push(`protective-${i}`));
-        editedResults?.biopsychosocial_functional_limitations?.forEach((_, i) => psychosocialIds.push(`functional-${i}`));
-        editedResults?.biopsychosocial_psychological?.forEach((_, i) => psychosocialIds.push(`psychological-${i}`));
-        editedResults?.biopsychosocial_social?.forEach((_, i) => psychosocialIds.push(`social-${i}`));
-        editedResults?.biopsychosocial_patient_strengths?.forEach((_, i) => psychosocialIds.push(`strength-${i}`));
-        // Fallback to yellowFlags if no structured factors
+        editedResults?.biopsychosocial_occupational?.forEach((_: any, i: number) => psychosocialIds.push(`occupational-${i}`));
+        editedResults?.biopsychosocial_protective?.forEach((_: any, i: number) => psychosocialIds.push(`protective-${i}`));
+        editedResults?.biopsychosocial_functional_limitations?.forEach((_: any, i: number) => psychosocialIds.push(`functional-${i}`));
+        editedResults?.biopsychosocial_psychological?.forEach((_: any, i: number) => psychosocialIds.push(`psychological-${i}`));
+        editedResults?.biopsychosocial_social?.forEach((_: any, i: number) => psychosocialIds.push(`social-${i}`));
+        editedResults?.biopsychosocial_patient_strengths?.forEach((_: any, i: number) => psychosocialIds.push(`strength-${i}`));
         if (psychosocialIds.length === 0) {
-          editedResults?.yellowFlags?.forEach((_, i) => psychosocialIds.push(`yellow-${i}`));
+          editedResults?.yellowFlags?.forEach((_: any, i: number) => psychosocialIds.push(`yellow-${i}`));
         }
         idsToSelect = psychosocialIds;
         break;
     }
-    
+
     const newSelection = [...new Set([...selectedIds, ...idsToSelect])];
     onSelectionChange(newSelection);
   };
 
   const handleSelectNone = (section: string) => {
     let idsToRemove: string[] = [];
-    
-    switch(section) {
+
+    switch (section) {
       case 'alerts':
         idsToRemove = selectedIds.filter(id =>
-          editedResults?.entities?.find(e => e.id === id && e.type === 'medication')
+          editedResults?.entities?.find((e: any) => e.id === id && e.type === 'medication')
         );
         break;
-        
       case 'clinical':
-        idsToRemove = selectedIds.filter(id => 
-          editedResults?.entities?.find(e => e.id === id)
+        idsToRemove = selectedIds.filter(id =>
+          editedResults?.entities?.find((e: any) => e.id === id)
         );
         break;
-        
       case 'physical':
-        // ✅ PHASE 2 FIX: Remove all physical test IDs (they use originalIndex)
         idsToRemove = selectedIds.filter(id => id.startsWith('physical-'));
         break;
-        
       case 'psychosocial':
-        idsToRemove = selectedIds.filter(id => 
+        idsToRemove = selectedIds.filter(id =>
           id.startsWith('occupational-') ||
           id.startsWith('protective-') ||
           id.startsWith('functional-') ||
@@ -174,13 +110,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         );
         break;
     }
-    
+
     onSelectionChange(selectedIds.filter(id => !idsToRemove.includes(id)));
   };
 
   if (!editedResults) return null;
 
-  // Follow-up path: do NOT show Highlights or Biopsychosocial. Only SOAP from Documentation.
+  // Follow-up: mostrar mensaje simple, sin secciones de análisis
   if (visitType === 'follow-up') {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
@@ -189,15 +125,15 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     );
   }
 
-  const criticalMeds = editedResults.entities?.filter(e => 
+  // A partir de aquí visitType === 'initial' — no necesitamos verificar de nuevo
+  const criticalMeds = editedResults.entities?.filter((e: any) =>
     e.type === 'medication' && e.text?.toLowerCase().includes('sin prescri')
   ) || [];
 
   return (
     <div className="flex flex-col gap-4">
-      
-      {/* WO-BUG-009: Medico-legal Summary — criticalMeds editables; red flags solo lectura desde AnalysisTab */}
-      {visitType !== 'follow-up' && (
+
+      {/* WO-BUG-009: Medico-legal Summary */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-500">
@@ -210,7 +146,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {criticalMeds.map((med) => (
+          {criticalMeds.map((med: any) => (
             <EditableCheckbox
               key={med.id}
               id={med.id}
@@ -235,17 +171,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                   <li key={id} className="flex items-center gap-2 text-sm text-slate-800">
                     <span>{label}</span>
                     {severity && (
-                      <span
-                        className={
-                          severity === 'immediate'
-                            ? 'text-xs px-2 py-0.5 rounded bg-red-600 text-white'
-                            : severity === 'today'
-                              ? 'text-xs px-2 py-0.5 rounded bg-amber-500 text-white'
-                              : severity === 'monitor'
-                                ? 'text-xs px-2 py-0.5 rounded bg-slate-500 text-white'
-                                : 'text-xs px-2 py-0.5 rounded bg-slate-400 text-white'
-                        }
-                      >
+                      <span className={
+                        severity === 'immediate' ? 'text-xs px-2 py-0.5 rounded bg-red-600 text-white' :
+                          severity === 'today' ? 'text-xs px-2 py-0.5 rounded bg-amber-500 text-white' :
+                            severity === 'monitor' ? 'text-xs px-2 py-0.5 rounded bg-slate-500 text-white' :
+                              'text-xs px-2 py-0.5 rounded bg-slate-400 text-white'
+                      }>
                         {severity}
                       </span>
                     )}
@@ -256,9 +187,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         )}
       </div>
-      )}
 
-      {/* Conversation Highlights: visible for both initial and follow-up so Vertex analysis is visible */}
+      {/* Conversation Highlights */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -266,12 +196,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               <Heart className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">
-                {visitType === 'follow-up' ? 'Follow-up analysis' : 'Conversation Highlights'}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {visitType === 'follow-up' ? 'Chief complaint, key findings, and summary from this visit.' : 'Capture chief complaint, key findings, and medication.'}
-              </p>
+              <h3 className="text-base font-semibold text-slate-900">Conversation Highlights</h3>
+              <p className="text-xs text-slate-500">Capture chief complaint, key findings, and medication.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -290,17 +216,11 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           </div>
         </div>
 
-        {visitType === 'follow-up' && editedResults.motivo_consulta && (
-          <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Summary</p>
-            <p className="text-sm text-slate-800">{editedResults.motivo_consulta}</p>
-          </div>
-        )}
         <div className="grid gap-4 lg:grid-cols-2">
           <div>
             <h4 className="font-medium text-sm text-slate-700 mb-2">Chief complaint & key findings</h4>
             <div className="space-y-1">
-              {editedResults.entities?.filter(e => e.type === 'symptom').map((entity) => (
+              {editedResults.entities?.filter((e: any) => e.type === 'symptom').map((entity: any) => (
                 <EditableCheckbox
                   key={entity.id}
                   id={entity.id}
@@ -322,8 +242,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           <div>
             <h4 className="font-medium text-sm text-slate-700 mb-2">Current medication</h4>
             <div className="space-y-1">
-              {editedResults.entities?.filter(e => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
-                .map((entity) => (
+              {editedResults.entities?.filter((e: any) => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
+                .map((entity: any) => (
                   <EditableCheckbox
                     key={entity.id}
                     id={entity.id}
@@ -332,14 +252,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                     onToggle={handleToggle}
                     onTextChange={handleTextChange}
                   />
-              ))}
+                ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recommended Physical Tests: only for initial (follow-up skips suggestions) */}
-      {visitType !== 'follow-up' && (
+      {/* Recommended Physical Tests */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -368,66 +287,44 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-          {physicalTests.map((test, i) => {
-            const label =
-              typeof test === "string" ? test : test.name || test.test || "Physical test";
-
-            // ✅ PHASE 2 FIX: Use originalIndex if available, otherwise fallback to i
-            const testIndex = (typeof test === "object" && test.originalIndex !== undefined) 
-              ? test.originalIndex 
-              : i;
+          {physicalTests.map((test: any, i: number) => {
+            const label = typeof test === 'string' ? test : test.name || test.test || 'Physical test';
+            const testIndex = (typeof test === 'object' && test.originalIndex !== undefined) ? test.originalIndex : i;
             const testId = `physical-${testIndex}`;
 
-            let evidenceDetail = "";
-            if (typeof test === "object") {
+            let evidenceDetail = '';
+            if (typeof test === 'object') {
               const evidenceParts: string[] = [];
-
-              // ✅ FIX: Solo mostrar sensitivity si es un número válido (no NaN, no undefined, no null, no "unknown")
               const sensitivity = test.sensitivity || test.sensibilidad;
-              // Bloque 6: Comparación corregida - sensitivity es number, no comparar con "unknown"
-              if (sensitivity != null && 
-                  typeof sensitivity === 'number' && 
-                  !isNaN(sensitivity) && 
-                  sensitivity >= 0 && 
-                  sensitivity <= 1) {
+              if (sensitivity != null && typeof sensitivity === 'number' && !isNaN(sensitivity) && sensitivity >= 0 && sensitivity <= 1) {
                 evidenceParts.push(`Sensitivity ${Math.round(sensitivity * 100)}%`);
               }
-              
-              // ✅ FIX: Solo mostrar specificity si es un número válido (no NaN, no undefined, no null, no "unknown")
               const specificity = test.specificity || test.especificidad;
-              // Bloque 6: Comparación corregida - specificity es number, no comparar con "unknown"
-              if (specificity != null && 
-                  typeof specificity === 'number' && 
-                  !isNaN(specificity) && 
-                  specificity >= 0 && 
-                  specificity <= 1) {
+              if (specificity != null && typeof specificity === 'number' && !isNaN(specificity) && specificity >= 0 && specificity <= 1) {
                 evidenceParts.push(`Specificity ${Math.round(specificity * 100)}%`);
               }
-              
               if (test.evidencia || test.evidence || test.evidence_level) {
-                const level = test.evidencia || test.evidence || test.evidence_level;
-                evidenceParts.push(`Evidence level: ${String(level)}`);
+                evidenceParts.push(`Evidence level: ${String(test.evidencia || test.evidence || test.evidence_level)}`);
               }
               if (test.justificacion || test.justification) {
                 evidenceParts.push(test.justificacion || test.justification);
               }
-
-              evidenceDetail = evidenceParts.length > 0 ? ` (${evidenceParts.join(" · ")})` : "";
+              evidenceDetail = evidenceParts.length > 0 ? ` (${evidenceParts.join(' · ')})` : '';
             }
 
             return (
-            <EditableCheckbox
-              key={testId}
-              id={testId}
+              <EditableCheckbox
+                key={testId}
+                id={testId}
                 text={`${i + 1}. ${label}${evidenceDetail}`}
-              checked={selectedIds.includes(testId)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+                checked={selectedIds.includes(testId)}
+                onToggle={handleToggle}
+                onTextChange={handleTextChange}
+              />
             );
           })}
         </div>
-        
+
         <div className="mt-3">
           <AddCustomItemButton
             onAdd={(text) => addCustomItem('physical', text)}
@@ -435,9 +332,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
-      )}
 
-      {/* Biopsychosocial Factors: visible for both initial and follow-up so Vertex analysis is visible */}
+      {/* Biopsychosocial Factors */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -466,111 +362,55 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         </div>
 
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-          {/* Occupational factors */}
-          {editedResults.biopsychosocial_occupational?.map((factor, i) => (
-            <EditableCheckbox
-              key={`occupational-${i}`}
-              id={`occupational-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`occupational-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_occupational?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`occupational-${i}`} id={`occupational-${i}`} text={factor}
+              checked={selectedIds.includes(`occupational-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Protective factors */}
-          {editedResults.biopsychosocial_protective?.map((factor, i) => (
-            <EditableCheckbox
-              key={`protective-${i}`}
-              id={`protective-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`protective-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_protective?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`protective-${i}`} id={`protective-${i}`} text={factor}
+              checked={selectedIds.includes(`protective-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Functional limitations */}
-          {editedResults.biopsychosocial_functional_limitations?.map((factor, i) => (
-            <EditableCheckbox
-              key={`functional-${i}`}
-              id={`functional-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`functional-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_functional_limitations?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`functional-${i}`} id={`functional-${i}`} text={factor}
+              checked={selectedIds.includes(`functional-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Psychological factors */}
-          {editedResults.biopsychosocial_psychological?.map((factor, i) => (
-            <EditableCheckbox
-              key={`psychological-${i}`}
-              id={`psychological-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`psychological-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_psychological?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`psychological-${i}`} id={`psychological-${i}`} text={factor}
+              checked={selectedIds.includes(`psychological-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Social factors */}
-          {editedResults.biopsychosocial_social?.map((factor, i) => (
-            <EditableCheckbox
-              key={`social-${i}`}
-              id={`social-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`social-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_social?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`social-${i}`} id={`social-${i}`} text={factor}
+              checked={selectedIds.includes(`social-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Patient strengths */}
-          {editedResults.biopsychosocial_patient_strengths?.map((factor, i) => (
-            <EditableCheckbox
-              key={`strength-${i}`}
-              id={`strength-${i}`}
-              text={factor}
-              checked={selectedIds.includes(`strength-${i}`)}
-              onToggle={handleToggle}
-              onTextChange={handleTextChange}
-            />
+          {editedResults.biopsychosocial_patient_strengths?.map((factor: string, i: number) => (
+            <EditableCheckbox key={`strength-${i}`} id={`strength-${i}`} text={factor}
+              checked={selectedIds.includes(`strength-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
           ))}
-          
-          {/* Fallback: yellow flags (for backward compatibility) */}
-          {(!editedResults.biopsychosocial_occupational?.length && 
-            !editedResults.biopsychosocial_protective?.length && 
+
+          {/* Fallback yellowFlags */}
+          {(!editedResults.biopsychosocial_occupational?.length &&
+            !editedResults.biopsychosocial_protective?.length &&
             !editedResults.biopsychosocial_functional_limitations?.length &&
             !editedResults.biopsychosocial_psychological?.length &&
             !editedResults.biopsychosocial_social?.length &&
             !editedResults.biopsychosocial_patient_strengths?.length) &&
-            editedResults.yellowFlags?.map((flag, i) => (
-              <EditableCheckbox
-                key={`yellow-${i}`}
-                id={`yellow-${i}`}
-                text={flag}
-                checked={selectedIds.includes(`yellow-${i}`)}
-                onToggle={handleToggle}
-                onTextChange={handleTextChange}
-              />
+            editedResults.yellowFlags?.map((flag: string, i: number) => (
+              <EditableCheckbox key={`yellow-${i}`} id={`yellow-${i}`} text={flag}
+                checked={selectedIds.includes(`yellow-${i}`)} onToggle={handleToggle} onTextChange={handleTextChange} />
             ))
           }
         </div>
-        
+
         <div className="mt-3">
           <AddCustomItemButton
-            onAdd={(text) => {
-              // Add to functional_limitations by default, but could be made smarter
-              addCustomItem('biopsychosocial_functional_limitations', text);
-            }}
+            onAdd={(text) => addCustomItem('biopsychosocial_functional_limitations', text)}
             placeholder="Add biopsychosocial factor..."
           />
         </div>
       </div>
+
     </div>
   );
 };
-
 
 export default ClinicalAnalysisResults;
