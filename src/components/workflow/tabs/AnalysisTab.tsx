@@ -145,6 +145,7 @@ export interface AnalysisTabProps {
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
   selectedRedFlagIds: string[];
   onRedFlagSelectionChange: (ids: string[]) => void;
+  redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
   redFlagDecisions?: Record<string, RedFlagDecision>;
   onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
   // WO-PART-C-REFERRAL-REPORT: Optional callback to trigger medical referral report generation
@@ -216,6 +217,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
+  redFlagsDetected = [],
   redFlagDecisions = {},
   onRedFlagDecisionChange,
   onGenerateReferralReport,
