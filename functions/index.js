@@ -317,6 +317,48 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 
   try {
     const { action = 'analyze', prompt, transcript, text, traceId } = req.body || {};
+
+    // ✅ WO-IMAGE-OCR-001: Image OCR via Gemini Vision
+    if (action === 'image-ocr') {
+      const { image, prompt: ocrPrompt } = req.body || {};
+      if (!image?.data || !image?.mimeType) {
+        return res.status(400).json({ ok: false, error: 'missing_image', message: "Provide image.data (base64) and image.mimeType" });
+      }
+      const client = await auth.getClient();
+      const tokenObj = await client.getAccessToken();
+      const accessToken = tokenObj?.token || tokenObj;
+      if (!accessToken) throw new Error('No se pudo obtener access token');
+
+      const ocrPayload = {
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType: image.mimeType, data: image.data } },
+            { text: ocrPrompt || 'Extract ALL text from this medical document image exactly as written. Return only the extracted text.' }
+          ]
+        }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
+      };
+
+      const r = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(ocrPayload)
+      });
+      const data = await r.json();
+      const extractedText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!extractedText.trim()) {
+        return res.status(422).json({ ok: false, error: 'empty_ocr_result' });
+      }
+      return res.status(200).json({
+        ok: true,
+        signature: 'vertexAIProxy@v1',
+        action: 'image-ocr',
+        text: extractedText,
+        vertexRaw: data
+      });
+    }
+
     if (action !== 'analyze') {
       return res.status(400).json({ ok: false, error: 'unsupported_action', action });
     }
