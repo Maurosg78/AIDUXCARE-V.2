@@ -1527,10 +1527,15 @@ const ProfessionalWorkflowPage = () => {
         const sharedTestIds = new Set(sanitized.map(t => t.id));
         const hasNewTests = sanitized.some(t => !currentTestIds.has(t.id));
         const isInitialLoad = currentTests.length === 0;
-
+        const currentTestsHaveResults = currentTests.some(t => t.result && t.result !== '' && t.notes !== '');
         if (!hasNewTests && !isInitialLoad) {
           console.log(`[PHASE2] No new tests in sharedState and not initial load, preserving current ${currentTests.length} tests`);
-          return currentTests; // Return current state unchanged
+          return currentTests;
+        }
+        // ✅ BUG-SOAP-001: If current tests already have documented results, don't overwrite with sharedState
+        if (currentTestsHaveResults && !isInitialLoad) {
+          console.log(`[PHASE2] Current tests have documented results, preserving to avoid overwriting with sharedState`);
+          return currentTests;
         }
 
         // ✅ PHASE 2 FIX: Don't filter AI-recommended tests by region - they're already validated
