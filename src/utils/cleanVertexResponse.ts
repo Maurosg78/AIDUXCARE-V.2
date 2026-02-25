@@ -229,6 +229,16 @@ const mergeUnique = (...arrays: string[][]): string[] => {
   return Array.from(set);
 };
 
+/** WO-P3-DEDUP-FINDINGS-001: normalización para comparar hallazgos vs flags y evitar duplicación semántica */
+const normalizeKey = (s: string): string =>
+  s
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+/** WO-P3-DEDUP-FINDINGS-001: marcadores de red/yellow flag en texto (case-insensitive) */
+const FLAG_MARKER_REGEX = /red\s*flag|yellow\s*flag|bandera\s*roja|bandera\s*amarilla|red_flags|yellow_flags/i;
+
 const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
   const alerts = payload.medicolegal_alerts ?? {};
   const highlights = payload.conversation_highlights ?? {};
@@ -263,10 +273,20 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
   const combinedYellow = mergeUnique(yellowFlags, legalEmployment);
   const psychosocialContext = mergeUnique(psychological, social, protective);
 
+  // WO-P3-DEDUP-FINDINGS-001: key_findings sin duplicación con red/yellow flags
+  const keyFindingsRaw = ensureStringArray(highlights.key_findings);
+  const flagTextSet = new Set([...redFlags, ...combinedYellow].map(normalizeKey));
+  const filteredKeyFindings = keyFindingsRaw.filter((item) => {
+    const normalized = normalizeKey(item);
+    if (FLAG_MARKER_REGEX.test(item)) return false;
+    if (flagTextSet.has(normalized)) return false;
+    return true;
+  });
+
   return {
     motivo_consulta: String(highlights.chief_complaint || highlights.summary || ""),
-    hallazgos_clinicos: ensureStringArray(highlights.key_findings),
-    hallazgos_relevantes: ensureStringArray(highlights.key_findings),
+    hallazgos_clinicos: filteredKeyFindings,
+    hallazgos_relevantes: [],
     contexto_ocupacional: occupational,
     contexto_psicosocial: psychosocialContext,
     medicacion_actual: ensureStringArray(highlights.medications),

@@ -161,29 +161,11 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
         {selectedRedFlagIds != null && selectedRedFlagIds.length > 0 && (
           <div className="mt-3">
-            <p className="text-xs font-medium text-slate-600 mb-2">Red flags selected for this case</p>
-            <ul className="space-y-1.5">
-              {selectedRedFlagIds.map((id) => {
-                const meta = redFlagsDetected.find((f) => f.id === id);
-                const label = meta?.description ?? id;
-                const severity = meta?.severity;
-                return (
-                  <li key={id} className="flex items-center gap-2 text-sm text-slate-800">
-                    <span>{label}</span>
-                    {severity && (
-                      <span className={
-                        severity === 'immediate' ? 'text-xs px-2 py-0.5 rounded bg-red-600 text-white' :
-                          severity === 'today' ? 'text-xs px-2 py-0.5 rounded bg-amber-500 text-white' :
-                            severity === 'monitor' ? 'text-xs px-2 py-0.5 rounded bg-slate-500 text-white' :
-                              'text-xs px-2 py-0.5 rounded bg-slate-400 text-white'
-                      }>
-                        {severity}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <p className="text-xs font-medium text-slate-600">
+              {selectedRedFlagIds.length === 1
+                ? '1 red flag selected in the analysis step above.'
+                : `${selectedRedFlagIds.length} red flags selected in the analysis step above.`}
+            </p>
           </div>
         )}
       </div>

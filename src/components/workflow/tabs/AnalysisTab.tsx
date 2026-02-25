@@ -395,35 +395,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </div>
       ) : niagaraResults && interactiveResults ? (
         <>
-          <div className="mt-4">
-            <ClinicalAnalysisResults
-              results={interactiveResults}
-              selectedIds={selectedEntityIds}
-              onSelectionChange={setSelectedEntityIds}
-              visitType={visitType}
-              selectedRedFlagIds={selectedRedFlagIds}
-              redFlagsDetected={redFlagsDetected}
-            />
-          </div>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div>
-              <p className="text-sm text-slate-600">
-                Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
-              </p>
-            </div>
-            <button
-              onClick={continueToEvaluation}
-              disabled={
-                (interactiveResults.physicalTests?.length ?? 0) > 0 &&
-                !selectedEntityIds.some((id) => id.startsWith("physical-"))
-              }
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover disabled:bg-slate-300 disabled:text-slate-100 disabled:shadow-none disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
-            >
-              <ChevronsRight className="w-4 h-4" />
-              Continue to physical evaluation
-            </button>
-          </div>
-
           {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
           {interactiveResults?.redFlags?.length > 0 && (
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
@@ -573,6 +544,39 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               </p>
             </div>
           )}
+
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <div>
+              <p className="text-sm text-slate-600">
+                Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
+              </p>
+            </div>
+            <button
+              onClick={continueToEvaluation}
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple text-[15px] font-medium"
+            >
+              <ChevronsRight className="w-4 h-4" />
+              Continue to physical evaluation
+            </button>
+            {/* WO-P2-PHYSICAL-GATE-UNBLOCK-001: warning when tests suggested but none selected — no block */}
+            {(interactiveResults.physicalTests?.length ?? 0) > 0 &&
+              !selectedEntityIds.some((id) => id.startsWith('physical-')) && (
+              <p className="mt-2 text-xs text-amber-700">
+                No physical tests selected. You can continue and add tests in the evaluation step.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <ClinicalAnalysisResults
+              results={interactiveResults}
+              selectedIds={selectedEntityIds}
+              onSelectionChange={setSelectedEntityIds}
+              visitType={visitType}
+              selectedRedFlagIds={selectedRedFlagIds}
+              redFlagsDetected={redFlagsDetected}
+            />
+          </div>
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
