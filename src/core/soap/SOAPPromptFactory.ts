@@ -79,6 +79,7 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Measurable data (ROM degrees, strength grades, pain scales)
 - Observable functional limitations
 - **CRITICAL: Include KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**
+- If imaging findings appear in KEY FINDINGS, reference the specific structural finding (disc level, type of lesion, severity) — do not paraphrase vaguely
 - DO NOT repeat patient's complaints from Subjective
 
 **ASSESSMENT:** Clinical reasoning and diagnosis
@@ -88,20 +89,56 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 - Prognosis indicators
 - DO NOT repeat examination details from Objective
 
-**PLAN:** Treatment strategy and next steps - MUST use structured format
-The Plan section MUST follow this exact structure for parsing and "Today's Plan" population:
+**PLAN:** Evidence-based treatment — MUST use structured format (WO-SOAP-PLAN-EVIDENCE-001)
+Two labeled sections required. Apply ALL rules below without exception.
 
 STRUCTURED PLAN FORMAT (REQUIRED):
-- Interventions: [List specific interventions, e.g., "Manual therapy to lumbar spine", "Strengthening exercises for quadriceps", "Gait training"]
-- Modalities: [List treatment modalities if applicable, e.g., "TENS", "Tecar therapy", "US", "Infrared light therapy", "Shockwave therapy" - or "None" if not applicable]
-- Home Exercises: [List specific home exercises prescribed, e.g., "Quad sets 3x10 daily", "ROM exercises 2x/day", "Ice 15min 3x/day" - or "None" if not prescribed]
-- Patient Education: [List education topics covered, e.g., "Posture awareness", "Activity modification", "Pain management strategies" - or "None" if not applicable]
-- Goals: [List measurable treatment goals, e.g., "Pain reduction to 3/10", "Return to running", "Full ROM restoration" - or "To be determined"]
-- Follow-up: [Next appointment details, e.g., "Reassess in 2 weeks", "Follow-up in 1 week", "As needed" - or "To be scheduled"]
-- Next Session Focus: [What to focus on in the next visit, e.g., "Progress strengthening program", "Reassess pain levels", "Advance exercises" - REQUIRED for follow-up planning]
 
-CRITICAL: Use clear section headers (Interventions:, Modalities:, etc.) and list items with bullets or dashes. This structure enables automatic parsing for "Today's Plan" population in follow-up visits.
-DO NOT repeat assessment rationale
+IN-CLINIC TREATMENT:
+- [intervention + dosage]
+
+HOME EXERCISE PROGRAM (HEP):
+- [exercise + sets/reps/frequency]
+
+━━━ CLASSIFICATION RULES (apply strictly) ━━━
+
+IN-CLINIC TREATMENT — physiotherapist present OR clinical equipment required:
+→ Manual therapy, joint mobilization, soft tissue release
+→ TENS / IFC: include Hz + pulse width μs + duration min + electrode placement
+→ Therapeutic ultrasound: include MHz + W/cm² + duty cycle % + duration min
+→ Moist heat / cryotherapy: include duration min + area
+→ Dry needling, acupuncture, taping (Kinesio, McConnell)
+→ Supervised exercise requiring clinical assessment or progression
+
+HOME EXERCISE PROGRAM (HEP) — patient performs independently, no clinical equipment:
+→ Stretching + ROM with sets/reps/hold time
+→ Strengthening with bodyweight or theraband: sets × reps + frequency/day
+→ Postural awareness, ergonomic strategies
+→ Self ice/heat only if no clinical setting required
+
+⛔ NEVER in HEP: TENS, IFC, ultrasound, clinical heat pack, manual therapy, dry needling
+⛔ NEVER in IN-CLINIC: independent home exercises, self-stretching, posture habits
+
+━━━ DOSAGE RULES ━━━
+Every IN-CLINIC modality MUST include dosage. Every HEP item MUST include sets/reps or duration + frequency.
+Generic items like "TENS therapy" or "stretching" without parameters are NOT acceptable.
+
+━━━ RED FLAG ESCALATION ━━━
+${context.analysis.redFlags.length > 0
+  ? `⚠️ RED FLAGS PRESENT: ${context.analysis.redFlags.join(' | ')}
+MANDATORY: Plan MUST open with urgent referral recommendation.
+Do not provide extensive treatment plan without addressing red flags first.`
+  : 'No red flags — proceed with standard plan.'}
+
+━━━ CLINICAL SPECIFICITY RULES ━━━
+Make the plan specific to THIS patient using the context data provided:
+- Imaging/key findings → reference specific structural findings in Plan rationale
+- Medications → note if any affect treatment (e.g. anticoagulants → caution with needling)
+- Occupational factors → include work-related functional goals
+- Yellow flags present → include psychosocial education in HEP
+- Functional limitations → set measurable short-term goals aligned with them
+
+DO NOT repeat assessment rationale in Plan.
 
 AVOID:
 ❌ Repetitive phrases between sections
@@ -113,27 +150,29 @@ AVOID:
 
 CLINICAL EXAMPLE (Professional SOAP Format):
 
-S: 28yr athlete reports R knee pain x 2 weeks post-soccer injury. Pain 7/10 with pivoting, stairs. Unable to return to sport. Previous ACL reconstruction L knee 2019.
+S: 65F chronic LBP + R radiculopathy. Pain 7/10, limits walking >10min. Night pain, 14kg weight loss/4mo. Current: morphine. Unable to work.
 
-O: R knee effusion present. Lachman test (+), anterior drawer (+). ROM flexion 110° (normal 135°), extension -10° (lacks full). Quad strength 3/5. Single leg hop test not attempted due to instability.
+O: Lumbar ROM: flexion 40° (limited), SLR R (+) 30°, L4-S1 hypomobility. MRI: L2-L3 and L5-S1 disc protrusions, spondyloarthrosis, Baastrup's disease. Neuro intact.
 
-A: R ACL tear with secondary meniscal involvement. Clinical presentation consistent with acute ligament disruption. Good surgical candidate given age and activity level.
+A: Patterns consistent with lumbar radiculopathy with multi-level disc involvement. RED FLAGS: unexplained weight loss + night pain require urgent medical investigation before physiotherapy proceeds.
 
-P: 
-- Interventions: Urgent orthopedic referral for MRI and surgical consultation. Pre-hab program: quad setting, ROM exercises, ice/elevation. Crutches non-weight bearing.
-- Modalities: None
-- Home Exercises: Quad sets 3x10 daily, ROM exercises 2x/day, Ice 15min 3x/day
-- Patient Education: Surgical timeline and expectations, non-weight bearing precautions
-- Goals: Maintain quad strength, reduce effusion, prepare for surgery
-- Follow-up: Orthopedic consultation scheduled
-- Next Session Focus: Reassess quad strength and ROM, progress pre-hab program
+P:
+IN-CLINIC TREATMENT:
+- Urgent oncology/medical referral — unexplained weight loss + night pain require exclusion of serious pathology
+- TENS: 80Hz, 100μs, 20min, paraspinal L4-S1 electrodes (pending medical clearance)
+- Moist heat: 15min, lumbar region, pre-treatment
+
+HOME EXERCISE PROGRAM (HEP):
+- Lumbar stabilization: bird-dog 3×10 each side, daily
+- Hip flexor stretch: 3×30sec hold, twice daily
+- Walking program: 20min comfortable pace, daily
 
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history. MAX 200 chars. Be concise and focused on what patient reports. Use abbreviations when appropriate.",
   "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM degrees, strength grades, pain scales). **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations. Focus on clinical significance.",
   "assessment": "Clinical reasoning: working diagnosis based on S+O findings, brief rationale, key impairments, prognosis. MAX 250 chars. Focus on clinical significance and pattern identification.",
-  "plan": "Treatment strategy using STRUCTURED FORMAT:\n- Interventions: [specific list]\n- Modalities: [TENS/Tecar/US/etc or None]\n- Home Exercises: [specific exercises or None]\n- Patient Education: [topics or None]\n- Goals: [measurable objectives]\n- Follow-up: [next appointment]\n- Next Session Focus: [what to focus on next visit]\nMAX 500 chars. Use clear section headers and bullet points. This structure enables parsing for follow-up visits."
+  "plan": "PLAN with exactly two sections:\n\nIN-CLINIC TREATMENT:\n- [modality/intervention with dosage parameters]\n\nHOME EXERCISE PROGRAM (HEP):\n- [exercise with sets × reps + frequency]\n\nRules: electrotherapy/manual therapy/supervised modalities → IN-CLINIC only. Independent exercises → HEP only. Every item must include dosage or sets/reps. MAX 600 chars."
 }
 
 CRITICAL LENGTH REQUIREMENTS:
