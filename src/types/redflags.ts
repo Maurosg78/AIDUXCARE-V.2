@@ -6,7 +6,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
-export type RedFlagDecision = 'refer' | 'treat_with_monitoring';
+export type RedFlagDecision = 'refer' | 'continue' | 'treat_with_monitoring';
 
 export interface RedFlagAcknowledgement {
   flagId: string;

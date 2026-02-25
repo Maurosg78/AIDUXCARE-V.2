@@ -271,12 +271,13 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       if (!decision) return;
       const justification = justifications[flagId]?.trim();
       const existing = byFlagId.get(flagId);
+      const needsJustification = decision === 'continue' || decision === 'treat_with_monitoring';
       byFlagId.set(flagId, {
         flagId,
         acknowledged: true,
         acknowledgedAt: existing?.acknowledgedAt ?? Timestamp.now(),
         decision,
-        justification: decision === 'treat_with_monitoring' ? (justification || undefined) : undefined,
+        justification: needsJustification ? (justification || undefined) : undefined,
         justifiedAt: justification ? Timestamp.now() : existing?.justifiedAt,
       });
     });
@@ -448,7 +449,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             <h3 className="font-semibold text-amber-900">Red flags — acknowledge and document</h3>
           </div>
           <p className="text-sm text-amber-800 mb-4">
-            For each red flag, choose to refer or treat with monitoring. If treating with monitoring, add a brief clinical justification. It will be reused in your SOAP note.
+            For each red flag, choose to refer or continue evaluation. If continuing, add a brief clinical rationale. It will be reused in your SOAP note.
           </p>
           <div className="space-y-4">
             {redFlags.map((flag, index) => {
@@ -476,22 +477,22 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        handleRedFlagDecision(flagId, 'treat_with_monitoring');
+                        handleRedFlagDecision(flagId, 'continue');
                         setTimeout(saveRedFlagsAcknowledgements, 0);
                       }}
                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                        decision === 'treat_with_monitoring'
+                        decision === 'continue' || decision === 'treat_with_monitoring'
                           ? 'bg-emerald-600 text-white'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Treat with monitoring
+                      Continue evaluation
                     </button>
                   </div>
-                  {decision === 'treat_with_monitoring' && (
+                  {(decision === 'continue' || decision === 'treat_with_monitoring') && (
                     <div className="mt-3">
                       <label htmlFor={`justification-${flagId}`} className="block text-xs font-medium text-slate-700 mb-1">
-                        Clinical justification for treating despite red flag
+                        Clinical rationale for continuing despite red flag
                       </label>
                       <textarea
                         id={`justification-${flagId}`}
