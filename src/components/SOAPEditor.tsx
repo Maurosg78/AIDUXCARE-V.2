@@ -820,13 +820,27 @@ Include specific parameters, duration, and frequency for each modality used."
                         e.stopPropagation();
                         if (!currentSOAP) return;
                         const currentPlan = currentSOAP.plan || '';
-                        const modalityText = `- ${modality.full}`;
-                        // Check if already added
+                        // WO-MODALITY-CLINIC-001: insert under IN-CLINIC TREATMENT header
                         if (!isAlreadyAdded) {
-                          const newPlan = currentPlan.trim() 
-                            ? `${currentPlan}\n${modalityText}`
-                            : modalityText;
-                          handleSectionChange('plan', newPlan);
+                          const modalityLine = `- ${modality.full}`;
+                          let updatedPlan: string;
+                          const inClinicMatch = currentPlan.match(/IN-CLINIC TREATMENT[:\s]*/i);
+                          if (inClinicMatch && inClinicMatch.index !== undefined) {
+                            const headerEnd = currentPlan.indexOf('\n', inClinicMatch.index);
+                            if (headerEnd !== -1) {
+                              updatedPlan =
+                                currentPlan.slice(0, headerEnd + 1) +
+                                modalityLine + '\n' +
+                                currentPlan.slice(headerEnd + 1);
+                            } else {
+                              updatedPlan = currentPlan + '\n' + modalityLine;
+                            }
+                          } else {
+                            updatedPlan = currentPlan.trim()
+                              ? `IN-CLINIC TREATMENT:\n${modalityLine}\n\n${currentPlan}`
+                              : `IN-CLINIC TREATMENT:\n${modalityLine}`;
+                          }
+                          handleSectionChange('plan', updatedPlan);
                         }
                       }}
                       disabled={isAlreadyAdded}
