@@ -3013,7 +3013,14 @@ const ProfessionalWorkflowPage = () => {
     }
 
     const sessionDate = new Date().toLocaleDateString("en-CA");
-    const physiotherapistName = user?.displayName || deriveClinicianDisplayName(undefined, user);
+    const physiotherapistName =
+      professionalProfile?.firstName && professionalProfile?.lastName
+        ? `PT. ${professionalProfile.firstName} ${professionalProfile.lastName}`
+        : professionalProfile?.displayName
+          ? `PT. ${professionalProfile.displayName}`
+          : user?.displayName
+            ? `PT. ${user.displayName}`
+            : 'PT.';
     const referringDoctor = (currentPatient as any).referringDoctor;
 
     const redFlagsSource = (interactiveResults as any).redFlags as

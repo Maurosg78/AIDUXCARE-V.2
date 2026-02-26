@@ -544,7 +544,18 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               </p>
             </div>
           )}
+          <div className="mt-4">
+            <ClinicalAnalysisResults
+              results={interactiveResults}
+              selectedIds={selectedEntityIds}
+              onSelectionChange={setSelectedEntityIds}
+              visitType={visitType}
+              selectedRedFlagIds={selectedRedFlagIds}
+              redFlagsDetected={redFlagsDetected}
+            />
+          </div>
 
+          {/* WO-BUTTON-POSITION-001: physical tests info + Continue button at end of tab */}
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div>
               <p className="text-sm text-slate-600">
@@ -565,17 +576,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 No physical tests selected. You can continue and add tests in the evaluation step.
               </p>
             )}
-          </div>
-
-          <div className="mt-4">
-            <ClinicalAnalysisResults
-              results={interactiveResults}
-              selectedIds={selectedEntityIds}
-              onSelectionChange={setSelectedEntityIds}
-              visitType={visitType}
-              selectedRedFlagIds={selectedRedFlagIds}
-              redFlagsDetected={redFlagsDetected}
-            />
           </div>
         </>
       ) : (
