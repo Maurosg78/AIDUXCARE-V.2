@@ -68,6 +68,9 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const [editedSOAP, setEditedSOAP] = useState<SOAPNote | null>(soap);
   const [hasChanges, setHasChanges] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  // WO-SOAP-FINALIZE-GATE-001
+  const [missingItems, setMissingItems] = useState<string[]>([]);
+  const [showMissingModal, setShowMissingModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isEditingFinalized, setIsEditingFinalized] = useState(false);
@@ -118,16 +121,37 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
 
   const handleFinalize = () => {
     if (!editedSOAP) return;
-    
-    // ✅ DÍA 2: CPO Review Gate - Validar que está reviewed si requiere review
-    if (requiresReview && !isReviewed) {
-      // No mostrar confirmación si no está reviewed
-      // El error será mostrado por handleSaveSOAP en ProfessionalWorkflowPage
+
+    // WO-SOAP-FINALIZE-GATE-001: collect missing items before allowing finalize
+    const isEmpty = (s?: string) =>
+      !s || s.trim().length < 10 || s.trim() === 'Not documented.';
+
+    const missing: string[] = [];
+    if (isEmpty(editedSOAP.subjective))
+      missing.push('Subjective section is empty — add patient-reported symptoms');
+    if (isEmpty(editedSOAP.objective))
+      missing.push('Objective section is empty — add physical exam findings');
+    if (isEmpty(editedSOAP.assessment))
+      missing.push('Assessment section is empty — add clinical reasoning');
+    if (isEmpty(editedSOAP.plan))
+      missing.push('Plan section is empty — generate SOAP or add manually');
+    if (
+      editedSOAP.plan &&
+      !isEmpty(editedSOAP.plan) &&
+      !editedSOAP.plan.includes('IN-CLINIC TREATMENT')
+    )
+      missing.push('Plan is missing IN-CLINIC TREATMENT section — regenerate or edit manually');
+    if (requiresReview && !isReviewed)
+      missing.push('CPO review checkbox must be confirmed before finalizing');
+
+    if (missing.length > 0) {
+      setMissingItems(missing);
+      setShowMissingModal(true);
       return;
     }
-    
+
+    // Original flow — unchanged from here
     if (showFinalizeConfirm) {
-      // ✅ DÍA 2: Asegurar que isReviewed está actualizado antes de finalizar
       const soapToFinalize = {
         ...editedSOAP,
         isReviewed: requiresReview ? true : editedSOAP.isReviewed,
@@ -1158,6 +1182,36 @@ Include specific parameters, duration, and frequency for each modality used."
                 Finalize
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* WO-SOAP-FINALIZE-GATE-001: missing requirements modal */}
+      {showMissingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900 mb-1">
+              Cannot finalize yet
+            </h3>
+            <p className="text-sm text-slate-500 mb-4">
+              Please complete the following before finalizing:
+            </p>
+            <ul className="space-y-2 mb-6">
+              {missingItems.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                  <span className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-[10px] font-bold">
+                    !
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowMissingModal(false)}
+              className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
+            >
+              Back to editing
+            </button>
           </div>
         </div>
       )}

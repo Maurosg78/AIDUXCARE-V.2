@@ -66,6 +66,13 @@ export const PLAN_SPLIT_KEYWORDS = {
     'in clinic',
     'in session',
     'today in session',
+    // WO-MODALITY-CLINIC-001
+    'tens', 'transcutaneous', 'ultrasound', 'tecar', 'diathermy',
+    'infrared', 'shockwave', 'extracorporeal', 'ifc', 'interferential',
+    'nmes', 'electrical stimulation', 'laser', 'photobiomodulation',
+    'dry needling', 'acupuncture', 'taping', 'kinesio', 'mcconnell',
+    'hot pack', 'moist heat', 'cryotherapy', 'ice pack',
+    'mobilization', 'manipulation',
   ],
   /** Palabras clave por línea → in-clinic (ES). */
   lineInClinicEs: [
