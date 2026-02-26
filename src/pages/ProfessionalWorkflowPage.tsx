@@ -3021,7 +3021,7 @@ const ProfessionalWorkflowPage = () => {
           : user?.displayName
             ? `PT. ${user.displayName}`
             : 'PT.';
-    const referringDoctor = (currentPatient as any).referringDoctor;
+    const referringDoctor = currentPatient.referringDoctor;
 
     const redFlagsSource = (interactiveResults as any).redFlags as
       | (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]
