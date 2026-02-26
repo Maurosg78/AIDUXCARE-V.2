@@ -857,7 +857,7 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   }
 
   // WO-FOLLOWUP-SOAP-02: Temporary diagnostic log — remove after validation
-  console.log('[FOLLOWUP-RAW] length:', rawText.length, 'preview:', rawText.substring(0, 300));
+  console.log('[FOLLOWUP-RAW] length:', rawText.length, 'preview:', rawText.substring(0, 1500));
 
   let soap: SOAPNote | null = null;
   let planItems: FollowUpPlanItem[] | null = null;
