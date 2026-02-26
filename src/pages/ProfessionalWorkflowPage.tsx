@@ -264,6 +264,12 @@ const ProfessionalWorkflowPage = () => {
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
 
+  // WO-REDFLAG-FOLLOWUP-002: follow-up red flags from generateFollowUpSOAPV2Raw alerts
+  const [followUpAlerts, setFollowUpAlerts] = useState<{
+    red_flags?: string[];
+    yellow_flags?: string[];
+  } | null>(null);
+
   // ✅ WO-CONSENT-VERBAL-01: Gate state for verbal consent
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [showVerbalConsentModal, setShowVerbalConsentModal] = useState(false);
@@ -2396,18 +2402,21 @@ const ProfessionalWorkflowPage = () => {
   }, [aiSuggestions, filteredEvaluationTests, dismissedSuggestionKeys]);
 
   const interactiveResults = useMemo(() => {
-    if (!niagaraResults) return null;
-
-    // ✅ CRITICAL FIX 3: Skip physical tests for follow-up visits
+    // WO-REDFLAG-FOLLOWUP-002: follow-up with red flags uses followUpAlerts, not niagaraResults
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
     if (isFollowUpWorkflow) {
-      // Return results without physical tests for follow-ups
-      return {
-        ...niagaraResults,
-        evaluaciones_fisicas_sugeridas: []
-      };
+      if (followUpAlerts?.red_flags?.length) {
+        // Inject follow-up red flags into interactiveResults shape
+        return {
+          redFlags: followUpAlerts.red_flags,
+          evaluaciones_fisicas_sugeridas: [],
+        } as any;
+      }
+      // No red flags in follow-up — return null (static message in AnalysisTab)
+      return null;
     }
+    if (!niagaraResults) return null;
 
     const rawTests = niagaraResults.evaluaciones_fisicas_sugeridas || [];
     // ✅ PHASE 2 FIX: Keep original index in physicalTests to match aiSuggestions
@@ -3507,7 +3516,8 @@ const ProfessionalWorkflowPage = () => {
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
       });
-      const { raw, soap } = await generateFollowUpSOAPV2Raw(fullPrompt);
+      // WO-REDFLAG-FOLLOWUP-002: extract alerts alongside soap
+      const { raw, soap, alerts } = await generateFollowUpSOAPV2Raw(fullPrompt);
       const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
       const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
       if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
@@ -3528,8 +3538,17 @@ const ProfessionalWorkflowPage = () => {
         soapLength: JSON.stringify(soap).length,
         source: 'followup_single_call',
       });
-      setActiveTab('soap');
-      document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // WO-REDFLAG-FOLLOWUP-002: if red flags detected, stay in Analysis; otherwise go to SOAP
+      const hasFollowUpRedFlags = (alerts as any)?.red_flags?.length > 0;
+      if (hasFollowUpRedFlags) {
+        setFollowUpAlerts(alerts as any);
+        // Stay in analysis tab — WO-REDFLAG-FOLLOWUP-001 handles the render
+        console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', alerts);
+      } else {
+        setFollowUpAlerts(null);
+        setActiveTab('soap');
+        document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } catch (err: any) {
       const message = err?.message || 'Failed to generate SOAP note. Please try again.';
       setAnalysisError(message);
