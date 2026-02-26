@@ -23,6 +23,7 @@ export interface Patient {
   previousInjuries: string;
   
   // Datos de Derivación
+  referringDoctor?: string;
   referringPhysician: string;
   referringCenter: string;
   referralDate: string;
@@ -366,6 +367,7 @@ export class PatientService {
           lastVisit: data.lastVisit as string || '',
           createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
           updatedAt: data.updatedAt?.toDate()?.toISOString() || new Date().toISOString(),
+          referringDoctor: data.referringDoctor as string || data.referringPhysician as string || '',
           ...(data.activeBaselineId != null && data.activeBaselineId !== '' && { activeBaselineId: data.activeBaselineId as string }),
         };
       }
