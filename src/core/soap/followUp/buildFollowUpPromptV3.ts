@@ -83,7 +83,7 @@ ${homeProgram.map((item) => `${item}`).join('\n\n')}
 `
       : '';
 
-  return `PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
+  const prompt = `PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
 SYSTEM / INSTRUCTION
 
@@ -184,28 +184,30 @@ Do NOT return analysis, highlights, or recommendations sections
 
 Do NOT include explanations or meta commentary
 
-Return SOAP only.
+Return SOAP only.`;
 
-CLINICAL SAFETY CHECK (MANDATORY — append after SOAP)
+  const JSON_CONTRACT = `
+Return ONLY valid JSON. No markdown. No commentary. No extra text.
 
-After completing the SOAP note, you MUST perform a clinical safety check on today's update.
-
-Scan for red flags: neurological deficits, loss of sphincter control, cauda equina symptoms,
-severe unexplained deterioration, signs of malignancy, fracture risk, vascular compromise,
-unexplained fever with spinal symptoms, or any finding requiring urgent medical referral.
-
-Append the following block IMMEDIATELY after the Plan section.
-Do NOT skip this block. Do NOT embed it inside the SOAP sections.
-
-If red flags ARE present:
-ALERTS {
-  "red_flags": ["<concise clinical description of flag 1>", "<flag 2 if applicable>"],
-  "yellow_flags": [],
-  "medico_legal": ["<urgent referral recommendation if applicable>"]
+Schema:
+{
+  "soap": {
+    "subjective": "string",
+    "objective": "string",
+    "assessment": "string",
+    "plan": "string"
+  },
+  "alerts": {
+    "red_flags": ["string"],
+    "none": boolean
+  }
 }
 
-If NO red flags are present:
-ALERTS {
-  "none": true
-}`;
+Rules:
+- If there are any red flags, alerts.none = false and alerts.red_flags must include them.
+- If there are no red flags, alerts.none = true and alerts.red_flags = [].
+- Be clinically conservative: if symptoms suggest cauda equina (urinary dysfunction, saddle anesthesia/perineal numbness), include a red flag.
+`;
+
+  return prompt + '\n\n' + JSON_CONTRACT;
 }

@@ -818,10 +818,88 @@ function parsePlainSOAPSections(rawText: string): SOAPNote | null {
   return null;
 }
 
+/** WO-REDFLAG-FOLLOWUP-003: Contract shape for follow-up JSON response. */
+interface FollowUpSoap {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+}
+
+/** WO-REDFLAG-FOLLOWUP-003: alerts from JSON contract (red_flags = string[]). */
+interface FollowUpResponseV3Alerts {
+  red_flags: string[];
+  none: boolean;
+}
+
+interface FollowUpResponseV3 {
+  soap: FollowUpSoap;
+  alerts: FollowUpResponseV3Alerts;
+}
+
+/**
+ * WO-REDFLAG-FOLLOWUP-003: Normalize parsed JSON to { soap, alerts }.
+ * (1) If obj.soap and obj.alerts exist → normalize to shape.
+ * (2) If legacy keys Subjective/Objective/Assessment/Plan → map to soap and derive alerts (e.g. CES in text).
+ * (3) Otherwise return null.
+ */
+function normalizeFollowUpJson(obj: unknown): FollowUpResponseV3 | null {
+  if (!obj || typeof obj !== 'object') return null;
+  const o = obj as Record<string, unknown>;
+
+  // (1) New contract: { soap, alerts }
+  if (o.soap && typeof o.soap === 'object' && o.alerts && typeof o.alerts === 'object') {
+    const soapObj = o.soap as Record<string, unknown>;
+    const alertsObj = o.alerts as Record<string, unknown>;
+    const soap: SOAPNote = {
+      subjective: String(soapObj.subjective ?? ''),
+      objective: String(soapObj.objective ?? ''),
+      assessment: String(soapObj.assessment ?? ''),
+      plan: String(soapObj.plan ?? ''),
+    };
+    const redFlags = Array.isArray(alertsObj.red_flags)
+      ? alertsObj.red_flags.map((x) => (typeof x === 'string' ? x : String(x)))
+      : [];
+    const none = alertsObj.none === true;
+    const alerts: FollowUpResponseV3Alerts = {
+      red_flags: none ? [] : redFlags,
+      none: redFlags.length === 0 ? true : false,
+    };
+    return { soap, alerts };
+  }
+
+  // (2) Legacy: top-level Subjective, Objective, Assessment, Plan
+  const subj = o.Subjective ?? o.subjective;
+  const objectiveVal = o.Objective ?? o.objective;
+  const ass = o.Assessment ?? o.assessment;
+  const planRaw = o.Plan ?? o.plan;
+  const hasAny = [subj, objectiveVal, ass, planRaw].some((v) => v != null && String(v).trim().length > 0);
+  if (!hasAny) return null;
+
+  const planStr =
+    typeof planRaw === 'string'
+      ? planRaw
+      : Array.isArray(planRaw)
+        ? planRaw.map((p: unknown) => (typeof p === 'string' ? p : (p as any)?.action ?? (p as any)?.label ?? String(p))).join('\n')
+        : '';
+  const combined = [subj, objectiveVal, ass, planStr].map((x) => String(x ?? '')).join(' ').toLowerCase();
+  const cesPatterns = /cauda equina|saddle (anesthesia|numbness|sensation)|(urinary|bladder|bowel) (dysfunction|retention|incontinence)|perineal numbness/i;
+  const redFlags: string[] = cesPatterns.test(combined) ? ['Possible cauda equina — urinary/saddle symptoms; consider urgent referral.'] : [];
+  return {
+    soap: {
+      subjective: String(subj ?? ''),
+      objective: String(objectiveVal ?? ''),
+      assessment: String(ass ?? ''),
+      plan: planStr || NOT_DOCUMENTED,
+    },
+    alerts: { red_flags: redFlags, none: redFlags.length === 0 },
+  };
+}
+
 /**
  * WO-11: Generate follow-up SOAP using raw prompt v2 (4 sources).
  * WO-11.1: Also parses ALERTS and plan[] for UI (red/yellow, checklist).
- * WO-FU-VERTEX-SPLIT-01: Primary output is plain SOAP text; JSON parse is fallback.
+ * WO-REDFLAG-FOLLOWUP-003: JSON-first when raw starts with "{"; fallback to plain/ALERTS.
  */
 export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   raw: string;
@@ -858,6 +936,39 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
 
   // WO-FOLLOWUP-SOAP-02: Temporary diagnostic log — remove after validation
   console.log('[FOLLOWUP-RAW] length:', rawText.length, 'preview:', rawText.substring(0, 2000));
+
+  // WO-REDFLAG-FOLLOWUP-003: JSON-first when response is a single JSON object
+  const rawTrimmed = rawText.trim();
+  if (rawTrimmed.startsWith('{')) {
+    try {
+      const extractJsonString = (s: string): string => {
+        const t = s.trim();
+        const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
+        if (codeBlock) return codeBlock[1].trim();
+        const firstBrace = t.indexOf('{');
+        if (firstBrace < 0) return t;
+        let depth = 0;
+        let end = -1;
+        for (let i = firstBrace; i < t.length; i++) {
+          if (t[i] === '{') depth++;
+          else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+        }
+        if (end >= 0) return t.slice(firstBrace, end + 1);
+        return t.slice(firstBrace);
+      };
+      const jsonStr = extractJsonString(rawTrimmed);
+      const parsed = JSON.parse(jsonStr);
+      const normalized = normalizeFollowUpJson(parsed);
+      if (normalized) {
+        const alertsOut: FollowUpAlerts = normalized.alerts.none
+          ? { none: true }
+          : { red_flags: normalized.alerts.red_flags.map((label) => ({ label, evidence: '', suggested_action: '' })) };
+        return { raw: rawText, soap: normalized.soap, alerts: alertsOut };
+      }
+    } catch (_) {
+      // fall through to existing parser
+    }
+  }
 
   let soap: SOAPNote | null = null;
   let planItems: FollowUpPlanItem[] | null = null;

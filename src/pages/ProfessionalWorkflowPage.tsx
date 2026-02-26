@@ -3516,8 +3516,11 @@ const ProfessionalWorkflowPage = () => {
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
       });
-      // WO-REDFLAG-FOLLOWUP-002: extract alerts alongside soap
+      // WO-REDFLAG-FOLLOWUP-002/003: extract alerts alongside soap; defensive shape for red_flags
       const { raw, soap, alerts } = await generateFollowUpSOAPV2Raw(fullPrompt);
+      const safeAlerts = {
+        red_flags: Array.isArray((alerts as any)?.red_flags) ? (alerts as any).red_flags : [],
+      };
       const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
       const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
       if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
@@ -3538,12 +3541,11 @@ const ProfessionalWorkflowPage = () => {
         soapLength: JSON.stringify(soap).length,
         source: 'followup_single_call',
       });
-      // WO-REDFLAG-FOLLOWUP-002: if red flags detected, stay in Analysis; otherwise go to SOAP
-      const hasFollowUpRedFlags = (alerts as any)?.red_flags?.length > 0;
-      if (hasFollowUpRedFlags) {
-        setFollowUpAlerts(alerts as any);
+      // WO-REDFLAG-FOLLOWUP-002/003: if red flags detected, stay in Analysis; otherwise go to SOAP
+      if (safeAlerts.red_flags.length > 0) {
+        setFollowUpAlerts({ ...alerts, red_flags: safeAlerts.red_flags } as any);
         // Stay in analysis tab — WO-REDFLAG-FOLLOWUP-001 handles the render
-        console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', alerts);
+        console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', safeAlerts);
       } else {
         setFollowUpAlerts(null);
         setActiveTab('soap');

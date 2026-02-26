@@ -544,16 +544,19 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               </p>
             </div>
           )}
-          <div className="mt-4">
-            <ClinicalAnalysisResults
-              results={interactiveResults}
-              selectedIds={selectedEntityIds}
-              onSelectionChange={setSelectedEntityIds}
-              visitType={visitType}
-              selectedRedFlagIds={selectedRedFlagIds}
-              redFlagsDetected={redFlagsDetected}
-            />
-          </div>
+          {/* WO-REDFLAG-FOLLOWUP-003: SoT — if follow-up and red flags already shown above, do not show duplicate block below */}
+          {!(visitType === 'follow-up' && (interactiveResults?.redFlags?.length ?? 0) > 0) && (
+            <div className="mt-4">
+              <ClinicalAnalysisResults
+                results={interactiveResults}
+                selectedIds={selectedEntityIds}
+                onSelectionChange={setSelectedEntityIds}
+                visitType={visitType}
+                selectedRedFlagIds={selectedRedFlagIds}
+                redFlagsDetected={redFlagsDetected}
+              />
+            </div>
+          )}
 
           {/* WO-BUTTON-POSITION-001: physical tests info + Continue button at end of tab */}
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
