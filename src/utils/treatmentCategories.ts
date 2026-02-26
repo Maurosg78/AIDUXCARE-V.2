@@ -52,6 +52,22 @@ export const CLINIC_MODALITIES = [
   'cupping',
   'cupping_therapy',
   'acupuncture',
+  'manual_therapy',
+  'mobilization',
+  'manipulation',
+  'soft_tissue',
+  
+  // Thermal modalities (clinic-only)
+  'hot_pack',
+  'moist_heat',
+  'cryotherapy',
+  'ice_pack',
+  
+  // WO-MODALITY-CLINIC-001: additional electrotherapy terms
+  'nmes',
+  'photobiomodulation',
+  'mcconnell',
+  'transcutaneous',
   
   // Other clinic-only
   'traction',
@@ -59,6 +75,8 @@ export const CLINIC_MODALITIES = [
   'taping',
   'kinesio_taping',
   'kinesiotaping',
+  'gait_training',
+  'supervised',
 ];
 
 /**
