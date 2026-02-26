@@ -67,7 +67,30 @@ RULES:
 - No repetition between sections
 - Use numbers to show change (e.g., "Pain 3/10 vs 6/10 previously")
 - Focus on clinical significance only
-- Canadian terminology`;
+- Canadian terminology
+
+CLINICAL SAFETY CHECK (MANDATORY — append after SOAP)
+
+After completing the SOAP note, you MUST perform a clinical safety check on today's update.
+
+Scan for red flags: neurological deficits, loss of sphincter control, cauda equina symptoms,
+severe unexplained deterioration, signs of malignancy, fracture risk, vascular compromise,
+unexplained fever with spinal symptoms, or any finding requiring urgent medical referral.
+
+Append the following block IMMEDIATELY after the Plan section.
+Do NOT skip this block. Do NOT embed it inside the SOAP sections.
+
+If red flags ARE present:
+ALERTS {
+  "red_flags": ["<concise clinical description of flag 1>", "<flag 2 if applicable>"],
+  "yellow_flags": [],
+  "medico_legal": ["<urgent referral recommendation if applicable>"]
+}
+
+If NO red flags are present:
+ALERTS {
+  "none": true
+}`;
 
   return prompt;
 }
