@@ -857,10 +857,14 @@ const ProfessionalWorkflowPage = () => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
 
-    // If follow-up and Niagara analysis is complete, navigate to SOAP tab (only when Niagara was used)
-    if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap') {
-      console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
+    // WO-REDFLAG-FOLLOWUP-001: only auto-navigate if no red flags — with red flags, stay in Analysis for clinical decision
+    const followUpHasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
+    if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap' && !followUpHasRedFlags) {
+      console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up, no red flags)');
       setActiveTab('soap');
+    }
+    if (isFollowUpWorkflow && niagaraResults && followUpHasRedFlags) {
+      console.log('[WORKFLOW] ⚠️ Follow-up red flags detected — staying in Analysis tab for clinical decision');
     }
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
 

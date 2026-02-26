@@ -388,8 +388,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         />
       )}
 
-      {/* Follow-up path: no highlights, no biopsychosocial, no physical tests. Only SOAP from Documentation. */}
-      {visitType === 'follow-up' ? (
+      {/* WO-REDFLAG-FOLLOWUP-001: Follow-up with red flags → show clinical decision block, not static message */}
+      {visitType === 'follow-up' && !(interactiveResults?.redFlags?.length > 0) ? (
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
           Generate your SOAP note in the Documentation section below. No separate analysis step — follow-up uses baseline, treatments, and clinical notes only.
         </div>
