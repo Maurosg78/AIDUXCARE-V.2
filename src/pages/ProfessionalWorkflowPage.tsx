@@ -3609,6 +3609,7 @@ const ProfessionalWorkflowPage = () => {
         setFollowUpAlerts({ ...alerts, red_flags: safeAlerts.red_flags } as any);
         // Stay in analysis tab — WO-REDFLAG-FOLLOWUP-001 handles the render
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', safeAlerts);
+        setActiveTab('analysis');
       } else {
         setFollowUpAlerts(null);
         if (hasUndecidedFollowUpRedFlags()) {
