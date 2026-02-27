@@ -521,7 +521,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     );
                   })}
                 </div>
-              </div>
               <div className="mt-4 flex justify-end">
                 {(() => {
                   const flags = (interactiveResults.redFlags as (string | { label?: string })[]) || [];
@@ -553,6 +552,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     </button>
                   );
                 })()}
+              </div>
               </div>
             )}
           </>
