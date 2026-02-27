@@ -870,7 +870,10 @@ const ProfessionalWorkflowPage = () => {
       setActiveTab('soap');
     }
     if (isFollowUpWorkflow && niagaraResults && followUpHasRedFlags) {
-      console.log('[WORKFLOW] ⚠️ Follow-up red flags detected — staying in Analysis tab for clinical decision');
+      console.log('[WORKFLOW] ⚠️ Follow-up red flags detected — navigating to Analysis tab for clinical decision', { red_flags: niagaraResults.red_flags });
+      if (activeTab !== 'analysis') {
+        setActiveTab('analysis');
+      }
     }
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
 
@@ -4890,9 +4893,10 @@ const ProfessionalWorkflowPage = () => {
                 { id: "soap", label: "3 · SOAP Report" },
               ]
                 .filter((tab) => {
-                  // Skip analysis tab for follow-ups (pero esto es Initial, así que siempre mostrar)
+                  // WO-REDFLAG-FOLLOWUP: Show analysis tab in follow-up when red flags need clinical decision
                   const isFollowUpWorkflow = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
-                  if (isFollowUpWorkflow && tab.id === 'analysis') {
+                  const hasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
+                  if (isFollowUpWorkflow && tab.id === 'analysis' && !hasRedFlags) {
                     return false;
                   }
 
@@ -4915,9 +4919,8 @@ const ProfessionalWorkflowPage = () => {
                 ))}
             </nav>
 
-            {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups */}
-            {/* ✅ ISO COMPLIANCE: Lazy-loaded components with Suspense for better performance */}
-            {activeTab === "analysis" && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+            {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision */}
+            {activeTab === "analysis" && (!(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') || (niagaraResults?.red_flags?.length ?? 0) > 0) && (
               <Suspense fallback={<LoadingSpinner />}>
                 <AnalysisTab
                   currentPatient={currentPatient}
