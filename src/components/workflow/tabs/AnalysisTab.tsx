@@ -150,6 +150,8 @@ export interface AnalysisTabProps {
   onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
   // WO-PART-C-REFERRAL-REPORT: Optional callback to trigger medical referral report generation
   onGenerateReferralReport?: () => void;
+  // WO-REDFLAG-ANALYSIS-UI-001: Optional callback when follow-up red flag decisions are confirmed
+  onConfirmFollowUpRedFlags?: () => void;
 }
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -221,6 +223,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   redFlagDecisions = {},
   onRedFlagDecisionChange,
   onGenerateReferralReport,
+  onConfirmFollowUpRedFlags,
 }) => {
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -388,11 +391,176 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         />
       )}
 
-      {/* WO-REDFLAG-FOLLOWUP-001: Follow-up with red flags → show clinical decision block, not static message */}
-      {visitType === 'follow-up' && !(interactiveResults?.redFlags?.length > 0) ? (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-          Generate your SOAP note in the Documentation section below. No separate analysis step — follow-up uses baseline, treatments, and clinical notes only.
-        </div>
+      {/* WO-REDFLAG-FOLLOWUP-003: Single source of truth for red flags = interactiveResults.redFlags (from alerts.red_flags). No fallback from SOAP assessment. */}
+      {visitType === 'follow-up' ? (
+        interactiveResults?.redFlags?.length > 0 ? (
+          <>
+            {console.log('[ANALYSIS-TAB] Rendering red flag decision block')}
+            {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
+            {interactiveResults?.redFlags?.length > 0 && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
+                <h3 className="text-sm font-semibold text-red-900 mb-3">🚨 Red flags detected — clinical decision required</h3>
+                <p className="text-xs text-slate-700 mb-3">
+                  Before accessing the SOAP note, document your clinical decision for each red flag.
+                </p>
+                <div className="space-y-3">
+                  {(interactiveResults.redFlags as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
+                    const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
+                    const label = typeof flag === 'string' ? flag : (flag?.label ?? '');
+                    const evidence = typeof flag === 'object' && flag && 'evidence' in flag ? (flag as { evidence?: string }).evidence : undefined;
+                    const suggestedAction = typeof flag === 'object' && flag && 'suggested_action' in flag ? (flag as { suggested_action?: string }).suggested_action : undefined;
+                    const urgency = typeof flag === 'object' && flag && 'urgency' in flag ? (flag as { urgency?: string }).urgency : undefined;
+                    const isChecked = selectedRedFlagIds.includes(id);
+                    const urgencyBadgeClass = urgency === 'immediate' ? 'bg-red-600 text-white' : urgency === 'today' ? 'bg-amber-500 text-white' : urgency === 'monitor' ? 'bg-slate-500 text-white' : '';
+                    return (
+                      <label
+                        key={`redflag-${idx}-${id}`}
+                        className="flex flex-col gap-2 rounded-lg border border-red-200 bg-white p-3 cursor-pointer hover:bg-red-50/50 transition"
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
+                              onRedFlagSelectionChange(next);
+                            }}
+                            className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-red-900">{label}</span>
+                            {urgency && (
+                              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
+                            )}
+                            {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
+                            {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                          </div>
+                        </div>
+
+                        {isChecked && (
+                          <div className="mt-2 ml-7 space-y-2">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs font-medium text-slate-700">
+                                Clinical decision for this red flag:
+                              </label>
+                              <div className="flex flex-col gap-1">
+                                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`decision-${id}`}
+                                    value="continue"
+                                    checked={redFlagDecisions[id]?.decision === 'continue'}
+                                    onChange={() =>
+                                      onRedFlagDecisionChange?.({
+                                        ...redFlagDecisions,
+                                        [id]: { decision: 'continue' },
+                                      })
+                                    }
+                                  />
+                                  Continue — does not alter treatment plan
+                                </label>
+
+                                <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`decision-${id}`}
+                                    value="referral_stop"
+                                    checked={redFlagDecisions[id]?.decision === 'referral_stop'}
+                                    onChange={() =>
+                                      onRedFlagDecisionChange?.({
+                                        ...redFlagDecisions,
+                                        [id]: { decision: 'referral_stop' },
+                                      })
+                                    }
+                                  />
+                                  Referral + Stop — generate report, pause physiotherapy
+                                </label>
+
+                                <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`decision-${id}`}
+                                    value="referral_continue_partial"
+                                    checked={redFlagDecisions[id]?.decision === 'referral_continue_partial'}
+                                    onChange={() =>
+                                      onRedFlagDecisionChange?.({
+                                        ...redFlagDecisions,
+                                        [id]: {
+                                          decision: 'referral_continue_partial',
+                                          continuationNote: redFlagDecisions[id]?.continuationNote,
+                                        },
+                                      })
+                                    }
+                                  />
+                                  Referral + Continue partially — generate report, continue safe modalities
+                                </label>
+
+                                {(redFlagDecisions[id]?.decision === 'referral_continue_partial' ||
+                                  redFlagDecisions[id]?.decision === 'continue') && (
+                                  <textarea
+                                    className="mt-1 w-full text-xs border border-amber-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
+                                    rows={2}
+                                    placeholder="Clinical justification (required when continuing with monitoring or partial physiotherapy)."
+                                    value={redFlagDecisions[id]?.continuationNote ?? ''}
+                                    onChange={(e) =>
+                                      onRedFlagDecisionChange?.({
+                                        ...redFlagDecisions,
+                                        [id]: {
+                                          decision: redFlagDecisions[id]?.decision ?? 'continue',
+                                          continuationNote: e.target.value,
+                                        },
+                                      })
+                                    }
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                {(() => {
+                  const flags = (interactiveResults.redFlags as (string | { label?: string })[]) || [];
+                  const allDecided = flags.length > 0 && flags.every((flag, idx) => {
+                    const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
+                    return !!redFlagDecisions[id]?.decision;
+                  });
+                  const allJustified = flags.every((flag, idx) => {
+                    const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
+                    const decision = redFlagDecisions[id]?.decision;
+                    if (decision === 'continue' || decision === 'referral_continue_partial') {
+                      return Boolean(redFlagDecisions[id]?.continuationNote?.trim());
+                    }
+                    return true;
+                  });
+                  const canConfirm = allDecided && allJustified;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canConfirm}
+                      onClick={() => onConfirmFollowUpRedFlags?.()}
+                      className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition ${
+                        canConfirm
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Confirm decisions and proceed to SOAP
+                    </button>
+                  );
+                })()}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
+            Generate your SOAP note in the Documentation section below. No separate analysis step — follow-up uses baseline, treatments, and clinical notes only.
+          </div>
+        )
       ) : niagaraResults && interactiveResults ? (
         <>
           {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
@@ -452,11 +620,11 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       [id]: { decision: 'continue' },
                                     })
                                   }
-                                />
-                                Continue — does not alter treatment plan
-                              </label>
+                                  />
+                                  Continue physiotherapy with monitoring
+                                </label>
 
-                              <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
+                                <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
                                 <input
                                   type="radio"
                                   name={`decision-${id}`}
@@ -468,11 +636,11 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       [id]: { decision: 'referral_stop' },
                                     })
                                   }
-                                />
-                                Referral + Stop — generate report, pause physiotherapy
-                              </label>
+                                  />
+                                  Refer to specialist — stop physiotherapy treatment
+                                </label>
 
-                              <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
+                                <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
                                 <input
                                   type="radio"
                                   name={`decision-${id}`}
@@ -487,15 +655,16 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       },
                                     })
                                   }
-                                />
-                                Referral + Continue partially — generate report, continue safe modalities
-                              </label>
+                                  />
+                                  Refer to specialist — continue partial physiotherapy
+                                </label>
 
-                              {redFlagDecisions[id]?.decision === 'referral_continue_partial' && (
+                                {(redFlagDecisions[id]?.decision === 'referral_continue_partial' ||
+                                  redFlagDecisions[id]?.decision === 'continue') && (
                                 <textarea
                                   className="mt-1 w-full text-xs border border-amber-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
                                   rows={2}
-                                  placeholder="Optional: describe safe modalities to continue (e.g. TENS, massage therapy for pain management)"
+                                    placeholder="Clinical justification (required when continuing with monitoring or partial physiotherapy)."
                                   value={redFlagDecisions[id]?.continuationNote ?? ''}
                                   onChange={(e) =>
                                     onRedFlagDecisionChange?.({

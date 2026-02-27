@@ -109,9 +109,7 @@ Invent tests, findings, or interventions not supported by the input
 
 Return highlights, summaries, or analysis sections
 
-Return JSON or structured metadata
-
-Your output must be plain clinical text under SOAP headings.
+Return anything other than the single JSON object defined below.
 
 CONTEXT — BASELINE (PREVIOUS VISIT)
 
@@ -155,59 +153,40 @@ Reflect progressions or adjustments
 
 Clearly distinguish in-clinic treatment vs home program
 
-The plan should logically follow from the baseline and today's update
+The plan should logically follow from the baseline and today's update.
 
-OUTPUT FORMAT (STRICT)
+=== OUTPUT FORMAT (MANDATORY) ===
 
-Return ONLY the following sections, in order.
-Each section must describe ONLY what is new or changed today — do not repeat the baseline.
+You MUST return ONLY a valid JSON object.
+Do NOT include explanations.
+Do NOT include markdown.
+Do NOT include text before or after the JSON.
 
-Subjective:
-(text)
+Return EXACTLY this structure:
 
-Objective:
-(text)
-
-Assessment:
-(text)
-
-Plan:
-(text)
-
-FINAL REMINDERS (NON-NEGOTIABLE)
-
-This is a follow-up, not an initial assessment
-
-Do NOT copy the baseline sections verbatim. Your output will be rejected if it repeats large portions of the baseline. Each section must describe ONLY what is new or changed today.
-
-Do NOT return analysis, highlights, or recommendations sections
-
-Do NOT include explanations or meta commentary
-
-Return SOAP only.`;
-
-  const JSON_CONTRACT = `
-Return ONLY valid JSON. No markdown. No commentary. No extra text.
-
-Schema:
 {
   "soap": {
-    "subjective": "string",
-    "objective": "string",
-    "assessment": "string",
-    "plan": "string"
+    "subjective": "...",
+    "objective": "...",
+    "assessment": "...",
+    "plan": "..."
   },
   "alerts": {
-    "red_flags": ["string"],
-    "none": boolean
+    "red_flags": ["..."] 
   }
 }
 
-Rules:
-- If there are any red flags, alerts.none = false and alerts.red_flags must include them.
-- If there are no red flags, alerts.none = true and alerts.red_flags = [].
-- Be clinically conservative: if symptoms suggest cauda equina (urinary dysfunction, saddle anesthesia/perineal numbness), include a red flag.
-`;
+If there are no red flags, return:
 
-  return prompt + '\n\n' + JSON_CONTRACT;
+"alerts": { "red_flags": [] }
+
+Red flags MUST include urgent neurological deficits such as:
+- Loss of bladder or bowel control
+- Saddle anesthesia
+- Rapid neurological deterioration
+
+✅ Nada más.
+❌ No mezclar con texto libre.`;
+
+  return prompt;
 }

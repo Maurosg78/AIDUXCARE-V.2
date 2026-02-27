@@ -818,310 +818,162 @@ function parsePlainSOAPSections(rawText: string): SOAPNote | null {
   return null;
 }
 
-/** WO-REDFLAG-FOLLOWUP-003: Contract shape for follow-up JSON response. */
-interface FollowUpSoap {
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-}
-
-/** WO-REDFLAG-FOLLOWUP-003: alerts from JSON contract (red_flags = string[]). */
-interface FollowUpResponseV3Alerts {
-  red_flags: string[];
-  none: boolean;
-}
-
-interface FollowUpResponseV3 {
-  soap: FollowUpSoap;
-  alerts: FollowUpResponseV3Alerts;
-}
-
-/**
- * WO-REDFLAG-FOLLOWUP-003: Normalize parsed JSON to { soap, alerts }.
- * (1) If obj.soap and obj.alerts exist → normalize to shape.
- * (2) If legacy keys Subjective/Objective/Assessment/Plan → map to soap and derive alerts (e.g. CES in text).
- * (3) Otherwise return null.
- */
-function normalizeFollowUpJson(obj: unknown): FollowUpResponseV3 | null {
-  if (!obj || typeof obj !== 'object') return null;
-  const o = obj as Record<string, unknown>;
-
-  // (1) New contract: { soap, alerts }
-  if (o.soap && typeof o.soap === 'object' && o.alerts && typeof o.alerts === 'object') {
-    const soapObj = o.soap as Record<string, unknown>;
-    const alertsObj = o.alerts as Record<string, unknown>;
-    const soap: SOAPNote = {
-      subjective: String(soapObj.subjective ?? ''),
-      objective: String(soapObj.objective ?? ''),
-      assessment: String(soapObj.assessment ?? ''),
-      plan: String(soapObj.plan ?? ''),
-    };
-    const redFlags = Array.isArray(alertsObj.red_flags)
-      ? alertsObj.red_flags.map((x) => (typeof x === 'string' ? x : String(x)))
-      : [];
-    const none = alertsObj.none === true;
-    const alerts: FollowUpResponseV3Alerts = {
-      red_flags: none ? [] : redFlags,
-      none: redFlags.length === 0 ? true : false,
-    };
-    return { soap, alerts };
-  }
-
-  // (2) Legacy: top-level Subjective, Objective, Assessment, Plan
-  const subj = o.Subjective ?? o.subjective;
-  const objectiveVal = o.Objective ?? o.objective;
-  const ass = o.Assessment ?? o.assessment;
-  const planRaw = o.Plan ?? o.plan;
-  const hasAny = [subj, objectiveVal, ass, planRaw].some((v) => v != null && String(v).trim().length > 0);
-  if (!hasAny) return null;
-
-  const planStr =
-    typeof planRaw === 'string'
-      ? planRaw
-      : Array.isArray(planRaw)
-        ? planRaw.map((p: unknown) => (typeof p === 'string' ? p : (p as any)?.action ?? (p as any)?.label ?? String(p))).join('\n')
-        : '';
-  const combined = [subj, objectiveVal, ass, planStr].map((x) => String(x ?? '')).join(' ').toLowerCase();
-  const cesPatterns = /cauda equina|saddle (anesthesia|numbness|sensation)|(urinary|bladder|bowel) (dysfunction|retention|incontinence)|perineal numbness/i;
-  const redFlags: string[] = cesPatterns.test(combined) ? ['Possible cauda equina — urinary/saddle symptoms; consider urgent referral.'] : [];
-  return {
-    soap: {
-      subjective: String(subj ?? ''),
-      objective: String(objectiveVal ?? ''),
-      assessment: String(ass ?? ''),
-      plan: planStr || NOT_DOCUMENTED,
-    },
-    alerts: { red_flags: redFlags, none: redFlags.length === 0 },
-  };
+/** WO-REDFLAG-FOLLOWUP-006: Explicit error when AI fails — no fallback content. */
+export interface FollowUpSOAPV2Error {
+  type: 'AI_UNAVAILABLE';
+  message: string;
 }
 
 /**
  * WO-11: Generate follow-up SOAP using raw prompt v2 (4 sources).
- * WO-11.1: Also parses ALERTS and plan[] for UI (red/yellow, checklist).
- * WO-REDFLAG-FOLLOWUP-003: JSON-first when raw starts with "{"; fallback to plain/ALERTS.
+ * WO-REDFLAG-FOLLOWUP-003: Single contract — JSON only.
+ * WO-REDFLAG-FOLLOWUP-006: On timeout/empty/invalid JSON/HTTP error → return error shape; no SOAP/alerts. No fallback content.
  */
 export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   raw: string;
   soap: SOAPNote | null;
   alerts?: FollowUpAlerts | null;
   planItems?: FollowUpPlanItem[] | null;
+  error?: FollowUpSOAPV2Error;
 }> {
+  console.log('🔥 ENTERING generateFollowUpSOAPV2Raw');
   const traceId = `soap-followup-v2-${Date.now()}`;
-  const response = await fetch(VERTEX_PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      action: 'analyze',
-      traceId,
-      model: 'gemini-2.0-flash-exp',
-    }),
-  });
+  const body = { prompt: fullPrompt, action: 'analyze', traceId, model: 'gemini-2.0-flash-exp' };
+  const bodyStr = JSON.stringify(body);
+
+  console.log('[FOLLOWUP-REQUEST]', { traceId, url: VERTEX_PROXY_URL, promptLength: fullPrompt.length, bodyLength: bodyStr.length });
+
+  let response: Response;
+  try {
+    response = await fetch(VERTEX_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: bodyStr,
+    });
+  } catch (err) {
+    console.error('[FOLLOWUP-NETWORK-ERROR]', err);
+    return {
+      raw: '',
+      soap: null,
+      alerts: null,
+      error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' },
+    };
+  }
+
+  console.log('[FOLLOWUP-RESPONSE]', { traceId, status: response.status, ok: response.ok });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+    const msg = errorData?.error || `HTTP ${response.status}`;
+    console.error('[FOLLOWUP-HTTP-ERROR]', { status: response.status, errorData });
+    return {
+      raw: '',
+      soap: null,
+      alerts: null,
+      error: { type: 'AI_UNAVAILABLE', message: `Follow-up AI generation failed or returned invalid response (${msg})` },
+    };
   }
 
-  const data = await response.json();
-  let rawText =
-    data.candidates?.[0]?.content?.parts?.[0]?.text ??
-    data.text ??
-    (data.soap ? JSON.stringify(data.soap) : '');
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch (err) {
+    console.error('[FOLLOWUP-PARSE-ERROR]', err);
+    return {
+      raw: '',
+      soap: null,
+      alerts: null,
+      error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' },
+    };
+  }
+
+  let rawText: string =
+    (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+    (data as any)?.text ??
+    ((data as any)?.soap ? JSON.stringify((data as any).soap) : '');
 
   if (!rawText || typeof rawText !== 'string') {
-    return { raw: '', soap: null };
+    console.log('[FOLLOWUP-EMPTY-BODY]', { traceId, vertexRaw: data });
+    return {
+      raw: '',
+      soap: null,
+      alerts: null,
+      error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' },
+    };
   }
 
-  // WO-FOLLOWUP-SOAP-02: Temporary diagnostic log — remove after validation
-  console.log('[FOLLOWUP-RAW] length:', rawText.length, 'preview:', rawText.substring(0, 2000));
+  console.log('[FOLLOWUP-RAW-STRICT]', rawText);
 
-  // WO-REDFLAG-FOLLOWUP-003: JSON-first when response is a single JSON object
-  const rawTrimmed = rawText.trim();
-  if (rawTrimmed.startsWith('{')) {
-    try {
-      const extractJsonString = (s: string): string => {
-        const t = s.trim();
-        const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
-        if (codeBlock) return codeBlock[1].trim();
-        const firstBrace = t.indexOf('{');
-        if (firstBrace < 0) return t;
-        let depth = 0;
-        let end = -1;
-        for (let i = firstBrace; i < t.length; i++) {
-          if (t[i] === '{') depth++;
-          else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-        }
-        if (end >= 0) return t.slice(firstBrace, end + 1);
-        return t.slice(firstBrace);
-      };
-      const jsonStr = extractJsonString(rawTrimmed);
-      const parsed = JSON.parse(jsonStr);
-      const normalized = normalizeFollowUpJson(parsed);
-      if (normalized) {
-        const alertsOut: FollowUpAlerts = normalized.alerts.none
-          ? { none: true }
-          : { red_flags: normalized.alerts.red_flags.map((label) => ({ label, evidence: '', suggested_action: '' })) };
-        return { raw: rawText, soap: normalized.soap, alerts: alertsOut };
-      }
-    } catch (_) {
-      // fall through to existing parser
-    }
-  }
-
-  let soap: SOAPNote | null = null;
-  let planItems: FollowUpPlanItem[] | null = null;
-  let alerts: FollowUpAlerts | null = null;
-
-  // WO-FU-VERTEX-SPLIT-01: Prompt V3 requests plain SOAP only — try plain sections first
-  const plainSoap = parsePlainSOAPSections(rawText);
-  console.log('[FOLLOWUP-RAW] parsePlainSOAPSections result:', plainSoap ? 'MATCHED' : 'NULL');
-  if (plainSoap) {
-    soap = plainSoap;
-  }
-
-  if (!soap) {
-    try {
-      let soapData: any = null;
-      const soapNoteBlock = rawText.match(/SOAP_NOTE\s*\{[\s\S]*?\}\s*(?=ALERTS|$)/i);
-      if (soapNoteBlock) {
-        const jsonStr = soapNoteBlock[0].replace(/^SOAP_NOTE\s*/i, '').trim();
-        soapData = JSON.parse(jsonStr);
-      } else {
-        const firstJson = rawText.match(/\{[\s\S]*\}/);
-        if (firstJson) soapData = JSON.parse(firstJson[0]);
-      }
-      if (soapData && typeof soapData === 'object') {
-        // WO-FOLLOWUP-PROMPT-04: Normalize keys — accept capitalized (Subjective, Objective, etc.) or lowercase
-        const subj = soapData.Subjective ?? soapData.subjective;
-        const obj = soapData.Objective ?? soapData.objective;
-        const ass = soapData.Assessment ?? soapData.assessment;
-        const planRaw = soapData.Plan ?? soapData.plan;
-        const plan =
-          typeof planRaw === 'string'
-            ? planRaw
-            : Array.isArray(planRaw)
-              ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action || p?.label || JSON.stringify(p))).join('\n')
-              : 'Not documented.';
-        soap = {
-          subjective: String(subj ?? 'Not documented.'),
-          objective: String(obj ?? 'Not documented.'),
-          assessment: String(ass ?? 'Not documented.'),
-          plan: plan || 'Not documented.',
-        };
-        const planArr = Array.isArray(planRaw) ? planRaw : soapData.plan;
-        if (Array.isArray(planArr) && planArr.length > 0) {
-          planItems = planArr.map((p: any) => ({
-            id: p.id ?? String(Math.random()).slice(2, 9),
-            action: typeof p.action === 'string' ? p.action : p.label ?? String(p),
-            status: ['completed', 'modified', 'deferred', 'planned'].includes(p.status) ? p.status : 'planned',
-            notes: p.notes,
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn('[SOAP Service] WO-11 parse SOAP_NOTE from v2 response:', e);
-    }
-  }
-
-  // Fallback: if no structured SOAP could be parsed but we have raw text, use it as single follow-up block
-  // so the UI shows the model output instead of "Not documented." everywhere.
-  if (!soap || (
-    !isMeaningfulSection(soap.subjective ?? '') &&
-    !isMeaningfulSection(soap.objective ?? '') &&
-    !isMeaningfulSection(soap.assessment ?? '') &&
-    !isMeaningfulSection(soap.plan ?? '') &&
-    !(soap.followUp != null && (soap.followUp as string).trim().length > 0)
-  )) {
-    const rawTrimmed = (rawText ?? '').trim();
-    if (rawTrimmed.length > 0) {
-      // WO-FOLLOWUP-PROMPT-04: Try parsing raw as JSON (Vertex sometimes returns JSON with capitalized keys,
-      // optionally wrapped in markdown code blocks like ```json ... ```)
-      let parsedSoap: SOAPNote | null = null;
-      const extractJsonString = (s: string): string => {
-        const t = s.trim();
-        const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
-        if (codeBlock) return codeBlock[1].trim();
-        const firstBrace = t.indexOf('{');
-        if (firstBrace < 0) return t;
-        // Extract first complete {...} object (brace matching)
-        let depth = 0;
-        let end = -1;
-        for (let i = firstBrace; i < t.length; i++) {
-          if (t[i] === '{') depth++;
-          else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-        }
-        if (end >= 0) return t.slice(firstBrace, end + 1);
-        return t.slice(firstBrace);
-      };
-      try {
-        const jsonStr = extractJsonString(rawTrimmed);
-        const parsed = JSON.parse(jsonStr);
-        if (parsed && typeof parsed === 'object') {
-          const subj = parsed.Subjective ?? parsed.subjective;
-          const obj = parsed.Objective ?? parsed.objective;
-          const ass = parsed.Assessment ?? parsed.assessment;
-          const planRaw = parsed.Plan ?? parsed.plan;
-          const hasAny = [subj, obj, ass, planRaw].some((v) => v != null && String(v).trim().length > 0);
-          if (hasAny) {
-            const planStr =
-              typeof planRaw === 'string'
-                ? planRaw
-                : Array.isArray(planRaw)
-                  ? planRaw.map((p: any) => (typeof p === 'string' ? p : p?.action ?? p?.label ?? String(p))).join('\n')
-                  : '';
-            parsedSoap = {
-              subjective: String(subj ?? ''),
-              objective: String(obj ?? ''),
-              assessment: String(ass ?? ''),
-              plan: planStr || 'Not documented.',
-            };
-          }
-        }
-      } catch (_) {
-        // not JSON — use raw as followUp below
-      }
-      if (parsedSoap && (isMeaningfulSection(parsedSoap.subjective) || isMeaningfulSection(parsedSoap.objective) || isMeaningfulSection(parsedSoap.assessment) || isMeaningfulSection(parsedSoap.plan))) {
-        soap = parsedSoap;
-        console.info('[SOAP Service] WO-11 fallback: parsed JSON (capitalized keys) into SOAP');
-      } else {
-        soap = {
-          subjective: '',
-          objective: '',
-          assessment: '',
-          plan: '',
-          followUp: rawTrimmed,
-        };
-        console.info('[SOAP Service] WO-11 using raw text as followUp block (structured parse had no content)');
-        console.log('[FOLLOWUP-RAW] FALLBACK activated. followUp length:', rawTrimmed.length);
-      }
-    }
-  }
-
-  // WO-11.1: parse ALERTS block
   try {
-    const alertsBlock = rawText.match(/ALERTS\s*\{[\s\S]*?\}\s*$/i) ?? rawText.match(/ALERTS\s*\{[\s\S]*\}/i);
-    if (alertsBlock) {
-      const jsonStr = alertsBlock[0].replace(/^ALERTS\s*/i, '').trim();
-      const parsed = JSON.parse(jsonStr);
-      if (parsed && typeof parsed === 'object') {
-        if (parsed.none === true) {
-          alerts = { none: true };
-        } else {
-          alerts = {
-            red_flags: Array.isArray(parsed.red_flags) ? parsed.red_flags : undefined,
-            yellow_flags: Array.isArray(parsed.yellow_flags) ? parsed.yellow_flags : undefined,
-            medico_legal: Array.isArray(parsed.medico_legal) ? parsed.medico_legal : undefined,
-          };
-        }
-      }
+  const extractJsonString = (s: string): string | null => {
+    const t = s.trim();
+    const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
+    if (codeBlock) return codeBlock[1].trim();
+    const firstBrace = t.indexOf('{');
+    if (firstBrace < 0) return null;
+    let depth = 0;
+    let end = -1;
+    for (let i = firstBrace; i < t.length; i++) {
+      if (t[i] === '{') depth++;
+      else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
     }
-  } catch (e) {
-    console.warn('[SOAP Service] WO-11.1 parse ALERTS from v2 response:', e);
+    if (end >= 0) return t.slice(firstBrace, end + 1);
+    return t.slice(firstBrace);
+  };
+
+  const jsonString = extractJsonString(rawText);
+  if (!jsonString) {
+    console.error('[FOLLOWUP-ERROR]', new Error('Follow-up response did not contain valid JSON'));
+    return { raw: rawText, soap: null, alerts: null, error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' } };
   }
 
-  return { raw: rawText, soap, alerts: alerts ?? undefined, planItems: planItems ?? undefined };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch (err) {
+    console.error('[FOLLOWUP-ERROR]', err);
+    return { raw: rawText, soap: null, alerts: null, error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' } };
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    console.error('[FOLLOWUP-ERROR]', new Error('Follow-up response did not contain valid JSON'));
+    return { raw: rawText, soap: null, alerts: null, error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' } };
+  }
+
+  const soapObj = (parsed as any).soap;
+  if (!soapObj || typeof soapObj !== 'object') {
+    console.error('[FOLLOWUP-ERROR]', new Error('Follow-up response missing soap'));
+    return { raw: rawText, soap: null, alerts: null, error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' } };
+  }
+
+  const soap: SOAPNote = {
+    subjective: String(soapObj.subjective ?? ''),
+    objective: String(soapObj.objective ?? ''),
+    assessment: String(soapObj.assessment ?? ''),
+    plan: String(soapObj.plan ?? ''),
+  };
+
+  const alertsRaw = (parsed as any).alerts ?? { red_flags: [] };
+  const red_flags = Array.isArray(alertsRaw.red_flags)
+    ? alertsRaw.red_flags.map((x: unknown) => (typeof x === 'string' ? x : String(x)))
+    : [];
+  const alerts: FollowUpAlerts = red_flags.length === 0
+    ? { none: true }
+    : { red_flags: red_flags.map((label) => ({ label, evidence: '', suggested_action: '' })) };
+
+  return {
+    raw: rawText,
+    soap,
+    alerts,
+  };
+  } catch (err) {
+    console.error('[FOLLOWUP-ERROR]', err);
+    return {
+      raw: rawText ?? '',
+      soap: null,
+      alerts: null,
+      error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' },
+    };
+  }
 }
 
 /**

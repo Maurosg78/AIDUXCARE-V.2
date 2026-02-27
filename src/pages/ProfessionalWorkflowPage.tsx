@@ -295,9 +295,34 @@ const ProfessionalWorkflowPage = () => {
     decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
     continuationNote?: string;
   }>>({});
+  const [followUpDecisionResolved, setFollowUpDecisionResolved] = useState(false);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
+
+  const hasUndecidedFollowUpRedFlags = (forceFollowUp?: boolean) => {
+    const isFollowUp = forceFollowUp || visitType === 'follow-up';
+    if (!isFollowUp) return false;
+    if (!interactiveResults?.redFlags?.length) return false;
+
+    return (interactiveResults.redFlags as any[]).some((flag: any) => {
+      const id = typeof flag === 'string' ? flag : flag.label;
+      return !redFlagDecisions[id]?.decision;
+    });
+  };
+
+  useEffect(() => {
+    if (visitType !== 'follow-up' || !(followUpAlerts?.red_flags?.length)) {
+      setFollowUpDecisionResolved(false);
+      return;
+    }
+    // All follow-up red flags have a decision → resolved
+    const allResolved = followUpAlerts.red_flags.every((label) => {
+      const decision = redFlagDecisions[label]?.decision;
+      return decision === 'continue' || decision === 'referral_stop' || decision === 'referral_continue_partial';
+    });
+    setFollowUpDecisionResolved(allResolved);
+  }, [visitType, followUpAlerts, redFlagDecisions]);
 
   // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo; usado en initial y legacy follow-up)
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -796,6 +821,10 @@ const ProfessionalWorkflowPage = () => {
         // Fallback: if explicit followup, still set it
         if (sessionTypeFromUrl === 'followup') {
           setVisitType('follow-up');
+          if (hasUndecidedFollowUpRedFlags(true)) {
+            console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+            return;
+          }
           setActiveTab('soap');
         }
         setWorkflowDetected(true);
@@ -867,6 +896,10 @@ const ProfessionalWorkflowPage = () => {
     const followUpHasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
     if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap' && !followUpHasRedFlags) {
       console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up, no red flags)');
+      if (hasUndecidedFollowUpRedFlags()) {
+        console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+        return;
+      }
       setActiveTab('soap');
     }
     if (isFollowUpWorkflow && niagaraResults && followUpHasRedFlags) {
@@ -1127,6 +1160,10 @@ const ProfessionalWorkflowPage = () => {
         setVisitType('follow-up');
       }
       if (activeTab !== 'soap') {
+        if (hasUndecidedFollowUpRedFlags()) {
+          console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+          return;
+        }
         setActiveTab('soap');
       }
 
@@ -1298,6 +1335,10 @@ const ProfessionalWorkflowPage = () => {
           setSessionId(sessionIdFromUrl);
           setLocalSoapNote(sessionData.soapNote as SOAPNote);
           setSoapStatus((sessionData.status === 'completed' ? 'finalized' : 'draft') as SOAPStatus);
+          if (hasUndecidedFollowUpRedFlags()) {
+            console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+            return;
+          }
           setActiveTab('soap');
           setAnalysisError(null);
           setResumeLoadFailed(null);
@@ -1330,6 +1371,10 @@ const ProfessionalWorkflowPage = () => {
             plan: note.soapData.plan ?? '',
           } as SOAPNote);
           setSoapStatus('finalized');
+          if (hasUndecidedFollowUpRedFlags()) {
+            console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+            return;
+          }
           setActiveTab('soap');
           setAnalysisError(null);
           setResumeLoadFailed(null);
@@ -1353,6 +1398,10 @@ const ProfessionalWorkflowPage = () => {
               plan: note.soapData.plan ?? '',
             } as SOAPNote);
             setSoapStatus('finalized');
+            if (hasUndecidedFollowUpRedFlags()) {
+              console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+              return;
+            }
             setActiveTab('soap');
             setAnalysisError(null);
             setResumeLoadFailed(null);
@@ -3496,6 +3545,10 @@ const ProfessionalWorkflowPage = () => {
   // Follow-up path only: ONE Vertex call — SOAP from baseline + transcript + in-clinic/HEP (no Niagara, no analysis_requested).
   // Single source of truth: baseline comes only from followUpClinicalState (built by getClinicalState on load). No fallbacks.
   const handleGenerateSOAPFollowUp = useCallback(async () => {
+    if (visitType === 'follow-up' && (followUpAlerts?.red_flags?.length ?? 0) > 0 && !followUpDecisionResolved) {
+      console.warn('[FOLLOWUP-HARD-GATE] SOAP generation blocked — decision not resolved');
+      return;
+    }
     const baseline = followUpClinicalState?.baselineSOAP ?? null;
     if (!baseline) {
       setAnalysisError('Follow-up requires prior clinical baseline (complete an initial assessment first).');
@@ -3519,15 +3572,22 @@ const ProfessionalWorkflowPage = () => {
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
       });
-      // WO-REDFLAG-FOLLOWUP-002/003: extract alerts alongside soap; defensive shape for red_flags
-      const { raw, soap, alerts } = await generateFollowUpSOAPV2Raw(fullPrompt);
+      // WO-REDFLAG-FOLLOWUP-006: On error shape — no SOAP, no alerts; show explicit message. No fallback content.
+      const result = await generateFollowUpSOAPV2Raw(fullPrompt);
+      const { raw, soap, alerts, error: followUpError } = result;
+      if (followUpError) {
+        setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
+        setFollowUpAlerts(null);
+        return;
+      }
       const safeAlerts = {
         red_flags: Array.isArray((alerts as any)?.red_flags) ? (alerts as any).red_flags : [],
       };
       const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
       const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
       if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
-        setAnalysisError('SOAP generation returned no content. Please try again or enter manually.');
+        setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
+        setFollowUpAlerts(null);
         return;
       }
       setLocalSoapNote({
@@ -3551,6 +3611,10 @@ const ProfessionalWorkflowPage = () => {
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', safeAlerts);
       } else {
         setFollowUpAlerts(null);
+        if (hasUndecidedFollowUpRedFlags()) {
+          console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+          return;
+        }
         setActiveTab('soap');
         document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -4750,6 +4814,10 @@ const ProfessionalWorkflowPage = () => {
                     onRedFlagSelectionChange={setSelectedRedFlagIds}
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
+                    onConfirmFollowUpRedFlags={() => {
+                      setActiveTab('soap');
+                      document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
                     onGenerateReferralReport={() => setReferralReportOpen(true)}
                   />
                 </Suspense>
@@ -4988,6 +5056,10 @@ const ProfessionalWorkflowPage = () => {
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
+                  onConfirmFollowUpRedFlags={() => {
+                    setActiveTab('soap');
+                    document.querySelector('[data-section=\"soap\"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   onGenerateReferralReport={() => setReferralReportOpen(true)}
                 />
               </Suspense>
@@ -5037,7 +5109,7 @@ const ProfessionalWorkflowPage = () => {
                   isGeneratingSOAP={isGeneratingSOAP}
                   patientId={patientId}
                   sessionId={sessionId}
-                  handleGenerateSoap={handleGenerateSoap}
+                  handleGenerateSoap={visitType === 'follow-up' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
                   handleSaveSOAP={handleSaveSOAP}
                   handleRegenerateSOAP={handleRegenerateSOAP}
                   handleFinalizeSOAP={handleFinalizeSOAP}
