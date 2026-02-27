@@ -376,6 +376,30 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
 
     const data = await r.json();
 
+    if (data.error) {
+      console.error('vertexAIProxy: Vertex returned error:', JSON.stringify(data.error).substring(0, 500));
+      return res.status(502).json({
+        ok: false,
+        error: 'vertex_upstream_error',
+        message: data.error.message || 'Vertex AI returned an error',
+        code: data.error.code || null,
+        traceId: traceId || null,
+        vertexRaw: data
+      });
+    }
+
+    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!resultText.trim()) {
+      console.error('vertexAIProxy: Vertex returned empty text, candidates:', JSON.stringify(data.candidates || []).substring(0, 500));
+      return res.status(502).json({
+        ok: false,
+        error: 'vertex_empty_response',
+        message: 'Vertex AI returned no text content',
+        traceId: traceId || null,
+        vertexRaw: data
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       signature: 'vertexAIProxy@v1',
@@ -383,7 +407,7 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
       location: LOCATION,
       model: MODEL,
       traceId: traceId || null,
-      text: data?.candidates?.[0]?.content?.parts?.[0]?.text || '',
+      text: resultText,
       vertexRaw: data
     });
   } catch (err) {
