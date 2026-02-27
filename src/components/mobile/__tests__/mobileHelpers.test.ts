@@ -111,8 +111,8 @@ describe('mobileHelpers', () => {
       
       initMobileFixes();
       
-      expect(addEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
-      expect(addEventListenerSpy).toHaveBeenCalledWith('orientationchange', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function), { passive: true });
+      expect(addEventListenerSpy).toHaveBeenCalledWith('orientationchange', expect.any(Function), { passive: true });
     });
   });
 });
