@@ -577,15 +577,21 @@ const ProfessionalWorkflowPage = () => {
     return () => { cancelled = true; };
   }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state]);
 
-  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
+  // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits
+  // WO-REDFLAG-FOLLOWUP: Do NOT auto-navigate when red flags are detected — stay in Analysis for clinical decision
   useEffect(() => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
 
-    // If follow-up and Niagara analysis is complete, navigate to SOAP tab
     if (isFollowUpWorkflow && niagaraResults && activeTab !== 'soap') {
-      console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
-      setActiveTab('soap');
+      const hasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
+      if (hasRedFlags) {
+        console.log('[WORKFLOW] ⚠️ Follow-up red flags detected — staying in Analysis tab for clinical decision', { red_flags: niagaraResults.red_flags });
+        setActiveTab('analysis');
+      } else {
+        console.log('[WORKFLOW] 🎯 Auto-navigating to SOAP tab after Niagara analysis (follow-up workflow)');
+        setActiveTab('soap');
+      }
     }
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
 
@@ -2957,8 +2963,9 @@ const ProfessionalWorkflowPage = () => {
               const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
               const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
 
-              // Skip analysis tab for follow-ups
-              if (isFollowUpWorkflow && tab.id === 'analysis') {
+              // WO-REDFLAG-FOLLOWUP: Show analysis tab in follow-up when red flags are detected
+              const hasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
+              if (isFollowUpWorkflow && tab.id === 'analysis' && !hasRedFlags) {
                 return false;
               }
 
@@ -2981,9 +2988,9 @@ const ProfessionalWorkflowPage = () => {
             ))}
         </nav>
 
-        {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups */}
-        {/* ✅ ISO COMPLIANCE: Lazy-loaded components with Suspense for better performance */}
-        {activeTab === "analysis" && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+        {/* ✅ WORKFLOW OPTIMIZATION: Skip analysis tab for follow-ups UNLESS red flags detected */}
+        {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision */}
+        {activeTab === "analysis" && (!(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') || (niagaraResults?.red_flags?.length ?? 0) > 0) && (
           <Suspense fallback={<LoadingSpinner />}>
             <AnalysisTab
               currentPatient={currentPatient}
