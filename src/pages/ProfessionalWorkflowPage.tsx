@@ -4998,10 +4998,11 @@ const ProfessionalWorkflowPage = () => {
                 ))}
             </nav>
 
-            {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision */}
-            {activeTab === "analysis" && (!(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') || (niagaraResults?.red_flags?.length ?? 0) > 0 || (followUpAlerts?.red_flags?.length ?? 0) > 0) && (
+            {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision. In follow-up always mount when tab is analysis; key forces remount when followUpAlerts arrives. */}
+            {activeTab === "analysis" && ((niagaraResults?.red_flags?.length ?? 0) > 0 || (followUpAlerts?.red_flags?.length ?? 0) > 0 || (sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up')) && (
               <Suspense fallback={<LoadingSpinner />}>
                 <AnalysisTab
+                  key={`analysis-${(followUpAlerts?.red_flags?.length ?? 0)}`}
                   currentPatient={currentPatient}
                   patientIdFromUrl={patientIdFromUrl}
                   patientClinicalInfo={patientClinicalInfo}
