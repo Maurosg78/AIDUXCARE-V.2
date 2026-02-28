@@ -287,8 +287,8 @@ const ProfessionalWorkflowPage = () => {
     declineReasons?: string[];
   } | null>(null);
 
-  // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter
-  const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "soap" : "analysis");
+  // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter. Follow-up always starts on Analysis (conversation + red-flag flow).
+  const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "analysis" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [selectedRedFlagIds, setSelectedRedFlagIds] = useState<string[]>([]);
   const [redFlagDecisions, setRedFlagDecisions] = useState<Record<string, {
