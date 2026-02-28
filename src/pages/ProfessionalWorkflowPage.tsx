@@ -2448,7 +2448,7 @@ const ProfessionalWorkflowPage = () => {
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null); // Filter nulls but keep original indices
-  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion]); // ✅ FIX: Add detectedCaseRegion to dependencies
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts]); // ✅ FIX: Add detectedCaseRegion to dependencies
 
   const pendingAiSuggestions = useMemo(() => {
     const toKey = (value: string) => value?.toLowerCase().trim() ?? "";
@@ -2645,7 +2645,7 @@ const ProfessionalWorkflowPage = () => {
       biopsychosocial_functional_limitations,
       biopsychosocial_patient_strengths
     };
-  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion]); // ✅ FIX: Add detectedCaseRegion to dependencies for region filtering
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts]); // ✅ FIX: Add detectedCaseRegion to dependencies for region filtering
 
   const physicalExamResults = useMemo(
     () =>
