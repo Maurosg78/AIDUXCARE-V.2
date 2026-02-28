@@ -4410,6 +4410,10 @@ const ProfessionalWorkflowPage = () => {
     );
   }
 
+  // WO-REDFLAG-FOLLOWUP: When follow-up has red flags, force Analysis tab at render time so SOAP never mounts until decisions are done
+  const isFollowUpWithRedFlags = (sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && ((followUpAlerts?.red_flags?.length ?? 0) > 0);
+  const effectiveActiveTab: ActiveTab = isFollowUpWithRedFlags ? 'analysis' : activeTab;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <CloseInitialAssessmentConfirmModal
@@ -4972,9 +4976,9 @@ const ProfessionalWorkflowPage = () => {
                 { id: "soap", label: "3 · SOAP Report" },
               ]
                 .filter((tab) => {
-                  // WO-REDFLAG-FOLLOWUP: Show analysis tab in follow-up when red flags need clinical decision
+                  // WO-REDFLAG-FOLLOWUP: Show analysis tab in follow-up when red flags need clinical decision (niagara or followUpAlerts)
                   const isFollowUpWorkflow = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
-                  const hasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0;
+                  const hasRedFlags = (niagaraResults?.red_flags?.length ?? 0) > 0 || (followUpAlerts?.red_flags?.length ?? 0) > 0;
                   if (isFollowUpWorkflow && tab.id === 'analysis' && !hasRedFlags) {
                     return false;
                   }
@@ -4988,7 +4992,7 @@ const ProfessionalWorkflowPage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as ActiveTab)}
-                    className={`rounded-full px-4 py-2 text-sm transition ${activeTab === tab.id
+                    className={`rounded-full px-4 py-2 text-sm transition ${effectiveActiveTab === tab.id
                       ? "bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow font-apple"
                       : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
                       }`}
@@ -4998,8 +5002,8 @@ const ProfessionalWorkflowPage = () => {
                 ))}
             </nav>
 
-            {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision. In follow-up always mount when tab is analysis; key forces remount when followUpAlerts arrives. */}
-            {activeTab === "analysis" && ((niagaraResults?.red_flags?.length ?? 0) > 0 || (followUpAlerts?.red_flags?.length ?? 0) > 0 || (sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up')) && (
+            {/* WO-REDFLAG-FOLLOWUP: Render analysis tab in follow-up when red flags require clinical decision. effectiveActiveTab forces Analysis when followUpAlerts has red flags. */}
+            {effectiveActiveTab === "analysis" && ((niagaraResults?.red_flags?.length ?? 0) > 0 || (followUpAlerts?.red_flags?.length ?? 0) > 0 || (sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up')) && (
               <Suspense fallback={<LoadingSpinner />}>
                 <AnalysisTab
                   key={`analysis-${(followUpAlerts?.red_flags?.length ?? 0)}`}
@@ -5076,7 +5080,7 @@ const ProfessionalWorkflowPage = () => {
                 />
               </Suspense>
             )}
-            {activeTab === "evaluation" && (
+            {effectiveActiveTab === "evaluation" && (
               <Suspense fallback={<LoadingSpinner />}>
                 <EvaluationTab
                   visitType={visitType}
@@ -5112,7 +5116,7 @@ const ProfessionalWorkflowPage = () => {
                 />
               </Suspense>
             )}
-            {activeTab === "soap" && (
+            {effectiveActiveTab === "soap" && (
               <Suspense fallback={<LoadingSpinner />}>
                 <SOAPTab
                   localSoapNote={localSoapNote}
