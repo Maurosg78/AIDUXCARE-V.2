@@ -910,6 +910,15 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
 
+  // WO-REDFLAG-FOLLOWUP: after followUpAlerts is set with red flags, switch to Analysis so the same render has both (fixes async state race)
+  useEffect(() => {
+    const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
+    if (!isFollowUp) return;
+    if ((followUpAlerts?.red_flags?.length ?? 0) > 0 && activeTab !== 'analysis') {
+      setActiveTab('analysis');
+    }
+  }, [followUpAlerts, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
+
   // ✅ FIX: Memoize onWorkflowSelected to prevent infinite loop
   const handleWorkflowSelected = useCallback((route: WorkflowRoute) => {
     setWorkflowRoute(route);
@@ -3605,11 +3614,11 @@ const ProfessionalWorkflowPage = () => {
         source: 'followup_single_call',
       });
       // WO-REDFLAG-FOLLOWUP-002/003: if red flags detected, stay in Analysis; otherwise go to SOAP
+      // Set followUpAlerts first; navigation to Analysis is done in useEffect so the same render has both (avoids async state race).
       if (safeAlerts.red_flags.length > 0) {
         setFollowUpAlerts({ ...alerts, red_flags: safeAlerts.red_flags } as any);
-        // Stay in analysis tab — WO-REDFLAG-FOLLOWUP-001 handles the render
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', safeAlerts);
-        setActiveTab('analysis');
+        // Do NOT setActiveTab('analysis') here — see useEffect below so AnalysisTab mounts with followUpAlerts already in state
       } else {
         setFollowUpAlerts(null);
         if (hasUndecidedFollowUpRedFlags()) {
