@@ -21,31 +21,115 @@ exports.processWithVertexAI = functions.region(LOCATION).https.onCall(async (dat
     const tokenObj = await client.getAccessToken();
     const accessToken = tokenObj?.token || tokenObj;
     if (!accessToken) throw new Error('No se pudo obtener access token');
-    const payload = {
-      contents: [{ role: 'user', parts: [{ text: inputText }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 16384, response_mime_type: 'application/json' }
-    };
-    const MAX_RETRIES = 3;
-    const RETRY_DELAYS = [2000, 4000, 8000];
-    let r, data;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      r = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      data = await r.json();
-      const is429 = r.status === 429 || data?.error?.code === 429;
-      if (!is429) break;
-      if (attempt < MAX_RETRIES) {
-        console.warn(`[vertexAIProxy] 429 —etry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAYS[attempt]}ms`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
-      } else {
-        return res.status(502).json({ ok: false, error: 'vertex_upstream_error', message: 'Resource exhausted. Please try again later.', code: 429, traceId: traceId || null, vertexRaw: data });
-      }
-    }
-    return res.status(200).json({ ok: true, signature: 'vertexAIProxy@v1', project: PROJECT, location: LOCATION, model: MODEL, traceId: traceId || null, text: data?.candidates?.[0]?.content?.parts?.[0]?.text || '', vertexRaw: data });
 
+    const r = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 4096, topP: 0.8 }
+      })
+    });
+
+    const result = await r.json();
+    return {
+      text: result?.candidates?.[0]?.content?.parts?.[0]?.text || '',
+      usage: result?.usageMetadata || null,
+      signature: 'processWithVertexAI@v1'
+    };
+  } catch (error) {
+    console.error('processWithVertexAI error:', error?.stack || error);
+    throw new functions.https.HttpsError('internal', error?.message || 'Unknown error');
+  }
+});
+
+/**
+ * Send SMS via Vonage (backend proxy to avoid CORS)
+ * 
+ * Market: CA · en-CA · PHIPA/PIPEDA Ready
+ */
+exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, res) => {
+  // CORS - Handle preflight
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.set('Access-Control-Max-Age', '3600');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+  }
+
+  try {
+    const { phone, message, clinicName, patientName, consentToken } = req.body || {};
+
+    if (!phone || !message) {
+      return res.status(400).json({ ok: false, error: 'missing_required_fields', message: 'phone and message are required' });
+    }
+
+    // Get Vonage credentials from environment
+    const VONAGE_API_KEY = functions.config().vonage?.api_key || process.env.VONAGE_API_KEY;
+    const VONAGE_API_SECRET = functions.config().vonage?.api_secret || process.env.VONAGE_API_SECRET;
+    const VONAGE_FROM_NUMBER = functions.config().vonage?.from_number || process.env.VONAGE_FROM_NUMBER;
+
+    if (!VONAGE_API_KEY || !VONAGE_API_SECRET || !VONAGE_FROM_NUMBER) {
+      console.error('[SMS Function] Missing Vonage credentials');
+      return res.status(500).json({ ok: false, error: 'configuration_error', message: 'Vonage credentials not configured' });
+    }
+
+    // Validate phone number format (E.164)
+    const cleanPhone = phone.replace(/\s/g, '');
+    if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
+      return res.status(400).json({ ok: false, error: 'invalid_phone_format', message: 'Phone must be in E.164 format' });
+    }
+
+    // Send SMS via Vonage REST API
+    const payload = new URLSearchParams({
+      api_key: VONAGE_API_KEY,
+      api_secret: VONAGE_API_SECRET,
+      to: cleanPhone,
+      from: VONAGE_FROM_NUMBER,
+      text: message,
+    });
+
+    // Log credentials status (without exposing secrets)
+    console.log('[SMS Function] Vonage config check:', {
+      apiKey: VONAGE_API_KEY ? `${VONAGE_API_KEY.substring(0, 4)}...` : 'MISSING',
+      apiSecret: VONAGE_API_SECRET ? 'SET' : 'MISSING',
+      fromNumber: VONAGE_FROM_NUMBER,
+      to: cleanPhone,
+    });
+
+    const response = await fetch('https://rest.nexmo.com/sms/json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payload.toString(),
+    });
+
+    const result = await response.json();
+    console.log('[SMS Function] Vonage API response:', {
+      status: response.status,
+      result: JSON.stringify(result).substring(0, 500), // Limit log size
+    });
+
+    // Check Vonage response (status '0' = accepted for delivery; actual delivery may still fail for international numbers)
+    if (result.messages && result.messages[0]?.status === '0') {
+      const msg = result.messages[0];
+      const to = cleanPhone;
+      const isInternational = !/^\+1\d{10}$/.test(to.replace(/\s/g, ''));
+      if (isInternational) {
+        console.warn('[SMS Function] SMS accepted by Vonage for international number:', { to: to.substring(0, 6) + '***', messageId: msg['message-id'] });
+      }
+      return res.status(200).json({
+        ok: true,
+        provider: 'vonage',
+        messageId: msg['message-id'],
+        status: msg.status,
+        remainingBalance: msg['remaining-balance'],
+      });
     } else {
       // Error from Vonage
       const errorText = result.messages?.[0]?.['error-text'] || result['error-text'] || 'Unknown error';
@@ -151,14 +235,25 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
       generationConfig: { temperature: 0.3, maxOutputTokens: 16384, response_mime_type: 'application/json' }
     };
 
-    const r = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await r.json();
-
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [2000, 4000, 8000];
+    let r, data;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      r = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      data = await r.json();
+      const is429 = r.status === 429 || data?.error?.code === 429;
+      if (is429 === false) break;
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[vertexAIProxy] 429 — retry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAYS[attempt]}ms`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+      } else {
+        return res.status(502).json({ ok: false, error: 'vertex_upstream_error', message: 'Resource exhausted. Please try again later.', code: 429, traceId: traceId || null, vertexRaw: data });
+      }
+    }
     return res.status(200).json({
       ok: true,
       signature: 'vertexAIProxy@v1',
