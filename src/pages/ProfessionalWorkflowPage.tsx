@@ -915,6 +915,7 @@ const ProfessionalWorkflowPage = () => {
     const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
     if (!isFollowUp) return;
     if ((followUpAlerts?.red_flags?.length ?? 0) > 0 && activeTab !== 'analysis') {
+      console.log('[REDFLAG-EFFECT] firing setActiveTab analysis', { followUpAlertsLen: followUpAlerts?.red_flags?.length, activeTab });
       setActiveTab('analysis');
     }
   }, [followUpAlerts, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
