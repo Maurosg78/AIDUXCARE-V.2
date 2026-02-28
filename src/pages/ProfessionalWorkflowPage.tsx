@@ -4831,8 +4831,13 @@ const ProfessionalWorkflowPage = () => {
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
                     onConfirmFollowUpRedFlags={() => {
-                      setActiveTab('soap');
-                      setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                      const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
+                      if (hasReferralStop) {
+                        setReferralReportOpen(true);
+                      } else {
+                        setActiveTab('soap');
+                        setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                      }
                     }}
                     onGenerateReferralReport={() => setReferralReportOpen(true)}
                   />
@@ -5077,8 +5082,13 @@ const ProfessionalWorkflowPage = () => {
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
                   onConfirmFollowUpRedFlags={() => {
-                    setActiveTab('soap');
-                    setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                    const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
+                    if (hasReferralStop) {
+                      setReferralReportOpen(true);
+                    } else {
+                      setActiveTab('soap');
+                      setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                    }
                   }}
                   onGenerateReferralReport={() => setReferralReportOpen(true)}
                 />
