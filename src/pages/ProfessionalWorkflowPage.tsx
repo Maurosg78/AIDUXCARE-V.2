@@ -4838,6 +4838,8 @@ const ProfessionalWorkflowPage = () => {
                 </Suspense>
               </div>
 
+              {/* WO-REDFLAG-FOLLOWUP: Hide Documentation (SOAP) section until red-flag decisions are done; avoids SOAPTab mounting with red flags pending */}
+              {(!(followUpAlerts?.red_flags?.length) || followUpDecisionResolved) && (
               <div className="bg-white border border-blue-200 rounded-lg p-6" data-section="soap">
                 <div className="flex items-start gap-3 mb-4">
                   <span className="text-2xl">📝</span>
@@ -4915,6 +4917,7 @@ const ProfessionalWorkflowPage = () => {
                   />
                 </Suspense>
               </div>
+              )}
 
               {/* WO-07: Botón sticky ELIMINADO en follow-up - fuerza a llegar al final y rellenar datos mínimos */}
               {visitType !== 'follow-up' && (
