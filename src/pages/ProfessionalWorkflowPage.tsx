@@ -316,9 +316,10 @@ const ProfessionalWorkflowPage = () => {
       setFollowUpDecisionResolved(false);
       return;
     }
-    // All follow-up red flags have a decision → resolved
-    const allResolved = followUpAlerts.red_flags.every((label) => {
-      const decision = redFlagDecisions[label]?.decision;
+    // All follow-up red flags have a decision → resolved (use same id as AnalysisTab: string | flag.label | red-${idx})
+    const allResolved = followUpAlerts.red_flags.every((flag: unknown, idx: number) => {
+      const id = typeof flag === 'string' ? flag : (flag as { label?: string })?.label ?? `red-${idx}`;
+      const decision = redFlagDecisions[id]?.decision;
       return decision === 'continue' || decision === 'referral_stop' || decision === 'referral_continue_partial';
     });
     setFollowUpDecisionResolved(allResolved);
@@ -4831,7 +4832,7 @@ const ProfessionalWorkflowPage = () => {
                     onRedFlagDecisionChange={setRedFlagDecisions}
                     onConfirmFollowUpRedFlags={() => {
                       setActiveTab('soap');
-                      document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                     }}
                     onGenerateReferralReport={() => setReferralReportOpen(true)}
                   />
@@ -5077,7 +5078,7 @@ const ProfessionalWorkflowPage = () => {
                   onRedFlagDecisionChange={setRedFlagDecisions}
                   onConfirmFollowUpRedFlags={() => {
                     setActiveTab('soap');
-                    document.querySelector('[data-section=\"soap\"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                   }}
                   onGenerateReferralReport={() => setReferralReportOpen(true)}
                 />

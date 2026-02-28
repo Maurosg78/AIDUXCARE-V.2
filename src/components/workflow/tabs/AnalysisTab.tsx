@@ -537,6 +537,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     return true;
                   });
                   const canConfirm = allDecided && allJustified;
+                  const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
                   return (
                     <button
                       type="button"
@@ -548,7 +549,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                       }`}
                     >
-                      Confirm decisions and proceed to SOAP
+                      {hasReferralStop ? 'Generate Referral' : 'Confirm decisions and proceed to SOAP'}
                     </button>
                   );
                 })()}
