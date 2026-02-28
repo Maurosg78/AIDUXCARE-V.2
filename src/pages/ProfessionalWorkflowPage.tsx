@@ -914,11 +914,11 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     const isFollowUp = sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up';
     if (!isFollowUp) return;
-    if ((followUpAlerts?.red_flags?.length ?? 0) > 0 && activeTab !== 'analysis') {
+    if ((followUpAlerts?.red_flags?.length ?? 0) > 0) {
       console.log('[REDFLAG-EFFECT] firing setActiveTab analysis', { followUpAlertsLen: followUpAlerts?.red_flags?.length, activeTab });
       setActiveTab('analysis');
     }
-  }, [followUpAlerts, sessionTypeFromUrl, workflowRoute?.type, activeTab]);
+  }, [followUpAlerts, sessionTypeFromUrl, workflowRoute?.type]);
 
   // ✅ FIX: Memoize onWorkflowSelected to prevent infinite loop
   const handleWorkflowSelected = useCallback((route: WorkflowRoute) => {
