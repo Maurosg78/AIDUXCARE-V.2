@@ -44,6 +44,7 @@ export interface SOAPTabProps {
   setIsShareMenuOpen: (open: boolean) => void;
   onCloseInitialAssessment?: () => void;
 
+  skipPlanValidation?: boolean;
   // Workflow optimization
   workflowMetrics: WorkflowMetrics | null;
   workflowRoute: WorkflowRoute | null;
@@ -113,6 +114,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleRegenerateSOAP,
   handleFinalizeSOAP,
   handleUnfinalizeSOAP,
+  skipPlanValidation,
   setIsShareMenuOpen,
   onCloseInitialAssessment,
   workflowMetrics,
@@ -253,6 +255,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             status={soapStatus}
             visitType={visitType}
             isGenerating={isGeneratingSOAP}
+            skipPlanValidation={skipPlanValidation}
             patientId={patientId}
             sessionId={sessionId}
             onSave={handleSaveSOAP}

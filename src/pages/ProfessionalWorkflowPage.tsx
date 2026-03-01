@@ -4879,6 +4879,7 @@ const ProfessionalWorkflowPage = () => {
                     handleFinalizeSOAP={handleFinalizeSOAP}
                     handleUnfinalizeSOAP={handleUnfinalizeSOAP}
                     setIsShareMenuOpen={setIsShareMenuOpen}
+                    skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
                     workflowMetrics={workflowMetrics}
                     workflowRoute={workflowRoute}
                     soapTokenOptimization={soapTokenOptimization}
@@ -5147,6 +5148,7 @@ const ProfessionalWorkflowPage = () => {
                   handleFinalizeSOAP={handleFinalizeSOAP}
                   handleUnfinalizeSOAP={handleUnfinalizeSOAP}
                   setIsShareMenuOpen={setIsShareMenuOpen}
+                  skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
                   workflowMetrics={workflowMetrics}
                   workflowRoute={workflowRoute}
                   soapTokenOptimization={soapTokenOptimization}

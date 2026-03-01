@@ -33,6 +33,8 @@ export interface SOAPEditorProps {
   className?: string;
   /** Follow-up only: one editable block (no S/O/A/P split). When true, always show single block. */
   singleBlockMode?: boolean;
+  /** When true, skips IN-CLINIC TREATMENT plan validation (e.g. referral_stop decisions). */
+  skipPlanValidation?: boolean;
   // ✅ WORKFLOW OPTIMIZATION: Optimized mode for follow-ups
   isOptimized?: boolean;
   tokenOptimization?: {
@@ -48,6 +50,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   status,
   visitType,
   singleBlockMode = false,
+  skipPlanValidation = false,
   isGenerating = false,
   patientId,
   sessionId,
@@ -138,7 +141,8 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     if (
       editedSOAP.plan &&
       !isEmpty(editedSOAP.plan) &&
-      !editedSOAP.plan.includes('IN-CLINIC TREATMENT')
+      !editedSOAP.plan.includes('IN-CLINIC TREATMENT') &&
+      !skipPlanValidation
     )
       missing.push('Plan is missing IN-CLINIC TREATMENT section — regenerate or edit manually');
     if (requiresReview && !isReviewed)
