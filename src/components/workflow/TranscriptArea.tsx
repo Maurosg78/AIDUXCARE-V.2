@@ -442,6 +442,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     prevProps.isRecording === nextProps.isRecording &&
     prevProps.isTranscribing === nextProps.isTranscribing &&
     prevProps.isProcessing === nextProps.isProcessing &&
+    prevProps.isGeneratingSOAP === nextProps.isGeneratingSOAP &&
     prevProps.transcriptError === nextProps.transcriptError &&
     prevProps.languagePreference === nextProps.languagePreference &&
     prevProps.mode === nextProps.mode &&
