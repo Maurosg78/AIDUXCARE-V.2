@@ -336,6 +336,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         setMode={setMode}
         isTranscribing={isTranscribing}
         isProcessing={isProcessing}
+        visitType={visitType}
         audioStream={audioStream}
         handleAnalyzeWithVertex={handleAnalyzeWithVertex}
         attachments={attachments}

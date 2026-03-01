@@ -77,6 +77,7 @@ export interface TranscriptAreaProps {
 
   // Analysis handler
   handleAnalyzeWithVertex: () => Promise<void>;
+  visitType?: string;
 
   // Attachments
   attachments: ClinicalAttachment[];
@@ -104,6 +105,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   isProcessing,
   audioStream,
   handleAnalyzeWithVertex,
+  visitType,
   attachments,
   isUploadingAttachment,
   attachmentError,
@@ -252,8 +254,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           <div className="flex items-center gap-3">
             <Brain className="h-5 w-5 text-primary-blue animate-pulse" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-primary-blue font-apple">Analyzing transcript...</p>
-              <p className="text-xs text-primary-blue/80 mt-0.5 font-apple font-light">Analyzing clinical data with our specialized AI methods</p>
+              <p className="text-sm font-medium text-primary-blue font-apple">{visitType === 'follow-up' ? 'Generating follow-up note...' : 'Analyzing transcript...'}</p>
+              <p className="text-xs text-primary-blue/80 mt-0.5 font-apple font-light">{visitType === 'follow-up' ? 'Processing clinical update with session history...' : 'Analyzing clinical data with our specialized AI methods'}</p>
             </div>
           </div>
         </div>
@@ -408,12 +410,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Analyzing...
+                {visitType === 'follow-up' ? 'Generating follow-up note...' : 'Analyzing...'}
               </>
             ) : (
               <>
                 <Brain className="w-4 h-4" />
-                Analyze with AiduxCare AI
+                {visitType === 'follow-up' ? 'Generate Follow-up Note' : 'Analyze with AiduxCare AI'}
               </>
             )}
           </button>
