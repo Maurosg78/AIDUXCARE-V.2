@@ -185,6 +185,10 @@ Red flags MUST include urgent neurological deficits such as:
 - Saddle anesthesia
 - Rapid neurological deterioration
 
+CRITICAL: Only report red flags if they are explicitly mentioned in TODAY'S CLINICAL UPDATE.
+Do NOT report red flags based on the baseline alone.
+If the baseline documents a prior referral for these symptoms, do NOT re-report them unless today's update confirms they are new or ongoing.
+
 ✅ Nada más.
 ❌ No mezclar con texto libre.`;
 
