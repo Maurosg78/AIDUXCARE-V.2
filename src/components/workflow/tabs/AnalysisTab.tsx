@@ -345,7 +345,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         removingAttachmentId={removingAttachmentId}
         handleAttachmentUpload={handleAttachmentUpload}
         handleAttachmentRemove={handleAttachmentRemove}
-        visitType={visitType}
       />
 
       {isTranscribing && (
