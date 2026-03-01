@@ -205,8 +205,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                 Complete the analysis and physical evaluation tabs, then generate a SOAP note.
               </p>
             )}
-            {/* WO-07: Botón Generate SOAP al final de página (no sticky) */}
-            <button
+            {/* WO-07: Botón Generate SOAP al final de página (no sticky) - hidden in follow-up */}
+            {visitType !== 'follow-up' && <button
               onClick={handleGenerateSoap}
               disabled={
                 !niagaraResults ||
@@ -226,7 +226,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                   Generate SOAP Note
                 </>
               )}
-            </button>
+            </button>}
             {analysisError && (
               <ErrorMessage
                 message={analysisError}
