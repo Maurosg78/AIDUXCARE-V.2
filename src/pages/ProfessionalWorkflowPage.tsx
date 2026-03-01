@@ -4804,6 +4804,7 @@ const ProfessionalWorkflowPage = () => {
                     setMode={setMode}
                     isTranscribing={isTranscribing}
                     isProcessing={isProcessing}
+                    isGeneratingSOAP={isGeneratingSOAP}
                     audioStream={audioStream}
                     handleAnalyzeWithVertex={handleAnalyzeWithVertex}
                     attachments={attachments}
@@ -4905,6 +4906,7 @@ const ProfessionalWorkflowPage = () => {
                     setMode={setMode}
                     isTranscribing={isTranscribing}
                     isProcessing={isProcessing}
+                    isGeneratingSOAP={isGeneratingSOAP}
                     audioStream={audioStream}
                     handleAnalyzeWithVertex={handleAnalyzeWithVertex}
                     attachments={attachments}

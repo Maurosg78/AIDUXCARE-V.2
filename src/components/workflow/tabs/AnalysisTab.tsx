@@ -110,6 +110,7 @@ export interface AnalysisTabProps {
   setMode: (mode: 'live' | 'dictation') => void;
   isTranscribing: boolean;
   isProcessing: boolean;
+  isGeneratingSOAP?: boolean;
   audioStream: MediaStream | null;
   handleAnalyzeWithVertex: () => Promise<void>;
   attachments: ClinicalAttachment[];
@@ -195,6 +196,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setMode,
   isTranscribing,
   isProcessing,
+  isGeneratingSOAP,
   audioStream,
   handleAnalyzeWithVertex,
   attachments,
@@ -336,6 +338,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         setMode={setMode}
         isTranscribing={isTranscribing}
         isProcessing={isProcessing}
+        isGeneratingSOAP={isGeneratingSOAP}
         visitType={visitType}
         audioStream={audioStream}
         handleAnalyzeWithVertex={handleAnalyzeWithVertex}

@@ -73,6 +73,7 @@ export interface TranscriptAreaProps {
   // Processing state
   isTranscribing: boolean;
   isProcessing: boolean;
+  isGeneratingSOAP?: boolean;
   audioStream: MediaStream | null;
 
   // Analysis handler
@@ -103,6 +104,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   setMode,
   isTranscribing,
   isProcessing,
+  isGeneratingSOAP,
   audioStream,
   handleAnalyzeWithVertex,
   visitType,
@@ -249,7 +251,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
       )}
 
       {/* Processing Transcription Indicator */}
-      {isProcessing && !isTranscribing && (
+      {(isProcessing || isGeneratingSOAP) && !isTranscribing && (
         <div className="mt-4 rounded-lg border border-primary-blue/20 bg-primary-blue/5 px-4 py-3">
           <div className="flex items-center gap-3">
             <Brain className="h-5 w-5 text-primary-blue animate-pulse" />
@@ -404,10 +406,10 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         <div className="mt-4 pt-4 border-t border-slate-200">
           <button
             onClick={handleAnalyzeWithVertex}
-            disabled={isProcessing || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
+            disabled={isProcessing || isGeneratingSOAP || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
             className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
           >
-            {isProcessing ? (
+            {(isProcessing || isGeneratingSOAP) ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {visitType === 'follow-up' ? 'Generating follow-up note...' : 'Analyzing...'}
