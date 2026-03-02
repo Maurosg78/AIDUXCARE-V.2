@@ -306,23 +306,6 @@ HOME EXERCISE PROGRAM (HEP):
 Rules: NO mixing items between sections. Everything supervised or performed in clinic → IN-CLINIC TREATMENT. Everything the patient does at home → HOME EXERCISE PROGRAM (HEP).
 DO NOT repeat assessment rationale
 
-CLINICAL EXAMPLE (Follow-up SOAP Format):
-
-S: Pain improved from 6/10 to 3/10. Can write 30min vs 10min previously. No new concerns. Patient reports better sleep.
-
-O: Grip strength R 8kg (was 5kg), L 12kg. R wrist flexion 75° (was 70°). UCL stress test (+) but less pain. Functional tasks improved.
-
-A: Good progress with UCL strengthening program. Pain reduction and grip improvement indicate positive response. Continue current plan with progression.
-
-P:
-IN-CLINIC TREATMENT:
-- Progress UCL exercises, add resistance. Continue manual therapy.
-- TENS 2x/week
-
-HOME EXERCISE PROGRAM (HEP):
-- Progress UCL exercises with resistance, continue ROM exercises
-- Ergonomics, activity modification
-
 OUTPUT FORMAT (JSON):
 {
   "subjective": "Patient's reported experience: changes since last visit, treatment response, progress, new concerns. MAX 200 chars. Focus on changes and patient-reported outcomes.",
@@ -524,13 +507,13 @@ SOAP SECTION PURPOSES - Leverage each section correctly:
 The Plan section MUST follow this exact structure for parsing and "Today's Plan" population:
 
 STRUCTURED PLAN FORMAT (REQUIRED):
-- Interventions: [List specific interventions, e.g., "Manual therapy to lumbar spine", "Strengthening exercises for quadriceps", "Gait training"]
-- Modalities: [List treatment modalities if applicable, e.g., "TENS", "Tecar therapy", "US", "Infrared light therapy", "Shockwave therapy" - or "None" if not applicable]
-- Home Exercises: [List specific home exercises prescribed, e.g., "Quad sets 3x10 daily", "ROM exercises 2x/day", "Ice 15min 3x/day" - or "None" if not prescribed]
-- Patient Education: [List education topics covered, e.g., "Posture awareness", "Activity modification", "Pain management strategies" - or "None" if not applicable]
-- Goals: [List measurable treatment goals, e.g., "Pain reduction to 3/10", "Return to running", "Full ROM restoration" - or "To be determined"]
-- Follow-up: [Next appointment details, e.g., "Reassess in 2 weeks", "Follow-up in 1 week", "As needed" - or "To be scheduled"]
-- Next Session Focus: [What to focus on in the next visit, e.g., "Progress strengthening program", "Reassess pain levels", "Advance exercises" - REQUIRED for follow-up planning]
+- Interventions: [List specific interventions from context - or "None"]
+- Modalities: [List treatment modalities if applicable from context - or "None"]
+- Home Exercises: [List specific home exercises and frequency from context - or "None"]
+- Patient Education: [List education topics covered from context - or "None"]
+- Goals: [List measurable treatment goals from context - or "To be determined"]
+- Follow-up: [Next appointment details from context - or "To be scheduled"]
+- Next Session Focus: [What to focus on in the next visit from context - REQUIRED for follow-up planning]
 
 CRITICAL: Use clear section headers (Interventions:, Modalities:, etc.) and list items with bullets or dashes. This structure enables automatic parsing for "Today's Plan" population in follow-up visits.
 DO NOT repeat assessment rationale

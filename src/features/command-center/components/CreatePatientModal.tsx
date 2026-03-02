@@ -216,7 +216,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[calc(100vh-4rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200">
           <h2 className="text-xl font-semibold text-slate-900">New Patient</h2>
