@@ -18,6 +18,27 @@ import { deidentify, reidentify, logDeidentification } from './dataDeidentificat
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
 import { enforceContractOrBuildRepair } from "../core/prompts/v3/validators/contractRuntime";
+// ✅ WO-JSON-PARSER-001: Centralized JSON sanitizer — prevents silent parse failures
+// Handles trailing commas, single quotes, and code block wrappers from Vertex AI responses
+function sanitizeAndExtractJson(raw: string): string | null {
+  const t = raw.trim();
+  // Strip markdown code blocks
+  const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
+  const jsonStr = codeBlock ? codeBlock[1].trim() : t;
+  // Extract outermost JSON object
+  const firstBrace = jsonStr.indexOf('{');
+  if (firstBrace < 0) return null;
+  let depth = 0;
+  let end = -1;
+  for (let i = firstBrace; i < jsonStr.length; i++) {
+    if (jsonStr[i] === '{') depth++;
+    else if (jsonStr[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  const extracted = end >= 0 ? jsonStr.slice(firstBrace, end + 1) : jsonStr.slice(firstBrace);
+  // Remove trailing commas before } or ] (invalid JSON from some LLM responses)
+  return extracted.replace(/,\s*([}\]])/g, '$1');
+}
+
 
 // ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
 const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
@@ -555,9 +576,9 @@ function parseSOAPResponse(
   } else if (vertexResponse.text) {
     // Try to parse JSON from text response
     try {
-      const jsonMatch = vertexResponse.text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        soapData = JSON.parse(jsonMatch[0]);
+      const jsonSanitized1 = sanitizeAndExtractJson(vertexResponse.text);
+      if (jsonSanitized1) {
+        soapData = JSON.parse(jsonSanitized1);
       }
     } catch (e) {
       console.warn('[ClinicalNotes Service] Failed to parse JSON from text response');
@@ -565,9 +586,9 @@ function parseSOAPResponse(
   } else if (vertexResponse.candidates?.[0]?.content?.parts?.[0]?.text) {
     const text = vertexResponse.candidates[0].content.parts[0].text;
     try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        soapData = JSON.parse(jsonMatch[0]);
+      const jsonSanitized2 = sanitizeAndExtractJson(text);
+      if (jsonSanitized2) {
+        soapData = JSON.parse(jsonSanitized2);
       }
     } catch (e) {
       console.warn('[ClinicalNotes Service] Failed to parse JSON from candidate text');
@@ -905,23 +926,7 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
   console.log('[FOLLOWUP-RAW-STRICT]', rawText);
 
   try {
-  const extractJsonString = (s: string): string | null => {
-    const t = s.trim();
-    const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(t);
-    if (codeBlock) return codeBlock[1].trim();
-    const firstBrace = t.indexOf('{');
-    if (firstBrace < 0) return null;
-    let depth = 0;
-    let end = -1;
-    for (let i = firstBrace; i < t.length; i++) {
-      if (t[i] === '{') depth++;
-      else if (t[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-    }
-    if (end >= 0) return t.slice(firstBrace, end + 1);
-    return t.slice(firstBrace);
-  };
-
-  const jsonString = extractJsonString(rawText);
+  const jsonString = sanitizeAndExtractJson(rawText);
   if (!jsonString) {
     console.error('[FOLLOWUP-ERROR]', new Error('Follow-up response did not contain valid JSON'));
     return { raw: rawText, soap: null, alerts: null, error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' } };
@@ -995,24 +1000,8 @@ export function deriveSOAPDataFromRawText(rawText: string): { subjective: string
     };
   }
 
-  const extractJsonString = (s: string): string => {
-    const trimmed = s.trim();
-    const codeBlock = /^```(?:json)?\s*([\s\S]*?)```\s*$/i.exec(trimmed);
-    if (codeBlock) return codeBlock[1].trim();
-    const firstBrace = trimmed.indexOf('{');
-    if (firstBrace < 0) return trimmed;
-    let depth = 0;
-    let end = -1;
-    for (let i = firstBrace; i < trimmed.length; i++) {
-      if (trimmed[i] === '{') depth++;
-      else if (trimmed[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-    }
-    if (end >= 0) return trimmed.slice(firstBrace, end + 1);
-    return trimmed.slice(firstBrace);
-  };
-
   try {
-    const jsonStr = extractJsonString(t);
+    const jsonStr = sanitizeAndExtractJson(t) ?? '{}';
     const parsed = JSON.parse(jsonStr);
     if (parsed && typeof parsed === 'object') {
       const subj = parsed.Subjective ?? parsed.subjective;
@@ -1080,9 +1069,9 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
   let soap: SOAPNote | null = parsePlainSOAPSections(rawText);
   if (!soap) {
     try {
-      const firstJson = rawText.match(/\{[\s\S]*\}/);
-      if (firstJson) {
-        const soapData = JSON.parse(firstJson[0]);
+      const firstJsonSanitized = sanitizeAndExtractJson(rawText);
+      if (firstJsonSanitized) {
+        const soapData = JSON.parse(firstJsonSanitized);
         if (soapData && typeof soapData === 'object') {
           const plan =
             typeof soapData.plan === 'string'
