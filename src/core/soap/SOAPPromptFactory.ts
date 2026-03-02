@@ -128,24 +128,8 @@ AVOID:
 ❌ Mixing subjective reports with objective findings
 ❌ NEVER use: "when radializing the hand", "when applying pressure to the cubitocarpal joint", "The patient reports", "On physical examination", "The treatment plan will focus on"
 
-CLINICAL EXAMPLE (Professional SOAP Format):
-
-S: 28yr athlete reports R knee pain x 2 weeks post-soccer injury. Pain 7/10 with pivoting, stairs. Unable to return to sport. Previous ACL reconstruction L knee 2019.
-
-O: R knee effusion present. Lachman test (+), anterior drawer (+). ROM flexion 110° (normal 135°), extension -10° (lacks full). Quad strength 3/5. Single leg hop test not attempted due to instability.
-
-A: R ACL tear with secondary meniscal involvement. Clinical presentation consistent with acute ligament disruption. Good surgical candidate given age and activity level.
-
-P:
-IN-CLINIC TREATMENT:
-- Manual therapy for lumbar spine mobility
-- Supervised therapeutic exercises for knee stability
-- Gait training with crutches
-
-HOME EXERCISE PROGRAM (HEP):
-- Quadriceps isometric exercises, 3x/day
-- Hamstring stretching, twice daily
-- Ice application for 15 minutes, 3x/day
+DOCUMENTATION STYLE:
+Use professional, concise Canadian physiotherapy documentation style. All content must derive exclusively from the CONTEXT DATA below. Where clinically appropriate, include specific parameters: sets x reps, frequency/day, duration, intensity — calibrated to the patient's age, condition severity, and functional level as documented in the context. Do not invent parameters not supported by the clinical data.
 
 OUTPUT FORMAT (JSON):
 {
