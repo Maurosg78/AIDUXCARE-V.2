@@ -622,6 +622,20 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           {entry.description && (
                             <p className="mt-1 text-[11px] text-slate-500">{entry.description}</p>
                           )}
+                          {(entry.sensitivity !== undefined || entry.sensitivityQualitative || entry.specificity !== undefined || entry.specificityQualitative) && (
+                            <div className="flex gap-2 mt-1 flex-wrap">
+                              {(entry.sensitivity !== undefined || entry.sensitivityQualitative) && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                  Sn: {entry.sensitivity !== undefined ? `${Math.round(entry.sensitivity * 100)}%` : entry.sensitivityQualitative}
+                                </span>
+                              )}
+                              {(entry.specificity !== undefined || entry.specificityQualitative) && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                  Sp: {entry.specificity !== undefined ? `${Math.round(entry.specificity * 100)}%` : entry.specificityQualitative}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
