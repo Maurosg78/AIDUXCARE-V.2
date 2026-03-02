@@ -379,6 +379,7 @@ const ProfessionalWorkflowPage = () => {
   const [baselineIdFromSession, setBaselineIdFromSession] = useState<string | null>(null);
   const [showCloseInitialConfirmModal, setShowCloseInitialConfirmModal] = useState(false);
   const [closeInitialConfirmData, setCloseInitialConfirmData] = useState<{ patientName?: string; baselineId?: string } | null>(null);
+  const [showCPOBlockModal, setShowCPOBlockModal] = useState(false);
 
   // Value Metrics Tracking - Timestamps
   const [sessionStartTime] = useState<Date>(new Date());
@@ -3726,10 +3727,7 @@ const ProfessionalWorkflowPage = () => {
     if (status === 'finalized') {
       // Check si requiere review y no fue reviewado
       if (soap.requiresReview && !soap.isReviewed) {
-        setAnalysisError(
-          '❌ CPO Compliance: This SOAP note requires review before finalization. ' +
-          'Please review and verify all AI-generated content before finalizing.'
-        );
+        setShowCPOBlockModal(true);
         return; // Bloquear finalización
       }
 
@@ -4412,6 +4410,29 @@ const ProfessionalWorkflowPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* WO-CPO-BLOCK-MODAL-001 */}
+      {showCPOBlockModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
+            <div className="bg-red-600 rounded-t-2xl p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-2"><span className="text-2xl">⚠️</span></div>
+                <div>
+                  <h2 className="text-xl font-bold">Cannot Finalize</h2>
+                  <p className="text-sm text-red-100 mt-1">CPO compliance check failed</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border border-red-20unded-lg p-4">
+                <p className="text-sm font-medium text-red-900">This SOAP note requires review before finalization.</p>
+                <p className="text-sm text-red-800 mt-2">Please review and verify all AI-generated content in the SOAP tab before finalizing. Click the review checkbox to confirm.</p>
+              </div>
+              <button type="button" onClick={() => setShowCPOBlockModal(false)} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium">Got it — I will review the note</button>
+            </div>
+          </div>
+        </div>
+      )}
       <CloseInitialAssessmentConfirmModal
         isOpen={showCloseInitialConfirmModal}
         onClose={() => {
