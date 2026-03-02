@@ -7,6 +7,15 @@ interface ReferralReportModalProps {
   reportData: ReferralReportData | null;
 }
 
+function calcAgeUI(dobStr: string): string {  const dob = new Date(dobStr);
+  if (isNaN(dob.getTime())) return "";
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age > 0 ? String(age) : "";
+}
+
 export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
   isOpen,
   onClose,
@@ -61,7 +70,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
             </p>
             <p className="text-sm text-slate-700">
               <span className="font-medium">Date of Birth:</span>{' '}
-              {reportData.patientDOB || 'Not specified'}
+              {reportData.patientDOB || "Not specified"}{reportData.patientDOB ? ` (Age: ${calcAgeUI(reportData.patientDOB)} yrs)` : ""}
             </p>
             <p className="text-sm text-slate-700">
               <span className="font-medium">Session Date:</span> {reportData.sessionDate}

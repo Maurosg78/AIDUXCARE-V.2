@@ -22,6 +22,17 @@ export interface ReferralReportData {
   clinicalNotes?: string;
 }
 
+function calcAge(dobStr: string | undefined): string {
+  if (!dobStr) return "";
+  const dob = new Date(dobStr);
+  if (isNaN(dob.getTime())) return "";
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age > 0 ? String(age) : "";
+}
+
 export class ReferralReportGenerator {
   static generatePDF(data: ReferralReportData): Blob {
     const doc = new jsPDF();
@@ -53,7 +64,7 @@ export class ReferralReportGenerator {
     doc.setFont('helvetica', 'normal');
     const patientLines = [
       `Name: ${data.patientName}`,
-      `Date of Birth: ${data.patientDOB || 'Not specified'}`,
+      `Date of Birth: ${data.patientDOB || "Not specified"}${calcAge(data.patientDOB) ? " (Age: " + calcAge(data.patientDOB) + " yrs)" : ""}`,
       `Session Date: ${data.sessionDate}`,
     ];
     patientLines.forEach((line) => {
