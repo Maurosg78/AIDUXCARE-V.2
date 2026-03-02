@@ -4225,12 +4225,6 @@ const ProfessionalWorkflowPage = () => {
       isFirstSession,
     });
 
-    console.log('[WORKFLOW] Consent resolution from domain (single source of truth)', {
-      consentResolution,
-      workflowConsentStatus,
-      willRenderGate: consentResolution.channel !== 'none' && consentResolution.channel !== 'blocked',
-      hardBlock: consentResolution.hardBlock
-    });
   }
 
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Hard block guard - ANTES de renderizar nada

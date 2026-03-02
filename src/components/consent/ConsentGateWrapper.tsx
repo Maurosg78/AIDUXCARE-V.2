@@ -51,10 +51,6 @@ export const ConsentGateWrapper: React.FC<ConsentGateWrapperProps> = ({
     if (shouldLogUnmount && !hasLoggedUnmount.current) {
       hasLoggedUnmount.current = true;
       consentLogger.info('workflow_gate_unmounted', {});
-      if (typeof console !== 'undefined') {
-        console.log('[WORKFLOW] Consent resolution from domain');
-        console.log('[WORKFLOW] Gate UNMOUNTED, rendering clinical workflow');
-      }
     }
   }, [shouldLogUnmount]);
 
