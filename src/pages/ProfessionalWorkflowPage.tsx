@@ -3159,6 +3159,7 @@ const ProfessionalWorkflowPage = () => {
     redFlagDecisions,
     selectedRedFlagIds,
     user,
+    professionalProfile,
   ]);
 
   // Detect visit type on mount or when data changes
