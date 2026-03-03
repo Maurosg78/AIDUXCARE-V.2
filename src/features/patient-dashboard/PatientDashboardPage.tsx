@@ -25,6 +25,7 @@ export const PatientDashboardPage: React.FC = () => {
 
   // WO-AUTO-BASELINE-01: Baseline effective = activeBaselineId OR at least one finalized initial SOAP.
   const [hasActiveBaseline, setHasActiveBaseline] = useState(false);
+  const [selectedSOAP, setSelectedSOAP] = useState<{subjective?:string;objective?:string;assessment?:string;plan?:string;date?:string} | null>(null);
   useEffect(() => {
     const checkBaseline = async () => {
       if (!patientId) return;
@@ -192,9 +193,8 @@ export const PatientDashboardPage: React.FC = () => {
                     navigate(`/notes/${visit.id}`);
                   } else if (isResumableInitial) {
                     navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
-                  } else {
-                    // Encounter/session already finalized — could open detail; for now no-op
-                    console.log('View encounter/session:', visit.id);
+                  } else if (visit.source === 'encounter' && visit.soap) {
+                    setSelectedSOAP({...visit.soap, date: visit.date?.toLocaleDateString?.() || ''});
                   }
                 };
                 return (
@@ -371,6 +371,25 @@ export const PatientDashboardPage: React.FC = () => {
         )}
       </div>
 
+      {selectedSOAP && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedSOAP(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-slate-800 rounded-t-2xl p-6 text-white flex justify-between items-center">
+              <h2 className="text-xl font-bold">SOAP Note</h2>
+              <button onClick={() => setSelectedSOAP(null)} className="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div className="p-6 space-y-4">
+              {selectedSOAP.date && <p className="text-xs text-slate-500">Session date: {selectedSOAP.date}</p>}
+              {(['subjective','objective','assessment','plan'] as const).map(key => selectedSOAP[key] ? (
+                <div key={key} className="border border-slate-200 rounded-lg p-4">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">{key}</h3>
+                  <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedSOAP[key]}</p>
+                </div>
+              ) : null)}
+            </div>
+          </div>
+        </div>
+      )}
       {/* TODO: Modales para episodio nuevo y grabación de audio */}
     </div>
   );
