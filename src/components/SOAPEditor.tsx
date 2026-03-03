@@ -141,7 +141,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     if (
       editedSOAP.plan &&
       !isEmpty(editedSOAP.plan) &&
-      !editedSOAP.plan.includes('IN-CLINIC TREATMENT') &&
+      !editedSOAP.plan?.toLowerCase().includes('in-clinic treatment') &&
       !skipPlanValidation
     )
       missing.push('Plan is missing IN-CLINIC TREATMENT section — regenerate or edit manually');
