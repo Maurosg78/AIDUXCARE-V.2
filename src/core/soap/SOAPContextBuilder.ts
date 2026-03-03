@@ -40,6 +40,7 @@ export interface SOAPContext {
     lastVisitDate?: string;
     ongoingTreatment?: string;
     painScale?: string; // Bloque 4: Agregado para uso en prompts
+    patientAge?: number;
   };
   physicalExamResults?: unknown[]; // Bloque 4: Agregado para compatibilidad con código existente
   // WO-FLOW-005: Focos clínicos editables del plan previo (solo follow-up)
@@ -116,6 +117,7 @@ export function buildSOAPContext(
     previousVisits?: number;
     lastVisitDate?: string;
     ongoingTreatment?: string;
+    patientAge?: number;
   },
   todayFocus?: Array<{
     id: string;

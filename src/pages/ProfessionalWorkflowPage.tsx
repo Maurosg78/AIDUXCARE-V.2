@@ -3312,6 +3312,7 @@ const ProfessionalWorkflowPage = () => {
           type: visitType,
           patientId: patientIdFromUrl || demoPatient.id,
           patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
+          patientAge: currentPatient?.dateOfBirth ? calculateAge(currentPatient.dateOfBirth) ?? undefined : undefined,
         },
       };
 

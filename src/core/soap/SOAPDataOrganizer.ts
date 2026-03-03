@@ -40,6 +40,7 @@ export interface UnifiedClinicalData {
     patientName?: string;
     previousVisits?: number;
     lastVisitDate?: string;
+    patientAge?: number;
   };
 }
 
@@ -94,6 +95,7 @@ export function organizeSOAPData(
     {
       previousVisits: visit.previousVisits,
       lastVisitDate: visit.lastVisitDate,
+      patientAge: visit.patientAge,
     }
   );
 

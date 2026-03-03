@@ -151,6 +151,8 @@ CONTEXT DATA:
 TRANSCRIPT:
 ${context.transcript || 'No transcript available'}
 
+PATIENT AGE: ${context.patientContext?.patientAge !== undefined ? `${context.patientContext.patientAge} years old` : 'Not specified'}
+
 CHIEF COMPLAINT:
 ${context.analysis.chiefComplaint || 'Not specified'}
 
@@ -544,6 +546,8 @@ CONTEXT DATA:
 
 TRANSCRIPT:
 ${context.transcript || 'No transcript available'}
+
+PATIENT AGE: ${context.patientContext?.patientAge !== undefined ? `${context.patientContext.patientAge} years old` : 'Not specified'}
 
 CHIEF COMPLAINT:
 ${context.analysis.chiefComplaint || 'Not specified'}
