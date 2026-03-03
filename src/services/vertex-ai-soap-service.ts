@@ -1035,7 +1035,7 @@ export function deriveSOAPDataFromRawText(rawText: string): { subjective: string
  * Used to create a baseline for existing patients. Returns SOAP only; no ALERTS/planItems.
  */
 const BASELINE_FROM_TEXT_SYSTEM =
-  'You are a clinical note assistant. Given session note(s) or free-text clinical summary, output a single SOAP note that serves as clinical context for future follow-ups. Use plain text with exactly these headings (one per section): Subjective:, Objective:, Assessment:, Plan:. Each section must contain substantive content; Plan must explicitly state what treatment is in course. Output nothing else.';
+  'You are a clinical note assistant. Given session note(s) or free-text clinical summary, output a single SOAP note that serves as clinical context for future follow-ups. Use plain text with exactly these headings (one per section): Subjective:, Objective:, Assessment:, Plan:. Each section must contain substantive content; Plan must explicitly state what treatment is in course. Output the SOAP note in Canadian English (en-CA). Use Canadian physiotherapy terminology and spelling. Regardless of the input language, the SOAP must be written in Canadian English. Output nothing else.';
 
 export async function generateBaselineSOAPFromFreeText(freeText: string): Promise<SOAPNote> {
   const userPrompt = `Extract or generate a structured SOAP note from the following session note(s) or clinical summary. The SOAP will be used as baseline context for future follow-ups. The Plan section must explicitly state what treatment is currently in course.\n\n---\n${freeText.trim().slice(0, 15000)}\n---`;
