@@ -3675,6 +3675,9 @@ const ProfessionalWorkflowPage = () => {
           ? (soapGenerationEndTime.getTime() - soapGenerationStartTime.getTime()) / 1000 / 60
           : undefined;
 
+      const totalDocumentationTime =
+        (new Date().getTime() - sessionStartTime.getTime()) / 1000 / 60;
+
       const rawManualEditingTime =
         totalDocumentationTime -
         (aiGenerationTime || 0) -

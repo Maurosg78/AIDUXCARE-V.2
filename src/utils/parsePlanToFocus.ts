@@ -32,8 +32,8 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
   const items: TodayFocusItem[] = [];
   let itemId = 0;
 
-  // Extraer Interventions
-  const interventionsMatch = planText.match(/interventions?:\s*([^\n]+(?:\n(?!-?\s*(?:Modalities?|Home|Patient|Goals?|Follow-up|Next))[^\n]+)*)/i);
+  // Extraer Interventions (incluye variantes recientes del modelo como "In-clinic treatment today:")
+  const interventionsMatch = planText.match(/(?:interventions?|in-?clinic treatment(?: today)?):\s*([^\n]+(?:\n(?!-?\s*(?:Modalities?|Home|Patient|Goals?|Follow-up|Next))[^\n]+)*)/i);
   if (interventionsMatch) {
     const interventionsText = interventionsMatch[1];
     // Parsear lista (bullets, dashes, o comas)
@@ -54,8 +54,8 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
     });
   }
 
-  // Extraer Home Exercises
-  const homeExercisesMatch = planText.match(/home\s+exercises?:\s*([^\n]+(?:\n(?!-?\s*(?:Patient|Goals?|Follow-up|Next|Modalities?|Interventions?))[^\n]+)*)/i);
+  // Extraer Home Exercises (incluye variantes como "Home Exercise Program:")
+  const homeExercisesMatch = planText.match(/(?:home\s+exercises?|home\s+exercise\s+program(?:\s*\(hep\))?):\s*([^\n]+(?:\n(?!-?\s*(?:Patient|Goals?|Follow-up|Next|Modalities?|Interventions?))[^\n]+)*)/i);
   if (homeExercisesMatch) {
     const exercisesText = homeExercisesMatch[1];
     // Parsear lista (bullets, dashes, o comas)
