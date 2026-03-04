@@ -11,7 +11,7 @@ interface SessionData {
   soapNote: any;
   physicalTests?: EvaluationTestEntry[]; // Fixed: Changed from any[] to EvaluationTestEntry[]
   timestamp?: any;
-  status: 'draft' | 'completed';
+  status: 'draft' | 'completed' | 'recording_in_progress' | 'interrupted';
   // ✅ Sprint 2A: Session Type Integration
   sessionType?: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate';
   tokenBudget?: number;
@@ -121,6 +121,30 @@ class SessionService {
     } catch (error) {
       console.error('Error updating session:', error);
       throw new Error('Failed to update session');
+    }
+  }
+
+  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string }[]> {
+    try {
+      const sessionsRef = collection(db, this.COLLECTION_NAME);
+      const q = query(
+        sessionsRef,
+        where('userId', '==', userId),
+        where('status', '==', 'recording_in_progress'),
+        orderBy('updatedAt', 'desc'),
+        limit(10)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => ({
+        id: d.id,
+        patientId: d.data().patientId || '',
+        patientName: d.data().patientName || 'Unknown patient',
+        sessionType: d.data().sessionType || 'followup',
+        transcript: d.data().transcript || '',
+      }));
+    } catch (error) {
+      console.error('Error fetching in-progress sessions:', error);
+      return [];
     }
   }
 

@@ -387,6 +387,14 @@ const ProfessionalWorkflowPage = () => {
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
   const [soapGenerationEndTime, setSoapGenerationEndTime] = useState<Date | null>(null);
+  const [hasRestoredFromAutoSave, setHasRestoredFromAutoSave] = useState(false);
+
+  // WO-RESILIENCE-001: auto-hide restore banner after a few seconds
+  useEffect(() => {
+    if (!hasRestoredFromAutoSave) return;
+    const timeout = setTimeout(() => setHasRestoredFromAutoSave(false), 7000);
+    return () => clearTimeout(timeout);
+  }, [hasRestoredFromAutoSave]);
 
   // Patient Consent - PHIPA s. 18 compliance (SMS-based approach)
   const [isFirstSession, setIsFirstSession] = useState<boolean | null>(null); // null = checking, true/false = result
@@ -473,6 +481,23 @@ const ProfessionalWorkflowPage = () => {
       throw error;
     }
   }, [_stopRecording, mode]);
+
+  // WO-MIC-LIFECYCLE-001: ensure recording is stopped when leaving workflow
+  useEffect(() => {
+    console.log('[WORKFLOW] Mounted ProfessionalWorkflowPage');
+    return () => {
+      console.log('[WORKFLOW] Unmounting ProfessionalWorkflowPage - force stopRecording');
+      stopRecording();
+    };
+  }, [stopRecording]);
+
+  // WO-MIC-LIFECYCLE-001: also stop recording when switching patients on same route
+  useEffect(() => {
+    if (!patientIdFromUrl) return;
+    return () => {
+      stopRecording();
+    };
+  }, [patientIdFromUrl, stopRecording]);
 
   // ✅ WO-04: Transcription events tracking
   useEffect(() => {
@@ -1140,47 +1165,61 @@ const ProfessionalWorkflowPage = () => {
     setCurrentSessionForComparison(session);
   }, [buildCurrentSession]);
 
+  // ✅ WO-RESILIENCE-001: Restore transcript from Firestore auto-save for follow-up sessions
+  useEffect(() => {
+    if (!user?.uid || !patientIdFromUrl) return;
+    if (hasRestoredFromAutoSave) return;
+    if (soapStatus === 'completed') return;
+    if (sessionTypeFromUrl !== 'followup') return;
+
+    let cancelled = false;
+
+    const restoreFromFirestore = async () => {
+      try {
+        const sessions = await sessionService.getInProgressSessions(user.uid);
+        if (cancelled) return;
+
+        const match = sessions.find(
+          (s) => s.patientId === patientIdFromUrl && s.sessionType === 'followup',
+        );
+
+        if (match?.transcript?.trim()) {
+          setTranscript(match.transcript);
+          setHasRestoredFromAutoSave(true);
+          console.log('[RESILIENCE] Restored transcript from auto-save for follow-up session:', {
+            patientId: patientIdFromUrl,
+            sessionTypeFromUrl,
+          });
+        } else {
+          // Firestore respondió y no hay sesión válida para ESTE paciente
+          const userId = user.uid || TEMP_USER_ID;
+          const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+          SessionStorage.clearSession(patientIdFromUrl, userId, 'follow-up', currentSessionId);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('[RESILIENCE] Failed to restore from auto-save:', error);
+          // Importante: nunca limpiar en error
+        }
+      }
+    };
+
+    restoreFromFirestore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, patientIdFromUrl, sessionTypeFromUrl, hasRestoredFromAutoSave, soapStatus]);
+
   // ✅ WORKFLOW PERSISTENCE: Restore workflow state from localStorage on mount
   // ✅ CRITICAL FIX: URL parameters take priority over localStorage
   useEffect(() => {
-    console.log('🔍 [DEBUG] useEffect - localStorage restore check starting...');
+    console.log('🔍 [DEBUG] useEffect - localStorage/auto-save restore check starting...');
     console.log('🔍 [DEBUG] useEffect - sessionTypeFromUrl:', sessionTypeFromUrl);
     console.log('🔍 [DEBUG] useEffect - patientId:', patientId);
     console.log('🔍 [DEBUG] useEffect - patientIdFromUrl:', patientIdFromUrl);
 
-    // ✅ AGGRESSIVE FIX: Clear localStorage for follow-up visits IMMEDIATELY
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-    console.log('🔍 [DEBUG] useEffect - isExplicitFollowUp:', isExplicitFollowUp);
-
-    if (isExplicitFollowUp && patientId) {
-      // Mark as processed FIRST to prevent infinite loops
-      if (useEffectClearedRef.current) {
-        // Already processed, don't do anything to avoid re-renders
-        return;
-      }
-
-      useEffectClearedRef.current = true;
-
-      // Clear localStorage for follow-up (fresh start)
-      // ✅ T1: Use v2 key structure with userId, visitType, sessionId
-      const userId = user?.uid || TEMP_USER_ID;
-      const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
-      SessionStorage.clearSession(patientId, userId, 'follow-up', currentSessionId);
-
-      // Set follow-up state only if not already set
-      if (visitType !== 'follow-up') {
-        setVisitType('follow-up');
-      }
-      if (activeTab !== 'soap') {
-        if (hasUndecidedFollowUpRedFlags()) {
-          console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
-          return;
-        }
-        setActiveTab('soap');
-      }
-
-      return; // Don't restore anything else
-    }
 
     const restoreWorkflowState = () => {
       try {
@@ -1255,11 +1294,6 @@ const ProfessionalWorkflowPage = () => {
           hasCleanedForInitial.current = cleanupKey;
           console.log('[WORKFLOW] ✅ All state reset to empty for initial evaluation');
           return; // Don't restore anything for initial sessions - everything starts empty
-        }
-
-        // ✅ CRITICAL FIX: Don't restore if URL explicitly specifies followup
-        if (isExplicitFollowUp) {
-          return;
         }
 
         // For other session types (wsib, mva, certificate), restore state normally
@@ -1543,7 +1577,7 @@ const ProfessionalWorkflowPage = () => {
       }
     };
 
-    const interval = setInterval(autoSaveToFirestore, 30000);
+    const interval = setInterval(autoSaveToFirestore, 10000);
     return () => clearInterval(interval);
   }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid]);
 
@@ -3895,6 +3929,9 @@ const ProfessionalWorkflowPage = () => {
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     await handleSaveSOAP(soap, 'finalized');
+    const pid = patientIdFromUrl;
+    const stype = visitType === 'initial' ? 'initial' : 'followup';
+    if (pid) setSessionCompleted(pid, stype);
 
     // ✅ HOSPITAL PORTAL: Show share menu after finalization
     // The share menu will allow physiotherapists to share the note securely
@@ -4782,7 +4819,12 @@ const ProfessionalWorkflowPage = () => {
                     </div>
                   )}
                 </div>
-                <Suspense fallback={<LoadingSpinner />}>
+                  {hasRestoredFromAutoSave && (
+                    <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-900">
+                      Session restored from auto-save.
+                    </div>
+                  )}
+                  <Suspense fallback={<LoadingSpinner />}>
                   <AnalysisTab
                     currentPatient={currentPatient}
                     patientIdFromUrl={patientIdFromUrl}
@@ -4826,7 +4868,6 @@ const ProfessionalWorkflowPage = () => {
                     isProcessing={isProcessing}
                     audioStream={audioStream}
                     handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-                    isGeneratingSOAP={isGeneratingSOAP}
                     attachments={attachments}
                     isUploadingAttachment={isUploadingAttachment}
                     attachmentError={attachmentError}
@@ -4938,9 +4979,9 @@ const ProfessionalWorkflowPage = () => {
                     handleAttachmentRemove={handleAttachmentRemove}
                     onCloseInitialAssessment={undefined}
                     onBackToCommandCenter={() => {
-                      const pid = patientIdFromUrl;
-                      const stype = visitType === 'initial' ? 'initial' : 'followup';
-                      if (pid) setSessionCompleted(pid, stype);
+                      if (sessionId) {
+                        sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
+                      }
                       navigate('/command-center');
                     }}
                   />
@@ -5147,7 +5188,6 @@ const ProfessionalWorkflowPage = () => {
                   handleAddCustomTest={handleAddCustomTest}
                   handleLibrarySelect={handleLibrarySelect}
                   handleGenerateSoap={handleGenerateSoap}
-                  isGeneratingSOAP={isGeneratingSOAP}
                   sessionTypeFromUrl={sessionTypeFromUrl}
                   workflowRoute={workflowRoute}
                 />
@@ -5182,9 +5222,9 @@ const ProfessionalWorkflowPage = () => {
                   setSuccessMessage={setSuccessMessage}
                   setVisitType={setVisitType}
                   onBackToCommandCenter={() => {
-                    const pid = patientIdFromUrl;
-                    const stype = visitType === 'initial' ? 'initial' : 'followup';
-                    if (pid) setSessionCompleted(pid, stype);
+                    if (sessionId) {
+                      sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
+                    }
                     navigate('/command-center');
                   }}
                 />
