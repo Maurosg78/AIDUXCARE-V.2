@@ -4970,7 +4970,6 @@ const ProfessionalWorkflowPage = () => {
                     isProcessing={isProcessing}
                     audioStream={audioStream}
                     handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-                    isGeneratingSOAP={isGeneratingSOAP}
                     attachments={attachments}
                     isUploadingAttachment={isUploadingAttachment}
                     attachmentError={attachmentError}
