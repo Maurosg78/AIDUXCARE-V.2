@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { FileText, AlertCircle, Scroll, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { FileText, AlertCircle, Scroll, ChevronDown, ChevronUp, User, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export interface WorkQueueSummary {
@@ -15,6 +15,7 @@ export interface WorkQueueSummary {
   draftDocuments: number;
   /** Patients in today's list not yet seen (status pending) — reminder to physio */
   pendingPatients?: number;
+  incompleteSessions?: number;
 }
 
 export interface WorkQueuePanelProps {
@@ -29,8 +30,8 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const hasItems = workQueue.pendingNotes > 0 || workQueue.missingConsents > 0 || workQueue.draftDocuments > 0 || (workQueue.pendingPatients ?? 0) > 0;
-  const totalItems = workQueue.pendingNotes + workQueue.missingConsents + workQueue.draftDocuments + (workQueue.pendingPatients ?? 0);
+  const hasItems = workQueue.pendingNotes > 0 || workQueue.missingConsents > 0 || workQueue.draftDocuments > 0 || (workQueue.pendingPatients ?? 0) > 0 || (workQueue.incompleteSessions ?? 0) > 0;
+  const totalItems = workQueue.pendingNotes + workQueue.missingConsents + workQueue.draftDocuments + (workQueue.pendingPatients ?? 0) + (workQueue.incompleteSessions ?? 0);
 
   return (
     <div id="work-queue" className="bg-white border border-gray-200 rounded-2xl shadow-sm">
@@ -89,6 +90,33 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
                 >
                   View List
+                </button>
+              </div>
+            )}
+
+            {(workQueue.incompleteSessions ?? 0) > 0 && (
+              <div className="bg-red-50 border border-red-300 rounded-xl p-5 hover:shadow-sm transition-all duration-200 flex flex-col min-h-[160px] ring-1 ring-red-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-red-900 font-apple mb-1">
+                      Incomplete Sessions
+                    </h3>
+                    <div className="text-2xl font-bold text-red-800 font-apple">
+                      {workQueue.incompleteSessions}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-red-700 font-apple font-light mb-4 flex-1">
+                  Sessions interrupted — no SOAP generated. Resume to complete documentation.
+                </p>
+                <button
+                  onClick={() => document.getElementById('work-with-patients')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-300 hover:border-red-400 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
+                >
+                  Resume Sessions
                 </button>
               </div>
             )}

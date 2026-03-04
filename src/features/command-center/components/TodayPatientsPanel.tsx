@@ -28,7 +28,7 @@ export interface TodayQuickItem {
   patientName: string;
   sessionType: 'initial' | 'followup' | 'ongoing';
   /** pending = can press Start; done = session completed, Start disabled, recycle to set pending again */
-  status?: 'pending' | 'done';
+  status?: 'pending' | 'done' | 'incomplete';
 }
 
 export interface TodayPatientsPanelProps {
@@ -166,19 +166,26 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           )}
           {todayQuickList.map((item, index) => {
             const isDone = item.status === 'done';
+            const isIncomplete = item.status === 'incomplete';
             const isOverdue = !isDone && isPastDate(displayDate); // Pasaron del día y no vistos → rojo
             const itemStyles = isDone
               ? 'border-gray-200 bg-gray-100/80'
+              : isIncomplete
+                ? 'border-red-400 bg-red-50 hover:bg-red-100 ring-1 ring-red-300'
               : isOverdue
                 ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
                 : 'border-primary-blue/40 bg-primary-blue/5 hover:bg-primary-blue/10';
             const textStyles = isDone
               ? 'text-gray-900'
+              : isIncomplete
+                ? 'text-red-900 font-semibold'
               : isOverdue
                 ? 'text-red-800'
                 : 'text-primary-blue';
             const subTextStyles = isDone
               ? 'text-gray-600'
+              : isIncomplete
+                ? 'text-red-700'
               : isOverdue
                 ? 'text-red-700'
                 : 'text-primary-blue/80';
@@ -197,7 +204,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     {item.sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
                     {SESSION_TYPE_LABELS[item.sessionType]}
                     {isDone
-                      ? <span className="text-gray-400 font-normal">— done</span>
+                      ? <span className="text-gray-400 fomal">— done</span>
+                      : isIncomplete
+                        ? <span className="font-bold text-red-700">⚠ INCOMPLETE — resume required</span>
                       : isOverdue
                         ? <span className="font-medium">— overdue</span>
                         : <span className="font-medium">— pending</span>}
@@ -221,6 +230,22 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                           aria-label="Remove from list"
                           title="Remove (e.g. if created in advance for future)"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
+                  ) : isIncomplete ? (
+                    <>
+          <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
+                        <Play className="w-4 h-4" /> Resume
+                      </button>
+                      {onRemoveFromToday && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRemoveIndex(index)}
+                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                          aria-label="Remove from list"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

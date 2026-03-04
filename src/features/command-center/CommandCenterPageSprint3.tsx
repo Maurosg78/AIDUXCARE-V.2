@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
 import { usePendingNotesCount } from './hooks/usePendingNotesCount';
+import { useInProgressSessions } from './hooks/useInProgressSessions';
 import { usePatientsList } from './hooks/usePatientsList';
 import { Patient } from '../../services/patientService';
 import PatientService from '../../services/patientService';
@@ -73,6 +74,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // Hooks
   const { appointments, loading: appointmentsLoading, getAppointments } = useAppointmentSchedule();
   const pendingNotes = usePendingNotesCount();
+  const inProgressSessions = useInProgressSessions();
   const { patients, refresh: refreshPatients } = usePatientsList();
 
   // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from Patient History with "New ongoing/assessment" → open Ongoing modal
@@ -128,11 +130,31 @@ export const CommandCenterPageSprint3: React.FC = () => {
         if (idx !== -1) list[idx] = { ...list[idx], status: 'done' };
         sessionStorage.removeItem(LAST_STARTED_KEY);
       }
-      setTodayQuickList(list);
+
+      // Merge in-progress sessions from Firestore as 'incomplete' items
+      const mergedList = [...list];
+      for (const session of inProgressSessions.data) {
+        const sessionType = (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
+        const existingIndex = mergedList.findIndex(
+          (i) => i.patientId === session.patientId && i.sessionType === sessionType
+        );
+        if (existingIndex === -1) {
+          mergedList.unshift({
+            patientId: session.patientId,
+            patientName: session.patientName || 'Patient',
+            sessionType,
+            status: 'incomplete',
+          });
+        } else if (mergedList[existingIndex].status !== 'done') {
+          mergedList[existingIndex] = { ...mergedList[existingIndex], status: 'incomplete' };
+        }
+      }
+
+      setTodayQuickList(mergedList);
     } catch {
       setTodayQuickList([]);
     }
-  }, [user?.uid, selectedDate]);
+  }, [user?.uid, selectedDate, inProgressSessions.data]);
 
   // Persist quick list to localStorage whenever it changes (key = selectedDate)
   useEffect(() => {
@@ -182,7 +204,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
   // Work queue summary — pending patients = in today's list, not yet seen (status !== 'done')
   const pendingPatientsCount = isSelectedDateToday
-    ? todayQuickList.filter((i) => i.status !== 'done').length
+    ? todayQuickList.filter((i) => (i.status ?? 'pending') === 'pending').length
     : 0;
 
   const workQueue: WorkQueueSummary = {
@@ -190,6 +212,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     missingConsents: 0, // TODO: Implement consent checking
     draftDocuments: 0, // TODO: Implement draft documents
     pendingPatients: pendingPatientsCount,
+    incompleteSessions: inProgressSessions.data.length,
   };
 
   // withPatientRequired implementation
