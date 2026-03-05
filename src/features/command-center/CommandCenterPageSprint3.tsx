@@ -145,7 +145,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             sessionType,
             status: 'incomplete',
           });
-        } else if (mergedList[existingIndex].status !== 'done') {
+        } else {
           mergedList[existingIndex] = { ...mergedList[existingIndex], status: 'incomplete' };
         }
       }
