@@ -6,15 +6,28 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-const SpeechRecognitionAPI =
+interface DictationRecognitionInstance {
+  start(): void;
+  stop(): void;
+  abort(): void;
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
+}
+
+const SpeechRecognitionAPI: (new () => DictationRecognitionInstance) | null =
   typeof window !== 'undefined'
-    ? (window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition)
+    ? (window as unknown as { SpeechRecognition?: new () => DictationRecognitionInstance; webkitSpeechRecognition?: new () => DictationRecognitionInstance }).SpeechRecognition
+    || (window as unknown as { webkitSpeechRecognition?: new () => DictationRecognitionInstance }).webkitSpeechRecognition
     : null;
 
 export function useDictation(options?: { lang?: string; onResult?: (text: string) => void }) {
   const [isDictating, setIsDictating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<InstanceType<NonNullable<typeof SpeechRecognitionAPI>> | null>(null);
+  const recognitionRef = useRef<DictationRecognitionInstance | null>(null);
 
   const isAvailable = !!SpeechRecognitionAPI;
 

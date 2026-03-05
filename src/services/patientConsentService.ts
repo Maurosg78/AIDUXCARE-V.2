@@ -72,6 +72,7 @@ type PatientConsentDoc = {
   consentVersion?: string;
   consentDate?: Timestamp | { toDate(): Date };
   consentScope?: 'ongoing' | 'session-only' | 'declined';
+  consentStatus?: string; // legacy/granted status
   patientId?: string;
   patientName?: string;
   [key: string]: any; // Para campos adicionales que puedan existir

@@ -66,9 +66,13 @@ export async function getClinicalState(
     sessionService.isFirstSession(patientId, userId),
   ]);
 
-  const consent = {
+  const status: ClinicalState['consent']['status'] =
+    (consentResult.status === 'ongoing' || consentResult.status === 'session-only' || consentResult.status === 'declined')
+      ? (consentResult.status as ClinicalState['consent']['status'])
+      : null;
+  const consent: ClinicalState['consent'] = {
     hasValidConsent: consentResult.hasValidConsent,
-    status: consentResult.status ?? null,
+    status,
   };
 
   if (baselineResult.hasBaseline && baselineResult.baselineSOAP) {

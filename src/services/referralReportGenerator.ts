@@ -138,7 +138,6 @@ export class ReferralReportGenerator {
       },
     });
 
-    // @ts-expect-error jspdf-autotable extends doc instance at runtime
     yPos = (doc as any).lastAutoTable.finalY + 10;
 
     // Chief complaint and clinical notes (optional)

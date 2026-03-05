@@ -90,7 +90,7 @@ function parseConsentStatusDoc(data: Record<string, unknown>): ConsentCheckResul
 
   const result: ConsentCheckResult = {
     hasValidConsent,
-    status: status ?? null,
+    status: (status == null ? null : String(status)) as string | null,
     consentMethod: (source as string) ?? (hasValidConsent ? 'verbal' : null),
     isDeclined: isDeclined || false,
     declineReasons: data?.declineReasons as string[] | undefined,

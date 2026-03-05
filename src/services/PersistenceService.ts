@@ -37,6 +37,8 @@ export interface SavedNote {
   createdAt: string;
   updatedAt: string;
   ownerUid: string; // Added for querying
+  /** Firestore rules expect authorUid; kept for backward compatibility with ownerUid */
+  authorUid?: string;
   /** WO-FIX-FOLLOWUP-VISITTYPE-SESSION-COUNT: preserve for History and session count */
   visitType?: 'initial' | 'follow-up';
   source?: 'workflow' | 'consultation';

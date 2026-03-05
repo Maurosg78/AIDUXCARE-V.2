@@ -11,6 +11,10 @@ export interface ClinicalAttachment {
   uploadedAt: string;
   /** Extracted text from PDF/image (when processed by FileProcessorService or similar) */
   extractedText?: string;
+  /** Optional processing error when extraction fails */
+  error?: string | null;
+  /** Optional page count detected for PDFs */
+  pageCount?: number;
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB per attachment

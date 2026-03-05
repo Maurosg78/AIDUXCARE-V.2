@@ -718,7 +718,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </div>
           )}
           {/* WO-REDFLAG-FOLLOWUP-003: SoT — if follow-up and red flags already shown above, do not show duplicate block below */}
-          {!(visitType === 'follow-up' && (interactiveResults?.redFlags?.length ?? 0) > 0) && (
+          {!((visitType as VisitType) === 'follow-up' && (interactiveResults?.redFlags?.length ?? 0) > 0) && (
             <div className="mt-4">
               <ClinicalAnalysisResults
                 results={interactiveResults}

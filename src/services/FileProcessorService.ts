@@ -50,7 +50,7 @@ export class FileProcessorService {
    */
   static async processFile(
     file: File,
-    downloadURL: string
+    downloadURL: string = ''
   ): Promise<ProcessedFile> {
     const baseResult: ProcessedFile = {
       fileName: file.name,

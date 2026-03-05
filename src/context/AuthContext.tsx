@@ -30,6 +30,8 @@ export interface RegisterData {
 export interface AuthContextType {
   /** Usuario actual autenticado */
   user: User | null;
+  /** true si hay usuario autenticado */
+  isAuthenticated: boolean;
   /** Indica si está cargando el estado de autenticación */
   loading: boolean;
   /** Indica si hay un error de autenticación */
@@ -222,6 +224,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    isAuthenticated: !!user,
     loading,
     error,
     login,

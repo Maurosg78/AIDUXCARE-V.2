@@ -22,6 +22,12 @@ export interface EvaluationTestEntry {
   result: 'normal' | 'positive' | 'negative' | 'inconclusive';
   notes: string;
   values?: Record<string, number | string | boolean | null>;
+  /** Sensitivity (0–1) when available */
+  sensitivity?: number;
+  sensitivityQualitative?: string;
+  /** Specificity (0–1) when available */
+  specificity?: number;
+  specificityQualitative?: string;
 }
 
 /**

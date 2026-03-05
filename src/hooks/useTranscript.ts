@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { FirebaseWhisperService, WhisperTranscriptionResult } from '../services/FirebaseWhisperService';
 import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
 import { hasMediaRecorderSupport } from '../utils/mobileDetection';
+import { micController } from '@/core/audio/micController';
 
 type TranscriptMeta = {
   detectedLanguage: string | null;
@@ -88,6 +89,12 @@ export const useTranscript = () => {
 
   const startRecording = useCallback(async () => {
     try {
+      // Guard against double-start if a recorder/stream is still alive
+      if (mediaRecorderRef.current || streamRef.current) {
+        console.log('[useTranscript] startRecording called but recorder/stream already exists, ignoring.');
+        return;
+      }
+
       setError(null);
       setTranscriptState(''); // Clear previous transcript
       interimTranscriptRef.current = '';
@@ -124,6 +131,8 @@ export const useTranscript = () => {
         }
       });
       console.log('[useTranscript] Microphone access granted, stream active:', stream.active);
+      // Register globally so only ONE physical stream is ever active
+      micController.registerStream(stream);
       streamRef.current = stream;
       setAudioStream(stream);
       audioChunksRef.current = [];
@@ -533,38 +542,69 @@ export const useTranscript = () => {
   }, [appendTranscript, languagePreference, mode, isWebSpeechAvailable, getSpeechRecognitionLang, isRecording]);
 
   const stopRecording = useCallback(() => {
-    // ✅ SPRINT 2 P3: Web Speech API disabled - no need to stop it
-    // Web Speech API was causing double microphone permission requests
-    
+    console.log('[MIC] stopRecording called');
+
     // Stop MediaRecorder if active
     try {
-      if (mediaRecorderRef.current) {
-        if (mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
+      const recorder = mediaRecorderRef.current;
+      if (recorder) {
+        // Extra guard: stop tracks on recorder's own stream
+        try {
+          const rs = recorder.stream;
+          rs?.getTracks().forEach((t) => {
+            try {
+              if (t.readyState === 'live') t.stop();
+            } catch (e) {
+              console.warn('[MIC] Error deteniendo pista desde recorder.stream', e);
+            }
+          });
+        } catch (e) {
+          console.warn('[MIC] Error accediendo a recorder.stream', e);
+        }
+
+        if (recorder.state !== 'inactive') {
+          console.log('[MIC] Stopping MediaRecorder');
+          recorder.stop();
         }
         mediaRecorderRef.current = null;
       }
     } catch (err) {
-      console.warn('Error deteniendo MediaRecorder', err);
+      console.warn('[MIC] Error deteniendo MediaRecorder', err);
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        try {
-          if (track.readyState === 'live') {
-            track.stop();
+      console.log('[MIC] Stopping audio tracks from streamRef');
+      try {
+        streamRef.current.getTracks().forEach(track => {
+          try {
+            if (track.readyState === 'live') {
+              track.stop();
+            }
+          } catch (e) {
+            console.warn('[MIC] Error deteniendo pista de audio', e);
           }
-        } catch (e) {
-          console.warn('Error deteniendo pista de audio', e);
-        }
-      });
+        });
+      } catch (e) {
+        console.warn('[MIC] Error recorriendo tracks de streamRef', e);
+      }
       streamRef.current = null;
       setAudioStream(null);
     }
 
+    // Ensure any globally tracked stream is also stopped
+    micController.stopActiveStream();
+
     setIsRecording(false);
     setIsTranscribing(false);
   }, []);
+
+  // WO-MIC-LIFECYCLE-001: ensure mic is stopped when hook unmounts
+  useEffect(() => {
+    return () => {
+      console.log('[MIC] cleanup on unmount');
+      stopRecording();
+    };
+  }, [stopRecording]);
 
   const reset = useCallback(() => {
     setTranscriptState('');

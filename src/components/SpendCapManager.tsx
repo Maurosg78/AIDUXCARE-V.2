@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
-import { SpendCapService, type SpendCapInfo } from '../services/spendCapService';
+import SpendCapService, { type SpendCapInfo } from '../services/spendCapService';
 import { useAuth } from '../hooks/useAuth';
 
 export interface SpendCapManagerProps {

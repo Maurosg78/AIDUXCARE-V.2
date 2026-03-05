@@ -24,7 +24,7 @@ export interface ConsentGateScreenProps {
   onCancel?: () => void;
 }
 
-export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
+const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   patientId,
   patientName,
   patientPhone,
@@ -188,3 +188,6 @@ export const ConsentGateScreen: React.FC<ConsentGateScreenProps> = ({
     </div>
   );
 };
+
+export const ConsentGateScreen = ConsentGateScreenComponent;
+export default ConsentGateScreenComponent;

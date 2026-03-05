@@ -4562,13 +4562,37 @@ const ProfessionalWorkflowPage = () => {
                 </>
               )}
             </div>
-            <Link
-              to="/command-center"
+            <button
+              type="button"
+              onClick={() => {
+                const uid = user?.uid;
+                if (uid) {
+                  const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+                  sessionService.updateSession(sid, {
+                    status: 'interrupted',
+                    patientId: patientId || '',
+                    patientName: currentPatient?.fullName || 'Unknown',
+                    userId: uid,
+                    sessionType: sessionTypeFromUrl || 'initial',
+                    transcript: transcript || '',
+                  }).catch(() => {
+                    sessionService.createSessionWithId(sid, {
+                      status: 'interrupted',
+                      patientId: patientId || '',
+                      patientName: currentPatient?.fullName || 'Unknown',
+                      userId: uid,
+                      sessionType: sessionTypeFromUrl || 'initial',
+                      transcript: transcript || '',
+                    }).catch(() => {});
+                  });
+                }
+                navigate('/command-center');
+              }}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-primary-blue hover:bg-blue-50 rounded-lg transition-colors font-apple"
             >
               <ArrowLeft className="w-4 h-4" />
               Command Center
-            </Link>
+            </button>
           </div>
         </div>
       </header>

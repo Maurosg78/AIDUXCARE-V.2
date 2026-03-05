@@ -26,6 +26,10 @@ type EvaluationTestEntry = {
   notes: string;
   values?: Record<string, number | string | boolean | null>;
   _prefillDefaults?: Record<string, number | null>;
+  sensitivity?: number;
+  sensitivityQualitative?: string;
+  specificity?: number;
+  specificityQualitative?: string;
 };
 
 const RESULT_LABELS: Record<EvaluationResult, string> = {

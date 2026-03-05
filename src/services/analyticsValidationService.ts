@@ -131,7 +131,8 @@ export function validateAnalyticsQuery(query: any, collection?: string): void {
   }
   
   // Additional validation: Check if querying sessions collection directly
-  if (queryString.includes('collection') && queryString.includes('sessions') && 
+  const queryString = JSON.stringify(query);
+  if (queryString.includes('collection') && queryString.includes('sessions') &&
       !queryString.includes('analytics_events')) {
     // Only allow queries to sessions if they're filtered to non-PHI fields
     // This is a safety check, but sessions should generally not be queried for analytics

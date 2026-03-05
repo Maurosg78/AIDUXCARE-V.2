@@ -1,5 +1,6 @@
 /* @ts-nocheck */
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../shared/ui';
 import { FileText, Download, Edit3, Save, Copy } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
   patientData,
   onSaveReport
 }) => {
+  const { t } = useTranslation();
   const [soapReport, setSoapReport] = useState({
     subjective: '',
     objective: '',
@@ -177,7 +179,7 @@ Date: ${new Date().toLocaleString()}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FileText className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold">${t("workflow.soapReport")}</h2>
+            <h2 className="text-xl font-semibold">{t("workflow.soapReport")}</h2>
           </div>
           <div className="flex gap-2">
             <button
@@ -207,7 +209,7 @@ Date: ${new Date().toLocaleString()}
         <div className="space-y-4">
           {/* SUBJETIVO */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-blue-600">S - ${t("soap.subjective")}</h3>
+            <h3 className="font-semibold text-lg mb-2 text-blue-600">S - {t("soap.subjective")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.subjective}
@@ -224,7 +226,7 @@ Date: ${new Date().toLocaleString()}
 
           {/* OBJETIVO */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-green-600">O - ${t("soap.objective")}</h3>
+            <h3 className="font-semibold text-lg mb-2 text-green-600">O - {t("soap.objective")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.objective}
@@ -258,7 +260,7 @@ Date: ${new Date().toLocaleString()}
 
           {/* PLAN */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-orange-600">P - ${t("soap.plan")}</h3>
+            <h3 className="font-semibold text-lg mb-2 text-orange-600">P - {t("soap.plan")}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.plan}

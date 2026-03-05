@@ -86,7 +86,7 @@ export const ConsentStatusBadge: React.FC<ConsentStatusBadgeProps> = ({
     );
   }
 
-  if (status.status === 'withdrawn') {
+  if ((status.status as string) === 'withdrawn') {
     return (
       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-800 rounded-full text-sm">
         <XCircle className="w-4 h-4" />

@@ -212,7 +212,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
               onClick={handleGenerateSoap}
               disabled={
                 !niagaraResults ||
-                (visitType !== 'follow-up' && physicalExamResults.length === 0) ||
+                ((visitType as VisitType) !== 'follow-up' && physicalExamResults.length === 0) ||
                 isGeneratingSOAP
               }
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-white font-medium shadow-sm hover:bg-gradient-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition"

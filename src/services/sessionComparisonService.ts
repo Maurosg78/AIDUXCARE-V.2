@@ -203,7 +203,7 @@ export class SessionComparisonService {
       } : null,
       physicalTests: [],
       timestamp: date,
-      status: enc.status,
+      status: enc.status === 'signed' ? 'completed' : (enc.status === 'draft' || enc.status === 'completed' ? enc.status : 'draft'),
     };
   }
 

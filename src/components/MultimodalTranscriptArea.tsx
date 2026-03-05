@@ -40,8 +40,9 @@ export const MultimodalTranscriptArea: React.FC<MultimodalTranscriptAreaProps> =
     setIsProcessing(true);
     for (const file of files) {
       try {
-        const processedText = await FileProcessorService.processFile(file);
-        setTranscript(transcript + '\n\n' + processedText);
+        const processed = await FileProcessorService.processFile(file);
+        const text = processed.extractedText ?? processed.error ?? '';
+        setTranscript(transcript + '\n\n' + text);
       } catch (error) {
         console.error('Error procesando archivo:', error);
       }

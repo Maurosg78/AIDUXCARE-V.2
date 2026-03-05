@@ -304,7 +304,7 @@ export function buildBillingExportFromEncounters(encounters: Encounter[]): Billi
       visitType: idx === 0 ? ('initial' as const) : ('follow-up' as const),
       sessionNumber: idx + 1,
       status: enc.status,
-      billingType: BillingClassificationService.classifyEncounter(enc),
+      billingType: BillingClassificationService.classifyEncounter(enc as unknown as { id?: string; patientId?: string; [key: string]: unknown }),
     };
   });
 }

@@ -10,9 +10,9 @@
 import React, { useState, useEffect } from 'react';
 import { Package, ShoppingCart, CheckCircle, AlertCircle } from 'lucide-react';
 import type { TokenPackage } from '../services/tokenPackageService';
-import { TokenPackageService } from '../services/tokenPackageService';
+import TokenPackageService from '../services/tokenPackageService';
 import type { TokenUsage } from '../services/tokenTrackingService';
-import { SpendCapService } from '../services/spendCapService';
+import SpendCapService from '../services/spendCapService';
 import { useAuth } from '../hooks/useAuth';
 
 export interface TokenPackageStoreProps {

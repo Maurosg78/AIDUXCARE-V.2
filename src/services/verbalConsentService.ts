@@ -131,9 +131,32 @@ export async function hasValidConsent(
   }
 }
 
+/** Result of verifying consent (for UI/status display). */
+export interface ConsentVerificationResult {
+  hasConsent: boolean;
+  status?: 'active' | 'expired' | 'none' | 'withdrawn';
+  obtainedDate?: string;
+}
+
+/**
+ * Verify consent and return structured result for UI.
+ * Uses the same doc as hasValidConsent; returns status for display.
+ */
+export async function verifyConsent(
+  patientId: string,
+  _physiotherapistId?: string
+): Promise<ConsentVerificationResult> {
+  const valid = await hasValidConsent(patientId, '', undefined);
+  return {
+    hasConsent: valid,
+    status: valid ? 'active' : 'none',
+  };
+}
+
 export const VerbalConsentService = {
   obtainConsent,
   hasValidConsent,
+  verifyConsent,
   getVerbalConsentText,
   getDefaultConsentTextVersion,
 };

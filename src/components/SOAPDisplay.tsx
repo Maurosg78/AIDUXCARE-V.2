@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Button } from '../shared/ui';
 import { Copy, Download, Check, Settings } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export const SOAPDisplay: React.FC<SOAPDisplayProps> = ({
   patientData,
   onDownloadPDF 
 }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [includeMetadata, setIncludeMetadata] = useState(false);
 
@@ -72,7 +74,7 @@ HORA: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-dig
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">${t("workflow.soapReportGenerated")}</h2>
+        <h2 className="text-xl font-semibold">{t("workflow.soapReportGenerated")}</h2>
         <div className="flex gap-2">
           <div className="flex items-center gap-1 mr-2">
             <input 
@@ -113,19 +115,19 @@ HORA: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-dig
       {/* Vista previa */}
       <div className="space-y-4 border-l-4 border-blue-500 pl-4">
         <div>
-          <h3 className="font-semibold text-blue-600 uppercase text-sm">${t("soap.subjective")}</h3>
+          <h3 className="font-semibold text-blue-600 uppercase text-sm">{t("soap.subjective")}</h3>
           <p className="mt-1 text-gray-700">{soapNote.subjective}</p>
         </div>
         <div>
-          <h3 className="font-semibold text-blue-600 uppercase text-sm">${t("soap.objective")}</h3>
+          <h3 className="font-semibold text-blue-600 uppercase text-sm">{t("soap.objective")}</h3>
           <p className="mt-1 text-gray-700">{soapNote.objective}</p>
         </div>
         <div>
-          <h3 className="font-semibold text-blue-600 uppercase text-sm">${t("soap.assessment")}</h3>
+          <h3 className="font-semibold text-blue-600 uppercase text-sm">{t("soap.assessment")}</h3>
           <p className="mt-1 text-gray-700">{soapNote.assessment}</p>
         </div>
         <div>
-          <h3 className="font-semibold text-blue-600 uppercase text-sm">${t("soap.plan")}</h3>
+          <h3 className="font-semibold text-blue-600 uppercase text-sm">{t("soap.plan")}</h3>
           <p className="mt-1 text-gray-700">{soapNote.plan}</p>
         </div>
       </div>
