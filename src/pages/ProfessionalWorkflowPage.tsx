@@ -239,6 +239,7 @@ const ProfessionalWorkflowPage = () => {
   const hasCleanedForInitial = useRef<string | null>(null);
   // WO-IA-RESUME-01: Only run resume load once per sessionId
   const hasResumeLoadAttemptedRef = useRef<string | null>(null);
+  const restoreTranscriptPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ✅ FIX: Clear localStorage ONLY ONCE on initial mount for follow-up (not on every render)
   if (isExplicitFollowUp && patientIdFromUrl && typeof window !== 'undefined' && !localStorageClearedRef.current) {
@@ -1129,6 +1130,7 @@ const ProfessionalWorkflowPage = () => {
       if (!hasProgress) return;
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
       if (isInitialSession) {
+        const effectiveSessionId = state.sessionId || sessionIdRef.current || null;
         try {
           SessionStorage.saveLatestInitialSession(state.patientId, state.userId, {
             transcript: state.transcript,
@@ -1142,16 +1144,16 @@ const ProfessionalWorkflowPage = () => {
             initialAssessmentClosedAt: state.initialAssessmentClosedAt,
             baselineId: state.baselineIdFromSession,
             visitType: state.visitType,
-            sessionId: state.sessionId,
+            sessionId: effectiveSessionId,
             timestamp: new Date().toISOString(),
             version: '1.0',
           });
-          console.log('[WORKFLOW] 💾 Saved state on unmount for resume (initial interrupted)');
+          console.log('[WORKFLOW] 💾 Saved state on unmount for resume (initial interrupted)', { sessionId: effectiveSessionId });
         } catch (e) {
           console.warn('[WORKFLOW] Failed to save state on unmount:', e);
         }
-        if (state.sessionId) {
-          sessionService.updateSession(state.sessionId, {
+        if (effectiveSessionId) {
+          sessionService.updateSession(effectiveSessionId, {
             status: 'interrupted',
             transcript: state.transcript,
             patientId: state.patientId,
@@ -1378,21 +1380,40 @@ const ProfessionalWorkflowPage = () => {
               : null;
             if (!savedLatest.transcript?.trim()) {
               setIsRestoringTranscript(true);
-              const applyTranscript = (text: string) => {
+              const applyTranscript = (text: string, source: string) => {
                 if (text?.trim()) {
                   setTranscript(text);
                   setIsRestoringTranscript(false);
-                  console.log('[WORKFLOW] ✅ Restored transcript from Firestore (completed after interrupt)');
+                  console.log('[WORKFLOW] ✅ Restored transcript:', source);
                 }
               };
               const clearRestoringAfterRetries = () => {
                 setTimeout(() => setIsRestoringTranscript(false), 500);
               };
+              // Poll SessionStorage: onTranscriptionComplete may write transcript to blob after we mounted
+              const pollBlobCount = 5;
+              const pollBlobIntervalMs = 2000;
+              let pollCount = 0;
+              const blobPollId = setInterval(() => {
+                pollCount++;
+                const latest = SessionStorage.getLatestInitialSession(patientId, userId);
+                if (latest?.transcript?.trim()) {
+                  clearInterval(blobPollId);
+                  restoreTranscriptPollRef.current = null;
+                  applyTranscript(latest.transcript, 'SessionStorage (transcription completed after return)');
+                } else if (pollCount >= pollBlobCount) {
+                  clearInterval(blobPollId);
+                  restoreTranscriptPollRef.current = null;
+                }
+              }, pollBlobIntervalMs);
+              restoreTranscriptPollRef.current = blobPollId;
               if (firestoreSessionId) {
                 const tryFetch = (attempt: number) => {
                   sessionService.getSessionById(firestoreSessionId).then((session) => {
                     if (session?.transcript && typeof session.transcript === 'string') {
-                      applyTranscript(session.transcript);
+                      clearInterval(blobPollId);
+                      restoreTranscriptPollRef.current = null;
+                      applyTranscript(session.transcript, 'Firestore (completed after interrupt)');
                       return;
                     }
                     const delays = [2000, 5000, 8000];
@@ -1417,11 +1438,17 @@ const ProfessionalWorkflowPage = () => {
                   const forPatient = sessions.filter((s) => s.patientId === patientId);
                   const withTranscript = forPatient.find((s) => s.transcript?.trim());
                   if (withTranscript?.transcript?.trim()) {
-                    setTranscript(withTranscript.transcript);
-                    console.log('[WORKFLOW] ✅ Restored transcript from in-progress sessions (fallback)');
+                    clearInterval(blobPollId);
+                    restoreTranscriptPollRef.current = null;
+                    applyTranscript(withTranscript.transcript, 'in-progress sessions (fallback)');
+                  } else {
+                    setIsRestoringTranscript(false);
                   }
+                }).catch(() => {
+                  clearInterval(blobPollId);
+                  restoreTranscriptPollRef.current = null;
                   setIsRestoringTranscript(false);
-                }).catch(() => setIsRestoringTranscript(false));
+                });
               }
             }
             console.log('[WORKFLOW] ✅ Restored from interrupted initial session (resume)');
@@ -1542,6 +1569,12 @@ const ProfessionalWorkflowPage = () => {
     if (patientId) {
       restoreWorkflowState();
     }
+    return () => {
+      if (restoreTranscriptPollRef.current) {
+        clearInterval(restoreTranscriptPollRef.current);
+        restoreTranscriptPollRef.current = null;
+      }
+    };
   }, [patientId, sessionTypeFromUrl]); // Only run when patientId or sessionTypeFromUrl changes
 
   // WO-IA-RESUME-01: Load existing session when resume=true&sessionId=YYY — do not create new session
@@ -1771,6 +1804,7 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     if (!isRecording || sessionId || !user?.uid || !patientIdFromUrl) return;
     const currentSessionId = `${user.uid}-${sessionStartTime.getTime()}`;
+    sessionIdRef.current = currentSessionId; // so unmount save has id even if setSessionId hasn't flushed
     const patientName = currentPatient?.fullName || `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() || 'Patient';
     sessionService
       .createSessionWithId(currentSessionId, {
