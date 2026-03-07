@@ -388,6 +388,8 @@ const ProfessionalWorkflowPage = () => {
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
   const [soapGenerationEndTime, setSoapGenerationEndTime] = useState<Date | null>(null);
   const [hasRestoredFromAutoSave, setHasRestoredFromAutoSave] = useState(false);
+  const [isRestoringTranscript, setIsRestoringTranscript] = useState(false);
+  const [restoredFromInterrupted, setRestoredFromInterrupted] = useState(false);
 
   // WO-RESILIENCE-001: auto-hide restore banner after a few seconds
   useEffect(() => {
@@ -457,6 +459,11 @@ const ProfessionalWorkflowPage = () => {
       const uid = userForPersistRef.current?.uid;
       if (sid && pid && uid && text?.trim()) {
         sessionService.updateSession(sid, { transcript: text }).catch(() => {});
+        // Persist transcript to SessionStorage so when user returns they get it even if Firestore read is slow
+        const latest = SessionStorage.getLatestInitialSession(pid, uid);
+        if (latest && String(latest.sessionId || '').trim() === sid) {
+          SessionStorage.saveLatestInitialSession(pid, uid, { ...latest, transcript: text, sessionId: sid });
+        }
       }
     },
   });
@@ -1349,12 +1356,16 @@ const ProfessionalWorkflowPage = () => {
             (savedLatest.sessionId != null && savedLatest.sessionId.trim().length > 0)
           );
           if (hasSavedData && savedLatest) {
+            setRestoredFromInterrupted(true);
+            setHasRestoredFromAutoSave(true);
             const sanitized = Array.isArray(savedLatest.evaluationTests) ? savedLatest.evaluationTests.map(sanitizeEvaluationEntry) : [];
             if (sanitized.length > 0) {
               setEvaluationTests(sanitized);
               updatePhysicalEvaluation(sanitized);
             }
-            if (savedLatest.transcript?.trim()) setTranscript(savedLatest.transcript);
+            if (savedLatest.transcript?.trim()) {
+              setTranscript(savedLatest.transcript);
+            }
             if (savedLatest.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedLatest.activeTab)) setActiveTab(savedLatest.activeTab);
             if (savedLatest.localSoapNote) setLocalSoapNote(savedLatest.localSoapNote);
             if (savedLatest.selectedEntityIds?.length) setSelectedEntityIds(savedLatest.selectedEntityIds);
@@ -1366,24 +1377,40 @@ const ProfessionalWorkflowPage = () => {
               ? savedLatest.sessionId
               : null;
             if (!savedLatest.transcript?.trim()) {
+              setIsRestoringTranscript(true);
               const applyTranscript = (text: string) => {
                 if (text?.trim()) {
                   setTranscript(text);
+                  setIsRestoringTranscript(false);
                   console.log('[WORKFLOW] ✅ Restored transcript from Firestore (completed after interrupt)');
                 }
               };
+              const clearRestoringAfterRetries = () => {
+                setTimeout(() => setIsRestoringTranscript(false), 500);
+              };
               if (firestoreSessionId) {
-                sessionService.getSessionById(firestoreSessionId).then((session) => {
-                  if (session?.transcript && typeof session.transcript === 'string') applyTranscript(session.transcript);
-                  else {
-                    // Transcription may complete after mount; retry once after 2s
-                    setTimeout(() => {
-                      sessionService.getSessionById(firestoreSessionId).then((s2) => {
-                        if (s2?.transcript && typeof s2.transcript === 'string') applyTranscript(s2.transcript);
-                      }).catch(() => {});
-                    }, 2000);
-                  }
-                }).catch(() => {});
+                const tryFetch = (attempt: number) => {
+                  sessionService.getSessionById(firestoreSessionId).then((session) => {
+                    if (session?.transcript && typeof session.transcript === 'string') {
+                      applyTranscript(session.transcript);
+                      return;
+                    }
+                    const delays = [2000, 5000, 8000];
+                    if (attempt < delays.length) {
+                      setTimeout(() => tryFetch(attempt + 1), delays[attempt]);
+                    } else {
+                      clearRestoringAfterRetries();
+                    }
+                  }).catch(() => {
+                    const delays = [2000, 5000, 8000];
+                    if (attempt < delays.length) {
+                      setTimeout(() => tryFetch(attempt + 1), delays[attempt]);
+                    } else {
+                      clearRestoringAfterRetries();
+                    }
+                  });
+                };
+                tryFetch(0);
               } else {
                 // Fallback: old localStorage may have __latest_initial__ as sessionId; find transcript from in-progress sessions for this patient
                 sessionService.getInProgressSessions(userId).then((sessions) => {
@@ -1393,7 +1420,8 @@ const ProfessionalWorkflowPage = () => {
                     setTranscript(withTranscript.transcript);
                     console.log('[WORKFLOW] ✅ Restored transcript from in-progress sessions (fallback)');
                   }
-                }).catch(() => {});
+                  setIsRestoringTranscript(false);
+                }).catch(() => setIsRestoringTranscript(false));
               }
             }
             console.log('[WORKFLOW] ✅ Restored from interrupted initial session (resume)');
@@ -5022,7 +5050,15 @@ const ProfessionalWorkflowPage = () => {
                 </div>
                   {hasRestoredFromAutoSave && (
                     <div className="mb-3 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-900">
-                      Session restored from auto-save.
+                      {restoredFromInterrupted
+                        ? 'Sesión reanudada. El nuevo audio se añadirá al transcript anterior.'
+                        : 'Session restored from auto-save.'}
+                    </div>
+                  )}
+                  {isRestoringTranscript && (
+                    <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Cargando transcript anterior…
                     </div>
                   )}
                   <Suspense fallback={<LoadingSpinner />}>
