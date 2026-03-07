@@ -10,6 +10,7 @@ on:
       - "scripts/check-sot-trailers.sh"
       - "package.json"
       - "pnpm-lock.yaml"
+      - ".github/workflows/data-validation.yml"
   push:
     branches: ["**"]
     paths:
@@ -19,6 +20,7 @@ on:
       - "scripts/check-sot-trailers.sh"
       - "package.json"
       - "pnpm-lock.yaml"
+      - ".github/workflows/data-validation.yml"
 
 jobs:
   validate:
@@ -32,7 +34,7 @@ jobs:
       # pnpm debe instalarse ANTES de usar cache pnpm
       - uses: pnpm/action-setup@v4
         with:
-          version: "9.15.9"
+          version: "10.29.2"
           run_install: false
 
       - uses: actions/setup-node@v4
