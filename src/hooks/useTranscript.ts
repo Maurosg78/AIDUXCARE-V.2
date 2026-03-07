@@ -13,9 +13,23 @@ type TranscriptMeta = {
 const LIVE_CHUNK_INTERVAL_MS = 3000;
 const DICTATION_CHUNK_INTERVAL_MS = 10000;
 
+/** Minimum audio size to send to Whisper; below this, models often "hallucinate" generic text (e.g. "This is a clinical conversation..."). ~3+ seconds of speech. */
+const MIN_AUDIO_SIZE_BYTES = 40000;
+
+/** Whisper sometimes returns this generic text for very short/silent audio; treat as invalid and do not append. */
+const HALLUCINATION_PREFIX = 'This is a clinical conversation between a healthcare';
+
 // Bloque 3B: Tipos SpeechRecognition movidos a src/types/speech-recognition.d.ts
 
-export const useTranscript = () => {
+export interface UseTranscriptOptions {
+  /** Called when a transcription chunk completes (e.g. after stop). Use to persist transcript to Firestore/SessionStorage so it survives unmount. */
+  onTranscriptionComplete?: (text: string) => void;
+}
+
+export const useTranscript = (options?: UseTranscriptOptions) => {
+  const onTranscriptionCompleteRef = useRef(options?.onTranscriptionComplete);
+  onTranscriptionCompleteRef.current = options?.onTranscriptionComplete;
+
   const [transcript, setTranscriptState] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -47,14 +61,18 @@ export const useTranscript = () => {
         return cleanedPrev ? `${cleanedPrev} ${cleanedNew}` : cleanedNew;
       });
     } else {
-      // For final results, append to transcript
+      // For final results, append to transcript and notify listeners with FULL transcript
       setTranscriptState(prev => {
         const cleanedPrev = prev.trim();
         const cleanedNew = text.trim();
         if (!cleanedNew) return cleanedPrev;
         // Remove any interim text and add final
         const withoutInterim = cleanedPrev.replace(interimTranscriptRef.current, '').trim();
-        return withoutInterim ? `${withoutInterim} ${cleanedNew}` : cleanedNew;
+        const nextTranscript = withoutInterim ? `${withoutInterim} ${cleanedNew}` : cleanedNew;
+        if (onTranscriptionCompleteRef.current) {
+          onTranscriptionCompleteRef.current(nextTranscript);
+        }
+        return nextTranscript;
       });
       interimTranscriptRef.current = '';
     }
@@ -96,7 +114,7 @@ export const useTranscript = () => {
       }
 
       setError(null);
-      setTranscriptState(''); // Clear previous transcript
+      // Do not clear existing transcript here: we want new recordings to append to any restored text
       interimTranscriptRef.current = '';
 
       // ✅ SPRINT 2 P3: Get microphone stream FIRST (single permission request)
@@ -285,18 +303,21 @@ export const useTranscript = () => {
           
           console.log(`[useTranscript] Transcription success: "${result.text?.substring(0, 50)}..."`);
           
-          // Append transcribed text immediately
-          if (result.text?.trim()) {
-            appendTranscript(result.text);
+          // Discard Whisper "hallucination" for very short/silent audio (generic placeholder-like text)
+          const trimmed = result.text?.trim() ?? '';
+          const isHallucination = trimmed && trimmed.startsWith(HALLUCINATION_PREFIX);
+          if (isHallucination) {
+            console.warn('[useTranscript] Discarding hallucinated transcript (short/silent audio):', trimmed.substring(0, 60) + '...');
+            setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
+          } else if (trimmed) {
+            appendTranscript(result.text!);
+            setMeta({
+              detectedLanguage: result.detectedLanguage ?? null,
+              averageLogProb: result.averageLogProb ?? null,
+              durationSeconds: result.durationSeconds
+            });
+            setError(null);
           }
-          
-          // Update meta with latest result
-          setMeta({
-            detectedLanguage: result.detectedLanguage ?? null,
-            averageLogProb: result.averageLogProb ?? null,
-            durationSeconds: result.durationSeconds
-          });
-          setError(null);
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
           console.error('[useTranscript] Error transcribiendo chunk:', errorMessage, err);
@@ -476,11 +497,12 @@ export const useTranscript = () => {
             
             // Attempt full transcription (will timeout if too large)
             await handleLargeAudio(finalBlob, normalizedMimeType);
-          } else if (finalBlob.size >= 2000 && !isTranscribingChunkRef.current) {
+          } else if (finalBlob.size >= MIN_AUDIO_SIZE_BYTES && !isTranscribingChunkRef.current) {
             console.log('[useTranscript] Transcribing complete audio recording...');
             await transcribeChunk(finalBlob);
-          } else if (finalBlob.size < 2000) {
-            console.warn(`[useTranscript] Final audio too small to transcribe: ${finalBlob.size} bytes`);
+          } else if (finalBlob.size < MIN_AUDIO_SIZE_BYTES) {
+            console.warn(`[useTranscript] Final audio too short to transcribe: ${finalBlob.size} bytes (min ${MIN_AUDIO_SIZE_BYTES})`);
+            setError('Recording too short or interrupted. Stay on this page while recording and record at least a few seconds of speech, then stop.');
           }
         }
         

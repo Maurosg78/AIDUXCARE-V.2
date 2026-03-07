@@ -46,6 +46,8 @@ export interface TodayPatientsPanelProps {
   onMarkPendingAgain?: (index: number) => void;
   /** Clear entire list to start fresh */
   onClearList?: () => void;
+  /** Dismiss an incomplete (red) session so it no longer appears in the list (marks session as cancelled). */
+  onDismissIncomplete?: (patientId: string, sessionType: 'initial' | 'followup' | 'ongoing') => void;
   /** Selected date for the list (for planning ahead) */
   selectedDate?: Date;
   /** Callback when user changes the date */
@@ -98,12 +100,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   onRemoveFromToday,
   onMarkPendingAgain,
   onClearList,
+  onDismissIncomplete,
   selectedDate,
   onDateChange,
   todayQuickList = [],
 }) => {
   const { patients: allPatients } = usePatientsList();
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
+  const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
   const [isListExpanded, setIsListExpanded] = useState(
     appointments.length > 0 || todayQuickList.length > 0
   );
@@ -126,7 +130,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           </h2>
           <p className="text-base text-gray-600 font-apple font-light">
             {hasQuickItems
-              ? `${todayQuickList.length} scheduled — press Start when it&apos;s time`
+              ? `${todayQuickList.length} scheduled — press Start when it's time`
               : hasAppointments && isToday(displayDate)
                 ? `${appointments.length} appointment${appointments.length > 1 ? 's' : ''} today`
                 : `No scheduled patients ${isToday(displayDate) ? 'today' : 'for this day'}`}
@@ -237,10 +241,21 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     </>
                   ) : isIncomplete ? (
                     <>
-          <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
+                      <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
                         <Play className="w-4 h-4" /> Resume
                       </button>
-                      {onRemoveFromToday && (
+                      {onDismissIncomplete && (
+                        <button
+                          type="button"
+                          onClick={() => setDismissIncompleteItem(item)}
+                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                          aria-label="Dismiss incomplete session"
+                          title="Dismiss — remove from list (session will no longer appear as incomplete)"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {!onDismissIncomplete && onRemoveFromToday && (
                         <button
                           type="button"
                           onClick={() => setConfirmRemoveIndex(index)}
@@ -288,9 +303,40 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           </button>
           {!hasQuickItems && appointments.length === 0 && !loading && (
             <p className="text-xs text-gray-500 font-apple font-light mt-2 text-center">
-              Add patients and session type; press Start on each row when it&apos;s time. To start a session without adding to the list, use &quot;Start in-clinic session&quot; below.
+              Add patients and session type; press Start on each row when it's time. To start a session without adding to the list, use "Start in-clinic session" below.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Confirm dismiss incomplete session */}
+      {dismissIncompleteItem && onDismissIncomplete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">Dismiss incomplete session?</h3>
+            <p className="text-sm text-gray-600 font-apple mb-4">
+              Remove {dismissIncompleteItem.patientName} from the incomplete list? You won't be able to resume this session from here.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDismissIncompleteItem(null)}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await onDismissIncomplete(dismissIncompleteItem.patientId, dismissIncompleteItem.sessionType);
+                  setDismissIncompleteItem(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

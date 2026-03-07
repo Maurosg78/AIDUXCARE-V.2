@@ -1,7 +1,10 @@
+/** Stable sessionId for "latest in-progress initial" session (resume after interrupt). */
+export const SESSION_ID_LATEST_INITIAL = '__latest_initial__';
+
 export class SessionStorage {
   private static readonly KEY_PREFIX_LEGACY = 'aidux_';
   private static readonly KEY_PREFIX_V2 = 'aidux_v2_';
-  
+
   /**
    * Build v2 key: aidux_v2_${userId}_${patientId}_${visitType}_${sessionId}
    */
@@ -86,6 +89,7 @@ export class SessionStorage {
       // Build v2 key
       const v2Key = this.buildKeyV2(finalUserId, patientId, finalVisitType, finalSessionId);
       
+      // Preserve data.sessionId when present (e.g. Firestore session id for "latest initial" resume); key still uses finalSessionId
       const sessionData = {
         ...data,
         timestamp: new Date().toISOString(),
@@ -93,7 +97,7 @@ export class SessionStorage {
         userId: finalUserId,
         patientId,
         visitType: finalVisitType,
-        sessionId: finalSessionId
+        sessionId: data?.sessionId != null && String(data.sessionId).trim() !== '' ? data.sessionId : finalSessionId
       };
       
       localStorage.setItem(v2Key, JSON.stringify(sessionData));
@@ -166,6 +170,12 @@ export class SessionStorage {
         const v2Key = this.buildKeyV2(userId, patientId, visitType, sessionId);
         localStorage.removeItem(v2Key);
       }
+
+      // Also clear "latest initial" slot when clearing initial session so resume doesn't restore stale data
+      if (userId && visitType && String(visitType).replace(/-/g, '_').toLowerCase() === 'initial') {
+        const latestKey = this.buildKeyV2(userId, patientId, visitType, SESSION_ID_LATEST_INITIAL);
+        localStorage.removeItem(latestKey);
+      }
       
       // Also clear legacy key for backward compatibility
       const legacyKey = this.buildKeyLegacy(patientId);
@@ -173,5 +183,20 @@ export class SessionStorage {
     } catch (e) {
       console.error('[SessionStorage] Error limpiando sesión:', e);
     }
+  }
+
+  /**
+   * Get latest in-progress initial session for a patient (for resume after interrupt).
+   * Uses stable key so save on unmount and restore on mount use the same slot.
+   */
+  static getLatestInitialSession(patientId: string, userId: string): any {
+    return this.getSession(patientId, userId, 'initial', SESSION_ID_LATEST_INITIAL);
+  }
+
+  /**
+   * Save current state as "latest initial" for this patient (for resume after interrupt).
+   */
+  static saveLatestInitialSession(patientId: string, userId: string, data: any): void {
+    this.saveSession(patientId, data, userId, 'initial', SESSION_ID_LATEST_INITIAL);
   }
 }

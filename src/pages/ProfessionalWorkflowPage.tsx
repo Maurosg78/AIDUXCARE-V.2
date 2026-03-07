@@ -426,6 +426,14 @@ const ProfessionalWorkflowPage = () => {
   const currentSessionType = sessionTypeFromUrl || (visitType === 'initial' ? 'initial' : 'followup');
   const sessionTypeConfig = SessionTypeService.getSessionTypeConfig(currentSessionType);
 
+  // WO-RESUME-INTERRUPTED: Refs for onTranscriptionComplete (runs after unmount; refs keep latest values)
+  const sessionIdRef = useRef<string | null>(null);
+  const patientIdForPersistRef = useRef<string | null>(null);
+  const userForPersistRef = useRef<{ uid: string } | null>(null);
+  sessionIdRef.current = sessionId;
+  patientIdForPersistRef.current = patientIdFromUrl ?? null;
+  userForPersistRef.current = user ? { uid: user.uid } : null;
+
   // ✅ CRITICAL: Initialize hooks BEFORE using their values in useMemo
   // These hooks must be called before detectedCaseRegion which depends on them
   const {
@@ -442,7 +450,16 @@ const ProfessionalWorkflowPage = () => {
     startRecording: _startRecording,
     stopRecording: _stopRecording,
     setTranscript,
-  } = useTranscript();
+  } = useTranscript({
+    onTranscriptionComplete: (text) => {
+      const sid = sessionIdRef.current;
+      const pid = patientIdForPersistRef.current;
+      const uid = userForPersistRef.current?.uid;
+      if (sid && pid && uid && text?.trim()) {
+        sessionService.updateSession(sid, { transcript: text }).catch(() => {});
+      }
+    },
+  });
 
   // ✅ WO-04: Recording events tracking
   const recordingStartTimeRef = useRef<number | null>(null);
@@ -1057,6 +1074,88 @@ const ProfessionalWorkflowPage = () => {
   const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
     (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
   );
+
+  // WO-RESUME-INTERRUPTED: On unmount, persist state so user can resume after accidental leave (battery, click, etc.)
+  // Placed here so evaluationTests (and all other state below) are in scope.
+  const unmountPersistRef = useRef<{
+    patientId: string;
+    patientName?: string;
+    userId: string;
+    visitType: string;
+    sessionId: string | null;
+    transcript: string;
+    evaluationTests: unknown[];
+    activeTab: string;
+    selectedEntityIds: string[];
+    localSoapNote: unknown;
+    soapStatus: string;
+    niagaraResults: unknown;
+    selectedRedFlagIds: string[];
+    initialAssessmentClosedAt: string | null;
+    baselineIdFromSession: string | null;
+    isRecording: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (!patientIdFromUrl || !user?.uid) return;
+    unmountPersistRef.current = {
+      patientId: patientIdFromUrl,
+      patientName: currentPatient?.fullName || `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() || 'Patient',
+      userId: user.uid,
+      visitType: visitType || 'initial',
+      sessionId,
+      transcript: transcript || '',
+      evaluationTests: evaluationTests || [],
+      activeTab,
+      selectedEntityIds: selectedEntityIds || [],
+      localSoapNote: localSoapNote ?? null,
+      soapStatus,
+      niagaraResults: niagaraResults ?? null,
+      selectedRedFlagIds: selectedRedFlagIds ?? [],
+      initialAssessmentClosedAt: initialAssessmentClosedAt ?? null,
+      baselineIdFromSession: baselineIdFromSession ?? null,
+      isRecording,
+    };
+    return () => {
+      const state = unmountPersistRef.current;
+      if (!state) return;
+      const hasProgress = state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0;
+      if (!hasProgress) return;
+      const isInitialSession = state.visitType === 'initial' || state.visitType === '';
+      if (isInitialSession) {
+        try {
+          SessionStorage.saveLatestInitialSession(state.patientId, state.userId, {
+            transcript: state.transcript,
+            evaluationTests: state.evaluationTests,
+            activeTab: state.activeTab,
+            selectedEntityIds: state.selectedEntityIds,
+            localSoapNote: state.localSoapNote,
+            soapStatus: state.soapStatus,
+            niagaraResults: state.niagaraResults,
+            redFlagsAccepted: state.selectedRedFlagIds,
+            initialAssessmentClosedAt: state.initialAssessmentClosedAt,
+            baselineId: state.baselineIdFromSession,
+            visitType: state.visitType,
+            sessionId: state.sessionId,
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+          });
+          console.log('[WORKFLOW] 💾 Saved state on unmount for resume (initial interrupted)');
+        } catch (e) {
+          console.warn('[WORKFLOW] Failed to save state on unmount:', e);
+        }
+        if (state.sessionId) {
+          sessionService.updateSession(state.sessionId, {
+            status: 'interrupted',
+            transcript: state.transcript,
+            patientId: state.patientId,
+            patientName: state.patientName || 'Patient',
+            userId: state.userId,
+          }).catch(() => {});
+        }
+      }
+    };
+  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
+
   const [customTestName, setCustomTestName] = useState("");
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
   const [customTestResult, setCustomTestResult] = useState<EvaluationResult | "">("");
@@ -1241,6 +1340,66 @@ const ProfessionalWorkflowPage = () => {
             return; // Don't clean again
           }
 
+          // WO-RESUME-INTERRUPTED: Try restore from "latest initial" (saved on unmount when recording/interrupted)
+          const userId = user?.uid || TEMP_USER_ID;
+          const savedLatest = SessionStorage.getLatestInitialSession(patientId, userId);
+          const hasSavedData = savedLatest && (
+            (savedLatest.transcript != null && savedLatest.transcript.trim().length > 0) ||
+            ((savedLatest.evaluationTests?.length ?? 0) > 0) ||
+            (savedLatest.sessionId != null && savedLatest.sessionId.trim().length > 0)
+          );
+          if (hasSavedData && savedLatest) {
+            const sanitized = Array.isArray(savedLatest.evaluationTests) ? savedLatest.evaluationTests.map(sanitizeEvaluationEntry) : [];
+            if (sanitized.length > 0) {
+              setEvaluationTests(sanitized);
+              updatePhysicalEvaluation(sanitized);
+            }
+            if (savedLatest.transcript?.trim()) setTranscript(savedLatest.transcript);
+            if (savedLatest.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedLatest.activeTab)) setActiveTab(savedLatest.activeTab);
+            if (savedLatest.localSoapNote) setLocalSoapNote(savedLatest.localSoapNote);
+            if (savedLatest.selectedEntityIds?.length) setSelectedEntityIds(savedLatest.selectedEntityIds);
+            if (savedLatest.initialAssessmentClosedAt != null && savedLatest.initialAssessmentClosedAt !== '') setInitialAssessmentClosedAt(savedLatest.initialAssessmentClosedAt);
+            if (savedLatest.baselineId != null && savedLatest.baselineId !== '') setBaselineIdFromSession(savedLatest.baselineId);
+            hasCleanedForInitial.current = cleanupKey;
+            // If transcript was empty (e.g. transcription completed after unmount), load from Firestore or from in-progress sessions
+            const firestoreSessionId = savedLatest.sessionId && String(savedLatest.sessionId).trim() && !String(savedLatest.sessionId).startsWith('__')
+              ? savedLatest.sessionId
+              : null;
+            if (!savedLatest.transcript?.trim()) {
+              const applyTranscript = (text: string) => {
+                if (text?.trim()) {
+                  setTranscript(text);
+                  console.log('[WORKFLOW] ✅ Restored transcript from Firestore (completed after interrupt)');
+                }
+              };
+              if (firestoreSessionId) {
+                sessionService.getSessionById(firestoreSessionId).then((session) => {
+                  if (session?.transcript && typeof session.transcript === 'string') applyTranscript(session.transcript);
+                  else {
+                    // Transcription may complete after mount; retry once after 2s
+                    setTimeout(() => {
+                      sessionService.getSessionById(firestoreSessionId).then((s2) => {
+                        if (s2?.transcript && typeof s2.transcript === 'string') applyTranscript(s2.transcript);
+                      }).catch(() => {});
+                    }, 2000);
+                  }
+                }).catch(() => {});
+              } else {
+                // Fallback: old localStorage may have __latest_initial__ as sessionId; find transcript from in-progress sessions for this patient
+                sessionService.getInProgressSessions(userId).then((sessions) => {
+                  const forPatient = sessions.filter((s) => s.patientId === patientId);
+                  const withTranscript = forPatient.find((s) => s.transcript?.trim());
+                  if (withTranscript?.transcript?.trim()) {
+                    setTranscript(withTranscript.transcript);
+                    console.log('[WORKFLOW] ✅ Restored transcript from in-progress sessions (fallback)');
+                  }
+                }).catch(() => {});
+              }
+            }
+            console.log('[WORKFLOW] ✅ Restored from interrupted initial session (resume)');
+            return;
+          }
+
           // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
           const shouldClearData = () => {
             // Check if there's important data that shouldn't be cleared
@@ -1271,8 +1430,7 @@ const ProfessionalWorkflowPage = () => {
 
           // Clear ALL saved state from localStorage for initial evaluations
           // This ensures a completely fresh start with empty transcript, tests, SOAP, etc.
-          // ✅ T1: Use v2 key structure with userId, visitType, sessionId
-          const userId = user?.uid || TEMP_USER_ID;
+          // ✅ T1: Use v2 key structure with userId, visitType, sessionId (userId already declared above in this block)
           const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
           SessionStorage.clearSession(patientId, userId, 'initial', currentSessionId);
           console.log('[WORKFLOW] ✅ Clearing saved state for initial evaluation (ONCE)');
@@ -1580,6 +1738,23 @@ const ProfessionalWorkflowPage = () => {
     const interval = setInterval(autoSaveToFirestore, 10000);
     return () => clearInterval(interval);
   }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid]);
+
+  // WO-RESUME: Create Firestore session as soon as recording starts so sessionId is set before unmount (transcript only exists after stop)
+  useEffect(() => {
+    if (!isRecording || sessionId || !user?.uid || !patientIdFromUrl) return;
+    const currentSessionId = `${user.uid}-${sessionStartTime.getTime()}`;
+    const patientName = currentPatient?.fullName || `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() || 'Patient';
+    sessionService
+      .createSessionWithId(currentSessionId, {
+        patientId: patientIdFromUrl,
+        patientName,
+        userId: user.uid,
+        status: 'recording_in_progress',
+        transcript: '',
+      })
+      .then(() => setSessionId(currentSessionId))
+      .catch(() => {});
+  }, [isRecording, sessionId, user?.uid, patientIdFromUrl, sessionStartTime, currentPatient]);
 
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
@@ -2383,9 +2558,11 @@ const ProfessionalWorkflowPage = () => {
     setSelectedEntityIds([]);
   }, [niagaraResults?.motivo_consulta]);
 
-  // ✅ PHASE 2: Clear evaluation tests when patient changes or new session starts
+  // ✅ PHASE 2: Clear evaluation tests only when patient actually changed (both ids defined and different)
+  // WO-RESUME-INTERRUPTED: Don't clear when currentPatient is still loading (undefined) on remount — avoids wiping restored state
   useEffect(() => {
-    if (patientIdFromUrl && patientIdFromUrl !== currentPatient?.id) {
+    if (!patientIdFromUrl || !currentPatient?.id) return;
+    if (patientIdFromUrl !== currentPatient.id) {
       console.log('[PHASE2] Patient changed, clearing evaluation tests');
       setEvaluationTests([]);
       isAddingTestsRef.current = false;

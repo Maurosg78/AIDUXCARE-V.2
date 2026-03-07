@@ -15,6 +15,7 @@ import { useInProgressSessions } from './hooks/useInProgressSessions';
 import { usePatientsList } from './hooks/usePatientsList';
 import { Patient } from '../../services/patientService';
 import PatientService from '../../services/patientService';
+import sessionService from '../../services/sessionService';
 
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
@@ -91,6 +92,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
       }
     })();
   }, [location.state, user?.uid, navigate]);
+
+  // Refetch in-progress sessions when Command Center is shown so manual deletions in Firestore are reflected
+  useEffect(() => {
+    inProgressSessions.refetch?.();
+  }, [inProgressSessions.refetch]);
 
   // Load today's appointments
   useEffect(() => {
@@ -380,6 +386,23 @@ export const CommandCenterPageSprint3: React.FC = () => {
     return [...prev, newItem];
   }, []);
 
+  /** Dismiss an incomplete (red) session so it no longer appears — marks session as cancelled in Firestore. */
+  const handleDismissIncomplete = useCallback(
+    async (patientId: string, sessionType: TodayQuickItem['sessionType']) => {
+      const session = inProgressSessions.data.find(
+        (s) => s.patientId === patientId && (s.sessionType as string) === sessionType
+      );
+      if (!session?.id) return;
+      try {
+        await sessionService.updateSession(session.id, { status: 'cancelled' });
+        await inProgressSessions.refetch();
+      } catch {
+        // ignore
+      }
+    },
+    [inProgressSessions.data, inProgressSessions.refetch]
+  );
+
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
@@ -429,6 +452,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onClearList={() => setTodayQuickList([])}
+            onDismissIncomplete={handleDismissIncomplete}
             onAddToToday={() => {
               setStartSessionModalMode('add_to_today');
               setStartSessionModalStep(1);

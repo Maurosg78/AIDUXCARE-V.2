@@ -38,6 +38,11 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
     analyserRef.current = analyser;
     audioContextRef.current = audioContext;
 
+    // Browsers start AudioContext suspended; resume so waveform gets real data
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().catch(() => {});
+    }
+
     // Animation loop to update waveform (optimized for mobile)
     // Throttle updates on low-end devices
     let lastUpdateTime = 0;
