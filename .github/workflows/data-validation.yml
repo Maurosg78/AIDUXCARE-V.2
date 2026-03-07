@@ -34,7 +34,6 @@ jobs:
       # pnpm debe instalarse ANTES de usar cache pnpm
       - uses: pnpm/action-setup@v4
         with:
-          version: "10.29.2"
           run_install: false
 
       - uses: actions/setup-node@v4
