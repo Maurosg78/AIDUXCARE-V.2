@@ -207,6 +207,13 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                 Complete the analysis and physical evaluation tabs, then generate a SOAP note.
               </p>
             )}
+            {/* Loading indicator for follow-up SOAP generation */}
+            {visitType === 'follow-up' && isGeneratingSOAP && (
+              <div className="flex items-center justify-center gap-3 py-4 text-blue-600">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm font-medium">Generating SOAP note...</span>
+              </div>
+            )}
             {/* WO-07: Botón Generate SOAP al final de página (no sticky) - hidden in follow-up */}
             {visitType !== 'follow-up' && <button
               onClick={handleGenerateSoap}
