@@ -5034,34 +5034,69 @@ const ProfessionalWorkflowPage = () => {
               {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}
               {visitType === 'follow-up' && (inClinicItems.length > 0 || homeProgramItems.length > 0) && (
                 <>
-                  {inClinicItems.length > 0 && (
-                    <div className="bg-white border border-blue-200 rounded-lg p-6">
-                      <div className="flex items-start gap-3 mb-4">
-                        <span className="text-2xl">🗓️</span>
-                        <div className="flex-1">
-                          <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                            Today&apos;s in-clinic treatment
-                          </h2>
-                          <p className="text-sm text-slate-600">
-                            Confirm or adjust what was planned previously.
-                          </p>
+                  {inClinicItems.length > 0 && (() => {
+                    const allInClinicDone = inClinicItems.every((i) => i.completed);
+                    return (
+                      <div className="bg-white border border-blue-200 rounded-lg p-6">
+                        <div className="flex items-start gap-3 mb-4">
+                          <span className="text-2xl">🗓️</span>
+                          <div className="flex-1">
+                            <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                              Today&apos;s in-clinic treatment
+                            </h2>
+                            <p className="text-sm text-slate-600">
+                              Confirm or adjust what was planned previously.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setInClinicItems((prev) =>
+                                  prev.map((i) => ({ ...i, completed: !allInClinicDone }))
+                                )
+                              }
+                              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors"
+                              title={allInClinicDone ? 'Unmark all' : 'Mark all as done'}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={allInClinicDone}
+                                readOnly
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span>All done</span>
+                            </button>
+                            <div className="flex items-center gap-2 text-sm text-blue-600">
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Today&apos;s treatment confirmed</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-blue-600">
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Today&apos;s treatment confirmed</span>
-                        </div>
+                        <SuggestedFocusEditor
+                          items={inClinicItems}
+                          onChange={setInClinicItems}
+                          onFinishSession={undefined}
+                          hideHeader={true}
+                        />
                       </div>
-                      <SuggestedFocusEditor
-                        items={inClinicItems}
-                        onChange={setInClinicItems}
-                        onFinishSession={undefined}
-                        hideHeader={true}
+                    );
+                  })()}
+                  {homeProgramItems.length > 0 && (() => {
+                    const allHEPDone = homeProgramItems.every((i) => i.completed);
+                    return (
+                      <HomeProgramBlock
+                        items={homeProgramItems}
+                        onChange={setHomeProgramItems}
+                        allDone={allHEPDone}
+                        onSelectAllClick={() =>
+                          setHomeProgramItems((prev) =>
+                            prev.map((i) => ({ ...i, completed: !allHEPDone }))
+                          )
+                        }
                       />
-                    </div>
-                  )}
-                  {homeProgramItems.length > 0 && (
-                    <HomeProgramBlock items={homeProgramItems} onChange={setHomeProgramItems} />
-                  )}
+                    );
+                  })()}
                 </>
               )}
 

@@ -12,6 +12,9 @@ export interface HomeProgramBlockProps {
   onChange: (items: TodayFocusItem[]) => void;
   /** When true, show block even when empty and allow adding new exercises. */
   allowAdd?: boolean;
+  /** WO-SELECT-ALL-001: when provided, show "All done" checkbox in header. */
+  allDone?: boolean;
+  onSelectAllClick?: () => void;
 }
 
 function newHepItemId(): string {
@@ -22,6 +25,8 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
   items: initialItems,
   onChange,
   allowAdd = false,
+  allDone = false,
+  onSelectAllClick,
 }) => {
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
@@ -133,6 +138,22 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
             Prescribed for home. Check to include in this follow-up. Edit as needed. Add notes (dictated or typed) per item if needed.
           </p>
         </div>
+        {onSelectAllClick != null && (
+          <button
+            type="button"
+            onClick={onSelectAllClick}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors flex-shrink-0"
+            title={allDone ? 'Unmark all' : 'Mark all as done'}
+          >
+            <input
+              type="checkbox"
+              checked={allDone}
+              readOnly
+              className="w-4 h-4 text-blue-600 rounded"
+            />
+            <span>All done</span>
+          </button>
+        )}
       </div>
 
       <div className="mt-4 space-y-3">
