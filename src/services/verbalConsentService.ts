@@ -9,6 +9,7 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { consentLogger } from '@/domain/consent/consentLogger';
+import { getConsentTextString } from '@/core/consent/consentTexts';
 
 const CONSENT_DOC_PATH = (patientId: string) => ['patients', patientId, 'consent_status', 'latest'] as const;
 
@@ -36,23 +37,31 @@ export interface ObtainConsentResult {
 }
 
 /**
- * Get default consent text version (for jurisdiction).
+ * Get default consent text version.
+ * ✅ v2-en-CA: CPO TRUST + IPC Ontario (Jan 28, 2026) compliant.
  */
 export function getDefaultConsentTextVersion(): string {
-  return '1.0';
+  return 'v2-en-CA';
 }
 
 /**
  * Get verbal consent text for display/read.
+ * Single source of truth: reads from consentTexts registry.
+ * Falls back to v2-en-CA if version not found.
  */
-export function getVerbalConsentText(_version?: string): string {
-  return 'I consent to voice recording and AI-assisted processing of my clinical notes for this session.';
+export function getVerbalConsentText(version?: string): string {
+  const v = version ?? getDefaultConsentTextVersion();
+  try {
+    return getConsentTextString(v);
+  } catch {
+    return getConsentTextString('v2-en-CA');
+  }
 }
 
 /**
  * Obtain (record) verbal consent. Writes to the same path that consentServerService reads.
  * WO-CONSENT-VERBAL-FIX: Normalize to domain contract so gate unmounts:
- * - channel: 'none'  → domain treats as "valid consent, no gate"
+ * - channel: 'none'  → in treats as "valid consent, no gate"
  * - source: 'verbal', granted: true, status: 'ongoing'
  */
 export async function obtainConsent(
