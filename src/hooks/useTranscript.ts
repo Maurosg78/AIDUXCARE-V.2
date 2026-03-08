@@ -317,6 +317,11 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
               durationSeconds: result.durationSeconds
             });
             setError(null);
+            // Fire callback in next tick so it runs even if component unmounted (setState updater may not run)
+            const fullText = result.text!;
+            setTimeout(() => {
+              onTranscriptionCompleteRef.current?.(fullText);
+            }, 0);
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);

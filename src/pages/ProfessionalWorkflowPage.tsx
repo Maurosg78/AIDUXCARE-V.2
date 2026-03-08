@@ -431,6 +431,8 @@ const ProfessionalWorkflowPage = () => {
 
   // WO-RESUME-INTERRUPTED: Refs for onTranscriptionComplete (runs after unmount; refs keep latest values)
   const sessionIdRef = useRef<string | null>(null);
+  /** Set only when recording starts; never overwritten by state so onTranscriptionComplete still has id after new instance mounts */
+  const sessionIdForTranscriptRef = useRef<string | null>(null);
   const patientIdForPersistRef = useRef<string | null>(null);
   const userForPersistRef = useRef<{ uid: string } | null>(null);
   sessionIdRef.current = sessionId;
@@ -455,15 +457,16 @@ const ProfessionalWorkflowPage = () => {
     setTranscript,
   } = useTranscript({
     onTranscriptionComplete: (text) => {
-      const sid = sessionIdRef.current;
+      const sid = sessionIdForTranscriptRef.current;
       const pid = patientIdForPersistRef.current;
       const uid = userForPersistRef.current?.uid;
-      if (sid && pid && uid && text?.trim()) {
+      if (!text?.trim()) return;
+      if (sid && pid && uid) {
         sessionService.updateSession(sid, { transcript: text }).catch(() => {});
-        // Persist transcript to SessionStorage so when user returns they get it even if Firestore read is slow
         const latest = SessionStorage.getLatestInitialSession(pid, uid);
         if (latest && String(latest.sessionId || '').trim() === sid) {
           SessionStorage.saveLatestInitialSession(pid, uid, { ...latest, transcript: text, sessionId: sid });
+          console.log('[WORKFLOW] ✅ Persisted transcript to SessionStorage (onTranscriptionComplete)', { sessionIdTail: sid.slice(-10) });
         }
       }
     },
@@ -1391,21 +1394,27 @@ const ProfessionalWorkflowPage = () => {
                 setTimeout(() => setIsRestoringTranscript(false), 500);
               };
               // Poll SessionStorage: onTranscriptionComplete may write transcript to blob after we mounted
-              const pollBlobCount = 5;
-              const pollBlobIntervalMs = 2000;
+              const pollBlobCount = 6;
+              const pollBlobIntervalMs = 1500;
               let pollCount = 0;
-              const blobPollId = setInterval(() => {
+              const tryBlobOnce = () => {
                 pollCount++;
                 const latest = SessionStorage.getLatestInitialSession(patientId, userId);
                 if (latest?.transcript?.trim()) {
-                  clearInterval(blobPollId);
-                  restoreTranscriptPollRef.current = null;
+                  if (restoreTranscriptPollRef.current) {
+                    clearInterval(restoreTranscriptPollRef.current);
+                    restoreTranscriptPollRef.current = null;
+                  }
                   applyTranscript(latest.transcript, 'SessionStorage (transcription completed after return)');
                 } else if (pollCount >= pollBlobCount) {
-                  clearInterval(blobPollId);
-                  restoreTranscriptPollRef.current = null;
+                  if (restoreTranscriptPollRef.current) {
+                    clearInterval(restoreTranscriptPollRef.current);
+                    restoreTranscriptPollRef.current = null;
+                  }
                 }
-              }, pollBlobIntervalMs);
+              };
+              tryBlobOnce();
+              const blobPollId = setInterval(tryBlobOnce, pollBlobIntervalMs);
               restoreTranscriptPollRef.current = blobPollId;
               if (firestoreSessionId) {
                 const tryFetch = (attempt: number) => {
@@ -1804,7 +1813,8 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     if (!isRecording || sessionId || !user?.uid || !patientIdFromUrl) return;
     const currentSessionId = `${user.uid}-${sessionStartTime.getTime()}`;
-    sessionIdRef.current = currentSessionId; // so unmount save has id even if setSessionId hasn't flushed
+    sessionIdRef.current = currentSessionId;
+    sessionIdForTranscriptRef.current = currentSessionId; // never overwritten by state so onTranscriptionComplete still has id after new instance mounts
     const patientName = currentPatient?.fullName || `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() || 'Patient';
     sessionService
       .createSessionWithId(currentSessionId, {
