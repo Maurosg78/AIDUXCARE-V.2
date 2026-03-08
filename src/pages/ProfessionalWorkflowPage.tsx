@@ -1129,7 +1129,7 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       const state = unmountPersistRef.current;
       if (!state) return;
-      const hasProgress = state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0;
+      const hasProgress = state.soapStatus !== "finalized" && (state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0);
       if (!hasProgress) return;
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
       if (isInitialSession) {

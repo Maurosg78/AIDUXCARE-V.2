@@ -84,6 +84,7 @@ ${homeProgram.map((item) => `${item}`).join('\n\n')}
       : '';
 
   const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
 PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 

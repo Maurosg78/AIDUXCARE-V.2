@@ -20,6 +20,7 @@ export interface CanadianPromptParams {
 }
 
 const PROMPT_HEADER = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
 AiDuxCare copilot for Canadian PTs. CPO scope. PHIPA/PIPEDA-aware (design goal).
 CORE: Expose clinical variables. Never diagnose. Present differential considerations. Highlight when medical referral needed.

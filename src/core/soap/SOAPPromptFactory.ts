@@ -242,6 +242,7 @@ export function buildFollowUpPrompt(
 
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
   const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
 You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
 
