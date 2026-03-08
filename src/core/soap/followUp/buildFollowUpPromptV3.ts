@@ -83,7 +83,9 @@ ${homeProgram.map((item) => `${item}`).join('\n\n')}
 `
       : '';
 
-  const prompt = `PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
+  const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+
+PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
 SYSTEM / INSTRUCTION
 

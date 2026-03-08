@@ -241,7 +241,9 @@ export function buildFollowUpPrompt(
     : 'No previous visit context available';
 
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
-  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
+  const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+
+You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
