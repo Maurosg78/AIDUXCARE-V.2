@@ -39,6 +39,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const { user } = useAuth();
   const [showVerbalModal, setShowVerbalModal] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
+  const [formOpened, setFormOpened] = useState(false);
   const [smsLoading, setSmsLoading] = useState(false);
   const [smsError, setSmsError] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
       );
       const url = `${window.location.origin}/consent/${token}`;
       window.open(url, '_blank', 'noopener,noreferrer');
+      setFormOpened(true);
     } catch (err) {
       setSmsError(err instanceof Error ? err.message : 'Failed to open form');
     } finally {
@@ -123,15 +125,29 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         </p>
 
         <div className="space-y-3">
-          <button
-            type="button"
-            onClick={handleOpenCanonicalForm}
-            disabled={formLoading || !physiotherapistId}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-blue to-indigo-500 text-white rounded-lg font-medium hover:from-primary-blue-hover hover:to-indigo-600 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FileText className="w-4 h-4" />
-            {formLoading ? 'Opening...' : 'Fill consent form (in-clinic)'}
-          </button>
+          {formOpened ? (
+            <div className="w-full flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium text-green-800">Consent form opened</p>
+                <p className="text-xs text-green-600">This page will update automatically once the patient completes it.</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleOpenCanonicalForm}
+              disabled={formLoading || !physiotherapistId}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-blue to-indigo-500 text-white rounded-lg font-medium hover:from-primary-blue-hover hover:to-indigo-600 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText className="w-4 h-4" />
+              {formLoading ? 'Opening...' : 'Fill consent form (in-clinic)'}
+            </button>
+          )}
 
           <button
             type="button"
