@@ -35,6 +35,7 @@ import {
   LAST_STARTED_KEY,
   getAndClearSessionCompleted,
 } from './todayListSessionStorage';
+import { getTodayList, saveTodayList } from '../../services/todayListService';
 
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -42,9 +43,6 @@ function toLocalDateKey(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
-
-const TODAY_LIST_STORAGE_KEY = (userId: string, date: Date) =>
-  `commandCenter_todayList_${userId}_${toLocalDateKey(date)}`;
 
 export const CommandCenterPageSprint3: React.FC = () => {
   const navigate = useNavigate();
@@ -107,17 +105,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
   const skipNextSaveRef = React.useRef(false);
 
-  // Load quick list from localStorage for selected date; mark as done the item we just started (from sessionStorage)
+  // Load quick list from Firestore for selected date; mark as done the item we just started (from sessionStorage)
   useEffect(() => {
     if (!user?.uid) return;
     skipNextSaveRef.current = true;
-    try {
-      const key = TODAY_LIST_STORAGE_KEY(user.uid, selectedDate);
-      const raw = localStorage.getItem(key);
-      let list: TodayQuickItem[] = raw ? JSON.parse(raw) : [];
-      list = list.map((item) => ({ ...item, status: item.status ?? 'pending' }));
 
-      // Mark done when workflow explicitly completed (Initial/Ongoing/Follow-up closed)
+    const dateKey = toLocalDateKey(selectedDate);
+
+    getTodayList(user.uid, dateKey).then((list) => {
+      // Mark done when workflow explicitly completed
       const completed = getAndClearSessionCompleted();
       if (completed) {
         const idx = list.findIndex(
@@ -128,11 +124,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
         );
         if (idx !== -1) list[idx] = { ...list[idx], status: 'done' };
       }
-      // Fallback: mark done when returning from Start (legacy — workflow may not set completed)
+      // Fallback: mark done when returning from Start (legacy)
       const lastStartedRaw = sessionStorage.getItem(LAST_STARTED_KEY);
       if (lastStartedRaw && !completed) {
-        const last: { patientId: string; sessionType: TodayQuickItem['sessionType'] } = JSON.parse(lastStartedRaw);
-        const idx = list.findIndex((i) => i.patientId === last.patientId && i.sessionType === last.sessionType);
+        const last: { patientId: string; sessionType: TodayQuickItem['sessionType'] } =
+          JSON.parse(lastStartedRaw);
+        const idx = list.findIndex(
+          (i) => i.patientId === last.patientId && i.sessionType === last.sessionType
+        );
         if (idx !== -1) list[idx] = { ...list[idx], status: 'done' };
         sessionStorage.removeItem(LAST_STARTED_KEY);
       }
@@ -140,7 +139,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
       // Merge in-progress sessions from Firestore as 'incomplete' items
       const mergedList = [...list];
       for (const session of inProgressSessions.data) {
-        const sessionType = (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
+        const sessionType =
+          (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
         const existingIndex = mergedList.findIndex(
           (i) => i.patientId === session.patientId && i.sessionType === sessionType
         );
@@ -157,24 +157,17 @@ export const CommandCenterPageSprint3: React.FC = () => {
       }
 
       setTodayQuickList(mergedList);
-    } catch {
-      setTodayQuickList([]);
-    }
+    });
   }, [user?.uid, selectedDate, inProgressSessions.data]);
 
-  // Persist quick list to localStorage whenever it changes (key = selectedDate)
+  // Persist quick list to Firestore whenever it changes (key = selectedDate)
   useEffect(() => {
     if (!user?.uid) return;
     if (skipNextSaveRef.current) {
       skipNextSaveRef.current = false;
       return;
     }
-    try {
-      const key = TODAY_LIST_STORAGE_KEY(user.uid, selectedDate);
-      localStorage.setItem(key, JSON.stringify(todayQuickList));
-    } catch {
-      // ignore
-    }
+    saveTodayList(user.uid, toLocalDateKey(selectedDate), todayQuickList);
   }, [user?.uid, selectedDate, todayQuickList]);
 
   // Redirect if not authenticated
