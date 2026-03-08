@@ -13,6 +13,15 @@ export interface TodayFocusItem {
   source: 'plan';     // fijo
 }
 
+/** WO-PLAN-TITLE-001: Discard section headers so they don't render as checklist items. */
+function isSectionHeaderLine(line: string): boolean {
+  const stripped = line.replace(/^[\d\.\)\-\•\*\s]+/, '').trim();
+  if (stripped.length < 4) return true;
+  if (/^(plan|treatment\s+plan|home\s+program|hep|assessment|subjective|objective|soap|interventions?|modalities?|goals?|follow-?up|next):?\s*$/i.test(stripped)) return true;
+  if (/^[A-Z][A-Z\s]+:?\s*$/.test(stripped)) return true;
+  return false;
+}
+
 /**
  * Parsea el plan previo (texto estructurado) a focos clínicos editables
  * 
@@ -42,8 +51,8 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
       .map(line => line.trim())
       .filter(line => line.length > 0 && !line.match(/^(Interventions?|Modalities?|Home|Patient|Goals?|Follow-up|Next)/i));
     
-    interventionList.forEach((intervention, idx) => {
-      if (intervention.length > 0) {
+    interventionList.forEach((intervention) => {
+      if (intervention.length > 0 && !isSectionHeaderLine(intervention)) {
         items.push({
           id: `intervention-${itemId++}`,
           label: intervention,
@@ -64,8 +73,8 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
       .map(line => line.trim())
       .filter(line => line.length > 0 && !line.match(/^(Home\s+Exercises?|Patient|Goals?|Follow-up|Next|Modalities?|Interventions?)/i));
     
-    exerciseList.forEach((exercise, idx) => {
-      if (exercise.length > 0) {
+    exerciseList.forEach((exercise) => {
+      if (exercise.length > 0 && !isSectionHeaderLine(exercise)) {
         items.push({
           id: `exercise-${itemId++}`,
           label: exercise,
@@ -80,11 +89,11 @@ export function parsePlanToFocusItems(planText: string | null | undefined): Toda
   if (items.length === 0) {
     // Buscar líneas que parezcan focos (empiezan con bullet o dash)
     const lines = planText.split('\n');
-    lines.forEach((line, idx) => {
+    lines.forEach((line) => {
       const trimmed = line.trim();
       if (trimmed.match(/^[•\-*]\s+/) && trimmed.length > 3) {
         const label = trimmed.replace(/^[•\-*]\s+/, '').trim();
-        if (label.length > 0) {
+        if (label.length > 0 && !isSectionHeaderLine(label)) {
           items.push({
             id: `general-${itemId++}`,
             label: label,
