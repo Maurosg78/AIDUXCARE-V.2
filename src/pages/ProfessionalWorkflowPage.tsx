@@ -4076,6 +4076,7 @@ const ProfessionalWorkflowPage = () => {
         soapNote: cleanedSoap,
         physicalTests: physicalExamResults || [],
         status: status === 'finalized' ? 'completed' : 'draft',
+        soapStatus: status === 'finalized' ? 'finalized' : 'draft',
         sessionType: currentSessionType,
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
