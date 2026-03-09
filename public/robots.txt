@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /command-center
+Disallow: /patient/
+Disallow: /workflow/
+Disallow: /notes/
+Disallow: /admin/
+Allow: /
+
+Sitemap: https://pilot.aiduxcare.com/sitemap.xml
