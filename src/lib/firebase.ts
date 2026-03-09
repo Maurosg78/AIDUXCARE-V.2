@@ -183,15 +183,20 @@ if (!__IS_TEST__) {
   }
 
   if (typeof window !== 'undefined') {
-    // Defer Analytics so other Firebase components are registered first (avoids "Component analytics has not been registered yet")
-    queueMicrotask(() => {
-      try {
-        _analytics = getAnalytics(_app);
-        console.info("✅ Firebase Analytics initialized");
-      } catch (error: any) {
-        console.warn("⚠️ Firebase Analytics unavailable:", error?.message || error);
-      }
-    });
+    const measurementId = import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '';
+    const appId = import.meta.env.VITE_FIREBASE_APP_ID || '';
+    const analyticsReady = measurementId.startsWith('G-') && !measurementId.includes('UAT') && appId.length > 30;
+    if (analyticsReady) {
+      queueMicrotask(() => {
+        try {
+          _analytics = getAnalytics(_app);
+          console.info("✅ Firebase Analytics initialize     } catch (error: any) {
+          console.warn("⚠️ Firebase Analytics unavailable:", error?.message || error);
+        }
+      });
+    } else {
+      console.info("ℹ️ Firebase Analytics skipped (dev/placeholder config)");
+    }
   }
 
   console.info("✅ Firebase inicializado en modo CLOUD (sin emuladores). Proyecto:", firebaseConfig.projectId);
