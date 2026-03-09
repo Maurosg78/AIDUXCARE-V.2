@@ -190,7 +190,8 @@ if (!__IS_TEST__) {
       queueMicrotask(() => {
         try {
           _analytics = getAnalytics(_app);
-          console.info("✅ Firebase Analytics initialize     } catch (error: any) {
+          console.info("✅ Firebase Analytics initialized");
+        } catch (error: any) {
           console.warn("⚠️ Firebase Analytics unavailable:", error?.message || error);
         }
       });
