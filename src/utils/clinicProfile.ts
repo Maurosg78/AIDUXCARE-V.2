@@ -1,6 +1,7 @@
 import type { ProfessionalProfile } from "@/context/ProfessionalProfileContext";
+import { isSpainPilot } from '@/core/pilotDetection';
 
-/** WO-PILOT-FIX-01: Map profession to display title (e.g. Physiotherapist → PT.) */
+/** WO-PILOT-FIX-01: Map profession to display title (e.g. Physiotherapist → PT.) — solo para jurisdicciones que usan abreviaturas (Canadá/US). */
 export const PROFESSION_TO_TITLE: Record<string, string> = {
   Physiotherapist: 'PT.',
   'Physical Therapist': 'PT.',
@@ -10,10 +11,14 @@ export const PROFESSION_TO_TITLE: Record<string, string> = {
   'Registered Nurse': 'RN',
   'Nurse Practitioner': 'NP',
   Other: '',
+  Podiatrist: '',
+  Dietitian: '',
+  Optometrist: '',
 };
 
-/** WO-PILOT-FIX-01: Get display title from profession. */
+/** WO-PILOT-FIX-01: Get display title from profession. En España no se usan prefijos anglosajones (PT., OT., etc.). */
 export function professionToDisplayTitle(profile?: ProfessionalProfile | null): string {
+  if (isSpainPilot()) return '';
   const profession = profile?.profession?.trim() || profile?.professionalTitle?.trim();
   if (!profession) return '';
   return PROFESSION_TO_TITLE[profession] ?? '';

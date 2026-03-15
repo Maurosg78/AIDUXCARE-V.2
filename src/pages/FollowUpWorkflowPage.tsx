@@ -1,7 +1,13 @@
 // @ts-nocheck
-// WO-08: Follow-up workflow page — PARALLEL PATH (not initial assessment).
+// WO-08: Follow-up workflow page — LEGACY / NOT MOUNTED.
 //
-// Follow-up does NOT use Niagara/analyze (no highlights, no physical tests, no biopsychosocial).
+// Follow-up workflows are unified in ProfessionalWorkflowPage so the longitudinal
+// pipeline (SOAP → encounter → recordEncounterTrajectory → Patient Clinical Memory)
+// always runs. Use route /follow-up which redirects to /workflow?type=followup&patientId=...
+// (see FollowUpRedirect.tsx). This file is kept for reference; do not add a route to it
+// without implementing save/finalize + encounter + trajectory or you break the pipeline.
+//
+// Original doc: Follow-up does NOT use Niagara/analyze (no highlights, no physical tests).
 // Hydration for Vertex = exactly three inputs:
 //   1. Patient data (who + injury/condition) — from baseline SOAP (previous evaluation).
 //   2. Exercises: in-clinic treatment today + home program (HEP) — from UI checklists.
@@ -27,10 +33,12 @@ import treatmentPlanService from "../services/treatmentPlanService";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
-import { generateFollowUpSOAPV2Raw } from "../services/vertex-ai-soap-service";
+import { generateFollowUpAnalysis } from "../services/vertex-ai-soap-service";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 import { getClinicalState, type ClinicalState } from "../services/clinicalStateService";
-import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
+import { SessionComparisonService, type SessionComparisonView, type Session as ComparisonSession } from "../services/sessionComparisonService";
+import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
+import { classifyTrajectoryFromTwoPoints } from "@/core/longitudinal/trajectoryClassifier";
 import { resolveConsentChannel } from "../domain/consent/resolveConsentChannel";
 
 // Components
@@ -77,6 +85,10 @@ const FollowUpWorkflowPage = () => {
   // WO-11.1: parsed ALERTS and plan[] for UI
   const [followUpAlerts, setFollowUpAlerts] = useState<FollowUpAlerts | null>(null);
   const [followUpPlanItems, setFollowUpPlanItems] = useState<FollowUpPlanItem[] | null>(null);
+  /** Fase C: AI clinical considerations (reflections only; not part of medical record until clinician inserts). */
+  const [followUpConsiderations, setFollowUpConsiderations] = useState<string[] | null>(null);
+  /** Patient Clinical Memory: pattern insight (observation only; not part of record). */
+  const [followUpPatternInsight, setFollowUpPatternInsight] = useState<{ patternId: string; description: string } | null>(null);
 
   // WO-12: ref for auto-navigate to Documentation on SOAP success
   const documentationSectionRef = useRef<HTMLDivElement | null>(null);
@@ -326,7 +338,49 @@ const FollowUpWorkflowPage = () => {
         setIsGeneratingSOAP(false);
         return;
       }
-      const fullPrompt = buildFollowUpPromptV3({
+      // Optional longitudinal context from last completed encounter comparison + trajectory pattern + pain series
+      let longitudinalSummary: string | undefined;
+      let trajectoryPattern: string | undefined;
+      let trajectoryConfidence: string | undefined;
+      let painSeriesSummary: string | undefined;
+      try {
+        if (patientId) {
+          const comparisonService = new SessionComparisonService();
+          const state = await comparisonService.getEncountersComparisonState(patientId);
+          if (!state.isFirstSession && state.previousSession && state.currentSession) {
+            const comparison = comparisonService.compareSessions(
+              state.previousSession as ComparisonSession,
+              state.currentSession as ComparisonSession
+            );
+            const uiData: SessionComparisonView = comparisonService.formatComparisonForUI(comparison, false);
+            longitudinalSummary = comparisonService.buildLongitudinalSummaryForPrompt(uiData) ?? undefined;
+            const prev = uiData.metrics.painLevel.previous;
+            const curr = uiData.metrics.painLevel.current;
+            const trajectory = classifyTrajectoryFromTwoPoints(prev ?? undefined, curr ?? undefined);
+            trajectoryPattern = trajectory?.label ?? undefined;
+            trajectoryConfidence = trajectory?.confidence ?? undefined;
+            const painSeries = await comparisonService.getLastNPainSeries(patientId, 3);
+            if (painSeries.length >= 2) {
+              painSeriesSummary = painSeries.join(' → ');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[FollowUpWorkflow] Longitudinal summary unavailable, continuing without it.', e);
+      }
+
+      // Fase B: previous plan as context only (guardrails in prompt)
+      const previousPlansSummary = previousTreatmentPlan?.planText?.trim()
+        ? (previousTreatmentPlan.nextSessionFocus
+            ? `Focus for today (from last plan): ${String(previousTreatmentPlan.nextSessionFocus).trim()}\n\n`
+            : '') +
+          (Array.isArray(previousTreatmentPlan.interventions) && previousTreatmentPlan.interventions.length > 0
+            ? `Interventions: ${previousTreatmentPlan.interventions.slice(0, 5).join('; ')}\n\n`
+            : '') +
+          `Plan text (previous):\n${String(previousTreatmentPlan.planText).trim().slice(0, 1500)}`
+        : undefined;
+
+      const followUpInput = {
         baselineSOAP: {
           subjective: clinicalState.baselineSOAP.subjective ?? '',
           objective: clinicalState.baselineSOAP.objective ?? '',
@@ -336,21 +390,37 @@ const FollowUpWorkflowPage = () => {
           encounterId: clinicalState.baselineSOAP.encounterId,
         },
         clinicalUpdate: followUpClinicalUpdate,
+        longitudinalSummary,
+        trajectoryPattern,
+        trajectoryConfidence,
+        painSeriesSummary,
+        previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
-      });
+      };
 
-      const { raw, soap, alerts, planItems } = await generateFollowUpSOAPV2Raw(fullPrompt);
+      const { documentation: soap, considerations, alerts, planItems, error: analysisError } = await generateFollowUpAnalysis(followUpInput);
 
-      const hasSOAP_NOTE = Boolean(soap);
-      const hasALERTS = raw.includes('ALERTS') || raw.includes('none');
       if (process.env.NODE_ENV === 'development') {
-        console.info('[WO-11][PROOF] vertex response received', { hasSOAP_NOTE, hasALERTS });
+        console.info('[WO-11][PROOF] follow-up analysis received', { hasSOAP: Boolean(soap), considerationsCount: considerations?.length ?? 0 });
       }
 
+      if (analysisError) {
+        setSoapError(analysisError.message ?? 'SOAP generation failed. Please try again.');
+        return;
+      }
       if (!soap) {
         setSoapError('SOAP generation returned no result. Please try again.');
         return;
+      }
+
+      setFollowUpConsiderations(considerations?.length ? considerations : null);
+      try {
+        const memoryService = new PatientTrajectoryMemoryService();
+        const insight = await memoryService.getPatternInsight(patientId);
+        setFollowUpPatternInsight(insight ?? null);
+      } catch {
+        setFollowUpPatternInsight(null);
       }
 
       const emptyOrPlaceholder = (s: string) => !s?.trim() || s.trim().toLowerCase() === 'not documented.';
@@ -376,7 +446,7 @@ const FollowUpWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [clinicalState?.hasBaseline, patientId, inClinicItems, homeProgramItems, transcript, hepComplianceNotes]);
+  }, [clinicalState?.hasBaseline, clinicalState?.baselineSOAP, patientId, inClinicItems, homeProgramItems, transcript, hepComplianceNotes, previousTreatmentPlan]);
 
   const handleAnalyzeWithVertex = handleGenerateSOAPFollowUp;
   const handleGenerateSoap = handleGenerateSOAPFollowUp;
@@ -821,6 +891,46 @@ const FollowUpWorkflowPage = () => {
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Patient Clinical Memory: pattern insight (observation only; not part of the medical record) */}
+              {followUpPatternInsight && (
+                <div className="mb-6 rounded-lg border border-slate-200 bg-sky-50/50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                    AI Patient Pattern Insight
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-2">(Not part of the medical record)</p>
+                  <p className="text-sm text-slate-700">{followUpPatternInsight.description}</p>
+                </div>
+              )}
+              {/* Fase C: AI Clinical Considerations — not part of the medical record until clinician inserts */}
+              {followUpConsiderations && followUpConsiderations.length > 0 && (
+                <div className="mb-6 rounded-lg border border-slate-200 bg-amber-50/50 p-4">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                    AI Clinical Considerations
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-3">(Not part of the medical record)</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 mb-3">
+                    {followUpConsiderations.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const block = '\n\n[AI considerations reviewed]\n' + followUpConsiderations.map((c) => `- ${c}`).join('\n');
+                      setLocalSoapNote((prev) => {
+                        if (!prev) return prev;
+                        const current = (prev.plan || '').trim();
+                        return { ...prev, plan: current + block };
+                      });
+                      setFollowUpConsiderations(null);
+                    }}
+                    className="text-sm font-medium text-amber-800 hover:text-amber-900 underline"
+                  >
+                    Insert into plan
+                  </button>
                 </div>
               )}
 

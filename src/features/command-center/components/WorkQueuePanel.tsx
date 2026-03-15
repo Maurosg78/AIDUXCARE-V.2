@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, AlertCircle, Scroll, ChevronDown, ChevronUp, User, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,6 +28,7 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
   workQueue,
   loading,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -42,10 +44,10 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
       >
         <div className="flex-1 text-left">
           <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
-            Work Queue
+            {t('shell.workQueue.title')}
           </h2>
           <p className="text-base text-gray-600 font-apple font-light">
-            {hasItems ? `${totalItems} item${totalItems > 1 ? 's' : ''} requiring attention` : 'No pending items'}
+            {hasItems ? t('shell.workQueue.itemsRequiringAttention', { count: totalItems }) : t('shell.workQueue.noPending')}
           </p>
         </div>
         <div className="flex-shrink-0 ml-4 flex items-center gap-3">
@@ -75,7 +77,7 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-semibold text-red-900 font-apple mb-1">
-                      Pending Patients
+                      {t('shell.workQueue.pendingPatients')}
                     </h3>
                     <div className="text-2xl font-bold text-red-800 font-apple">
                       {workQueue.pendingPatients}
@@ -102,7 +104,7 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-semibold text-red-900 font-apple mb-1">
-                      Incomplete Sessions
+                      {t('shell.workQueue.incompleteSessions')}
                     </h3>
                     <div className="text-2xl font-bold text-red-800 font-apple">
                       {workQueue.incompleteSessions}
@@ -110,13 +112,13 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   </div>
                 </div>
                 <p className="text-sm text-red-700 font-apple font-light mb-4 flex-1">
-                  Sessions interrupted — no SOAP generated. Resume to complete documentation.
+                  {t('shell.workQueue.incompleteSessionsDesc')}
                 </p>
                 <button
                   onClick={() => document.getElementById('work-with-patients')?.scrollIntoView({ behavior: 'smooth' })}
                 className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-300 hover:border-red-400 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
                 >
-                  Resume Sessions
+                  {t('shell.workQueue.resumeSessions')}
                 </button>
               </div>
             )}
@@ -129,10 +131,10 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                    Pending Notes
+                    {t('shell.workQueue.pendingNotes')}
                   </h3>
                   {loading ? (
-                    <div className="text-sm text-gray-500 font-apple">Loading...</div>
+                    <div className="text-sm text-gray-500 font-apple">{t('shell.workQueue.loading')}</div>
                   ) : (
                     <div className="text-2xl font-bold text-gray-900 font-apple">
                       {workQueue.pendingNotes}
@@ -142,14 +144,14 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
               </div>
 
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
-                Notes that must be reviewed and signed
+                {t('shell.workQueue.pendingNotesDesc')}
               </p>
 
               <button
                 onClick={() => navigate('/notes/pending')}
                 className="w-full px-4 py-3 bg-white hover:bg-primary-blue/5 border border-gray-200 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-semibold text-gray-900 font-apple"
               >
-                Review Notes
+                {t('shell.workQueue.reviewNotes')}
               </button>
             </div>
 
@@ -161,10 +163,10 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                    Draft Documents
+                    {t('shell.workQueue.draftDocuments')}
                   </h3>
                   {loading ? (
-                    <div className="text-sm text-gray-500 font-apple">Loading...</div>
+                    <div className="text-sm text-gray-500 font-apple">{t('shell.workQueue.loading')}</div>
                   ) : (
                     <div className="text-2xl font-bold text-gray-900 font-apple">
                       {workQueue.draftDocuments}
@@ -174,14 +176,14 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
               </div>
 
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
-                Draft support documents (future)
+                {t('shell.workQueue.draftDocumentsDesc')}
               </p>
 
               <button
                 disabled
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-400 font-apple cursor-not-allowed"
               >
-                Coming Soon
+                {t('shell.workQueue.comingSoon')}
               </button>
             </div>
 
@@ -193,10 +195,10 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                    Missing Consents
+                    {t('shell.workQueue.missingConsents')}
                   </h3>
                   {loading ? (
-                    <div className="text-sm text-gray-500 font-apple">Loading...</div>
+                    <div className="text-sm text-gray-500 font-apple">{t('shell.workQueue.loading')}</div>
                   ) : (
                     <div className="text-2xl font-bold text-gray-900 font-apple">
                       {workQueue.missingConsents}
@@ -206,14 +208,14 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
               </div>
 
               <p className="text-sm text-gray-600 font-apple font-light mb-4 flex-1">
-                Patients requiring consent review
+                {t('shell.workQueue.missingConsentsDesc')}
               </p>
 
               <button
                 onClick={() => navigate('/consents')}
                 className="w-full px-4 py-3 bg-white hover:bg-primary-blue/5 border border-gray-200 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-semibold text-gray-900 font-apple"
               >
-                Review Consents
+                {t('shell.workQueue.reviewConsents')}
               </button>
             </div>
           </div>

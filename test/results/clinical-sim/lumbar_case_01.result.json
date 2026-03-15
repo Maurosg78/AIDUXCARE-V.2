@@ -1,0 +1,21 @@
+{
+  "engineVersion": "2026.03.10",
+  "language": "es",
+  "soap": {
+    "subjective": "El paciente refiere dolor lumbar de 3 semanas de evolución, inicialmente 7/10, actualmente 4/10 en reposo y 6/10 al esfuerzo. El dolor irradia de forma intermitente hacia glúteo y cara posterior de muslo derecho, empeora con sedestación prolongada y mejora al caminar breves distancias.",
+    "objective": "Limitación moderada de flexión lumbar por dolor. Dolor a la palpación paravertebral L4-L5. Test de Lasegue positivo a 50° en miembro inferior derecho, con reproducción del dolor irradiado. Fuerza 4/5 en extensores de cadera derechos. Marcha independiente con leve acortamiento de paso.",
+    "assessment": "Clínica compatible con lumbociatalgia derecha de probable origen mecánico, en fase subaguda, con buena tolerancia al movimiento y factores mecánicos claros (sedestación prolongada, flexión). Sin signos actuales de síndrome de cauda equina ni banderas rojas mayores documentadas.",
+    "plan": "Ejercicio terapéutico de control lumbopélvico 3x/semana, progresión de movilidad lumbar en rangos tolerados, fortalecimiento de glúteo medio y extensores de cadera, educación postural para sedestación prolongada y pautas de autocuidado en domicilio."
+  },
+  "referralReportEs": "Paciente: Fixture Patient\nFecha de sesión: 13/3/2026\nEpisodio: El paciente refiere dolor lumbar de 3 semanas de evolucion, inicialmente 7/10, actualmente 4/10 en reposo y 6/10 al esfuerzo\n\nImpresión clínica documentada por el fisioterapeuta: Clinica compatible con lumbociatalgia derecha de probable origen mecanico, en fase subaguda, con buena tolerancia al movimiento y factores mecanicos claros (sedestacion prolongada, flexion).\n\nEvolución: Dolor referido de 7/10\n\nNota: Este informe se basa en la valoración fisioterapéutica realizada en la sesión descrita.",
+  "warnings": [],
+  "metrics": {
+    "sectionsDetected": true,
+    "forbiddenLanguage": false,
+    "regulatoryBoundaryCheck": "PASS",
+    "sectionsCount": 6,
+    "narrativeLength": 562,
+    "planDetected": false,
+    "recordWriteAttempt": false
+  }
+}

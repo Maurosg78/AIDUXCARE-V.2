@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Patient } from '@/services/patientService';
 import { usePatientsList } from '../hooks/usePatientsList';
 import { Play, UserPlus, RefreshCw, FileText, Trash2, RotateCcw, Calendar } from 'lucide-react';
@@ -56,12 +57,6 @@ export interface TodayPatientsPanelProps {
   todayQuickList?: TodayQuickItem[];
 }
 
-const SESSION_TYPE_LABELS: Record<'initial' | 'followup' | 'ongoing', string> = {
-  initial: 'Initial Assessment',
-  followup: 'Follow-up',
-  ongoing: 'Ongoing (first time)',
-};
-
 function formatDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -79,15 +74,18 @@ function isPastDate(d: Date): boolean {
   return formatDateKey(d) < formatDateKey(new Date());
 }
 
-function formatDateLabel(d: Date): string {
+function formatDateLabel(
+  d: Date,
+  t: (key: string, opts?: { count?: number }) => string
+): string {
   const today = new Date();
   const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
-  if (diffDays >= 2 && diffDays <= 7) return `In ${diffDays} days`;
-  if (diffDays <= -2 && diffDays >= -7) return `${-diffDays} days ago`;
-  return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  if (diffDays === 0) return t('shell.todayPatients.today');
+  if (diffDays === 1) return t('shell.todayPatients.tomorrow');
+  if (diffDays === -1) return t('shell.todayPatients.yesterday');
+  if (diffDays >= 2 && diffDays <= 7) return t('shell.todayPatients.inDays', { count: diffDays });
+  if (diffDays <= -2 && diffDays >= -7) return t('shell.todayPatients.daysAgo', { count: -diffDays });
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
@@ -105,6 +103,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   onDateChange,
   todayQuickList = [],
 }) => {
+  const { t } = useTranslation();
   const { patients: allPatients } = usePatientsList();
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
@@ -126,14 +125,16 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
-            {isToday(displayDate) ? "Today's Patients" : `${formatDateLabel(displayDate)}'s schedule`}
+            {isToday(displayDate) ? t('shell.todayPatients.title') : `${formatDateLabel(displayDate, t)}${t('shell.todayPatients.scheduleSuffix')}`}
           </h2>
           <p className="text-base text-gray-600 font-apple font-light">
             {hasQuickItems
-              ? `${todayQuickList.length} scheduled — press Start when it's time`
+              ? t('shell.todayPatients.scheduledCount', { count: todayQuickList.length })
               : hasAppointments && isToday(displayDate)
-                ? `${appointments.length} appointment${appointments.length > 1 ? 's' : ''} today`
-                : `No scheduled patients ${isToday(displayDate) ? 'today' : 'for this day'}`}
+                ? t('shell.todayPatients.appointmentsToday', { count: appointments.length })
+                : isToday(displayDate)
+                  ? t('shell.todayPatients.noScheduledToday')
+                  : t('shell.todayPatients.noScheduledDay')}
           </p>
         </div>
         {onDateChange && (
@@ -161,10 +162,10 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 type="button"
                 onClick={onClearList}
                 className="text-sm text-gray-500 hover:text-red-600 font-apple flex items-center gap-1.5"
-                title="Clear list to build a new schedule"
+                title={t('shell.todayPatients.clearListTitle')}
               >
                 <Trash2 className="w-4 h-4" />
-                Clear list
+                {t('shell.todayPatients.clearList')}
               </button>
             </div>
           )}
@@ -206,24 +207,24 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     {item.sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
                     {item.sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
                     {item.sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
-                    {SESSION_TYPE_LABELS[item.sessionType]}
+                    {t(`shell.sessionType.${item.sessionType}`)}
                     {isDone
-                      ? <span className="text-gray-400 fomal">— done</span>
+                      ? <span className="text-gray-400 fomal">— {t('shell.todayPatients.done')}</span>
                       : isIncomplete
-                        ? <span className="font-bold text-red-700">⚠ INCOMPLETE — resume required</span>
+                        ? <span className="font-bold text-red-700">⚠ {t('shell.todayPatients.incompleteResume')}</span>
                       : isOverdue
-                        ? <span className="font-medium">— overdue</span>
-                        : <span className="font-medium">— pending</span>}
+                        ? <span className="font-medium">— {t('shell.todayPatients.overdue')}</span>
+                        : <span className="font-medium">— {t('shell.todayPatients.pending')}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isDone ? (
                     <>
-                      <button type="button" disabled className="p-2 rounded-lg bg-gray-200 text-gray-400 font-apple text-xs font-medium cursor-not-allowed flex items-center gap-1.5" aria-label="Session completed">
-                        <Play className="w-4 h-4" /> Start
+                      <button type="button" disabled className="p-2 rounded-lg bg-gray-200 text-gray-400 font-apple text-xs font-medium cursor-not-allowed flex items-center gap-1.5" aria-label={t('shell.todayPatients.sessionCompleted')}>
+                        <Play className="w-4 h-4" /> {t('shell.todayPatients.start')}
                       </button>
                       {onMarkPendingAgain && (
-                        <button type="button" onClick={() => onMarkPendingAgain(index)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title="Mark as pending again" aria-label="Mark as pending again">
+                        <button type="button" onClick={() => onMarkPendingAgain(index)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title={t('shell.todayPatients.markPendingAgain')} aria-label={t('shell.todayPatients.markPendingAgain')}>
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       )}
@@ -232,8 +233,8 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                           type="button"
                           onClick={() => setConfirmRemoveIndex(index)}
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label="Remove from list"
-                          title="Remove (e.g. if created in advance for future)"
+                          aria-label={t('shell.todayPatients.removeFromList')}
+                          title={t('shell.todayPatients.removeFromListTitle')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -242,7 +243,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                   ) : isIncomplete ? (
                     <>
                       <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
-                        <Play className="w-4 h-4" /> Resume
+                        <Play className="w-4 h-4" /> {t('shell.todayPatients.resume')}
                       </button>
                       {onDismissIncomplete && (
                         <button
@@ -260,7 +261,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                           type="button"
                           onClick={() => setConfirmRemoveIndex(index)}
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label="Remove from list"
+                          aria-label={t('shell.todayPatients.removeFromList')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -269,14 +270,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                   ) : (
                     <>
                       <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5">
-                        <Play className="w-4 h-4" /> Start
+                        <Play className="w-4 h-4" /> {t('shell.todayPatients.start')}
                       </button>
                       {onRemoveFromToday && (
                         <button
                           type="button"
                           onClick={() => setConfirmRemoveIndex(index)}
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label="Remove from list"
+                          aria-label={t('shell.todayPatients.removeFromList')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -299,11 +300,11 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             className="w-full py-3 px-4 rounded-xl border-2 border-primary-blue/40 bg-primary-blue/5 hover:bg-primary-blue/10 text-primary-blue font-medium text-sm font-apple transition-all flex items-center justify-center gap-2 hover:bg-primary-blue/15"
           >
             <UserPlus className="w-4 h-4" />
-            {isToday(displayDate) ? 'Add to today' : 'Add to this day'}
+            {isToday(displayDate) ? t('shell.todayPatients.addToToday') : t('shell.todayPatients.addToThisDay')}
           </button>
           {!hasQuickItems && appointments.length === 0 && !loading && (
             <p className="text-xs text-gray-500 font-apple font-light mt-2 text-center">
-              Add patients and session type; press Start on each row when it's time. To start a session without adding to the list, use "Start in-clinic session" below.
+              {t('shell.todayPatients.addPatientsHint')}
             </p>
           )}
         </div>
@@ -313,9 +314,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       {dismissIncompleteItem && onDismissIncomplete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">Dismiss incomplete session?</h3>
+            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">{t('shell.todayPatients.dismissIncompleteTitle')}</h3>
             <p className="text-sm text-gray-600 font-apple mb-4">
-              Remove {dismissIncompleteItem.patientName} from the incomplete list? You won't be able to resume this session from here.
+              {t('shell.todayPatients.dismissIncompleteMessage', { name: dismissIncompleteItem.patientName })}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -323,7 +324,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 onClick={() => setDismissIncompleteItem(null)}
                 className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm"
               >
-                Cancel
+                {t('shell.todayPatients.cancel')}
               </button>
               <button
                 type="button"
@@ -333,7 +334,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
               >
-                Dismiss
+                {t('shell.todayPatients.dismiss')}
               </button>
             </div>
           </div>
@@ -344,9 +345,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       {confirmRemoveIndex !== null && todayQuickList[confirmRemoveIndex] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">Remove from list?</h3>
+            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">{t('shell.todayPatients.confirmRemoveTitle')}</h3>
             <p className="text-sm text-gray-600 font-apple mb-4">
-              Remove {todayQuickList[confirmRemoveIndex].patientName}? This cannot be undone.
+              {t('shell.todayPatients.confirmRemoveMessage', { name: todayQuickList[confirmRemoveIndex].patientName })}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -354,7 +355,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 onClick={() => setConfirmRemoveIndex(null)}
                 className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm"
               >
-                Cancel
+                {t('shell.todayPatients.cancel')}
               </button>
               <button
                 type="button"
@@ -364,7 +365,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
               >
-                Remove
+                {t('shell.todayPatients.remove')}
               </button>
             </div>
           </div>

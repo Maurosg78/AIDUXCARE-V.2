@@ -29,6 +29,28 @@ export interface FollowUpPromptV3Input {
   baselineSOAP: FollowUpPromptV3BaselineSOAP;
   /** Today's clinical update (transcript). Required. */
   clinicalUpdate: string;
+  /**
+   * Optional longitudinal summary since last visit (deltas, progress, alerts).
+   * Built from SessionComparisonService / longitudinal analysis.
+   */
+  longitudinalSummary?: string;
+  /**
+   * Optional trajectory pattern from TrajectoryClassifier (improved | regressed | plateau | fluctuating).
+   * Context only; model must only describe evolution, not infer treatment strategy.
+   */
+  trajectoryPattern?: string;
+  /** Optional confidence for trajectory (low | medium | high). */
+  trajectoryConfidence?: string;
+  /**
+   * Optional short pain series for narrative continuity (e.g. "7 → 5 → 4" or "7 → 4").
+   * Helps the model generate natural evolution phrasing without inferring treatment.
+   */
+  painSeriesSummary?: string;
+  /**
+   * Optional summary of previous treatment plan(s) (e.g. last 1–2 plans from treatment_plans).
+   * For documentation continuity only. Model must use ONLY as context; no new interventions unless in today's input.
+   */
+  previousPlansSummary?: string;
   /** In-clinic treatment performed today. Optional. */
   inClinicItems?: string[];
   /** Home exercise program (current or adjusted). Optional. */
@@ -44,6 +66,11 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
   const {
     baselineSOAP,
     clinicalUpdate,
+    longitudinalSummary,
+    trajectoryPattern,
+    trajectoryConfidence,
+    painSeriesSummary,
+    previousPlansSummary,
     inClinicItems = [],
     homeProgram = [],
   } = input;
@@ -83,6 +110,42 @@ ${homeProgram.map((item) => `${item}`).join('\n\n')}
 `
       : '';
 
+  const longitudinalSection =
+    longitudinalSummary && longitudinalSummary.trim().length > 0
+      ? `LONGITUDINAL CONTEXT — CHANGES SINCE LAST VISIT (if provided)
+
+Use this ONLY to understand evolution between the previous completed session and today.
+Do NOT invent new findings; reflect only what is clearly documented here.
+The longitudinal context is provided for documentation continuity. Do not infer new diagnoses or treatment decisions from it.
+If longitudinal context is provided, use it only to describe evolution of symptoms or response to care. Do not transform the longitudinal information into treatment strategy.
+
+${longitudinalSummary.trim()}
+
+`
+      : '';
+
+  const trajectorySection =
+    (trajectoryPattern && trajectoryPattern.trim().length > 0) || (painSeriesSummary && painSeriesSummary.trim().length > 0)
+      ? `TRAJECTORY PATTERN (context only)
+
+${painSeriesSummary && painSeriesSummary.trim().length > 0 ? `Pain series (recent visits): ${painSeriesSummary.trim()}\n\n` : ''}${trajectoryPattern && trajectoryPattern.trim().length > 0 ? `Pain trajectory classification: ${trajectoryPattern.trim()}${trajectoryConfidence ? ` (confidence: ${trajectoryConfidence})` : ''}\nSignal source: longitudinal analysis.\n` : ''}Use this information only to describe patient evolution. Do not infer treatment decisions.
+
+`
+      : '';
+
+  const previousPlansSection =
+    previousPlansSummary && previousPlansSummary.trim().length > 0
+      ? `PREVIOUS TREATMENT PLAN(S) — CONTEXT ONLY
+
+Use the previous plan ONLY as context to maintain narrative continuity.
+Do NOT introduce new interventions, progressions, or recommendations unless explicitly documented in today's session input.
+Your task is to document what was done and decided today, not to decide next treatment strategy.
+
+${previousPlansSummary.trim()}
+
+`
+      : '';
+
   const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
 Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
@@ -99,6 +162,13 @@ ROLE AND LANGUAGE:
 - Reflect ONLY the information provided in the baseline and today's update
 - Output in Canadian English (en-CA)
 - Use Canadian physiotherapy terminology and spelling
+
+SOURCE OF TRUTH CONSTRAINT:
+- All clinical statements must originate from:
+  - the baseline SOAP,
+  - today's clinical update,
+  - in-clinic items and home program items provided.
+- Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
 
 This is NOT an initial assessment.
 
@@ -146,7 +216,9 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${inClinicSection}${hepSection}TASK
+${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${previousPlansSection}TASK
+
+Your role is to rewrite the SOAP note reflecting today's encounter. You must NOT decide next treatment strategy.
 
 Using only the information above:
 
@@ -154,17 +226,17 @@ Update the Subjective based on today's report
 
 Update the Objective based on observed or reported changes
 
-Update the Assessment to reflect progression, response, or tolerance
+Update the Assessment to summarise progression, response, or tolerance as documented by the clinician
 
 Do NOT restate the entire diagnosis unless it has changed
 
 Update the Plan:
 
-Reflect progressions or adjustments
+Reflect progressions or adjustments ONLY if they are clearly documented in the baseline and today's inputs
 
 Clearly distinguish in-clinic treatment vs home program
 
-The plan should logically follow from the baseline and today's update.
+The plan should logically follow from the baseline and today's update, without adding new interventions not present in the input data. Structure and summarise; do not generate treatment decisions.
 
 === OUTPUT FORMAT (MANDATORY) ===
 

@@ -19,6 +19,8 @@ export interface ReferralReportData {
   referringDoctor?: string;
   redFlags: ReferralReportRedFlag[];
   chiefComplaint?: string;
+  /** Evolution sentence from trajectory + pain series (descriptive only). Shown as "Clinical evolution" when present. */
+  clinicalEvolutionSummary?: string;
   clinicalNotes?: string;
 }
 
@@ -156,6 +158,23 @@ export class ReferralReportGenerator {
       const ccLines = doc.splitTextToSize(data.chiefComplaint, 180);
       doc.text(ccLines, 14, yPos);
       yPos += ccLines.length * 5 + 6;
+    }
+
+    if (data.clinicalEvolutionSummary) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLINICAL EVOLUTION', 14, yPos);
+      yPos += 6;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const evolutionLines = doc.splitTextToSize(data.clinicalEvolutionSummary, 180);
+      doc.text(evolutionLines, 14, yPos);
+      yPos += evolutionLines.length * 5 + 6;
     }
 
     if (data.clinicalNotes) {

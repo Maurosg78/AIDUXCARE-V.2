@@ -148,3 +148,129 @@
 ---
 
 **Fuente de verdad actualizada al 16 de julio de 2025. Responsable: CTO/Implementador Jefe.** 
+
+---
+
+## 🧊 Parking lot estratégico – Formularios de seguros / mutuas
+
+### WO-PARK-INS-01 — Form-aware report generation (Insurance / External Forms)
+
+- **Tipo**: Parking lot / deuda estratégica de producto.  
+- **Contexto**: Muchos fisioterapeutas deben completar formularios específicos de aseguradoras, mutuas o empleadores (PDF/XLS) *además* de la historia clínica y del informe para derivador, generando triple trabajo:
+
+  ```text
+  SOAP clínico
+  ↓
+  informe para derivador
+  ↓
+  formulario de seguro / mutua
+  ```
+
+  Ejemplos típicos: formularios de compañías como Generali u otras aseguradoras que piden diagnóstico, limitaciones funcionales, tratamiento, plan, etc.
+
+#### Problema que resolvería
+
+Reducir la duplicación entre:
+
+```text
+historia clínica
+vs
+formularios administrativos
+```
+
+permitiendo que AiDux genere **informes compatibles con formularios externos**, reutilizando al máximo los datos clínicos ya documentados.
+
+#### Idea funcional
+
+Flujo conceptual:
+
+```text
+Adjuntar documento (PDF/XLS)
+↓
+Tipo: formulario seguro/mutua
+↓
+Analizar campos requeridos
+```
+
+AiDux:
+
+1. Lee el formulario.  
+2. Detecta los campos solicitados.  
+3. Cruza esos campos con los datos existentes en la historia clínica / informes previos.  
+
+Resultado:
+
+```text
+Campos ya disponibles
+Campos faltantes
+Campos no aplicables
+```
+
+El sistema pide al fisioterapeuta completar solo los campos faltantes antes de generar el informe compatible.
+
+#### Principios de diseño
+
+- **AiDux nunca inventa datos**: todo campo clínico debe venir de:
+  - historia clínica estructurada,
+  - texto libre del fisio,
+  - o entrada manual adicional.
+- Los campos faltantes se muestran de forma explícita al clínico.  
+- Debe existir opción **“No aplicable”** para evitar incoherencias clínicas.
+
+Ejemplo:
+
+```text
+Campo: embarazo
+Paciente: niña 12 años
+Respuesta: No aplicable
+```
+
+#### Resultado esperado
+
+AiDux genera un **informe clínico compatible con el formulario**, que contiene toda la información requerida por la aseguradora/mutua:
+
+- Diagnóstico  
+- Hallazgos objetivos  
+- Limitaciones funcionales  
+- Tratamiento realizado  
+- Plan terapéutico  
+- Campos administrativos solicitados  
+
+El fisioterapeuta puede:
+
+- copiar/pegar al formulario digital, o  
+- adjuntarlo como informe clínico estructurado que cumple los requisitos del formulario.
+
+#### Beneficio
+
+Reduce drásticamente la duplicación de trabajo:
+
+```text
+Antes
+SOAP
++ informe médico
++ formulario seguro
+
+Después
+SOAP
++ informe compatible generado por AiDux
+```
+
+#### Complejidad técnica estimada
+
+Media-alta. Requiere:
+
+- parser de PDF/XLS,  
+- detector de campos,  
+- mapping clínico → campos administrativos,  
+- UI para completar datos faltantes y marcar “No aplicable”.  
+
+#### Prioridad
+
+- **Parking lot**: activar cuando:
+  - exista uso real con **aseguradoras / mutuas**, y  
+  - aparezca fricción clara en pilotos clínicos por “doble documentación”.  
+
+#### Valor estratégico
+
+Alta diferenciación. Esto convertiría AiDux en un **motor de documentación clínica adaptable a formularios externos**, no solo un generador de SOAP/notas.

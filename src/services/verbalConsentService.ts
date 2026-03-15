@@ -10,6 +10,8 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { consentLogger } from '@/domain/consent/consentLogger';
 import { getConsentTextString } from '@/core/consent/consentTexts';
+import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 const CONSENT_DOC_PATH = (patientId: string) => ['patients', patientId, 'consent_status', 'latest'] as const;
 
@@ -41,7 +43,56 @@ export interface ObtainConsentResult {
  * ✅ v2-en-CA: CPO TRUST + IPC Ontario (Jan 28, 2026) compliant.
  */
 export function getDefaultConsentTextVersion(): string {
+  // Para el MVP ES, permitimos que el flag de piloto
+  // active el texto verbal español sin cambiar aún la
+  // jurisdicción global (sigue siendo CA-ON a nivel core).
+  if (isSpainPilot()) {
+    return 'v1-es-ES-verbal';
+  }
   return 'v2-en-CA';
+}
+
+/**
+ * Returns the consent text version used by the patient-facing portal
+ * for a given jurisdiction.
+ *
+ * Phase 1:
+ *  - CA-ON → v2-en-CA (current production behaviour)
+ *  - ES-ES → v1-es-ES-written (prepared, but jurisdiction not yet active)
+ */
+export function getConsentVersionForPortal(jurisdiction: string): string {
+  switch (jurisdiction) {
+    case 'CA-ON':
+      return 'v2-en-CA';
+    case 'ES-ES':
+      return 'v1-es-ES-written';
+    default:
+      return getDefaultConsentTextVersion();
+  }
+}
+
+/**
+ * Returns the consent text version for the current jurisdiction.
+ *
+ * Phase 1: Always returns CA-ON version (no behavior change)
+ * Phase 2: ES-ES jurisdiction support
+ */
+export function getConsentTextVersionForCurrentJurisdiction(): string {
+  const jurisdiction = getCurrentJurisdiction();
+
+  switch (jurisdiction) {
+    case 'CA-ON':
+      // Canada / Ontario pilot: CPO TRUST + IPC Ontario aligned text
+      return 'v2-en-CA';
+
+    case 'ES-ES':
+      // Spain pilot: verbal consent text in Spanish (not yet activated at runtime)
+      return 'v1-es-ES-verbal';
+
+    default:
+      // Fallback to current Canadian default to avoid behaviour changes
+      return getDefaultConsentTextVersion();
+  }
 }
 
 /**

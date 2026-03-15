@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FileText,
   RefreshCw,
@@ -36,53 +37,53 @@ interface SessionTypeItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// P1: Centralizar budgets - obtener desde SessionTypeService (source of truth)
-const sessionTypeItems: SessionTypeItem[] = [
-  {
-    type: 'initial',
-    label: 'Initial Assessment',
-    description: 'Comprehensive initial evaluation',
-    tokenBudget: SessionTypeService.getTokenBudget('initial'),
-    icon: FileText,
-  },
-  {
-    type: 'followup',
-    label: 'Follow-up',
-    description: 'Progress check and treatment continuation',
-    tokenBudget: SessionTypeService.getTokenBudget('followup'),
-    icon: RefreshCw,
-  },
-  {
-    type: 'wsib',
-    label: 'WSIB',
-    description: 'Workplace Safety and Insurance Board assessment',
-    tokenBudget: SessionTypeService.getTokenBudget('wsib'),
-    icon: Building2,
-  },
-  {
-    type: 'mva',
-    label: 'MVA',
-    description: 'Motor Vehicle Accident assessment',
-    tokenBudget: SessionTypeService.getTokenBudget('mva'),
-    icon: Car,
-  },
-  {
-    type: 'certificate',
-    label: 'Medical Certificate',
-    description: 'Specific assessment for certification',
-    tokenBudget: SessionTypeService.getTokenBudget('certificate'),
-    icon: Scroll,
-  },
-];
-
 export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
   activeSessionType,
   onSessionTypeChange,
   patientName,
   className = '',
 }) => {
-  // Toast for showing messages
+  const { t } = useTranslation();
   const { notify } = useToast();
+
+  // P1: Centralizar budgets - obtener desde SessionTypeService (source of truth)
+  const sessionTypeItems: SessionTypeItem[] = [
+    {
+      type: 'initial',
+      label: t('workflow.sidebar.initialAssessment'),
+      description: t('workflow.sidebar.initialAssessmentDesc'),
+      tokenBudget: SessionTypeService.getTokenBudget('initial'),
+      icon: FileText,
+    },
+    {
+      type: 'followup',
+      label: t('workflow.sidebar.followup'),
+      description: t('workflow.sidebar.followupDesc'),
+      tokenBudget: SessionTypeService.getTokenBudget('followup'),
+      icon: RefreshCw,
+    },
+    {
+      type: 'wsib',
+      label: t('workflow.sidebar.wsib'),
+      description: t('workflow.sidebar.wsibDesc'),
+      tokenBudget: SessionTypeService.getTokenBudget('wsib'),
+      icon: Building2,
+    },
+    {
+      type: 'mva',
+      label: t('workflow.sidebar.mva'),
+      description: t('workflow.sidebar.mvaDesc'),
+      tokenBudget: SessionTypeService.getTokenBudget('mva'),
+      icon: Car,
+    },
+    {
+      type: 'certificate',
+      label: t('workflow.sidebar.certificate'),
+      description: t('workflow.sidebar.certificateDesc'),
+      tokenBudget: SessionTypeService.getTokenBudget('certificate'),
+      icon: Scroll,
+    },
+  ];
 
   return (
     <aside
@@ -97,11 +98,11 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
       <div className="px-6 py-5 border-b border-slate-200">
         <div className="flex items-center gap-2 mb-1">
           <h2 className="text-sm font-semibold text-slate-900 tracking-tight">
-            Session Type
+            {t('workflow.sidebar.sessionTypeTitle')}
           </h2>
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <Info className="w-3.5 h-3.5" />
-            <span>Token budget shown</span>
+            <span>{t('workflow.sidebar.tokenBudgetShown')}</span>
           </div>
         </div>
         {patientName && (
@@ -160,7 +161,7 @@ export const WorkflowSidebar: React.FC<WorkflowSidebarProps> = ({
                         </span>
                         {!isPilotAvailable && (
                           <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded font-apple">
-                            Coming soon
+                            {t('workflow.sidebar.comingSoon')}
                           </span>
                         )}
                       </div>

@@ -9,9 +9,11 @@
 
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useIsAdmin } from '../../../hooks/useIsAdmin';
+import { isSpainPilot } from '@/core/pilotDetection';
 import { useProfessionalProfile as useProfessionalProfileContext } from '../../../context/ProfessionalProfileContext';
 import { deriveClinicianDisplayName } from '../../../utils/clinicProfile';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
@@ -25,6 +27,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   tokenUsage,
   tokenUsageLoading,
 }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = useIsAdmin();
@@ -46,11 +49,11 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <p className="text-[15px] font-medium text-slate-800 font-apple">
-              Command Center — Canada
+              {t('shell.commandCenter.title')} — {isSpainPilot() ? 'España' : 'Canada'}
             </p>
             {clinicianDisplayName && (
               <p className="text-[13px] text-slate-600 font-apple font-light">
-                · Welcome, {clinicianDisplayName}
+                · {t('shell.commandCenter.welcomeGreeting')}, {clinicianDisplayName}
               </p>
             )}
           </div>
@@ -65,7 +68,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-apple"
             >
               <Users className="w-4 h-4" />
-              Command Center
+              {t('shell.commandCenter.title')}
             </Link>
           )}
 
@@ -83,7 +86,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
           {/* Email verified status */}
           <div className="flex items-center gap-2 text-sm text-slate-500 font-apple">
             <CheckCircle className="w-4 h-4 text-emerald-500" />
-            Email verified · Access granted
+            {t('shell.commandCenter.emailVerifiedStatus')}
           </div>
         </div>
       </div>

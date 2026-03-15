@@ -1,0 +1,21 @@
+{
+  "engineVersion": "2026.03.10",
+  "language": "es",
+  "soap": {
+    "subjective": "Paciente de 52 años con dolor lumbar crónico de más de 6 meses de evolución. Dolor basal 4/10, con picos de 6/10 al final de la jornada laboral. Refiere aumento del dolor en periodos de estrés laboral y preocupación por posible baja médica prolongada. Duerme mal, se despierta varias veces pensando en el trabajo. Sin irradiación clara a miembros inferiores.",
+    "objective": "Ligera limitación de flexión lumbar por rigidez, sin signos de irritación radicular. Test de Lasegue y Slump negativos bilateralmente. Patrón de movimiento algo rígido y cauteloso. No se observan déficits neurológicos objetivos.",
+    "assessment": "Dolor lumbar crónico mecánico con componente biopsicosocial relevante (estrés laboral, preocupación por el futuro laboral y alteración del sueño), sin signos de radiculopatía ni banderas rojas mayores en la exploración actual.",
+    "plan": "Educar sobre dolor lumbar crónico y factores psicosociales que pueden influir en la percepción del dolor. Introducir programa progresivo de ejercicio aeróbico y fortalecimiento del tronco. Recomendar pausas activas breves durante la jornada laboral. Explorar, si el paciente lo considera, derivación a apoyo psicológico para manejo del estrés."
+  },
+  "referralReportEs": "Paciente: Fixture Patient\nFecha de sesión: 13/3/2026\nEpisodio: Paciente de 52 anos con dolor lumbar cronico de mas de 6 meses de evolucion\n\nImpresión clínica documentada por el fisioterapeuta: Dolor lumbar cronico mecanico con componente biopsicosocial relevante (estres laboral, preocupacion por el futuro laboral y alteracion del sueno), sin signos de radiculopatia ni banderas rojas mayores en la exploracion actual.\n\nEvolución: Dolor referido de 4/10\n\nNota: Este informe se basa en la valoración fisioterapéutica realizada en la sesión descrita.",
+  "warnings": [],
+  "metrics": {
+    "sectionsDetected": true,
+    "forbiddenLanguage": false,
+    "regulatoryBoundaryCheck": "PASS",
+    "sectionsCount": 6,
+    "narrativeLength": 549,
+    "planDetected": false,
+    "recordWriteAttempt": false
+  }
+}

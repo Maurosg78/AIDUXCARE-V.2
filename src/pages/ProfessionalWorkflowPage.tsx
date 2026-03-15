@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, FileText, Users, Plus, Info, LogOut, ArrowLeft } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
@@ -17,8 +18,7 @@ import { FileProcessorService } from "../services/FileProcessorService";
 import { matchTestName } from "@/core/msk-tests/matching/fuzzyMatch";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
-import { generateSOAPNote as generateSOAPNoteFromService, generateFollowUpSOAPV2Raw, deriveSOAPDataFromRawText } from "../services/vertex-ai-soap-service";
-import { buildFollowUpPromptV3 } from "../core/soap/followUp/buildFollowUpPromptV3";
+import { generateSOAPNote as generateSOAPNoteFromService, generateFollowUpAnalysis, deriveSOAPDataFromRawText } from "../services/vertex-ai-soap-service";
 import { getClinicalState } from "../services/clinicalStateService";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
@@ -31,7 +31,7 @@ import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
-import { useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation, Link, Navigate } from "react-router-dom";
 import treatmentPlanService from "../services/treatmentPlanService";
 import PersistenceService from "../services/PersistenceService";
 import { encountersRepo } from "../repositories/encountersRepo";
@@ -62,7 +62,9 @@ import { getTimeBasedGreeting } from "@/utils/timeGreeting";
 import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
-import type { Session } from "../services/sessionComparisonService";
+import { SessionComparisonService, type SessionComparisonView, type Session as ComparisonSession } from "../services/sessionComparisonService";
+import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
+import { classifyTrajectoryFromTwoPoints } from "@/core/longitudinal/trajectoryClassifier";
 import { getAuth, signOut } from "firebase/auth";
 import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -214,6 +216,7 @@ const formatFileSize = (bytes: number) => {
 };
 
 const ProfessionalWorkflowPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -265,11 +268,15 @@ const ProfessionalWorkflowPage = () => {
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
 
-  // WO-REDFLAG-FOLLOWUP-002: follow-up red flags from generateFollowUpSOAPV2Raw alerts
+  // WO-REDFLAG-FOLLOWUP-002: follow-up red flags from generateFollowUpAnalysis alerts
   const [followUpAlerts, setFollowUpAlerts] = useState<{
     red_flags?: string[];
     yellow_flags?: string[];
   } | null>(null);
+  /** Fase C: AI clinical considerations (reflections only; not part of medical record until clinician inserts). */
+  const [followUpConsiderations, setFollowUpConsiderations] = useState<string[] | null>(null);
+  /** Patient Clinical Memory: pattern insight from trajectory events (observation only; not part of record). */
+  const [followUpPatternInsight, setFollowUpPatternInsight] = useState<{ patternId: string; description: string } | null>(null);
 
   // ✅ WO-CONSENT-VERBAL-01: Gate state for verbal consent
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
@@ -2617,7 +2624,7 @@ const ProfessionalWorkflowPage = () => {
 
 
   useEffect(() => {
-    // WO-FOLLOWUP-SOAP-03: Follow-up generates SOAP via generateFollowUpSOAPV2Raw,
+    // WO-FOLLOWUP-SOAP-03: Follow-up generates SOAP via generateFollowUpAnalysis (Fase C: documentation + considerations),
     // not via useNiagaraProcessor. Skip overwrite when visitType is follow-up.
     if (soapNote && visitType !== 'follow-up') {
       setLocalSoapNote(soapNote);
@@ -3345,6 +3352,8 @@ const ProfessionalWorkflowPage = () => {
 
   // WO-PART-C-REFERRAL-REPORT: Referral report modal state
   const [referralReportOpen, setReferralReportOpen] = useState(false);
+  const [referralReportData, setReferralReportData] = useState<ReferralReportData | null>(null);
+  const [isBuildingReferralReport, setIsBuildingReferralReport] = useState(false);
 
   // Initial Plan Modal state (for existing patients without initial assessment)
   const [isInitialPlanModalOpen, setIsInitialPlanModalOpen] = useState(false);
@@ -3352,7 +3361,7 @@ const ProfessionalWorkflowPage = () => {
   // Universal Share Menu state
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
-  const buildReferralReportData = useCallback((): ReferralReportData | null => {
+  const buildReferralReportData = useCallback((clinicalEvolutionSummary?: string | null): ReferralReportData | null => {
     if (!currentPatient || !interactiveResults) {
       return null;
     }
@@ -3434,6 +3443,7 @@ const ProfessionalWorkflowPage = () => {
       referringDoctor,
       redFlags,
       chiefComplaint,
+      clinicalEvolutionSummary: clinicalEvolutionSummary ?? undefined,
       clinicalNotes,
     };
   }, [
@@ -3445,6 +3455,22 @@ const ProfessionalWorkflowPage = () => {
     user,
     professionalProfile,
   ]);
+
+  const handleOpenReferralReport = useCallback(async () => {
+    setIsBuildingReferralReport(true);
+    try {
+      const patientId = patientIdFromUrl ?? (currentPatient as any)?.id ?? '';
+      const evolution =
+        patientId ? await new SessionComparisonService().getReferralEvolutionSentence(patientId) : null;
+      const data = buildReferralReportData(evolution ?? undefined);
+      if (data) {
+        setReferralReportData(data);
+        setReferralReportOpen(true);
+      }
+    } finally {
+      setIsBuildingReferralReport(false);
+    }
+  }, [patientIdFromUrl, currentPatient, buildReferralReportData]);
 
   // Detect visit type on mount or when data changes
   useEffect(() => {
@@ -3863,19 +3889,74 @@ const ProfessionalWorkflowPage = () => {
     const startTime = Date.now();
     try {
       await trackSOAPGenerationStarted({ visitType: 'follow-up', source: 'followup_single_call' });
-      const fullPrompt = buildFollowUpPromptV3({
+      // Optional longitudinal context from last completed encounter comparison + trajectory pattern + pain series
+      let longitudinalSummary: string | undefined;
+      let trajectoryPattern: string | undefined;
+      let trajectoryConfidence: string | undefined;
+      let painSeriesSummary: string | undefined;
+      try {
+        const pid = patientIdFromUrl || demoPatient.id;
+        if (pid) {
+          const comparisonService = new SessionComparisonService();
+          const state = await comparisonService.getEncountersComparisonState(pid);
+          if (!state.isFirstSession && state.previousSession && state.currentSession) {
+            const comparison = comparisonService.compareSessions(
+              state.previousSession as ComparisonSession,
+              state.currentSession as ComparisonSession
+            );
+            const uiData: SessionComparisonView = comparisonService.formatComparisonForUI(comparison, false);
+            longitudinalSummary = comparisonService.buildLongitudinalSummaryForPrompt(uiData) ?? undefined;
+            const prev = uiData.metrics.painLevel.previous;
+            const curr = uiData.metrics.painLevel.current;
+            const trajectory = classifyTrajectoryFromTwoPoints(prev ?? undefined, curr ?? undefined);
+            trajectoryPattern = trajectory?.label ?? undefined;
+            trajectoryConfidence = trajectory?.confidence ?? undefined;
+            const painSeries = await comparisonService.getLastNPainSeries(pid, 3);
+            if (painSeries.length >= 2) {
+              painSeriesSummary = painSeries.join(' → ');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Workflow] Longitudinal summary unavailable, continuing without it.', e);
+      }
+      // Fase B: previous plan as context only (guardrails in prompt)
+      const previousPlansSummary = previousTreatmentPlan?.planText?.trim()
+        ? (previousTreatmentPlan.nextSessionFocus
+            ? `Focus for today (from last plan): ${String(previousTreatmentPlan.nextSessionFocus).trim()}\n\n`
+            : '') +
+          (Array.isArray(previousTreatmentPlan.interventions) && previousTreatmentPlan.interventions.length > 0
+            ? `Interventions: ${previousTreatmentPlan.interventions.slice(0, 5).join('; ')}\n\n`
+            : '') +
+          `Plan text (previous):\n${String(previousTreatmentPlan.planText).trim().slice(0, 1500)}`
+        : undefined;
+      const followUpInput = {
         baselineSOAP: baseline,
         clinicalUpdate: followUpClinicalUpdate,
+        longitudinalSummary,
+        trajectoryPattern,
+        trajectoryConfidence,
+        painSeriesSummary,
+        previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
-      });
-      // WO-REDFLAG-FOLLOWUP-006: On error shape — no SOAP, no alerts; show explicit message. No fallback content.
-      const result = await generateFollowUpSOAPV2Raw(fullPrompt);
-      const { raw, soap, alerts, error: followUpError } = result;
+      };
+      // Fase C: documentation + considerations (considerations not part of record until clinician inserts).
+      const result = await generateFollowUpAnalysis(followUpInput);
+      const { documentation: soap, considerations, alerts, error: followUpError } = result;
       if (followUpError) {
         setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
         setFollowUpAlerts(null);
+        setFollowUpConsiderations(null);
         return;
+      }
+      setFollowUpConsiderations(considerations?.length ? considerations : null);
+      try {
+        const memoryService = new PatientTrajectoryMemoryService();
+        const insight = await memoryService.getPatternInsight(patientIdFromUrl || '');
+        setFollowUpPatternInsight(insight ?? null);
+      } catch {
+        setFollowUpPatternInsight(null);
       }
       const safeAlerts = {
         red_flags: Array.isArray((alerts as any)?.red_flags) ? (alerts as any).red_flags : [],
@@ -3923,7 +4004,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [followUpClinicalState, transcript, inClinicItems, homeProgramItems]);
+  }, [followUpClinicalState, transcript, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -4330,8 +4411,18 @@ const ProfessionalWorkflowPage = () => {
               authorUid: user.uid,
               encounterDate: new Date(),
             });
-            await encountersRepo.updateEncounter(encounterId, { status: 'completed' });
+            await encountersRepo.updateEncounter(encounterId, {
+              status: 'completed',
+              soap: { subjective: s, objective: o, assessment: a, plan: p },
+            });
             console.log('[Workflow] ✅ Follow-up encounter created and completed:', encounterId);
+            // Patient Clinical Memory: record trajectory event for pattern detection (non-blocking)
+            try {
+              const memoryService = new PatientTrajectoryMemoryService();
+              await memoryService.recordEncounterTrajectory(patientId, encounterId, s);
+            } catch (memErr) {
+              console.warn('[Workflow] Patient trajectory memory record failed (non-blocking):', memErr);
+            }
           } catch (encErr) {
             console.error('[Workflow] Failed to create follow-up encounter (non-blocking):', encErr);
           }
@@ -4499,6 +4590,11 @@ const ProfessionalWorkflowPage = () => {
 
   // ✅ ISO COMPLIANCE: Render functions extracted to separate components for better code organization
   // Components are lazy-loaded for optimal performance and memory management
+
+  // Follow-up requires patient context; avoid running longitudinal flow without it
+  if (isExplicitFollowUp && !patientIdFromUrl) {
+    return <Navigate to="/command-center" replace />;
+  }
 
   // ✅ WO-CONSENT-SINGLE-SOURCE-01: Dominio es única fuente de verdad
   // Resolver consentimiento desde workflowConsentStatus (backend) → dominio → render
@@ -4701,7 +4797,7 @@ const ProfessionalWorkflowPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* WO-CPO-BLOCK-MODAL-001 */}
+      {/* WO-CPO-BLOCK-MODAL-001 — jurisdiction-aware (CPO / normativa europea-española-autonómica) */}
       {showCPOBlockModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
@@ -4709,17 +4805,16 @@ const ProfessionalWorkflowPage = () => {
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 rounded-full p-2"><span className="text-2xl">⚠️</span></div>
                 <div>
-                  <h2 className="text-xl font-bold">Cannot Finalize</h2>
-                  <p className="text-sm text-red-100 mt-1">CPO compliance check failed</p>
+                  <h2 className="text-xl font-bold">{t('clinical.soap.cannotFinalize.title')}</h2>
+                  <p className="text-sm text-red-100 mt-1">{t('clinical.soap.cannotFinalize.subtitle')}</p>
                 </div>
               </div>
             </div>
             <div className="p-6 space-y-4">
-              <div className="bg-red-50 border border-red-20unded-lg p-4">
-                <p className="text-sm font-medium text-red-900">This SOAP note requires review before finalization.</p>
-                <p className="text-sm text-red-800 mt-2">Please review and verify all AI-generated content in the SOAP tab before finalizing. Click the review checkbox to confirm.</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-red-900">{t('clinical.soap.cannotFinalize.body')}</p>
               </div>
-              <button type="button" onClick={() => setShowCPOBlockModal(false)} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium">Got it — I will review the note</button>
+              <button type="button" onClick={() => setShowCPOBlockModal(false)} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium">{t('clinical.soap.cannotFinalize.button')}</button>
             </div>
           </div>
         </div>
@@ -5010,12 +5105,12 @@ const ProfessionalWorkflowPage = () => {
 
                   {/* Visit Type Indicator — session ordinal: Initial = First, Follow-up = Second / Third / … */}
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">{t('workflow.visit.visitTypeLabel')}</p>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-blue-600" />
                         <span className="text-sm font-semibold text-slate-900 font-apple">
-                          {visitType === 'follow-up' ? 'Follow-up visit' : 'Initial visit'}
+                          {visitType === 'follow-up' ? t('workflow.visit.followupVisit') : t('workflow.visit.initialVisit')}
                         </span>
                       </div>
                       <p className="text-sm text-slate-600 font-apple font-light">
@@ -5025,7 +5120,7 @@ const ProfessionalWorkflowPage = () => {
                     {previousTreatmentPlan && (
                       <div className="mt-2 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-xs text-slate-600 font-apple font-light">Previous treatment plan loaded</span>
+                        <span className="text-xs text-slate-600 font-apple font-light">{t('workflow.visit.previousPlanLoaded')}</span>
                       </div>
                     )}
                   </div>
@@ -5106,25 +5201,25 @@ const ProfessionalWorkflowPage = () => {
                 {/* WO-06.1: Micro-copy de continuidad (solo follow-up) */}
                 {visitType === 'follow-up' && (
                   <p className="text-xs text-slate-500 mb-3 font-apple font-light">
-                    Based on the initial assessment and previous sessions.
+                    {t('workflow.visit.followupContextHint')}
                   </p>
                 )}
                 <div className="flex items-start gap-3 mb-4">
                   <span className="text-2xl">{visitType === 'follow-up' ? '📝' : '🎙️'}</span>
                   <div className="flex-1">
                     <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                      {visitType === 'follow-up' ? 'Follow-up clinical update' : 'Clinical notes'}
+                      {visitType === 'follow-up' ? t('workflow.visit.followupClinicalUpdate') : t('workflow.visit.clinicalNotes')}
                     </h2>
                     <p className="text-sm text-slate-600">
                       {visitType === 'follow-up'
-                        ? 'Update based on patient response, progress, setbacks, and modifications applied today.'
-                        : 'Record, type, or paste your clinical observations.'}
+                        ? t('workflow.visit.followupNotesDesc')
+                        : t('workflow.visit.initialNotesDesc')}
                     </p>
                   </div>
                   {transcript?.trim() && (
                     <div className="flex items-center gap-2 text-sm text-blue-600">
                       <CheckCircle className="w-4 h-4" />
-                      <span>{visitType === 'follow-up' ? 'Clinical update captured' : 'Clinical notes captured'}</span>
+                      <span>{visitType === 'follow-up' ? t('workflow.visit.clinicalUpdateCaptured') : t('workflow.visit.clinicalNotesCaptured')}</span>
                     </div>
                   )}
                 </div>
@@ -5212,13 +5307,13 @@ const ProfessionalWorkflowPage = () => {
                     onConfirmFollowUpRedFlags={() => {
                       const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
                       if (hasReferralStop) {
-                        setReferralReportOpen(true);
+                        handleOpenReferralReport();
                       } else {
                         setActiveTab('soap');
                         setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                       }
                     }}
-                    onGenerateReferralReport={() => setReferralReportOpen(true)}
+                    onGenerateReferralReport={handleOpenReferralReport}
                   />
                 </Suspense>
               </div>
@@ -5243,6 +5338,45 @@ const ProfessionalWorkflowPage = () => {
                     </div>
                   )}
                 </div>
+                {/* Patient Clinical Memory: pattern insight (observation only; not part of the medical record) */}
+                {visitType === 'follow-up' && followUpPatternInsight && (
+                  <div className="mb-6 rounded-lg border border-slate-200 bg-sky-50/50 p-4">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                      AI Patient Pattern Insight
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-2">(Not part of the medical record)</p>
+                    <p className="text-sm text-slate-700">{followUpPatternInsight.description}</p>
+                  </div>
+                )}
+                {/* Fase C: AI Clinical Considerations — not part of the medical record until clinician inserts */}
+                {visitType === 'follow-up' && followUpConsiderations && followUpConsiderations.length > 0 && (
+                  <div className="mb-6 rounded-lg border border-slate-200 bg-amber-50/50 p-4">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                      AI Clinical Considerations
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-3">(Not part of the medical record)</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 mb-3">
+                      {followUpConsiderations.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const block = '\n\n[AI considerations reviewed]\n' + followUpConsiderations.map((c) => `- ${c}`).join('\n');
+                        setLocalSoapNote((prev) => {
+                          if (!prev) return prev;
+                          const current = (prev.plan || '').trim();
+                          return { ...prev, plan: current + block };
+                        });
+                        setFollowUpConsiderations(null);
+                      }}
+                      className="text-sm font-medium text-amber-800 hover:text-amber-900 underline"
+                    >
+                      Insert into plan
+                    </button>
+                  </div>
+                )}
                 <Suspense fallback={<LoadingSpinner />}>
                   <SOAPTab
                     localSoapNote={localSoapNote}
@@ -5360,9 +5494,9 @@ const ProfessionalWorkflowPage = () => {
           <>
             <nav className="flex flex-wrap gap-2">
               {[
-                { id: "analysis", label: "1 · Initial Analysis" },
-                { id: "evaluation", label: "2 · Physical Evaluation" },
-                { id: "soap", label: "3 · SOAP Report" },
+                { id: "analysis", label: `1 · ${t('workflow.initialAnalysis')}` },
+                { id: "evaluation", label: `2 · ${t('workflow.physicalEvaluation')}` },
+                { id: "soap", label: `3 · ${t('workflow.soapReport')}` },
               ]
                 .filter((tab) => {
                   // WO-REDFLAG-FOLLOWUP: Show analysis tab in follow-up when red flags need clinical decision (niagara or followUpAlerts)
@@ -5464,13 +5598,13 @@ const ProfessionalWorkflowPage = () => {
                   onConfirmFollowUpRedFlags={() => {
                     const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
                     if (hasReferralStop) {
-                      setReferralReportOpen(true);
+                      handleOpenReferralReport();
                     } else {
                       setActiveTab('soap');
                       setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                     }
                   }}
-                  onGenerateReferralReport={() => setReferralReportOpen(true)}
+                  onGenerateReferralReport={handleOpenReferralReport}
                 />
               </Suspense>
             )}
@@ -5556,7 +5690,7 @@ const ProfessionalWorkflowPage = () => {
       <ReferralReportModal
         isOpen={referralReportOpen}
         onClose={() => setReferralReportOpen(false)}
-        reportData={buildReferralReportData()}
+        reportData={referralReportData}
       />
 
       {/* Initial Plan Modal for existing patients without initial assessment */}

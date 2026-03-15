@@ -2,30 +2,40 @@ import logger from '@/shared/utils/logger';
 /**
  * Variables de entorno para AiDuxCare V.2
  * Centraliza todas las configuraciones del sistema
+ *
+ * Nota: En el frontend usamos Vite (import.meta.env.*).
+ * En scripts Node (simuladores, tests) esas variables pueden no existir.
+ * Unificamos el acceso mediante viteEnv para evitar errores en Node.
  */
 
+const viteEnv =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env) || (process?.env as Record<string, any>) || {};
+
 // Variables de Supabase
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_URL = viteEnv.VITE_SUPABASE_URL || '';
+export const SUPABASE_ANON_KEY = viteEnv.VITE_SUPABASE_ANON_KEY || '';
 
 // Variables de APIs de IA
-export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-export const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
-export const WHISPER_MODEL = import.meta.env.VITE_WHISPER_MODEL || 'gpt-4o-mini-transcribe';
-export const OPENAI_TRANSCRIPT_URL = import.meta.env.VITE_OPENAI_TRANSCRIPT_URL || 'https://api.openai.com/v1/audio/transcriptions';
+export const OPENAI_API_KEY = viteEnv.VITE_OPENAI_API_KEY || '';
+export const HUGGINGFACE_API_KEY = viteEnv.VITE_HUGGINGFACE_API_KEY || '';
+export const WHISPER_MODEL = viteEnv.VITE_WHISPER_MODEL || 'gpt-4o-mini-transcribe';
+export const OPENAI_TRANSCRIPT_URL =
+  viteEnv.VITE_OPENAI_TRANSCRIPT_URL || 'https://api.openai.com/v1/audio/transcriptions';
 
 // Variables de entorno de la aplicación
-export const APP_ENVIRONMENT = import.meta.env.VITE_APP_ENVIRONMENT || 'development';
+export const APP_ENVIRONMENT = viteEnv.VITE_APP_ENVIRONMENT || process.env.NODE_ENV || 'development';
 
 // ✅ REMOVED: Ollama configuration (not in use)
 // Service in use: Google Vertex AI via Firebase Functions (northamerica-northeast1, Canada)
 
 // Configuración del AiDux Assistant
 // ✅ Using Vertex AI as primary service (Canadian region)
-export const AIDUX_ASSISTANT_PROVIDER = import.meta.env.VITE_AIDUX_ASSISTANT_PROVIDER || 'vertex-ai';
-export const AIDUX_ASSISTANT_BASE_URL = import.meta.env.VITE_AIDUX_ASSISTANT_BASE_URL || 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
-export const AIDUX_ASSISTANT_MODEL = import.meta.env.VITE_AIDUX_ASSISTANT_MODEL || 'gemini-2.5-flash';
-export const AIDUX_ASSISTANT_TIMEOUT = parseInt(import.meta.env.VITE_AIDUX_ASSISTANT_TIMEOUT || '30000'); // 30 segundos
+export const AIDUX_ASSISTANT_PROVIDER = viteEnv.VITE_AIDUX_ASSISTANT_PROVIDER || 'vertex-ai';
+export const AIDUX_ASSISTANT_BASE_URL =
+  viteEnv.VITE_AIDUX_ASSISTANT_BASE_URL ||
+  'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+export const AIDUX_ASSISTANT_MODEL = viteEnv.VITE_AIDUX_ASSISTANT_MODEL || 'gemini-2.5-flash';
+export const AIDUX_ASSISTANT_TIMEOUT = parseInt(viteEnv.VITE_AIDUX_ASSISTANT_TIMEOUT || '30000'); // 30 segundos
 
 /**
  * Configuración completa del entorno
@@ -95,8 +105,8 @@ export function validateEnvironment(): {
   };
 }
 
-// Log de diagnóstico en desarrollo
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+// Log de diagnóstico en desarrollo (solo en navegador + entorno dev)
+if (typeof window !== 'undefined' && (viteEnv.DEV || APP_ENVIRONMENT === 'development')) {
   console.log('⚠️ Información de configuración (solo visible en desarrollo):');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL ? 'OK ✅' : 'MISSING ❌'}`);
   console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? 'OK ✅' : 'MISSING ❌'}`);

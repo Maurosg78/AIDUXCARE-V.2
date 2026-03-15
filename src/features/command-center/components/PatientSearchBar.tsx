@@ -8,10 +8,12 @@
 
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { usePatientsList } from '../hooks/usePatientsList';
 
 export const PatientSearchBar: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { patients: allPatients, loading } = usePatientsList();
   const [query, setQuery] = React.useState('');
@@ -41,13 +43,13 @@ export const PatientSearchBar: React.FC = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Search patient by name..."
+          placeholder={t('shell.commandCenter.searchPatientPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setShowResults(true)}
           onBlur={() => setTimeout(() => setShowResults(false), 150)}
           className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-primary-blue focus:border-primary-blue/50 font-apple text-slate-900 placeholder:text-slate-400"
-          aria-label="Search patient"
+          aria-label={t('shell.commandCenter.searchPatient')}
         />
       </div>
       {showResults && (

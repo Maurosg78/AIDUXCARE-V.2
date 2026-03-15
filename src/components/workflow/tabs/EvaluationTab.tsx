@@ -8,6 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stethoscope, Loader2, FileText, ChevronRight } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
 import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDefinitions } from '../../../core/msk-tests/library/mskTestLibrary';
@@ -227,6 +228,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   sessionTypeFromUrl,
   workflowRoute,
 }) => {
+  const { t } = useTranslation();
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
 
@@ -378,12 +380,12 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
         <Stethoscope className="w-6 h-6 text-emerald-600" />
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">
-            {visitType === 'follow-up' ? 'Selective Re-evaluation' : 'Physical Evaluation'}
+            {visitType === 'follow-up' ? t('workflow.selectiveReevaluation') : t('workflow.physicalEvaluation')}
           </h2>
           <p className="text-sm text-slate-500">
             {visitType === 'follow-up' 
-              ? 'Focus on key tests to measure progress. Compare results with baseline from initial assessment.'
-              : 'Select the tests you performed and record the outcome. These findings feed the SOAP draft.'}
+              ? t('workflow.evaluationSubtitleFollowup')
+              : t('workflow.evaluationSubtitleInitial')}
           </p>
         </div>
       </header>
@@ -392,15 +394,15 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       {visitType === 'follow-up' && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">
-            Selective Re-evaluation Approach
+            {t('workflow.evaluationBannerTitle')}
           </h3>
           <p className="text-sm text-blue-700 mb-2">
-            In follow-up visits, focus on measuring progress in key areas rather than performing exhaustive testing.
+            {t('workflow.evaluationBannerBody')}
           </p>
           <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-            <li>Re-test key measures from initial assessment</li>
-            <li>Focus on areas related to treatment goals</li>
-            <li>Compare results with baseline to document progress</li>
+            <li>{t('workflow.evaluationBannerBullet1')}</li>
+            <li>{t('workflow.evaluationBannerBullet2')}</li>
+            <li>{t('workflow.evaluationBannerBullet3')}</li>
           </ul>
         </div>
       )}
@@ -410,7 +412,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           {/* FASE 2: Additional AI-suggested tests (6+) in sidebar for deeper exploration */}
           {additionalAiSuggestions.length > 0 && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
             <section className="rounded-3xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-800">Additional Tests</h3>
+              <h3 className="text-sm font-semibold text-slate-800">{t('workflow.additionalTests')}</h3>
               <p className="mt-1 text-xs text-slate-500">
                 Additional tests for deeper exploration. Click to add to your evaluation.
               </p>
@@ -459,23 +461,23 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           {!(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
             <section className="rounded-3xl border border-slate-200 bg-white px-4 py-5 shadow-sm space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">Add Tests</h3>
+                <h3 className="text-sm font-semibold text-slate-800">{t('workflow.evaluation.addTests')}</h3>
                 <p className="mt-1 text-xs text-slate-500">
-                  Choose from the library or add a custom test. Once added, tests appear on the right for documentation.
+                  {t('workflow.evaluation.addTestsHint')}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Library tests
+                    {t('workflow.evaluation.libraryTests')}
                   </label>
                   <select
                     onChange={handleLibrarySelect}
                     defaultValue=""
                     className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
                   >
-                    <option value="">Select a test…</option>
+                    <option value="">{t('workflow.evaluation.selectTestPlaceholder')}</option>
                     {regions.map((region) => (
                       <optgroup key={region} label={regionLabels[region]}>
                         {MSK_TEST_LIBRARY.filter((test) => test.region === region).map((test) => {
@@ -483,7 +485,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           return (
                             <option key={test.id} value={test.id} disabled={disabled}>
                               {test.name}
-                              {disabled ? " (added)" : ""}
+                              {disabled ? t('workflow.evaluation.addedSuffix') : ""}
                             </option>
                           );
                         })}
@@ -491,7 +493,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                     ))}
                   </select>
                   <p className="mt-1.5 text-[11px] text-slate-500">
-                    Tests already in your evaluation are disabled in this list.
+                    {t('workflow.evaluation.testsAlreadyAddedHint')}
                   </p>
                 </div>
 
@@ -499,10 +501,10 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
                       <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Custom test
+                        {t('workflow.evaluation.customTest')}
                       </label>
                       <p className="mt-1 text-xs text-slate-500">
-                        Log additional assessments not in the library.
+                        {t('workflow.evaluation.customTestHint')}
                       </p>
                     </div>
                     <button
@@ -514,7 +516,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                       disabled={isCustomFormOpen}
                       className="rounded-full bg-[#7c3aed] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#6d28d9] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                     >
-                      Add custom test
+                      {t('workflow.evaluation.addCustomTest')}
                     </button>
                   </div>
 
@@ -523,7 +525,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                       <input
                         value={customTestName}
                         onChange={(event) => setCustomTestName(event.target.value)}
-                        placeholder="Test name"
+                        placeholder={t('workflow.evaluation.testNamePlaceholder')}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
                       />
                       <div className="grid grid-cols-2 gap-2">

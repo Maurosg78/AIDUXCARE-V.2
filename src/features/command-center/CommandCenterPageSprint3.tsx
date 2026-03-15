@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
@@ -45,6 +46,7 @@ function toLocalDateKey(d: Date): string {
 }
 
 export const CommandCenterPageSprint3: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -431,7 +433,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
         <div className="flex flex-col gap-8">
           {/* WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: Patient search bar — search → select → Patient History */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-            <h2 className="text-sm font-medium text-slate-700 mb-3 font-apple">Search patient</h2>
+            <h2 className="text-sm font-medium text-slate-700 mb-3 font-apple">{t('shell.commandCenter.searchPatient')}</h2>
             <PatientSearchBar />
           </div>
 

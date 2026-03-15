@@ -3,6 +3,7 @@ import React from 'react';
 import { createBrowserRouter, useParams, Navigate, useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut } from 'lucide-react';
+import { isSpainPilot } from '@/core/pilotDetection';
 import { AuthGuard } from '../components/AuthGuard';
 import { useAuth } from '../hooks/useAuth';
 import { AuthOnlyGuard } from '../components/AuthOnlyGuard';
@@ -17,6 +18,7 @@ import { NotesListPage } from '../pages/NotesPage';
 import { NoteDetailPage } from '../pages/NotesPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
+import FollowUpRedirect from '../pages/FollowUpRedirect';
 import { ConsentVerificationPage } from '../pages/ConsentVerificationPage';
 import { PatientConsentPortalPage } from '../pages/PatientConsentPortalPage';
 import DisclosurePage from '../pages/DisclosurePage';
@@ -29,6 +31,7 @@ import HospitalPortalLandingPage from '../pages/HospitalPortalLandingPage';
 import UnifiedLandingPage from '../pages/UnifiedLandingPage';
 import InpatientPortalPage from '../pages/InpatientPortalPage';
 import PublicLandingPage from '../pages/PublicLandingPage';
+import LandingPage from '../landing/pages/LandingPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
 import AuthActionPage from '../pages/AuthActionPage';
@@ -63,7 +66,7 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               <h1 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 AiDuxCare
               </h1>
-              <span className="text-xl" aria-hidden>🍁</span>
+              {!isSpainPilot() && <span className="text-xl" aria-hidden>🍁</span>}
             </div>
             {user && (
               <button
@@ -120,6 +123,8 @@ export const createRouter = () => createBrowserRouter([
   { path: '/notes/:id', element: <AuthGuard><LayoutWrapper><NoteDetailWrapper /></LayoutWrapper></AuthGuard> },
   { path: '/workflow', element: <AuthGuard><LayoutWrapper><ErrorBoundary><ProfessionalWorkflowPage /></ErrorBoundary></LayoutWrapper></AuthGuard> },
   { path: '/workflow/:sessionId', element: <AuthGuard><LayoutWrapper><ErrorBoundary><ProfessionalWorkflowPage /></ErrorBoundary></LayoutWrapper></AuthGuard> },
+  // MVP longitudinal: follow-up workflows unified in ProfessionalWorkflowPage so SOAP → encounter → trajectory → memory pipeline always runs
+  { path: '/follow-up', element: <AuthGuard><FollowUpRedirect /></AuthGuard> },
   { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
   // ✅ T2: Legacy/internal page — do not verify without token (redirects to /consent/:token if token provided)
@@ -134,6 +139,7 @@ export const createRouter = () => createBrowserRouter([
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/terms', element: <TermsOfServicePage /> },
   { path: '/public', element: <PublicLandingPage /> },
+  { path: '/landing', element: <LandingPage /> },
 ]);
 
 // Mantener exportación por defecto para compatibilidad

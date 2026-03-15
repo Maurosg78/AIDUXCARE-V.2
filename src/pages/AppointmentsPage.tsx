@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { WeeklyAgenda } from '../features/appointments/components/WeeklyAgenda';
 
@@ -8,6 +9,7 @@ interface AppointmentsPageProps {
 }
 
 export const AppointmentListPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -28,7 +30,7 @@ export const AppointmentListPage: React.FC = () => {
               onClick={() => navigate('/command-center')}
               className="px-4 py-2 text-primary-blue hover:text-primary-purple font-apple text-[15px] font-medium"
             >
-              ← Back to Command Center
+              ← {t('shell.nav.backToCommandCenter')}
             </button>
           </div>
         </div>
@@ -55,6 +57,7 @@ export const AppointmentListPage: React.FC = () => {
 };
 
 export const AppointmentDetailPage: React.FC<AppointmentsPageProps> = ({ id }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -68,7 +71,7 @@ export const AppointmentDetailPage: React.FC<AppointmentsPageProps> = ({ id }) =
             onClick={() => navigate('/command-center')}
             className="px-4 py-2 text-primary-blue hover:text-primary-purple font-apple text-[15px] font-medium"
           >
-            ← Back to Command Center
+            ← {t('shell.nav.backToCommandCenter')}
           </button>
         </div>
         <div className="bg-white shadow rounded-lg p-6">

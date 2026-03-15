@@ -36,6 +36,13 @@ vi.mock('firebase/firestore', async () => {
   };
 });
 
+const mockGetEncountersByPatient = vi.fn();
+vi.mock('../../repositories/encountersRepo', () => ({
+  encountersRepo: {
+    getEncountersByPatient: (...args: unknown[]) => mockGetEncountersByPatient(...args),
+  },
+}));
+
 // Helper function to create mock session
 function createMockSession(overrides: Partial<Session> = {}): Session {
   const defaultSession: Session = {
@@ -682,6 +689,36 @@ describe('SessionComparisonService', () => {
       const comparison = service.compareSessions(previous, current);
 
       expect(comparison.deltas.daysBetweenSessions).toBe(7);
+    });
+  });
+
+  describe('getLastNPainSeries', () => {
+    it('returns last N pain values (max 3) from completed encounters, oldest to newest', async () => {
+      const baseTime = Date.now();
+      mockGetEncountersByPatient.mockResolvedValue([
+        { id: 'e1', status: 'signed', encounterDate: new Timestamp(baseTime / 1000, 0), soap: { subjective: 'Pain 6/10' } },
+        { id: 'e2', status: 'completed', encounterDate: new Timestamp((baseTime + 1e6) / 1000, 0), soap: { subjective: 'Pain 5 out of 10' } },
+        { id: 'e3', status: 'signed', encounterDate: new Timestamp((baseTime + 2e6) / 1000, 0), soap: { subjective: 'dolor 4/10' } },
+      ]);
+      const series = await service.getLastNPainSeries('patient-1', 3);
+      expect(series).toEqual([6, 5, 4]);
+    });
+
+    it('returns empty array when maxPoints < 1', async () => {
+      const series = await service.getLastNPainSeries('patient-1', 0);
+      expect(series).toEqual([]);
+    });
+
+    it('returns at most maxPoints values', async () => {
+      const baseTime = Date.now();
+      mockGetEncountersByPatient.mockResolvedValue([
+        { id: 'e1', status: 'signed', encounterDate: new Timestamp(baseTime / 1000, 0), soap: { subjective: '7/10' } },
+        { id: 'e2', status: 'signed', encounterDate: new Timestamp((baseTime + 1e6) / 1000, 0), soap: { subjective: '6/10' } },
+        { id: 'e3', status: 'signed', encounterDate: new Timestamp((baseTime + 2e6) / 1000, 0), soap: { subjective: '5/10' } },
+      ]);
+      const series = await service.getLastNPainSeries('patient-1', 2);
+      expect(series).toHaveLength(2);
+      expect(series).toEqual([6, 5]);
     });
   });
 });

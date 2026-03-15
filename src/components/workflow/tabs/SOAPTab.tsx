@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, Loader2, ClipboardList, CheckCircle } from 'lucide-react';
 import type { SOAPNote } from '../../../types/vertex-ai';
 import type { SOAPStatus } from '../../../components/SOAPEditor';
@@ -153,14 +154,20 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   handleAttachmentRemove,
   onBackToCommandCenter,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
       {/* WO-07: Simplificado - solo header mínimo para follow-up */}
       {visitType === 'follow-up' ? (
         // Follow-up: header mínimo, sin ruido
         <div className="text-center py-4">
-          <h2 className="text-xl font-semibold text-slate-900">SOAP Note</h2>
-          <p className="text-sm text-slate-500 mt-1">Review and finalize your documentation</p>
+          <h2 className="text-xl font-semibold text-slate-900">
+            {t('clinical.soap.header.followupTitle')}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {t('clinical.soap.header.followupSubtitle')}
+          </p>
         </div>
       ) : (
         // Initial: mantener header completo
@@ -168,9 +175,11 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-slate-900" />
             <div>
-              <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">SOAP Note Generation</h2>
+              <h2 className="text-2xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {t('clinical.soap.header.initialTitle')}
+              </h2>
               <p className="text-sm text-slate-500">
-                Generate professional SOAP notes from your clinical data. AI-assisted documentation.
+                {t('clinical.soap.header.initialSubtitle')}
               </p>
             </div>
           </div>
@@ -197,21 +206,25 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
+            <p className="text-sm text-slate-600 mb-2">
+              {t('clinical.soap.empty.noNote')}
+            </p>
             {visitType === 'follow-up' ? (
               <p className="text-xs text-slate-500 mb-6">
-                Complete your clinical update above, then generate SOAP note.
+                {t('clinical.soap.empty.followupHint')}
               </p>
             ) : (
               <p className="text-xs text-slate-500 mb-6">
-                Complete the analysis and physical evaluation tabs, then generate a SOAP note.
+                {t('clinical.soap.empty.initialHint')}
               </p>
             )}
             {/* Loading indicator for follow-up SOAP generation */}
             {visitType === 'follow-up' && isGeneratingSOAP && (
               <div className="flex items-center justify-center gap-3 py-4 text-blue-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm font-medium">Generating SOAP note...</span>
+                <span className="text-sm font-medium">
+                  {t('clinical.soap.generate.loading')}
+                </span>
               </div>
             )}
             {/* WO-07: Botón Generate SOAP al final de página (no sticky) - hidden in follow-up */}
@@ -227,12 +240,12 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
               {isGeneratingSOAP ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating SOAP Note...
+                  {t('clinical.soap.generate.loading')}
                 </>
               ) : (
                 <>
                   <FileText className="w-4 h-4" />
-                  Generate SOAP Note
+                  {t('clinical.soap.generate.button')}
                 </>
               )}
             </button>}
@@ -279,6 +292,20 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             isOptimized={workflowRoute?.analysisLevel === 'optimized'}
             tokenOptimization={soapTokenOptimization}
             onBackToCommandCenter={onBackToCommandCenter}
+            sessionState={
+              sessionId
+                ? {
+                    sessionId,
+                    patientId,
+                    patientName: '', // optional for report; real name can be added later if needed
+                    sessionType: visitType === 'initial' ? 'initial' : 'followup',
+                    transcript,
+                    startTime: new Date(),
+                    lastUpdated: new Date(),
+                    status: soapStatus === 'finalized' ? 'completed' : 'in-progress',
+                  }
+                : undefined
+            }
           />
 
           {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}
@@ -286,17 +313,17 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                  Initial Assessment Complete
+                  {t('workflow.soapTab.initialAssessmentComplete')}
                 </h3>
                 <p className="text-sm text-slate-600 mb-6">
-                  SOAP note finalized. Ready to close this assessment.
+                  {t('workflow.soapTab.soapFinalizedHint')}
                 </p>
                 <button
                   onClick={onCloseInitialAssessment}
                   className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition shadow-sm"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  Close Initial Assessment
+                  {t('workflow.soapTab.closeInitialAssessment')}
                 </button>
               </div>
             </div>

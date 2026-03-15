@@ -78,6 +78,9 @@ class SessionService {
    * Use the same id the client uses (e.g. userId-timestamp) so notes and URL match.
    */
   async createSessionWithId(sessionId: string, sessionData: SessionData): Promise<string> {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('aidux_simulate_firestore_fail') === 'true') {
+      throw new Error('[Simulación] Firestore no disponible. No se pudo guardar la sesión. Comprueba tu conexión e inténtalo de nuevo.');
+    }
     try {
       const docRef = doc(db, this.COLLECTION_NAME, sessionId);
       const cleanedSessionData = this.cleanUndefined(sessionData);
@@ -114,6 +117,9 @@ class SessionService {
    * WO-IA-RESUME-01: Update existing session (merge). Use when resuming — do not create new session.
    */
   async updateSession(sessionId: string, data: Partial<SessionData> & { [key: string]: any }): Promise<void> {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('aidux_simulate_firestore_fail') === 'true') {
+      throw new Error('[Simulación] Firestore no disponible. No se pudo actualizar la sesión. Comprueba tu conexión e inténtalo de nuevo.');
+    }
     try {
       const docRef = doc(db, this.COLLECTION_NAME, sessionId);
       const cleaned = this.cleanUndefined(data);

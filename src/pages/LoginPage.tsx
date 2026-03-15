@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -14,6 +15,7 @@ import logger from "@/shared/utils/logger";
 import styles from '@/styles/wizard.module.css';
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -175,19 +177,19 @@ const LoginPage: React.FC = () => {
 
     // ✅ CRITICAL FIX: Manual validation in English (compliance requirement)
     if (!email.trim()) {
-      setError("Please enter your email address");
+      setError(t('login.errorEmailRequired'));
       return;
     }
 
     if (!password.trim()) {
-      setError("Please enter your password");
+      setError(t('login.errorPasswordRequired'));
       return;
     }
 
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address");
+      setError(t('login.errorInvalidEmail'));
       return;
     }
 
@@ -217,7 +219,7 @@ const LoginPage: React.FC = () => {
       const currentUserAfterLogin = auth.currentUser;
       const firebaseEmailVerified = currentUserAfterLogin?.emailVerified === true;
       if (professional && professional.isActive === false && !firebaseEmailVerified) {
-        setError("Your account is pending activation. Check your inbox.");
+        setError(t('login.errorPendingActivation'));
         setShowPendingActivationResend(true);
         return;
       }
@@ -241,7 +243,7 @@ const LoginPage: React.FC = () => {
       // useEffect will handle the redirect when profile is ready
     } catch (err) {
       logger.error("[LOGIN] Authentication error", err);
-      setError("We couldn't validate your credentials. Please try again.");
+      setError(t('login.errorInvalidCredentials'));
       setShowPendingActivationResend(false);
       hasRedirectedRef.current = false; // Reset on error to allow retry
     } finally {
@@ -256,11 +258,11 @@ const LoginPage: React.FC = () => {
         {/* Header Section - Apple-Style Thin Typography */}
         <div className="text-center mb-8">
           <p className="text-[10px] font-light text-gray-500 uppercase tracking-[0.02em] mb-4 font-apple">
-            SECURE PROFESSIONAL ACCESS • PHIPA COMPLIANT
+            {t('landing.headerBadge')}
           </p>
 
           <h1 className="text-3xl sm:text-4xl font-light mb-3 tracking-[-0.02em] leading-[1.1] font-apple">
-            Welcome to{' '}
+            {t('landing.welcomeTitle')}{' '}
             <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
               AiduxCare
             </span>
@@ -268,14 +270,14 @@ const LoginPage: React.FC = () => {
           </h1>
 
           <p className="text-lg text-gray-600 font-light leading-[1.3] font-apple">
-            Your Best Medico-Legal Copilot
+            {t('landing.tagline')}
           </p>
         </div>
 
         {/* Single Login Card - Compact Design */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-medium text-gray-900 mb-5 text-center font-apple">
-            Sign In
+            {t('login.title')}
           </h2>
 
           {/* Messages */}
@@ -296,24 +298,24 @@ const LoginPage: React.FC = () => {
                     setResendVerificationLoading(true);
                     const currentUser = auth.currentUser;
                     if (!currentUser) {
-                      setError("Please sign in again, then use Resend verification email.");
+                      setError(t('login.errorSignInToResend'));
                       setResendVerificationLoading(false);
                       return;
                     }
                     const result = await firebaseAuthService.sendEmailVerification(currentUser);
                     setResendVerificationLoading(false);
                     if (result.success) {
-                      setSuccessMessage("Verification email sent. Please check your inbox.");
+                      setSuccessMessage(t('login.successVerificationSent'));
                       setError("");
                       setShowPendingActivationResend(false);
                     } else {
-                      setError(result.message || "Failed to send verification email. Please try again.");
+                      setError(result.message || t('login.errorResendFailed'));
                     }
                   }}
                   disabled={resendVerificationLoading}
                   className="w-full py-2.5 px-4 text-sm font-medium text-primary-blue border border-primary-blue/50 rounded-lg bg-primary-blue/5 hover:bg-primary-blue/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-apple"
                 >
-                  {resendVerificationLoading ? "Sending…" : "Resend verification email"}
+                  {resendVerificationLoading ? t('login.sending') : t('login.resendVerification')}
                 </button>
               )}
             </div>
@@ -385,7 +387,7 @@ const LoginPage: React.FC = () => {
               {capsLockActive && (
                 <div className="flex items-center gap-2 mt-2 text-amber-600 text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  <span>Caps Lock is on</span>
+                  <span>{t('login.capsLockOn')}</span>
                 </div>
               )}
             </div>
@@ -395,7 +397,7 @@ const LoginPage: React.FC = () => {
               disabled={loading}
               className="w-full h-11 text-[15px] font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? t('login.signingIn') : t('login.title')}
             </Button>
 
             <div className="text-center">
@@ -403,7 +405,7 @@ const LoginPage: React.FC = () => {
                 to="/forgot-password"
                 className="text-sm text-primary-blue hover:text-primary-purple transition-colors font-apple font-light"
               >
-                Forgot your password?
+                {t('login.forgotPassword')}
               </Link>
             </div>
           </form>

@@ -28,6 +28,8 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
   const [isDictating, setIsDictating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<DictationRecognitionInstance | null>(null);
+  const resultCallbackRef = useRef<((text: string) => void) | null>(null);
+  const lastInterimRef = useRef<string>('');
 
   const isAvailable = !!SpeechRecognitionAPI;
 
@@ -42,6 +44,8 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
       }
       recognitionRef.current = null;
     }
+    resultCallbackRef.current = null;
+    lastInterimRef.current = '';
     setIsDictating(false);
   }, []);
 
@@ -54,6 +58,10 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
       setError(null);
       stop();
 
+      const callback = onResult ?? options?.onResult ?? null;
+      resultCallbackRef.current = callback;
+      lastInterimRef.current = '';
+
       const rec = new SpeechRecognitionAPI();
       recognitionRef.current = rec;
       rec.continuous = true;
@@ -64,13 +72,24 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           const text = (result[0]?.transcript ?? '').trim();
-          if (!text || !result.isFinal) continue;
-          (onResult ?? options?.onResult)?.(text);
+          if (!text) continue;
+          if (result.isFinal) {
+            callback?.(text);
+            lastInterimRef.current = '';
+          } else {
+            lastInterimRef.current = text;
+          }
         }
       };
 
       rec.onend = () => {
+        const pending = lastInterimRef.current.trim();
+        if (pending) {
+          resultCallbackRef.current?.(pending);
+          lastInterimRef.current = '';
+        }
         recognitionRef.current = null;
+        resultCallbackRef.current = null;
         setIsDictating(false);
       };
 

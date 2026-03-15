@@ -9,9 +9,11 @@
  * DoD: All fields persist in users/{uid} only
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getAuth, signOut } from 'firebase/auth';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 import { app } from '../core/firebase/firebaseClient';
 import { firebaseAuthService } from '@/services/firebaseAuthService';
@@ -39,8 +41,10 @@ interface OnboardingStep {
 }
 
 export const ProfessionalOnboardingPage: React.FC = () => {
+  const { t } = useTranslation();
+  const esPilot = isSpainPilot();
   const navigate = useNavigate();
-  const { updateProfile, profile, loading: profileLoading } = useProfessionalProfile();
+  const { updateProfile, saveProfileForUid, profile, loading: profileLoading } = useProfessionalProfile();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +98,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     password: '', // Para nuevos usuarios (solo si no está autenticado)
     confirmPassword: '', // Para nuevos usuarios (solo si no está autenticado)
     phone: '',
-    phoneCountryCode: '+1', // E.164 format
+    phoneCountryCode: isSpainPilot() ? '+34' : '+1', // E.164 format — +34 for Spain pilot
     country: '',
     province: '', // province/state
     city: '',
@@ -132,24 +136,12 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     pilotConsent: false, // WO-12: Pilot consent - required for all countries
   });
 
-  // CTO SPEC: 3 wizards canónicos
-  const steps: OnboardingStep[] = [
-    {
-      id: 'identity',
-      title: 'Professional Identity',
-      description: 'Who you are within AiDuxCare',
-    },
-    {
-      id: 'practice',
-      title: 'Clinical Practice & Style',
-      description: 'How you work and how AiDuxCare helps you',
-    },
-    {
-      id: 'consent',
-      title: 'Data Use & Consent',
-      description: 'What you allow your assistant to do',
-    }
-  ];
+  // CTO SPEC: 3 wizards canónicos (i18n)
+  const steps: OnboardingStep[] = useMemo(() => [
+    { id: 'identity', title: t('onboarding.step1Title'), description: t('onboarding.step1Desc') },
+    { id: 'practice', title: t('onboarding.step2Title'), description: t('onboarding.step2Desc') },
+    { id: 'consent', title: t('onboarding.step3Title'), description: t('onboarding.step3Desc') },
+  ], [t]);
 
   // CTO SPEC: Email readonly si viene de auth
   useEffect(() => {
@@ -378,8 +370,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           formData.yearsOfExperience &&
           formData.yearsOfExperience > 0 &&
           formData.specialty?.trim() &&
-          formData.practiceSetting &&
-          formData.practiceCountry?.trim()
+          formData.practiceSetting
         );
       }
       case 'consent': {
@@ -388,7 +379,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         const hasPilotConsent = formData.pilotConsent === true;
 
         // PHIPA y PIPEDA son obligatorios SOLO para Canadá
-        const practiceCountry = formData.practiceCountry || formData.country || '';
+        const practiceCountry = formData.licenseCountry || formData.country || '';
         const isCanada = practiceCountry.toUpperCase() === 'CA';
 
         if (isCanada) {
@@ -418,13 +409,13 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       // WO-ONB-SIGNUP-01: Si el usuario NO está autenticado, crear cuenta primero
       if (!authUser) {
         if (!formData.password || formData.password.length < 6) {
-          setError('Password must be at least 6 characters long');
+          setError(t('onboarding.errorPasswordLength'));
           setIsLoading(false);
           return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
+          setError(t('onboarding.errorPasswordsNoMatch'));
           setIsLoading(false);
           return;
         }
@@ -443,7 +434,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       }
 
       if (!authUser) {
-        setError('Unable to authenticate user. Please try again.');
+        setError(t('onboarding.errorAuthFailed'));
         setIsLoading(false);
         return;
       }
@@ -478,27 +469,24 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       const specialtyFromAreas = normalizedAreas.matched[0]?.code ?? formData.specialty;
 
       // CTO SPEC: Persistir EXCLUSIVAMENTE en users/{uid}
-      // CTO SPEC: Todos los campos del onboarding deben cumplir una de estas 3:
-      // - Afecta UI (firstName, lastName, preferredName → displayName, fullName)
-      // - Afecta prompting (specialty, practicePreferences, dataUseConsent)
-      // - Afecta compliance/legal (licenseNumber, country, province, city)
-      await updateProfile({
+      // Usar saveProfileForUid(uid) para que el perfil se guarde aunque Auth aún no haya actualizado user (p. ej. tras createUserWithEmailAndPassword).
+      const profilePayload = {
+        uid: authUser.uid,
         // WIZARD 1: Identidad profesional
-        // UI: Saludo, firma automática, identidad clínica en prompts
-        displayName: formData.preferredName || formData.firstName, // Para saludo en UI
-        fullName: `${formData.firstName} ${formData.lastName}`, // Para firma automática
-        preferredSalutation: formData.preferredName || undefined, // Para saludo personalizado
-        lastNamePreferred: formData.lastName, // Para identidad clínica
-        email: formData.email, // Readonly desde auth - identidad técnica
-        phone: fullPhone, // E.164 format - para SMS
-        country: formData.country, // Compliance: selección automática de regulación
-        province: formData.province, // Compliance: guardrails clínico-legales
-        city: formData.city, // Compliance: copy dinámico
-        profession: formData.profession, // Prompting: lenguaje clínico específico
+        displayName: formData.preferredName || formData.firstName,
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        preferredSalutation: formData.preferredName || undefined,
+        lastNamePreferred: formData.lastName,
+        email: formData.email,
+        phone: fullPhone,
+        country: formData.country,
+        province: formData.province,
+        city: formData.city,
+        profession: formData.profession,
         professionalTitle:
           formData.profession === 'Other' && formData.professionOther?.trim()
             ? normalizeProfessionOther(formData.professionOther.trim()).labelForPrompt
-            : formData.profession, // Alias para compatibilidad; cuando Other usamos etiqueta normalizada
+            : formData.profession,
         ...(formData.profession === 'Other' && formData.professionOther?.trim()
           ? {
             professionOther: (() => {
@@ -507,12 +495,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
             })(),
           }
           : {}),
-        licenseNumber: formData.licenseNumber, // Compliance: guardrails clínico-legales
-        // licenseCountry: formData.licenseCountry, // Se puede almacenar como metadata si es necesario
-
+        licenseNumber: formData.licenseNumber,
         // WIZARD 2: Práctica clínica
-        // Prompting: seniority, nivel de explicación, lenguaje clínico, prioridad en hipótesis
-        specialty: specialtyFromAreas || formData.specialty, // Backward compat; prefer first normalized area
+        specialty: specialtyFromAreas || formData.specialty,
         practiceAreas: normalizedAreas.matched.length > 0 ? normalizedAreas.matched : undefined,
         techniques: normalizedTechniques.matched.length > 0 ? normalizedTechniques.matched : undefined,
         profileVocabVersion: CURRENT_PRACTICE_AREAS_VOCAB_VERSION,
@@ -520,29 +505,24 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           normalizedAreas.unmatched.length > 0 || normalizedTechniques.unmatched.length > 0
             ? { practiceAreas: normalizedAreas.unmatched, techniques: normalizedTechniques.unmatched }
             : undefined,
-        experienceYears: formData.yearsOfExperience.toString(), // Prompting: seniority
-        practiceCountry: formData.practiceCountry || formData.country, // Compliance: país donde se ejercerá (fallback a country si no existe)
-        practicePreferences, // Prompting: reduce fricción cognitiva, evita sugerencias no usadas
-
+        experienceYears: formData.yearsOfExperience.toString(),
+        practiceCountry: formData.licenseCountry || formData.country,
+        practicePreferences,
         // WIZARD 3: Consentimiento
-        // Prompting: filtrado de datos antes de construir prompt
-        // Compliance: PHIPA y PIPEDA son obligatorios para cumplir con regulaciones canadienses
         dataUseConsent: {
           ...formData.dataUseConsent,
-          phipaConsent: formData.dataUseConsent.phipaConsent, // Required for PHIPA compliance (Canada only)
-          pipedaConsent: formData.dataUseConsent.pipedaConsent, // Required for PIPEDA compliance (Canada only)
+          phipaConsent: formData.dataUseConsent.phipaConsent,
+          pipedaConsent: formData.dataUseConsent.pipedaConsent,
         },
-        // WO-12: Pilot consent - required for all countries
         pilotConsent: {
           accepted: formData.pilotConsent,
           acceptedAt: new Date(),
           version: 'pilot-v1',
-          practiceCountry: formData.practiceCountry || formData.country || '',
+          practiceCountry: formData.licenseCountry || formData.country || '',
         },
-
-        // CTO SPEC: registrationStatus pasa a 'complete' cuando se completa todo
-        registrationStatus: 'complete',
-      });
+        registrationStatus: 'complete' as const,
+      };
+      await saveProfileForUid(authUser.uid, profilePayload);
 
       logger.info('Professional profile saved successfully in users/{uid}');
 
@@ -567,7 +547,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         navigate("/login", {
           replace: true,
           state: {
-            message: 'Registration completed successfully! Please check your email to verify your account.',
+            message: t('onboarding.successRegistrationMessage'),
             type: 'success'
           }
         });
@@ -577,23 +557,24 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       logger.error('Error saving profile:', error);
       const code = (error as { code?: string })?.code;
       if (code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Please sign in or use a different email.');
+        setError(t('onboarding.errorEmailAlreadyRegistered'));
         return;
       }
       if (code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
+        setError(t('onboarding.errorInvalidEmail'));
         return;
       }
       if (code === 'auth/weak-password') {
-        setError('Password is too weak. Please use at least 6 characters.');
+        setError(t('onboarding.errorWeakPassword'));
         return;
       }
-      setError('Error saving professional profile. Please try again.');
+      setError(t('onboarding.errorSavingProfile'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Lista internacional (Canadá, US, etc.)
   const healthProfessions: string[] = [
     'Physiotherapist',
     'Physical Therapist',
@@ -606,6 +587,40 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     'Psychologist',
     'Social Worker',
     'Other'
+  ];
+
+  // España: solo profesiones sanitarias tituladas / aliadas a la salud, denominación española
+  const healthProfessionsEs: string[] = [
+    'Physiotherapist',       // Fisioterapeuta (una sola entrada; Physical Therapist no se usa en ES)
+    'Occupational Therapist', // Terapeuta ocupacional
+    'Speech Therapist',     // Logopeda
+    'Podiatrist',           // Podólogo
+    'Dietitian',            // Dietista-Nutricionista
+    'Optometrist',          // Óptico-optometrista
+    'Other'                 // Otro
+  ];
+
+  // España: comunidades autónomas oficiales (normas que rigen el ejercicio profesional)
+  const AUTONOMOUS_COMMUNITIES_ES: string[] = [
+    'Andalucía',
+    'Aragón',
+    'Principado de Asturias',
+    'Illes Balears',
+    'Canarias',
+    'Cantabria',
+    'Castilla y León',
+    'Castilla-La Mancha',
+    'Cataluña',
+    'Comunitat Valenciana',
+    'Extremadura',
+    'Galicia',
+    'Comunidad de Madrid',
+    'Región de Murcia',
+    'Comunidad Foral de Navarra',
+    'País Vasco',
+    'La Rioja',
+    'Ceuta',
+    'Melilla',
   ];
 
   // CTO SPEC: Layout optimizado para pantalla 13" sin scroll
@@ -648,24 +663,24 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         {/* Header - Ultra compacto */}
         <div className="text-center mb-2">
           <p className="text-[9px] font-light text-gray-500 uppercase tracking-[0.02em] mb-1 font-apple">
-            SECURE PROFESSIONAL ACCESS • PHIPA COMPLIANT
+            {t('onboarding.headerBadge')}
           </p>
           <h1 className="text-xl sm:text-2xl font-light mb-1 tracking-[-0.02em] leading-tight font-apple">
-            Welcome to{' '}
+            {t('onboarding.welcomeTitle')}{' '}
             <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
               AiduxCare
             </span>
-            <span className="ml-1 text-lg">🍁</span>
+            {!esPilot && <span className="ml-1 text-lg" aria-hidden>🍁</span>}
           </h1>
           <p className="text-sm text-gray-600 font-light font-apple">
-            Complete Your Professional Profile
+            {t('onboarding.subtitle')}
           </p>
         </div>
 
         {/* Card principal - Compacto */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-2">
           <h2 className="text-base font-medium text-gray-900 mb-3 text-center font-apple">
-            Professional Onboarding
+            {t('onboarding.title')}
           </h2>
 
           {/* Progress Indicator - Compacto */}
@@ -706,17 +721,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           {currentStep === 0 && (
             <div className="bg-gradient-to-br from-gray-50 to-blue-50/20 rounded-lg border border-blue-200/60 p-4 mb-2 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
-                Professional Identity
+                {t('onboarding.identityTitle')}
               </h3>
               <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
-                Who you are within AiDuxCare
+                {t('onboarding.identityDesc')}
               </p>
 
               <div className="grid grid-cols-2 gap-2">
                 {/* First Name - Required */}
                 <div className="relative">
                   <label htmlFor="firstName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    First Name <span className="text-red-500">*</span>
+                    {t('onboarding.firstName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -732,7 +747,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Last Name - Required */}
                 <div className="relative">
                   <label htmlFor="lastName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Last Name <span className="text-red-500">*</span>
+                    {t('onboarding.lastName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -748,7 +763,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Preferred Name - Optional */}
                 <div className="relative">
                   <label htmlFor="preferredName" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Preferred Name
+                    {t('onboarding.preferredName')}
                   </label>
                   <input
                     type="text"
@@ -762,7 +777,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Email - Required, Readonly */}
                 <div className="relative">
                   <label htmlFor="email" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Email <span className="text-red-500">*</span>
+                    {t('onboarding.email')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -801,7 +816,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   <>
                     <div className="relative">
                       <label htmlFor="password" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                        Password <span className="text-red-500">*</span>
+                        {t('onboarding.password')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="password"
@@ -817,7 +832,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
                     <div className="relative">
                       <label htmlFor="confirmPassword" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                        Confirm Password <span className="text-red-500">*</span>
+                        {t('onboarding.confirmPassword')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="password"
@@ -843,7 +858,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Phone with Country Code - Optional */}
                 <div className="relative col-span-2">
                   <label htmlFor="phone" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Phone <span className="text-gray-400 text-[10px]">(for SMS notifications)</span>
+                    {t('onboarding.phone')} <span className="text-gray-400 text-[10px]">{t('onboarding.phoneForSms')}</span>
                   </label>
                   <div className="flex gap-1.5">
                     <select
@@ -882,7 +897,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Country - Required */}
                 <div className="relative">
                   <label htmlFor="country" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Country <span className="text-red-500">*</span>
+                    {t('onboarding.country')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="country"
@@ -891,40 +906,49 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     className={getFieldValidationClass(formData.country, true)}
                     required
                   >
-                    <option value="">Select</option>
-                    <option value="CA">Canada</option>
-                    <option value="US">United States</option>
-                    <option value="MX">Mexico</option>
-                    <option value="ES">Spain</option>
-                    <option value="AR">Argentina</option>
-                    <option value="CO">Colombia</option>
-                    <option value="PE">Peru</option>
-                    <option value="CL">Chile</option>
-                    <option value="OTHER">Other</option>
+                    <option value="">{t('onboarding.select')}</option>
+                    {(['CA', 'US', 'MX', 'ES', 'AR', 'CO', 'PE', 'CL', 'OTHER'] as const).map((code) => (
+                      <option key={code} value={code}>{t('onboarding.country_' + code)}</option>
+                    ))}
                   </select>
                   {getFieldValidationIcon(formData.country, true)}
                 </div>
 
-                {/* Province/State - Required */}
+                {/* Province/State (internacional) o Comunidad autónoma (España) - Required */}
                 <div className="relative">
                   <label htmlFor="province" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Province/State <span className="text-red-500">*</span>
+                    {t('onboarding.provinceState')} <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    id="province"
-                    value={formData.province}
-                    onChange={(e) => handleInputChange('province', e.target.value)}
-                    className={getFieldValidationClass(formData.province, true)}
-                    required
-                  />
+                  {esPilot ? (
+                    <select
+                      id="province"
+                      value={formData.province}
+                      onChange={(e) => handleInputChange('province', e.target.value)}
+                      className={getFieldValidationClass(formData.province, true)}
+                      required
+                    >
+                      <option value="">{t('onboarding.selectAutonomousCommunity')}</option>
+                      {AUTONOMOUS_COMMUNITIES_ES.map((ccaa) => (
+                        <option key={ccaa} value={ccaa}>{ccaa}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      id="province"
+                      value={formData.province}
+                      onChange={(e) => handleInputChange('province', e.target.value)}
+                      className={getFieldValidationClass(formData.province, true)}
+                      required
+                    />
+                  )}
                   {getFieldValidationIcon(formData.province, true)}
                 </div>
 
                 {/* City - Required */}
                 <div className="relative">
                   <label htmlFor="city" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    City <span className="text-red-500">*</span>
+                    {t('onboarding.city')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -940,7 +964,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Profession - Required */}
                 <div className="relative">
                   <label htmlFor="profession" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Profession <span className="text-red-500">*</span>
+                    {t('onboarding.profession')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="profession"
@@ -949,10 +973,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     className={getFieldValidationClass(formData.profession, true)}
                     required
                   >
-                    <option value="">Select</option>
-                    {healthProfessions.map((profession) => (
+                    <option value="">{t('onboarding.select')}</option>
+                    {(esPilot ? healthProfessionsEs : healthProfessions).map((profession) => (
                       <option key={profession} value={profession}>
-                        {profession}
+                        {t('onboarding.profession_' + profession.replace(/\s+/g, '_'))}
                       </option>
                     ))}
                   </select>
@@ -963,20 +987,20 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {formData.profession === 'Other' && (
                   <div className="relative col-span-2">
                     <label htmlFor="professionOther" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                      Specify your profession <span className="text-red-500">*</span>
+                      {t('onboarding.specifyProfession')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       id="professionOther"
                       value={formData.professionOther}
                       onChange={(e) => handleInputChange('professionOther', e.target.value)}
-                      placeholder="e.g. Osteopath, Kinesiologist, Athletic Therapist"
+                      placeholder={t('onboarding.professionOtherPlaceholder')}
                       className={getFieldValidationClass(formData.professionOther.trim(), true)}
                       required
                     />
                     {getFieldValidationIcon(formData.professionOther.trim(), true)}
                     <p className="text-[10px] text-gray-500 mt-0.5 font-apple">
-                      We will use this to tailor documentation to your role. Your answer is stored securely and normalized for prompts.
+                      {t('onboarding.professionHint')}
                     </p>
                   </div>
                 )}
@@ -984,7 +1008,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* License Number - Required */}
                 <div className="relative">
                   <label htmlFor="licenseNumber" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    License Number <span className="text-red-500">*</span>
+                    {t('onboarding.licenseNumber')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1000,7 +1024,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* License Country - Required */}
                 <div className="relative">
                   <label htmlFor="licenseCountry" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    License Country <span className="text-red-500">*</span>
+                    {t('onboarding.licenseCountry')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="licenseCountry"
@@ -1009,16 +1033,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     className={getFieldValidationClass(formData.licenseCountry, true)}
                     required
                   >
-                    <option value="">Select</option>
-                    <option value="CA">Canada</option>
-                    <option value="US">United States</option>
-                    <option value="MX">Mexico</option>
-                    <option value="ES">Spain</option>
-                    <option value="AR">Argentina</option>
-                    <option value="CO">Colombia</option>
-                    <option value="PE">Peru</option>
-                    <option value="CL">Chile</option>
-                    <option value="OTHER">Other</option>
+                    <option value="">{t('onboarding.select')}</option>
+                    {(['CA', 'US', 'MX', 'ES', 'AR', 'CO', 'PE', 'CL', 'OTHER'] as const).map((code) => (
+                      <option key={code} value={code}>{t('onboarding.country_' + code)}</option>
+                    ))}
                   </select>
                   {getFieldValidationIcon(formData.licenseCountry, true)}
                 </div>
@@ -1030,17 +1048,17 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           {currentStep === 1 && (
             <div className="bg-gradient-to-br from-gray-50 to-purple-50/20 rounded-lg border border-purple-200/60 p-4 mb-2 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
-                Clinical Practice & Style
+                {t('onboarding.step2Title')}
               </h3>
               <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
-                How you work and how AiDuxCare helps you
+                {t('onboarding.step2Desc')}
               </p>
 
               <div className="grid grid-cols-2 gap-2">
                 {/* Years of Experience - Required */}
                 <div className="relative">
                   <label htmlFor="yearsOfExperience" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Years of Experience <span className="text-red-500">*</span>
+                    {t('onboarding.yearsOfExperience')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -1057,8 +1075,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 {/* Specialty - Multi-select checkboxes */}
                 <div className="relative col-span-2">
                   <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Specialty / Focus <span className="text-red-500">*</span>
-                    <span className="text-gray-400 text-[10px] ml-1">(select all that apply)</span>
+                    {t('onboarding.specialtyFocus')} <span className="text-red-500">*</span>
+                    <span className="text-gray-400 text-[10px] ml-1">{t('onboarding.selectAllThatApply')}</span>
                   </label>
                   <div className="grid grid-cols-2 gap-1.5 p-2 border border-gray-300 rounded-lg bg-gray-50">
                     {PRIMARY_SPECIALTIES.map((specialty) => {
@@ -1154,40 +1172,22 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   </div>
                   {Array.isArray(formData.practiceSettings) && formData.practiceSettings.length > 0 && (
                     <p className="text-[10px] text-green-600 mt-0.5 font-apple">
-                      {formData.practiceSettings.length} setting{formData.practiceSettings.length !== 1 ? 's' : ''} selected
+                      {t('onboarding.settingsSelectedCount', { count: formData.practiceSettings.length })}
                     </p>
                   )}
                 </div>
 
-                {/* Practice Country - Required */}
-                <div className="relative">
-                  <label htmlFor="practiceCountry" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                    Country of Practice <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="practiceCountry"
-                    value={formData.practiceCountry}
-                    onChange={(e) => handleInputChange('practiceCountry', e.target.value)}
-                    className={getFieldValidationClass(formData.practiceCountry, true)}
-                    required
-                  >
-                    <option value="">Select</option>
-                    <option value="CA">Canadá</option>
-                    <option value="CL">Chile</option>
-                    <option value="ES">España</option>
-                  </select>
-                  {getFieldValidationIcon(formData.practiceCountry, true)}
-                </div>
-
                 {/* Practice Preferences */}
                 <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
-                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">Practice Preferences</h4>
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
+                    {t('onboarding.practicePreferencesTitle')}
+                  </h4>
 
                   <div className="grid grid-cols-2 gap-2">
                     {/* Note Verbosity */}
                     <div>
                       <label htmlFor="noteVerbosity" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                        Note Verbosity
+                        {t('onboarding.noteVerbosityLabel')}
                       </label>
                       <select
                         id="noteVerbosity"
@@ -1195,16 +1195,16 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         onChange={(e) => handleInputChange('practicePreferences.noteVerbosity', e.target.value)}
                         className="w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
                       >
-                        <option value="concise">Concise</option>
-                        <option value="standard">Standard</option>
-                        <option value="detailed">Detailed</option>
+                        <option value="concise">{t('onboarding.noteVerbosity_concise')}</option>
+                        <option value="standard">{t('onboarding.noteVerbosity_standard')}</option>
+                        <option value="detailed">{t('onboarding.noteVerbosity_detailed')}</option>
                       </select>
                     </div>
 
                     {/* Tone */}
                     <div>
                       <label htmlFor="tone" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                        Tone
+                        {t('onboarding.toneLabel')}
                       </label>
                       <select
                         id="tone"
@@ -1212,9 +1212,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         onChange={(e) => handleInputChange('practicePreferences.tone', e.target.value)}
                         className="w-full h-9 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue transition-all text-xs bg-white font-apple font-light"
                       >
-                        <option value="formal">Formal</option>
-                        <option value="friendly">Friendly</option>
-                        <option value="educational">Educational</option>
+                        <option value="formal">{t('onboarding.tone_formal')}</option>
+                        <option value="friendly">{t('onboarding.tone_friendly')}</option>
+                        <option value="educational">{t('onboarding.tone_educational')}</option>
                       </select>
                     </div>
 
@@ -1224,7 +1224,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         {/* Preferred Treatments (MSK) */}
                         <div>
                           <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                            Preferred Treatments (MSK) <span className="text-gray-400 text-[10px]">(optional)</span>
+                            {t('onboarding.preferredTreatmentsLabel')} <span className="text-gray-400 text-[10px]">{t('onboarding.optional')}</span>
                           </label>
                           <div className="max-h-32 overflow-y-auto p-2 border border-gray-300 rounded-lg bg-gray-50">
                             {MSK_SKILLS.map((skill) => {
@@ -1250,7 +1250,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                           </div>
                           {Array.isArray(formData.practicePreferences.preferredTreatments) && formData.practicePreferences.preferredTreatments.length > 0 && (
                             <p className="text-[10px] text-green-600 mt-0.5 font-apple">
-                              {formData.practicePreferences.preferredTreatments.length} selected
+                              {t('onboarding.selectedCount', { count: formData.practicePreferences.preferredTreatments.length })}
                             </p>
                           )}
                         </div>
@@ -1258,7 +1258,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         {/* Do Not Suggest (MSK) */}
                         <div>
                           <label className="block text-xs font-normal text-gray-700 mb-1 font-apple">
-                            Do Not Suggest (MSK) <span className="text-gray-400 text-[10px]">(optional)</span>
+                            {t('onboarding.doNotSuggestLabel')} <span className="text-gray-400 text-[10px]">{t('onboarding.optional')}</span>
                           </label>
                           <div className="max-h-32 overflow-y-auto p-2 border border-gray-300 rounded-lg bg-gray-50">
                             {MSK_SKILLS.map((skill) => {
@@ -1284,7 +1284,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                           </div>
                           {Array.isArray(formData.practicePreferences.doNotSuggest) && formData.practicePreferences.doNotSuggest.length > 0 && (
                             <p className="text-[10px] text-red-600 mt-0.5 font-apple">
-                              {formData.practicePreferences.doNotSuggest.length} excluded
+                              {t('onboarding.excludedCount', { count: formData.practicePreferences.doNotSuggest.length })}
                             </p>
                           )}
                         </div>
@@ -1298,18 +1298,18 @@ export const ProfessionalOnboardingPage: React.FC = () => {
 
           {/* WIZARD 3 — Uso de datos y consentimiento (CTO Spec) */}
           {currentStep === 2 && (() => {
-            // WO-12: Get practice country with fallback
-            const practiceCountry = formData.practiceCountry || formData.country || '';
+            // WO-12: País de práctica = país de la licencia (o país del perfil)
+            const practiceCountry = formData.licenseCountry || formData.country || '';
             const isCanada = practiceCountry.toUpperCase() === 'CA';
             const consentContent = getPilotConsentContent(practiceCountry);
 
             return (
               <div className="bg-gradient-to-br from-gray-50 to-indigo-50/20 rounded-lg border border-indigo-200/60 p-4 mb-2 shadow-sm">
                 <h3 className="text-sm font-semibold text-gray-900 mb-1 font-apple">
-                  Data Use & Privacy Consent
+                  {t('onboarding.step3Title')}
                 </h3>
                 <p className="text-[10px] text-gray-600 mb-3 font-apple font-light">
-                  Your informed consent for data use and compliance with privacy legislation
+                  {t('onboarding.step3Desc')}
                 </p>
 
                 <div className="space-y-3">
@@ -1348,10 +1348,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   {isCanada && (
                     <div className="border-t border-indigo-200 pt-2">
                       <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
-                        Canadian Privacy Legislation Compliance <span className="text-red-500">*</span>
+                        {t('onboarding.canadianPrivacyTitle')} <span className="text-red-500">*</span>
                       </h4>
                       <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
-                        As a healthcare professional in Canada, you must consent to our privacy practices in accordance with applicable legislation.
+                        {t('onboarding.canadianPrivacyDesc')}
                       </p>
 
                       {/* PHIPA Consent */}
@@ -1367,14 +1367,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                           />
                           <div className="ml-2.5 flex-1">
                             <label htmlFor="phipaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
-                              Personal Health Information Protection Act (PHIPA) Consent
+                              {t('onboarding.phipaConsentLabel')}
                             </label>
                             <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
-                              I acknowledge that I have read and understood the{' '}
-                              <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
-                                Privacy Policy
-                              </Link>
-                              {' '}and consent to the collection, use, and disclosure of my personal health information in accordance with the Personal Health Information Protection Act, 2004 (PHIPA). I understand that my information will be used solely for the purposes of providing and improving healthcare services, and that I may withdraw this consent at any time.
+                              {t('onboarding.phipaConsentBody')}
                             </p>
                           </div>
                         </div>
@@ -1393,14 +1389,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                           />
                           <div className="ml-2.5 flex-1">
                             <label htmlFor="pipedaConsent" className="text-xs font-semibold text-gray-900 cursor-pointer font-apple">
-                              Personal Information Protection and Electronic Documents Act (PIPEDA) Consent
+                              {t('onboarding.pipedaConsentLabel')}
                             </label>
                             <p className="text-[10px] text-gray-700 mt-1 font-apple font-light leading-relaxed">
-                              I acknowledge that I have read and understood the{' '}
-                              <Link to="/privacy" target="_blank" className="text-blue-600 hover:text-blue-800 underline font-medium">
-                                Privacy Policy
-                              </Link>
-                              {' '}and consent to the collection, use, and disclosure of my personal information in accordance with the Personal Information Protection and Electronic Documents Act (PIPEDA). I understand that my information will be protected by appropriate safeguards and that I have the right to access, correct, or request deletion of my personal information.
+                              {t('onboarding.pipedaConsentBody')}
                             </p>
                           </div>
                         </div>
@@ -1411,11 +1403,11 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   {/* SECTION 2: AI Assistant Personalization Preferences (Optional) */}
                   <div className="border-t border-indigo-200 pt-2">
                     <h4 className="text-xs font-semibold text-gray-900 mb-2 font-apple">
-                      AI Assistant Personalization Preferences
-                      <span className="text-gray-400 text-[10px] ml-1 font-normal">(optional)</span>
+                      {t('onboarding.aiPersonalizationTitle')}
+                      <span className="text-gray-400 text-[10px] ml-1 font-normal">{t('onboarding.aiPersonalizationOptional')}</span>
                     </h4>
                     <p className="text-[10px] text-gray-600 mb-2 font-apple font-light">
-                      Customize how your AI assistant uses information to provide personalized clinical support.
+                      {t('onboarding.aiPersonalizationDesc')}
                     </p>
 
                     {/* 1. Personalize with your professional style */}
@@ -1430,10 +1422,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         />
                         <div className="ml-2 flex-1">
                           <label htmlFor="personalizationFromClinicianInputs" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                            Personalize with your professional style
+                            {t('onboarding.personalizeStyle')}
                           </label>
                           <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                            Allow the AI assistant to use your professional information (specialty, experience, practice preferences) to tailor clinical notes and treatment suggestions to your practice style.
+                            {t('onboarding.personalizeStyleDesc')}
                           </p>
                         </div>
                       </div>
@@ -1451,10 +1443,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         />
                         <div className="ml-2 flex-1">
                           <label htmlFor="personalizationFromPatientData" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                            Personalize with patient data
+                            {t('onboarding.personalizePatientData')}
                           </label>
                           <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                            Allow the AI assistant to use patient clinical data (current and historical) to enrich clinical reasoning and treatment planning. This enables more contextually relevant suggestions based on patient history.
+                            {t('onboarding.personalizePatientDataDesc')}
                           </p>
                         </div>
                       </div>
@@ -1472,10 +1464,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         />
                         <div className="ml-2 flex-1">
                           <label htmlFor="allowAssistantMemoryAcrossSessions" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                            Assistant memory across sessions
+                            {t('onboarding.assistantMemory')}
                           </label>
                           <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                            Enable the AI assistant to remember your preferences and clinical context between sessions, providing continuity and reducing repetitive input.
+                            {t('onboarding.assistantMemoryDesc')}
                           </p>
                         </div>
                       </div>
@@ -1493,10 +1485,10 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                         />
                         <div className="ml-2 flex-1">
                           <label htmlFor="useDeidentifiedDataForProductImprovement" className="text-xs font-medium text-gray-700 cursor-pointer font-apple">
-                            Product improvement with deidentified data
+                            {t('onboarding.productImprovement')}
                           </label>
                           <p className="text-[10px] text-gray-600 mt-0.5 font-apple font-light">
-                            Allow AiduxCare to use deidentified and aggregated data (with all personal identifiers removed) to improve system quality, accuracy, and clinical outcomes. This data cannot be linked back to you or your patients.
+                            {t('onboarding.productImprovementDesc')}
                           </p>
                         </div>
                       </div>
@@ -1506,15 +1498,15 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                   {/* Information Notice */}
                   <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
                     <p className="text-[10px] text-amber-800 font-apple font-light leading-relaxed">
-                      <strong className="font-semibold">Important:</strong> You may withdraw any of these consents at any time by updating your preferences in your account settings. Withdrawing consent may limit certain features of the service. For detailed information about how we collect, use, and protect your information, please review our{' '}
+                      <strong className="font-semibold">{t('onboarding.importantNotice')}</strong>{' '}
+                      {t('onboarding.withdrawNotice')}{' '}
                       <Link to="/privacy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
-                        Privacy Policy
+                        {t('onboarding.privacyPolicyLink')}
                       </Link>
                       {' '}and{' '}
                       <Link to="/terms" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
-                        Terms of Service
-                      </Link>
-                      .
+                        {t('onboarding.termsLink')}
+                      </Link>.
                     </p>
                   </div>
                 </div>
@@ -1530,7 +1522,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
               variant="outline"
               className="h-9 text-xs font-medium transition-all duration-200 font-apple"
             >
-              Back
+              {t('onboarding.back')}
             </Button>
 
             {currentStep === steps.length - 1 ? (
@@ -1541,7 +1533,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 loading={isLoading}
                 className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
               >
-                {isLoading ? 'Completing...' : 'Complete Setup'}
+                {isLoading ? t('onboarding.completing') : t('onboarding.completeSetup')}
               </Button>
             ) : (
               <Button
@@ -1550,7 +1542,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                 variant="gradient"
                 className="h-9 text-xs font-medium shadow-sm hover:shadow-md transform hover:scale-[1.01] transition-all duration-200 font-apple"
               >
-                Next
+                {t('onboarding.next')}
               </Button>
             )}
           </div>
@@ -1566,8 +1558,8 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         {/* Footer - Compacto */}
         <div className="text-center mt-1">
           <p className="text-[10px] text-gray-500 font-apple font-light flex items-center justify-center gap-1">
-            <span>🍁</span>
-            <span>PHIPA Compliant • SSL Secured • 100% Canadian Data</span>
+            {!esPilot && <span aria-hidden>🍁</span>}
+            <span>{t('onboarding.footerBadge')}</span>
           </p>
         </div>
       </div>

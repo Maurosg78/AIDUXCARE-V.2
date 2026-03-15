@@ -1,0 +1,21 @@
+{
+  "engineVersion": "2026.03.10",
+  "language": "es",
+  "soap": {
+    "subjective": "Mujer de 38 años que consulta por dolor cervical mecánico de 6 semanas de evolución. Inicialmente 7/10, actualmente 3/10 en reposo y 4/10 con movimiento. Refiere mejoría clara desde el inicio del tratamiento, con menor rigidez matutina y mejor tolerancia al trabajo frente al ordenador.",
+    "objective": "Aumento del rango de movimiento en rotación cervical bilateral respecto a la evaluación inicial. Ligera molestia al final de rango en rotación derecha. Test de Spurling negativo bilateral. Control motor cervical mejorado en ejercicios de retracción. No se observan signos neurológicos focales.",
+    "assessment": "Evolución favorable de cuadro de dolor cervical mecánico con buena respuesta al tratamiento actual. Disminución del dolor reportado y mejora funcional en actividades de la vida diaria, sin aparición de banderas rojas.",
+    "plan": "Mantener programa actual de ejercicios de control motor cervical y fortalecimiento escapular 3x/semana. Progresar carga de ejercicios de forma gradual según tolerancia. Reforzar pautas de ergonomía en el puesto de trabajo y pausas activas cada 60 minutos."
+  },
+  "referralReportEs": "Paciente: Fixture Patient\nFecha de sesión: 13/3/2026\nEpisodio: Mujer de 38 anos que consulta por dolor cervical mecanico de 6 semanas de evolucion\n\nImpresión clínica documentada por el fisioterapeuta: Evolucion favorable de cuadro de dolor cervical mecanico con buena respuesta al tratamiento actual.\n\nEvolución: Dolor referido de 7/10\n\nNota: Este informe se basa en la valoración fisioterapéutica realizada en la sesión descrita.",
+  "warnings": [],
+  "metrics": {
+    "sectionsDetected": true,
+    "forbiddenLanguage": false,
+    "regulatoryBoundaryCheck": "PASS",
+    "sectionsCount": 6,
+    "narrativeLength": 430,
+    "planDetected": false,
+    "recordWriteAttempt": false
+  }
+}

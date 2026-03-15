@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FeedbackService, FeedbackType, FeedbackSeverity, EnrichedContext } from '../../services/feedbackService';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -15,6 +16,7 @@ interface FeedbackModalProps {
  * 🔴 ENHANCED: Now includes enriched context capture and display.
  */
 export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [type, setType] = useState<FeedbackType>('bug');
   const [severity, setSeverity] = useState<FeedbackSeverity>('medium');
@@ -39,7 +41,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     e.preventDefault();
     
     if (!description.trim()) {
-      setSubmitError('Please describe the problem or suggestion');
+      setSubmitError(t('feedback.modal.errorDescribe'));
       return;
     }
 
@@ -94,12 +96,12 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
       >
         {/* Header */}
         <div className="sticky top-0 bg-blue-600 text-white px-6 py-4 rounded-t-lg flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Report Feedback</h2>
+          <h2 className="text-xl font-semibold">{t('feedback.modal.title')}</h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
             className="text-white hover:text-gray-200 transition-colors disabled:opacity-50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label="Close"
+            aria-label={t('feedback.modal.close')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -112,7 +114,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           {/* Success Message */}
           {submitSuccess && (
             <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md">
-              ✅ Feedback submitted successfully! Thank you for your help.
+              ✅ {t('feedback.modal.success')}
             </div>
           )}
 
@@ -126,7 +128,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           {/* Type Selection */}
           <div>
             <label htmlFor="feedback-type" className="block text-sm font-medium text-gray-700 mb-2">
-              Feedback Type *
+              {t('feedback.modal.typeLabel')}
             </label>
             <select
               id="feedback-type"
@@ -135,17 +137,17 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
             >
-              <option value="bug">🐛 Bug / Error</option>
-              <option value="suggestion">💡 Suggestion / Improvement</option>
-              <option value="question">❓ Question</option>
-              <option value="other">📝 Other</option>
+              <option value="bug">🐛 {t('feedback.modal.typeBug')}</option>
+              <option value="suggestion">💡 {t('feedback.modal.typeSuggestion')}</option>
+              <option value="question">❓ {t('feedback.modal.typeQuestion')}</option>
+              <option value="other">📝 {t('feedback.modal.typeOther')}</option>
             </select>
           </div>
 
           {/* Severity Selection */}
           <div>
             <label htmlFor="feedback-severity" className="block text-sm font-medium text-gray-700 mb-2">
-              Severity *
+              {t('feedback.modal.severityLabel')}
             </label>
             <select
               id="feedback-severity"
@@ -154,17 +156,17 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
             >
-              <option value="low">🟢 Low - Cosmetic, doesn't affect usage</option>
-              <option value="medium">🟡 Medium - Annoying but functional</option>
-              <option value="high">🟠 High - Affects important functionality</option>
-              <option value="critical">🔴 Critical - Blocks complete workflow</option>
+              <option value="low">🟢 {t('feedback.modal.severityLow')}</option>
+              <option value="medium">🟡 {t('feedback.modal.severityMedium')}</option>
+              <option value="high">🟠 {t('feedback.modal.severityHigh')}</option>
+              <option value="critical">🔴 {t('feedback.modal.severityCritical')}</option>
             </select>
           </div>
 
           {/* Description */}
           <div>
             <label htmlFor="feedback-description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
+              {t('feedback.modal.descriptionLabel')}
             </label>
             <textarea
               id="feedback-description"
@@ -172,12 +174,12 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Describe the problem, suggestion, or question. Include steps to reproduce if it's a bug..."
+              placeholder={t('feedback.modal.descriptionPlaceholder')}
               required
               disabled={isSubmitting}
             />
             <p className="mt-1 text-sm text-gray-500">
-              The following will be automatically captured: URL, browser, and session context.
+              {t('feedback.modal.autoCaptureNote')}
             </p>
           </div>
 
@@ -185,57 +187,57 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
           {enrichedContext && (
             <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                📍 Context Automatically Captured
+                📍 {t('feedback.modal.contextTitle')}
               </h4>
               <div className="text-xs text-gray-600 space-y-1">
                 <div className="flex items-start gap-2">
-                  <span className="font-medium">URL:</span>
+                  <span className="font-medium">{t('feedback.modal.url')}</span>
                   <span className="text-gray-500 break-all">{window.location.pathname}</span>
                 </div>
                 {enrichedContext.workflowStep && (
                   <div className="flex items-start gap-2">
-                    <span className="font-medium">Workflow Step:</span>
+                    <span className="font-medium">{t('feedback.modal.workflowStep')}</span>
                     <span className="text-gray-500 capitalize">{enrichedContext.workflowStep}</span>
                   </div>
                 )}
                 {enrichedContext.patientType && (
                   <div className="flex items-start gap-2">
-                    <span className="font-medium">Patient Type:</span>
+                    <span className="font-medium">{t('feedback.modal.patientType')}</span>
                     <span className="text-gray-500">
-                      {enrichedContext.patientType === 'new_evaluation' ? 'New - Initial Evaluation' : 'Existing - Follow-up'}
+                      {enrichedContext.patientType === 'new_evaluation' ? t('feedback.modal.patientTypeNew') : t('feedback.modal.patientTypeFollowup')}
                     </span>
                   </div>
                 )}
                 {enrichedContext.isPilotUser && (
                   <div className="flex items-start gap-2">
-                    <span className="font-medium">Pilot User:</span>
-                    <span className="text-gray-500">Yes</span>
+                    <span className="font-medium">{t('feedback.modal.pilotUser')}</span>
+                    <span className="text-gray-500">{t('feedback.modal.yes')}</span>
                   </div>
                 )}
                 {enrichedContext.userExperienceLevel && (
                   <div className="flex items-start gap-2">
-                    <span className="font-medium">Experience Level:</span>
+                    <span className="font-medium">{t('feedback.modal.experienceLevel')}</span>
                     <span className="text-gray-500 capitalize">{enrichedContext.userExperienceLevel}</span>
                   </div>
                 )}
                 {enrichedContext.workflowState && (
                   <div className="mt-2 pt-2 border-t border-gray-300">
-                    <div className="font-medium text-gray-700 mb-1">Workflow State:</div>
+                    <div className="font-medium text-gray-700 mb-1">{t('feedback.modal.workflowState')}</div>
                     <div className="space-y-0.5 text-gray-600">
                       {enrichedContext.workflowState.hasTranscript && (
-                        <div>✓ Transcript ({enrichedContext.workflowState.transcriptLength} words)</div>
+                        <div>✓ {t('feedback.modal.hasTranscript', { count: enrichedContext.workflowState.transcriptLength ?? 0 })}</div>
                       )}
-                      {enrichedContext.workflowState.hasAnalysis && <div>✓ Analysis completed</div>}
+                      {enrichedContext.workflowState.hasAnalysis && <div>✓ {t('feedback.modal.hasAnalysis')}</div>}
                       {enrichedContext.workflowState.testsCompleted !== undefined && enrichedContext.workflowState.testsCompleted > 0 && (
-                        <div>✓ {enrichedContext.workflowState.testsCompleted} test(s) completed</div>
+                        <div>✓ {t('feedback.modal.testsCompleted', { count: enrichedContext.workflowState.testsCompleted })}</div>
                       )}
-                      {enrichedContext.workflowState.soapGenerated && <div>✓ SOAP generated</div>}
-                      {enrichedContext.workflowState.soapFinalized && <div>✓ SOAP finalized</div>}
+                      {enrichedContext.workflowState.soapGenerated && <div>✓ {t('feedback.modal.soapGenerated')}</div>}
+                      {enrichedContext.workflowState.soapFinalized && <div>✓ {t('feedback.modal.soapFinalized')}</div>}
                     </div>
                   </div>
                 )}
                 <div className="mt-2 pt-2 border-t border-gray-300 text-gray-500 italic">
-                  Browser, session context, and workflow state will be automatically included with your feedback.
+                  {t('feedback.modal.contextFooter')}
                 </div>
               </div>
             </div>
@@ -249,7 +251,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
               disabled={isSubmitting}
               className="px-5 py-3 min-h-[48px] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t('feedback.modal.cancel')}
             </button>
             <button
               type="submit"
@@ -262,10 +264,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Submitting...
+                  {t('feedback.modal.submitting')}
                 </>
               ) : (
-                'Submit Feedback'
+                t('feedback.modal.submit')
               )}
             </button>
           </div>

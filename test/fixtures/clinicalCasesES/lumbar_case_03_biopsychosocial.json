@@ -1,0 +1,17 @@
+{
+  "language": "es",
+  "originalSOAP": {
+    "subjective": "Paciente de 52 años con dolor lumbar crónico de más de 6 meses de evolución. Dolor basal 4/10, con picos de 6/10 al final de la jornada laboral. Refiere aumento del dolor en periodos de estrés laboral y preocupación por posible baja médica prolongada. Duerme mal, se despierta varias veces pensando en el trabajo. Sin irradiación clara a miembros inferiores.",
+    "objective": "Ligera limitación de flexión lumbar por rigidez, sin signos de irritación radicular. Test de Lasegue y Slump negativos bilateralmente. Patrón de movimiento algo rígido y cauteloso. No se observan déficits neurológicos objetivos.",
+    "assessment": "Dolor lumbar crónico mecánico con componente biopsicosocial relevante (estrés laboral, preocupación por el futuro laboral y alteración del sueño), sin signos de radiculopatía ni banderas rojas mayores en la exploración actual.",
+    "plan": "Educar sobre dolor lumbar crónico y factores psicosociales que pueden influir en la percepción del dolor. Introducir programa progresivo de ejercicio aeróbico y fortalecimiento del tronco. Recomendar pausas activas breves durante la jornada laboral. Explorar, si el paciente lo considera, derivación a apoyo psicológico para manejo del estrés."
+  },
+  "expectedReportStructure": {
+    "hasDiagnosisParagraph": true,
+    "hasEvolutionParagraph": true,
+    "hasFindingsBlock": true,
+    "hasTreatmentBlock": true,
+    "hasPlanParagraph": true
+  }
+}
+

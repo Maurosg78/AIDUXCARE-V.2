@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PersistenceService, type SavedNote } from '@/services/PersistenceService';
 
 export const NotesListPage = () => <div>Notes List</div>;
@@ -13,6 +14,7 @@ interface NoteDetailPageProps {
  * Used when "View SOAP" from Patient History points to a consultation/note.
  */
 export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [note, setNote] = useState<SavedNote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
 
   useEffect(() => {
     if (!id) {
-      setError('No note ID provided.');
+      setError('errorNoId');
       setLoading(false);
       return;
     }
@@ -30,7 +32,7 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
         const loaded = await PersistenceService.getNoteById(id);
         if (cancelled) return;
         if (!loaded) {
-          setError('Note not found or you do not have access.');
+          setError('errorNotFound');
           setNote(null);
         } else {
           setNote(loaded);
@@ -38,7 +40,7 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
         }
       } catch (e) {
         if (!cancelled) {
-          setError('Could not load the note.');
+          setError('errorLoad');
           setNote(null);
         }
       } finally {
@@ -72,15 +74,15 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
             onClick={() => navigate('/command-center')}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 mb-6"
           >
-            ← Back to Command Center
+            ← {t('shell.nav.backToCommandCenter')}
           </button>
           <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-            <p className="text-slate-600 mb-4">{error || 'Note not found.'}</p>
+            <p className="text-slate-600 mb-4">{error ? t(`notes.${error}`) : t('notes.notFoundFallback')}</p>
             <button
               onClick={() => navigate('/command-center')}
               className="text-brand-in-500 hover:text-brand-in-600 font-medium"
             >
-              Go to Command Center
+              {t('shell.nav.goToCommandCenter')}
             </button>
           </div>
         </div>
@@ -96,45 +98,45 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
             onClick={() => navigate(-1)}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
           >
-            ← Back
+            ← {t('notes.back')}
           </button>
-          <h1 className="text-xl font-semibold text-slate-900">SOAP Note</h1>
+          <h1 className="text-xl font-semibold text-slate-900">{t('notes.pageTitle')}</h1>
           <button
             onClick={() => navigate('/command-center')}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
           >
-            Command Center
+            {t('shell.nav.goToCommandCenter')}
           </button>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           {soap?.subjective && (
             <section className="p-6 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Subjective</h2>
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">{t('soap.subjective')}</h2>
               <div className="text-slate-800 whitespace-pre-wrap">{soap.subjective}</div>
             </section>
           )}
           {soap?.objective && (
             <section className="p-6 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Objective</h2>
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">{t('soap.objective')}</h2>
               <div className="text-slate-800 whitespace-pre-wrap">{soap.objective}</div>
             </section>
           )}
           {soap?.assessment && (
             <section className="p-6 border-b border-slate-100">
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Assessment</h2>
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">{t('soap.assessment')}</h2>
               <div className="text-slate-800 whitespace-pre-wrap">{soap.assessment}</div>
             </section>
           )}
           {soap?.plan && (
             <section className="p-6">
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Plan</h2>
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">{t('soap.plan')}</h2>
               <div className="text-slate-800 whitespace-pre-wrap">{soap.plan}</div>
             </section>
           )}
           {!soap?.subjective && !soap?.objective && !soap?.assessment && !soap?.plan && (
             <section className="p-6">
-              <p className="text-slate-500">No SOAP content in this note.</p>
+              <p className="text-slate-500">{t('notes.noContent')}</p>
             </section>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FileText, Play, History } from 'lucide-react';
 
 import ClinicalAssistantPanel from "../../shared/components/Assistant/ClinicalAssistantPanel";
@@ -13,6 +14,7 @@ import { usePatientVisits } from './hooks/usePatientVisits';
 import { PatientService } from '@/services/patientService';
 
 export const PatientDashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id: patientId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   // TODO: Implementar lógica para pacientes nuevos con searchParams
@@ -74,7 +76,7 @@ export const PatientDashboardPage: React.FC = () => {
               onClick={() => navigate('/command-center')}
               className="btn-primary"
             >
-              Back to Command Center
+              {t('shell.nav.backToCommandCenter')}
             </button>
           </div>
         </div>
@@ -99,7 +101,7 @@ export const PatientDashboardPage: React.FC = () => {
               onClick={() => navigate('/command-center')}
               className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-colors"
             >
-              ← Back to Command Center
+              ← {t('shell.nav.backToCommandCenter')}
             </button>
             <h1 className="text-xl font-semibold text-slate-900">Patient History</h1>
             <div className="w-40"></div> {/* Spacer for centering */}

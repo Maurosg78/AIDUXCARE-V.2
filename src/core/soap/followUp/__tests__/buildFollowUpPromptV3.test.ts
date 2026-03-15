@@ -82,18 +82,20 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).not.toContain('HOME EXERCISE PROGRAM');
   });
 
-  it('requests plain SOAP output only (no JSON)', () => {
+  it('requests JSON output with soap + alerts and task is documentation not decision', () => {
     const prompt = buildFollowUpPromptV3({
       baselineSOAP,
       clinicalUpdate: 'Update',
     });
-    expect(prompt).toContain('Return ONLY the following sections');
-    expect(prompt).toContain('Subjective:');
-    expect(prompt).toContain('Objective:');
-    expect(prompt).toContain('Assessment:');
-    expect(prompt).toContain('Plan:');
-    expect(prompt).toContain('Do NOT return analysis, highlights');
-    expect(prompt).toContain('Return SOAP only');
+    expect(prompt).toContain('You MUST return ONLY a valid JSON object');
+    expect(prompt).toContain('"soap":');
+    expect(prompt).toContain('"subjective":');
+    expect(prompt).toContain('"objective":');
+    expect(prompt).toContain('"assessment":');
+    expect(prompt).toContain('"plan":');
+    expect(prompt).toContain('Return anything other than the single JSON object');
+    expect(prompt).toContain('rewrite the SOAP note reflecting today\'s encounter');
+    expect(prompt).toContain('You must NOT decide next treatment strategy');
   });
 
   it('states this is NOT an initial assessment', () => {
@@ -103,5 +105,56 @@ describe('buildFollowUpPromptV3', () => {
     });
     expect(prompt).toContain('This is NOT an initial assessment');
     expect(prompt).toContain('follow-up');
+  });
+
+  it('includes LONGITUDINAL CONTEXT and guardrail when longitudinalSummary provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      longitudinalSummary: 'Pain 7/10 → 4/10. Overall: improved.',
+    });
+    expect(prompt).toContain('LONGITUDINAL CONTEXT — CHANGES SINCE LAST VISIT');
+    expect(prompt).toContain('Pain 7/10 → 4/10');
+    expect(prompt).toContain('documentation continuity');
+    expect(prompt).toContain('Do not infer new diagnoses or treatment decisions from it');
+    expect(prompt).toContain('use it only to describe evolution of symptoms or response to care');
+    expect(prompt).toContain('Do not transform the longitudinal information into treatment strategy');
+  });
+
+  it('includes TRAJECTORY PATTERN block when trajectoryPattern provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      trajectoryPattern: 'improved',
+      trajectoryConfidence: 'high',
+    });
+    expect(prompt).toContain('TRAJECTORY PATTERN (context only)');
+    expect(prompt).toContain('Pain trajectory classification: improved');
+    expect(prompt).toContain('confidence: high');
+    expect(prompt).toContain('Use this information only to describe patient evolution');
+    expect(prompt).toContain('Do not infer treatment decisions');
+  });
+
+  it('includes pain series (recent visits) when painSeriesSummary provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      painSeriesSummary: '7 → 5 → 4',
+    });
+    expect(prompt).toContain('TRAJECTORY PATTERN (context only)');
+    expect(prompt).toContain('Pain series (recent visits): 7 → 5 → 4');
+    expect(prompt).toContain('Use this information only to describe patient evolution');
+  });
+
+  it('includes PREVIOUS TREATMENT PLAN(S) and context-only guardrail when previousPlansSummary provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      previousPlansSummary: 'Focus: Reassess ROM. Interventions: Manual therapy.',
+    });
+    expect(prompt).toContain('PREVIOUS TREATMENT PLAN(S) — CONTEXT ONLY');
+    expect(prompt).toContain('Use the previous plan ONLY as context');
+    expect(prompt).toContain('Do NOT introduce new interventions');
+    expect(prompt).toContain('Reassess ROM');
   });
 });

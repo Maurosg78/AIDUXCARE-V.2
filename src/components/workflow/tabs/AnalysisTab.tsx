@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight } from 'lucide-react';
 import type { Patient } from '../../../services/patientService';
 import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
@@ -227,6 +228,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onGenerateReferralReport,
   onConfirmFollowUpRedFlags,
 }) => {
+  const { t } = useTranslation();
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
   
@@ -289,10 +291,10 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       {!hideHeader && (
         <header className="flex flex-col gap-1">
           <h1 className="text-3xl sm:text-4xl font-light text-slate-900 tracking-[-0.02em] leading-[1.1] font-apple mb-3">
-            Professional Workflow
+            {t('workflow.title')}
           </h1>
           <p className="text-lg text-slate-500 font-light leading-[1.3] font-apple">
-            Canada · Patient data stored under PHIPA/PIPEDA controls · Clinical AI processing verified.
+            {t('workflow.subtitle')}
           </p>
         </header>
       )}
@@ -707,13 +709,13 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition shadow-sm"
                   >
                     <span>📋</span>
-                    <span>Generate Medical Referral Report</span>
+                    <span>{t('workflow.analysis.generateReferralReport')}</span>
                   </button>
                 </div>
               )}
 
               <p className="mt-3 text-xs text-slate-600">
-                Select the red flags relevant to this case. All detected flags are recorded for clinical quality tracking.
+                {t('workflow.analysis.redFlagsHint')}
               </p>
             </div>
           )}
@@ -735,7 +737,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div>
               <p className="text-sm text-slate-600">
-                Select the physical tests you plan to perform. You can edit or add items before moving to the next step.
+                {t('workflow.evaluation.addTestsHint')}
               </p>
             </div>
             <button
@@ -743,20 +745,20 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple text-[15px] font-medium"
             >
               <ChevronsRight className="w-4 h-4" />
-              Continue to physical evaluation
+              {t('workflow.analysis.continueToEvaluation')}
             </button>
             {/* WO-P2-PHYSICAL-GATE-UNBLOCK-001: warning when tests suggested but none selected — no block */}
             {(interactiveResults.physicalTests?.length ?? 0) > 0 &&
               !selectedEntityIds.some((id) => id.startsWith('physical-')) && (
               <p className="mt-2 text-xs text-amber-700">
-                No physical tests selected. You can continue and add tests in the evaluation step.
+                {t('workflow.analysis.noTestsSelectedWarning')}
               </p>
             )}
           </div>
         </>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-          Run the analysis to unlock AI insights, patient safety checks, and suggested physical evaluations.
+          {t('workflow.analysis.runAnalysisEmptyState')}
         </div>
       )}
     </div>

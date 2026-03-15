@@ -1,0 +1,17 @@
+{
+  "language": "es",
+  "originalSOAP": {
+    "subjective": "Paciente de 45 años con dolor lumbar derecho de 5 semanas de evolución. Inicialmente 5/10, actualmente 8/10 con aumento progresivo en los últimos 10 días. El dolor irradia de forma más constante hacia cara posterior de muslo y pantorrilla derecha, empeora con bipedestación prolongada y al inclinarse hacia adelante. Refiere dificultad para dormir por el dolor.",
+    "objective": "Marcha antálgica con leve flexión de tronco. Limitación marcada de flexión lumbar por dolor. Test de Lasegue positivo a 35° en miembro inferior derecho con reproducción del dolor irradiado. Slump test positivo derecho. Disminución de fuerza 4-/5 en dorsiflexores de tobillo derecho. Hipersensibilidad a la palpación paravertebral L4-L5.",
+    "assessment": "Clínica compatible con lumbociatalgia derecha en fase subaguda con empeoramiento reciente del dolor y de la irradiación, sin signos actuales de síndrome de cauda equina. Se documenta aumento de la irritabilidad nerviosa y de la limitación funcional.",
+    "plan": "Continuar con ejercicio terapéutico lumbar dentro de rangos tolerados, priorizando control del dolor. Ajustar frecuencia de sesiones a 2x/semana. Educar en estrategias de manejo del dolor y posturas de alivio. Se sugiere reevaluación médica si el dolor nocturno y la debilidad progresan."
+  },
+  "expectedReportStructure": {
+    "hasDiagnosisParagraph": true,
+    "hasEvolutionParagraph": true,
+    "hasFindingsBlock": true,
+    "hasTreatmentBlock": true,
+    "hasPlanParagraph": true
+  }
+}
+

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Play,
   History,
@@ -60,6 +61,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
   onCreatePatientForOngoing,
   isNewlyCreated = false,
 }) => {
+  const { t } = useTranslation();
   // Panel siempre expandido
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -89,13 +91,13 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
 
   // WO-UX-01: Primary session types (Initial, Follow-up) visible; rest in "More options"
   const primarySessionTypes: Array<{ type: SessionType; label: string }> = [
-    { type: 'initial', label: 'Initial Assessment' },
-    { type: 'followup', label: 'Follow-up' },
+    { type: 'initial', label: t('shell.sessionType.initial') },
+    { type: 'followup', label: t('shell.sessionType.followup') },
   ];
   const moreSessionTypes: Array<{ type: SessionType; label: string }> = [
-    { type: 'wsib', label: 'WSIB session' },
-    { type: 'mva', label: 'MVA session' },
-    { type: 'certificate', label: 'Certificate-only session' },
+    { type: 'wsib', label: t('shell.sessionType.wsib') },
+    { type: 'mva', label: t('shell.sessionType.mva') },
+    { type: 'certificate', label: t('shell.sessionType.certificate') },
   ];
 
   const handlePatientSelect = (patient: Patient) => {
@@ -117,19 +119,19 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
           {selectedPatient ? (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
-                Work with {selectedPatient.fullName || selectedPatient.firstName}
+                {t('shell.workWithPatients.workWithName', { name: selectedPatient.fullName || selectedPatient.firstName })}
               </h2>
               <p className="text-base text-gray-600 font-apple font-light">
-                {hasHistory ? 'Continue treatment' : 'Start new patient evaluation'}
+                {hasHistory ? t('shell.workWithPatients.continueTreatment') : t('shell.workWithPatients.startNewEvaluation')}
               </p>
             </div>
           ) : (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
-                Work with Patients
+                {t('shell.workWithPatients.title')}
               </h2>
               <p className="text-base text-gray-600 font-apple font-light">
-                Select a patient or create new
+                {t('shell.workWithPatients.selectPatientOrCreate')}
               </p>
             </div>
           )}
@@ -150,7 +152,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
             /* NO PATIENT: 2 cards for NEW patients — go directly to forms, NO patient list */
             <div className="pt-4 space-y-3">
               <p className="text-sm text-gray-600 font-apple font-light mb-4">
-                New patient? Choose how to receive them. Each card goes directly to its form.
+                {t('shell.workWithPatients.newPatientHint')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
@@ -162,8 +164,8 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                     <UserPlus className="w-5 h-5 text-primary-blue" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900 font-apple">Initial Assessment</h3>
-                    <p className="text-sm text-gray-600 font-apple font-light mt-0.5">First visit — create patient form → full evaluation and SOAP</p>
+                    <h3 className="text-base font-semibold text-gray-900 font-apple">{t('shell.workWithPatients.initialAssessment')}</h3>
+                    <p className="text-sm text-gray-600 font-apple font-light mt-0.5">{t('shell.workWithPatients.initialAssessmentDesc')}</p>
                   </div>
                 </button>
                 <button
@@ -175,8 +177,8 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                     <FileText className="w-5 h-5 text-primary-blue" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900 font-apple">Ongoing (first time in AiDuxCare)</h3>
-                    <p className="text-sm text-gray-600 font-apple font-light mt-0.5">Existing treatment elsewhere — create patient form → intake → session</p>
+                    <h3 className="text-base font-semibold text-gray-900 font-apple">{t('shell.workWithPatients.ongoingFirstTime')}</h3>
+                    <p className="text-sm text-gray-600 font-apple font-light mt-0.5">{t('shell.workWithPatients.ongoingFirstTimeDesc')}</p>
                   </div>
                 </button>
               </div>
@@ -186,7 +188,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                   onClick={onOpenStartSessionModal}
                   className="text-sm text-primary-blue hover:text-primary-blue-hover font-apple font-medium pt-2"
                 >
-                  Or choose existing patient and start →
+                  {t('shell.workWithPatients.orChooseExisting')}
                 </button>
               )}
             </div>
@@ -206,10 +208,10 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-base font-semibold text-gray-900 font-apple mb-1">
-                          Patient History
+                          {t('shell.workWithPatients.patientHistory')}
                         </h3>
                         <p className="text-sm text-gray-500 font-apple font-light">
-                          Previous sessions & notes
+                          {t('shell.workWithPatients.previousSessionsNotes')}
                         </p>
                       </div>
                     </div>
@@ -226,7 +228,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                         onClick={() => onViewHistory()}
                         className="w-full px-4 py-3 bg-gray-50/50 hover:bg-primary-blue/5 border border-gray-200/60 hover:border-primary-blue/30 rounded-xl transition-all duration-200 text-sm font-medium text-gray-900 font-apple group hover:text-primary-blue"
                       >
-                        View History
+                        {t('shell.workWithPatients.viewHistory')}
                       </button>
                     </div>
                   )}
@@ -248,8 +250,8 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                           <Play className="w-5 h-5 text-primary-blue" />
                         </div>
                         <div>
-                          <h3 className="text-base font-semibold text-gray-900 font-apple">Start Initial Assessment</h3>
-                          <p className="text-sm text-gray-600 font-apple font-light">First visit — full evaluation and SOAP</p>
+                          <h3 className="text-base font-semibold text-gray-900 font-apple">{t('shell.workWithPatients.startInitialAssessment')}</h3>
+                          <p className="text-sm text-gray-600 font-apple font-light">{t('shell.workWithPatients.firstVisitFullEval')}</p>
                         </div>
                       </div>
                     </button>
@@ -266,8 +268,8 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                           <Play className="w-5 h-5 text-primary-blue" />
                         </div>
                         <div>
-                          <h3 className="text-base font-semibold text-gray-900 font-apple">Start Follow-up</h3>
-                          <p className="text-sm text-gray-600 font-apple font-light">Next visit — update and SOAP</p>
+                          <h3 className="text-base font-semibold text-gray-900 font-apple">{t('shell.workWithPatients.startFollowup')}</h3>
+                          <p className="text-sm text-gray-600 font-apple font-light">{t('shell.workWithPatients.nextVisitUpdate')}</p>
                         </div>
                       </div>
                     </button>
@@ -280,7 +282,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                         }
                       }}
                       disabled={!SessionTypeService.isPilotAvailable('followup') || hasHistory}
-                      title={hasHistory ? 'This patient already has sessions — use Initial or Follow-up' : undefined}
+                      title={hasHistory ? t('shell.workWithPatients.ongoingPatientTooltipDisabled') : undefined}
                       className={`w-full p-4 rounded-xl border-2 text-left group transition-all duration-200 ${hasHistory ? 'opacity-50 cursor-not-allowed border-gray-200/60 bg-gray-50/50' : 'border-gray-200/60 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5'}`}
                     >
                       <div className="flex items-center gap-3">
@@ -288,9 +290,9 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                           <Play className="w-5 h-5 text-primary-blue" />
                         </div>
                         <div>
-                          <h3 className="text-base font-semibold text-gray-900 font-apple">Ongoing patient, first time in AiDuxCare</h3>
+                          <h3 className="text-base font-semibold text-gray-900 font-apple">{t('shell.workWithPatients.ongoingFirstTime')}</h3>
                           <p className="text-sm text-gray-600 font-apple font-light">
-                            {hasHistory ? 'This patient already has sessions — use Initial or Follow-up' : 'Existing treatment, first time in app — fill intake to create baseline'}
+                            {hasHistory ? t('shell.workWithPatients.ongoingPatientTooltipDisabled') : t('shell.workWithPatients.ongoingFirstTimeDesc')}
                           </p>
                         </div>
                       </div>
@@ -301,7 +303,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                         onClick={() => handleCardToggle('session')}
                         className="w-full flex items-center justify-between text-sm text-gray-500 hover:text-gray-700 font-apple"
                       >
-                        <span>More session types</span>
+                        <span>{t('shell.workWithPatients.moreSessionTypes')}</span>
                         {expandedCard === 'session' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                       {expandedCard === 'session' && (

@@ -7,8 +7,10 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function PatientSearchPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -20,7 +22,7 @@ export default function PatientSearchPage() {
           onClick={() => navigate('/command-center')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          Return to Command Center
+          {t('shell.nav.returnToCommandCenter')}
         </button>
       </div>
     </div>

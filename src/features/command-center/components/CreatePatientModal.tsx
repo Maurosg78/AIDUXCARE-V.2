@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { X, Loader2, User, Phone, Mail, FileText, Calendar } from 'lucide-react';
@@ -19,6 +20,7 @@ interface CreatePatientModalProps {
 }
 
 export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, onClose, onSuccess, initialPatientType }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const firstNameInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,24 +73,24 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Required';
+      newErrors.firstName = t('shell.createPatient.errorRequired');
     }
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Required';
+      newErrors.lastName = t('shell.createPatient.errorRequired');
     }
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required for SMS consent';
+      newErrors.phone = t('shell.createPatient.errorPhoneSms');
     } else if (!/^\+?[\d\s\-()]+$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid phone format';
+      newErrors.phone = t('shell.createPatient.errorPhoneInvalid');
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email';
+      newErrors.email = t('shell.createPatient.errorEmailInvalid');
     }
     if (!formData.birthDate) {
-      newErrors.birthDate = 'Date of birth is required';
+      newErrors.birthDate = t('shell.createPatient.errorBirthDateRequired');
     }
     if (!formData.chiefComplaint.trim()) {
-      newErrors.chiefComplaint = 'Required';
+      newErrors.chiefComplaint = t('shell.createPatient.errorRequired');
     }
 
     setErrors(newErrors);
@@ -206,7 +208,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
       }
     } catch (error) {
       logger.error('Error creating patient:', error);
-      setErrors({ submit: 'Failed to create patient. Please try again.' });
+      setErrors({ submit: t('shell.createPatient.errorSubmit') });
     } finally {
       setIsSubmitting(false);
     }
@@ -219,7 +221,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[calc(100vh-4rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200">
-          <h2 className="text-xl font-semibold text-slate-900">New Patient</h2>
+          <h2 className="text-xl font-semibold text-slate-900">{t('shell.createPatient.title')}</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -243,7 +245,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1">
-                First Name <span className="text-red-500">*</span>
+                {t('shell.createPatient.firstName')} <span className="text-red-500">*</span>
               </label>
               <input
                 ref={firstNameInputRef}
@@ -257,7 +259,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                   ? 'border-red-300 focus:ring-red-500'
                   : 'border-slate-300 focus:ring-indigo-500'
                   }`}
-                placeholder="John"
+                placeholder={t('shell.createPatient.firstNamePlaceholder')}
                 disabled={isSubmitting}
               />
               {errors.firstName && (
@@ -267,7 +269,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
 
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1">
-                Last Name <span className="text-red-500">*</span>
+                {t('shell.createPatient.lastName')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -280,7 +282,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                   ? 'border-red-300 focus:ring-red-500'
                   : 'border-slate-300 focus:ring-indigo-500'
                   }`}
-                placeholder="Doe"
+                placeholder={t('shell.createPatient.lastNamePlaceholder')}
                 disabled={isSubmitting}
               />
               {errors.lastName && (
@@ -293,7 +295,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
               <Phone className="w-4 h-4 text-slate-500" />
-              Phone <span className="text-red-500">*</span>
+              {t('shell.createPatient.phone')} <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
@@ -306,20 +308,20 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-slate-300 focus:ring-indigo-500'
                 }`}
-              placeholder="+1 (555) 123-4567"
+              placeholder={t('shell.createPatient.phonePlaceholder')}
               disabled={isSubmitting}
             />
             {errors.phone && (
               <p className="text-red-600 text-xs mt-1">{errors.phone}</p>
             )}
-            <p className="text-xs text-slate-500 mt-1">Required for SMS consent delivery</p>
+            <p className="text-xs text-slate-500 mt-1">{t('shell.createPatient.phoneHint')}</p>
           </div>
 
           {/* Date of Birth - Required */}
           <div>
             <label htmlFor="birthDate" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
               <Calendar className="w-4 h-4 text-slate-500" />
-              Date of Birth <span className="text-red-500">*</span>
+              {t('shell.createPatient.birthDate')} <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -344,7 +346,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
               <Mail className="w-4 h-4 text-slate-500" />
-              Email <span className="text-slate-400 text-xs font-normal">(optional)</span>
+              {t('shell.createPatient.email')} <span className="text-slate-400 text-xs font-normal">{t('shell.createPatient.emailOptional')}</span>
             </label>
             <input
               type="email"
@@ -356,7 +358,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-slate-300 focus:ring-indigo-500'
                 }`}
-              placeholder="john.doe@example.com"
+              placeholder={t('shell.createPatient.emailPlaceholder')}
               disabled={isSubmitting}
             />
             {errors.email && (
@@ -368,7 +370,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
           <div>
             <label htmlFor="chiefComplaint" className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
               <FileText className="w-4 h-4 text-slate-500" />
-              Chief Complaint <span className="text-red-500">*</span>
+              {t('shell.createPatient.chiefComplaint')} <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2">
               <textarea
@@ -382,14 +384,14 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                   ? 'border-red-300 focus:ring-red-500'
                   : 'border-slate-300 focus:ring-indigo-500'
                   }`}
-                placeholder="Brief description of the patient's main concern..."
+                placeholder={t('shell.createPatient.chiefComplaintPlaceholder')}
                 disabled={isSubmitting}
               />
               <DictationButton
                 value={formData.chiefComplaint}
                 onChange={(v) => setFormData((p) => ({ ...p, chiefComplaint: v }))}
                 disabled={isSubmitting}
-                title="Dictate chief complaint"
+                title={t('shell.createPatient.dictateChiefComplaint')}
                 className="self-start"
               />
             </div>
@@ -408,7 +410,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                 className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
                 disabled={isSubmitting}
               />
-              <span>This is a referral patient</span>
+              <span>{t('shell.createPatient.isReferral')}</span>
             </label>
           </div>
 
@@ -417,7 +419,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
             <>
               <div>
                 <label htmlFor="referringDoctor" className="block text-sm font-medium text-slate-700 mb-1">
-                  Referring Physician <span className="text-slate-400 text-xs font-normal">(optional)</span>
+                  {t('shell.createPatient.referringPhysician')} <span className="text-slate-400 text-xs font-normal">{t('shell.createPatient.emailOptional')}</span>
                 </label>
                 <input
                   type="text"
@@ -426,13 +428,13 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                   value={formData.referringDoctor}
                   onChange={(e) => setFormData((prev) => ({ ...prev, referringDoctor: e.target.value }))}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                  placeholder="Dr. Smith (optional)"
+                  placeholder={t('shell.createPatient.referringPhysicianPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
               <div>
                 <label htmlFor="referralDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
-                  Referral Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
+                  {t('shell.createPatient.referralDiagnosis')} <span className="text-slate-400 text-xs font-normal">{t('shell.createPatient.emailOptional')}</span>
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -442,14 +444,14 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                     value={formData.referralDiagnosis}
                     onChange={handleInputChange}
                     className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                    placeholder="Diagnosis from referring physician..."
+                    placeholder={t('shell.createPatient.referralDiagnosisPlaceholder')}
                     disabled={isSubmitting}
                   />
                   <DictationButton
                     value={formData.referralDiagnosis}
                     onChange={(v) => setFormData((p) => ({ ...p, referralDiagnosis: v }))}
                     disabled={isSubmitting}
-                    title="Dictate referral diagnosis"
+                    title={t('shell.createPatient.dictateReferralDiagnosis')}
                   />
                 </div>
               </div>
@@ -460,7 +462,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
           {!formData.isReferral && (
             <div>
               <label htmlFor="suspectedDiagnosis" className="block text-sm font-medium text-slate-700 mb-1">
-                Suspected Diagnosis <span className="text-slate-400 text-xs font-normal">(optional)</span>
+                {t('shell.createPatient.suspectedDiagnosis')} <span className="text-slate-400 text-xs font-normal">{t('shell.createPatient.emailOptional')}</span>
               </label>
               <div className="flex gap-2">
                 <input
@@ -470,14 +472,14 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
                   value={formData.suspectedDiagnosis}
                   onChange={handleInputChange}
                   className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                  placeholder="Initial suspected diagnosis..."
+                  placeholder={t('shell.createPatient.suspectedDiagnosisPlaceholder')}
                   disabled={isSubmitting}
                 />
                 <DictationButton
                   value={formData.suspectedDiagnosis}
                   onChange={(v) => setFormData((p) => ({ ...p, suspectedDiagnosis: v }))}
                   disabled={isSubmitting}
-                  title="Dictate suspected diagnosis"
+                  title={t('shell.createPatient.dictateSuspectedDiagnosis')}
                 />
               </div>
             </div>
@@ -491,7 +493,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('shell.createPatient.cancel')}
             </button>
             <button
               type="submit"
@@ -501,10 +503,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {t('shell.createPatient.creating')}
                 </>
               ) : (
-                'Create Patient'
+                t('shell.createPatient.createPatient')
               )}
             </button>
           </div>

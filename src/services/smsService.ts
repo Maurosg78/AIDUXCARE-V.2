@@ -12,9 +12,10 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import logger from '@/shared/utils/logger';
-import { SMS_TEMPLATES, validateSMSTemplate } from '../content/smsTemplates';
+import { SMS_TEMPLATES, validateSMSTemplate, validateSMSTemplateEs } from '../content/smsTemplates';
 import { getPublicBaseUrl } from '../utils/urlHelpers';
 import { normalizeNameForSMS } from '../utils/textNormalizer';
+import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
 
 const SMS_COLLECTION = 'pending_sms'; // Audit trail for SMS sends
 
@@ -187,16 +188,18 @@ export class SMSService {
       const consentUrl = `${publicBaseUrl}/consent/${consentToken}`;
       const privacyUrl = `${publicBaseUrl}/privacy-policy`;
 
-      // Use English template (en-CA for Canadian market)
-      const message = SMS_TEMPLATES.consent.en_CA(
+      // Template by jurisdiction (en-CA PHIPA, es_ES GDPR/RGPD)
+      const jurisdiction = getCurrentJurisdiction();
+      const useEsTemplate = jurisdiction === 'ES-ES';
+      const consentTemplate = useEsTemplate ? SMS_TEMPLATES.consent.es_ES : SMS_TEMPLATES.consent.en_CA;
+      const message = consentTemplate(
         normalizeNameForSMS(patientName),
         normalizeNameForSMS(physiotherapistName),
         consentUrl,
         privacyUrl
       );
 
-      // Validate template (ensure no Spanish content)
-      const validation = validateSMSTemplate(message);
+      const validation = useEsTemplate ? validateSMSTemplateEs(message) : validateSMSTemplate(message);
       if (!validation.isValid) {
         logger.error('[SMS] Template validation failed:', validation.errors);
         throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);

@@ -135,9 +135,18 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
             )}
           </section>
 
+          {reportData.clinicalEvolutionSummary && (
+            <section className="space-y-1">
+              <h3 className="text-sm font-semibold text-slate-800">Clinical evolution</h3>
+              <p className="text-sm text-slate-700">
+                {reportData.clinicalEvolutionSummary}
+              </p>
+            </section>
+          )}
+
           {reportData.clinicalNotes && (
             <section className="space-y-1">
-              <h3 className="text-sm font-semibold text-slate-800">Clinical Notes</h3>
+              <h3 className="text-sm font-semibold text-slate-800">Current session findings</h3>
               <p className="text-sm text-slate-700 whitespace-pre-line">
                 {reportData.clinicalNotes}
               </p>

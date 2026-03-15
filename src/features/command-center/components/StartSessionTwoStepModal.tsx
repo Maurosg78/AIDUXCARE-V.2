@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Search, UserPlus, ArrowLeft, Play, RefreshCw, FileText } from 'lucide-react';
 import { Patient } from '@/services/patientService';
 import { usePatientsList, type PatientListItem } from '../hooks/usePatientsList';
@@ -51,6 +52,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   initialPatient = null,
   isNewlyCreatedPatient = false,
 }) => {
+  const { t } = useTranslation();
   const { patients, loading } = usePatientsList();
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(initialPatient);
@@ -141,17 +143,16 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
     onClose();
   };
 
-  const patientName = selectedPatient?.fullName || selectedPatient?.firstName || 'Patient';
+  const patientName = selectedPatient?.fullName || selectedPatient?.firstName || t('shell.startSessionModal.patientFallbackName');
   const isAddToTodayMode = mode === 'add_to_today';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-xl">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           {step === 1 ? (
             <h2 className="text-xl font-semibold text-gray-900 font-apple">
-              Who is the patient?
+              {t('shell.startSessionModal.whoIsPatient')}
             </h2>
           ) : (
             <div className="flex items-center gap-3">
@@ -159,13 +160,13 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                 type="button"
                 onClick={handleBackToStep1}
                 className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
-                aria-label="Back to patient list"
+                aria-label={t('shell.startSessionModal.backToPatientList')}
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 font-apple">
-                  What type of session?
+                  {t('shell.startSessionModal.whatTypeOfSession')}
                 </h2>
                 <p className="text-sm text-gray-500 font-apple font-light mt-0.5">
                   {patientName}
@@ -184,13 +185,12 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
 
         {step === 1 ? (
           <>
-            {/* Step 1: Search */}
             <div className="p-4 pt-0 border-b border-gray-100">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={isAddToTodayMode ? "Search patient by name or email..." : "Search by name or email..."}
+                  placeholder={isAddToTodayMode ? t('shell.startSessionModal.searchPlaceholderAddToToday') : t('shell.startSessionModal.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent font-apple"
@@ -198,20 +198,19 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
               </div>
             </div>
 
-            {/* Step 1: Patient list — in add_to_today mode, show results only when user has typed (no full list) */}
             <div className="flex-1 overflow-y-auto p-6 min-h-[200px]">
               {loading ? (
                 <div className="text-center text-gray-500 font-apple py-8">
-                  Loading patients...
+                  {t('shell.startSessionModal.loadingPatients')}
                 </div>
               ) : isAddToTodayMode && !searchQuery.trim() ? (
                 <div className="text-center text-gray-500 font-apple py-8">
-                  <p className="mb-2">Type to search for a patient</p>
-                  <p className="text-sm font-light">Select only from search results to add to today&apos;s list</p>
+                  <p className="mb-2">{t('shell.startSessionModal.typeToSearch')}</p>
+                  <p className="text-sm font-light">{t('shell.startSessionModal.selectFromSearchResults')}</p>
                 </div>
               ) : filteredPatients.length === 0 ? (
                 <div className="text-center text-gray-500 font-apple py-8">
-                  {searchQuery.trim() ? 'No patients found' : 'No patients yet'}
+                  {searchQuery.trim() ? t('shell.startSessionModal.noPatientsFound') : t('shell.startSessionModal.noPatientsYet')}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -241,7 +240,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all font-apple"
                 >
                   <UserPlus className="w-5 h-5" />
-                  Create New Patient
+                  {t('shell.startSessionModal.createNewPatient')}
                 </button>
               </div>
             )}
@@ -250,7 +249,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
           /* Step 2: Add to today — solo pacientes existentes; 3 opciones (Follow-up solo si registrado) */
           <div className="p-6 space-y-3 flex-1 overflow-y-auto">
             <p className="text-sm text-gray-600 font-apple font-light mb-4">
-              Add this patient to today&apos;s list with the selected session type. When it&apos;s time, press Start on that row.
+              {t('shell.startSessionModal.addToTodayHint')}
             </p>
             <button
               onClick={handleAddAsInitial}
@@ -262,15 +261,15 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <UserPlus className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Add as Initial Assessment</div>
-                  <div className="text-sm text-gray-600 font-light">First visit — full evaluation and SOAP</div>
+                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsInitial')}</div>
+                  <div className="text-sm text-gray-600 font-light">{t('shell.startSessionModal.firstVisitFullEval')}</div>
                 </div>
               </div>
             </button>
             <button
               onClick={handleAddAsFollowup}
               disabled={!SessionTypeService.isPilotAvailable('followup') || followUpDisabled}
-              title={followUpDisabled ? 'Only for patients already registered (with baseline)' : undefined}
+              title={followUpDisabled ? t('shell.startSessionModal.tooltipFollowupDisabled') : undefined}
               className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center gap-3">
@@ -278,11 +277,11 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <RefreshCw className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Add as Follow-up</div>
+                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsFollowup')}</div>
                   <div className="text-sm text-gray-600 font-light">
                     {followUpDisabled
-                      ? 'Patient needs Initial Assessment or Ongoing intake first'
-                      : 'Next visit — update and SOAP'}
+                      ? t('shell.startSessionModal.patientNeedsInitialOrOngoing')
+                      : t('shell.startSessionModal.nextVisitUpdate')}
                   </div>
                 </div>
               </div>
@@ -290,7 +289,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
             <button
               onClick={handleAddAsOngoing}
               disabled={!SessionTypeService.isPilotAvailable('followup') || ongoingDisabled}
-              title={ongoingDisabled ? 'Only for patients not yet in AiDuxCare' : undefined}
+              title={ongoingDisabled ? t('shell.startSessionModal.tooltipOngoingDisabled') : undefined}
               className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-50/80"
             >
               <div className="flex items-center gap-3">
@@ -298,11 +297,11 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <FileText className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Add as Ongoing (first time in AiDuxCare)</div>
+                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsOngoing')}</div>
                   <div className="text-sm text-gray-600 font-light">
                     {ongoingDisabled
-                      ? 'This patient already has sessions — use Initial or Follow-up'
-                      : 'Existing treatment — fill intake, then session'}
+                      ? t('shell.startSessionModal.ongoingAlreadyHasSessions')
+                      : t('shell.startSessionModal.ongoingFillIntakeThenSession')}
                   </div>
                 </div>
               </div>
@@ -321,8 +320,8 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <UserPlus className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Initial Assessment</div>
-                  <div className="text-sm text-gray-600 font-light">First visit — full evaluation and SOAP</div>
+                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.initialAssessment')}</div>
+                  <div className="text-sm text-gray-600 font-light">{t('shell.startSessionModal.firstVisitFullEval')}</div>
                 </div>
                 <Play className="w-5 h-5 text-primary-blue ml-auto flex-shrink-0" />
               </div>
@@ -332,7 +331,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
               <button
                 onClick={handleStartFollowup}
                 disabled={!SessionTypeService.isPilotAvailable('followup') || followUpDisabled}
-                title={followUpDisabled ? 'Only for patients already registered (with baseline)' : undefined}
+                title={followUpDisabled ? t('shell.startSessionModal.tooltipFollowupDisabled') : undefined}
                 className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-3">
@@ -340,9 +339,9 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                     <RefreshCw className="w-5 h-5 text-primary-blue" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Follow-up</div>
+                    <div className="font-semibold text-gray-900">{t('shell.startSessionModal.followup')}</div>
                     <div className="text-sm text-gray-600 font-light">
-                      {followUpDisabled ? 'Patient needs Initial Assessment or Ongoing intake first' : 'Next visit — update and SOAP'}
+                      {followUpDisabled ? t('shell.startSessionModal.patientNeedsInitialOrOngoing') : t('shell.startSessionModal.nextVisitUpdate')}
                     </div>
                   </div>
                   <Play className="w-5 h-5 text-gray-400 ml-auto flex-shrink-0" />
@@ -353,7 +352,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
             <button
               onClick={handleStartOngoing}
               disabled={!SessionTypeService.isPilotAvailable('followup') || ongoingDisabled}
-              title={ongoingDisabled ? 'Only for patients not yet in AiDuxCare (this patient already has history)' : undefined}
+              title={ongoingDisabled ? t('shell.startSessionModal.tooltipOngoingDisabledHasHistory') : undefined}
               className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-50/80"
             >
               <div className="flex items-center gap-3">
@@ -361,13 +360,13 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <FileText className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Ongoing patient, first time in AiDuxCare</div>
+                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.ongoingFirstTimeLabel')}</div>
                   <div className="text-sm text-gray-600 font-light">
                     {ongoingDisabled
-                      ? 'This patient already has sessions in AiDuxCare — use Initial or Follow-up'
+                      ? t('shell.startSessionModal.ongoingAlreadyInAidux')
                       : isNewlyCreatedPatient
-                        ? 'Existing treatment elsewhere — fill intake, then session'
-                        : 'Existing treatment — fill intake to create baseline, then session'}
+                        ? t('shell.startSessionModal.ongoingExistingElsewhere')
+                        : t('shell.startSessionModal.ongoingExistingFillBaseline')}
                   </div>
                 </div>
                 <Play className="w-5 h-5 text-gray-400 ml-auto flex-shrink-0" />

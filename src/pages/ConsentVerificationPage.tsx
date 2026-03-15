@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Shield, CheckCircle, AlertCircle, Loader2, Info, ExternalLink } from 'lucide-react';
 import { ConsentVerificationService, type ConsentVerificationState, type SMSConsentStatus } from '../services/consentVerificationService';
 import { PatientService } from '../services/patientService';
@@ -21,6 +22,7 @@ import logger from '@/shared/utils/logger';
 import { deriveClinicName, deriveClinicianDisplayName } from '@/utils/clinicProfile';
 
 export const ConsentVerificationPage: React.FC = () => {
+  const { t } = useTranslation();
   const { patientId, token } = useParams<{ patientId?: string; token?: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -234,7 +236,7 @@ export const ConsentVerificationPage: React.FC = () => {
               onClick={() => user ? navigate('/command-center') : navigate('/login')}
               className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
             >
-              {user ? 'Return to Command Center' : 'Return to Login'}
+              {user ? t('shell.nav.returnToCommandCenter') : 'Return to Login'}
             </button>
             <a
               href="/privacy-policy"
@@ -263,7 +265,7 @@ export const ConsentVerificationPage: React.FC = () => {
             onClick={() => user ? navigate('/command-center') : navigate('/login')}
             className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            {user ? 'Return to Command Center' : 'Return to Login'}
+            {user ? t('shell.nav.returnToCommandCenter') : 'Return to Login'}
           </button>
         </div>
       </div>

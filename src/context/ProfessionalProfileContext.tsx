@@ -85,6 +85,8 @@ interface ProfessionalProfileContextType {
   error?: Error;
   errorType?: 'network' | 'blocked' | 'permission' | 'other';
   updateProfile: (updates: Partial<ProfessionalProfile>) => Promise<void>;
+  /** Guarda perfil para un uid concreto (crea doc si no existe). Usar tras createUserWithEmailAndPassword cuando useAuth().user aún no está actualizado. */
+  saveProfileForUid: (uid: string, updates: Partial<ProfessionalProfile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateWizardData: (field: keyof ProfessionalProfile, value: unknown) => Promise<void>;
   setCurrentStep: (step: number) => void;
@@ -132,6 +134,8 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     if (Array.isArray(obj)) {
       return obj.map(cleanUndefined).filter(item => item !== null && item !== undefined);
     }
+    // Preservar Date (Firestore lo acepta); si se recorre como objeto quedaría {} y se perdería
+    if (obj instanceof Date) return obj;
     if (typeof obj === 'object') {
       const cleaned: any = {};
       for (const key in obj) {
@@ -383,6 +387,26 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     }
   };
 
+  /** Guarda perfil para un uid (setDoc merge). Usar en onboarding tras crear cuenta, cuando Auth aún no ha actualizado user. */
+  const saveProfileForUid = async (uid: string, updates: Partial<ProfessionalProfile>): Promise<void> => {
+    try {
+      const db = getDb();
+      const userRef = doc(db, 'users', uid);
+      const cleanedUpdates = cleanUndefined({
+        ...updates,
+        lastSeenAt: serverTimestamp()
+      });
+      await setDoc(userRef, cleanedUpdates, { merge: true });
+      if (user?.uid === uid) {
+        setProfile(prev => (prev ? { ...prev, ...updates } : undefined));
+      }
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error('Error al guardar perfil');
+      setError(e);
+      throw e;
+    }
+  };
+
   const updateWizardData = async (field: keyof ProfessionalProfile, value: unknown): Promise<void> => {
     await updateProfile({ [field]: value } as Partial<ProfessionalProfile>);
   };
@@ -442,6 +466,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
     error,
     errorType,
     updateProfile,
+    saveProfileForUid,
     refreshProfile,
     updateWizardData,
     setCurrentStep,

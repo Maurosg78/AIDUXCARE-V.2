@@ -8,10 +8,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, Save, CheckCircle, AlertCircle, Loader2, RefreshCw, Eye, Copy, Download, Check, X, Share2 } from 'lucide-react';
 import type { SOAPNote } from '../types/vertex-ai';
 import { AnalyticsService } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
+import { generateEsReferralReportForSession, type ReferralReportResult } from '@/core/clinical/clinicalReportService';
+import type { SessionState } from '@/types/sessionState';
+import { getSoapReviewConfig } from '@/core/jurisdiction/JurisdictionEngine';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 export type SOAPStatus = 'draft' | 'finalized';
 
@@ -43,6 +48,8 @@ export interface SOAPEditorProps {
     reduction: number;
     reductionPercent: number;
   };
+  /** Optional SessionState (or subset) for clinical reporting (ES-ES pilot). */
+  sessionState?: Partial<SessionState> & { soapNote?: SOAPNote };
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -64,7 +71,10 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   className = '',
   isOptimized = false,
   tokenOptimization,
+  sessionState,
 }) => {
+  const { t } = useTranslation();
+  const soapReview = getSoapReviewConfig();
   // Follow-up: one block only (no Niagara, no 4-section mapping). Cannot show S/O/A/P split.
   const showSingleBlock = singleBlockMode || visitType === 'follow-up';
   const { user } = useAuth();
@@ -77,6 +87,9 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isEditingFinalized, setIsEditingFinalized] = useState(false);
+  const [referralPreview, setReferralPreview] = useState<ReferralReportResult | null>(null);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const esPilotEnabled = isSpainPilot();
 
   // Update local state when prop changes
   useEffect(() => {
@@ -131,22 +144,22 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
 
     const missing: string[] = [];
     if (isEmpty(editedSOAP.subjective))
-      missing.push('Subjective section is empty — add patient-reported symptoms');
+      missing.push(t('clinical.soap.missingFields.subjective'));
     if (isEmpty(editedSOAP.objective))
-      missing.push('Objective section is empty — add physical exam findings');
+      missing.push(t('clinical.soap.missingFields.objective'));
     if (isEmpty(editedSOAP.assessment))
-      missing.push('Assessment section is empty — add clinical reasoning');
+      missing.push(t('clinical.soap.missingFields.assessment'));
     if (isEmpty(editedSOAP.plan))
-      missing.push('Plan section is empty — generate SOAP or add manually');
+      missing.push(t('clinical.soap.missingFields.plan'));
     if (
       editedSOAP.plan &&
       !isEmpty(editedSOAP.plan) &&
       !editedSOAP.plan?.toLowerCase().includes('in-clinic treatment') &&
       !skipPlanValidation
     )
-      missing.push('Plan is missing IN-CLINIC TREATMENT section — regenerate or edit manually');
+      missing.push(t('clinical.soap.missingFields.planInClinic'));
     if (requiresReview && !isReviewed)
-      missing.push('CPO review checkbox must be confirmed before finalizing');
+      missing.push(t('clinical.soap.missingFields.reviewCheckbox'));
 
     if (missing.length > 0) {
       setMissingItems(missing);
@@ -183,6 +196,32 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
 
   const handleClosePreview = () => {
     setShowPreview(false);
+  };
+
+  const handleReferralPreview = () => {
+    const currentSOAP = editedSOAP || soap;
+    if (!currentSOAP || !sessionState) return;
+    // Build minimal SessionState for report service
+    const pseudoSession: SessionState = {
+      sessionId: (sessionState as any).sessionId || 'simulated-session',
+      patientId: sessionState.patientId || patientId || 'unknown',
+      patientName: (sessionState as any).patientName || undefined,
+      sessionType: (sessionState as any).sessionType || (visitType === 'initial' ? 'initial' : 'followup'),
+      subtype: (sessionState as any).subtype,
+      additionalOutputs: [],
+      transcript: (sessionState as any).transcript || '',
+      soapNote: currentSOAP,
+      isRecording: false,
+      startTime: (sessionState as any).startTime || new Date(),
+      lastUpdated: (sessionState as any).lastUpdated || new Date(),
+      status: (sessionState as any).status || 'completed',
+    };
+
+    const result = generateEsReferralReportForSession(pseudoSession);
+    if (result) {
+      setReferralPreview(result);
+      setShowReferralModal(true);
+    }
   };
 
   const handleUnfinalize = () => {
@@ -538,8 +577,8 @@ ${'='.repeat(60)}`;
       <div className={`rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ${className}`}>
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent mb-4" />
-          <p className="text-[15px] font-light text-slate-700 font-apple">Generating SOAP note with AiduxCare AI...</p>
-          <p className="text-[12px] text-slate-500 mt-2 font-apple font-light">This may take a few seconds</p>
+          <p className="text-[15px] font-light text-slate-700 font-apple">{t('clinical.soap.loading.generating')}</p>
+          <p className="text-[12px] text-slate-500 mt-2 font-apple font-light">{t('clinical.soap.loading.hint')}</p>
         </div>
       </div>
     );
@@ -549,8 +588,8 @@ ${'='.repeat(60)}`;
     return (
       <div className={`rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center ${className}`}>
         <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <p className="text-sm text-slate-600 mb-2">No SOAP note generated yet</p>
-        <p className="text-xs text-slate-500">Complete the analysis and physical evaluation tabs, then generate a SOAP note</p>
+        <p className="text-sm text-slate-600 mb-2">{t('clinical.soap.empty.noNote')}</p>
+        <p className="text-xs text-slate-500">{t('clinical.soap.empty.initialHint')}</p>
       </div>
     );
   }
@@ -633,7 +672,7 @@ ${'='.repeat(60)}`;
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-medium bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-apple">
-                  SOAP Note - {visitType === 'initial' ? 'Initial Assessment' : 'Follow-up Visit'}
+                  {t('clinical.soap.header.followupTitle')} — {visitType === 'initial' ? t('clinical.soap.noteTitle.initial') : t('clinical.soap.noteTitle.followup')}
                 </h3>
                 {isOptimized && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
@@ -643,8 +682,8 @@ ${'='.repeat(60)}`;
               </div>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-xs text-slate-500">
-                  Status: <span className={`font-medium ${status === 'finalized' ? 'text-green-600' : 'text-amber-600'}`}>
-                    {status === 'finalized' ? 'Finalized' : 'Draft'}
+                  {t('clinical.soap.statusLabel')} <span className={`font-medium ${status === 'finalized' ? 'text-green-600' : 'text-amber-600'}`}>
+                    {status === 'finalized' ? t('clinical.soap.statusFinalized') : t('clinical.soap.statusDraft')}
                   </span>
                 </p>
                 {tokenOptimization && tokenOptimization.reductionPercent > 0 && (
@@ -658,7 +697,7 @@ ${'='.repeat(60)}`;
         </div>
       </div>
 
-      {/* ✅ DÍA 2: Review Required Badge - CPO Compliance */}
+      {/* ✅ DÍA 2: Review Required Badge — jurisdiction-aware (CPO / normativa europea-española-autonómica) */}
       {requiresReview && !isReviewed && status === 'draft' && (
         <div className="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
           <div className="flex items-start justify-between gap-4">
@@ -666,12 +705,10 @@ ${'='.repeat(60)}`;
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-yellow-900 mb-1">
-                  ⚠️ Review Required - CPO Compliance
+                  ⚠️ {t('clinical.soap.review.requiredTitle', { institution: soapReview.institutionName })}
                 </p>
                 <p className="text-xs text-yellow-700 leading-relaxed">
-                  This SOAP note was AI-generated and <strong>requires your review before finalization</strong>. 
-                  Please verify all content, especially clinical assessments and treatment plans, to ensure accuracy 
-                  and completeness per CPO TRUST Framework requirements.
+                  {t('clinical.soap.review.requiredBody', { framework: soapReview.frameworkLabel })}
                 </p>
               </div>
             </div>
@@ -679,7 +716,7 @@ ${'='.repeat(60)}`;
               onClick={handleMarkAsReviewed}
               className="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors flex-shrink-0"
             >
-              Mark as Reviewed
+              {t('clinical.soap.review.markAsReviewed')}
             </button>
           </div>
         </div>
@@ -691,10 +728,10 @@ ${'='.repeat(60)}`;
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
             <p className="text-xs text-green-800">
-              <strong>✓ Reviewed:</strong> This SOAP note has been reviewed and is ready for finalization.
+              <strong>✓</strong> {t('clinical.soap.review.reviewedDone')}
               {currentSOAP?.reviewed?.reviewedAt && (
                 <span className="ml-2 text-green-700">
-                  Reviewed on {new Date(currentSOAP.reviewed.reviewedAt).toLocaleString('en-CA')}
+                  {t('clinical.soap.review.reviewedOn', { date: new Date(currentSOAP.reviewed.reviewedAt).toLocaleString() })}
                 </span>
               )}
             </p>
@@ -707,7 +744,7 @@ ${'='.repeat(60)}`;
         {showSingleBlock ? (
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Follow-up SOAP note (editable — copy and paste into your EMR)
+              {t('clinical.soap.followUpBlockLabel')}
             </label>
             <textarea
               value={(() => {
@@ -731,7 +768,7 @@ ${'='.repeat(60)}`;
         {/* Subjective */}
         <div className="border-l-4 border-purple-300 pl-4">
           <label className="block text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            S: Subjective
+            S: {t('soap.subjective')}
           </label>
           <textarea
             value={currentSOAP?.subjective || ''}
@@ -748,7 +785,7 @@ ${'='.repeat(60)}`;
         {/* Objective */}
         <div className="border-l-4 border-blue-300 pl-4">
           <label className="block text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            O: Objective
+            O: {t('soap.objective')}
           </label>
           <textarea
             value={currentSOAP?.objective || ''}
@@ -765,7 +802,7 @@ ${'='.repeat(60)}`;
         {/* Assessment */}
         <div className="border-l-4 border-purple-400 pl-4">
           <label className="block text-sm font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            A: Assessment
+            A: {t('soap.assessment')}
           </label>
           <textarea
             value={currentSOAP?.assessment || ''}
@@ -782,7 +819,7 @@ ${'='.repeat(60)}`;
         {/* Plan */}
         <div className="border-l-4 border-blue-400 pl-4">
           <label className="block text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            P: Plan
+            P: {t('soap.plan')}
           </label>
           <textarea
             value={currentSOAP?.plan || ''}
@@ -909,19 +946,26 @@ Include specific parameters, duration, and frequency for each modality used."
       {/* Panel de acciones al final: asegura que el fisio ha leído S/O/A/P antes de cerrar */}
       <div className="border-t border-slate-200 px-6 py-5 bg-slate-50/80 rounded-b-2xl">
         {/* Disclaimer / Export Info */}
-        <div className={`mb-4 px-4 py-3 rounded-lg ${status === 'finalized' ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+        <div
+          className={`mb-4 px-4 py-3 rounded-lg ${
+            status === 'finalized'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-amber-50 border border-amber-200'
+          }`}
+        >
           {status === 'finalized' ? (
             <div className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm text-green-800 mb-1">
-                  <strong>Session finalized.</strong> Your patient&apos;s data has been saved correctly.
+                  <strong>{t('clinical.actions.sessionFinalizedTitle')}</strong>{' '}
+                  {t('clinical.actions.sessionFinalizedBody')}
                 </p>
                 <p className="text-xs text-green-700 mb-2">
-                  This SOAP is ready for export. Use &quot;Copy to Clipboard&quot; or &quot;Download .txt&quot; for your EMR.
+                  {t('clinical.actions.sessionFinalizedExport')}
                 </p>
                 <p className="text-[10px] text-green-600">
-                  EMR: the text is compatible with most systems. Paste (Ctrl+V / Cmd+V) in the note field.
+                  {t('clinical.actions.sessionFinalizedHint')}
                 </p>
               </div>
             </div>
@@ -929,13 +973,16 @@ Include specific parameters, duration, and frequency for each modality used."
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-800">
-                <strong>AI-Assisted Documentation:</strong> Review and edit all content before finalizing. The clinician is responsible for the accuracy and completeness of this note.
+                <strong>{t('clinical.actions.draftDisclaimerTitle')}</strong>{' '}
+                {t('clinical.actions.draftDisclaimerBody')}
               </p>
             </div>
           )}
         </div>
 
-        <h4 className="text-sm font-semibold text-slate-800 mb-3">Actions</h4>
+        <h4 className="text-sm font-semibold text-slate-800 mb-3">
+          {t('clinical.actions.header')}
+        </h4>
         <div className="flex flex-wrap items-center gap-3">
           {status === 'draft' && (
             <>
@@ -945,7 +992,7 @@ Include specific parameters, duration, and frequency for each modality used."
                   className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  Regenerate
+                  {t('clinical.actions.regenerate')}
                 </button>
               )}
               <button
@@ -954,22 +1001,31 @@ Include specific parameters, duration, and frequency for each modality used."
                 className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 <Save className="w-3.5 h-3.5" />
-                Save Draft
+                {t('clinical.actions.saveDraft')}
               </button>
               <button
                 onClick={handlePreview}
                 className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
               >
                 <Eye className="w-3.5 h-3.5" />
-                Vista previa
+                {t('clinical.actions.preview')}
               </button>
+              {esPilotEnabled && sessionState && (
+                <button
+                  onClick={handleReferralPreview}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-indigo-200 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  {t('clinical.report.es.viewButton')}
+                </button>
+              )}
               {onFinalize && (
                 <button
                   onClick={handleFinalize}
                   className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-success hover:bg-gradient-success-hover text-white text-[15px] font-medium shadow-sm transition font-apple"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Finalize & Save
+                  {t('clinical.actions.finalize')}
                 </button>
               )}
             </>
@@ -981,43 +1037,43 @@ Include specific parameters, duration, and frequency for each modality used."
                   <button
                     onClick={handleUnfinalize}
                     className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors min-w-[120px] justify-center"
-                    title="Unfinalize to edit this note"
+                    title={t('clinical.actions.editTitle')}
                   >
                     <FileText className="w-4 h-4" />
-                    Edit
+                  {t('clinical.actions.edit')}
                   </button>
                   <button
                     onClick={handleCopyToClipboard}
                     className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
-                    title="Copy to clipboard for pasting into your EMR"
+                    title={t('clinical.actions.copyTitle')}
                   >
                     {copied ? (
                       <>
                         <Check className="w-4 h-4" />
-                        Copied!
+                      {t('clinical.actions.copied')}
                       </>
                     ) : (
                       <>
                         <Copy className="w-4 h-4" />
-                        Copy to Clipboard
+                      {t('clinical.actions.copy')}
                       </>
                     )}
                   </button>
                   <button
                     onClick={handleDownloadAsText}
                     className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-colors min-w-[160px] justify-center"
-                    title="Download as text file"
+                    title={t('clinical.actions.downloadTxtTitle')}
                   >
                     <Download className="w-4 h-4" />
-                    Download .txt
+                  {t('clinical.actions.downloadTxt')}
                   </button>
                   <button
                     onClick={handleExportPDF}
                     className="inline-flex items-center gap-2 px-4 py-2.5 h-10 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors justify-center"
-                    title="Export PDF"
+                    title={t('clinical.actions.exportPdfTitle')}
                   >
                     <Download className="w-4 h-4" />
-                    Export PDF
+                  {t('clinical.actions.exportPdf')}
                   </button>
                   {onBackToCommandCenter && (
                     <button
@@ -1025,7 +1081,7 @@ Include specific parameters, duration, and frequency for each modality used."
                       className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white text-[15px] font-medium shadow-sm hover:opacity-95 transition font-apple"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      Back to Command Center
+                      {t('shell.nav.backToCommandCenter')}
                     </button>
                   )}
                 </>
@@ -1037,7 +1093,7 @@ Include specific parameters, duration, and frequency for each modality used."
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    Save Changes
+                  {t('clinical.actions.saveChanges')}
                   </button>
                   <button
                     onClick={() => {
@@ -1047,13 +1103,54 @@ Include specific parameters, duration, and frequency for each modality used."
                     }}
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
                   >
-                    Cancel Edit
+                  {t('clinical.actions.cancelEdit')}
                   </button>
                 </>
               )}
             </>
           )}
         </div>
+
+      {/* ES-ES Referral Report Preview (beta) */}
+      {showReferralModal && referralPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary-blue" />
+                <span className="text-sm font-semibold text-slate-800">
+                  {t('clinical.report.es.modalTitle')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReferralModal(false)}
+                className="p-1 rounded-full hover:bg-slate-100"
+              >
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-900">
+                <p className="font-medium">
+                  {t('clinical.report.es.draftBannerTitle')}
+                </p>
+                <p>
+                  {t('clinical.report.es.draftBannerBody')}
+                </p>
+              </div>
+              {referralPreview.clinicalStatus === 'redflag' && (
+                <div className="mb-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
+                  ⚠ Alerta clínica detectada. Valorar derivación médica urgente según criterio clínico.
+                </div>
+              )}
+              <pre className="whitespace-pre-wrap text-xs leading-relaxed font-mono text-slate-800">
+                {referralPreview.reportText}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Preview Modal */}
@@ -1069,11 +1166,11 @@ Include specific parameters, duration, and frequency for each modality used."
         >
           <div className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-4">
-              <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">SOAP Note Preview</h3>
+              <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">{t('clinical.soap.previewModal.title')}</h3>
               <button
                 onClick={handleClosePreview}
                 className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                aria-label="Close preview"
+                aria-label={t('clinical.soap.previewModal.closeAriaLabel')}
                 type="button"
               >
                 <X className="w-5 h-5" />
@@ -1083,36 +1180,36 @@ Include specific parameters, duration, and frequency for each modality used."
             <div className="space-y-6">
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <p className="text-xs text-amber-800">
-                  <strong>Preview Mode:</strong> This is how your SOAP note will appear once finalized. Review all sections carefully before accepting.
+                  {t('clinical.soap.previewModal.banner')}
                 </p>
               </div>
               
               <div className="space-y-6">
                 <div className="border-l-4 border-purple-300 pl-4">
-                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">S: Subjective</h4>
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">S: {t('soap.subjective')}</h4>
                   <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-purple-100">
-                    {currentSOAP.subjective || 'No content'}
+                    {currentSOAP.subjective || t('clinical.soap.previewModal.noContent')}
                   </div>
                 </div>
                 
                 <div className="border-l-4 border-blue-300 pl-4">
-                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">O: Objective</h4>
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">O: {t('soap.objective')}</h4>
                   <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-blue-100">
-                    {currentSOAP.objective || 'No content'}
+                    {currentSOAP.objective || t('clinical.soap.previewModal.noContent')}
                   </div>
                 </div>
                 
                 <div className="border-l-4 border-purple-400 pl-4">
-                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">A: Assessment</h4>
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">A: {t('soap.assessment')}</h4>
                   <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-purple-200">
-                    {currentSOAP.assessment || 'No content'}
+                    {currentSOAP.assessment || t('clinical.soap.previewModal.noContent')}
                   </div>
                 </div>
                 
                 <div className="border-l-4 border-blue-400 pl-4">
-                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">P: Plan</h4>
+                  <h4 className="text-sm font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">P: {t('soap.plan')}</h4>
                   <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 rounded-lg p-4 text-sm text-slate-700 whitespace-pre-wrap border border-blue-200">
-                    {currentSOAP.plan || 'No content'}
+                    {currentSOAP.plan || t('clinical.soap.previewModal.noContent')}
                   </div>
                 </div>
               </div>
@@ -1123,7 +1220,7 @@ Include specific parameters, duration, and frequency for each modality used."
                 onClick={handleClosePreview}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
-                Back to Edit
+                {t('clinical.soap.previewModal.backToEdit')}
               </button>
               {onFinalize && (
                 <button
@@ -1133,7 +1230,7 @@ Include specific parameters, duration, and frequency for each modality used."
                   }}
                   className="flex-1 px-4 py-2 rounded-lg bg-gradient-primary text-white text-sm font-medium hover:bg-gradient-primary-hover transition"
                 >
-                  Accept & Finalize
+                  {t('clinical.soap.previewModal.acceptAndFinalize')}
                 </button>
               )}
             </div>
@@ -1145,12 +1242,12 @@ Include specific parameters, duration, and frequency for each modality used."
       {showFinalizeConfirm && (
         <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Finalize SOAP Note?</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('clinical.soap.finalizeModal.title')}</h3>
             <p className="text-sm text-slate-600 mb-4">
-              Once finalized, this SOAP note will be saved and marked as complete. You can still edit it, but it will require "unfinalizing" first.
+              {t('clinical.soap.finalizeModal.body')}
             </p>
             
-            {/* ✅ DÍA 2: CPO Review Checkbox - HTML5 required */}
+            {/* ✅ DÍA 2: Review Checkbox — jurisdiction-aware (CPO / normativa aplicable) */}
             {requiresReview && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <label className="flex items-start gap-2 cursor-pointer">
@@ -1170,12 +1267,12 @@ Include specific parameters, duration, and frequency for each modality used."
                     className="mt-1 h-4 w-4 text-yellow-600 rounded border-gray-300 focus:ring-yellow-500"
                   />
                   <span className="text-sm text-yellow-900">
-                    I have reviewed and verified this SOAP note (CPO requirement)
+                    {t('clinical.soap.review.checkboxLabel', { institution: soapReview.institutionName })}
                   </span>
                 </label>
                 {!isReviewed && (
                   <p className="text-xs text-yellow-700 mt-2 ml-6">
-                    This checkbox is required before finalizing AI-generated SOAP notes.
+                    {t('clinical.soap.review.checkboxHint')}
                   </p>
                 )}
               </div>
@@ -1186,7 +1283,7 @@ Include specific parameters, duration, and frequency for each modality used."
                 onClick={handleCancelFinalize}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
-                Cancel
+                {t('clinical.soap.finalizeModal.cancel')}
               </button>
               <button
                 onClick={handleFinalize}
@@ -1197,7 +1294,7 @@ Include specific parameters, duration, and frequency for each modality used."
                     : 'bg-gradient-primary text-white hover:bg-gradient-primary-hover'
                 }`}
               >
-                Finalize
+                {t('clinical.soap.finalizeModal.finalize')}
               </button>
             </div>
           </div>
@@ -1209,10 +1306,10 @@ Include specific parameters, duration, and frequency for each modality used."
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="text-base font-semibold text-slate-900 mb-1">
-              Cannot finalize yet
+              {t('clinical.soap.missingRequirements.title')}
             </h3>
             <p className="text-sm text-slate-500 mb-4">
-              Please complete the following before finalizing:
+              {t('clinical.soap.missingRequirements.body')}
             </p>
             <ul className="space-y-2 mb-6">
               {missingItems.map((item, i) => (
@@ -1228,7 +1325,7 @@ Include specific parameters, duration, and frequency for each modality used."
               onClick={() => setShowMissingModal(false)}
               className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
             >
-              Back to editing
+              {t('clinical.soap.missingRequirements.backButton')}
             </button>
           </div>
         </div>

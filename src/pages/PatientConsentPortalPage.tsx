@@ -22,7 +22,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, AlertCircle, Shield, FileText, Clock } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { getVerbalConsentText, getDefaultConsentTextVersion } from '../services/verbalConsentService';
+import { getVerbalConsentText, getConsentVersionForPortal } from '../services/verbalConsentService';
 import { getCurrentJurisdiction } from '../core/consent/consentJurisdiction';
 
 interface ConsentToken {
@@ -60,8 +60,9 @@ export default function PatientConsentPortalPage() {
   const [declineReasons, setDeclineReasons] = useState<string[]>([]);
   const [declineNotes, setDeclineNotes] = useState('');
 
-  // Get consent text
-  const textVersion = getDefaultConsentTextVersion();
+  // Get consent text (jurisdiction-aware; Phase 1 still CA-ON only)
+  const jurisdiction = getCurrentJurisdiction();
+  const textVersion = getConsentVersionForPortal(jurisdiction);
   const consentText = getVerbalConsentText(textVersion);
 
   useEffect(() => {

@@ -1,8 +1,6 @@
 /**
- * SMS Templates - English (en-CA) for Canadian Market
- * PHIPA s.18 Compliant Consent Messages
- * 
- * All templates are in English only - no Spanish allowed
+ * SMS Templates - Multi-jurisdiction (en-CA PHIPA, es_ES GDPR/RGPD)
+ * Consent and activation messages by locale/jurisdiction.
  */
 export const SMS_TEMPLATES = {
   consent: {
@@ -16,7 +14,18 @@ export const SMS_TEMPLATES = {
 Authorize: ${consentUrl}
 Privacy Policy: ${privacyUrl}
 Reply STOP to opt out.`;
-    }
+    },
+    es_ES: (
+      patientName: string,
+      physioName: string,
+      consentUrl: string,
+      privacyUrl: string
+    ): string => {
+      return `Hola ${patientName}, ${physioName} necesita tu consentimiento para el tratamiento de datos de salud según el RGPD.
+Autorizar: ${consentUrl}
+Política de privacidad: ${privacyUrl}
+Responde STOP para darte de baja.`;
+    },
   },
   activation: {
     en_CA: (
@@ -42,48 +51,38 @@ function containsNonASCII(text: string): boolean {
 }
 
 /**
- * Validation helper for SMS templates
- * Ensures no Spanish content and required English content
+ * Validation for en-CA (Canadian) SMS: no Spanish, requires English greeting.
  */
 export function validateSMSTemplate(template: string): {
   isValid: boolean;
   errors: string[];
 } {
   const errors: string[] = [];
-  
-  // NEW: Check for non-ASCII characters (accents, tildes, ñ, etc.)
   if (containsNonASCII(template)) {
-    console.error('[SMS VALIDATION] Template contains non-ASCII characters:', template);
     errors.push('Contains non-ASCII characters (accents/tildes not allowed in SMS)');
   }
-  
-  // Check for Spanish words
   const spanishWords = [
     'Hola', 'consentimiento', 'datos', 'salud', 'según', 'ley',
     'válido', 'necesita', 'para', 'cancelar', 'cuenta', 'activa'
   ];
-  
   spanishWords.forEach(word => {
     if (new RegExp('\\b' + word + '\\b', 'i').test(template)) {
       errors.push('Contains Spanish word: ' + word);
     }
   });
-
-  // Check for required English content
   if (!template.includes('Hello') && !template.includes('Hi')) {
     errors.push('Missing English greeting');
   }
+  return { isValid: errors.length === 0, errors };
+}
 
-  // Check for PHIPA mention in consent messages
-  if (template.includes('consent') && !template.includes('PHIPA')) {
-    // Warning but not error - PHIPA may be implied
-    console.warn('SMS template mentions consent but not PHIPA');
+/**
+ * Validation for es-ES (GDPR) SMS: allows Spanish, minimal checks.
+ */
+export function validateSMSTemplateEs(template: string): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (!template || template.length < 10) {
+    errors.push('Template too short');
   }
-  
-  console.log('[SMS VALIDATION] Results:', { isValid: errors.length === 0, errors, templateLength: template.length });
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+  return { isValid: errors.length === 0, errors };
 }

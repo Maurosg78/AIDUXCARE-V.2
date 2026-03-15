@@ -8,12 +8,14 @@
  */
 
 import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
+import { buildFollowUpPromptV3, type FollowUpPromptV3Input } from "../core/soap/followUp/buildFollowUpPromptV3";
 import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
 import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from '../types/vertex-ai';
 import type { SessionType } from './sessionTypeService';
 import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
+import { logRegulatoryLanguageWarnings } from '../utils/regulatoryLanguageGuard';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
@@ -452,6 +454,14 @@ export async function generateSOAPNote(
       // ✅ CRITICAL: Do NOT modify plan - user can add modalities manually in Phase 3
       // Plan remains as generated - user has full control to edit and add modalities
     }
+
+    // ✅ REG-SOT: Log potential risky regulatory language in SOAP (non-blocking)
+    logRegulatoryLanguageWarnings('soap_note', {
+      subjective: soapNote.subjective,
+      objective: soapNote.objective,
+      assessment: soapNote.assessment,
+      plan: soapNote.plan,
+    });
 
     // ✅ REFINED: Validate for quality (guidelines, not strict limits)
     const validation = validateSOAP(soapNote);
@@ -965,6 +975,14 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
     ? { none: true }
     : { red_flags: red_flags.map((label) => ({ label, evidence: '', suggested_action: '' })) };
 
+  // Regulatory boundary: same guard as referral report — log risky language before showing to clinician
+  logRegulatoryLanguageWarnings('soap_note_followup_v3', {
+    subjective: soap.subjective,
+    objective: soap.objective,
+    assessment: soap.assessment,
+    plan: soap.plan,
+  });
+
   return {
     raw: rawText,
     soap,
@@ -979,6 +997,89 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
       error: { type: 'AI_UNAVAILABLE', message: 'Follow-up AI generation failed or returned invalid response' },
     };
   }
+}
+
+/** Fase C: Follow-up analysis returns documentation (SOAP) + considerations (reflections only, not part of record). */
+export interface FollowUpAnalysisResult {
+  documentation: SOAPNote | null;
+  considerations: string[];
+  alerts?: FollowUpAlerts | null;
+  planItems?: FollowUpPlanItem[] | null;
+  error?: FollowUpSOAPV2Error;
+}
+
+const CONSIDERATIONS_SYSTEM = `You are a clinical documentation assistant. List 1–3 brief clinical considerations based on the session trajectory and pain series. These are reflections only. Do NOT recommend treatment. Do NOT provide diagnosis. Keep them short and neutral. Output only a bullet list (one line per item, use • or -). No other text.`;
+
+function parseConsiderationsFromResponse(text: string): string[] {
+  if (!text || typeof text !== 'string') return [];
+  const lines = text
+    .split(/\n/)
+    .map((l) => l.replace(/^[\s•\-*]\s*|\d+\.\s*/g, '').trim())
+    .filter((l) => l.length > 0 && l.length <= 200);
+  return lines.slice(0, 3);
+}
+
+/**
+ * Fase C: Generate follow-up SOAP (documentation) + AI clinical considerations (reflections only).
+ * documentation → SOAP editor (clinical record). considerations → UI only, not part of medical record.
+ */
+export async function generateFollowUpAnalysis(
+  input: FollowUpPromptV3Input
+): Promise<FollowUpAnalysisResult> {
+  const fullPrompt = buildFollowUpPromptV3(input);
+  const soapResult = await generateFollowUpSOAPV2Raw(fullPrompt);
+
+  if (soapResult.error || !soapResult.soap) {
+    return {
+      documentation: soapResult.soap ?? null,
+      considerations: [],
+      alerts: soapResult.alerts ?? null,
+      error: soapResult.error,
+    };
+  }
+
+  // Structured data first so considerations depend on motor output, not free-text interpretation
+  const structured: string[] = [];
+  if (input.trajectoryPattern?.trim()) structured.push(`Trajectory: ${input.trajectoryPattern.trim()}`);
+  if (input.painSeriesSummary?.trim()) structured.push(`Pain series: ${input.painSeriesSummary.trim()}`);
+  if (input.trajectoryConfidence?.trim()) structured.push(`Confidence: ${input.trajectoryConfidence.trim()}`);
+  const narrative = input.longitudinalSummary?.trim() ? `\nLongitudinal context: ${input.longitudinalSummary.trim()}` : '';
+  const contextBlock =
+    structured.length > 0 ? structured.join('\n') + narrative : narrative || 'No trajectory or pain series data.';
+
+  const considerationsPrompt = `${CONSIDERATIONS_SYSTEM}\n\nContext:\n${contextBlock}`;
+  const traceId = `followup-considerations-${Date.now()}`;
+
+  let considerations: string[] = [];
+  try {
+    const res = await fetch(VERTEX_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: considerationsPrompt,
+        action: 'analyze',
+        traceId,
+        model: 'gemini-2.0-flash-exp',
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const raw =
+        (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        (data as any)?.text ??
+        '';
+      if (raw && typeof raw === 'string') considerations = parseConsiderationsFromResponse(raw);
+    }
+  } catch (e) {
+    console.warn('[FollowUpAnalysis] Considerations call failed, returning documentation only.', e);
+  }
+
+  return {
+    documentation: soapResult.soap,
+    considerations,
+    alerts: soapResult.alerts ?? null,
+    planItems: (soapResult as any).planItems ?? null,
+  };
 }
 
 /**
@@ -1084,6 +1185,136 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
             objective: String(soapData.objective ?? ''),
             assessment: String(soapData.assessment ?? ''),
             plan: plan || '',
+          };
+        }
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  if (!soap) {
+    throw new Error('Could not parse SOAP from AI response.');
+  }
+
+  return soap;
+}
+
+/**
+ * Payload for standardizing Ongoing patient intake via Vertex.
+ * Same shape as OngoingFormData from the intake form.
+ */
+export interface OngoingIntakePayload {
+  chiefComplaint?: string;
+  painPresent?: boolean;
+  painNPRS?: number;
+  impactNotes?: string;
+  antecedentesPrevios?: string;
+  objectiveFindings?: string;
+  clinicalImpression?: string;
+  sessionNotes?: string;
+  plannedNextFocus?: string;
+}
+
+const MAX_DOCUMENTS_CHARS = 8000;
+
+function buildOngoingIntakePayloadText(payload: OngoingIntakePayload, documentsText?: string): string {
+  const trim = (s: string | undefined) => (s ?? '').trim();
+  const painParts: string[] = [];
+  if (payload.painPresent && payload.painNPRS != null) painParts.push(`EVA/NPRS ${payload.painNPRS}/10`);
+  if (payload.impactNotes) painParts.push(trim(payload.impactNotes));
+  const painLine = painParts.length > 0 ? painParts.join('. ') : '';
+
+  const sections: string[] = [];
+  if (trim(payload.chiefComplaint)) sections.push(`[Motivo de consulta]\n${trim(payload.chiefComplaint)}`);
+  if (painLine) sections.push(`[Dolor / impacto]\n${painLine}`);
+  if (trim(payload.antecedentesPrevios)) sections.push(`[Antecedentes e historia]\n${trim(payload.antecedentesPrevios)}`);
+  if (trim(payload.objectiveFindings)) sections.push(`[Hallazgos objetivos]\n${trim(payload.objectiveFindings)}`);
+  if (trim(payload.clinicalImpression)) sections.push(`[Impresión clínica]\n${trim(payload.clinicalImpression)}`);
+  if (trim(payload.sessionNotes)) sections.push(`[Notas de sesión]\n${trim(payload.sessionNotes)}`);
+  if (trim(payload.plannedNextFocus)) sections.push(`[Próximo enfoque planificado]\n${trim(payload.plannedNextFocus)}`);
+  if (documentsText && documentsText.trim()) {
+    const capped = documentsText.trim().slice(0, MAX_DOCUMENTS_CHARS);
+    sections.push(`[Documentos adjuntos]\n${capped}`);
+  }
+  return sections.join('\n\n');
+}
+
+function getBaselineOutputLanguage(jurisdiction: string): 'es' | 'en-CA' {
+  return jurisdiction === 'ES-ES' ? 'es' : 'en-CA';
+}
+
+const BASELINE_FROM_ONGOING_SYSTEM_ES =
+  'Eres un asistente de notas clínicas. Te proporciono los datos del formulario de un paciente en tratamiento (primera vez en el sistema), no una evaluación inicial. Tu tarea es generar una nota SOAP que sirva como baseline clínico para futuros seguimientos. La nota debe tener la misma estructura y calidad que una evaluación inicial: clara, concisa, terminología estándar de fisioterapia, lista para historia clínica. Usa exactamente estas cabeceras (una por sección): Subjetivo:, Objetivo:, Evaluación:, Plan:. Cada sección debe tener contenido sustancial. El Plan debe indicar explícitamente qué tratamiento está en curso y el siguiente enfoque. Responde solo con la nota SOAP, en español. Nada más.';
+
+const BASELINE_FROM_ONGOING_SYSTEM_EN =
+  'You are a clinical note assistant. You are given structured intake data from an existing patient (first time in the system), not an initial evaluation. Your task is to produce a single SOAP note that serves as baseline context for future follow-ups. The note must have the same structure and quality as an initial assessment: clear, concise, standard physiotherapy terminology, EMR-ready. Use plain text with exactly these headings (one per section): Subjective:, Objective:, Assessment:, Plan:. Each section must contain substantive content; Plan must explicitly state what treatment is in course and next focus. Output the SOAP note in Canadian English (en-CA). Use Canadian physiotherapy terminology. Output nothing else.';
+
+/**
+ * WO-ONGOING-VERTEX: Generate standardized baseline SOAP from Ongoing patient intake form.
+ * Sends form data (and optional documents text) to Vertex; returns SOAP with same structure as initial assessment.
+ * Language follows jurisdiction (ES-ES → Spanish, else en-CA).
+ */
+export async function generateBaselineSOAPFromOngoingIntake(
+  payload: OngoingIntakePayload,
+  documentsText?: string,
+  jurisdiction?: string
+): Promise<SOAPNote> {
+  const { getCurrentJurisdiction } = await import('@/core/consent/consentJurisdiction');
+  const j = jurisdiction ?? getCurrentJurisdiction();
+  const lang = getBaselineOutputLanguage(j);
+  const systemPrompt = lang === 'es' ? BASELINE_FROM_ONGOING_SYSTEM_ES : BASELINE_FROM_ONGOING_SYSTEM_EN;
+  const payloadText = buildOngoingIntakePayloadText(payload, documentsText);
+  const userPrompt = lang === 'es'
+    ? `Genera una nota SOAP estandarizada a partir de los siguientes datos del formulario de intake. El Plan debe indicar claramente el tratamiento en curso y el próximo enfoque.\n\n---\n${payloadText}\n---`
+    : `Generate a standardized SOAP note from the following intake form data. The Plan must clearly state current treatment and next focus.\n\n---\n${payloadText}\n---`;
+  const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
+  const traceId = `baseline-ongoing-${Date.now()}`;
+  const response = await fetch(VERTEX_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: fullPrompt,
+      action: 'analyze',
+      traceId,
+      model: 'gemini-2.0-flash-exp',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Vertex AI error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawText =
+    data.candidates?.[0]?.content?.parts?.[0]?.text ??
+    data.text ??
+    (data.soap ? JSON.stringify(data.soap) : '');
+
+  if (!rawText || typeof rawText !== 'string') {
+    throw new Error('No SOAP content returned from AI.');
+  }
+
+  let soap: SOAPNote | null = parsePlainSOAPSections(rawText);
+  if (!soap) {
+    try {
+      const firstJsonSanitized = sanitizeAndExtractJson(rawText);
+      if (firstJsonSanitized) {
+        const soapData = JSON.parse(firstJsonSanitized);
+        if (soapData && typeof soapData === 'object') {
+          const plan =
+            typeof soapData.plan === 'string'
+              ? soapData.plan
+              : Array.isArray(soapData.plan)
+                ? soapData.plan.map((p: any) => (typeof p === 'string' ? p : p?.action ?? p?.label ?? String(p))).join('\n')
+                : '';
+          soap = {
+            subjective: String(soapData.subjective ?? soapData.Subjective ?? ''),
+            objective: String(soapData.objective ?? soapData.Objective ?? ''),
+            assessment: String(soapData.assessment ?? soapData.Assessment ?? ''),
+            plan: plan || String(soapData.plan ?? soapData.Plan ?? ''),
           };
         }
       }

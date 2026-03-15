@@ -15,3 +15,22 @@
     font-family: var(--font-sans);
   }
 }
+
+/* DictationButton: equalizer animation while capturing audio */
+@keyframes dictation-bar {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.7; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+.dictation-equalizer-bar {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: center bottom;
+  animation: dictation-bar 0.5s ease-in-out infinite;
+}
+.dictation-equalizer-bar:nth-child(1) { animation-delay: 0s; }
+.dictation-equalizer-bar:nth-child(2) { animation-delay: 0.1s; }
+.dictation-equalizer-bar:nth-child(3) { animation-delay: 0.2s; }
+.dictation-equalizer-bar:nth-child(4) { animation-delay: 0.15s; }
+.dictation-equalizer-bar:nth-child(5) { animation-delay: 0.05s; }

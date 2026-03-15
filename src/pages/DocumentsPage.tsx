@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   FileText, 
   Search, 
@@ -21,6 +22,7 @@ interface NoteWithPatient extends SavedNote {
 }
 
 export default function DocumentsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notes, setNotes] = useState<NoteWithPatient[]>([]);
@@ -171,7 +173,7 @@ Confidence: ${(note.soapData.confidence * 100).toFixed(1)}%
               onClick={() => navigate('/command-center')}
               className="px-4 py-2 text-primary-blue hover:text-primary-purple font-apple text-[15px] font-medium"
             >
-              ← Back to Command Center
+              ← {t('shell.nav.backToCommandCenter')}
             </button>
           </div>
         </div>

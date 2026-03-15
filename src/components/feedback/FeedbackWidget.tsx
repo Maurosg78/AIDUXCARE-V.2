@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FeedbackModal } from './FeedbackModal';
 
 /**
  * FeedbackWidget
- * 
+ *
  * Floating button always visible for users to report feedback during beta testing.
  * Critical for 1-month physiotherapist testing program.
  */
 export const FeedbackWidget: React.FC = () => {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -16,8 +18,8 @@ export const FeedbackWidget: React.FC = () => {
       <button
         onClick={() => setIsModalOpen(true)}
         className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 min-w-[48px] min-h-[48px] shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group"
-        aria-label="Report feedback"
-        title="Report problem or suggestion"
+        aria-label={t('feedback.widget.ariaLabel')}
+        title={t('feedback.widget.title')}
       >
         {/* Icon */}
         <svg
@@ -36,7 +38,7 @@ export const FeedbackWidget: React.FC = () => {
         
         {/* Text (visible on hover) */}
         <span className="hidden md:inline-block text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-          Feedback
+          {t('feedback.widget.buttonLabel')}
         </span>
       </button>
 

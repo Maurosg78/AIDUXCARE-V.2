@@ -1,13 +1,14 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
-import logger from "@/shared/utils/logger";
-import { AuthProvider } from "./context/AuthContext";
-import { ProfessionalProfileProvider } from "./context/ProfessionalProfileContext";
-import { SessionProvider } from "./context/SessionContext";
-import { MobileViewportFix } from "./components/mobile/MobileViewportFix";
-import { MobileTestHarness } from "./components/mobile/MobileTestHarness";
-import App from "./App";
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import logger from '@/shared/utils/logger';
+import { AuthProvider } from './context/AuthContext';
+import { ProfessionalProfileProvider } from './context/ProfessionalProfileContext';
+import { SessionProvider } from './context/SessionContext';
+import { MobileViewportFix } from './components/mobile/MobileViewportFix';
+import { MobileTestHarness } from './components/mobile/MobileTestHarness';
+import App from './App';
+import './i18n';
 
 // Lazy load Analytics - solo se inicializa cuando se necesita
 // Esto evita cargar el servicio completo al inicio

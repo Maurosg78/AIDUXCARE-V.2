@@ -15,8 +15,13 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, CheckCircle, AlertCircle, User, Clock, Shield } from 'lucide-react';
-import VerbalConsentService, { getVerbalConsentText, getDefaultConsentTextVersion, VerbalConsentDetails } from '../../services/verbalConsentService';
+import VerbalConsentService, {
+  getVerbalConsentText,
+  getConsentTextVersionForCurrentJurisdiction,
+  VerbalConsentDetails,
+} from '../../services/verbalConsentService';
 // ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
 import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
 import type { ConsentTextVersion } from '../../core/consent/consentLanguagePolicy';
@@ -44,6 +49,9 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   onConsentObtained,
   onConsentDenied,
 }) => {
+  const { t } = useTranslation();
+  const jurisdiction = getCurrentJurisdiction();
+  const isGdpr = jurisdiction === 'ES-ES';
   const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
   const [readStarted, setReadStarted] = useState(false);
   const [patientResponse, setPatientResponse] = useState<'authorized' | 'denied' | 'unable_to_respond' | null>(null);
@@ -57,7 +65,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // ✅ WO-CONSENT-VERBAL-01-LANG: Get consent text for current jurisdiction
-  const consentTextVersion = getDefaultConsentTextVersion();
+  const consentTextVersion = getConsentTextVersionForCurrentJurisdiction();
   const consentText = getVerbalConsentText(consentTextVersion);
 
   if (!isOpen) return null;
@@ -82,14 +90,14 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     const finalResponse = response || patientResponse;
     
     if (!finalResponse) {
-      setError('Please select the patient\'s response');
+      setError(t('consent.verbal.errorSelectResponse'));
       return;
     }
 
     if (finalResponse === 'authorized') {
       // ✅ WO-CONSENT-VERBAL-01: Require all confirmations including physiotherapist checkbox
       if (!patientUnderstood || !voluntarilyGiven || !physiotherapistConfirmed) {
-        setError('You must confirm that the patient understood and gave consent voluntarily, and that you have read the consent text to the patient.');
+        setError(t('consent.verbal.errorConfirmAll'));
         return;
       }
     }
@@ -100,7 +108,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     try {
       if (finalResponse === 'authorized') {
         // ✅ WO-CONSENT-VERBAL-01-LANG: Get text version for current jurisdiction
-        const textVersion = getDefaultConsentTextVersion();
+        const textVersion = getConsentTextVersionForCurrentJurisdiction();
         const consentText = getVerbalConsentText(textVersion);
         const jurisdiction = getCurrentJurisdiction();
         
@@ -130,7 +138,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           onConsentObtained(result.consentId ?? '');
           handleClose();
         } else {
-          setError('Error registering consent. Please try again.');
+          setError(t('consent.verbal.errorRegistering'));
         }
       } else {
         // Consent denied or unable to respond
@@ -141,7 +149,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
       }
     } catch (err) {
       console.error('[VerbalConsentModal] Error:', err);
-      setError(err instanceof Error ? err.message : 'Error processing consent');
+      setError(err instanceof Error ? err.message : t('consent.verbal.errorProcessing'));
     } finally {
       setIsSubmitting(false);
     }
@@ -169,9 +177,9 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6" />
             <div>
-              <h2 className="text-xl font-bold">Verbal Consent Required</h2>
+              <h2 className="text-xl font-bold">{t('consent.verbal.title')}</h2>
               <p className="text-indigo-100 text-sm">
-                {patientName ? `Patient: ${patientName}` : `ID: ${patientId}`}
+                {patientName ? `${t('consent.verbal.patientLabel')}: ${patientName}` : `${t('consent.verbal.idLabel')}: ${patientId}`}
               </p>
             </div>
           </div>
@@ -193,11 +201,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                   <AlertCircle className="w-5 h-5 text-primary-blue mt-0.5" />
                   <div>
                     <h3 className="font-semibold text-indigo-900 mb-2">
-                      Important Instructions
+                      {t('consent.verbal.importantInstructions')}
                     </h3>
                     <p className="text-indigo-700 text-sm">
-                      You must read the complete consent text to the patient before continuing.
-                      This process is required by PHIPA and is legally valid.
+                      {t('consent.verbal.instructionsBody')} {isGdpr ? t('consent.verbal.instructionsBodyGdpr') : t('consent.verbal.instructionsBodyPhipa')}
                     </p>
                   </div>
                 </div>
@@ -207,7 +214,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-5 h-5 text-blue-600" />
                   <h3 className="font-semibold text-blue-900">
-                    Consent Text to Read
+                    {t('consent.verbal.consentTextToRead')}
                   </h3>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-blue-200">
@@ -222,13 +229,13 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                   onClick={handleClose}
                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
                 >
-                  Cancel
+                  {t('consent.verbal.cancel')}
                 </button>
                 <button
                   onClick={handleStartReading}
                   className="px-6 py-2 bg-gradient-to-r from-primary-blue to-primary-purple text-white rounded-lg hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-medium shadow-md"
                 >
-                  I Have Read the Text to the Patient
+                  {t('consent.verbal.iHaveReadToPatient')}
                 </button>
               </div>
             </div>
@@ -239,13 +246,13 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Text read to patient</span>
+                  <span className="font-medium">{t('consent.verbal.textReadToPatient')}</span>
                 </div>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-4">
-                  What was the patient's response?
+                  {t('consent.verbal.patientResponseQuestion')}
                 </h3>
                 <div className="space-y-3">
                   <button
@@ -262,10 +269,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                       }`} />
                       <div>
                         <div className="font-medium text-gray-900">
-                          ✅ YES - Patient authorized verbally
+                          ✅ {t('consent.verbal.yesAuthorized')}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          The patient understood and authorized recording and processing
+                          {t('consent.verbal.yesAuthorizedDesc')}
                         </div>
                       </div>
                     </div>
@@ -285,10 +292,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                       }`} />
                       <div>
                         <div className="font-medium text-gray-900">
-                          ❌ NO - Patient did not authorize
+                          ❌ {t('consent.verbal.noDenied')}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          The patient did not authorize recording
+                          {t('consent.verbal.noDeniedDesc')}
                         </div>
                       </div>
                     </div>
@@ -308,10 +315,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                       }`} />
                       <div>
                         <div className="font-medium text-gray-900">
-                          ⚠️ Patient unable to decide (SDM required)
+                          ⚠️ {t('consent.verbal.unableToRespond')}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          Legal representative or substitute decision maker required
+                          {t('consent.verbal.unableToRespondDesc')}
                         </div>
                       </div>
                     </div>
@@ -326,12 +333,12 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               )}
 
               <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setStep('read')}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Back
-                </button>
+<button
+                onClick={() => setStep('read')}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              >
+                {t('consent.verbal.back')}
+              </button>
               </div>
             </div>
           )}
@@ -341,7 +348,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Patient authorized verbally</span>
+                  <span className="font-medium">{t('consent.verbal.patientAuthorizedVerbally')}</span>
                 </div>
               </div>
 
@@ -358,10 +365,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                     />
                     <div>
                       <div className="font-medium text-gray-900">
-                        I confirm that I have read this consent to the patient and verbal consent was obtained.
+                        {t('consent.verbal.confirmReadToPatient')}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        This confirmation is required before proceeding
+                        {t('consent.verbal.confirmReadRequired')}
                       </div>
                     </div>
                   </label>
@@ -377,10 +384,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                     />
                     <div>
                       <div className="font-medium text-gray-900">
-                        I confirm that the patient understood the complete text
+                        {t('consent.verbal.confirmUnderstood')}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        The patient demonstrated understanding of the consent
+                        {t('consent.verbal.confirmUnderstoodDesc')}
                       </div>
                     </div>
                   </label>
@@ -396,10 +403,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                     />
                     <div>
                       <div className="font-medium text-gray-900">
-                        I confirm that consent was given voluntarily
+                        {t('consent.verbal.confirmVoluntary')}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        Without pressure or coercion
+                        {t('consent.verbal.confirmVoluntaryDesc')}
                       </div>
                     </div>
                   </label>
@@ -409,25 +416,25 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               <div className="border-t pt-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Witnesses present (optional)
+                    {t('consent.verbal.witnessesOptional')}
                   </label>
                   <input
                     type="text"
                     value={witnessName}
                     onChange={(e) => setWitnessName(e.target.value)}
-                    placeholder="E.g.: Nurse Mary, Family member John"
+                    placeholder={t('consent.verbal.witnessesPlaceholder')}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional notes (optional)
+                    {t('consent.verbal.notesOptional')}
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Notes about consent obtaining..."
+                    placeholder={t('consent.verbal.notesPlaceholder')}
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
                   />
@@ -441,24 +448,24 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               )}
 
               <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setStep('response')}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                  disabled={isSubmitting}
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => handleSubmit()}
-                  disabled={!physiotherapistConfirmed || !patientUnderstood || !voluntarilyGiven || isSubmitting}
-                  className={`px-6 py-2 rounded-lg transition font-medium ${
-                    physiotherapistConfirmed && patientUnderstood && voluntarilyGiven && !isSubmitting
-                      ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white hover:from-primary-blue-hover hover:to-primary-purple-hover shadow-md'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isSubmitting ? 'Registering...' : 'Confirm & Continue'}
-                </button>
+<button
+                onClick={() => setStep('response')}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                disabled={isSubmitting}
+              >
+                {t('consent.verbal.back')}
+              </button>
+              <button
+                onClick={() => handleSubmit()}
+                disabled={!physiotherapistConfirmed || !patientUnderstood || !voluntarilyGiven || isSubmitting}
+                className={`px-6 py-2 rounded-lg transition font-medium ${
+                  physiotherapistConfirmed && patientUnderstood && voluntarilyGiven && !isSubmitting
+                    ? 'bg-gradient-to-r from-primary-blue to-primary-purple text-white hover:from-primary-blue-hover hover:to-primary-purple-hover shadow-md'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? t('consent.verbal.registering') : t('consent.verbal.confirmContinue')}
+              </button>
               </div>
             </div>
           )}
@@ -469,7 +476,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           <div className="flex items-center gap-2 text-xs text-indigo-700">
             <Shield className="w-4 h-4" />
             <span>
-              Verbal consent is valid under PHIPA. Once granted, it is valid for the entire treatment.
+              {isGdpr ? t('consent.verbal.footerGdpr') : t('consent.verbal.footerPhipa')}
             </span>
           </div>
         </div>
