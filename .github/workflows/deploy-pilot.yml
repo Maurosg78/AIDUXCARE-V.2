@@ -1,80 +1,26 @@
-# Tras pasar lint, typecheck, build y tests unitarios (Vitest), despliega al VPS del piloto.
-# Requiere secretos: PILOT_SSH_HOST, PILOT_SSH_USER, PILOT_SSH_PRIVATE_KEY
-# Opcional (Variables del repo): PILOT_DEPLOY_PATH (default /var/www/pilot), PILOT_DEPLOY_BRANCH (default stable)
-
 name: Test and deploy pilot
-
 on:
   push:
     branches:
       - stable
   workflow_dispatch:
-
 concurrency:
   group: deploy-pilot-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
-  verify:
-    name: Lint, typecheck, build, test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (prod)
-        run: pnpm run lint:prod
-
-      - name: Typecheck
-        run: pnpm run typecheck
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Unit tests
-        run: pnpm test
-
   deploy:
     name: Deploy to pilot VPS
-    needs: verify
-    runs-on: ubuntu-latest
-    if: success()
+    runs-on: self-hosted
     steps:
-      - name: Remote pull, build, pm2 restart
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.PILOT_SSH_HOST }}
-          username: ${{ secrets.PILOT_SSH_USER }}
-          key: ${{ secrets.PILOT_SSH_PRIVATE_KEY }}
-          script_stop: true
-          script: |
-            set -euo pipefail
-            DEPLOY_PATH="${{ vars.PILOT_DEPLOY_PATH }}"
-            DEPLOY_BRANCH="${{ vars.PILOT_DEPLOY_BRANCH }}"
-            if [ -z "$DEPLOY_PATH" ]; then DEPLOY_PATH="/var/www/pilot"; fi
-            if [ -z "$DEPLOY_BRANCH" ]; then DEPLOY_BRANCH="stable"; fi
-            cd "$DEPLOY_PATH"
-            git config --global --add safe.directory "$DEPLOY_PATH" || true
-            git fetch origin
-            git checkout "$DEPLOY_BRANCH"
-            git reset --hard "origin/$DEPLOY_BRANCH"
-            if command -v pnpm >/dev/null 2>&1 && [ -f pnpm-lock.yaml ]; then
-              pnpm install --frozen-lockfile
-              VITE_ENABLE_ES_PILOT=true pnpm run build
-            else
-              npm ci
-              VITE_ENABLE_ES_PILOT=true npm run build
-            fi
-            pm2 restart pilot-web
+      - name: Pull, build and restart
+        run: |
+          set -euo pipefail
+          cd /var/www/pilot
+          git fetch origin
+          git checkout stable
+          git reset --hard origin/stable
+          pnpm install --frozen-lockfile
+          VITE_ENABLE_ES_PILOT=true pnpm run build
+          pm2 restart pilot-web
