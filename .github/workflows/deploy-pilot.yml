@@ -21,6 +21,6 @@ jobs:
           git fetch origin
           git checkout stable
           git reset --hard origin/stable
-          pnpm install --frozen-lockfile
-          VITE_ENABLE_ES_PILOT=true pnpm run build
+          npm install
+          VITE_ENABLE_ES_PILOT=true npm run build
           pm2 restart pilot-web
