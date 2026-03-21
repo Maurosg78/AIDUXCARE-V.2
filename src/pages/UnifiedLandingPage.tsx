@@ -338,18 +338,18 @@ const UnifiedLandingPage: React.FC = () => {
         {/* Footer Links */}
         <div className="text-center mt-8">
           <div className="flex items-center justify-center gap-6 text-xs text-gray-600 font-light">
-            <button
-              onClick={() => navigate('/privacy')}
+            <a
+              href="/privacy-policy"
               className="hover:text-gray-900 transition-colors"
             >
               {t('landing.privacyPolicy')}
-            </button>
-            <button
-              onClick={() => navigate('/terms')}
+            </a>
+            <a
+              href="/terms-of-use"
               className="hover:text-gray-900 transition-colors"
             >
               {t('landing.termsOfService')}
-            </button>
+            </a>
           </div>
         </div>
       </div>
