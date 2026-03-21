@@ -44,6 +44,31 @@ function getSOAPRolePhrase(profile?: ProfessionalProfile | null): string {
   return 'a registered healthcare professional';
 }
 
+/** Builds the optional PROFESSIONAL CONTEXT block from clinician profile fields.
+ *  Returns an empty string when all relevant fields are absent, so callers can
+ *  embed it directly in the template without leaving stray blank lines. */
+function buildProfessionalContextBlock(profile?: ProfessionalProfile | null): string {
+  if (!profile) return '';
+  const lines: string[] = [];
+  if (profile.specialty?.trim()) {
+    lines.push(`Specialty: ${profile.specialty.trim()}`);
+  }
+  if (profile.practiceAreas && profile.practiceAreas.length > 0) {
+    lines.push(`Practice areas: ${profile.practiceAreas.map(a => a.label).join(', ')}`);
+  }
+  if (profile.techniques && profile.techniques.length > 0) {
+    lines.push(`Preferred techniques: ${profile.techniques.map(t => t.label).join(', ')}`);
+  }
+  if (lines.length === 0) return '';
+  return [
+    '',
+    'PROFESSIONAL CONTEXT:',
+    ...lines,
+    'Prioritize these areas and techniques when generating clinical suggestions. Do not suggest techniques outside this professional\'s scope unless clinically necessary.',
+    ''
+  ].join('\n');
+}
+
 /**
  * Builds prompt for Initial Assessment SOAP note
  */
@@ -52,8 +77,8 @@ export function buildInitialAssessmentPrompt(
   options?: SOAPPromptOptions
 ): string {
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
-  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for an INITIAL ASSESSMENT visit.
-
+  const professionalContextBlock = buildProfessionalContextBlock(options?.professionalProfile);
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for an INITIAL ASSESSMENT visit.${professionalContextBlock}
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
@@ -248,11 +273,11 @@ export function buildFollowUpPrompt(
     : 'No previous visit context available';
 
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
+  const professionalContextBlock = buildProfessionalContextBlock(options?.professionalProfile);
   const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
 Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
-You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.
-
+You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.${professionalContextBlock}
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
