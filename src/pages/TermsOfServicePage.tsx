@@ -148,7 +148,7 @@ const TermsOfServiceSpain: React.FC = () => (
               <p className="text-gray-700">
                 <strong>Email legal:</strong> <a href="mailto:legal@aiduxcare.com" className="text-indigo-600 hover:text-indigo-800 underline">legal@aiduxcare.com</a><br />
                 <strong>Privacidad / RGPD:</strong> <a href="mailto:privacy@aiduxcare.com" className="text-indigo-600 hover:text-indigo-800 underline">privacy@aiduxcare.com</a><br />
-                <strong>Dirección:</strong> AiduxCare Inc., Niagara Falls Innovation Hub, 4255 Queen St, Niagara Falls, ON L2E 2L3, Canadá
+                <strong>Dirección:</strong> Calle del Escultor José Capuz 23, CP 46006, Valencia, España
               </p>
             </div>
           </section>

@@ -23,7 +23,7 @@ const PrivacyPolicySpain: React.FC = () => (
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
               <p className="mb-1"><strong>AiduxCare Inc.</strong></p>
               <p className="mb-1">Correo electrónico: <a href="mailto:privacy@aiduxcare.com" className="text-indigo-600 hover:text-indigo-800 underline">privacy@aiduxcare.com</a></p>
-              <p className="mb-0">Niagara Falls Innovation Hub, 4255 Queen St, Niagara Falls, ON L2E 2L3, Canadá</p>
+              <p className="mb-0">Calle del Escultor José Capuz 23, CP 46006, Valencia, España</p>
             </div>
             <p className="mt-4">
               AiduxCare actúa como <strong>encargado del tratamiento</strong> en el sentido del artículo 28 del Reglamento (UE) 2016/679 (RGPD), procesando datos de salud por cuenta del profesional sanitario (<strong>responsable del tratamiento</strong>) que contrata y utiliza el servicio.

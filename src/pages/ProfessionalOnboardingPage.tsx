@@ -1552,11 +1552,11 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     <p className="text-[10px] text-amber-800 font-apple font-light leading-relaxed">
                       <strong className="font-semibold">{t('onboarding.importantNotice')}</strong>{' '}
                       {t('onboarding.withdrawNotice')}{' '}
-                      <Link to="/privacy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                      <Link to="/privacy-policy" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
                         {t('onboarding.privacyPolicyLink')}
                       </Link>
-                      {' '}and{' '}
-                      <Link to="/terms" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
+                      {esPilot ? ' y ' : ' and '}
+                      <Link to="/terms-of-use" target="_blank" className="text-amber-700 hover:text-amber-900 underline font-medium">
                         {t('onboarding.termsLink')}
                       </Link>.
                     </p>
