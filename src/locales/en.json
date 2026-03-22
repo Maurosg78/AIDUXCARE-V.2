@@ -374,12 +374,53 @@
     "notFoundFallback": "Note not found."
   },
   "shell": {
+    "app": {
+      "documentTitle": "AiDuxCare · Professional clinical documentation"
+    },
+    "common": {
+      "close": "Close",
+      "logout": "Log out"
+    },
     "commandCenter": {
       "title": "Command Center",
       "welcomeGreeting": "Welcome",
       "emailVerifiedStatus": "Email verified · Access granted",
       "searchPatient": "Search patient",
-      "searchPatientPlaceholder": "Search patient by name..."
+      "searchPatientPlaceholder": "Search patient by name...",
+      "searchHintType": "Type to search patients",
+      "searchNoResults": "No patients found — try a different search",
+      "searchLoadingPatients": "Loading patients…",
+      "patientUnknownName": "Unknown"
+    },
+    "patientListDropdown": {
+      "loadingButton": "Loading patients...",
+      "errorButton": "Error loading patients",
+      "selectPatientCount": "Select patient ({{count}})",
+      "searchPlaceholder": "Search by name, email, or phone...",
+      "loadingList": "Loading patients...",
+      "errorWithMessage": "Error loading patients: {{message}}",
+      "noMatch": "No patients found matching your search",
+      "noneRegistered": "No patients registered yet",
+      "patientsCount_one": "{{count}} patient",
+      "patientsCount_other": "{{count}} patients",
+      "footerMatching": " matching \"{{term}}\""
+    },
+    "patientSelectorModal": {
+      "title": "Select patient",
+      "searchPlaceholder": "Search patients by name or email...",
+      "loading": "Loading patients...",
+      "noMatch": "No patients found matching your search",
+      "noneAvailable": "No patients available",
+      "createNew": "Create new patient"
+    },
+    "professionalWorkflow": {
+      "initialAssessment": "Initial Assessment",
+      "followUp": "Follow-up",
+      "clinicalWorkflow": "Clinical Workflow",
+      "markAllDone": "Mark all as done",
+      "unmarkAll": "Unmark all",
+      "allDoneLabel": "All done",
+      "todayTreatmentConfirmed": "Today's treatment confirmed"
     },
     "nav": {
       "backToCommandCenter": "Back to Command Center",
@@ -406,7 +447,7 @@
       "removeFromListTitle": "Remove (e.g. if created in advance for future)",
       "addToToday": "Add to today",
       "addToThisDay": "Add to this day",
-      "addPatientsHint": "Add patients and session type, press Start on each row when it's time. To start a session without adding to the list, use \"Start in-clinic session\" below.",
+      "addPatientsHint": "Add patients and session type if they were already created previously.",
       "resume": "Resume",
       "cancel": "Cancel",
       "remove": "Remove",
@@ -415,6 +456,8 @@
       "confirmRemoveMessage": "Remove {{name}}? This cannot be undone.",
       "dismissIncompleteTitle": "Dismiss incomplete session?",
       "dismissIncompleteMessage": "Remove {{name}} from the incomplete list? You won't be able to resume this session from here.",
+      "dismissIncompleteAria": "Dismiss incomplete session",
+      "dismissIncompleteTooltip": "Remove from list (session will no longer appear as incomplete)",
       "today": "Today",
       "tomorrow": "Tomorrow",
       "yesterday": "Yesterday",
@@ -430,14 +473,14 @@
       "certificate": "Certificate-only session"
     },
     "workWithPatients": {
-      "title": "Work with Patients",
+      "title": "New patients",
       "workWithName": "Work with {{name}}",
-      "selectPatientOrCreate": "Select a patient or create new",
+      "selectPatientOrCreate": "",
       "continueTreatment": "Continue treatment",
       "startNewEvaluation": "Start new patient evaluation",
-      "newPatientHint": "New patient? Choose how to receive them. Each card goes directly to its form.",
-      "initialAssessment": "Initial Assessment",
-      "initialAssessmentDesc": "First visit — create patient form → full evaluation and SOAP",
+      "newPatientHint": "",
+      "initialAssessment": "Initial evaluation",
+      "initialAssessmentDesc": "Form for first visit",
       "ongoingFirstTime": "Ongoing patient — first time in AiDuxCare",
       "ongoingFirstTimeDesc": "Complete the intake to create this patient's clinical baseline, then start the session.",
       "ongoingPatientTooltipDisabled": "This patient already has sessions in AiDuxCare. Use Initial Assessment or Follow-up.",
@@ -448,7 +491,7 @@
       "patientHistory": "Patient History",
       "previousSessionsNotes": "Previous sessions & notes",
       "viewHistory": "View History",
-      "startInitialAssessment": "Start Initial Assessment",
+      "startInitialAssessment": "Start initial evaluation",
       "firstVisitFullEval": "First visit — full evaluation and SOAP",
       "startFollowup": "Start Follow-up",
       "nextVisitUpdate": "Next visit — update and SOAP",
@@ -503,7 +546,8 @@
         "standardizingWithAI": "Standardizing with AI…",
         "saveWithoutStandardize": "Save without standardizing",
         "errorVertexFailed": "Could not standardize with AI. You can save without standardizing."
-      }
+      },
+      "pilotFeatureNotify": "This feature isn't available during the pilot. We'll email you when it becomes available."
     },
     "createPatient": {
       "title": "New Patient",
@@ -544,6 +588,7 @@
     "startSessionModal": {
       "whoIsPatient": "Who is the patient?",
       "whatTypeOfSession": "What type of session?",
+      "visitTypeTodayTitle": "Visit type — today's list",
       "backToPatientList": "Back to patient list",
       "searchPlaceholder": "Search by name or email...",
       "searchPlaceholderAddToToday": "Search patient by name or email...",
@@ -553,10 +598,12 @@
       "noPatientsFound": "No patients found",
       "noPatientsYet": "No patients yet",
       "createNewPatient": "Create New Patient",
-      "addToTodayHint": "Add this patient to today's list with the selected session type. When it's time, press Start on that row.",
-      "addAsInitial": "Add as Initial Assessment",
-      "addAsFollowup": "Add as Follow-up",
-      "addAsOngoing": "Add as Ongoing (first time in AiDuxCare)",
+      "addToTodayHint": "Choose the visit type for your patient.",
+      "optionDisabledSubtitle": "Not available for this patient",
+      "optionLoadingTooltip": "Loading patient data…",
+      "addAsInitial": "Initial evaluation",
+      "addAsFollowup": "Follow-up visit",
+      "addAsOngoing": "Follow-up visit - First time in Aidux",
       "firstVisitFullEval": "First visit — full evaluation and SOAP",
       "nextVisitUpdate": "Next visit — update and SOAP",
       "patientNeedsInitialOrOngoing": "Patient needs Initial Assessment or Ongoing intake first",
@@ -593,6 +640,58 @@
       "missingConsentsDesc": "Patients requiring consent review",
       "reviewConsents": "Review Consents",
       "loading": "Loading..."
+    },
+    "compliance": {
+      "footerCanada": "PHIPA Compliant • SSL Secured • 100% Canadian Data",
+      "footerSpainPilot": "Applicable regulatory compliance · Encrypted connection · Data processing per AiDuxCare policy"
+    },
+    "contextualActions": {
+      "continueSession": "Continue Session",
+      "continueSessionDesc": "Return to active session",
+      "startAppointment": "Start Appointment",
+      "startAppointmentDesc": "Begin session with {{name}}",
+      "prepareAppointment": "Prepare for Appointment",
+      "prepareAppointmentDesc": "Appointment starting soon: {{name}}",
+      "reviewPendingNotes": "Review Pending Notes",
+      "reviewPendingNotesDesc": "{{count}} note(s) awaiting review",
+      "newPatient": "New Patient",
+      "newPatientDesc": "Register a new patient",
+      "newAppointment": "New Appointment",
+      "newAppointmentDesc": "Schedule a new appointment",
+      "emergencyIntake": "Emergency Intake",
+      "emergencyIntakeDesc": "Quick intake for emergency cases",
+      "fallbackPatientName": "patient"
+    },
+    "documentsForms": {
+      "title": "Documents & Forms",
+      "noSoapTitle": "No SOAP Notes Available",
+      "noSoapBody": "You need to generate a SOAP note first before creating WSIB/MVA forms or certificates.",
+      "loadingRecentNotes": "Loading recent SOAP notes...",
+      "selectSoapNote": "Select SOAP Note:",
+      "errorLoadRecent": "Failed to load recent SOAP notes. Please generate a SOAP note first.",
+      "errorProcessSoap": "Failed to process SOAP note",
+      "backToCategories": "← Back to categories"
+    },
+    "appointmentCalendar": {
+      "loadingSchedule": "Loading schedule...",
+      "errorPrefix": "Error:",
+      "appointmentsFor": "Appointments for {{date}}",
+      "noneScheduled": "No appointments scheduled",
+      "createAppointment": "Create Appointment",
+      "statusConfirmed": "Confirmed",
+      "statusScheduled": "Scheduled",
+      "statusCompleted": "Completed",
+      "statusCancelled": "Cancelled",
+      "statusUnknown": "Unknown"
+    },
+    "commandCenterLegacy": {
+      "quickActions": "Quick Actions",
+      "todaysSchedule": "Today's Schedule",
+      "viewAppointments": "View appointments",
+      "pendingNotes": "Pending Notes",
+      "reviewDrafts": "Review drafts",
+      "clinicalVault": "Clinical Vault",
+      "soapNotesSubtitle": "SOAP notes"
     }
   },
   "landing": {
@@ -631,7 +730,7 @@
     "createAccount": "Create your account",
     "completeProfessionalSetup": "Complete professional setup",
     "verifyCredentials": "Verify credentials",
-    "notPartYet": "",
+    "notPartYet": "Not part of AiduxCare yet?",
     "phipaCompliant": "PHIPA Compliant",
     "sslSecured": "SSL Secured",
     "canadianData": "100% Canadian Data",
@@ -747,6 +846,9 @@
     "successRegistrationMessage": "Registration completed successfully! Please check your email to verify your account."
   },
   "login": {
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "loadingProfile": "Loading your profile…",
     "errorEmailRequired": "Please enter your email address",
     "errorPasswordRequired": "Please enter your password",
     "errorInvalidEmail": "Please enter a valid email address",

@@ -3,6 +3,7 @@ import React from 'react';
 import { createBrowserRouter, useParams, Navigate, useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { AuthGuard } from '../components/AuthGuard';
 import { useAuth } from '../hooks/useAuth';
@@ -45,6 +46,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 // LayoutWrapper — Branding oficial: hoja de maple + AiDuxCare (gradient púrpura-azul), fijo en todas las pantallas
 // WO-PILOT-FIX-03: Logout button visible on every authenticated page
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -72,10 +74,11 @@ function LayoutWrapper({ children }: { children: React.ReactNode }) {
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors"
-                title="Logout"
+                title={t('shell.common.logout')}
+                aria-label={t('shell.common.logout')}
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t('shell.common.logout')}</span>
               </button>
             )}
           </div>

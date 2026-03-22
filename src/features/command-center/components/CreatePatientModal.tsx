@@ -226,7 +226,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
             disabled={isSubmitting}
-            aria-label="Close"
+            aria-label={t('shell.common.close')}
           >
             <X className="w-5 h-5" />
           </button>

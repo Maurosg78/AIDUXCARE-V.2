@@ -398,7 +398,7 @@ const OngoingPatientIntakeModalInner: React.FC<OngoingPatientIntakeModalProps> =
               {t('shell.workWithPatients.ongoingFirstTime')}
             </h2>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1" disabled={submitting} aria-label="Close">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1" disabled={submitting} aria-label={t('shell.common.close')}>
             <X className="w-5 h-5" />
           </button>
         </div>

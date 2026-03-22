@@ -499,13 +499,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
               setOpenPatientSelectorForOngoing(true);
               setShowPatientSelector(true);
             }}
-            onOpenStartSessionModal={() => {
-              setStartSessionModalMode('start_now');
-              setStartSessionModalStep(1);
-              setStartSessionModalPatient(null);
-              setCreatePatientFromStartSessionModal(false);
-              setShowStartSessionModal(true);
-            }}
             onCreatePatientForInitial={() => {
               setCreatePatientForOngoingFlow(false);
               setShowCreatePatient(true);

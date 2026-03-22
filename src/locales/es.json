@@ -61,7 +61,7 @@
       "sessionTypeTitle": "Tipo de sesión",
       "tokenBudgetShown": "Presupuesto de tokens mostrado",
       "comingSoon": "Próximamente",
-      "initialAssessment": "Valoración inicial",
+      "initialAssessment": "Evaluación inicial",
       "initialAssessmentDesc": "Evaluación inicial completa",
       "followup": "Seguimiento",
       "followupDesc": "Control de progreso y continuación del tratamiento",
@@ -374,12 +374,53 @@
     "notFoundFallback": "Nota no encontrada."
   },
   "shell": {
+    "app": {
+      "documentTitle": "AiDuxCare · Documentación clínica profesional"
+    },
+    "common": {
+      "close": "Cerrar",
+      "logout": "Cerrar sesión"
+    },
     "commandCenter": {
       "title": "Centro de mando",
       "welcomeGreeting": "Bienvenido",
       "emailVerifiedStatus": "Correo verificado · Acceso concedido",
       "searchPatient": "Buscar paciente",
-      "searchPatientPlaceholder": "Buscar paciente por nombre..."
+      "searchPatientPlaceholder": "Buscar paciente por nombre...",
+      "searchHintType": "Escribe para buscar pacientes",
+      "searchNoResults": "No hay pacientes que coincidan. Prueba con otro término.",
+      "searchLoadingPatients": "Cargando pacientes…",
+      "patientUnknownName": "Sin nombre"
+    },
+    "patientListDropdown": {
+      "loadingButton": "Cargando pacientes…",
+      "errorButton": "Error al cargar pacientes",
+      "selectPatientCount": "Seleccionar paciente ({{count}})",
+      "searchPlaceholder": "Buscar por nombre, correo o teléfono…",
+      "loadingList": "Cargando pacientes…",
+      "errorWithMessage": "Error al cargar pacientes: {{message}}",
+      "noMatch": "No hay pacientes que coincidan con la búsqueda",
+      "noneRegistered": "Aún no hay pacientes registrados",
+      "patientsCount_one": "{{count}} paciente",
+      "patientsCount_other": "{{count}} pacientes",
+      "footerMatching": " · coinciden con «{{term}}»"
+    },
+    "patientSelectorModal": {
+      "title": "Seleccionar paciente",
+      "searchPlaceholder": "Buscar pacientes por nombre o correo…",
+      "loading": "Cargando pacientes…",
+      "noMatch": "No hay pacientes que coincidan con la búsqueda",
+      "noneAvailable": "No hay pacientes disponibles",
+      "createNew": "Crear nuevo paciente"
+    },
+    "professionalWorkflow": {
+      "initialAssessment": "Evaluación inicial",
+      "followUp": "Seguimiento",
+      "clinicalWorkflow": "Flujo clínico",
+      "markAllDone": "Marcar todo como hecho",
+      "unmarkAll": "Desmarcar todo",
+      "allDoneLabel": "Todo listo",
+      "todayTreatmentConfirmed": "Tratamiento de hoy confirmado"
     },
     "nav": {
       "backToCommandCenter": "Volver al Centro de mando",
@@ -406,7 +447,7 @@
       "removeFromListTitle": "Quitar (p. ej. si se creó por adelantado)",
       "addToToday": "Añadir al día",
       "addToThisDay": "Añadir a este día",
-      "addPatientsHint": "Añade pacientes y tipo de sesión, pulsa Iniciar en cada fila cuando toque. Para iniciar una sesión sin añadirla a la lista, usa \"Iniciar sesión en clínica\" abajo.",
+      "addPatientsHint": "Añade pacientes y tipo de sesión si ya están creados previamente.",
       "resume": "Reanudar",
       "cancel": "Cancelar",
       "remove": "Quitar",
@@ -415,6 +456,8 @@
       "confirmRemoveMessage": "¿Quitar a {{name}}? No se puede deshacer.",
       "dismissIncompleteTitle": "¿Descartar sesión incompleta?",
       "dismissIncompleteMessage": "¿Quitar a {{name}} de la lista de incompletas? No podrás reanudar esta sesión desde aquí.",
+      "dismissIncompleteAria": "Descartar sesión incompleta",
+      "dismissIncompleteTooltip": "Quitar de la lista (la sesión ya no aparecerá como incompleta)",
       "today": "Hoy",
       "tomorrow": "Mañana",
       "yesterday": "Ayer",
@@ -422,7 +465,7 @@
       "daysAgo": "Hace {{count}} días"
     },
     "sessionType": {
-      "initial": "Valoración inicial",
+      "initial": "Evaluación inicial",
       "followup": "Seguimiento",
       "ongoing": "Continuidad (primera vez)",
       "wsib": "Sesión WSIB",
@@ -430,17 +473,17 @@
       "certificate": "Sesión solo certificado"
     },
     "workWithPatients": {
-      "title": "Trabajar con pacientes",
+      "title": "Nuevos pacientes",
       "workWithName": "Trabajar con {{name}}",
-      "selectPatientOrCreate": "Selecciona un paciente o crea uno nuevo",
+      "selectPatientOrCreate": "",
       "continueTreatment": "Continuar tratamiento",
-      "startNewEvaluation": "Iniciar nueva valoración de paciente",
-      "newPatientHint": "¿Paciente nuevo? Elige cómo recibirlo. Cada tarjeta lleva directamente a su formulario.",
-      "initialAssessment": "Valoración inicial",
-      "initialAssessmentDesc": "Primera visita — formulario de paciente → evaluación completa y SOAP",
+      "startNewEvaluation": "Iniciar nueva evaluación de paciente",
+      "newPatientHint": "",
+      "initialAssessment": "Evaluación inicial",
+      "initialAssessmentDesc": "Formulario para primera visita",
       "ongoingFirstTime": "Paciente en tratamiento — primera vez en AiDuxCare",
       "ongoingFirstTimeDesc": "Completa los datos para crear la base clínica de este paciente. Luego inicia la sesión.",
-      "ongoingPatientTooltipDisabled": "Este paciente ya tiene sesiones en AiDuxCare. Usa Valoración inicial o Seguimiento.",
+      "ongoingPatientTooltipDisabled": "Este paciente ya tiene sesiones en AiDuxCare. Usa Evaluación inicial o Seguimiento.",
       "ongoingCancel": "Cancelar",
       "ongoingCreateBaselineAndStart": "Crear base clínica e iniciar sesión",
       "ongoingCreatingBaseline": "Creando base clínica…",
@@ -448,7 +491,7 @@
       "patientHistory": "Historial del paciente",
       "previousSessionsNotes": "Sesiones y notas anteriores",
       "viewHistory": "Ver historial",
-      "startInitialAssessment": "Iniciar valoración inicial",
+      "startInitialAssessment": "Iniciar evaluación inicial",
       "firstVisitFullEval": "Primera visita — evaluación completa y SOAP",
       "startFollowup": "Iniciar seguimiento",
       "nextVisitUpdate": "Próxima visita — actualización y SOAP",
@@ -503,7 +546,8 @@
         "standardizingWithAI": "Estandarizando con IA…",
         "saveWithoutStandardize": "Guardar sin estandarizar",
         "errorVertexFailed": "No se pudo estandarizar con IA. Puedes guardar sin estandarizar."
-      }
+      },
+      "pilotFeatureNotify": "Esta función no está disponible en el piloto. Te avisaremos por correo cuando esté disponible."
     },
     "createPatient": {
       "title": "Nuevo paciente",
@@ -544,6 +588,7 @@
     "startSessionModal": {
       "whoIsPatient": "¿Quién es el paciente?",
       "whatTypeOfSession": "¿Qué tipo de sesión?",
+      "visitTypeTodayTitle": "Tipo de visita — agenda de hoy",
       "backToPatientList": "Volver a la lista de pacientes",
       "searchPlaceholder": "Buscar por nombre o correo...",
       "searchPlaceholderAddToToday": "Buscar paciente por nombre o correo...",
@@ -553,19 +598,21 @@
       "noPatientsFound": "No se encontraron pacientes",
       "noPatientsYet": "Aún no hay pacientes",
       "createNewPatient": "Crear nuevo paciente",
-      "addToTodayHint": "Añade este paciente al día con el tipo de sesión elegido. Cuando toque, pulsa Iniciar en esa fila.",
-      "addAsInitial": "Añadir como valoración inicial",
-      "addAsFollowup": "Añadir como seguimiento",
-      "addAsOngoing": "Añadir como continuidad (primera vez en AiDuxCare)",
+      "addToTodayHint": "Elige el tipo de visita para tu paciente.",
+      "optionDisabledSubtitle": "No disponible para este paciente",
+      "optionLoadingTooltip": "Cargando datos del paciente…",
+      "addAsInitial": "Evaluación inicial",
+      "addAsFollowup": "Visita de seguimiento",
+      "addAsOngoing": "Visita de seguimiento - Primera vez en Aidux",
       "firstVisitFullEval": "Primera visita — evaluación completa y SOAP",
       "nextVisitUpdate": "Próxima visita — actualización y SOAP",
-      "patientNeedsInitialOrOngoing": "El paciente necesita valoración inicial o registro de continuidad antes",
-      "ongoingAlreadyHasSessions": "Este paciente ya tiene sesiones — usa Valoración inicial o Seguimiento",
+      "patientNeedsInitialOrOngoing": "El paciente necesita evaluación inicial o registro de continuidad antes",
+      "ongoingAlreadyHasSessions": "Este paciente ya tiene sesiones — usa Evaluación inicial o Seguimiento",
       "ongoingFillIntakeThenSession": "Tratamiento en curso — completa el registro y luego la sesión",
-      "initialAssessment": "Valoración inicial",
+      "initialAssessment": "Evaluación inicial",
       "followup": "Seguimiento",
       "ongoingFirstTimeLabel": "Paciente en tratamiento — primera vez en AiDuxCare",
-      "ongoingAlreadyInAidux": "Este paciente ya tiene sesiones en AiDuxCare — usa Valoración inicial o Seguimiento",
+      "ongoingAlreadyInAidux": "Este paciente ya tiene sesiones en AiDuxCare — usa Evaluación inicial o Seguimiento",
       "ongoingExistingElsewhere": "Tratamiento en otro sitio — completa el registro y luego la sesión",
       "ongoingExistingFillBaseline": "Tratamiento en curso — completa el registro para crear la base, luego la sesión",
       "patientFallbackName": "Paciente",
@@ -593,6 +640,58 @@
       "missingConsentsDesc": "Pacientes que requieren revisión de consentimiento",
       "reviewConsents": "Revisar consentimientos",
       "loading": "Cargando..."
+    },
+    "compliance": {
+      "footerCanada": "PHIPA Compliant • SSL Secured • 100% Canadian Data",
+      "footerSpainPilot": "Cumplimiento normativo aplicable · Conexión cifrada · Tratamiento de datos según la política de AiDuxCare"
+    },
+    "contextualActions": {
+      "continueSession": "Continuar sesión",
+      "continueSessionDesc": "Volver a la sesión activa",
+      "startAppointment": "Iniciar cita",
+      "startAppointmentDesc": "Iniciar sesión con {{name}}",
+      "prepareAppointment": "Preparar cita",
+      "prepareAppointmentDesc": "La cita comienza pronto: {{name}}",
+      "reviewPendingNotes": "Revisar notas pendientes",
+      "reviewPendingNotesDesc": "{{count}} nota(s) pendiente(s) de revisión",
+      "newPatient": "Nuevo paciente",
+      "newPatientDesc": "Registrar un nuevo paciente",
+      "newAppointment": "Nueva cita",
+      "newAppointmentDesc": "Programar una nueva cita",
+      "emergencyIntake": "Registro urgente",
+      "emergencyIntakeDesc": "Registro rápido para casos urgentes",
+      "fallbackPatientName": "el paciente"
+    },
+    "documentsForms": {
+      "title": "Documentos y formularios",
+      "noSoapTitle": "No hay notas SOAP disponibles",
+      "noSoapBody": "Genera primero una nota SOAP antes de crear formularios o certificados.",
+      "loadingRecentNotes": "Cargando notas SOAP recientes…",
+      "selectSoapNote": "Seleccionar nota SOAP:",
+      "errorLoadRecent": "No se pudieron cargar las notas SOAP recientes. Genera primero una nota SOAP.",
+      "errorProcessSoap": "No se pudo procesar la nota SOAP",
+      "backToCategories": "← Volver a categorías"
+    },
+    "appointmentCalendar": {
+      "loadingSchedule": "Cargando agenda…",
+      "errorPrefix": "Error:",
+      "appointmentsFor": "Citas del {{date}}",
+      "noneScheduled": "No hay citas programadas",
+      "createAppointment": "Crear cita",
+      "statusConfirmed": "Confirmada",
+      "statusScheduled": "Programada",
+      "statusCompleted": "Completada",
+      "statusCancelled": "Cancelada",
+      "statusUnknown": "Desconocido"
+    },
+    "commandCenterLegacy": {
+      "quickActions": "Acciones rápidas",
+      "todaysSchedule": "Agenda de hoy",
+      "viewAppointments": "Ver citas",
+      "pendingNotes": "Notas pendientes",
+      "reviewDrafts": "Revisar borradores",
+      "clinicalVault": "Archivo clínico",
+      "soapNotesSubtitle": "Notas SOAP"
     }
   },
   "landing": {
@@ -631,7 +730,7 @@
     "createAccount": "Crea tu cuenta",
     "completeProfessionalSetup": "Completa la configuración profesional",
     "verifyCredentials": "Verifica tus credenciales",
-    "notPartYet": "",
+    "notPartYet": "¿Aún no formas parte de AiduxCare?",
     "phipaCompliant": "Cumplimiento normativo",
     "sslSecured": "Conexión SSL",
     "canadianData": "Datos almacenados en la UE • Cumplimiento RGPD • Sin transferencias a terceros países",
@@ -747,6 +846,9 @@
     "successRegistrationMessage": "Registro completado. Revisa tu correo para verificar tu cuenta."
   },
   "login": {
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "loadingProfile": "Cargando tu perfil…",
     "errorEmailRequired": "Introduce tu correo electrónico",
     "errorPasswordRequired": "Introduce tu contraseña",
     "errorInvalidEmail": "Introduce una dirección de correo válida",

@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Play, Clock, AlertCircle, FileText, UserPlus, Calendar, AlertTriangle } from 'lucide-react';
 import type { DashboardState, DashboardContext, AppointmentInfo, SessionInfo } from '@/types/navigation';
 import { useTodayAppointmentsCount } from './useTodayAppointmentsCount';
@@ -89,8 +90,8 @@ export function useCommandCenter(): CommandCenterState {
       case 'active':
         actions.push({
           id: 'continue-session',
-          label: 'Continue Session',
-          description: 'Return to active session',
+          label: t('shell.contextualActions.continueSession'),
+          description: t('shell.contextualActions.continueSessionDesc'),
           icon: <Play className="w-5 h-5" />,
           action: () => {
             if (activeSession) {
@@ -123,8 +124,10 @@ export function useCommandCenter(): CommandCenterState {
       case 'prep':
         actions.push({
           id: 'prepare-appointment',
-          label: 'Prepare for Appointment',
-          description: `Appointment starting soon: ${nextAppointment?.patientName || 'patient'}`,
+          label: t('shell.contextualActions.prepareAppointment'),
+          description: t('shell.contextualActions.prepareAppointmentDesc', {
+            name: nextAppointment?.patientName || t('shell.contextualActions.fallbackPatientName'),
+          }),
           icon: <AlertCircle className="w-5 h-5" />,
           action: () => {
             if (nextAppointment) {
@@ -141,8 +144,8 @@ export function useCommandCenter(): CommandCenterState {
         if (pendingNotes.data && pendingNotes.data > 0) {
           actions.push({
             id: 'review-pending-notes',
-            label: 'Review Pending Notes',
-            description: `${pendingNotes.data} note${pendingNotes.data > 1 ? 's' : ''} awaiting review`,
+            label: t('shell.contextualActions.reviewPendingNotes'),
+            description: t('shell.contextualActions.reviewPendingNotesDesc', { count: pendingNotes.data }),
             icon: <FileText className="w-5 h-5" />,
             action: () => navigate('/documents?filter=pending'),
             priority: 1,
@@ -157,8 +160,8 @@ export function useCommandCenter(): CommandCenterState {
     actions.push(
       {
         id: 'new-patient',
-        label: 'New Patient',
-        description: 'Register a new patient',
+        label: t('shell.contextualActions.newPatient'),
+        description: t('shell.contextualActions.newPatientDesc'),
         icon: <UserPlus className="w-5 h-5" />,
         action: () => navigate('/patients/create'),
         priority: 2,
@@ -167,8 +170,8 @@ export function useCommandCenter(): CommandCenterState {
       },
       {
         id: 'new-appointment',
-        label: 'New Appointment',
-        description: 'Schedule a new appointment',
+        label: t('shell.contextualActions.newAppointment'),
+        description: t('shell.contextualActions.newAppointmentDesc'),
         icon: <Calendar className="w-5 h-5" />,
         action: () => navigate('/scheduling/new'),
         priority: 2,
@@ -177,8 +180,8 @@ export function useCommandCenter(): CommandCenterState {
       },
       {
         id: 'emergency-intake',
-        label: 'Emergency Intake',
-        description: 'Quick intake for emergency cases',
+        label: t('shell.contextualActions.emergencyIntake'),
+        description: t('shell.contextualActions.emergencyIntakeDesc'),
         icon: <AlertTriangle className="w-5 h-5" />,
         action: () => navigate('/emergency-intake'),
         priority: 3,
@@ -189,7 +192,7 @@ export function useCommandCenter(): CommandCenterState {
 
     // Sort by priority
     return actions.sort((a, b) => a.priority - b.priority);
-  }, [dashboardState, activeSession, nextAppointment, pendingNotes.data, navigate]);
+  }, [dashboardState, activeSession, nextAppointment, pendingNotes.data, navigate, t]);
 
   return {
     dashboardState,

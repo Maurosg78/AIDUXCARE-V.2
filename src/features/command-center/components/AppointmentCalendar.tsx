@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Appointment } from '../hooks/useAppointmentSchedule';
 
@@ -19,8 +20,16 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   onDateChange,
   onCreateAppointment
 }) => {
+  const { t, i18n } = useTranslation();
+
+  /** Canada / default: en-CA; Spain UI: es-ES — sin cambiar reglas de negocio, solo formato. */
+  const dateLocale = useMemo(
+    () => (i18n.language.startsWith('es') ? 'es-ES' : 'en-CA'),
+    [i18n.language]
+  );
+
   const formatTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleTimeString('en-CA', {
+    return new Date(dateTime).toLocaleTimeString(dateLocale, {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -44,23 +53,30 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   const getStatusText = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'Confirmed';
+        return t('shell.appointmentCalendar.statusConfirmed');
       case 'scheduled':
-        return 'Scheduled';
+        return t('shell.appointmentCalendar.statusScheduled');
       case 'completed':
-        return 'Completed';
+        return t('shell.appointmentCalendar.statusCompleted');
       case 'cancelled':
-        return 'Cancelled';
+        return t('shell.appointmentCalendar.statusCancelled');
       default:
-        return 'Unknown';
+        return t('shell.appointmentCalendar.statusUnknown');
     }
   };
+
+  const headerDate = selectedDate.toLocaleDateString(dateLocale, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
-        <span className="ml-3 text-gray-600">Cargando agenda...</span>
+        <span className="ml-3 text-gray-600">{t('shell.appointmentCalendar.loadingSchedule')}</span>
       </div>
     );
   }
@@ -68,7 +84,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   if (error) {
     return (
       <div className="text-red-600 text-center py-4">
-        Error: {error}
+        {t('shell.appointmentCalendar.errorPrefix')} {error}
       </div>
     );
   }
@@ -77,12 +93,7 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-text-secondary">
-          Appointments for {selectedDate.toLocaleDateString('en-CA', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+          {t('shell.appointmentCalendar.appointmentsFor', { date: headerDate })}
         </div>
         {onDateChange && (
           <input
@@ -101,12 +112,12 @@ export const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-sm">No appointments scheduled</p>
+          <p className="text-gray-500 text-sm">{t('shell.appointmentCalendar.noneScheduled')}</p>
           <button
             onClick={onCreateAppointment}
             className="mt-2 px-4 py-2 bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white text-sm rounded-lg font-medium transition-all duration-200"
           >
-            Create Appointment
+            {t('shell.appointmentCalendar.createAppointment')}
           </button>
         </div>
       ) : (

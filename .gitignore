@@ -105,3 +105,15 @@ scripts/exports/
 **/.pnpm-store/
 **/.pnpm-debug.log*
 scripts/create-pilot-env-on-vps.sh
+
+# GitHub Actions self-hosted runner (must be installed outside the repo)
+actions-runner-linux-x64-*.tar.gz
+/bin/
+/externals/
+/.path
+/config.sh
+/env.sh
+/run.sh
+/safe_sleep.sh
+/run-helper.cmd.template
+/run-helper.sh.template

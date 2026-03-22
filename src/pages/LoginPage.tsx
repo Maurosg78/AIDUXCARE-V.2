@@ -10,6 +10,7 @@ import { firebaseAuthService } from "@/services/firebaseAuthService";
 import { isProfileComplete } from "../utils/professionalProfileValidation";
 import Button from "../components/ui/button";
 import { auth } from "../lib/firebase";
+import { isSpainPilot } from '@/core/pilotDetection';
 
 import logger from "@/shared/utils/logger";
 import styles from '@/styles/wizard.module.css';
@@ -266,7 +267,7 @@ const LoginPage: React.FC = () => {
             <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
               AiduxCare
             </span>
-            <span className="ml-2 text-2xl">🍁</span>
+            {!isSpainPilot() && <span className="ml-2 text-2xl">🍁</span>}
           </h1>
 
           <p className="text-lg text-gray-600 font-light leading-[1.3] font-apple">
@@ -328,7 +329,7 @@ const LoginPage: React.FC = () => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span>Loading your profile...</span>
+              <span>{t('login.loadingProfile')}</span>
             </div>
           )}
 
@@ -353,7 +354,7 @@ const LoginPage: React.FC = () => {
 
             <div className="relative">
               <label htmlFor="password" className="block text-sm font-normal text-gray-700 mb-2 font-apple">
-                Password
+                {t('login.passwordLabel')}
               </label>
               <div className="relative">
                 <input
@@ -420,23 +421,27 @@ const LoginPage: React.FC = () => {
           {/* Signup Section - Secondary Action */}
           <div className="text-center space-y-3">
             <p className="text-gray-600 text-[15px] font-apple font-light">
-              Not part of AiduxCare yet?
+              {t('landing.notPartYet')}
             </p>
             <Button
               variant="outline"
               className="w-full h-11 text-[15px] font-medium transition-all duration-200 font-apple"
               onClick={() => navigate('/professional-onboarding')}
             >
-              Sign Up Here
+              {t('landing.signUpHere')}
             </Button>
           </div>
         </div>
 
-        {/* Trust Footer - Professional with Canadian Identity */}
+        {/* Trust Footer — Canada: PHIPA; Spain pilot: RGPD */}
         <div className="text-center">
           <p className="text-[12px] text-gray-500 font-apple font-light flex items-center justify-center gap-1">
-            <span>🍁</span>
-            <span>PHIPA Compliant • SSL Secured • 100% Canadian Data</span>
+            {!isSpainPilot() && <span>🍁</span>}
+            <span>
+              {isSpainPilot()
+                ? 'Cumplimiento RGPD • SSL • Datos seguros'
+                : 'PHIPA Compliant • SSL Secured • 100% Canadian Data'}
+            </span>
           </p>
         </div>
       </div>

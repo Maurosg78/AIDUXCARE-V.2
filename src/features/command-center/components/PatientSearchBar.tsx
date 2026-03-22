@@ -55,10 +55,10 @@ export const PatientSearchBar: React.FC = () => {
       {showResults && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto z-50">
           {loading ? (
-            <div className="p-4 text-sm text-slate-500">Loading patients...</div>
+            <div className="p-4 text-sm text-slate-500">{t('shell.commandCenter.searchLoadingPatients')}</div>
           ) : filteredPatients.length === 0 ? (
             <div className="p-4 text-sm text-slate-500">
-              {query.trim() ? 'No patients found — try a different search' : 'Type to search patients'}
+              {query.trim() ? t('shell.commandCenter.searchNoResults') : t('shell.commandCenter.searchHintType')}
             </div>
           ) : (
             <ul className="py-2">
@@ -70,7 +70,7 @@ export const PatientSearchBar: React.FC = () => {
                     className="w-full px-4 py-3 min-h-[56px] rounded-lg text-left hover:bg-slate-50 active:bg-slate-100 font-apple text-slate-900 flex flex-col justify-center"
                   >
                     <span className="block text-sm font-medium leading-snug">
-                      {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown'}
+                      {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || t('shell.commandCenter.patientUnknownName')}
                     </span>
                     {patient.email && (
                       <span className="block text-xs text-slate-500 mt-0.5 leading-tight">{patient.email}</span>

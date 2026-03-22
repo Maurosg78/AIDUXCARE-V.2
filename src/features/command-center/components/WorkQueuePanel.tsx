@@ -85,13 +85,13 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                   </div>
                 </div>
                 <p className="text-sm text-red-700 font-apple font-light mb-4 flex-1">
-                  In today&apos;s list — session not yet completed
+                  {t('shell.workQueue.pendingPatientsDesc')}
                 </p>
                 <button
                   onClick={() => document.getElementById('work-with-patients')?.scrollIntoView({ behavior: 'smooth' })}
                   className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
                 >
-                  View List
+                  {t('shell.workQueue.viewList')}
                 </button>
               </div>
             )}

@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Search, UserPlus } from 'lucide-react';
 import { Patient } from '@/services/patientService';
 import { usePatientsList, type PatientListItem } from '../hooks/usePatientsList';
@@ -26,6 +27,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
   onCreateNew,
   allowCreateNew = true,
 }) => {
+  const { t } = useTranslation();
   const { patients, loading } = usePatientsList();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,11 +53,13 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 font-apple">
-            Select Patient
+            {t('shell.patientSelectorModal.title')}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={t('shell.common.close')}
           >
             <X className="w-6 h-6" />
           </button>
@@ -67,7 +71,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search patients by name or email..."
+              placeholder={t('shell.patientSelectorModal.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent font-apple"
@@ -79,11 +83,11 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="text-center text-gray-500 font-apple py-8">
-              Loading patients...
+              {t('shell.patientSelectorModal.loading')}
             </div>
           ) : filteredPatients.length === 0 ? (
             <div className="text-center text-gray-500 font-apple py-8">
-              {searchQuery ? 'No patients found matching your search' : 'No patients available'}
+              {searchQuery ? t('shell.patientSelectorModal.noMatch') : t('shell.patientSelectorModal.noneAvailable')}
             </div>
           ) : (
             <div className="space-y-2">
@@ -118,7 +122,7 @@ export const PatientSelectorModal: React.FC<PatientSelectorModalProps> = ({
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-apple"
             >
               <UserPlus className="w-5 h-5" />
-              Create New Patient
+              {t('shell.patientSelectorModal.createNew')}
             </button>
           </div>
         )}

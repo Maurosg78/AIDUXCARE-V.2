@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { isSpainPilot } from '@/core/pilotDetection';
 import { Calendar, FileText, Archive, RefreshCw, Building2, Car, Scroll, Info } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -29,6 +31,7 @@ import tokenTrackingService, { type TokenUsage } from '../../services/tokenTrack
 import logger from '@/shared/utils/logger';
 
 export const CommandCenterPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const isAuthenticated = !!user;
@@ -81,10 +84,10 @@ export const CommandCenterPage: React.FC = () => {
 
   // Get appointment info for PrimaryActionCard
   const nextAppointmentInfo = dashboardContext.nextAppointment ? {
-    time: dashboardContext.nextAppointment.startTime.toLocaleTimeString('en-CA', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }),
+    time: dashboardContext.nextAppointment.startTime.toLocaleTimeString(
+      i18n.language.startsWith('es') ? 'es-ES' : 'en-CA',
+      { hour: '2-digit', minute: '2-digit' },
+    ),
     reason: dashboardContext.nextAppointment.sessionType || 'Appointment'
   } : undefined;
 
@@ -205,7 +208,7 @@ export const CommandCenterPage: React.FC = () => {
             {contextualActions.length > 0 && (
               <div className="mb-8 opacity-75">
                 <h2 className="text-lg font-medium text-gray-700 mb-3 font-apple">
-                  Quick Actions
+                  {t('shell.commandCenterLegacy.quickActions')}
                 </h2>
                 <ContextualActions actions={contextualActions} maxVisible={3} />
               </div>
@@ -224,8 +227,8 @@ export const CommandCenterPage: React.FC = () => {
               <Calendar className="w-5 h-5 text-primary-blue" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm text-gray-900 font-apple">Today's Schedule</h3>
-              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">View appointments</p>
+              <h3 className="font-semibold text-sm text-gray-900 font-apple">{t('shell.commandCenterLegacy.todaysSchedule')}</h3>
+              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">{t('shell.commandCenterLegacy.viewAppointments')}</p>
             </div>
           </button>
 
@@ -241,14 +244,14 @@ export const CommandCenterPage: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-sm text-gray-900 font-apple">Pending Notes</h3>
+                <h3 className="font-semibold text-sm text-gray-900 font-apple">{t('shell.commandCenterLegacy.pendingNotes')}</h3>
                 {pendingNotesCount.data > 0 && (
                   <span className="min-w-[20px] h-5 rounded-full bg-gradient-to-r from-primary-blue to-primary-purple text-white text-xs flex items-center justify-center px-1.5 font-apple font-medium">
                     {pendingNotesCount.data}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">Review drafts</p>
+              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">{t('shell.commandCenterLegacy.reviewDrafts')}</p>
             </div>
           </button>
 
@@ -263,8 +266,8 @@ export const CommandCenterPage: React.FC = () => {
               <Archive className="w-5 h-5 text-primary-blue" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm text-gray-900 font-apple">Clinical Vault</h3>
-              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">SOAP notes</p>
+              <h3 className="font-semibold text-sm text-gray-900 font-apple">{t('shell.commandCenterLegacy.clinicalVault')}</h3>
+              <p className="text-xs text-gray-600 mt-0.5 font-apple font-light">{t('shell.commandCenterLegacy.soapNotesSubtitle')}</p>
             </div>
           </button>
         </div>
@@ -288,8 +291,12 @@ export const CommandCenterPage: React.FC = () => {
         {/* Compliance Footer - Coherente con login */}
         <div className="mt-12 pt-8 border-t border-gray-200">
           <p className="text-[12px] text-gray-500 font-apple font-light flex items-center justify-center gap-1">
-            <span>🍁</span>
-            <span>PHIPA Compliant • SSL Secured • 100% Canadian Data</span>
+            {!isSpainPilot() && <span aria-hidden>🍁</span>}
+            <span>
+              {isSpainPilot()
+                ? t('shell.compliance.footerSpainPilot')
+                : t('shell.compliance.footerCanada')}
+            </span>
           </p>
         </div>
       </div>

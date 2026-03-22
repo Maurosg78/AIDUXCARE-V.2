@@ -103,6 +103,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     province: '', // province/state
     city: '',
     profession: '', // physiotherapist, etc.
+    professionalTitle: '',
     professionOther: '', // free-text when profession === 'Other'; captured and normalized
     licenseNumber: '',
     licenseCountry: '', // issuingBody
@@ -149,6 +150,25 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       setFormData(prev => ({ ...prev, email: user.email || '' }));
     }
   }, [user?.email]);
+
+  // Pre-fill editable onboarding fields when an existing profile is loaded.
+  useEffect(() => {
+    if (!profile) return;
+    setFormData(prev => ({
+      ...prev,
+      firstName: prev.firstName || (profile.displayName || '').trim(),
+      lastName: prev.lastName || (profile.lastNamePreferred || '').trim(),
+      preferredName: prev.preferredName || (profile.preferredSalutation || '').trim(),
+      email: prev.email || (profile.email || '').trim(),
+      country: prev.country || (profile.country || '').trim(),
+      province: prev.province || (profile.province || '').trim(),
+      city: prev.city || (profile.city || '').trim(),
+      profession: prev.profession || (profile.profession || '').trim(),
+      professionalTitle: prev.professionalTitle || (profile.professionalTitle || '').trim(),
+      licenseNumber: prev.licenseNumber || (profile.licenseNumber || '').trim(),
+      licenseCountry: prev.licenseCountry || (profile.practiceCountry || '').trim(),
+    }));
+  }, [profile]);
 
   const handleInputChange = (field: string, value: any) => {
     // CTO SPEC: Manejar nested objects (practicePreferences, dataUseConsent)
@@ -350,6 +370,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
           formData.province &&
           formData.city &&
           formData.profession &&
+          formData.professionalTitle &&
           (formData.profession !== 'Other' || !!formData.professionOther?.trim()) &&
           formData.licenseNumber?.trim() &&
           formData.licenseCountry
@@ -483,10 +504,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         province: formData.province,
         city: formData.city,
         profession: formData.profession,
-        professionalTitle:
-          formData.profession === 'Other' && formData.professionOther?.trim()
-            ? normalizeProfessionOther(formData.professionOther.trim()).labelForPrompt
-            : formData.profession,
+        professionalTitle: formData.professionalTitle,
         ...(formData.profession === 'Other' && formData.professionOther?.trim()
           ? {
             professionOther: (() => {
@@ -599,6 +617,18 @@ export const ProfessionalOnboardingPage: React.FC = () => {
     'Optometrist',          // Óptico-optometrista
     'Other'                 // Otro
   ];
+
+  const professionalTitlesByJurisdiction = esPilot
+    ? [
+      { value: 'Ft.', label: 'Ft. (Fisioterapeuta)' },
+      { value: 'Lic. Ft.', label: 'Lic. Ft. (Licenciado en Fisioterapia)' },
+      { value: 'Dr. Ft.', label: 'Dr. Ft. (Doctor en Fisioterapia)' },
+    ]
+    : [
+      { value: 'PT', label: 'PT (Physiotherapist)' },
+      { value: 'DPT', label: 'DPT (Doctor of Physical Therapy)' },
+      { value: 'MPT', label: 'MPT (Master of Physical Therapy)' },
+    ];
 
   // España: comunidades autónomas oficiales (normas que rigen el ejercicio profesional)
   const AUTONOMOUS_COMMUNITIES_ES: string[] = [
@@ -981,6 +1011,28 @@ export const ProfessionalOnboardingPage: React.FC = () => {
                     ))}
                   </select>
                   {getFieldValidationIcon(formData.profession, true)}
+                </div>
+
+                {/* Professional Title - Required, jurisdiction-scoped */}
+                <div className="relative">
+                  <label htmlFor="professionalTitle" className="block text-xs font-normal text-gray-700 mb-1 font-apple">
+                    Título profesional <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="professionalTitle"
+                    value={formData.professionalTitle}
+                    onChange={(e) => handleInputChange('professionalTitle', e.target.value)}
+                    className={getFieldValidationClass(formData.professionalTitle, true)}
+                    required
+                  >
+                    <option value="">{t('onboarding.select')}</option>
+                    {professionalTitlesByJurisdiction.map((title) => (
+                      <option key={title.value} value={title.value}>
+                        {title.label}
+                      </option>
+                    ))}
+                  </select>
+                  {getFieldValidationIcon(formData.professionalTitle, true)}
                 </div>
 
                 {/* Specify profession when "Other" - captured and normalized */}

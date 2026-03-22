@@ -24,6 +24,34 @@ export function professionToDisplayTitle(profile?: ProfessionalProfile | null): 
   return PROFESSION_TO_TITLE[profession] ?? '';
 }
 
+/** Títulos formales del onboarding (ES-ES) — no confundir con el valor legacy `profession` en inglés. */
+const SPAIN_GREETING_TITLES = new Set(['Ft.', 'Lic. Ft.', 'Dr. Ft.', 'Dra. Ft.']);
+
+/** Títulos del onboarding Canadá (CA-ON). */
+const CANADA_GREETING_TITLES = new Set(['PT', 'DPT', 'MPT']);
+
+const LEGACY_PHYSIO_PROFESSION = /^physiotherapist$|^physical therapist$/i;
+
+/**
+ * Prefijo para saludos (p. ej. Command Center): solo abreviaturas de onboarding o Ft. por defecto para fisioterapia en ES.
+ * Evita mostrar "Physiotherapist" cuando en Firestore quedó el nombre de profesión en vez del título elegido.
+ */
+export function resolveSalutationPrefixForGreeting(profile?: ProfessionalProfile | null): string {
+  if (!profile) return '';
+  const stored = profile.professionalTitle?.trim() || '';
+
+  if (isSpainPilot()) {
+    if (SPAIN_GREETING_TITLES.has(stored)) return stored;
+    if (LEGACY_PHYSIO_PROFESSION.test(stored)) return 'Ft.';
+    const prof = (profile.profession || '').trim();
+    if (LEGACY_PHYSIO_PROFESSION.test(prof)) return 'Ft.';
+    return '';
+  }
+
+  if (CANADA_GREETING_TITLES.has(stored)) return stored;
+  return '';
+}
+
 /**
  * Returns the clinic name configured for the professional profile.
  * Falls back to workplace name or default AiduxCare Clinic.

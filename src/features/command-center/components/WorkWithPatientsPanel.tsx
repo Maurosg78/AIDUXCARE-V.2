@@ -37,8 +37,6 @@ export interface WorkWithPatientsPanelProps {
   onOngoingPatientFirstTime?: () => void;
   /** When no patient selected: start Ongoing flow (select or create patient, then intake form) */
   onStartOngoingNoPatient?: () => void;
-  /** When no patient selected: single entry point — opens same 2-step modal (who? → what type?). One modality only. */
-  onOpenStartSessionModal?: () => void;
   /** New patient — Initial Assessment: go directly to Create Patient form, no list */
   onCreatePatientForInitial?: () => void;
   /** New patient — Ongoing: go directly to Create Patient form, then Ongoing intake, no list */
@@ -56,7 +54,6 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
   onCreatePatient,
   onOngoingPatientFirstTime,
   onStartOngoingNoPatient,
-  onOpenStartSessionModal,
   onCreatePatientForInitial,
   onCreatePatientForOngoing,
   isNewlyCreated = false,
@@ -130,9 +127,11 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
               <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
                 {t('shell.workWithPatients.title')}
               </h2>
-              <p className="text-base text-gray-600 font-apple font-light">
-                {t('shell.workWithPatients.selectPatientOrCreate')}
-              </p>
+              {t('shell.workWithPatients.selectPatientOrCreate').trim() ? (
+                <p className="text-base text-gray-600 font-apple font-light">
+                  {t('shell.workWithPatients.selectPatientOrCreate')}
+                </p>
+              ) : null}
             </div>
           )}
         </div>
@@ -151,9 +150,11 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
           {!selectedPatient ? (
             /* NO PATIENT: 2 cards for NEW patients — go directly to forms, NO patient list */
             <div className="pt-4 space-y-3">
-              <p className="text-sm text-gray-600 font-apple font-light mb-4">
-                {t('shell.workWithPatients.newPatientHint')}
-              </p>
+              {t('shell.workWithPatients.newPatientHint').trim() ? (
+                <p className="text-sm text-gray-600 font-apple font-light mb-4">
+                  {t('shell.workWithPatients.newPatientHint')}
+                </p>
+              ) : null}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   type="button"
@@ -182,15 +183,6 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                   </div>
                 </button>
               </div>
-              {onOpenStartSessionModal && (
-                <button
-                  type="button"
-                  onClick={onOpenStartSessionModal}
-                  className="text-sm text-primary-blue hover:text-primary-blue-hover font-apple font-medium pt-2"
-                >
-                  {t('shell.workWithPatients.orChooseExisting')}
-                </button>
-              )}
             </div>
           ) : (
             /* PATIENT SELECTED: WO-UX-01 — Both CTAs always visible; primary action on the RIGHT (left→right flow) */
@@ -315,7 +307,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                                 key={session.type}
                                 onClick={() => {
                                   if (!isPilotAvailable) {
-                                    notify('Feature not available during pilot. We\'ll email you when it becomes available.');
+                                    notify(t('shell.workWithPatients.pilotFeatureNotify'));
                                     return;
                                   }
                                   onStartSession(session.type);
@@ -326,7 +318,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
                               >
                                 <span className="text-gray-700">{session.label}</span>
                                 {!isPilotAvailable && (
-                                  <span className="ml-2 text-xs text-gray-400">Coming soon</span>
+                                  <span className="ml-2 text-xs text-gray-400">{t('shell.workQueue.comingSoon')}</span>
                                 )}
                               </button>
                             );

@@ -166,7 +166,9 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
               </button>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 font-apple">
-                  {t('shell.startSessionModal.whatTypeOfSession')}
+                  {isAddToTodayMode
+                    ? t('shell.startSessionModal.visitTypeTodayTitle')
+                    : t('shell.startSessionModal.whatTypeOfSession')}
                 </h2>
                 <p className="text-sm text-gray-500 font-apple font-light mt-0.5">
                   {patientName}
@@ -177,7 +179,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-            aria-label="Close"
+            aria-label={t('shell.common.close')}
           >
             <X className="w-6 h-6" />
           </button>
@@ -246,66 +248,116 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
             )}
           </>
         ) : isAddToTodayMode && onAddToToday ? (
-          /* Step 2: Add to today — solo pacientes existentes; 3 opciones (Follow-up solo si registrado) */
+          /* Step 2: Add to today — orden: seguimiento primero si ya hay historial */
           <div className="p-6 space-y-3 flex-1 overflow-y-auto">
-            <p className="text-sm text-gray-600 font-apple font-light mb-4">
+            <p className="text-sm text-gray-600 font-apple font-light mb-3">
               {t('shell.startSessionModal.addToTodayHint')}
             </p>
-            <button
-              onClick={handleAddAsInitial}
-              disabled={!SessionTypeService.isPilotAvailable('initial')}
-              className="w-full p-4 rounded-xl border-2 border-primary-blue/40 bg-gradient-to-r from-primary-blue/10 to-primary-purple/10 hover:border-primary-blue/60 hover:shadow-md transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-blue/20 flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="w-5 h-5 text-primary-blue" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsInitial')}</div>
-                  <div className="text-sm text-gray-600 font-light">{t('shell.startSessionModal.firstVisitFullEval')}</div>
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={handleAddAsFollowup}
-              disabled={!SessionTypeService.isPilotAvailable('followup') || followUpDisabled}
-              title={followUpDisabled ? t('shell.startSessionModal.tooltipFollowupDisabled') : undefined}
-              className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-blue/10 flex items-center justify-center flex-shrink-0">
-                  <RefreshCw className="w-5 h-5 text-primary-blue" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsFollowup')}</div>
-                  <div className="text-sm text-gray-600 font-light">
-                    {followUpDisabled
-                      ? t('shell.startSessionModal.patientNeedsInitialOrOngoing')
-                      : t('shell.startSessionModal.nextVisitUpdate')}
-                  </div>
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={handleAddAsOngoing}
-              disabled={!SessionTypeService.isPilotAvailable('followup') || ongoingDisabled}
-              title={ongoingDisabled ? t('shell.startSessionModal.tooltipOngoingDisabled') : undefined}
-              className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-50/80"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-blue/10 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-primary-blue" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsOngoing')}</div>
-                  <div className="text-sm text-gray-600 font-light">
-                    {ongoingDisabled
+            {(() => {
+              const initialPilot = SessionTypeService.isPilotAvailable('initial');
+              const followPilot = SessionTypeService.isPilotAvailable('followup');
+              const initialOff = !initialPilot;
+              const followBtnOff = !followPilot || followUpDisabled;
+              const ongoingBtnOff = !followPilot || ongoingDisabled;
+              const followTitle =
+                followBtnOff && followUpDisabled
+                  ? t('shell.startSessionModal.patientNeedsInitialOrOngoing')
+                  : undefined;
+              const ongoingTitle =
+                ongoingBtnOff && ongoingDisabled
+                  ? isLoadingHistory
+                    ? t('shell.startSessionModal.optionLoadingTooltip')
+                    : hasHistory
                       ? t('shell.startSessionModal.ongoingAlreadyHasSessions')
-                      : t('shell.startSessionModal.ongoingFillIntakeThenSession')}
+                      : t('shell.startSessionModal.tooltipOngoingDisabled')
+                  : undefined;
+
+              const cardInitial = (
+                <button
+                  key="add-initial"
+                  type="button"
+                  onClick={handleAddAsInitial}
+                  disabled={initialOff}
+                  className="w-full p-4 rounded-xl border-2 border-primary-blue/40 bg-gradient-to-r from-primary-blue/10 to-primary-purple/10 hover:border-primary-blue/60 hover:shadow-md transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-blue/20 flex items-center justify-center flex-shrink-0">
+                      <UserPlus className="w-5 h-5 text-primary-blue" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsInitial')}</div>
+                      {initialOff ? (
+                        <div className="text-sm text-gray-600 font-light mt-0.5">
+                          {t('shell.startSessionModal.optionDisabledSubtitle')}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </button>
+                </button>
+              );
+              const cardFollow = (
+                <button
+                  key="add-follow"
+                  type="button"
+                  onClick={handleAddAsFollowup}
+                  disabled={followBtnOff}
+                  title={followTitle}
+                  className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-blue/10 flex items-center justify-center flex-shrink-0">
+                      <RefreshCw className="w-5 h-5 text-primary-blue" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsFollowup')}</div>
+                      {followBtnOff ? (
+                        <div className="text-sm text-gray-600 font-light mt-0.5">
+                          {t('shell.startSessionModal.optionDisabledSubtitle')}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              );
+              const cardOngoing = (
+                <button
+                  key="add-ongoing"
+                  type="button"
+                  onClick={handleAddAsOngoing}
+                  disabled={ongoingBtnOff}
+                  title={ongoingTitle}
+                  className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-50/80"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-blue/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-primary-blue" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{t('shell.startSessionModal.addAsOngoing')}</div>
+                      {ongoingBtnOff ? (
+                        <div className="text-sm text-gray-600 font-light mt-0.5">
+                          {t('shell.startSessionModal.optionDisabledSubtitle')}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              );
+
+              return followUpDisabled ? (
+                <>
+                  {cardInitial}
+                  {cardOngoing}
+                  {cardFollow}
+                </>
+              ) : (
+                <>
+                  {cardFollow}
+                  {cardInitial}
+                  {cardOngoing}
+                </>
+              );
+            })()}
           </div>
         ) : (
           /* Step 2: Session type — Start now. New patient: solo Initial + Ongoing; otherwise 3 opciones */

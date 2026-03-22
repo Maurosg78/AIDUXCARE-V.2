@@ -10,12 +10,12 @@
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, Users, MessageSquare } from 'lucide-react';
+import { CalendarDays, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useIsAdmin } from '../../../hooks/useIsAdmin';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { useProfessionalProfile as useProfessionalProfileContext } from '../../../context/ProfessionalProfileContext';
-import { deriveClinicianDisplayName } from '../../../utils/clinicProfile';
+import { deriveClinicianDisplayName, resolveSalutationPrefixForGreeting } from '../../../utils/clinicProfile';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
 
 export interface CommandCenterHeaderProps {
@@ -40,6 +40,35 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
     [professionalProfile, user]
   );
 
+  const greetingByHour = useMemo(() => {
+    const hour = new Date().getHours();
+    if (isSpainPilot()) {
+      if (hour >= 6 && hour <= 13) return 'Buenos días';
+      if (hour >= 14 && hour <= 20) return 'Buenas tardes';
+      return 'Buenas noches';
+    }
+    if (hour >= 6 && hour <= 13) return 'Good morning';
+    if (hour >= 14 && hour <= 20) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  const greetingLine = useMemo(() => {
+    if (!clinicianDisplayName) return '';
+    const prefix = resolveSalutationPrefixForGreeting(professionalProfile);
+    const titledName = prefix ? `${prefix} ${clinicianDisplayName}` : clinicianDisplayName;
+    return `${greetingByHour}, ${titledName}`;
+  }, [clinicianDisplayName, greetingByHour, professionalProfile]);
+
+  const todayLongDate = useMemo(() => {
+    const locale = isSpainPilot() ? 'es-ES' : 'en-CA';
+    return new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(new Date());
+  }, []);
+
   // WO-PILOT-FIX-03: Logout moved to LayoutWrapper (global nav) — no duplicate here
 
   return (
@@ -51,11 +80,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             <p className="text-[15px] font-medium text-slate-800 font-apple">
               {t('shell.commandCenter.title')} — {isSpainPilot() ? 'España' : 'Canada'}
             </p>
-            {clinicianDisplayName && (
-              <p className="text-[13px] text-slate-600 font-apple font-light">
-                · {t('shell.commandCenter.welcomeGreeting')}, {clinicianDisplayName}
-              </p>
-            )}
+            {greetingLine && <p className="text-[14px] text-slate-600 font-apple font-light">· {greetingLine}</p>}
           </div>
         </div>
 
@@ -83,10 +108,10 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             </Link>
           )}
 
-          {/* Email verified status */}
-          <div className="flex items-center gap-2 text-sm text-slate-500 font-apple">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            {t('shell.commandCenter.emailVerifiedStatus')}
+          {/* Current date (jurisdiction-aware long format) */}
+          <div className="flex items-center gap-2 text-base text-slate-500 font-apple">
+            <CalendarDays className="w-4 h-4 text-slate-500" />
+            {todayLongDate}
           </div>
         </div>
       </div>

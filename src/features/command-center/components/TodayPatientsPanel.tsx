@@ -250,8 +250,8 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                           type="button"
                           onClick={() => setDismissIncompleteItem(item)}
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label="Dismiss incomplete session"
-                          title="Dismiss — remove from list (session will no longer appear as incomplete)"
+                          aria-label={t('shell.todayPatients.dismissIncompleteAria')}
+                          title={t('shell.todayPatients.dismissIncompleteTooltip')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

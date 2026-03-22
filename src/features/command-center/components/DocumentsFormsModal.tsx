@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, FileText, Download, AlertCircle, Loader2 } from 'lucide-react';
 import { Patient } from '@/services/patientService';
 import { WSIBFormGenerator } from '@/components/WSIBFormGenerator';
@@ -32,6 +33,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
   onClose,
   patient,
 }) => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { profile: professionalProfile } = useProfessionalProfile();
   const [selectedCategory, setSelectedCategory] = useState<FormCategory>(null);
@@ -105,7 +107,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
       setSession(sessionData);
     } catch (err) {
       logger.error('Error converting note to SOAP:', err);
-      setError('Failed to process SOAP note');
+      setError(t('shell.documentsForms.errorProcessSoap'));
     }
   };
 
@@ -135,11 +137,11 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
           <div className="flex items-center justify-between p-5 border-b border-slate-200">
-            <h2 className="text-xl font-semibold text-slate-900">Documents & Forms</h2>
+            <h2 className="text-xl font-semibold text-slate-900">{t('shell.documentsForms.title')}</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 transition-colors"
-              aria-label="Close"
+              aria-label={t('shell.common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -147,16 +149,16 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
           <div className="p-6 text-center">
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">
-              No SOAP Notes Available
+              {t('shell.documentsForms.noSoapTitle')}
             </h3>
             <p className="text-slate-600 mb-4">
-              You need to generate a SOAP note first before creating WSIB/MVA forms or certificates.
+              {t('shell.documentsForms.noSoapBody')}
             </p>
             <button
               onClick={onClose}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
-              Close
+              {t('shell.common.close')}
             </button>
           </div>
         </div>
@@ -171,7 +173,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Documents & Forms</h2>
+            <h2 className="text-xl font-semibold text-slate-900">{t('shell.documentsForms.title')}</h2>
             <p className="text-sm text-slate-500 mt-1">
               {patient.fullName || `${patient.firstName} ${patient.lastName}`}
             </p>
@@ -179,7 +181,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
-            aria-label="Close"
+            aria-label={t('shell.common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -190,7 +192,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-3 text-slate-600">Loading recent SOAP notes...</span>
+              <span className="ml-3 text-slate-600">{t('shell.documentsForms.loadingRecentNotes')}</span>
             </div>
           ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -215,13 +217,16 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
                   >
                     {recentNotes.map((note) => (
                       <option key={note.id} value={note.id}>
-                        {new Date(note.createdAt).toLocaleDateString('en-CA', {
+                        {new Date(note.createdAt).toLocaleDateString(
+                          i18n.language.startsWith('es') ? 'es-ES' : 'en-CA',
+                          {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })}
+                          }
+                        )}
                       </option>
                     ))}
                   </select>
@@ -275,7 +280,7 @@ export const DocumentsFormsModal: React.FC<DocumentsFormsModalProps> = ({
                 onClick={() => setSelectedCategory(null)}
                 className="mb-4 text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
               >
-                ← Back to Categories
+                {t('shell.documentsForms.backToCategories')}
               </button>
 
               {/* Render appropriate generator */}
