@@ -141,6 +141,7 @@ export const createRouter = () => createBrowserRouter([
   { path: '/hospital/note', element: <HospitalPortalPage /> }, // Original note code portal (legacy)
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/terms', element: <TermsOfServicePage /> },
+  { path: '/terms-of-use', element: <TermsOfServicePage /> }, // Alias (landing footer links here)
   { path: '/public', element: <PublicLandingPage /> },
   { path: '/landing', element: <LandingPage /> },
 ]);
