@@ -134,7 +134,7 @@ const PrivacyPolicySpain: React.FC = () => (
                 <a href="mailto:privacy@aiduxcare.com" className="text-indigo-600 hover:text-indigo-800 underline">privacy@aiduxcare.com</a>
               </p>
               <p className="mb-0">
-                <strong>Dirección postal:</strong> AiduxCare Inc., Niagara Falls Innovation Hub, 4255 Queen St, Niagara Falls, ON L2E 2L3, Canadá
+                <strong>Dirección postal:</strong> Calle del Escultor José Capuz 23, CP 46006, Valencia, España
               </p>
             </div>
             <p className="text-sm text-slate-500 mt-4">
