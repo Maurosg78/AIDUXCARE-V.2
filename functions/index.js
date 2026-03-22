@@ -800,7 +800,7 @@ exports.sendResendHelloWorld = onCallV2(
         : '<p>Congrats on sending your <strong>first email</strong>!</p>';
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'AiduxCare <noreply@aiduxcare.com>',
       to,
       subject,
       html,
@@ -945,7 +945,7 @@ exports.sendPatientSummary = onCallV2(
     });
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'AiduxCare <noreply@aiduxcare.com>',
       to: patientEmail,
       subject: `Tu resumen de sesión — ${visitDate || 'hoy'}`,
       html,
