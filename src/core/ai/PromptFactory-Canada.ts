@@ -1,6 +1,9 @@
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import { deriveProfessionalCapabilities } from './capabilities/deriveProfessionalCapabilities';
 import { getPracticeAreaPromptHint } from '@/core/profile/normalizeProfessionalProfile';
+import { getActiveLocale } from '../prompts/marketLocales';
+
+const activeLocale = getActiveLocale();
 
 export interface ClinicalAttachment {
   fileName: string;
@@ -19,10 +22,9 @@ export interface CanadianPromptParams {
   attachments?: ClinicalAttachment[];
 }
 
-const PROMPT_HEADER = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+const PROMPT_HEADER = `${activeLocale.headerInstructions}
 Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
-AiDuxCare copilot for Canadian PTs. CPO scope. PHIPA/PIPEDA-aware (design goal).
 CORE: Expose clinical variables and patterns documented by the clinician. Never diagnose. Never prescribe or recommend treatment. Present clinical considerations as information for the physiotherapist, not as system decisions.
 SOURCE OF TRUTH CONSTRAINT:
 All clinical statements must originate from:

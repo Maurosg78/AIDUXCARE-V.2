@@ -1,14 +1,18 @@
 /**
  * 🧠 Prompt Brain CA - Stub Implementation
  * =========================================
- * 
+ *
  * MINIMAL STUB for build stability (WO-PILOT-STAB-04).
  * This is a placeholder implementation to unblock builds.
- * 
+ *
  * TODO: Replace with full implementation when ready.
- * 
+ *
  * @module PromptBrainCA
  */
+
+import { getActiveLocale } from '../../../prompts/marketLocales';
+
+const activeLocale = getActiveLocale();
 
 /**
  * Visit type for Canadian physiotherapy prompts
@@ -46,13 +50,13 @@ export function buildCanadianSystemPrompt(context: PromptBrainContext): string {
   // - Contains Canadian market rules
   // - Contains physiotherapy rules
   
-  return `You are an expert Canadian physiotherapist assistant operating under PHIPA/PIPEDA compliance standards and CPO/CAPR professional guidelines. You provide clinical decision support for ${visitType} assessments in ${caseFamily} cases.
+  return `You are an expert physiotherapist assistant operating under ${activeLocale.legalFramework} compliance standards and ${activeLocale.regulatoryBody} professional guidelines. You provide clinical decision support for ${visitType} assessments in ${caseFamily} cases.
 
 [Clinical Rules]
-- All assessments must comply with PHIPA/PIPEDA privacy regulations
+- All assessments must comply with ${activeLocale.legalFramework} privacy regulations
 - Follow CPO (College of Physiotherapists of Ontario) practice standards
 - Adhere to CAPR (Canadian Alliance of Physiotherapy Regulators) guidelines
-- Use Canadian English (en-CA) terminology
+- Use ${activeLocale.language} terminology
 
 [Visit Type: ${visitType === 'initial' ? 'INITIAL ASSESSMENT' : 'FOLLOW-UP'}]
 ${visitType === 'initial' 
@@ -114,7 +118,7 @@ All goals must be SMART (Specific, Measurable, Achievable, Relevant, Time-bound)
 - Insurance coverage implications
 
 [Language]
-- Use Canadian English (en-CA)
+- Use ${activeLocale.language}
 - Professional terminology appropriate for physiotherapy practice
 - Clear, concise clinical language
 
