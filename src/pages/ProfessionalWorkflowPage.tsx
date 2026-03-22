@@ -4879,10 +4879,11 @@ const ProfessionalWorkflowPage = () => {
               type="button"
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors font-apple"
-              title="Logout"
+              title={t('shell.common.logout')}
+              aria-label={t('shell.common.logout')}
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              {t('shell.common.logout')}
             </button>
           </div>
 
@@ -4892,9 +4893,9 @@ const ProfessionalWorkflowPage = () => {
               <span className="text-base font-semibold text-slate-900 font-apple">
                 {currentPatient
                   ? visitType === 'initial'
-                    ? 'Initial Assessment'
-                    : 'Follow-up'
-                  : 'Clinical Workflow'}
+                    ? t('shell.professionalWorkflow.initialAssessment')
+                    : t('shell.professionalWorkflow.followUp')
+                  : t('shell.professionalWorkflow.clinicalWorkflow')}
               </span>
               {currentPatient && (
                 <>
@@ -5153,7 +5154,7 @@ const ProfessionalWorkflowPage = () => {
                                 )
                               }
                               className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors"
-                              title={allInClinicDone ? 'Unmark all' : 'Mark all as done'}
+                              title={allInClinicDone ? t('shell.professionalWorkflow.unmarkAll') : t('shell.professionalWorkflow.markAllDone')}
                             >
                               <input
                                 type="checkbox"
@@ -5161,11 +5162,11 @@ const ProfessionalWorkflowPage = () => {
                                 readOnly
                                 className="w-4 h-4 text-blue-600 rounded"
                               />
-                              <span>All done</span>
+                              <span>{t('shell.professionalWorkflow.allDoneLabel')}</span>
                             </button>
                             <div className="flex items-center gap-2 text-sm text-blue-600">
                               <CheckCircle className="w-4 h-4" />
-                              <span>Today&apos;s treatment confirmed</span>
+                              <span>{t('shell.professionalWorkflow.todayTreatmentConfirmed')}</span>
                             </div>
                           </div>
                         </div>
@@ -5434,6 +5435,10 @@ const ProfessionalWorkflowPage = () => {
                       }
                       navigate('/command-center');
                     }}
+                    patientEmail={currentPatient?.email}
+                    patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
+                    professionalName={clinicianDisplayName || ''}
+                    professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
                   />
                 </Suspense>
               </div>
@@ -5677,6 +5682,10 @@ const ProfessionalWorkflowPage = () => {
                     }
                     navigate('/command-center');
                   }}
+                  patientEmail={currentPatient?.email}
+                  patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
+                  professionalName={clinicianDisplayName || ''}
+                  professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
                 />
               </Suspense>
             )}

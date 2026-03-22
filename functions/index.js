@@ -756,3 +756,207 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
     return res.status(500).json({ ok: false, error: 'internal_error' });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Resend (email) — API key solo en Secret Manager (nunca en código)
+// Secret name: RESEND_API_KEY  →  firebase functions:secrets:set RESEND_API_KEY
+// ---------------------------------------------------------------------------
+const { onCall: onCallV2, HttpsError: HttpsErrorV2 } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const { Resend } = require('resend');
+
+const resendApiKeySecret = defineSecret('RESEND_API_KEY');
+
+/**
+ * Callable de prueba: envía un correo vía Resend usando la clave en secrets.
+ * Requiere usuario autenticado (Firebase Auth) para evitar abuso.
+ *
+ * Opcional en data: { to, subject, html } — si faltan, usa valores de ejemplo.
+ */
+exports.sendResendHelloWorld = onCallV2(
+  {
+    region: LOCATION,
+    secrets: [resendApiKeySecret],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsErrorV2('unauthenticated', 'Sign in required');
+    }
+
+    const apiKey = resendApiKeySecret.value();
+    const resend = new Resend(apiKey);
+
+    const to =
+      typeof request.data?.to === 'string' && request.data.to.trim()
+        ? request.data.to.trim()
+        : 'mauricio@aiduxcare.com';
+    const subject =
+      typeof request.data?.subject === 'string' && request.data.subject.trim()
+        ? request.data.subject.trim()
+        : 'Hello World';
+    const html =
+      typeof request.data?.html === 'string' && request.data.html.trim()
+        ? request.data.html
+        : '<p>Congrats on sending your <strong>first email</strong>!</p>';
+
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error('[sendResendHelloWorld] Resend API error:', error);
+      throw new HttpsErrorV2('internal', error.message || 'Resend send failed');
+    }
+
+    return { ok: true, id: data?.id };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// sendPatientSummary — Envía resumen de sesión (HEP + tratamiento) al paciente
+// Solo piloto España. Requiere usuario autenticado.
+// ---------------------------------------------------------------------------
+
+/** Escapa caracteres HTML para uso seguro en templates de email. */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Construye el HTML del email de resumen para el paciente.
+ * @param {object} p
+ * @param {string} p.patientFirstName
+ * @param {string} p.professionalName
+ * @param {string} p.professionalTitle
+ * @param {string} p.visitDate
+ * @param {string[]} p.inClinicItems
+ * @param {string[]} p.hepItems
+ * @param {string} [p.customMessage]
+ */
+function buildPatientSummaryHtml(p) {
+  const inClinicHtml = p.inClinicItems.length > 0
+    ? `<p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin:0 0 8px">Hoy trabajamos en</p>
+       <ul style="padding-left:20px;margin:0 0 24px;font-size:14px;line-height:1.6">
+         ${p.inClinicItems.map(i => `<li style="margin-bottom:6px">${escHtml(i)}</li>`).join('')}
+       </ul>`
+    : '';
+
+  const hepHtml = p.hepItems.length > 0
+    ? `<p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin:0 0 8px">Para casa &#127968;</p>
+       <ul style="padding-left:20px;margin:0 0 24px;font-size:14px;line-height:1.6">
+         ${p.hepItems.map(i => `<li style="margin-bottom:6px">${escHtml(i)}</li>`).join('')}
+       </ul>`
+    : '';
+
+  const noteHtml = p.customMessage
+    ? `<div style="background:#f0f9ff;border-left:3px solid #4f46e5;padding:12px 16px;margin:20px 0;border-radius:4px;font-size:14px">
+         <strong>Nota de tu fisioterapeuta:</strong><br>${escHtml(p.customMessage)}
+       </div>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#374151">
+  <div style="max-width:580px;margin:32px auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:20px 32px">
+      <span style="color:#fff;font-size:18px;font-weight:600;letter-spacing:-0.3px">AiduxCare</span>
+    </div>
+    <div style="padding:32px">
+      <p style="font-size:16px;margin:0 0 6px">Hola <strong>${escHtml(p.patientFirstName)}</strong>,</p>
+      <p style="font-size:14px;color:#6b7280;margin:0 0 28px">
+        Aquí tienes el resumen de tu sesión del <strong>${escHtml(p.visitDate)}</strong>
+        con <strong>${escHtml(p.professionalName)}</strong>.
+      </p>
+      ${inClinicHtml}
+      ${hepHtml}
+      ${noteHtml}
+      <p style="font-size:14px;margin:28px 0 4px">Ante cualquier duda, no dudes en contactarnos.</p>
+      <p style="font-size:14px;margin:0">
+        Un saludo,<br>
+        <strong>${escHtml(p.professionalName)}</strong><br>
+        <span style="color:#6b7280;font-size:13px">${escHtml(p.professionalTitle)}</span>
+      </p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e7eb;background:#f9fafb">
+      <p style="font-size:11px;color:#9ca3af;margin:0">
+        Mensaje enviado desde AiduxCare en nombre de tu profesional de salud.
+        Por favor, no respondas a este email.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Envía el resumen de sesión (HEP + tratamiento en clínica) al paciente por email.
+ * Solo para piloto España. Requiere usuario autenticado.
+ *
+ * data: { patientEmail, patientFirstName, professionalName, professionalTitle,
+ *         visitDate, inClinicItems[], hepItems[], customMessage? }
+ */
+exports.sendPatientSummary = onCallV2(
+  {
+    region: LOCATION,
+    secrets: [resendApiKeySecret],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsErrorV2('unauthenticated', 'Sign in required');
+    }
+
+    const {
+      patientEmail,
+      patientFirstName,
+      professionalName,
+      professionalTitle,
+      visitDate,
+      inClinicItems,
+      hepItems,
+      customMessage,
+    } = request.data || {};
+
+    if (!patientEmail || !patientFirstName || !professionalName) {
+      throw new HttpsErrorV2(
+        'invalid-argument',
+        'Missing required fields: patientEmail, patientFirstName, professionalName'
+      );
+    }
+
+    const apiKey = resendApiKeySecret.value();
+    const resend = new Resend(apiKey);
+
+    const html = buildPatientSummaryHtml({
+      patientFirstName,
+      professionalName,
+      professionalTitle: professionalTitle || 'Fisioterapeuta',
+      visitDate: visitDate || new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+      inClinicItems: Array.isArray(inClinicItems) ? inClinicItems : [],
+      hepItems: Array.isArray(hepItems) ? hepItems : [],
+      customMessage: typeof customMessage === 'string' ? customMessage.trim() : '',
+    });
+
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: patientEmail,
+      subject: `Tu resumen de sesión — ${visitDate || 'hoy'}`,
+      html,
+    });
+
+    if (error) {
+      console.error('[sendPatientSummary] Resend error:', error);
+      throw new HttpsErrorV2('internal', error.message || 'Email send failed');
+    }
+
+    console.log('[sendPatientSummary] Sent:', data?.id, '→', patientEmail);
+    return { ok: true, id: data?.id };
+  }
+);
