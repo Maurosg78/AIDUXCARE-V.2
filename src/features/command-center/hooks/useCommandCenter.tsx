@@ -35,6 +35,7 @@ export interface ContextualAction {
 
 export function useCommandCenter(): CommandCenterState {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [nextAppointment, setNextAppointment] = useState<AppointmentInfo | undefined>();
   const [activeSession, setActiveSession] = useState<SessionInfo | undefined>();
