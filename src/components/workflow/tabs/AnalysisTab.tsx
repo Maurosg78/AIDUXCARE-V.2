@@ -446,7 +446,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           <div className="mt-2 ml-7 space-y-2">
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-medium text-slate-700">
-                                Clinical decision for this red flag:
+                                {t('workflow.analysis.redFlag.clinicalDecision')}
                               </label>
                               <div className="flex flex-col gap-1">
                                 <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
@@ -462,7 +462,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       })
                                     }
                                   />
-                                  Continue — does not alter treatment plan
+                                  {t('workflow.analysis.redFlag.options.continue')}
                                 </label>
 
                                 <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
@@ -478,7 +478,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       })
                                     }
                                   />
-                                  Referral + Stop — generate report, pause physiotherapy
+                                  {t('workflow.analysis.redFlag.options.referralStop')}
                                 </label>
 
                                 <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
@@ -497,7 +497,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                       })
                                     }
                                   />
-                                  Referral + Continue partially — generate report, continue safe modalities
+                                  {t('workflow.analysis.redFlag.options.referralContinue')}
                                 </label>
 
                                 {(redFlagDecisions[id]?.decision === 'referral_continue_partial' ||
@@ -505,7 +505,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                   <textarea
                                     className="mt-1 w-full text-xs border border-amber-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
                                     rows={2}
-                                    placeholder="Clinical justification (required when continuing with monitoring or partial physiotherapy)."
+                                    placeholder={t('workflow.analysis.redFlag.justificationPlaceholder')}
                                     value={redFlagDecisions[id]?.continuationNote ?? ''}
                                     onChange={(e) =>
                                       onRedFlagDecisionChange?.({
@@ -611,7 +611,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                         <div className="mt-2 ml-7 space-y-2">
                           <div className="flex flex-col gap-1">
                             <label className="text-xs font-medium text-slate-700">
-                              Clinical decision for this red flag:
+                              {t('workflow.analysis.redFlag.clinicalDecision')}
                             </label>
                             <div className="flex flex-col gap-1">
                               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
@@ -627,7 +627,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                     })
                                   }
                                   />
-                                  Continue physiotherapy with monitoring
+                                  {t('workflow.analysis.redFlag.options.continue')}
                                 </label>
 
                                 <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
@@ -643,7 +643,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                     })
                                   }
                                   />
-                                  Refer to specialist — stop physiotherapy treatment
+                                  {t('workflow.analysis.redFlag.options.referralStop')}
                                 </label>
 
                                 <label className="flex items-center gap-2 text-xs text-amber-700 cursor-pointer">
@@ -662,7 +662,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                     })
                                   }
                                   />
-                                  Refer to specialist — continue partial physiotherapy
+                                  {t('workflow.analysis.redFlag.options.referralContinue')}
                                 </label>
 
                                 {(redFlagDecisions[id]?.decision === 'referral_continue_partial' ||
@@ -670,13 +670,13 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                 <textarea
                                   className="mt-1 w-full text-xs border border-amber-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
                                   rows={2}
-                                    placeholder="Clinical justification (required when continuing with monitoring or partial physiotherapy)."
+                                    placeholder={t('workflow.analysis.redFlag.justificationPlaceholder')}
                                   value={redFlagDecisions[id]?.continuationNote ?? ''}
                                   onChange={(e) =>
                                     onRedFlagDecisionChange?.({
                                       ...redFlagDecisions,
                                       [id]: {
-                                        decision: 'referral_continue_partial',
+                                        decision: redFlagDecisions[id]?.decision ?? 'continue',
                                         continuationNote: e.target.value,
                                       },
                                     })

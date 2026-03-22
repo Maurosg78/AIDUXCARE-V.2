@@ -25,7 +25,16 @@
       "continueToEvaluation": "Pasar a evaluación física",
       "noTestsSelectedWarning": "No hay pruebas físicas seleccionadas. Puedes seguir y añadirlas en el paso de evaluación.",
       "runAnalysisEmptyState": "Ejecuta el análisis para ver sugerencias de IA, comprobaciones de seguridad y pruebas físicas sugeridas.",
-      "generateReferralReport": "Generar informe de derivación"
+      "generateReferralReport": "Generar informe de derivación",
+      "redFlag": {
+        "clinicalDecision": "Decisión clínica para esta alerta:",
+        "justificationPlaceholder": "Justificación clínica (requerida al continuar con monitoreo o fisioterapia parcial).",
+        "options": {
+          "continue": "Continuar fisioterapia con monitoreo",
+          "referralStop": "Derivar a especialista — suspender tratamiento",
+          "referralContinue": "Derivar a especialista — continuar fisioterapia parcial"
+        }
+      }
     },
     "evaluation": {
       "addTests": "Añadir pruebas",
