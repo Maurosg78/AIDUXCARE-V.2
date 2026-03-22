@@ -4,7 +4,7 @@
  * Generates differentiated prompts for Initial Assessment vs Follow-up visits.
  * Enhanced with session-specific prompts (WSIB, MVA, Certificate).
  * 
- * Market: CA · en-CA · PHIPA/PIPEDA Ready
+ * Market-aware locale via activeLocale (see ../prompts/marketLocales).
  * Sprint 2A: Session Type Integration
  */
 
@@ -14,6 +14,9 @@ import type { OrganizedSOAPInput } from './SOAPDataOrganizer';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { buildOptimizedFollowUpPrompt } from './FollowUpSOAPPromptBuilder';
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
+import { getActiveLocale, type PromptLocale } from '../prompts/marketLocales';
+
+const activeLocale = getActiveLocale();
 
 export interface SOAPPromptOptions {
   previousVisitContext?: {
@@ -78,12 +81,12 @@ export function buildInitialAssessmentPrompt(
 ): string {
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
   const professionalContextBlock = buildProfessionalContextBlock(options?.professionalProfile);
-  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for an INITIAL ASSESSMENT visit.${professionalContextBlock}
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in ${activeLocale.jurisdiction}. Generate a SOAP note for an INITIAL ASSESSMENT visit.${professionalContextBlock}
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
 - Reflect ONLY information provided by the clinician
-- Output in Canadian English (en-CA)
+- Output in ${activeLocale.language}
 - Use Canadian medical terminology and spelling (e.g., "physiotherapy" not "physical therapy", "registered" not "licensed")
 - This is an INITIAL ASSESSMENT - be thorough and complete
 
@@ -245,7 +248,7 @@ CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
 - Scope: Physiotherapy assessment and treatment planning only
-- Language: Professional Canadian English, CONCISE, clinically appropriate
+- Language: ${activeLocale.language}, CONCISE, clinically appropriate
 - Terminology: Use Canadian physiotherapy terminology and abbreviations (ROM, B/L, R/L, /10)
 - EMR-ready: Generate documentation ready for professional medical records
 - NO repetition: Each section adds NEW clinical information - avoid repeating between sections
@@ -274,15 +277,15 @@ export function buildFollowUpPrompt(
 
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
   const professionalContextBlock = buildProfessionalContextBlock(options?.professionalProfile);
-  const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
+  const prompt = `${activeLocale.headerInstructions}
 Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
-You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.${professionalContextBlock}
+You are a clinical documentation assistant for ${rolePhrase} in ${activeLocale.jurisdiction}. Generate a SOAP note for a FOLLOW-UP/TREATMENT CONTINUITY visit.${professionalContextBlock}
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
 - Reflect ONLY information provided by the clinician
-- Output in Canadian English (en-CA)
+- Output in ${activeLocale.language}
 - Use Canadian medical terminology and spelling (e.g., "physiotherapy" not "physical therapy", "registered" not "licensed")
 - This is a FOLLOW-UP visit - focus on changes and progress
 
@@ -429,7 +432,7 @@ CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
 - Scope: Physiotherapy assessment and treatment planning only
-- Language: Professional Canadian English, CONCISE, clinically appropriate
+- Language: ${activeLocale.language}, CONCISE, clinically appropriate
 - Terminology: Use Canadian physiotherapy terminology and abbreviations (ROM, B/L, R/L, /10)
 - EMR-ready: Generate documentation ready for professional medical records
 - NO repetition: Each section adds NEW clinical information - avoid repeating between sections
@@ -490,13 +493,13 @@ function buildLegalFocusedPrompt(
 ): string {
   const sessionLabel = sessionType === 'wsib' ? 'WSIB (Workplace Safety and Insurance Board)' : 'MVA (Motor Vehicle Accident)';
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
-  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a ${sessionLabel} ASSESSMENT visit.
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in ${activeLocale.jurisdiction}. Generate a SOAP note for a ${sessionLabel} ASSESSMENT visit.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
 - Reflect ONLY information provided by the clinician
-- Output in Canadian English (en-CA)
+- Output in ${activeLocale.language}
 - Use Canadian medical terminology and spelling
 - This is a ${sessionLabel} assessment - include detailed injury mechanism, work-related factors (WSIB) or accident details (MVA), functional limitations affecting work capacity, and return-to-work recommendations
 - Ensure medico-legal clarity and precision
@@ -636,7 +639,7 @@ CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
 - Scope: Physiotherapy assessment and treatment planning only
-- Language: Professional Canadian English, CONCISE, legally precise, clinically appropriate
+- Language: ${activeLocale.language}, CONCISE, legally precise, clinically appropriate
 - Terminology: Use abbreviations (ROM, B/L, R/L, /10) and numbers
 - EMR-ready: Generate documentation ready for professional medical records
 - NO repetition: Each section adds NEW clinical information - avoid repeating between sections
@@ -658,13 +661,13 @@ function buildCertificatePrompt(
   options?: SOAPPromptOptions
 ): string {
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
-  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in Ontario, Canada. Generate a SOAP note for a MEDICAL CERTIFICATE ASSESSMENT.
+  const prompt = `You are a clinical documentation assistant for ${rolePhrase} in ${activeLocale.jurisdiction}. Generate a SOAP note for a MEDICAL CERTIFICATE ASSESSMENT.
 
 ROLE:
 - You assist with documentation, you do NOT diagnose
 - Use language: "Patterns consistent with..." not "Patient has..."
 - Reflect ONLY information provided by the clinician
-- Output in Canadian English (en-CA)
+- Output in ${activeLocale.language}
 - Use Canadian medical terminology and spelling
 - This is a CERTIFICATE assessment - focus on specific functional limitations, work restrictions, or activity limitations relevant to the certificate purpose
 - Be precise and objective
@@ -753,7 +756,7 @@ ${JSON.stringify(context.physicalEvaluation.tests, null, 2)}
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - Focus on functional limitations and work/activity restrictions
-- Language: Professional Canadian English, CONCISE, precise, objective
+- Language: ${activeLocale.language}, CONCISE, precise, objective
 - Terminology: Use abbreviations (ROM, B/L, R/L, /10) and numbers
 - EMR-ready: Generate documentation ready for professional medical records
 - NO repetition: Each section adds NEW clinical information - avoid repeating between sections
