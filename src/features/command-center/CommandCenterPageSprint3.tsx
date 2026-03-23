@@ -154,7 +154,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
             status: 'incomplete',
           });
         } else {
-          mergedList[existingIndex] = { ...mergedList[existingIndex], status: 'incomplete' };
+          const currentItem = mergedList[existingIndex];
+          const currentStatus = currentItem.status;
+          const isAlreadyCompleted = currentStatus === 'done';
+
+          if (!isAlreadyCompleted) {
+            mergedList[existingIndex] = {
+              ...currentItem,
+              status: 'incomplete',
+            };
+          }
         }
       }
 
