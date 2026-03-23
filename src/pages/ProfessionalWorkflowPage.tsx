@@ -4164,12 +4164,13 @@ const ProfessionalWorkflowPage = () => {
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
       };
-      if (sessionId) {
-        await sessionService.updateSession(sessionId, savePayload);
+      const effectiveSessionId = sessionId ?? sessionIdRef.current;
+      if (effectiveSessionId) {
+        await sessionService.updateSession(effectiveSessionId, savePayload);
       } else {
-        const currentSessionId = `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-        await sessionService.createSessionWithId(currentSessionId, savePayload);
-        setSessionId(currentSessionId);
+        const fallbackSessionId = `${user?.uid}-${sessionStartTime.getTime()}`;
+        await sessionService.createSessionWithId(fallbackSessionId, savePayload);
+        setSessionId(fallbackSessionId);
         await trackSessionStarted({
           userId: TEMP_USER_ID,
           patientId: patientIdFromUrl || demoPatient.id,
