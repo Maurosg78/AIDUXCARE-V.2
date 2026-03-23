@@ -64,7 +64,8 @@ export class PersistenceService {
   static async saveSOAPNote(
     soapData: SOAPData,
     patientId: string = 'default-patient',
-    sessionId: string = 'default-session'
+    sessionId: string = 'default-session',
+    noteId?: string
   ): Promise<string> {
     try {
       const userId = this.getCurrentUserId();
@@ -79,10 +80,10 @@ export class PersistenceService {
       // Cifrar los datos SOAP
       const encryptedData = await CryptoService.encryptMedicalData(soapData);
 
-      // Crear el registro de la nota
-      const noteId = this.generateNoteId();
+      // Use provided noteId (idempotent retries) or generate a new one
+      const resolvedNoteId = noteId ?? this.generateNoteId();
       const savedNote: SavedNote = {
-        id: noteId,
+        id: resolvedNoteId,
         patientId,
         sessionId,
         soapData, // Mantener una copia sin cifrar para visualización
@@ -95,7 +96,7 @@ export class PersistenceService {
       };
 
       // ✅ FIX 1.1: Save to Firestore - Use authorUid to match Firestore rules
-      const noteRef = doc(db, this.COLLECTION_NAME, noteId);
+      const noteRef = doc(db, this.COLLECTION_NAME, resolvedNoteId);
       const dataToSave = {
         ...savedNote,
         authorUid: userId, // ✅ CRITICAL: Firestore rules expect authorUid, not ownerUid
@@ -104,7 +105,7 @@ export class PersistenceService {
 
       console.log(`[PersistenceService] Saving note to Firestore:`, {
         collection: this.COLLECTION_NAME,
-        noteId,
+        noteId: resolvedNoteId,
         ownerUid: userId,
         patientId: savedNote.patientId,
         sessionId: savedNote.sessionId,
@@ -113,8 +114,8 @@ export class PersistenceService {
 
       await setDoc(noteRef, dataToSave);
 
-      console.log(`✅ [PersistenceService] Note saved successfully with ID: ${noteId}`);
-      return noteId;
+      console.log(`✅ [PersistenceService] Note saved successfully with ID: ${resolvedNoteId}`);
+      return resolvedNoteId;
     } catch (error) {
       console.error('Error generating clinical note:', error);
       throw new Error('Failed to save note to database');

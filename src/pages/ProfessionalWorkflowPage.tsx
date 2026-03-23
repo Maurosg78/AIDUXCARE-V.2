@@ -240,6 +240,8 @@ const ProfessionalWorkflowPage = () => {
   const useEffectClearedRef = useRef(false);
   // ✅ WO-FIX-DATA-PERSISTENCE: Track if we've cleaned for this specific initial session
   const hasCleanedForInitial = useRef<string | null>(null);
+  // Guard against duplicate SOAP saves (double-tap / double-click)
+  const isFinalizingRef = useRef(false);
   // WO-IA-RESUME-01: Only run resume load once per sessionId
   const hasResumeLoadAttemptedRef = useRef<string | null>(null);
   const restoreTranscriptPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -4259,6 +4261,9 @@ const ProfessionalWorkflowPage = () => {
   }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
+    if (isFinalizingRef.current) return;
+    isFinalizingRef.current = true;
+    try {
     await handleSaveSOAP(soap, 'finalized');
     const pid = patientIdFromUrl;
     const stype = visitType === 'initial' ? 'initial' : 'followup';
@@ -4474,6 +4479,9 @@ const ProfessionalWorkflowPage = () => {
         console.error('[Workflow] Failed to save treatment plan:', error);
         // Non-blocking: continue even if plan save fails
       }
+    }
+    } finally {
+      isFinalizingRef.current = false;
     }
   };
 

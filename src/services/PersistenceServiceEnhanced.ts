@@ -175,10 +175,15 @@ export async function saveSOAPNoteWithRetry(
     backupKey = saveToLocalBackup(soapData, patientId, sessionId);
   }
 
+  // Anchor noteId to sessionId so the same session always produces the same Firestore document (idempotent across retries AND duplicate calls)
+  const stableNoteId = sessionId && sessionId !== 'default-session'
+    ? `note_${sessionId}`
+    : `note_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
   // Retry loop
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
-      const noteId = await PersistenceService.saveSOAPNote(soapData, patientId, sessionId);
+      const noteId = await PersistenceService.saveSOAPNote(soapData, patientId, sessionId, stableNoteId);
       
       // Success - remove backup if exists
       if (backupKey) {
