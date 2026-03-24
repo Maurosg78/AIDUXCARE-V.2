@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { Shield, MessageCircle, FileText, Smartphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { VerbalConsentModal } from './VerbalConsentModal';
 import { PatientConsentService } from '@/services/patientConsentService';
 import { SMSService } from '@/services/smsService';
@@ -37,6 +38,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   onCancel,
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showVerbalModal, setShowVerbalModal] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formOpened, setFormOpened] = useState(false);
@@ -47,7 +49,6 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
     console.log('[ConsentGate] ✅ Verbal consent recorded', { consentId: consentId ? '***' : '' });
     setShowVerbalModal(false);
     if (onConsentGranted) {
-      await new Promise((r) => setTimeout(r, 300));
       await onConsentGranted();
     }
   };
@@ -145,7 +146,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-blue to-indigo-500 text-white rounded-lg font-medium hover:from-primary-blue-hover hover:to-indigo-600 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileText className="w-4 h-4" />
-              {formLoading ? 'Opening...' : 'Fill consent form (in-clinic)'}
+              {formLoading ? 'Opening...' : t('consent.fillForm')}
             </button>
           )}
 
@@ -156,7 +157,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-500 to-primary-purple text-white rounded-lg font-medium hover:from-indigo-600 hover:to-primary-purple-hover transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Smartphone className="w-4 h-4" />
-            {smsLoading ? 'Sending...' : 'Send SMS link'}
+            {smsLoading ? 'Sending...' : t('consent.sendSms')}
           </button>
           {!patientPhone?.trim() && (
             <p className="text-xs text-indigo-600 -mt-1">Patient phone required for SMS</p>
@@ -168,7 +169,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-purple to-fuchsia-600 text-white rounded-lg font-medium hover:from-primary-purple-hover hover:to-fuchsia-700 transition shadow-md"
           >
             <MessageCircle className="w-4 h-4" />
-            Obtain verbal consent
+            {t('consent.obtainVerbal')}
           </button>
         </div>
 

@@ -87,6 +87,9 @@
     "agree": "I have read and agree to the consent terms.",
     "submit": "Confirm Consent",
     "confirmation": "Your consent has been recorded successfully.",
+    "fillForm": "Fill consent form (in-clinic)",
+    "sendSms": "Send SMS link",
+    "obtainVerbal": "Obtain verbal consent",
     "verbal": {
       "title": "Verbal Consent Required",
       "patientLabel": "Patient",

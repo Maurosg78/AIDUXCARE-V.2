@@ -140,6 +140,12 @@
     "agree": "He leído y acepto los términos del consentimiento.",
     "submit": "Confirmar consentimiento",
     "confirmation": "Tu consentimiento ha sido registrado correctamente.",
+    "fillForm": "Completar formulario de consentimiento (en consulta)",
+    "sendSms": "Enviar enlace por SMS",
+    "obtainVerbal": "Obtener consentimiento verbal",
+    "verbalTitle": "Consentimiento verbal",
+    "writtenTitle": "Consentimiento escrito",
+    "smsTitle": "Consentimiento por SMS",
     "verbal": {
       "title": "Consentimiento verbal requerido",
       "patientLabel": "Paciente",

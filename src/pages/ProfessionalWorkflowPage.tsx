@@ -2105,6 +2105,26 @@ const ProfessionalWorkflowPage = () => {
     consentGrantedRef.current === true ||
     workflowConsentStatus?.hasValidConsent === true;
 
+  const handleConsentGrantedImmediate = useCallback(async () => {
+    const immediateConsentResult = {
+      hasValidConsent: true,
+      status: 'ongoing' as const,
+      consentMethod: 'verbal' as const,
+    };
+    const updatedWorkflowStatus = {
+      hasValidConsent: immediateConsentResult.hasValidConsent,
+      isDeclined: false,
+      status: immediateConsentResult.status,
+      consentMethod: immediateConsentResult.consentMethod,
+    };
+    consentGrantedRef.current = true;
+    setWorkflowConsentStatus(updatedWorkflowStatus);
+    setPatientHasConsent(true);
+    setConsentStatus('ongoing');
+    setConsentPending(false);
+    setSmsError(null);
+  }, []);
+
 
   useEffect(() => {
     const patientId = patientIdFromUrl || (currentPatient?.id);
@@ -4733,6 +4753,7 @@ const ProfessionalWorkflowPage = () => {
         consentResolution={consentResolution}
         physiotherapistId={user?.uid}
         physiotherapistName={clinicianDisplayName}
+        onConsentGranted={handleConsentGrantedImmediate}
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Callback para check inmediato cuando se declina
         onConsentDeclined={async () => {
           console.log('[WORKFLOW] Consent declined - triggering immediate check');
