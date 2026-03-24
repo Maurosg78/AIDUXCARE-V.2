@@ -16,6 +16,7 @@ export interface WorkQueueSummary {
   draftDocuments: number;
   /** Patients in today's list not yet seen (status pending) — reminder to physio */
   pendingPatients?: number;
+  nextPendingPatientName?: string;
   incompleteSessions?: number;
 }
 
@@ -87,6 +88,11 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
                 <p className="text-sm text-red-700 font-apple font-light mb-4 flex-1">
                   {t('shell.workQueue.pendingPatientsDesc')}
                 </p>
+                {workQueue.nextPendingPatientName && (
+                  <p className="text-sm text-red-800 font-apple font-medium mb-4">
+                    {t('shell.workQueue.nextPendingPatient', { name: workQueue.nextPendingPatientName })}
+                  </p>
+                )}
                 <button
                   onClick={() => document.getElementById('work-with-patients')?.scrollIntoView({ behavior: 'smooth' })}
                   className="w-full px-4 py-3 bg-white hover:bg-red-50 border border-red-200 hover:border-red-300 rounded-xl transition-all duration-200 text-sm font-semibold text-red-800 font-apple"
@@ -224,6 +230,5 @@ export const WorkQueuePanel: React.FC<WorkQueuePanelProps> = ({
     </div>
   );
 };
-
 
 

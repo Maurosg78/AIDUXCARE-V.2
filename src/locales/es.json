@@ -685,6 +685,7 @@
       "itemsRequiringAttention": "{{count}} elemento(s) requieren atención",
       "pendingPatients": "Pacientes pendientes",
       "pendingPatientsDesc": "En la lista de hoy — sesión aún no completada",
+      "nextPendingPatient": "Siguiente pendiente: {{name}}",
       "viewList": "Ver lista",
       "incompleteSessions": "Sesiones incompletas",
       "incompleteSessionsDesc": "Sesiones interrumpidas — sin SOAP generado. Reanuda para completar la documentación.",

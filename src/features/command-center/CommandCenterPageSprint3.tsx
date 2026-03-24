@@ -213,15 +213,20 @@ export const CommandCenterPageSprint3: React.FC = () => {
     selectedDate.getFullYear() === new Date().getFullYear();
 
   // Work queue summary — pending patients = in today's list, not yet seen (status !== 'done')
+  const pendingPatientsItems = isSelectedDateToday
+    ? todayQuickList.filter((i) => (i.status ?? 'pending') === 'pending')
+    : [];
   const pendingPatientsCount = isSelectedDateToday
-    ? todayQuickList.filter((i) => (i.status ?? 'pending') === 'pending').length
+    ? pendingPatientsItems.length
     : 0;
+  const nextPendingPatientName = pendingPatientsItems[0]?.patientName;
 
   const workQueue: WorkQueueSummary = {
     pendingNotes: pendingNotes.data || 0,
     missingConsents: 0, // TODO: Implement consent checking
     draftDocuments: 0, // TODO: Implement draft documents
     pendingPatients: pendingPatientsCount,
+    nextPendingPatientName,
     incompleteSessions: inProgressSessions.data.length,
   };
 
@@ -613,4 +618,3 @@ export const CommandCenterPageSprint3: React.FC = () => {
     </div>
   );
 };
-
