@@ -167,9 +167,9 @@ export function getJurisdictionConfig(id: JurisdictionId): JurisdictionConfig {
  * keeping behaviour identical to production.
  */
 export function getActiveJurisdiction(): JurisdictionId {
-  // Reuse existing source of truth for current jurisdiction.
-  // In later checkpoints this will incorporate profile + geolocation.
-  return 'CA-ON';
+  const spainPilotActive = isSpainPilot();
+  const activeJurisdiction = spainPilotActive ? 'ES-ES' : 'CA-ON';
+  return activeJurisdiction;
 }
 
 /**

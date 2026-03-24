@@ -5727,7 +5727,7 @@ const ProfessionalWorkflowPage = () => {
       {(() => {
         if (!currentPatient || !user?.uid || !workflowConsentStatus) return false;
         const jurisdiction = getCurrentJurisdiction();
-        const isFirstSession = true;
+        const isFirstSession = visitType === 'initial';
         const currentResolution = resolveConsentChannel({
           hasValidConsent: workflowConsentStatus.hasValidConsent,
           jurisdiction,
