@@ -5448,6 +5448,8 @@ const ProfessionalWorkflowPage = () => {
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+                    redFlagDecisions={redFlagDecisions}
                   />
                 </Suspense>
               </div>
@@ -5695,6 +5697,8 @@ const ProfessionalWorkflowPage = () => {
                   patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                   professionalName={clinicianDisplayName || ''}
                   professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                  patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+                  redFlagDecisions={redFlagDecisions}
                 />
               </Suspense>
             )}

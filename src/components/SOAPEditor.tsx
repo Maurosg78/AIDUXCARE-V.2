@@ -50,6 +50,8 @@ export interface SOAPEditorProps {
   };
   /** Optional SessionState (or subset) for clinical reporting (ES-ES pilot). */
   sessionState?: Partial<SessionState> & { soapNote?: SOAPNote };
+  /** Red flag decisions — used to gate the referral report button. */
+  redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -72,6 +74,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   isOptimized = false,
   tokenOptimization,
   sessionState,
+  redFlagDecisions,
 }) => {
   const { t } = useTranslation();
   const soapReview = getSoapReviewConfig();
@@ -90,6 +93,8 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const [referralPreview, setReferralPreview] = useState<ReferralReportResult | null>(null);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const esPilotEnabled = isSpainPilot();
+  const hasReferralStopDecision = Object.values(redFlagDecisions ?? {})
+    .some((decision) => decision.decision === 'referral_stop');
 
   // Update local state when prop changes
   useEffect(() => {
@@ -1010,7 +1015,7 @@ Include specific parameters, duration, and frequency for each modality used."
                 <Eye className="w-3.5 h-3.5" />
                 {t('clinical.actions.preview')}
               </button>
-              {esPilotEnabled && sessionState && (
+              {esPilotEnabled && sessionState && hasReferralStopDecision && (
                 <button
                   onClick={handleReferralPreview}
                   className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg border border-indigo-200 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition"

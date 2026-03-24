@@ -109,6 +109,10 @@ export interface SOAPTabProps {
   patientFirstName?: string;
   professionalName?: string;
   professionalTitle?: string;
+  /** Patient full name — threaded to SOAPEditor for referral report. */
+  patientName?: string;
+  /** Red flag decisions — threaded to SOAPEditor to gate referral button. */
+  redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
 }
 
 export const SOAPTab: React.FC<SOAPTabProps> = ({
@@ -165,6 +169,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   patientFirstName,
   professionalName,
   professionalTitle,
+  patientName,
+  redFlagDecisions,
 }) => {
   const { t } = useTranslation();
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -311,7 +317,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                 ? {
                     sessionId,
                     patientId,
-                    patientName: '', // optional for report; real name can be added later if needed
+                    patientName: patientName ?? '',
                     sessionType: visitType === 'initial' ? 'initial' : 'followup',
                     transcript,
                     startTime: new Date(),
@@ -320,6 +326,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                   }
                 : undefined
             }
+            redFlagDecisions={redFlagDecisions}
           />
 
           {/* Spain pilot: Enviar resumen al paciente */}
