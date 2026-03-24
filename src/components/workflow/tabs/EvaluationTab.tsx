@@ -33,12 +33,7 @@ type EvaluationTestEntry = {
   specificityQualitative?: string;
 };
 
-const RESULT_LABELS: Record<EvaluationResult, string> = {
-  normal: "Normal",
-  positive: "Positive",
-  negative: "Negative",
-  inconclusive: "Inconclusive",
-};
+// RESULT_LABELS is defined inside the component so t() can be used (see below)
 
 const RESULT_OPTIONS: EvaluationResult[] = ["normal", "positive", "negative", "inconclusive"];
 
@@ -229,6 +224,12 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   workflowRoute,
 }) => {
   const { t } = useTranslation();
+  const RESULT_LABELS: Record<EvaluationResult, string> = {
+    normal: t('workflow.evaluation.resultLabels.normal'),
+    positive: t('workflow.evaluation.resultLabels.positive'),
+    negative: t('workflow.evaluation.resultLabels.negative'),
+    inconclusive: t('workflow.evaluation.resultLabels.inconclusive'),
+  };
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
 
@@ -433,7 +434,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <div className="flex-1">
                           <p className="font-semibold text-slate-700">{displayName}</p>
                           <p className="text-[11px] text-slate-500">
-                            {matched ? matched.description : 'Custom entry sourced from transcript.'}
+                            {matched ? matched.description : t('workflow.evaluation.customEntry')}
                           </p>
                         </div>
                         <button
@@ -539,14 +540,14 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               {label}
                             </option>
                           ))}
-                          <option value="other">Other / General</option>
+                          <option value="other">{t('workflow.evaluation.regionOther')}</option>
                         </select>
                         <select
                           value={customTestResult}
                           onChange={(event) => setCustomTestResult(event.target.value as EvaluationResult | '')}
                           className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
                         >
-                          <option value="">Result (optional)</option>
+                          <option value="">{t('workflow.evaluation.resultOptional')}</option>
                           {RESULT_OPTIONS.map((option) => (
                             <option key={option} value={option}>
                               {RESULT_LABELS[option]}
@@ -558,7 +559,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         value={customTestNotes}
                         onChange={(event) => setCustomTestNotes(event.target.value)}
                         rows={2}
-                        placeholder="Notes (optional)"
+                        placeholder={t('workflow.evaluation.notesOptional')}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
                       />
                       <div className="flex items-center justify-end gap-2">
@@ -570,14 +571,14 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           }}
                           className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                         >
-                          Cancel
+                          {t('workflow.evaluation.cancel')}
                         </button>
                         <button
                           type="button"
                           onClick={handleAddCustomTest}
                           className="rounded-full bg-[#7c3aed] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6d28d9]"
                         >
-                          Save custom test
+                          {t('workflow.evaluation.saveCustomTest')}
                         </button>
                       </div>
                     </div>
@@ -594,7 +595,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
 
           <div className="rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-slate-800">Selected Tests</p>
+              <p className="text-sm font-semibold text-slate-800">{t('workflow.evaluation.selectedTests')}</p>
               <span className="text-xs text-slate-500">
                 {filteredEvaluationTests.length} selected
                 {detectedCaseRegion && filteredEvaluationTests.length !== evaluationTests.length && (
@@ -623,7 +624,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <div>
                           <p className="font-semibold text-slate-800">{entry.name}</p>
                           <p className="text-[11px] text-slate-500">
-                            {entry.region ? regionLabels[entry.region] : 'General'} · Source: {entry.source.toUpperCase()}
+                            {entry.region ? regionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · Source: {entry.source.toUpperCase()}
                           </p>
                           {entry.description && (
                             <p className="mt-1 text-[11px] text-slate-500">{entry.description}</p>
@@ -725,7 +726,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           <div className="space-y-3 pt-2 border-t border-slate-200">
                             <div className="flex flex-wrap items-center gap-3">
                               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600">
-                                Status: {RESULT_LABELS[entry.result] || "Pending"}
+                                Status: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
                               </span>
                               <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                                 <input
@@ -739,7 +740,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                   }
                                   className="h-3.5 w-3.5 rounded border-slate-300 text-primary-blue focus:ring-primary-blue"
                                 />
-                                Abnormal result
+                                {t('workflow.evaluation.abnormalResult')}
                               </label>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -763,17 +764,17 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           {/* Add Notes field */}
                           <div className="pt-2 border-t border-slate-200">
                             <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                              Add Notes
+                              {t('workflow.evaluation.addNotes')}
                             </label>
                             <textarea
                               value={entry.notes || ''}
                               onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
                               rows={2}
-                              placeholder="Additional clinical notes, observations, or findings..."
+                              placeholder={t('workflow.evaluation.notesPlaceholder')}
                               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
                             />
                             <p className="mt-1 text-[10px] text-slate-400">
-                              Notes will be included in the SOAP generation process.
+                              {t('workflow.evaluation.notesHelper')}
                             </p>
                           </div>
                         </div>
@@ -782,7 +783,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <>
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600">
-                              Status: {RESULT_LABELS[entry.result] || "Pending"}
+                              Status: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
                             </span>
                             <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                               <input
@@ -795,7 +796,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                 }
                                 className="h-3.5 w-3.5 rounded border-slate-300 text-primary-blue focus:ring-primary-blue"
                               />
-                              Abnormal result
+                              {t('workflow.evaluation.abnormalResult')}
                             </label>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -818,7 +819,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                             value={entry.notes}
                             onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
                             rows={3}
-                            placeholder="Clinical notes, pain provocation, mobility restrictions..."
+                            placeholder={t('workflow.evaluation.fallbackNotesPlaceholder')}
                             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
                           />
                         </>
@@ -834,7 +835,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
 
       <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
         <div className="text-sm text-slate-500">
-          Progress: {completedCount} of {totalTests} tests documented ({progressPercent}%)
+          {t('workflow.evaluation.progressText', { completed: completedCount, total: totalTests, percent: progressPercent })}
         </div>
         <button
           onClick={handleGenerateSoap}
@@ -844,12 +845,12 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           {isGeneratingSOAP ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Generating SOAP Note...
+              {t('workflow.evaluation.generatingSoap')}
             </>
           ) : (
             <>
               <FileText className="h-4 w-4" />
-              Generate SOAP Note
+              {t('workflow.evaluation.generateSoap')}
             </>
           )}
         </button>

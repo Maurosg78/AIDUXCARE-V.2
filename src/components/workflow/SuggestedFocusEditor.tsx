@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Edit2, X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
@@ -29,6 +30,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
   hideHeader = false,
   allowAdd = false,
 }) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
     completed: item.completed ?? false,
@@ -166,7 +168,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                 <button
                   onClick={() => handleToggleCompleted(item.id)}
                   className="mt-1 flex-shrink-0"
-                    title="Performed in clinic today — click to uncheck"
+                    title={t('workflow.treatment.performedInClinic')}
                 >
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </button>
@@ -220,7 +222,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                       <button
                         onClick={() => handleEditLabel(item.id)}
                         className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-colors"
-                        title="Edit activity"
+                        title={t('workflow.treatment.editItem')}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -228,7 +230,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                         <button
                           onClick={() => handleRemove(item.id)}
                           className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Remove activity"
+                          title={t('workflow.treatment.removeItem')}
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -249,13 +251,13 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                       ) : (
                         <ChevronDown className="w-3 h-3" />
                       )}
-                      <span>Notes (dictated or typed)</span>
+                      <span>{t('workflow.treatment.notesLabel')}</span>
                     </button>
                     {isNotesExpanded && (
                       <textarea
                         value={item.notes || ''}
                         onChange={(e) => handleUpdateNotes(item.id, e.target.value)}
-                        placeholder="Add notes (dictated or typed)..."
+                        placeholder={t('workflow.treatment.notesPlaceholder')}
                         className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple resize-none"
                         rows={2}
                       />
@@ -290,7 +292,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     if (e.key === 'Enter') handleAddNew();
                     if (e.key === 'Escape') handleCancelAdd();
                   }}
-                  placeholder="New treatment (e.g. Manual therapy, Exercise)"
+                  placeholder={t('workflow.treatment.newTreatmentPlaceholder')}
                   className="flex-1 px-2 py-1.5 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple"
                   autoFocus
                 />

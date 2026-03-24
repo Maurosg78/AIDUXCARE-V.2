@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Edit2, X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
@@ -28,6 +29,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
   allDone = false,
   onSelectAllClick,
 }) => {
+  const { t } = useTranslation();
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
     completed: item.completed ?? false,
@@ -151,7 +153,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
               readOnly
               className="w-4 h-4 text-blue-600 rounded"
             />
-            <span>All done</span>
+            <span>{t('workflow.homeProgram.allDone')}</span>
           </button>
         )}
       </div>
@@ -170,7 +172,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                 <button
                   onClick={() => handleToggleCompleted(item.id)}
                   className="mt-1 flex-shrink-0"
-                  title="Included in follow-up — click to uncheck"
+                  title={t('workflow.homeProgram.includedInFollowUp')}
                 >
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </button>
@@ -180,7 +182,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                   checked={false}
                   onChange={() => handleToggleCompleted(item.id)}
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  title="Check to include in this follow-up"
+                  title={t('workflow.homeProgram.checkToInclude')}
                 />
               )}
 
@@ -242,13 +244,13 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                       className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 font-apple font-light mb-1"
                     >
                       {isNotesExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      <span>Notes (dictated or typed)</span>
+                      <span>{t('workflow.homeProgram.notesLabel')}</span>
                     </button>
                     {isNotesExpanded && (
                       <textarea
                         value={item.notes || ''}
                         onChange={(e) => handleUpdateNotes(item.id, e.target.value)}
-                        placeholder="Add notes (dictated or typed)..."
+                        placeholder={t('workflow.homeProgram.notesPlaceholder')}
                         className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple resize-none"
                         rows={2}
                       />
@@ -281,7 +283,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                     if (e.key === 'Enter') handleAddNew();
                     if (e.key === 'Escape') handleCancelAdd();
                   }}
-                  placeholder="New exercise (e.g. Lumbar mobility, Core activation)"
+                  placeholder={t('workflow.homeProgram.newExercisePlaceholder')}
                   className="flex-1 px-2 py-1.5 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-apple"
                   autoFocus
                 />

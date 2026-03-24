@@ -26,6 +26,11 @@
       "noTestsSelectedWarning": "No hay pruebas físicas seleccionadas. Puedes seguir y añadirlas en el paso de evaluación.",
       "runAnalysisEmptyState": "Ejecuta el análisis para ver sugerencias de IA, comprobaciones de seguridad y pruebas físicas sugeridas.",
       "generateReferralReport": "Generar informe de derivación",
+      "followUpConversation": "Conversación de seguimiento",
+      "suggestedAction": "Sugerido: {{action}}",
+      "confirmDecisions": "Confirmar decisiones y continuar a SOAP",
+      "generateSoapHint": "Genera tu nota SOAP en la sección de Documentación...",
+      "referralWarning": "⛔ Se generará un informe de derivación médica. El tratamiento de fisioterapia se pausará hasta recibir respuesta del especialista.",
       "redFlag": {
         "clinicalDecision": "Decisión clínica para esta alerta:",
         "justificationPlaceholder": "Justificación clínica (requerida al continuar con monitoreo o fisioterapia parcial).",
@@ -46,7 +51,30 @@
       "addCustomTest": "Añadir prueba personalizada",
       "testNamePlaceholder": "Nombre de la prueba",
       "testsAlreadyAddedHint": "Las pruebas ya añadidas aparecen deshabilitadas en la lista.",
-      "addedSuffix": " (añadida)"
+      "addedSuffix": " (añadida)",
+      "resultLabels": {
+        "normal": "Normal",
+        "positive": "Positivo",
+        "negative": "Negativo",
+        "inconclusive": "No concluyente"
+      },
+      "customEntry": "Entrada personalizada desde transcripción.",
+      "regionOther": "Otro / General",
+      "resultOptional": "Resultado (opcional)",
+      "notesOptional": "Notas (opcional)",
+      "cancel": "Cancelar",
+      "saveCustomTest": "Guardar prueba personalizada",
+      "selectedTests": "Pruebas seleccionadas",
+      "regionGeneral": "General",
+      "statusPending": "Pendiente",
+      "abnormalResult": "Resultado anormal",
+      "notesPlaceholder": "Notas clínicas adicionales, observaciones o hos...",
+      "addNotes": "Añadir notas",
+      "notesHelper": "Las notas se incluirán en el proceso de generación de la nota SOAP.",
+      "fallbackNotesPlaceholder": "Notas clínicas, provocación del dolor, restricciones de movilidad...",
+      "generatingSoap": "Generando nota SOAP...",
+      "generateSoap": "Generar nota SOAP",
+      "progressText": "Progreso: {{completed}} de {{total}} pruebas documentadas ({{percent}}%)"
     },
     "visit": {
       "visitTypeLabel": "Tipo de visita",
@@ -60,6 +88,22 @@
       "followupNotesDesc": "Actualiza según respuesta del paciente, progreso, contratiempos y cambios de hoy.",
       "initialNotesDesc": "Graba, escribe o pega tus observaciones clínicas.",
       "followupContextHint": "En función de la valoración inicial y sesiones anteriores."
+    },
+    "homeProgram": {
+      "allDone": "Todo hecho",
+      "includedInFollowUp": "Incluido en seguimiento — clic para desmarcar",
+      "checkToInclude": "Marcar para incluir en este seguimiento",
+      "notesLabel": "Notas (dictadas o escritas)",
+      "notesPlaceholder": "Añadir notas (dictadas o escritas)...",
+      "newExercisePlaceholder": "Nuevo ejercicio (ej. Movilidad lumbar, Activación del core)"
+    },
+    "treatment": {
+      "performedInClinic": "Realizado en clínica hoy — clic para desmarcar",
+      "editItem": "Editar elemento",
+      "removeItem": "Eliminar elemento",
+      "notesLabel": "Notas (dictadas o escritas)",
+      "notesPlaceholder": "Añadir notas (dictadas o escritas)...",
+      "newTreatmentPlaceholder": "Nuevo tratamiento (ej. Terapia manual, Ejercicio)"
     },
     "soapTab": {
       "initialAssessmentComplete": "Valoración inicial lista",

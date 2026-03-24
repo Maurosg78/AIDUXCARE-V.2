@@ -312,7 +312,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       {visitType === 'follow-up' && !todayFocusBlockRenderedByParent && todayFocus.length === 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
-            Follow-up Conversation
+            {t('workflow.analysis.followUpConversation')}
           </h2>
           <p className="text-sm text-blue-700 mb-3">
             Record your conversation with the patient about their progress since last visit. 
@@ -438,7 +438,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                               <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
                             )}
                             {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
-                            {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                            {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">{t('workflow.analysis.suggestedAction', { action: suggestedAction })}</p>}
                           </div>
                         </div>
 
@@ -554,7 +554,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                       }`}
                     >
-                      {hasReferralStop ? 'Generate Referral' : 'Confirm decisions and proceed to SOAP'}
+                      {hasReferralStop ? t('workflow.analysis.generateReferralReport') : t('workflow.analysis.confirmDecisions')}
                     </button>
                   );
                 })()}
@@ -564,7 +564,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           </>
         ) : (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-            Generate your SOAP note in the Documentation section below. No separate analysis step — follow-up uses baseline, treatments, and clinical notes only.
+            {t('workflow.analysis.generateSoapHint')}
           </div>
         )
       ) : niagaraResults && interactiveResults ? (
@@ -603,7 +603,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                             <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
                           )}
                           {evidence && <p className="mt-1 text-xs text-slate-600">{evidence}</p>}
-                          {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">Suggested: {suggestedAction}</p>}
+                          {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">{t('workflow.analysis.suggestedAction', { action: suggestedAction })}</p>}
                         </div>
                       </div>
 
@@ -694,7 +694,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
               {Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop') && (
                 <div className="mt-3 p-3 rounded-lg bg-red-100 border border-red-300 text-xs text-red-800 font-medium">
-                  ⛔ A medical referral report will be generated. Physiotherapy treatment will be paused pending specialist response.
+                  {t('workflow.analysis.referralWarning')}
                 </div>
               )}
 
