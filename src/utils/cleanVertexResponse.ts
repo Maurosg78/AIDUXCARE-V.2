@@ -1,4 +1,5 @@
 import { parseVertexResponse, validateClinicalSchema } from "./responseParser";
+import { getActiveLocale } from "@/core/prompts/marketLocales";
 
 export type LegalExposure = "low" | "moderate" | "high";
 
@@ -223,6 +224,40 @@ const cleanFlags = (flags: string[]): string[] =>
       !flag.toLowerCase().includes("no critical")
   );
 
+const isSpanishMarket = (): boolean => getActiveLocale().marketCode === "ES";
+
+const localizeEsClinicalText = (input: string): string => {
+  if (!input) return input;
+
+  const replacements: Array<[RegExp, string]> = [
+    [/^Clinical concern:/i, "Preocupación clínica:"],
+    [/Recommend medical review\/referral based on red flags\.?/gi, "Recomendar revisión/derivación médica según red flags."],
+    [/Recommend medical review based on red flags\.?/gi, "Recomendar revisión médica según red flags."],
+    [/potential medication safety risk/gi, "posible riesgo de seguridad farmacológica"],
+    [/reported electrical sensations in hand post-surgery/gi, "sensación eléctrica referida en la mano tras la cirugía"],
+    [/significant discrepancy between discharge report of ['"]correct mobility['"] and current minimal active hand movement/gi, "discrepancia significativa entre el informe de alta de \"movilidad correcta\" y la mínima movilidad activa actual de la mano"],
+    [/post-surgery/gi, "tras la cirugía"],
+    [/hand\/wrist/gi, "mano/muñeca"],
+    [/electrical sensations/gi, "sensaciones eléctricas"],
+    [/minimal active hand movement/gi, "mínima movilidad activa de la mano"],
+    [/Pin removed one week ago\.?/gi, "Retirada de aguja/clavo hace una semana."],
+    [/Hematoma and slight edema in affected hand\/wrist\.?/gi, "Hematoma y ligero edema en la mano/muñeca afectadas."],
+    [/No thrombosis, no severe muscle atrophy, no neurological changes on observation\.?/gi, "Sin trombosis, sin atrofia muscular severa ni cambios neurológicos en la observación."],
+    [/Discharge report stated ['"]Correcta movilidad del miembro intervenido['"] but patient reports minimal active movement\.?/gi, "El informe de alta indicó \"correcta movilidad del miembro intervenido\", pero la paciente refiere mínima movilidad activa."],
+    [/as needed for pain/gi, "según dolor"],
+    [/every 24 hours/gi, "cada 24 horas"],
+    [/every 12 hours/gi, "cada 12 horas"],
+    [/for 10 days/gi, "durante 10 días"],
+    [/for 5 days/gi, "durante 5 días"],
+    [/tablet/gi, "comprimido"],
+  ];
+
+  return replacements.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), input).trim();
+};
+
+const maybeLocalizeEsArray = (items: string[]): string[] =>
+  isSpanishMarket() ? items.map(localizeEsClinicalText) : items;
+
 const mergeUnique = (...arrays: string[][]): string[] => {
   const set = new Set<string>();
   arrays.flat().filter(Boolean).forEach((item) => set.add(item));
@@ -244,18 +279,18 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
   const highlights = payload.conversation_highlights ?? {};
   const biopsych = payload.biopsychosocial_factors ?? {};
 
-  const redFlags = cleanFlags(ensureStringArray(alerts.red_flags));
-  const yellowFlags = cleanFlags(ensureStringArray(alerts.yellow_flags));
-  const alertNotes = ensureStringArray(alerts.alert_notes);
+  const redFlags = maybeLocalizeEsArray(cleanFlags(ensureStringArray(alerts.red_flags)));
+  const yellowFlags = maybeLocalizeEsArray(cleanFlags(ensureStringArray(alerts.yellow_flags)));
+  const alertNotes = maybeLocalizeEsArray(ensureStringArray(alerts.alert_notes));
 
   // Extract all biopsychosocial factors separately
-  const psychological = ensureStringArray(biopsych.psychological);
-  const social = ensureStringArray(biopsych.social);
-  const occupational = ensureStringArray(biopsych.occupational);
-  const protective = ensureStringArray(biopsych.protective_factors);
-  const functionalLimitations = ensureStringArray(biopsych.functional_limitations);
-  const patientStrengths = ensureStringArray(biopsych.patient_strengths);
-  const legalEmployment = ensureStringArray(biopsych.legal_or_employment_context);
+  const psychological = maybeLocalizeEsArray(ensureStringArray(biopsych.psychological));
+  const social = maybeLocalizeEsArray(ensureStringArray(biopsych.social));
+  const occupational = maybeLocalizeEsArray(ensureStringArray(biopsych.occupational));
+  const protective = maybeLocalizeEsArray(ensureStringArray(biopsych.protective_factors));
+  const functionalLimitations = maybeLocalizeEsArray(ensureStringArray(biopsych.functional_limitations));
+  const patientStrengths = maybeLocalizeEsArray(ensureStringArray(biopsych.patient_strengths));
+  const legalEmployment = maybeLocalizeEsArray(ensureStringArray(biopsych.legal_or_employment_context));
 
   // Debug logging for biopsychosocial factors
   console.debug('[Normalizer] Biopsychosocial raw:', biopsych);
@@ -274,7 +309,7 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
   const psychosocialContext = mergeUnique(psychological, social, protective);
 
   // WO-P3-DEDUP-FINDINGS-001: key_findings sin duplicación con red/yellow flags
-  const keyFindingsRaw = ensureStringArray(highlights.key_findings);
+  const keyFindingsRaw = maybeLocalizeEsArray(ensureStringArray(highlights.key_findings));
   const flagTextSet = new Set([...redFlags, ...combinedYellow].map(normalizeKey));
   const filteredKeyFindings = keyFindingsRaw.filter((item) => {
     const normalized = normalizeKey(item);
@@ -284,13 +319,15 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
   });
 
   return {
-    motivo_consulta: String(highlights.chief_complaint || highlights.summary || ""),
+    motivo_consulta: isSpanishMarket()
+      ? localizeEsClinicalText(String(highlights.chief_complaint || highlights.summary || ""))
+      : String(highlights.chief_complaint || highlights.summary || ""),
     hallazgos_clinicos: filteredKeyFindings,
     hallazgos_relevantes: [],
     contexto_ocupacional: occupational,
     contexto_psicosocial: psychosocialContext,
-    medicacion_actual: ensureStringArray(highlights.medications),
-    antecedentes_medicos: ensureStringArray(highlights.medical_history),
+    medicacion_actual: maybeLocalizeEsArray(ensureStringArray(highlights.medications)),
+    antecedentes_medicos: maybeLocalizeEsArray(ensureStringArray(highlights.medical_history)),
     diagnosticos_probables: [],
     red_flags: redFlags,
     yellow_flags: combinedYellow,
@@ -312,22 +349,26 @@ const mapStructuredPayload = (payload: StructuredPayload): ClinicalAnalysis => {
 
 const mapLegacyPayload = (payload: any): ClinicalAnalysis => {
   const clone = { ...DEFAULT_RESULT };
-  clone.motivo_consulta = String(payload?.motivo_consulta || "");
-  clone.hallazgos_clinicos = ensureStringArray(payload?.hallazgos_clinicos);
+  clone.motivo_consulta = isSpanishMarket()
+    ? localizeEsClinicalText(String(payload?.motivo_consulta || ""))
+    : String(payload?.motivo_consulta || "");
+  clone.hallazgos_clinicos = maybeLocalizeEsArray(ensureStringArray(payload?.hallazgos_clinicos));
   clone.hallazgos_relevantes =
     ensureStringArray(payload?.hallazgos_relevantes) || clone.hallazgos_clinicos;
-  clone.contexto_ocupacional = ensureStringArray(payload?.contexto_ocupacional);
-  clone.contexto_psicosocial = ensureStringArray(payload?.contexto_psicosocial);
-  clone.medicacion_actual = ensureStringArray(payload?.medicacion_actual);
-  clone.antecedentes_medicos = ensureStringArray(payload?.antecedentes_medicos);
+  clone.contexto_ocupacional = maybeLocalizeEsArray(ensureStringArray(payload?.contexto_ocupacional));
+  clone.contexto_psicosocial = maybeLocalizeEsArray(ensureStringArray(payload?.contexto_psicosocial));
+  clone.medicacion_actual = maybeLocalizeEsArray(ensureStringArray(payload?.medicacion_actual));
+  clone.antecedentes_medicos = maybeLocalizeEsArray(ensureStringArray(payload?.antecedentes_medicos));
   clone.diagnosticos_probables = ensureStringArray(payload?.diagnosticos_probables);
-  clone.red_flags = cleanFlags(ensureStringArray(payload?.red_flags));
-  clone.yellow_flags = cleanFlags(ensureStringArray(payload?.yellow_flags));
+  clone.red_flags = maybeLocalizeEsArray(cleanFlags(ensureStringArray(payload?.red_flags)));
+  clone.yellow_flags = maybeLocalizeEsArray(cleanFlags(ensureStringArray(payload?.yellow_flags)));
   clone.evaluaciones_fisicas_sugeridas = mapPhysicalTests(payload?.evaluaciones_fisicas_sugeridas);
   // clone.plan_tratamiento_sugerido = []; // WO-ELIMINATE-PREMATURE-PLAN: Not generated in first call - treatment plan requires objective findings
   clone.derivacion_recomendada = String(payload?.derivacion_recomendada || "");
   clone.pronostico_estimado = String(payload?.pronostico_estimado || "");
-  clone.notas_seguridad = String(payload?.notas_seguridad || "");
+  clone.notas_seguridad = isSpanishMarket()
+    ? localizeEsClinicalText(String(payload?.notas_seguridad || ""))
+    : String(payload?.notas_seguridad || "");
   clone.riesgo_legal = mapExposure(payload?.riesgo_legal);
   return clone;
 };

@@ -30,6 +30,47 @@ const promptRedFlagRules = isSpanishMarket
 - ✅ T4: Wording compliance ("never diagnose" dominant): Always phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags." NOT as diagnostic statements like "Medication overdose risk... exceeding safe limits... urgent referral." Use concern/review language, not definitive clinical judgments.
 - Example correct phrasing: "Clinical concern: potential medication safety risk (NSAIDs + SSRIs interaction detected). Recommend medical review/referral based on red flags." NOT "Medication overdose risk... exceeding safe limits."`;
 
+const DEFAULT_INSTRUCTIONS_INITIAL_ES = `Analiza la transcripción como asistente de razonamiento clínico para un fisioterapeuta en España. Expón variables clínicas, patrones y correlaciones documentadas en la presentación del paciente. Presenta consideraciones clínicas completas sin diagnosticar ni prescribir. Recomienda valoraciones de fisioterapia basadas en evidencia como consideraciones, no como indicaciones. Resume los factores biopsicosociales de forma estructurada. Señala cuándo procede revisión médica, pruebas complementarias o derivación por exceder el ámbito fisioterapéutico o por riesgo para la seguridad.
+
+REGLAS CRÍTICAS DE IDIOMA:
+- Toda la salida debe estar en español clínico formal (es-ES).
+- No mezcles inglés en red flags, hallazgos, medicación ni pruebas.
+- Si el documento adjunto está en otro idioma, traduce el contenido clínico relevante al español manteniendo exactitud clínica.
+- En medicación, conserva el nombre comercial o principio activo original si procede, pero expresa pauta y contexto en español.
+
+REGLAS DE DISTRIBUCIÓN:
+- chief_complaint: motivo principal de consulta.
+- key_findings: hallazgos clínicos únicos no repetidos en chief_complaint.
+- medical_history: antecedentes y eventos previos.
+- medications: lista estructurada de medicación actual en español clínico.
+- red_flags: riesgos clínicos con lenguaje de preocupación clínica y recomendación de revisión/derivación médica.
+- yellow_flags: factores psicosociales o contextuales.
+- summary: síntesis breve en una sola frase sin repetir todo lo anterior.
+
+ESTILO CONCISO:
+- Objetivo 8-12 palabras por ítem, máximo 15.
+- Formato preferido: "[Hallazgo clínico] - [implicación], [acción]".
+- Evita frases diagnósticas definitivas. Usa "preocupación clínica", "requiere valoración" o "recomendar revisión".`;
+
+const DEFAULT_INSTRUCTIONS_FOLLOWUP_ES = `Analiza esta visita de seguimiento como asistente de razonamiento clínico para un fisioterapeuta en España. Céntrate en evolución clínica, continuidad asistencial y cambios respecto a la línea basal. Expón respuesta al tratamiento, progresión sintomática, cambios funcionales, adherencia, nuevas incidencias y modificaciones biopsicosociales. Recomienda valoraciones de fisioterapia sólo si son necesarias para control evolutivo o por nuevas preocupaciones clínicas. Señala cuándo procede revisión médica o derivación por seguridad o por exceder el ámbito fisioterapéutico.
+
+REGLAS CRÍTICAS DE IDIOMA:
+- Toda la salida debe estar en español clínico formal (es-ES).
+- No mezcles inglés en red flags, hallazgos, medicación ni pruebas.
+- Si el documento adjunto está en otro idioma, traduce el contenido clínico relevante al español manteniendo exactitud clínica.
+- En medicación, conserva el nombre original si procede, pero expresa dosis, frecuencia y duración en español.
+
+REGLAS DE DISTRIBUCIÓN:
+- Céntrate en CAMBIOS desde la última visita, sin repetir la línea basal completa.
+- key_findings: nuevos hallazgos o cambios de estado únicamente.
+- summary: síntesis de evolución, no una repetición del caso inicial.
+- red_flags: usa lenguaje de preocupación clínica y recomendación de revisión/derivación médica.
+
+ESTILO CONCISO:
+- Objetivo 8-12 palabras por ítem, máximo 15.
+- Formato preferido: "[Hallazgo clínico] - [implicación], [acción]".
+- Evita lenguaje diagnóstico definitivo.`;
+
 export interface ClinicalAttachment {
   fileName: string;
   fileType: string;
@@ -536,10 +577,10 @@ const buildAttachmentsSection = (attachments?: ClinicalAttachment[]): string => 
         ? '- Si el documento contiene medicación al alta o tratamiento activo, incluye TODA la lista claramente presente\n'
         : '- If the document contains discharge or active medications, include the FULL clearly documented list\n';
       const medicationLineTwo = isSpanishMarket
-        ? '- Copia nombre, dosis, frecuencia y duración exactamente como aparezcan cuando estén disponibles\n'
+        ? '- Normaliza la pauta al español clínico: "nombre, dosis, frecuencia, duración" cuando esté disponible\n'
         : '- Copy name, dose, frequency, and duration exactly as documented when available\n';
       const medicationLineThree = isSpanishMarket
-        ? '- No omitas medicamentos claramente presentes en el texto extraído\n\n'
+        ? '- No omitas medicamentos claramente presentes en el texto extraído y no dejes instrucciones de pauta en inglés\n\n'
         : '- Do not omit medications that are clearly present in the extracted text\n\n';
 
       section += `\n${extractedLabel}\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
@@ -593,13 +634,21 @@ export const buildCanadianPrompt = ({
   const validatedPatientContext = validatePatientContext(contextoPaciente, professionalProfile);
 
   // Use follow-up specific instructions if visit type is follow-up
-  const defaultInstructions = visitType === 'follow-up'
-    ? DEFAULT_INSTRUCTIONS_FOLLOWUP
-    : DEFAULT_INSTRUCTIONS_INITIAL;
+  const defaultInstructions = isSpanishMarket
+    ? visitType === 'follow-up'
+      ? DEFAULT_INSTRUCTIONS_FOLLOWUP_ES
+      : DEFAULT_INSTRUCTIONS_INITIAL_ES
+    : visitType === 'follow-up'
+      ? DEFAULT_INSTRUCTIONS_FOLLOWUP
+      : DEFAULT_INSTRUCTIONS_INITIAL;
 
-  const visitTypeContext = visitType === 'follow-up'
-    ? '\n[Visit Type: FOLLOW-UP - Focus on progress assessment and clinical continuity]\n'
-    : '\n[Visit Type: INITIAL ASSESSMENT - Comprehensive clinical evaluation]\n';
+  const visitTypeContext = isSpanishMarket
+    ? visitType === 'follow-up'
+      ? '\n[Tipo de visita: SEGUIMIENTO - centrarse en evolución clínica y continuidad asistencial]\n'
+      : '\n[Tipo de visita: VALORACIÓN INICIAL - evaluación clínica integral]\n'
+    : visitType === 'follow-up'
+      ? '\n[Visit Type: FOLLOW-UP - Focus on progress assessment and clinical continuity]\n'
+      : '\n[Visit Type: INITIAL ASSESSMENT - Comprehensive clinical evaluation]\n';
 
   const attachmentsSection = buildAttachmentsSection(attachments);
 
