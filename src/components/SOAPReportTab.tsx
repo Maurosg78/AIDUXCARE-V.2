@@ -46,20 +46,21 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
   };
 
   const generateSubjective = () => {
+    const newline = '\n';
     let text = 'CHIEF COMPLAINT:\n';
     
     // Main symptoms
     if (analysisData?.entities) {
       const symptoms = analysisData.entities.filter(e => e.type === 'symptom');
       if (symptoms.length > 0) {
-        text += symptoms.map(s => `- ${s.text}`).join('\n');
+        text += symptoms.map(s => `- ${s.text}`).join(newline);
       }
     }
     
     // Psychosocial factors
     if (analysisData?.yellowFlags?.length > 0) {
       text += '\n\nCONTEXTUAL FACTORS:\n';
-      text += analysisData.yellowFlags.map(f => `- ${f}`).join('\n');
+      text += analysisData.yellowFlags.map(f => `- ${f}`).join(newline);
     }
     
     return text;
@@ -84,6 +85,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
   };
 
   const generateAssessment = () => {
+    const newline = '\n';
     let text = 'CLINICAL ASSESSMENT:\n';
     
     const redFlags = Array.isArray(analysisData?.redFlags) ? analysisData.redFlags : [];
@@ -101,7 +103,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
           }
           return '- Red flag detected';
         })
-        .join('\n');
+        .join(newline);
     }
     
     // Functional diagnosis
@@ -169,8 +171,17 @@ Date: ${new Date().toLocaleString()}
   };
 
   const handleCopy = () => {
-    const fullReport = Object.values(soapReport).join('\n\n');
-    navigator.clipboard.writeText(fullReport);
+    const newline = '\n';
+    const sectionBreak = `${newline}${newline}`;
+    const soapSections = [
+      soapReport.subjective ? `SUBJETIVO:${newline}${soapReport.subjective}` : null,
+      soapReport.objective ? `OBJETIVO:${newline}${soapReport.objective}` : null,
+      soapReport.assessment ? `VALORACIÓN:${newline}${soapReport.assessment}` : null,
+      soapReport.plan ? `PLAN:${newline}${soapReport.plan}` : null,
+    ];
+    const filteredSections = soapSections.filter(Boolean);
+    const formattedSoapText = filteredSections.join(sectionBreak);
+    navigator.clipboard.writeText(formattedSoapText);
   };
 
   return (
