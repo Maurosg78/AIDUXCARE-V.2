@@ -1,3 +1,5 @@
+import { isSpainPilot } from '../pilotDetection';
+
 /**
  * AiduxCare Market Locale Configuration
  * 
@@ -126,8 +128,8 @@ export function getActiveLocale(): PromptLocale {
     return MARKET_LOCALES.CA;
   }
 
-  // Explicit Spain pilot env flag (set by GitHub Actions deploy-pilot workflow)
-  if (import.meta.env.VITE_ENABLE_ES_PILOT === 'true') {
+  // Reuse the same ES pilot detection used by the UI and jurisdiction flow.
+  if (isSpainPilot()) {
     return MARKET_LOCALES.ES;
   }
 
