@@ -138,6 +138,10 @@ When writing the PLAN section, you MUST divide it into two clearly labeled secti
 1. IN-CLINIC TREATMENT – interventions performed during the clinical session (manual therapy, supervised exercises, modalities, gait training, etc.).
 2. HOME EXERCISE PROGRAM (HEP) – exercises, education, or activities prescribed for the patient to perform independently at home.
 Do not mix items between sections. Use bullet points only.
+- Each intervention must be patient-specific and linked to documented impairments, functional limitations, or treatment response from this session.
+- Include evolution criteria when supported by the clinical data: pain target (NRS), ROM/strength target, functional milestone, load tolerance, or review criterion.
+- Use evidence-based physiotherapy interventions appropriate to the documented condition. Do not invent evidence levels — only cite if present in the clinical context.
+- If prior treatment response is documented, state explicitly how the plan progresses, regresses, or maintains based on that response.
 
 STRUCTURED PLAN FORMAT (REQUIRED) – exact headers:
 PLAN:
@@ -329,6 +333,10 @@ When writing the PLAN section, you MUST divide it into two clearly labeled secti
 1. IN-CLINIC TREATMENT – interventions performed during the clinical session.
 2. HOME EXERCISE PROGRAM (HEP) – exercises or activities prescribed for the patient to perform at home.
 Do not mix items between sections. Use bullet points only.
+- Each intervention must be patient-specific and linked to documented impairments, functional limitations, or treatment response from this session.
+- Include evolution criteria when supported by the clinical data: pain target (NRS), ROM/strength target, functional milestone, load tolerance, or review criterion.
+- Use evidence-based physiotherapy interventions appropriate to the documented condition. Do not invent evidence levels — only cite if present in the clinical context.
+- If prior treatment response is documented, state explicitly how the plan progresses, regresses, or maintains based on that response.
 
 STRUCTURED PLAN FORMAT (REQUIRED) – exact headers:
 PLAN:
@@ -777,4 +785,3 @@ export function buildSOAPPromptFromOrganized(
 ): string {
   return buildSOAPPrompt(organized.context, options);
 }
-
