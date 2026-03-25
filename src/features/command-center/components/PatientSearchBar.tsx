@@ -47,7 +47,7 @@ export const PatientSearchBar: React.FC = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setShowResults(true)}
-          onBlur={() => setTimeout(() => setShowResults(false), 150)}
+          onBlur={() => setTimeout(() => setShowResults(false), 300)}
           className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-primary-blue focus:border-primary-blue/50 font-apple text-slate-900 placeholder:text-slate-400"
           aria-label={t('shell.commandCenter.searchPatient')}
         />
@@ -66,7 +66,10 @@ export const PatientSearchBar: React.FC = () => {
                 <li key={patient.id} className="px-2">
                   <button
                     type="button"
-                    onClick={() => handleSelect(patient)}
+                    onMouseDown={(mouseEvent) => {
+                      mouseEvent.preventDefault();
+                      handleSelect(patient);
+                    }}
                     className="w-full px-4 py-3 min-h-[56px] rounded-lg text-left hover:bg-slate-50 active:bg-slate-100 font-apple text-slate-900 flex flex-col justify-center"
                   >
                     <span className="block text-sm font-medium leading-snug">
