@@ -11,7 +11,7 @@ interface NoteDetailPageProps {
 
 /**
  * Note Detail — loads a saved note by id and displays SOAP content (read-only).
- * Used when "View SOAP" from Patient History points to a consultation/note.
+ * Used when "View SOAP" from the history view points to a consultation/note.
  */
 export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
   const { t } = useTranslation();

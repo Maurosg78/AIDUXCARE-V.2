@@ -142,7 +142,7 @@ export interface AnalysisTabProps {
   hideHeader?: boolean;
   // WO-FU-PLAN-SPLIT-01: Si true, el parent ya muestra In-Clinic + HEP; no duplicar "Today's treatment session"
   todayFocusBlockRenderedByParent?: boolean;
-  /** When resume failed (session not found), show links to view note or go back to Patient History */
+  /** When resume failed (session not found), show recovery links to the note or history view. */
   resumeLoadFailed?: { sessionId: string; patientId: string } | null;
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
   selectedRedFlagIds: string[];
@@ -380,7 +380,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 href={`/patients/${resumeLoadFailed.patientId}/history`}
                 className="text-brand-in-600 hover:text-brand-in-700 font-medium underline"
               >
-                Back to Patient History
+                {t('workflow.analysis.backToPatientHistory')}
               </a>
             </div>
           )}
@@ -766,5 +766,4 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
 };
 
 export default AnalysisTab;
-
 

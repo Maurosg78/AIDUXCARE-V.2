@@ -16,6 +16,7 @@
  */
 
 import { isSpainPilot } from '@/core/pilotDetection';
+import { MARKET_LOCALES } from '../prompts/marketLocales';
 import type { ClinicalJurisdiction } from '../consent/consentJurisdiction';
 import type { ConsentTextVersion } from '../consent/consentLanguagePolicy';
 
@@ -131,9 +132,8 @@ const JURISDICTIONS: Record<JurisdictionId, JurisdictionConfig> = {
     },
 
     soapReview: {
-      // Neutral formulation: regulation rests on colegios autonómicos, legislación sanitaria nacional y normativa europea (GDPR, AI Act). CGCFE coordina colegios, no es autoridad reguladora directa.
-      frameworkLabel: 'normativa legal europea, española y de la comunidad autónoma correspondiente',
-      institutionName: 'normativa aplicable y colegio profesional de tu comunidad autónoma',
+      frameworkLabel: MARKET_LOCALES.ES.legalFramework,
+      institutionName: MARKET_LOCALES.ES.regulatoryBody,
     },
 
     clinicalDocuments: {
@@ -222,5 +222,4 @@ export function getSoapReviewConfig(): JurisdictionSoapReviewConfig {
   const config = getJurisdictionConfig(id);
   return config.soapReview;
 }
-
 

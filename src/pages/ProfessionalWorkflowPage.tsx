@@ -369,7 +369,7 @@ const ProfessionalWorkflowPage = () => {
   const [savingSession, setSavingSession] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  /** When resume=true fails (session not found), show recovery links (View note / Back to Patient History) */
+  /** When resume=true fails (session not found), show recovery links (View note / Back to history view). */
   const [resumeLoadFailed, setResumeLoadFailed] = useState<{ sessionId: string; patientId: string } | null>(null);
   const setAnalysisErrorWithRecovery = useCallback((err: string | null) => {
     setAnalysisError(err);

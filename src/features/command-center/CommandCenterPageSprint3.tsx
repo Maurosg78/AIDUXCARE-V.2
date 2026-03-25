@@ -78,7 +78,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const inProgressSessions = useInProgressSessions();
   const { patients, refresh: refreshPatients } = usePatientsList();
 
-  // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from Patient History with "New ongoing/assessment" → open Ongoing modal
+  // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from the history view with "New ongoing/assessment" → open Ongoing modal
   useEffect(() => {
     const state = location.state as { openOngoingForPatientId?: string } | null;
     const id = state?.openOngoingForPatientId;
@@ -445,7 +445,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex flex-col gap-8">
-          {/* WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: Patient search bar — search → select → Patient History */}
+          {/* WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: Patient search bar — search → select → history view */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
             <h2 className="text-sm font-medium text-slate-700 mb-3 font-apple">{t('shell.commandCenter.searchPatient')}</h2>
             <PatientSearchBar />

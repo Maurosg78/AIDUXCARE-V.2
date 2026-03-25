@@ -25,7 +25,8 @@
       "continueToEvaluation": "Continue to physical evaluation",
       "noTestsSelectedWarning": "No physical tests selected. You can continue and add tests in the evaluation step.",
       "runAnalysisEmptyState": "Run the analysis to unlock AI insights, patient safety checks, and suggested physical evaluations.",
-      "generateReferralReport": "Generate Medical Referral Report"
+      "generateReferralReport": "Generate Medical Referral Report",
+      "backToPatientHistory": "Back to Patient History"
     },
     "evaluation": {
       "addTests": "Add Tests",
@@ -587,6 +588,51 @@
       "errorEmailInvalid": "Invalid email",
       "errorBirthDateRequired": "Date of birth is required",
       "errorSubmit": "Failed to create patient. Please try again."
+    },
+    "patientDashboard": {
+      "invalidPatientId": "Invalid patient ID",
+      "loadErrorTitle": "Error loading patient",
+      "totalVisits": "Total Visits",
+      "completed": "Completed",
+      "initialEval": "Initial Eval",
+      "never": "Never",
+      "lastVisit": "Last Visit",
+      "visitHistory": "Visit History",
+      "startNewEvaluation": "Start New Evaluation",
+      "initialEvaluation": "Initial Evaluation",
+      "followUpVisit": "Follow-up Visit",
+      "pendingClosure": "Pending Closure",
+      "closed": "Closed",
+      "signed": "Signed",
+      "chiefComplaint": "Chief Complaint",
+      "assessment": "Assessment",
+      "plan": "Plan",
+      "viewSoap": "View SOAP",
+      "noVisitHistoryFound": "No visit history found",
+      "noVisitHistoryBody": "Initial evaluations and follow-up visits will appear here",
+      "activeTreatmentPlan": "Active Treatment Plan",
+      "shortTermGoals": "Short-term Goals",
+      "longTermGoals": "Long-term Goals",
+      "clinicalActions": "Clinical actions",
+      "followUp": "Follow-up",
+      "ongoingPatient": "Ongoing patient",
+      "soapNote": "SOAP Note",
+      "sessionDate": "Session date",
+      "soapSections": {
+        "subjective": "Subjective",
+        "objective": "Objective",
+        "assessment": "Assessment",
+        "plan": "Plan"
+      }
+    },
+    "workflowSelector": {
+      "followUpVisit": "Follow-up Visit",
+      "optimizedWorkflowEnabled": "Optimized workflow enabled",
+      "initialEvaluation": "Initial Evaluation",
+      "fullAnalysisWorkflow": "Full analysis workflow",
+      "followUpSuggested": "Follow-up Suggested",
+      "followUpSuggestedBody": "This appears to be a follow-up visit. Switch to optimized workflow for faster documentation?",
+      "workflowLabel": "Workflow"
     },
     "startSessionModal": {
       "whoIsPatient": "Who is the patient?",

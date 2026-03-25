@@ -188,7 +188,7 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
             /* PATIENT SELECTED: WO-UX-01 — Both CTAs always visible; primary action on the RIGHT (left→right flow) */
             <div className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1. LEFT: Patient History (secondary — consult first) */}
+                {/* 1. LEFT: History view (secondary — consult first) */}
                 <div className="bg-white border border-gray-200/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col min-h-[120px] order-2 md:order-1">
                   <button
                     onClick={() => handleCardToggle('history')}
@@ -336,5 +336,4 @@ export const WorkWithPatientsPanel: React.FC<WorkWithPatientsPanelProps> = ({
     </div>
   );
 };
-
 

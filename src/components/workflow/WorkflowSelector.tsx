@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Info, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { detectFollowUp, explainDetectionResult, type FollowUpDetectionResult, type FollowUpDetectionInput } from '../../services/followUpDetectionService';
 import { routeWorkflow, type WorkflowRoute } from '../../services/workflowRouterService';
@@ -36,6 +37,7 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
   onWorkflowSelected,
   onManualOverride,
 }) => {
+  const { t } = useTranslation();
   const [detectionResult, setDetectionResult] = useState<FollowUpDetectionResult | null>(null);
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
   const [isDetecting, setIsDetecting] = useState(true);
@@ -151,8 +153,8 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Follow-up Visit</h3>
-                <p className="text-xs text-gray-600">Optimized workflow enabled</p>
+                <h3 className="font-semibold text-gray-900">{t('workflowSelector.followUpVisit')}</h3>
+                <p className="text-xs text-gray-600">{t('workflowSelector.optimizedWorkflowEnabled')}</p>
               </div>
             </div>
           ) : (
@@ -161,8 +163,8 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
                 <Info className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Initial Evaluation</h3>
-                <p className="text-xs text-gray-600">Full analysis workflow</p>
+                <h3 className="font-semibold text-gray-900">{t('workflowSelector.initialEvaluation')}</h3>
+                <p className="text-xs text-gray-600">{t('workflowSelector.fullAnalysisWorkflow')}</p>
               </div>
             </div>
           )}
@@ -192,9 +194,9 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-yellow-900">Follow-up Suggested</p>
+                <p className="text-sm font-medium text-yellow-900">{t('workflowSelector.followUpSuggested')}</p>
                 <p className="text-xs text-yellow-700 mt-1">
-                  This appears to be a follow-up visit. Switch to optimized workflow for faster documentation?
+                  {t('workflowSelector.followUpSuggestedBody')}
                 </p>
               </div>
             </div>
@@ -204,7 +206,7 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
 
       {/* Manual Override Controls */}
       <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-600">Workflow:</span>
+        <span className="text-xs text-gray-600">{t('workflowSelector.workflowLabel')}:</span>
         <div className="flex gap-2">
           <button
             onClick={() => handleManualOverride('initial')}
@@ -214,7 +216,7 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            Initial Evaluation
+            {t('workflowSelector.initialEvaluation')}
           </button>
           <button
             onClick={() => handleManualOverride('follow-up')}
@@ -274,5 +276,4 @@ export const WorkflowSelector: React.FC<WorkflowSelectorProps> = ({
 };
 
 export default WorkflowSelector;
-
 

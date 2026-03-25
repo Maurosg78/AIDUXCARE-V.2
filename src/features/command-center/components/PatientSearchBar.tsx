@@ -1,7 +1,7 @@
 /**
  * Patient Search Bar — WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1
  *
- * Visible search bar in Command Center. Search patient → select → navigate to Patient History.
+ * Visible search bar in Command Center. Search patient → select → navigate to the history view.
  * Uses usePatientsList + client-side filter (case-insensitive) — PatientService.searchPatients
  * uses Firestore prefix search which is case-sensitive and returns no results for "nova" vs "Nova".
  */
