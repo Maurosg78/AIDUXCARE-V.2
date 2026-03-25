@@ -434,6 +434,10 @@
     "notFoundFallback": "Nota no encontrada."
   },
   "shell": {
+    "patientHistory": "Historial del paciente",
+    "startInitialAssessment": "Iniciar evaluación inicial",
+    "initialAssessment": "Evaluación inicial",
+    "ongoingPatientTooltipDisabled": "Este paciente ya tiene sesiones en AiduxCare — usa Evaluación inicial o Seguimiento",
     "app": {
       "documentTitle": "AiDuxCare · Documentación clínica profesional"
     },

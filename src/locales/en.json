@@ -378,6 +378,10 @@
     "notFoundFallback": "Note not found."
   },
   "shell": {
+    "patientHistory": "Patient History",
+    "startInitialAssessment": "Start Initial Assessment",
+    "initialAssessment": "Initial Assessment",
+    "ongoingPatientTooltipDisabled": "This patient already has sessions in AiDuxCare — use Initial or Follow-up",
     "app": {
       "documentTitle": "AiDuxCare · Professional clinical documentation"
     },
