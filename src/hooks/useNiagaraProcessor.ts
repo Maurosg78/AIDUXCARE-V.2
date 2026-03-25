@@ -3,6 +3,7 @@ import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-fireba
 import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexResponse';
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import type { ClinicalAttachment } from '../core/ai/PromptFactory-Canada';
+import { resolveClinicalMarket } from '@/core/market/resolveClinicalMarket';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -44,6 +45,7 @@ export const useNiagaraProcessor = () => {
     setIsAnalyzing(true);
     try {
       const attachments = typeof payload === 'object' ? payload.attachments : undefined;
+      const resolvedMarket = resolveClinicalMarket();
       
       // Log attachments for debugging
       if (attachments && attachments.length > 0) {
@@ -60,11 +62,12 @@ export const useNiagaraProcessor = () => {
         timestamp,
         professionalProfile: typeof payload === 'object' ? payload.professionalProfile : undefined,
         visitType: typeof payload === 'object' ? payload.visitType : undefined,
-        attachments: attachments
+        attachments: attachments,
+        market: resolvedMarket.market,
       });
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);
-      const cleaned = normalizeVertexResponse(response);
+      const cleaned = normalizeVertexResponse(response, { market: resolvedMarket.market });
       console.log("Cleaned response:", cleaned);
       setNiagaraResults(cleaned);
       return cleaned;
