@@ -2,6 +2,7 @@ import { PromptFactory } from "../core/ai/PromptFactory-v3";
 import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
 import type { PhysicalExamResult } from "../types/vertex-ai";
 import { deidentify, reidentify, logDeidentification } from "./dataDeidentificationService";
+import { getActiveLocale } from "../core/prompts/marketLocales";
 
 type NiagaraProxyPayload = {
   text: string;
@@ -50,6 +51,25 @@ const sanitizeTranscript = (value: string): string => {
   }
   // Preserve the tail of the transcript (most recent dialogue) when truncating
   return collapsed.slice(collapsed.length - MAX_TRANSCRIPT_CHARS);
+};
+
+const buildAnalysisInstructions = (visitType: 'initial' | 'follow-up') => {
+  const activeLocale = getActiveLocale();
+  const isSpanishMarket = activeLocale.marketCode === 'ES';
+
+  if (isSpanishMarket) {
+    if (visitType === 'follow-up') {
+      return 'Analiza esta visita de seguimiento centrándote en la evolución clínica, la continuidad asistencial y los cambios respecto a la línea basal. Responde en español clínico formal (es-ES).';
+    }
+
+    return 'Analiza la transcripción y los documentos adjuntos para extraer información clínica relevante. Responde en español clínico formal (es-ES).';
+  }
+
+  if (visitType === 'follow-up') {
+    return 'Analyze this follow-up visit focusing on progress assessment and clinical continuity.';
+  }
+
+  return 'Analyze the following transcript and extract relevant clinical information.';
 };
 
 const callVertexWithPrompt = async (prompt: string, traceId: string) => {
@@ -183,15 +203,15 @@ export async function analyzeWithVertexProxy(payload: {
     const contextoPaciente = usePatientData 
       ? "Patient undergoing physiotherapy assessment" // Can include history if available
       : "Current session only - no historical data"; // Minimal context per consent
+    const normalizedVisitType = payload.visitType || 'initial';
+    const analysisInstructions = buildAnalysisInstructions(normalizedVisitType);
     
     const structuredPrompt = PromptFactory.create({
       contextoPaciente,
-      instrucciones: payload.visitType === 'follow-up' 
-        ? "Analyze this follow-up visit focusing on progress assessment and clinical continuity."
-        : "Analyze the following transcript and extract relevant clinical information.",
+      instrucciones: analysisInstructions,
       transcript: deidentifiedText, // Use de-identified transcript
       professionalProfile: payload.professionalProfile, // Pass professional profile
-      visitType: payload.visitType || 'initial', // Pass visit type for prompt customization
+      visitType: normalizedVisitType, // Pass visit type for prompt customization
       attachments: payload.attachments // Pass clinical attachments (PDFs, images, etc.)
     });
     finalPrompt = structuredPrompt;

@@ -4,6 +4,7 @@ import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
 import { useEditableResults } from '../hooks/useEditableResults';
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sortPhysicalTestsByImportance';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -23,6 +24,40 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   selectedRedFlagIds,
   redFlagsDetected = [],
 }) => {
+  const esPilot = isSpainPilot();
+  const ui = esPilot
+    ? {
+        followUpMessage: 'Genera la nota SOAP en la sección de documentación inferior. El seguimiento utiliza la línea basal, los tratamientos y las notas clínicas, sin bloques de análisis separados.',
+        medicoLegalTitle: 'Resumen médico-legal',
+        medicoLegalBody: 'Notas de cumplimiento y red flags seleccionados en el paso de análisis.',
+        redFlagSingle: '1 red flag seleccionada en el paso de análisis anterior.',
+        redFlagMultiple: (count: number) => `${count} red flags seleccionadas en el paso de análisis anterior.`,
+        conversationTitle: 'Resumen de la conversación',
+        conversationBody: 'Recoge motivo de consulta, hallazgos clave y medicación.',
+        selectAll: 'Seleccionar todo',
+        clear: 'Limpiar',
+        chiefComplaintTitle: 'Motivo de consulta y hallazgos clave',
+        addClinicalHighlight: 'Añadir hallazgo clínico...',
+        currentMedicationTitle: 'Medicación actual',
+        testsTitle: 'Pruebas físicas recomendadas',
+        testsBody: 'Selecciona las valoraciones que planeas realizar en la pestaña de evaluación.',
+      }
+    : {
+        followUpMessage: 'Generate your SOAP note in the Documentation section below. Follow-up uses baseline, treatments, and clinical notes only — no separate analysis sections.',
+        medicoLegalTitle: 'Medico-legal Summary',
+        medicoLegalBody: 'Compliance notes and red flags selected in the analysis step.',
+        redFlagSingle: '1 red flag selected in the analysis step above.',
+        redFlagMultiple: (count: number) => `${count} red flags selected in the analysis step above.`,
+        conversationTitle: 'Conversation Highlights',
+        conversationBody: 'Capture chief complaint, key findings, and medication.',
+        selectAll: 'Select all',
+        clear: 'Clear',
+        chiefComplaintTitle: 'Chief complaint & key findings',
+        addClinicalHighlight: 'Add clinical highlight...',
+        currentMedicationTitle: 'Current medication',
+        testsTitle: 'Recommended Physical Tests',
+        testsBody: 'Select the assessments you plan to run in the evaluation tab.',
+      };
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
 
   const physicalTests = useMemo(() => {
@@ -120,7 +155,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   if (visitType === 'follow-up') {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-        Generate your SOAP note in the Documentation section below. Follow-up uses baseline, treatments, and clinical notes only — no separate analysis sections.
+        {ui.followUpMessage}
       </div>
     );
   }
@@ -140,8 +175,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <AlertCircle className="w-4 h-4" />
           </span>
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Medico-legal Summary</h3>
-            <p className="text-xs text-slate-500">Compliance notes and red flags selected in the analysis step.</p>
+            <h3 className="text-base font-semibold text-slate-900">{ui.medicoLegalTitle}</h3>
+            <p className="text-xs text-slate-500">{ui.medicoLegalBody}</p>
           </div>
         </div>
 
@@ -163,8 +198,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           <div className="mt-3">
             <p className="text-xs font-medium text-slate-600">
               {selectedRedFlagIds.length === 1
-                ? '1 red flag selected in the analysis step above.'
-                : `${selectedRedFlagIds.length} red flags selected in the analysis step above.`}
+                ? ui.redFlagSingle
+                : ui.redFlagMultiple(selectedRedFlagIds.length)}
             </p>
           </div>
         )}
@@ -178,8 +213,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               <Heart className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Conversation Highlights</h3>
-              <p className="text-xs text-slate-500">Capture chief complaint, key findings, and medication.</p>
+              <h3 className="text-base font-semibold text-slate-900">{ui.conversationTitle}</h3>
+              <p className="text-xs text-slate-500">{ui.conversationBody}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -187,20 +222,20 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               onClick={() => handleSelectAll('clinical')}
               className="px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-[#e6ddff] to-[#d7ecff] text-slate-700 border border-transparent hover:shadow-sm"
             >
-              Select all
+              {ui.selectAll}
             </button>
             <button
               onClick={() => handleSelectNone('clinical')}
               className="px-3 py-1 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
             >
-              Clear
+              {ui.clear}
             </button>
           </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div>
-            <h4 className="font-medium text-sm text-slate-700 mb-2">Chief complaint & key findings</h4>
+            <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.chiefComplaintTitle}</h4>
             <div className="space-y-1">
               {editedResults.entities?.filter((e: any) => e.type === 'symptom').map((entity: any) => (
                 <EditableCheckbox
@@ -216,13 +251,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <div className="mt-2">
               <AddCustomItemButton
                 onAdd={(text) => addCustomItem('symptoms', text)}
-                placeholder="Add clinical highlight..."
+                placeholder={ui.addClinicalHighlight}
               />
             </div>
           </div>
 
           <div>
-            <h4 className="font-medium text-sm text-slate-700 mb-2">Current medication</h4>
+            <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
             <div className="space-y-1">
               {editedResults.entities?.filter((e: any) => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
                 .map((entity: any) => (
@@ -248,8 +283,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               <Activity className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Recommended Physical Tests</h3>
-              <p className="text-xs text-slate-500">Select the assessments you plan to run in the evaluation tab.</p>
+              <h3 className="text-base font-semibold text-slate-900">{ui.testsTitle}</h3>
+              <p className="text-xs text-slate-500">{ui.testsBody}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -257,13 +292,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               onClick={() => handleSelectAll('physical')}
               className="px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-[#e6ddff] to-[#d7ecff] text-slate-700 border border-transparent hover:shadow-sm"
             >
-              Select all
+              {ui.selectAll}
             </button>
             <button
               onClick={() => handleSelectNone('physical')}
               className="px-3 py-1 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
             >
-              Clear
+              {ui.clear}
             </button>
           </div>
         </div>

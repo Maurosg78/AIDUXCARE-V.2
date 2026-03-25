@@ -4,6 +4,31 @@ import { getPracticeAreaPromptHint } from '@/core/profile/normalizeProfessionalP
 import { getActiveLocale } from '../prompts/marketLocales';
 
 const activeLocale = getActiveLocale();
+const isSpanishMarket = activeLocale.marketCode === 'ES';
+const promptDateLocale = isSpanishMarket ? 'es-ES' : 'en-CA';
+const promptDateLabel = isSpanishMarket ? 'Fecha de hoy' : "Today's date";
+const promptRules = isSpanishMarket
+  ? 'Rules: es-ES. CONCISO: Objetivo 8-12 palabras por ítem, máximo 15. Lenguaje de exposición ("sugerir/considerar", NO "es/tiene"). No cites WSIB, Ontario, CPO, CAPR, CPA ni marcos canadienses.'
+  : 'Rules: EN-CA. CONCISE: Target 8-12 words/item, max 15 words. Exposure lang ("suggest/consider", NOT "is/has"). Cite provincial (WSIB). No fabrication.';
+const promptLanguageStandards = isSpanishMarket
+  ? `LANGUAGE STANDARDS (CGCFE Compliance):
+- Evita abreviaturas innecesarias: Usa lenguaje clínico completo y claro.
+- Terminología profesional: Usa terminología alineada con la documentación clínica en España y la práctica fisioterapéutica.
+- Claridad sobre brevedad: Prioriza claridad clínica y redacción profesional.`
+  : `LANGUAGE STANDARDS (CAPR/CPO Compliance):
+- AVOID abbreviations: Use full words (e.g., "range of motion" not "ROM", "activities of daily living" not "ADLs", "low back pain" not "LBP", "physical therapy" not "PT", "as soon as possible" not "ASAP"). Only use standard medical abbreviations when absolutely necessary and only after first defining them.
+- Professional terminology: Use complete, clear clinical language aligned with Canadian Physiotherapy Association (CPA) and College of Physiotherapists of Ontario (CPO) documentation standards.
+- Clarity over brevity: Prioritize clarity and professional communication over space-saving abbreviations.`;
+const promptMedicationRules = isSpanishMarket
+  ? '- Medications: Format as "nombre, dosis, frecuencia, duración" cuando aparezcan. No introduzcas advertencias canadienses ni marcos regulatorios canadienses. Si hay red flags farmacológicos, exprésalos en contexto clínico español usando lenguaje de revisión/derivación médica.'
+  : '- Medications: Format as "name, dosage (units), frequency, duration". Correct dosage errors (oral meds are mg, not g). Flag interactions (NSAIDs+SSRIs/SNRIs = red flag).';
+const promptRedFlagRules = isSpanishMarket
+  ? `- Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, clinically relevant medication interactions.
+- Usa lenguaje de preocupación clínica y revisión/derivación médica. No menciones "Canadian usage", marcos provinciales ni organismos canadienses.
+- Example correct phrasing: "Preocupación clínica: posible riesgo de seguridad farmacológica. Recomendar revisión médica según red flags."`
+  : `- Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). 
+- ✅ T4: Wording compliance ("never diagnose" dominant): Always phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags." NOT as diagnostic statements like "Medication overdose risk... exceeding safe limits... urgent referral." Use concern/review language, not definitive clinical judgments.
+- Example correct phrasing: "Clinical concern: potential medication safety risk (NSAIDs + SSRIs interaction detected). Recommend medical review/referral based on red flags." NOT "Medication overdose risk... exceeding safe limits."`;
 
 export interface ClinicalAttachment {
   fileName: string;
@@ -23,7 +48,7 @@ export interface CanadianPromptParams {
 }
 
 const PROMPT_HEADER = `${activeLocale.headerInstructions}
-Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
+${promptDateLabel}: ${new Date().toLocaleDateString(promptDateLocale)}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
 CORE: Expose clinical variables and patterns documented by the clinician. Never diagnose. Never prescribe or recommend treatment. Present clinical considerations as information for the physiotherapist, not as system decisions.
 SOURCE OF TRUTH CONSTRAINT:
@@ -34,12 +59,9 @@ All clinical statements must originate from:
 Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
 Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
-Rules: EN-CA. CONCISE: Target 8-12 words/item, max 15 words. Exposure lang ("suggest/consider", NOT "is/has"). Cite provincial (WSIB). No fabrication.
+${promptRules}
 
-LANGUAGE STANDARDS (CAPR/CPO Compliance):
-- AVOID abbreviations: Use full words (e.g., "range of motion" not "ROM", "activities of daily living" not "ADLs", "low back pain" not "LBP", "physical therapy" not "PT", "as soon as possible" not "ASAP"). Only use standard medical abbreviations when absolutely necessary and only after first defining them.
-- Professional terminology: Use complete, clear clinical language aligned with Canadian Physiotherapy Association (CPA) and College of Physiotherapists of Ontario (CPO) documentation standards.
-- Clarity over brevity: Prioritize clarity and professional communication over space-saving abbreviations.
+${promptLanguageStandards}
 
 CONCISION RULES (NEW):
 - Format: "[Clinical finding] - [implication], [action]" NOT "[Label]: [Long description], [more description]. [Full sentence action]."
@@ -97,10 +119,8 @@ EMPTY FIELD RULES (NEW):
   ✅ // Field omitted entirely
 
 CRITICAL INSTRUCTIONS:
-- Red flags: Unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags). 
-- ✅ T4: Wording compliance ("never diagnose" dominant): Always phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags." NOT as diagnostic statements like "Medication overdose risk... exceeding safe limits... urgent referral." Use concern/review language, not definitive clinical judgments.
-- Example correct phrasing: "Clinical concern: potential medication safety risk (NSAIDs + SSRIs interaction detected). Recommend medical review/referral based on red flags." NOT "Medication overdose risk... exceeding safe limits."
-- Medications: Format as "name, dosage (units), frequency, duration". Correct dosage errors (oral meds are mg, not g). Flag interactions (NSAIDs+SSRIs/SNRIs = red flag).
+${promptRedFlagRules}
+${promptMedicationRules}
 - Chief complaint: Capture precise anatomical location, quality, radiation, temporal evolution (onset/progression/triggers), aggravating/relieving factors, functional impact. Include intensity scales and active symptoms.
 - Physical tests: Consider anatomical structures, neural involvement (specify relevant spinal/neural levels when indicated by presentation, e.g., dermatomes, myotomes, specific spinal segments), joint integrity, functional capacity. Frame as "Consider assessing..." not "Perform...". CRITICAL: For EACH recommended physical test, attempt to search for and provide sensitivity/specificity values from reliable sources. See PHYSICAL TESTS SCORING REQUIREMENT below for detailed instructions. ANTI-HALLUCINATION: If no reliable source is available, use "unknown" rather than estimating or inventing values.
 
@@ -473,29 +493,82 @@ const buildAttachmentsSection = (attachments?: ClinicalAttachment[]): string => 
     return '';
   }
 
-  let section = '\n## CLINICAL ATTACHMENTS\n\n';
+  let sectionTitle = '\n## CLINICAL ATTACHMENTS\n\n';
+
+  if (isSpanishMarket) {
+    sectionTitle = '\n## DOCUMENTOS CLÍNICOS ADJUNTOS\n\n';
+  }
+
+  let section = sectionTitle;
 
   attachments.forEach((attachment, index) => {
-    section += `### Attachment ${index + 1}: ${attachment.fileName}\n`;
-    section += `Type: ${attachment.fileType}\n`;
+    const attachmentLabel = isSpanishMarket ? 'Adjunto' : 'Attachment';
+    const typeLabel = isSpanishMarket ? 'Tipo' : 'Type';
+    const pagesLabel = isSpanishMarket ? 'Páginas' : 'Pages';
+
+    section += `### ${attachmentLabel} ${index + 1}: ${attachment.fileName}\n`;
+    section += `${typeLabel}: ${attachment.fileType}\n`;
 
     if (attachment.pageCount) {
-      section += `Pages: ${attachment.pageCount}\n`;
+      section += `${pagesLabel}: ${attachment.pageCount}\n`;
     }
 
     if (attachment.extractedText) {
-      section += `\n**EXTRACTED CONTENT:**\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
-      section += `**CRITICAL ANALYSIS REQUIRED:**\n`;
-      section += `- Identify red flags requiring immediate referral\n`;
-      section += `- Note diagnostic findings requiring action\n`;
-      section += `- Identify contraindications to proposed treatment\n`;
-      section += `- Correlate findings with patient presentation\n`;
-      section += `- Flag any discrepancies between report and symptoms\n\n`;
+      const extractedLabel = isSpanishMarket ? '**CONTENIDO EXTRAÍDO:**' : '**EXTRACTED CONTENT:**';
+      const analysisLabel = isSpanishMarket ? '**ANÁLISIS OBLIGATORIO:**' : '**CRITICAL ANALYSIS REQUIRED:**';
+      const medicationLabel = isSpanishMarket ? '**EXTRACCIÓN OBLIGATORIA DE MEDICACIÓN:**' : '**MANDATORY MEDICATION EXTRACTION:**';
+      const referralLine = isSpanishMarket
+        ? '- Identifica red flags que requieran revisión o derivación médica\n'
+        : '- Identify red flags requiring immediate referral\n';
+      const findingsLine = isSpanishMarket
+        ? '- Señala hallazgos diagnósticos que requieran acción clínica\n'
+        : '- Note diagnostic findings requiring action\n';
+      const contraindicationsLine = isSpanishMarket
+        ? '- Identifica contraindicaciones relevantes para el tratamiento propuesto\n'
+        : '- Identify contraindications to proposed treatment\n';
+      const correlationLine = isSpanishMarket
+        ? '- Correlaciona los hallazgos del documento con la presentación clínica\n'
+        : '- Correlate findings with patient presentation\n';
+      const discrepancyLine = isSpanishMarket
+        ? '- Señala discrepancias entre el informe y los síntomas descritos\n'
+        : '- Flag any discrepancies between report and symptoms\n';
+      const medicationLineOne = isSpanishMarket
+        ? '- Si el documento contiene medicación al alta o tratamiento activo, incluye TODA la lista claramente presente\n'
+        : '- If the document contains discharge or active medications, include the FULL clearly documented list\n';
+      const medicationLineTwo = isSpanishMarket
+        ? '- Copia nombre, dosis, frecuencia y duración exactamente como aparezcan cuando estén disponibles\n'
+        : '- Copy name, dose, frequency, and duration exactly as documented when available\n';
+      const medicationLineThree = isSpanishMarket
+        ? '- No omitas medicamentos claramente presentes en el texto extraído\n\n'
+        : '- Do not omit medications that are clearly present in the extracted text\n\n';
+
+      section += `\n${extractedLabel}\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
+      section += `${analysisLabel}\n`;
+      section += referralLine;
+      section += findingsLine;
+      section += contraindicationsLine;
+      section += correlationLine;
+      section += discrepancyLine;
+      section += `\n${medicationLabel}\n`;
+      section += medicationLineOne;
+      section += medicationLineTwo;
+      section += medicationLineThree;
     } else if (attachment.error) {
-      section += `\n⚠️ **NOTE:** Could not extract text from this file (${attachment.error}).\n`;
-      section += `Document was uploaded but content not analyzed.\n\n`;
+      const errorNote = isSpanishMarket
+        ? `\n⚠️ **NOTA:** No se pudo extraer texto de este archivo (${attachment.error}).\n`
+        : `\n⚠️ **NOTE:** Could not extract text from this file (${attachment.error}).\n`;
+      const errorBody = isSpanishMarket
+        ? 'El documento se subió, pero su contenido no fue analizado.\n\n'
+        : 'Document was uploaded but content not analyzed.\n\n';
+
+      section += errorNote;
+      section += errorBody;
     } else {
-      section += `\n**NOTE:** No text content extracted.\n\n`;
+      const noTextNote = isSpanishMarket
+        ? '\n**NOTA:** No se extrajo contenido de texto.\n\n'
+        : '\n**NOTE:** No text content extracted.\n\n';
+
+      section += noTextNote;
     }
   });
 
