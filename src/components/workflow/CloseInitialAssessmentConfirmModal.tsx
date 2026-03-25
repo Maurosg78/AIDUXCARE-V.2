@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { setSessionCompleted } from '@/features/command-center/todayListSessionStorage';
 
@@ -26,6 +27,7 @@ export function CloseInitialAssessmentConfirmModal({
   patientName,
   baselineId,
 }: CloseInitialAssessmentConfirmModalProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [secondsLeft, setSecondsLeft] = useState(Math.ceil(REDIRECT_DELAY_MS / 1000));
 
@@ -64,9 +66,9 @@ export function CloseInitialAssessmentConfirmModal({
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Everything saved</h2>
+                <h2 className="text-xl font-bold">{t('workflow.closeInitialAssessment.savedTitle')}</h2>
                 <p className="text-sm text-green-100 mt-1">
-                  Initial assessment closed. Baseline saved for follow-up visits.
+                  {t('workflow.closeInitialAssessment.savedBody')}
                 </p>
               </div>
             </div>
@@ -76,23 +78,23 @@ export function CloseInitialAssessmentConfirmModal({
         {/* Content */}
         <div className="p-6 space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-green-900">Clinical baseline has been saved.</p>
+            <p className="text-sm font-medium text-green-900">{t('workflow.closeInitialAssessment.baselineSaved')}</p>
             {patientName && (
               <p className="text-sm text-green-800 mt-1">
-                <strong>Patient:</strong> {patientName}
+                <strong>{t('workflow.closeInitialAssessment.patientLabel')}:</strong> {patientName}
               </p>
             )}
             {baselineId && (
               <p className="text-xs text-green-700 mt-2 font-mono truncate" title={baselineId}>
-                Baseline ID: {baselineId.slice(0, 12)}…
+                {t('workflow.closeInitialAssessment.baselineIdLabel')}: {baselineId.slice(0, 12)}…
               </p>
             )}
           </div>
 
           <p className="text-sm text-slate-600 text-center">
             {secondsLeft > 0
-              ? `Redirecting to Command Center in ${secondsLeft} s…`
-              : 'Redirecting to Command Center…'}
+              ? t('workflow.closeInitialAssessment.redirectCountdown', { secondsLeft })
+              : t('workflow.closeInitialAssessment.redirectNow')}
           </p>
         </div>
       </div>

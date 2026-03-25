@@ -108,7 +108,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         token
       );
     } catch (err) {
-      setSmsError(err instanceof Error ? err.message : 'Failed to send SMS');
+      setSmsError(err instanceof Error ? err.message : t('consent.failedToSendSms'));
     } finally {
       setSmsLoading(false);
     }
@@ -120,9 +120,9 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-gradient-to-br from-primary-blue to-primary-purple flex items-center justify-center">
           <Shield className="w-7 h-7 text-white" />
         </div>
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple bg-clip-text text-transparent mb-2 text-center">Consent required</h2>
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple bg-clip-text text-transparent mb-2 text-center">{t('consent.requiredTitle')}</h2>
         <p className="text-slate-600 text-sm mb-6 text-center">
-          Patient consent is required before using the clinical workflow (including voice recording and attachments).
+          {t('consent.requiredWorkflowBody')}
         </p>
 
         <div className="space-y-3">
@@ -134,8 +134,8 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
                 </svg>
               </div>
               <div className="text-left">
-                <p className="text-sm font-medium text-green-800">Consent form opened</p>
-                <p className="text-xs text-green-600">This page will update automatically once the patient completes it.</p>
+                <p className="text-sm font-medium text-green-800">{t('consent.formOpenedTitle')}</p>
+                <p className="text-xs text-green-600">{t('consent.formOpenedBody')}</p>
               </div>
             </div>
           ) : (
@@ -146,7 +146,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-blue to-indigo-500 text-white rounded-lg font-medium hover:from-primary-blue-hover hover:to-indigo-600 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileText className="w-4 h-4" />
-              {formLoading ? 'Opening...' : t('consent.fillForm')}
+              {formLoading ? t('consent.opening') : t('consent.fillForm')}
             </button>
           )}
 
@@ -157,10 +157,10 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-500 to-primary-purple text-white rounded-lg font-medium hover:from-indigo-600 hover:to-primary-purple-hover transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Smartphone className="w-4 h-4" />
-            {smsLoading ? 'Sending...' : t('consent.sendSms')}
+            {smsLoading ? t('consent.sending') : t('consent.sendSms')}
           </button>
           {!patientPhone?.trim() && (
-            <p className="text-xs text-indigo-600 -mt-1">Patient phone required for SMS</p>
+            <p className="text-xs text-indigo-600 -mt-1">{t('consent.patientPhoneRequired')}</p>
           )}
 
           <button
@@ -178,7 +178,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         )}
 
         <p className="mt-4 text-xs text-indigo-600/80 text-center">
-          After patient completes the form or gives verbal consent, this page will update automatically.
+          {t('consent.autoUpdateAfterConsent')}
         </p>
 
         {onCancel && (
@@ -187,7 +187,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
             onClick={onCancel}
             className="mt-4 w-full py-2 text-sm text-slate-500 hover:text-primary-purple transition-colors"
           >
-            Cancel — Return to command center
+            {t('consent.cancelReturnToCommandCenter')}
           </button>
         )}
       </div>

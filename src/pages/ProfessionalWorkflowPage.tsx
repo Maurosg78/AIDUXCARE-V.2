@@ -79,7 +79,6 @@ import { SessionStorage } from "../services/session-storage";
 import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clinicalBaselineService";
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
 import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
-import { InitialClinicalSummaryModal } from "../components/workflow/InitialClinicalSummaryModal";
 import ReferralReportModal from "../components/ReferralReportModal";
 import type { ReferralReportData } from "../services/referralReportGenerator";
 import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-service";
@@ -344,8 +343,6 @@ const ProfessionalWorkflowPage = () => {
   const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
   /** True once getClinicalState has settled for follow-up; used to gate "no baseline → cannot start follow-up". */
   const [followUpBaselineChecked, setFollowUpBaselineChecked] = useState(false);
-  /** WO-MINIMAL-BASELINE: Modal "Resumen clínico inicial" for existing patients without baseline. */
-  const [showInitialSummaryModal, setShowInitialSummaryModal] = useState(false);
 
   // WO-PILOT-FIX-07: Time-based greeting for header
   const [greeting, setGreeting] = useState(getTimeBasedGreeting());
@@ -1011,10 +1008,21 @@ const ProfessionalWorkflowPage = () => {
         const isVerified = await ConsentVerificationService.isConsentVerified(patientId);
 
         if (!isVerified) {
+          const verificationParams = new URLSearchParams();
+
+          if (sessionTypeFromUrl) {
+            verificationParams.set('type', sessionTypeFromUrl);
+          }
+
+          const verificationQuery = verificationParams.toString();
+          const verificationPath = verificationQuery
+            ? `/consent-verification/${patientId}?${verificationQuery}`
+            : `/consent-verification/${patientId}`;
+
           // Only redirect if verification explicitly returns false
           // Don't redirect on errors - allow workflow to continue
           console.log('[WORKFLOW] Consent not verified, redirecting to verification...');
-          navigate(`/consent-verification/${patientId}`);
+          navigate(verificationPath);
         }
       } catch (error) {
         // If verification check fails, log but don't block workflow
@@ -1026,7 +1034,7 @@ const ProfessionalWorkflowPage = () => {
     if (patientIdFromUrl) {
       checkConsentVerification();
     }
-  }, [patientIdFromUrl, navigate]);
+  }, [patientIdFromUrl, navigate, sessionTypeFromUrl]);
 
   // ✅ WO-CONSENT-GATE-UI-01: Gate - Check for valid consent (verbal OR digital) with jurisdiction validation
   // This is the ABSOLUTE gate - if no consent, NO clinical UI is rendered
@@ -3601,8 +3609,7 @@ const ProfessionalWorkflowPage = () => {
     if (!consentCheck.hasValidConsent) {
       // Show notification that consent is required
       setAnalysisError(
-        'Patient consent is required before generating SOAP notes. ' +
-        'Please obtain verbal consent using the consent modal, or wait for the patient to provide digital consent via SMS.'
+        t('workflow.consentRequiredForSoap')
       );
       // ✅ WO-CONSENT-SINGLE-SOURCE-01: Verificar desde dominio, no desde estado duplicado
       const jurisdiction = getCurrentJurisdiction();
@@ -4859,40 +4866,6 @@ const ProfessionalWorkflowPage = () => {
         patientName={closeInitialConfirmData?.patientName}
         baselineId={closeInitialConfirmData?.baselineId}
       />
-      <InitialClinicalSummaryModal
-        isOpen={showInitialSummaryModal}
-        onClose={() => setShowInitialSummaryModal(false)}
-        patientId={patientId ?? ''}
-        patientName={currentPatient?.fullName ?? (currentPatient ? `${(currentPatient as any).firstName ?? ''} ${(currentPatient as any).lastName ?? ''}`.trim() : undefined)}
-        onSuccess={() => {
-          if (!patientId || !user?.uid) return;
-          getClinicalState(patientId, user.uid).then((state) => {
-            if (state?.hasBaseline && state.baselineSOAP) {
-              setFollowUpClinicalState({
-                baselineSOAP: {
-                  subjective: state.baselineSOAP.subjective ?? '',
-                  objective: state.baselineSOAP.objective ?? '',
-                  assessment: state.baselineSOAP.assessment ?? '',
-                  plan: state.baselineSOAP.plan ?? '',
-                },
-              });
-            }
-            setFollowUpBaselineChecked(true);
-          });
-        }}
-        onSubmit={async (freeText, inputMode) => {
-          if (!patientId || !user?.uid) throw new Error('Missing patient or user.');
-          const soap = await generateBaselineSOAPFromFreeText(freeText);
-          const baselineId = await createBaselineFromMinimalSOAP({
-            patientId,
-            soap: { subjective: soap.subjective, objective: soap.objective, assessment: soap.assessment, plan: soap.plan },
-            createdBy: user.uid,
-            source: inputMode === 'paste' ? 'vertex_from_paste' : 'manual_minimal',
-          });
-          await PatientService.updatePatient(patientId, { activeBaselineId: baselineId });
-          return baselineId;
-        }}
-      />
       {/* WO-PILOT-FIX-07: Two-line header - Professional identity + Session context */}
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl flex flex-col gap-2">
@@ -4967,7 +4940,7 @@ const ProfessionalWorkflowPage = () => {
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-primary-blue hover:bg-blue-50 rounded-lg transition-colors font-apple"
             >
               <ArrowLeft className="w-4 h-4" />
-              Command Center
+              {t('shell.commandCenter.title')}
             </button>
           </div>
         </div>
@@ -5005,13 +4978,6 @@ const ProfessionalWorkflowPage = () => {
                 You cannot start a follow-up without a prior initial assessment. Complete an initial assessment for this patient first; the baseline is then built from that and is the single source of truth for follow-up.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowInitialSummaryModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
-                >
-                  Set initial clinical summary
-                </button>
                 <button
                   type="button"
                   onClick={() => navigate(patientId ? `/workflow?patientId=${patientId}` : '/command-center')}
@@ -5778,11 +5744,11 @@ const ProfessionalWorkflowPage = () => {
               setWorkflowBlocked(false);
               setShowVerbalConsentModal(false);
               setConsentCheckComplete(false); // Reset to re-check
-              setSuccessMessage('Consent obtained. You can now proceed with the clinical workflow.');
+              setSuccessMessage(t('workflow.consentObtainedProceed'));
             }}
             onConsentDenied={() => {
               console.log('[WORKFLOW] ❌ Consent denied by patient');
-              setAnalysisError('Patient consent is required to proceed. Please obtain consent before continuing.');
+              setAnalysisError(t('workflow.consentRequiredProceed'));
             }}
           />
         )}
