@@ -16,11 +16,48 @@ import { SessionComparisonService } from '../../services/sessionComparisonServic
 import sessionService from '../../services/sessionService';
 import { AnalyticsService } from '../../services/analyticsService';
 
+const hoistedMocks = vi.hoisted(() => {
+  const mockSetTranscript = vi.fn();
+  const mockGetLatestInitialSession = vi.fn();
+  const mockClearSession = vi.fn();
+
+  return {
+    mockSetTranscript,
+    mockGetLatestInitialSession,
+    mockClearSession,
+  };
+});
+
+const mockSetTranscript = hoistedMocks.mockSetTranscript;
+const mockGetLatestInitialSession = hoistedMocks.mockGetLatestInitialSession;
+const mockClearSession = hoistedMocks.mockClearSession;
+
 // Mock dependencies
 vi.mock('../../services/sessionService', () => ({
   default: {
     createSession: vi.fn(),
     isFirstSession: vi.fn(),
+    updateSession: vi.fn(),
+    getSessionById: vi.fn(),
+    getNotesByPatient: vi.fn(),
+    getInProgressSessions: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+vi.mock('../../services/session-storage', () => ({
+  SessionStorage: {
+    getLatestInitialSession: hoistedMocks.mockGetLatestInitialSession,
+    clearSession: hoistedMocks.mockClearSession,
+    getSession: vi.fn(),
+    saveSession: vi.fn(),
+    saveLatestInitialSession: vi.fn(),
+  },
+  default: {
+    getLatestInitialSession: hoistedMocks.mockGetLatestInitialSession,
+    clearSession: hoistedMocks.mockClearSession,
+    getSession: vi.fn(),
+    saveSession: vi.fn(),
+    saveLatestInitialSession: vi.fn(),
   },
 }));
 
@@ -138,7 +175,7 @@ vi.mock('../../hooks/useTranscript', () => ({
     audioStream: null,
     startRecording: vi.fn(),
     stopRecording: vi.fn(),
-    setTranscript: vi.fn(),
+    setTranscript: hoistedMocks.mockSetTranscript,
   }),
 }));
 
@@ -215,6 +252,9 @@ describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
 
     (SessionComparisonService as any).mockImplementation(() => mockSessionComparisonService);
     vi.clearAllMocks();
+    mockGetLatestInitialSession.mockReset();
+    mockClearSession.mockReset();
+    mockSetTranscript.mockReset();
   });
 
 vi.mock('../../services/followUpDetectionService', () => ({
@@ -363,5 +403,29 @@ vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
       expect(true).toBe(true); // Placeholder
     });
   });
-});
 
+  describe('Initial Session Restore Guardrails', () => {
+    it('should start a new initial evaluation without restoring the latest interrupted draft', async () => {
+      const savedLatestDraft = {
+        transcript: 'Draft transcript that must not be restored',
+        evaluationTests: [{ name: 'SLR' }],
+        sessionId: 'previous-session-id',
+      };
+
+      mockGetLatestInitialSession.mockReturnValue(savedLatestDraft);
+
+      render(
+        <MemoryRouter initialEntries={['/workflow?type=initial&patientId=test-patient-1']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
+      });
+
+      expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
+      expect(mockSetTranscript).not.toHaveBeenCalledWith(savedLatestDraft.transcript);
+    });
+  });
+});

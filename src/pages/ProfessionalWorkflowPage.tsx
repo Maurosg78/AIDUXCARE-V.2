@@ -1151,6 +1151,12 @@ const ProfessionalWorkflowPage = () => {
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
       if (isInitialSession) {
         const effectiveSessionId = state.sessionId || sessionIdRef.current || null;
+        const normalizedSessionId = typeof effectiveSessionId === 'string' ? effectiveSessionId.trim() : '';
+        const hasValidSessionId = normalizedSessionId.length > 0;
+        if (!hasValidSessionId) {
+          console.log('[WORKFLOW] ⏭️ Skipping interrupted initial save without valid sessionId');
+          return;
+        }
         try {
           SessionStorage.saveLatestInitialSession(state.patientId, state.userId, {
             transcript: state.transcript,
@@ -1164,16 +1170,16 @@ const ProfessionalWorkflowPage = () => {
             initialAssessmentClosedAt: state.initialAssessmentClosedAt,
             baselineId: state.baselineIdFromSession,
             visitType: state.visitType,
-            sessionId: effectiveSessionId,
+            sessionId: normalizedSessionId,
             timestamp: new Date().toISOString(),
             version: '1.0',
           });
-          console.log('[WORKFLOW] 💾 Saved state on unmount for resume (initial interrupted)', { sessionId: effectiveSessionId });
+          console.log('[WORKFLOW] 💾 Saved state on unmount for resume (initial interrupted)', { sessionId: normalizedSessionId });
         } catch (e) {
           console.warn('[WORKFLOW] Failed to save state on unmount:', e);
         }
-        if (effectiveSessionId) {
-          sessionService.updateSession(effectiveSessionId, {
+        if (hasValidSessionId) {
+          sessionService.updateSession(normalizedSessionId, {
             status: 'interrupted',
             transcript: state.transcript,
             patientId: state.patientId,
@@ -1367,118 +1373,6 @@ const ProfessionalWorkflowPage = () => {
           if (hasCleanedForInitial.current === cleanupKey) {
             console.log('[WORKFLOW] ⏭️ Already cleaned for this initial session, skipping cleanup');
             return; // Don't clean again
-          }
-
-          // WO-RESUME-INTERRUPTED: Try restore from "latest initial" (saved on unmount when recording/interrupted)
-          const userId = user?.uid || TEMP_USER_ID;
-          const savedLatest = SessionStorage.getLatestInitialSession(patientId, userId);
-          const hasSavedData = savedLatest && (
-            (savedLatest.transcript != null && savedLatest.transcript.trim().length > 0) ||
-            ((savedLatest.evaluationTests?.length ?? 0) > 0) ||
-            (savedLatest.sessionId != null && savedLatest.sessionId.trim().length > 0)
-          );
-          if (hasSavedData && savedLatest) {
-            setRestoredFromInterrupted(true);
-            setHasRestoredFromAutoSave(true);
-            const sanitized = Array.isArray(savedLatest.evaluationTests) ? savedLatest.evaluationTests.map(sanitizeEvaluationEntry) : [];
-            if (sanitized.length > 0) {
-              setEvaluationTests(sanitized);
-              updatePhysicalEvaluation(sanitized);
-            }
-            if (savedLatest.transcript?.trim()) {
-              setTranscript(savedLatest.transcript);
-            }
-            if (savedLatest.activeTab && ['analysis', 'evaluation', 'soap'].includes(savedLatest.activeTab)) setActiveTab(savedLatest.activeTab);
-            if (savedLatest.localSoapNote) setLocalSoapNote(savedLatest.localSoapNote);
-            if (savedLatest.selectedEntityIds?.length) setSelectedEntityIds(savedLatest.selectedEntityIds);
-            if (savedLatest.initialAssessmentClosedAt != null && savedLatest.initialAssessmentClosedAt !== '') setInitialAssessmentClosedAt(savedLatest.initialAssessmentClosedAt);
-            if (savedLatest.baselineId != null && savedLatest.baselineId !== '') setBaselineIdFromSession(savedLatest.baselineId);
-            hasCleanedForInitial.current = cleanupKey;
-            // If transcript was empty (e.g. transcription completed after unmount), load from Firestore or from in-progress sessions
-            const firestoreSessionId = savedLatest.sessionId && String(savedLatest.sessionId).trim() && !String(savedLatest.sessionId).startsWith('__')
-              ? savedLatest.sessionId
-              : null;
-            if (!savedLatest.transcript?.trim()) {
-              setIsRestoringTranscript(true);
-              const applyTranscript = (text: string, source: string) => {
-                if (text?.trim()) {
-                  setTranscript(text);
-                  setIsRestoringTranscript(false);
-                  console.log('[WORKFLOW] ✅ Restored transcript:', source);
-                }
-              };
-              const clearRestoringAfterRetries = () => {
-                setTimeout(() => setIsRestoringTranscript(false), 500);
-              };
-              // Poll SessionStorage: onTranscriptionComplete may write transcript to blob after we mounted
-              const pollBlobCount = 6;
-              const pollBlobIntervalMs = 1500;
-              let pollCount = 0;
-              const tryBlobOnce = () => {
-                pollCount++;
-                const latest = SessionStorage.getLatestInitialSession(patientId, userId);
-                if (latest?.transcript?.trim()) {
-                  if (restoreTranscriptPollRef.current) {
-                    clearInterval(restoreTranscriptPollRef.current);
-                    restoreTranscriptPollRef.current = null;
-                  }
-                  applyTranscript(latest.transcript, 'SessionStorage (transcription completed after return)');
-                } else if (pollCount >= pollBlobCount) {
-                  if (restoreTranscriptPollRef.current) {
-                    clearInterval(restoreTranscriptPollRef.current);
-                    restoreTranscriptPollRef.current = null;
-                  }
-                }
-              };
-              tryBlobOnce();
-              const blobPollId = setInterval(tryBlobOnce, pollBlobIntervalMs);
-              restoreTranscriptPollRef.current = blobPollId;
-              if (firestoreSessionId) {
-                const tryFetch = (attempt: number) => {
-                  sessionService.getSessionById(firestoreSessionId).then((session) => {
-                    if (session?.transcript && typeof session.transcript === 'string') {
-                      clearInterval(blobPollId);
-                      restoreTranscriptPollRef.current = null;
-                      applyTranscript(session.transcript, 'Firestore (completed after interrupt)');
-                      return;
-                    }
-                    const delays = [2000, 5000, 8000];
-                    if (attempt < delays.length) {
-                      setTimeout(() => tryFetch(attempt + 1), delays[attempt]);
-                    } else {
-                      clearRestoringAfterRetries();
-                    }
-                  }).catch(() => {
-                    const delays = [2000, 5000, 8000];
-                    if (attempt < delays.length) {
-                      setTimeout(() => tryFetch(attempt + 1), delays[attempt]);
-                    } else {
-                      clearRestoringAfterRetries();
-                    }
-                  });
-                };
-                tryFetch(0);
-              } else {
-                // Fallback: old localStorage may have __latest_initial__ as sessionId; find transcript from in-progress sessions for this patient
-                sessionService.getInProgressSessions(userId).then((sessions) => {
-                  const forPatient = sessions.filter((s) => s.patientId === patientId);
-                  const withTranscript = forPatient.find((s) => s.transcript?.trim());
-                  if (withTranscript?.transcript?.trim()) {
-                    clearInterval(blobPollId);
-                    restoreTranscriptPollRef.current = null;
-                    applyTranscript(withTranscript.transcript, 'in-progress sessions (fallback)');
-                  } else {
-                    setIsRestoringTranscript(false);
-                  }
-                }).catch(() => {
-                  clearInterval(blobPollId);
-                  restoreTranscriptPollRef.current = null;
-                  setIsRestoringTranscript(false);
-                });
-              }
-            }
-            console.log('[WORKFLOW] ✅ Restored from interrupted initial session (resume)');
-            return;
           }
 
           // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
