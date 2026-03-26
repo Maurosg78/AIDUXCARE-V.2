@@ -76,6 +76,7 @@
     "test:rag": "tsx scripts/test-rag-pubmed.ts",
     "simulate:session": "tsx scripts/simulate-aidux-session.ts",
     "check:env": "node scripts/check-env.cjs",
+    "check:generated-js": "node scripts/check-generated-js.cjs",
     "dev:clinical-sim": "tsx scripts/clinical-sim-server.ts",
     "test:clinical-fixtures": "tsx scripts/runClinicalFixtures.ts",
     "verify:locales": "node scripts/verify-locales-json.mjs",
