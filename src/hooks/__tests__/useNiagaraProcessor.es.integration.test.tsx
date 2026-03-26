@@ -1,6 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useNiagaraProcessor } from '../useNiagaraProcessor';
+import {
+  containsForbiddenEnglishInEsClinicalFields,
+  getForbiddenEnglishTermsInEsClinicalFields,
+} from '../../utils/normalizers/es/containsForbiddenEnglishInEsClinicalFields';
 
 vi.mock('@/core/market/resolveClinicalMarket', () => {
   const resolveClinicalMarket = vi.fn(() => {
@@ -61,11 +65,11 @@ describe('useNiagaraProcessor ES attachment integration', () => {
           'Clinical concern: Metamizol use. Recommend medical review/referral based on red flags.',
         ],
         yellow_flags: [
-          'Fear of movement after surgery.',
+          'Temor al movimiento tras la cirugía.',
         ],
         legal_exposure: 'high',
         alert_notes: [
-          'Clinical concern: medication safety issue.',
+          'Preocupación clínica: posible incidencia de seguridad farmacológica.',
         ],
       },
       conversation_highlights: {
@@ -85,7 +89,7 @@ describe('useNiagaraProcessor ES attachment integration', () => {
       recommended_physical_tests: [],
       biopsychosocial_factors: {
         psychological: [
-          'Fear of movement.',
+          'Temor al movimiento.',
         ],
       },
     });
@@ -140,6 +144,8 @@ describe('useNiagaraProcessor ES attachment integration', () => {
     const requestPayload = JSON.parse(fetchBody);
     const prompt = String(requestPayload.prompt || '');
     const medicationOutput = analysisResult?.medicacion_actual || [];
+    const hasForbiddenEnglish = containsForbiddenEnglishInEsClinicalFields(analysisResult);
+    const forbiddenTerms = getForbiddenEnglishTermsInEsClinicalFields(analysisResult);
 
     expect(prompt).toContain('fisioterapeuta colegiado en España');
     expect(prompt).toContain('## DOCUMENTOS CLÍNICOS ADJUNTOS');
@@ -150,6 +156,8 @@ describe('useNiagaraProcessor ES attachment integration', () => {
     expect(prompt).not.toContain('College of Physiotherapists of Ontario');
 
     expect(analysisResult).not.toBeNull();
+    expect(hasForbiddenEnglish).toBe(false);
+    expect(forbiddenTerms).toEqual([]);
     expect(analysisResult.red_flags[0]).toContain('Preocupación clínica:');
     expect(analysisResult.red_flags[0]).toContain('Recomendar revisión/derivación médica según red flags.');
     expect(analysisResult.motivo_consulta).toContain('Dolor y rigidez de muñeca');
