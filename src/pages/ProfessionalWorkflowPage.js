@@ -1122,6 +1122,7 @@ const ProfessionalWorkflowPage = () => {
         const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
         const restoreWorkflowState = () => {
             try {
+                const userId = user?.uid || TEMP_USER_ID;
                 // ✅ FIX: For initial evaluations (type=initial or no type), DON'T restore ANY state
                 // Everything should start fresh and empty for initial evaluations
                 const isInitialSession = sessionTypeFromUrl === 'initial' || !sessionTypeFromUrl;
@@ -1186,7 +1187,6 @@ const ProfessionalWorkflowPage = () => {
                 }
                 // For other session types (wsib, mva, certificate), restore state normally
                 // ✅ T1: Use v2 key structure with userId, visitType, sessionId (with legacy fallback)
-                const userId = user?.uid || TEMP_USER_ID;
                 const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
                 const savedState = SessionStorage.getSession(patientId, userId, visitType || 'initial', currentSessionId);
                 if (!savedState) {
