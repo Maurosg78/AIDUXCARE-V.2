@@ -29,6 +29,7 @@ import { VerbalConsentService } from "../services/verbalConsentService";
 import { SMSService } from "../services/smsService";
 import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
+import { isSpainPilot } from "@/core/pilotDetection";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, useLocation, Link, Navigate } from "react-router-dom";
@@ -1179,13 +1180,19 @@ const ProfessionalWorkflowPage = () => {
           console.warn('[WORKFLOW] Failed to save state on unmount:', e);
         }
         if (hasValidSessionId) {
-          sessionService.updateSession(normalizedSessionId, {
+          const updateSessionPromise = sessionService.updateSession(normalizedSessionId, {
             status: 'interrupted',
             transcript: state.transcript,
             patientId: state.patientId,
             patientName: state.patientName || 'Patient',
             userId: state.userId,
-          }).catch(() => {});
+          });
+          const hasCatchHandler =
+            updateSessionPromise != null &&
+            typeof updateSessionPromise.catch === 'function';
+          if (hasCatchHandler) {
+            updateSessionPromise.catch(() => {});
+          }
         }
       }
     };
@@ -4409,6 +4416,12 @@ const ProfessionalWorkflowPage = () => {
 
   const handleRegenerateSOAP = async () => {
     // Regenerate with same context
+    const isSpainMarket = isSpainPilot();
+    const regeneratePayload = {
+      visitType,
+      isSpainMarket,
+    };
+    void AnalyticsService.trackEvent('workflow_soap_regenerated', regeneratePayload).catch(() => {});
     await handleGenerateSoap();
   };
 

@@ -35,9 +35,9 @@ const mockClearSession = hoistedMocks.mockClearSession;
 // Mock dependencies
 vi.mock('../../services/sessionService', () => ({
   default: {
-    createSession: vi.fn(),
+    createSession: vi.fn().mockResolvedValue('new-session-id'),
     isFirstSession: vi.fn(),
-    updateSession: vi.fn(),
+    updateSession: vi.fn().mockResolvedValue(undefined),
     getSessionById: vi.fn(),
     getNotesByPatient: vi.fn(),
     getInProgressSessions: vi.fn().mockResolvedValue([]),
@@ -426,6 +426,40 @@ vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
 
       expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
       expect(mockSetTranscript).not.toHaveBeenCalledWith(savedLatestDraft.transcript);
+    });
+
+    it('should restore an initial evaluation only when resume is explicit and sessionId is valid', async () => {
+      const resumedTranscript = 'Recovered interrupted initial transcript';
+
+      const resumedSession = {
+        id: 'resume-session-id',
+        transcript: resumedTranscript,
+        soapNote: {
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+        },
+        physicalTests: [],
+        status: 'interrupted',
+      };
+
+      const getSessionByIdMock = vi.mocked(sessionService.getSessionById);
+
+      getSessionByIdMock.mockResolvedValue(resumedSession as any);
+
+      render(
+        <MemoryRouter initialEntries={['/workflow?type=initial&patientId=test-patient-1&resume=true&sessionId=resume-session-id']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(getSessionByIdMock).toHaveBeenCalledWith('resume-session-id');
+      });
+
+      expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
+      expect(mockSetTranscript).toHaveBeenCalledWith(resumedTranscript);
     });
   });
 });

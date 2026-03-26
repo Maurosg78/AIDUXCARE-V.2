@@ -96,15 +96,28 @@ const mapExposure = (value: unknown): LegalExposure => {
   return "low";
 };
 
-const buildTestJustification = (item: Record<string, any>): string => {
+const buildTestJustification = (item: Record<string, any>, transformText: TextTransform): string => {
   const pieces: string[] = [];
-  if (item.rationale) pieces.push(item.rationale);
-  if (item.region) pieces.push(`Region: ${item.region}`);
-  if (item.evidence_level) pieces.push(`Evidence: ${String(item.evidence_level).toLowerCase()}`);
+
+  if (item.rationale) {
+    const rationale = transformText(String(item.rationale));
+    pieces.push(rationale);
+  }
+
+  if (item.region) {
+    const region = transformText(`Región: ${item.region}`);
+    pieces.push(region);
+  }
+
+  if (item.evidence_level) {
+    const evidence = transformText(`Evidencia: ${String(item.evidence_level).toLowerCase()}`);
+    pieces.push(evidence);
+  }
+
   return pieces.join(" · ").trim();
 };
 
-const mapPhysicalTests = (tests: unknown): any[] => {
+const mapPhysicalTests = (tests: unknown, transformText: TextTransform): any[] => {
   if (!Array.isArray(tests)) return [];
 
   return tests
@@ -114,6 +127,7 @@ const mapPhysicalTests = (tests: unknown): any[] => {
       if (typeof item !== "object") return null;
 
       const name = item.name || item.test || "Physical test";
+      const testName = transformText(String(name));
       const sensitivityValue = item.sensibilidad !== undefined ? item.sensibilidad : item.sensitivity;
       const specificityValue = item.especificidad !== undefined ? item.especificidad : item.specificity;
       const sensitivityIsUnknown = sensitivityValue === "unknown" || sensitivityValue === null || sensitivityValue === undefined;
@@ -124,41 +138,55 @@ const mapPhysicalTests = (tests: unknown): any[] => {
       const hasScores = sensitivity !== undefined || specificity !== undefined;
 
       if (hasScores && !hasSource) {
+        const objective = transformText(String(item.objective || item.objetivo || item.indicacion || ""));
+        const contraindications = transformText(String(item.contraindicado_si || item.contraindications || ""));
+        const justification = buildTestJustification(item, transformText);
+        const evidenceLevel = transformText(String(item.evidence_level || item.evidencia || ""));
+        const rationale = transformText(String(item.rationale || item.justificacion || justification));
+        const region = item.region ? transformText(String(item.region)) : undefined;
+
         return {
-          test: name,
+          test: testName,
           sensibilidad: undefined,
           especificidad: undefined,
           sensitivity: undefined,
           specificity: undefined,
           sensitivityQualitative: undefined,
           specificityQualitative: undefined,
-          objetivo: item.objective || item.objetivo || item.indicacion || "",
-          contraindicado_si: item.contraindicado_si || item.contraindications || "",
-          justificacion: buildTestJustification(item),
-          evidencia: item.evidence_level || item.evidencia,
-          evidence_level: item.evidence_level || item.evidencia,
+          objetivo: objective,
+          contraindicado_si: contraindications,
+          justificacion: justification,
+          evidencia: evidenceLevel,
+          evidence_level: evidenceLevel,
           source: "unknown",
-          rationale: item.rationale || item.justificacion || buildTestJustification(item),
-          region: item.region || undefined,
+          rationale: rationale,
+          region: region,
         };
       }
 
+      const objective = transformText(String(item.objective || item.objetivo || item.indicacion || ""));
+      const contraindications = transformText(String(item.contraindicado_si || item.contraindications || ""));
+      const justification = buildTestJustification(item, transformText);
+      const evidenceLevel = transformText(String(item.evidence_level || item.evidencia || ""));
+      const rationale = transformText(String(item.rationale || item.justificacion || justification));
+      const region = item.region ? transformText(String(item.region)) : undefined;
+
       return {
-        test: name,
+        test: testName,
         sensibilidad: sensitivity,
         especificidad: specificity,
         sensitivity,
         specificity,
         sensitivityQualitative: typeof sensitivity === "string" ? sensitivity : undefined,
         specificityQualitative: typeof specificity === "string" ? specificity : undefined,
-        objetivo: item.objective || item.objetivo || item.indicacion || "",
-        contraindicado_si: item.contraindicado_si || item.contraindications || "",
-        justificacion: buildTestJustification(item),
-        evidencia: item.evidence_level || item.evidencia,
-        evidence_level: item.evidence_level || item.evidencia,
+        objetivo: objective,
+        contraindicado_si: contraindications,
+        justificacion: justification,
+        evidencia: evidenceLevel,
+        evidence_level: evidenceLevel,
         source: item.source || "unknown",
-        rationale: item.rationale || item.justificacion || buildTestJustification(item),
-        region: item.region || undefined,
+        rationale: rationale,
+        region: region,
       };
     })
     .filter(Boolean);
@@ -223,9 +251,9 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
     diagnosticos_probables: [],
     red_flags: redFlags,
     yellow_flags: combinedYellow,
-    evaluaciones_fisicas_sugeridas: mapPhysicalTests(payload.recommended_physical_tests),
-    derivacion_recomendada: "",
-    pronostico_estimado: "",
+    evaluaciones_fisicas_sugeridas: mapPhysicalTests(payload.recommended_physical_tests, transformText),
+    derivacion_recomendada: transformText(""),
+    pronostico_estimado: transformText(""),
     notas_seguridad: alertNotes.join(" • "),
     riesgo_legal: mapExposure(alerts.legal_exposure),
     biopsychosocial_psychological: psychological,
@@ -249,9 +277,9 @@ const mapLegacyPayload = (payload: any, transformText: TextTransform): ClinicalA
   clone.diagnosticos_probables = ensureStringArray(payload?.diagnosticos_probables);
   clone.red_flags = transformArray(cleanFlags(ensureStringArray(payload?.red_flags)), transformText);
   clone.yellow_flags = transformArray(cleanFlags(ensureStringArray(payload?.yellow_flags)), transformText);
-  clone.evaluaciones_fisicas_sugeridas = mapPhysicalTests(payload?.evaluaciones_fisicas_sugeridas);
-  clone.derivacion_recomendada = String(payload?.derivacion_recomendada || "");
-  clone.pronostico_estimado = String(payload?.pronostico_estimado || "");
+  clone.evaluaciones_fisicas_sugeridas = mapPhysicalTests(payload?.evaluaciones_fisicas_sugeridas, transformText);
+  clone.derivacion_recomendada = transformText(String(payload?.derivacion_recomendada || ""));
+  clone.pronostico_estimado = transformText(String(payload?.pronostico_estimado || ""));
   clone.notas_seguridad = transformText(String(payload?.notas_seguridad || ""));
   clone.riesgo_legal = mapExposure(payload?.riesgo_legal);
   return clone;

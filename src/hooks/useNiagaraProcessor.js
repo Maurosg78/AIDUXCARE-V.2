@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { VertexAIServiceViaFirebase } from '../services/vertex-ai-service-firebase';
 import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
 import { resolveClinicalMarket } from '@/core/market/resolveClinicalMarket';
+import { ensureSpanishClinicalAnalysis } from '../utils/normalizers/es/ensureSpanishClinicalAnalysis';
 export const useNiagaraProcessor = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [niagaraResults, setNiagaraResults] = useState(null);
@@ -50,7 +51,9 @@ export const useNiagaraProcessor = () => {
             });
             console.log("Response from Vertex:", response);
             console.log("Response text:", response?.text);
-            const cleaned = normalizeVertexResponse(response, { market: resolvedMarket.market });
+            const normalized = normalizeVertexResponse(response, { market: resolvedMarket.market });
+            const shouldForceSpanish = resolvedMarket.market === 'ES';
+            const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(normalized) : normalized;
             console.log("Cleaned response:", cleaned);
             setNiagaraResults(cleaned);
             return cleaned;

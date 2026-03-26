@@ -4,6 +4,7 @@ import { normalizeVertexResponse, ClinicalAnalysis } from '../utils/cleanVertexR
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import type { ClinicalAttachment } from '../core/ai/PromptFactory-Canada';
 import { resolveClinicalMarket } from '@/core/market/resolveClinicalMarket';
+import { ensureSpanishClinicalAnalysis } from '../utils/normalizers/es/ensureSpanishClinicalAnalysis';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -67,7 +68,9 @@ export const useNiagaraProcessor = () => {
       });
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);
-      const cleaned = normalizeVertexResponse(response, { market: resolvedMarket.market });
+      const normalized = normalizeVertexResponse(response, { market: resolvedMarket.market });
+      const shouldForceSpanish = resolvedMarket.market === 'ES';
+      const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(normalized) : normalized;
       console.log("Cleaned response:", cleaned);
       setNiagaraResults(cleaned);
       return cleaned;

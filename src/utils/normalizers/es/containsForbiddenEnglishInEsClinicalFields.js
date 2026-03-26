@@ -16,6 +16,18 @@ const FORBIDDEN_ENGLISH_TERMS = [
     'WSIB',
     'CAPR',
     'Canadian usage',
+    'Significant fear of movement',
+    'Electrical sensations with movement',
+    'Anxiety regarding',
+    'Computer engineer',
+    'Metamizol use',
+    'Assess for',
+    'Quantify ',
+    'wrist',
+    'forearm',
+    'emerging',
+    'functional capacity',
+    'requires assistance',
 ];
 const collectEsClinicalFields = (analysis) => {
     const redFlags = analysis.red_flags || [];
@@ -24,6 +36,27 @@ const collectEsClinicalFields = (analysis) => {
     const keyFindings = analysis.hallazgos_clinicos || [];
     const medications = analysis.medicacion_actual || [];
     const safetyNotes = analysis.notas_seguridad ? [analysis.notas_seguridad] : [];
+    const occupational = analysis.biopsychosocial_occupational || [];
+    const psychosocial = analysis.biopsychosocial_psychological || [];
+    const social = analysis.biopsychosocial_social || [];
+    const protective = analysis.biopsychosocial_protective || [];
+    const functionalLimitations = analysis.biopsychosocial_functional_limitations || [];
+    const strengths = analysis.biopsychosocial_patient_strengths || [];
+    const physicalTests = analysis.evaluaciones_fisicas_sugeridas || [];
+    const physicalTestTexts = physicalTests.flatMap((item) => {
+        const name = item?.test ? [String(item.test)] : [];
+        const objective = item?.objetivo ? [String(item.objetivo)] : [];
+        const justification = item?.justificacion ? [String(item.justificacion)] : [];
+        const rationale = item?.rationale ? [String(item.rationale)] : [];
+        const region = item?.region ? [String(item.region)] : [];
+        return [
+            ...name,
+            ...objective,
+            ...justification,
+            ...rationale,
+            ...region,
+        ];
+    });
     return [
         ...redFlags,
         ...yellowFlags,
@@ -31,6 +64,13 @@ const collectEsClinicalFields = (analysis) => {
         ...keyFindings,
         ...medications,
         ...safetyNotes,
+        ...occupational,
+        ...psychosocial,
+        ...social,
+        ...protective,
+        ...functionalLimitations,
+        ...strengths,
+        ...physicalTestTexts,
     ];
 };
 export const containsForbiddenEnglishInEsClinicalFields = (analysis) => {

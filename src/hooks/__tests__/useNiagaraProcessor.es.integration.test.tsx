@@ -86,10 +86,27 @@ describe('useNiagaraProcessor ES attachment integration', () => {
         ],
         summary: 'Seguimiento postquirúrgico.',
       },
-      recommended_physical_tests: [],
+      recommended_physical_tests: [
+        {
+          name: "Active and Passive Range of Motion (AROM/PROM)",
+          objective: "Quantify current wrist and forearm mobility limitations.",
+          region: "Left wrist, forearm",
+          rationale: "Patient reports minimal active hand mobility and requires assistance.",
+          evidence_level: "emerging",
+          sensitivity: "unknown",
+          specificity: "unknown",
+          source: "clinical_reasoning",
+        },
+      ],
       biopsychosocial_factors: {
         psychological: [
-          'Temor al movimiento.',
+          'Significant fear of movement impacting active hand use.',
+        ],
+        occupational: [
+          'Computer engineer, requiring fine motor skills and hand function.',
+        ],
+        functional_limitations: [
+          'Requires contralateral hand assistance for movement.',
         ],
       },
     });
@@ -161,7 +178,15 @@ describe('useNiagaraProcessor ES attachment integration', () => {
     expect(analysisResult.red_flags[0]).toContain('Preocupación clínica:');
     expect(analysisResult.red_flags[0]).toContain('Recomendar revisión/derivación médica según red flags.');
     expect(analysisResult.motivo_consulta).toContain('Dolor y rigidez de muñeca');
+    expect(analysisResult.biopsychosocial_psychological?.[0]).toContain('Temor significativo al movimiento');
+    expect(analysisResult.biopsychosocial_occupational?.[0]).toContain('profesional de ingeniería informática');
+    expect(analysisResult.biopsychosocial_functional_limitations?.[0]).toContain('Requiere ayuda de la mano contralateral');
     expect(medicationOutput).toContain('Metamizol, 575 mg, cada 12 horas, según dolor.');
     expect(medicationOutput).toContain('Deflazacort, 30 mg, cada 24 horas.');
+    expect(analysisResult.evaluaciones_fisicas_sugeridas[0].test).toContain('Rango de movimiento activo y pasivo');
+    expect(analysisResult.evaluaciones_fisicas_sugeridas[0].objetivo).toContain('Cuantificar');
+    expect(analysisResult.evaluaciones_fisicas_sugeridas[0].region).toContain('muñeca izquierda');
+    expect(analysisResult.evaluaciones_fisicas_sugeridas[0].justificacion).not.toContain('requires assistance');
+    expect(analysisResult.evaluaciones_fisicas_sugeridas[0].justificacion).not.toContain('Patient reports');
   });
 });

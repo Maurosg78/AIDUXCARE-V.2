@@ -28,6 +28,7 @@ REGLAS DE REDACCIÓN:
 - Objetivo 8-12 palabras por ítem. Máximo 15.
 - Usa lenguaje de exposición clínica: "sugiere", "requiere valoración", "considerar".
 - No mezcles inglés en red flags, hallazgos, medicación ni pruebas.
+- No dejes texto en inglés en biopsychosocial_factors, objective, rationale, summary, chief_complaint ni medications.
 
 INSTRUCCIONES CRÍTICAS:
 - Red flags: pérdida de peso no explicada, dolor nocturno, déficits neurológicos, incontinencia, infección sistémica, traumatismo mayor, debilidad progresiva, antecedentes oncológicos, anticoagulantes, esteroides, traumatismo en >65 años, empeoramiento en reposo, interacciones farmacológicas clínicamente relevantes.

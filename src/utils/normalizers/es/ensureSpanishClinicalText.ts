@@ -1,0 +1,69 @@
+const SPANISH_CLINICAL_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/^Clinical concern:/i, 'Preocupación clínica:'],
+  [/Recommend medical review\/referral based on red flags\.?/gi, 'Recomendar revisión/derivación médica según red flags.'],
+  [/Recommend medical review based on red flags\.?/gi, 'Recomendar revisión médica según red flags.'],
+  [/Active and Passive Range of Motion \(AROM\/PROM\)/gi, 'Rango de movimiento activo y pasivo (AROM/PROM)'],
+  [/Metamizol use/gi, 'uso de Metamizol'],
+  [/Significant fear of movement/gi, 'Temor significativo al movimiento'],
+  [/fear of movement/gi, 'temor al movimiento'],
+  [/impacting active hand use/gi, 'que afecta al uso activo de la mano'],
+  [/Electrical sensations with movement/gi, 'Sensaciones eléctricas con el movimiento'],
+  [/indicating potential nerve irritation/gi, 'que sugieren posible irritación neural'],
+  [/Anxiety regarding active hand use/gi, 'Ansiedad respecto al uso activo de la mano'],
+  [/Computer engineer/gi, 'profesional de ingeniería informática'],
+  [/requiring fine motor skills and hand function/gi, 'con necesidad de destreza motora fina y función manual'],
+  [/Patient reports minimal active hand mobility and requires assistance\.?/gi, 'La persona refiere movilidad activa mínima de la mano y requiere ayuda.'],
+  [/Patient reports/gi, 'La persona refiere'],
+  [/Minimal active hand mobility/gi, 'Movilidad activa mínima de la mano'],
+  [/Requires contralateral hand assistance for movement/gi, 'Requiere ayuda de la mano contralateral para el movimiento'],
+  [/Left wrist, forearm/gi, 'muñeca izquierda, antebrazo'],
+  [/Left wrist/gi, 'muñeca izquierda'],
+  [/Left hand, forearm/gi, 'mano izquierda, antebrazo'],
+  [/Left hand/gi, 'mano izquierda'],
+  [/Right wrist, forearm/gi, 'muñeca derecha, antebrazo'],
+  [/Right wrist/gi, 'muñeca derecha'],
+  [/Right hand, forearm/gi, 'mano derecha, antebrazo'],
+  [/Right hand/gi, 'mano derecha'],
+  [/Assess for/gi, 'Valorar'],
+  [/Assess /gi, 'Valorar '],
+  [/current wrist and forearm mobility limitations/gi, 'las limitaciones actuales de movilidad de muñeca y antebrazo'],
+  [/Quantify /gi, 'Cuantificar '],
+  [/current /gi, 'actual '],
+  [/wrist/gi, 'muñeca'],
+  [/forearm/gi, 'antebrazo'],
+  [/mobility limitations/gi, 'limitaciones de movilidad'],
+  [/median nerve irritation or compression/gi, 'irritación o compresión del nervio mediano'],
+  [/median nerve compression/gi, 'compresión del nervio mediano'],
+  [/nerve irritation or damage/gi, 'irritación o daño neural'],
+  [/nerve irritation/gi, 'irritación neural'],
+  [/post-operative status/gi, 'estado postoperatorio'],
+  [/hand strength/gi, 'fuerza de la mano'],
+  [/functional hand strength/gi, 'fuerza funcional de la mano'],
+  [/functional capacity/gi, 'capacidad funcional'],
+  [/reported mobility limitations/gi, 'limitaciones de movilidad referidas'],
+  [/requires assistance/gi, 'requiere ayuda'],
+  [/\band\b/gi, 'y'],
+  [/emerging/gi, 'emergente'],
+  [/as needed for pain/gi, 'según dolor'],
+  [/every 24 hours/gi, 'cada 24 horas'],
+  [/every 12 hours/gi, 'cada 12 horas'],
+  [/for 10 days/gi, 'durante 10 días'],
+  [/for 5 days/gi, 'durante 5 días'],
+  [/tablet/gi, 'comprimido'],
+];
+
+export const ensureSpanishClinicalText = (value: string): string => {
+  const inputValue = typeof value === 'string' ? value : String(value ?? '');
+  let normalizedValue = inputValue;
+
+  for (const [pattern, replacement] of SPANISH_CLINICAL_REPLACEMENTS) {
+    const replacedValue = normalizedValue.replace(pattern, replacement);
+    normalizedValue = replacedValue;
+  }
+
+  const trimmedValue = normalizedValue.trim();
+
+  return trimmedValue;
+};
+
+export { SPANISH_CLINICAL_REPLACEMENTS };
