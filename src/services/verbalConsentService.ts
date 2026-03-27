@@ -52,6 +52,30 @@ export function getDefaultConsentTextVersion(): string {
   return 'v2-en-CA';
 }
 
+export function normalizeConsentJurisdiction(jurisdiction?: string | null): 'ES-ES' | 'CA-ON' {
+  const normalizedJurisdiction = `${jurisdiction || ''}`.trim().toUpperCase();
+
+  if (normalizedJurisdiction === 'ES' || normalizedJurisdiction === 'ES-ES') {
+    return 'ES-ES';
+  }
+
+  if (normalizedJurisdiction === 'CA' || normalizedJurisdiction === 'CA-ON') {
+    return 'CA-ON';
+  }
+
+  return getCurrentJurisdiction() === 'ES-ES' ? 'ES-ES' : 'CA-ON';
+}
+
+export function getConsentLanguageForJurisdiction(jurisdiction?: string | null): 'es' | 'en' {
+  const effectiveJurisdiction = normalizeConsentJurisdiction(jurisdiction);
+
+  if (effectiveJurisdiction === 'ES-ES') {
+    return 'es';
+  }
+
+  return 'en';
+}
+
 /**
  * Returns the consent text version used by the patient-facing portal
  * for a given jurisdiction.
@@ -61,7 +85,9 @@ export function getDefaultConsentTextVersion(): string {
  *  - ES-ES → v1-es-ES-written (prepared, but jurisdiction not yet active)
  */
 export function getConsentVersionForPortal(jurisdiction: string): string {
-  switch (jurisdiction) {
+  const effectiveJurisdiction = normalizeConsentJurisdiction(jurisdiction);
+
+  switch (effectiveJurisdiction) {
     case 'CA-ON':
       return 'v2-en-CA';
     case 'ES-ES':
@@ -80,17 +106,18 @@ export function getConsentVersionForPortal(jurisdiction: string): string {
 export function getConsentTextVersionForCurrentJurisdiction(): string {
   const jurisdiction = getCurrentJurisdiction();
 
-  switch (jurisdiction) {
+  return getConsentTextVersionForJurisdiction(jurisdiction);
+}
+
+export function getConsentTextVersionForJurisdiction(jurisdiction?: string | null): string {
+  const effectiveJurisdiction = normalizeConsentJurisdiction(jurisdiction);
+
+  switch (effectiveJurisdiction) {
     case 'CA-ON':
-      // Canada / Ontario pilot: CPO TRUST + IPC Ontario aligned text
       return 'v2-en-CA';
-
     case 'ES-ES':
-      // Spain pilot: verbal consent text in Spanish (not yet activated at runtime)
       return 'v1-es-ES-verbal';
-
     default:
-      // Fallback to current Canadian default to avoid behaviour changes
       return getDefaultConsentTextVersion();
   }
 }
@@ -219,6 +246,11 @@ export const VerbalConsentService = {
   verifyConsent,
   getVerbalConsentText,
   getDefaultConsentTextVersion,
+  normalizeConsentJurisdiction,
+  getConsentLanguageForJurisdiction,
+  getConsentTextVersionForJurisdiction,
+  getConsentTextVersionForCurrentJurisdiction,
+  getConsentVersionForPortal,
 };
 
 export default VerbalConsentService;

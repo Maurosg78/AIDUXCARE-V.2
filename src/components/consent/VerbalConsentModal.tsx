@@ -20,11 +20,12 @@ import { X, CheckCircle, AlertCircle, User, Clock, Shield } from 'lucide-react';
 import VerbalConsentService, {
   getVerbalConsentText,
   getConsentTextVersionForCurrentJurisdiction,
+  getConsentTextVersionForJurisdiction,
+  normalizeConsentJurisdiction,
   VerbalConsentDetails,
 } from '../../services/verbalConsentService';
 // ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
 import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
-import type { ConsentTextVersion } from '../../core/consent/consentLanguagePolicy';
 
 export interface VerbalConsentModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export interface VerbalConsentModalProps {
   physiotherapistId: string;
   physiotherapistName?: string;
   hospitalId?: string;
+  jurisdiction?: string;
   onConsentObtained: (consentId: string) => void;
   onConsentDenied?: () => void;
 }
@@ -46,12 +48,14 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   physiotherapistId,
   physiotherapistName,
   hospitalId,
+  jurisdiction,
   onConsentObtained,
   onConsentDenied,
 }) => {
   const { t } = useTranslation();
-  const jurisdiction = getCurrentJurisdiction();
-  const isGdpr = jurisdiction === 'ES-ES';
+  const currentJurisdiction = getCurrentJurisdiction();
+  const effectiveJurisdiction = normalizeConsentJurisdiction(jurisdiction || currentJurisdiction);
+  const isGdpr = effectiveJurisdiction === 'ES-ES';
   const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
   const [readStarted, setReadStarted] = useState(false);
   const [patientResponse, setPatientResponse] = useState<'authorized' | 'denied' | 'unable_to_respond' | null>(null);
@@ -65,7 +69,9 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // ✅ WO-CONSENT-VERBAL-01-LANG: Get consent text for current jurisdiction
-  const consentTextVersion = getConsentTextVersionForCurrentJurisdiction();
+  const consentTextVersion = jurisdiction
+    ? getConsentTextVersionForJurisdiction(effectiveJurisdiction)
+    : getConsentTextVersionForCurrentJurisdiction();
   const consentText = getVerbalConsentText(consentTextVersion);
 
   if (!isOpen) return null;
@@ -108,9 +114,11 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     try {
       if (finalResponse === 'authorized') {
         // ✅ WO-CONSENT-VERBAL-01-LANG: Get text version for current jurisdiction
-        const textVersion = getConsentTextVersionForCurrentJurisdiction();
+        const textVersion = jurisdiction
+          ? getConsentTextVersionForJurisdiction(effectiveJurisdiction)
+          : getConsentTextVersionForCurrentJurisdiction();
         const consentText = getVerbalConsentText(textVersion);
-        const jurisdiction = getCurrentJurisdiction();
+        const consentJurisdiction = effectiveJurisdiction;
         
         const consentDetails: Omit<VerbalConsentDetails, 'method'> = {
           obtainedBy: physiotherapistName || physiotherapistId,
@@ -129,7 +137,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           { 
             hospitalId,
             textVersion, // ✅ WO-CONSENT-VERBAL-01-LANG
-            jurisdiction, // ✅ WO-CONSENT-VERBAL-01-LANG
+            jurisdiction: consentJurisdiction, // ✅ WO-CONSENT-VERBAL-01-LANG
           }
         );
 
@@ -486,5 +494,4 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
 };
 
 export default VerbalConsentModal;
-
 

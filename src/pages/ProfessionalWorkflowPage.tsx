@@ -25,7 +25,11 @@ import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedC
 import { AnalyticsService } from "../services/analyticsService";
 import type { ValueMetricsEvent } from "../services/analyticsService";
 import { checkConsentViaServer } from "../services/consentServerService";
-import { VerbalConsentService } from "../services/verbalConsentService";
+import {
+  getConsentLanguageForJurisdiction,
+  getConsentVersionForPortal,
+  VerbalConsentService,
+} from "../services/verbalConsentService";
 import { SMSService } from "../services/smsService";
 import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
@@ -711,7 +715,13 @@ const ProfessionalWorkflowPage = () => {
         currentPatient.email || undefined,
         clinicName,
         user.uid,
-        clinicianDisplayName
+        clinicianDisplayName,
+        undefined,
+        {
+          jurisdiction: consentSmsJurisdiction,
+          language: getConsentLanguageForJurisdiction(consentSmsJurisdiction),
+          consentTextVersion: getConsentVersionForPortal(consentSmsJurisdiction),
+        }
       );
 
       setConsentToken(token);

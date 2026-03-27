@@ -40,6 +40,7 @@ import { SessionComparisonService, type SessionComparisonView, type Session as C
 import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
 import { classifyTrajectoryFromTwoPoints } from "@/core/longitudinal/trajectoryClassifier";
 import { resolveConsentChannel } from "../domain/consent/resolveConsentChannel";
+import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 
 // Components
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -76,6 +77,22 @@ const FollowUpWorkflowPage = () => {
   // Patient state
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const followUpConsentJurisdiction = useMemo(() => {
+    const practiceCountry = `${professionalProfile?.practiceCountry || professionalProfile?.country || ''}`.trim().toUpperCase();
+    if (practiceCountry === 'ES') return 'ES-ES';
+    if (practiceCountry === 'CA') return 'CA-ON';
+
+    const patientPhone = `${currentPatient?.phone || currentPatient?.personalInfo?.phone || ''}`.trim();
+    if (patientPhone.startsWith('+34')) return 'ES-ES';
+    if (patientPhone.startsWith('+1')) return 'CA-ON';
+
+    return getCurrentJurisdiction();
+  }, [
+    currentPatient?.personalInfo?.phone,
+    currentPatient?.phone,
+    professionalProfile?.country,
+    professionalProfile?.practiceCountry,
+  ]);
 
   // SOAP state
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
@@ -679,11 +696,12 @@ const FollowUpWorkflowPage = () => {
               consentResolution={resolveConsentChannel({
                 hasValidConsent: false,
                 isDeclined: clinicalState.consent.status === 'declined',
-                jurisdiction: 'CA-ON',
+                jurisdiction: followUpConsentJurisdiction,
                 isFirstSession: clinicalState.isFirstSession,
               })}
               physiotherapistId={user?.uid}
               physiotherapistName={deriveClinicianDisplayName(professionalProfile, user)}
+              consentJurisdiction={followUpConsentJurisdiction}
             />
           )}
 

@@ -15,12 +15,50 @@ import { CheckCircle, XCircle, X } from 'lucide-react';
 export default function ConsentSuccessPage() {
   const [searchParams] = useSearchParams();
   const decision = searchParams.get('decision');
+  const language = searchParams.get('lang') === 'es' ? 'es' : 'en';
   const isDeclined = decision === 'declined';
   const [showCloseButton, setShowCloseButton] = useState(false);
   const [attemptingClose, setAttemptingClose] = useState(true);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [buttonClicked, setButtonClicked] = useState(false);
+  const copy = language === 'es'
+    ? {
+        declinedTitle: 'Consentimiento rechazado',
+        declinedBody: 'Tu decisión ha sido registrada. No se utilizará documentación asistida por IA en tu atención.',
+        acceptedTitle: 'Consentimiento registrado',
+        acceptedBody: 'Gracias por proporcionar tu consentimiento. Tu respuesta se ha registrado correctamente.',
+        closing: 'Esta ventana se cerrará automáticamente...',
+        shownBelow: 'Instrucciones visibles abajo ↓',
+        closePage: 'Cerrar esta página',
+        manualClose: 'Para cerrar esta página manualmente:',
+        ios: 'iOS: desliza hacia arriba desde la parte inferior para ver las apps abiertas y luego cierra esta pestaña del navegador.',
+        android: 'Android: pulsa varias veces Atrás o abre el menú del navegador (⋮) y selecciona "Cerrar pestaña".',
+        windows: 'Windows/Linux: pulsa Ctrl + W o Ctrl + F4.',
+        mac: 'Mac: pulsa Cmd + W.',
+        tabClose: 'O haz clic en la X de la pestaña del navegador.',
+        safeToCloseDeclined: 'Tu decisión ha sido registrada. Puedes cerrar esta página con seguridad.',
+        safeToCloseAccepted: 'Tu consentimiento ha sido registrado. Puedes cerrar esta página con seguridad.',
+        helpText: 'Si el botón no cierra la ventana, se mostrarán instrucciones detalladas.',
+      }
+    : {
+        declinedTitle: 'Consent Declined',
+        declinedBody: 'Your decision has been recorded. AI-assisted documentation will not be used for your care.',
+        acceptedTitle: 'Consent Recorded',
+        acceptedBody: 'Thank you for providing your consent. Your response has been successfully recorded.',
+        closing: 'This window will close automatically...',
+        shownBelow: 'Instructions Shown Below ↓',
+        closePage: 'Close This Page',
+        manualClose: 'To close this page manually:',
+        ios: 'iOS: Swipe up from the bottom of the screen to see all apps, then swipe the browser tab upward.',
+        android: 'Android: Tap the "Back" button several times or tap the browser menu (⋮) and select "Close tab".',
+        windows: 'Windows/Linux: Press Ctrl + W or Ctrl + F4.',
+        mac: 'Mac: Press Cmd + W.',
+        tabClose: 'Or click the X on the browser tab.',
+        safeToCloseDeclined: 'Your decision has been recorded. You can safely close this page.',
+        safeToCloseAccepted: 'Your consent has been recorded. You can safely close this page.',
+        helpText: "If the button doesn't close the window, detailed instructions will be shown.",
+      };
 
   // ✅ Detect mobile
   useEffect(() => {
@@ -103,13 +141,11 @@ export default function ConsentSuccessPage() {
         {isDeclined ? (
           <>
             <XCircle className="w-20 h-20 text-orange-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Declined</h1>
-            <p className="text-gray-600 mb-6">
-              Your decision has been recorded. AI-assisted documentation will not be used for your care.
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{copy.declinedTitle}</h1>
+            <p className="text-gray-600 mb-6">{copy.declinedBody}</p>
             {attemptingClose && !showCloseButton && (
               <p className="text-sm text-gray-500 animate-pulse">
-                This window will close automatically...
+                {copy.closing}
               </p>
             )}
             {showCloseButton && (
@@ -120,49 +156,49 @@ export default function ConsentSuccessPage() {
                   className="w-full bg-orange-600 hover:bg-orange-700 active:bg-orange-800 disabled:bg-orange-500 disabled:cursor-default text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   <X className="w-5 h-5" />
-                  {buttonClicked && showInstructions ? 'Instructions Shown Below ↓' : 'Close This Page'}
+                  {buttonClicked && showInstructions ? copy.shownBelow : copy.closePage}
                 </button>
                 {showInstructions && (
                   <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg text-left animate-fadeIn">
                     <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                       <span className="text-lg">📱</span>
-                      To close this page manually:
+                      {copy.manualClose}
                     </p>
                     {isMobile ? (
                       <ul className="text-sm text-blue-800 space-y-2 list-none">
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>iOS:</strong> Swipe up from the bottom of the screen to see all apps, then swipe the browser tab upward</span>
+                          <span>{copy.ios}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Android:</strong> Tap the "Back" button several times or tap the browser menu (⋮) and select "Close tab"</span>
+                          <span>{copy.android}</span>
                         </li>
                       </ul>
                     ) : (
                       <ul className="text-sm text-blue-800 space-y-2 list-none">
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Windows/Linux:</strong> Press <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Ctrl + W</kbd> or <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Ctrl + F4</kbd></span>
+                          <span>{copy.windows}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Mac:</strong> Press <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Cmd + W</kbd></span>
+                          <span>{copy.mac}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span>Or click the <strong>X</strong> on the browser tab</span>
+                          <span>{copy.tabClose}</span>
                         </li>
                       </ul>
                     )}
                     <p className="mt-3 text-xs text-blue-700 italic">
-                      Your decision has been recorded. You can safely close this page.
+                      {copy.safeToCloseDeclined}
                     </p>
                   </div>
                 )}
                 {!showInstructions && (
                   <p className="text-xs text-gray-500 text-center">
-                    If the button doesn't close the window, detailed instructions will be shown.
+                    {copy.helpText}
                   </p>
                 )}
               </div>
@@ -171,13 +207,11 @@ export default function ConsentSuccessPage() {
         ) : (
           <>
             <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Consent Recorded</h1>
-            <p className="text-gray-600 mb-6">
-              Thank you for providing your consent. Your response has been successfully recorded.
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{copy.acceptedTitle}</h1>
+            <p className="text-gray-600 mb-6">{copy.acceptedBody}</p>
             {attemptingClose && !showCloseButton && (
               <p className="text-sm text-gray-500 animate-pulse">
-                This window will close automatically...
+                {copy.closing}
               </p>
             )}
             {showCloseButton && (
@@ -188,49 +222,49 @@ export default function ConsentSuccessPage() {
                   className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-500 disabled:cursor-default text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   <X className="w-5 h-5" />
-                  {buttonClicked && showInstructions ? 'Instructions Shown Below ↓' : 'Close This Page'}
+                  {buttonClicked && showInstructions ? copy.shownBelow : copy.closePage}
                 </button>
                 {showInstructions && (
                   <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg text-left animate-fadeIn">
                     <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                       <span className="text-lg">📱</span>
-                      To close this page manually:
+                      {copy.manualClose}
                     </p>
                     {isMobile ? (
                       <ul className="text-sm text-blue-800 space-y-2 list-none">
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>iOS:</strong> Swipe up from the bottom of the screen to see all apps, then swipe the browser tab upward</span>
+                          <span>{copy.ios}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Android:</strong> Tap the "Back" button several times or tap the browser menu (⋮) and select "Close tab"</span>
+                          <span>{copy.android}</span>
                         </li>
                       </ul>
                     ) : (
                       <ul className="text-sm text-blue-800 space-y-2 list-none">
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Windows/Linux:</strong> Press <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Ctrl + W</kbd> or <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Ctrl + F4</kbd></span>
+                          <span>{copy.windows}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span><strong>Mac:</strong> Press <kbd className="px-2 py-1 bg-blue-100 rounded font-mono text-xs">Cmd + W</kbd></span>
+                          <span>{copy.mac}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
-                          <span>Or click the <strong>X</strong> on the browser tab</span>
+                          <span>{copy.tabClose}</span>
                         </li>
                       </ul>
                     )}
                     <p className="mt-3 text-xs text-blue-700 italic">
-                      Your consent has been recorded. You can safely close this page.
+                      {copy.safeToCloseAccepted}
                     </p>
                   </div>
                 )}
                 {!showInstructions && (
                   <p className="text-xs text-gray-500 text-center">
-                    If the button doesn't close the window, detailed instructions will be shown.
+                    {copy.helpText}
                   </p>
                 )}
               </div>

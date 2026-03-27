@@ -37,6 +37,9 @@ export interface PatientConsentToken {
   physiotherapistId: string;
   physiotherapistName: string;
   sessionId?: string;
+  jurisdiction?: string;
+  language?: string;
+  consentTextVersion?: string;
   createdAt: Date;
   expiresAt: Date;
   used: boolean;
@@ -110,7 +113,12 @@ export class PatientConsentService {
     clinicName: string = 'AiduxCare Clinic',
     physiotherapistId: string = 'temp-user',
     physiotherapistName: string = 'Your physiotherapist',
-    sessionId?: string
+    sessionId?: string,
+    options?: {
+      jurisdiction?: string;
+      language?: string;
+      consentTextVersion?: string;
+    }
   ): Promise<string> {
     try {
       // Prioridad 1.1: Hardening - asegurar nombre seguro con fallback
@@ -137,6 +145,9 @@ export class PatientConsentService {
         physiotherapistId,
         physiotherapistName: safePhysioName,
         sessionId: sessionId || null,
+        jurisdiction: options?.jurisdiction || null,
+        language: options?.language || null,
+        consentTextVersion: options?.consentTextVersion || null,
         createdAt: serverTimestamp(),
         expiresAt: Timestamp.fromDate(expiresAt),
         used: false,
@@ -200,6 +211,9 @@ export class PatientConsentService {
         physiotherapistId: data.physiotherapistId,
         physiotherapistName: data.physiotherapistName,
         sessionId: data.sessionId,
+        jurisdiction: data.jurisdiction,
+        language: data.language,
+        consentTextVersion: data.consentTextVersion,
         createdAt: data.createdAt?.toDate() || new Date(),
         expiresAt: data.expiresAt?.toDate() || new Date(),
         used: data.used || false,
@@ -778,4 +792,3 @@ export class PatientConsentService {
     }
   }
 }
-

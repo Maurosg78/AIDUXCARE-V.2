@@ -93,13 +93,15 @@ export class SMSService {
   ): Promise<void> {
     try {
       const publicBaseUrl = getPublicBaseUrl();
-      const disclosureUrl = `${publicBaseUrl}/disclosure/${patientId}`;
+      const jurisdiction = resolveConsentSmsJurisdiction(phone);
+      const language = jurisdiction === 'ES-ES' ? 'es' : 'en';
+      const disclosureUrl = `${publicBaseUrl}/disclosure/${patientId}?lang=${language}`;
+      const normalizedName = normalizeNameForSMS(patientName);
+      const message = language === 'es'
+        ? `Hola ${normalizedName}, tu documento informativo de consentimiento está disponible aquí: ${disclosureUrl}`
+        : `Hi ${normalizedName}, your consent disclosure document is available at: ${disclosureUrl}`;
 
-      // Simple disclosure message (can be enhanced later)
-      const message = `Hi ${normalizeNameForSMS(patientName)}, your consent disclosure document is available at: ${disclosureUrl}`;
-
-      // Validate template
-      const validation = validateSMSTemplate(message);
+      const validation = language === 'es' ? validateSMSTemplateEs(message) : validateSMSTemplate(message);
       if (!validation.isValid) {
         logger.error('[SMS] Disclosure template validation failed:', validation.errors);
         throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);

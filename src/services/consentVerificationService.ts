@@ -18,6 +18,11 @@ import { auth } from '../lib/firebase';
 import { SMSService } from './smsService';
 import { PatientConsentService } from './patientConsentService';
 import { checkConsentViaServer } from './consentServerService';
+import {
+  getConsentLanguageForJurisdiction,
+  getConsentVersionForPortal,
+  normalizeConsentJurisdiction,
+} from './verbalConsentService';
 
 export type SMSConsentStatus = 'sending' | 'sent' | 'confirmed' | 'failed' | 'timeout';
 export type ConsentMethod = 'sms' | 'manual' | null;
@@ -121,6 +126,7 @@ export class ConsentVerificationService {
       // Send SMS if phone available
       if (patientPhone) {
         try {
+          const consentJurisdiction = normalizeConsentJurisdiction(patientPhone?.startsWith('+34') ? 'ES-ES' : 'CA-ON');
           // Generate consent token
           const token = await PatientConsentService.generateConsentToken(
             patientId,
@@ -129,7 +135,13 @@ export class ConsentVerificationService {
             undefined, // email
             clinicName,
             physiotherapistId,
-            physiotherapistName
+            physiotherapistName,
+            undefined,
+            {
+              jurisdiction: consentJurisdiction,
+              language: getConsentLanguageForJurisdiction(consentJurisdiction),
+              consentTextVersion: getConsentVersionForPortal(consentJurisdiction),
+            }
           );
 
           // Send SMS
@@ -443,4 +455,3 @@ export class ConsentVerificationService {
     }
   }
 }
-

@@ -8,6 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { VerbalConsentModal } from './VerbalConsentModal';
 import { PatientConsentService } from '@/services/patientConsentService';
 import { SMSService } from '@/services/smsService';
+import {
+  getConsentLanguageForJurisdiction,
+  getConsentVersionForPortal,
+  normalizeConsentJurisdiction,
+} from '@/services/verbalConsentService';
 import { useAuth } from '@/hooks/useAuth';
 import type { ConsentResolution } from '@/domain/consent/resolveConsentChannel';
 
@@ -46,6 +51,9 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const [formOpened, setFormOpened] = useState(false);
   const [smsLoading, setSmsLoading] = useState(false);
   const [smsError, setSmsError] = useState<string | null>(null);
+  const normalizedJurisdiction = normalizeConsentJurisdiction(consentJurisdiction);
+  const consentLanguage = getConsentLanguageForJurisdiction(normalizedJurisdiction);
+  const consentTextVersion = getConsentVersionForPortal(normalizedJurisdiction);
 
   const handleConsentObtained = async (consentId: string) => {
     console.log('[ConsentGate] ✅ Verbal consent recorded', { consentId: consentId ? '***' : '' });
@@ -67,7 +75,13 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         undefined,
         clinicName ?? 'Clinic',
         physiotherapistId,
-        physiotherapistName ?? 'Physiotherapist'
+        physiotherapistName ?? 'Physiotherapist',
+        undefined,
+        {
+          jurisdiction: normalizedJurisdiction,
+          language: consentLanguage,
+          consentTextVersion,
+        }
       );
       const url = `${window.location.origin}/consent/${token}`;
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -94,7 +108,13 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         undefined,
         clinicName ?? 'Clinic',
         physiotherapistId,
-        physiotherapistName ?? 'Physiotherapist'
+        physiotherapistName ?? 'Physiotherapist',
+        undefined,
+        {
+          jurisdiction: normalizedJurisdiction,
+          language: consentLanguage,
+          consentTextVersion,
+        }
       );
       const tokenDoc = await PatientConsentService.getConsentByToken(token);
       const physioName = tokenDoc?.physiotherapistName?.trim() || physiotherapistName || 'Physiotherapist';
@@ -108,7 +128,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         clinicName ?? 'Clinic',
         physioName,
         token,
-        { jurisdiction: consentJurisdiction }
+        { jurisdiction: normalizedJurisdiction }
       );
     } catch (err) {
       setSmsError(err instanceof Error ? err.message : t('consent.failedToSendSms'));
@@ -202,6 +222,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         patientName={patientName}
         physiotherapistId={physiotherapistId ?? ''}
         physiotherapistName={physiotherapistName}
+        jurisdiction={normalizedJurisdiction}
         onConsentObtained={handleConsentObtained}
         onConsentDenied={onConsentDeclined}
       />

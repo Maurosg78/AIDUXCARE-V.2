@@ -9,16 +9,52 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { FileText, Shield, CheckCircle } from 'lucide-react';
-import { getVerbalConsentText, getDefaultConsentTextVersion } from '../services/verbalConsentService';
+import {
+  getConsentTextVersionForJurisdiction,
+  getVerbalConsentText,
+  normalizeConsentJurisdiction,
+} from '../services/verbalConsentService';
 
 export default function DisclosurePage() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const [acknowledged, setAcknowledged] = useState(false);
-
-  const textVersion = getDefaultConsentTextVersion();
+  const requestedLang = searchParams.get('lang') === 'es' ? 'ES-ES' : 'CA-ON';
+  const textJurisdiction = normalizeConsentJurisdiction(requestedLang);
+  const isSpanish = textJurisdiction === 'ES-ES';
+  const textVersion = getConsentTextVersionForJurisdiction(textJurisdiction);
   const consentText = getVerbalConsentText(textVersion);
+  const copy = isSpanish
+    ? {
+        title: 'Documento informativo de consentimiento',
+        subtitle: 'Este documento se te ha enviado tras tu consentimiento verbal para documentación clínica asistida por IA.',
+        intro: 'Lee la siguiente declaración informativa:',
+        bullets: [
+          'Aquí se explica cómo se utilizará tu información de salud',
+          'Puedes retirar el consentimiento en cualquier momento contactando con tu profesional',
+          'Para más detalles, consulta nuestra Política de privacidad',
+        ],
+        statementTitle: 'Declaración informativa',
+        acknowledged: 'Leído y confirmado',
+        acknowledge: 'He leído y confirmo esta información',
+        privacy: 'Política de privacidad',
+      }
+    : {
+        title: 'Consent Disclosure Document',
+        subtitle: 'This document was sent to you following your verbal consent for AI-assisted clinical documentation.',
+        intro: 'Please read the disclosure statement below:',
+        bullets: [
+          'This explains how your health information will be used',
+          'You may withdraw consent at any time by contacting your provider',
+          'For more details, see our Privacy Policy',
+        ],
+        statementTitle: 'Disclosure Statement',
+        acknowledged: 'Acknowledged',
+        acknowledge: 'I have read and acknowledge this disclosure',
+        privacy: 'Privacy Policy',
+      };
 
   useEffect(() => {
     // Track view for audit (optional - could write to patient_disclosures)
@@ -34,10 +70,10 @@ export default function DisclosurePage() {
         <div className="bg-gradient-to-r from-primary-blue via-indigo-600 to-primary-purple rounded-t-2xl p-6 text-white shadow-xl">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8" />
-            <h1 className="text-2xl font-bold">Consent Disclosure Document</h1>
+            <h1 className="text-2xl font-bold">{copy.title}</h1>
           </div>
           <p className="text-indigo-100 text-sm">
-            This document was sent to you following your verbal consent for AI-assisted clinical documentation.
+            {copy.subtitle}
           </p>
         </div>
 
@@ -47,11 +83,11 @@ export default function DisclosurePage() {
             <div className="flex items-start gap-3">
               <FileText className="w-5 h-5 text-primary-purple flex-shrink-0 mt-0.5" />
               <div className="text-sm text-indigo-900">
-                <p className="font-medium mb-2">Please read the disclosure statement below:</p>
+                <p className="font-medium mb-2">{copy.intro}</p>
                 <ul className="list-disc list-inside space-y-1 text-indigo-800">
-                  <li>This explains how your health information will be used</li>
-                  <li>You may withdraw consent at any time by contacting your provider</li>
-                  <li>For more details, see our <Link to="/privacy-policy" className="underline font-medium" target="_blank" rel="noopener noreferrer">Privacy Policy</Link></li>
+                  <li>{copy.bullets[0]}</li>
+                  <li>{copy.bullets[1]}</li>
+                  <li>{isSpanish ? 'Para más detalles, consulta nuestra ' : 'For more details, see our '}<Link to="/privacy-policy" className="underline font-medium" target="_blank" rel="noopener noreferrer">{copy.privacy}</Link></li>
                 </ul>
               </div>
             </div>
@@ -59,7 +95,7 @@ export default function DisclosurePage() {
 
           {/* Disclosure Text */}
           <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200 max-h-96 overflow-y-auto">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Disclosure Statement</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{copy.statementTitle}</h2>
             <div className="prose prose-sm max-w-none">
               <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{consentText}</div>
             </div>
@@ -79,17 +115,17 @@ export default function DisclosurePage() {
               {acknowledged ? (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  Acknowledged
+                  {copy.acknowledged}
                 </>
               ) : (
-                <>I have read and acknowledge this disclosure</>
+                <>{copy.acknowledge}</>
               )}
             </button>
           </div>
 
           <p className="text-center text-sm text-gray-500">
             <Link to="/privacy-policy" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">
-              Privacy Policy
+              {copy.privacy}
             </Link>
           </p>
         </div>
