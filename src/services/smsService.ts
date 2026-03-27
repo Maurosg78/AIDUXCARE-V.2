@@ -33,6 +33,26 @@ const VONAGE_API_SECRET = import.meta.env.VITE_VONAGE_API_SECRET || '';
 const VONAGE_FROM_NUMBER = import.meta.env.VITE_VONAGE_FROM_NUMBER || '';
 const VONAGE_ENABLED = !!(VONAGE_API_KEY && VONAGE_API_SECRET && VONAGE_FROM_NUMBER);
 
+function resolveConsentSmsJurisdiction(phone: string, explicitJurisdiction?: string): 'ES-ES' | 'CA-ON' {
+  const normalizedJurisdiction = (explicitJurisdiction || '').trim().toUpperCase();
+  if (normalizedJurisdiction === 'ES' || normalizedJurisdiction === 'ES-ES') {
+    return 'ES-ES';
+  }
+  if (normalizedJurisdiction === 'CA' || normalizedJurisdiction === 'CA-ON') {
+    return 'CA-ON';
+  }
+
+  const normalizedPhone = phone.trim().replace(/[^\d+]/g, '');
+  if (normalizedPhone.startsWith('+34')) {
+    return 'ES-ES';
+  }
+  if (normalizedPhone.startsWith('+1')) {
+    return 'CA-ON';
+  }
+
+  return getCurrentJurisdiction() === 'ES-ES' ? 'ES-ES' : 'CA-ON';
+}
+
 // Log Twilio configuration status (only in development)
 if (import.meta.env.DEV) {
   console.log('[SMS SERVICE] Provider configuration:', {
@@ -180,7 +200,8 @@ export class SMSService {
     patientName: string,
     clinicName: string,
     physiotherapistName: string,
-    consentToken: string
+    consentToken: string,
+    options?: { jurisdiction?: string }
   ): Promise<void> {
     try {
       // Get production URL (never localhost in production)
@@ -189,7 +210,7 @@ export class SMSService {
       const privacyUrl = `${publicBaseUrl}/privacy-policy`;
 
       // Template by jurisdiction (en-CA PHIPA, es_ES GDPR/RGPD)
-      const jurisdiction = getCurrentJurisdiction();
+      const jurisdiction = resolveConsentSmsJurisdiction(phone, options?.jurisdiction);
       const useEsTemplate = jurisdiction === 'ES-ES';
       const consentTemplate = useEsTemplate ? SMS_TEMPLATES.consent.es_ES : SMS_TEMPLATES.consent.en_CA;
       const message = consentTemplate(
@@ -260,6 +281,7 @@ export class SMSService {
         phoneLength: phone.length,
         patientName,
         consentUrl,
+        jurisdiction,
         twilioEnabled: TWILIO_ENABLED,
         note: '⚠️ In Twilio trial accounts, SMS can only be sent to verified phone numbers. Verify numbers in Twilio Console > Phone Numbers > Verified Caller IDs'
       });
@@ -837,4 +859,3 @@ export class SMSService {
     return phone;
   }
 }
-

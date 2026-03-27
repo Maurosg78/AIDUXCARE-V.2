@@ -16,6 +16,7 @@ export interface ConsentGateScreenProps {
   patientName?: string;
   patientPhone?: string;
   clinicName?: string;
+  consentJurisdiction?: string;
   consentResolution: ConsentResolution;
   physiotherapistId?: string;
   physiotherapistName?: string;
@@ -30,6 +31,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   patientName,
   patientPhone,
   clinicName,
+  consentJurisdiction,
   consentResolution,
   physiotherapistId,
   physiotherapistName,
@@ -105,7 +107,8 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         patientName ?? 'Patient',
         clinicName ?? 'Clinic',
         physioName,
-        token
+        token,
+        { jurisdiction: consentJurisdiction }
       );
     } catch (err) {
       setSmsError(err instanceof Error ? err.message : t('consent.failedToSendSms'));

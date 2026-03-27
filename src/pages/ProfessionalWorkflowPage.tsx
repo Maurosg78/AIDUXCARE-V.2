@@ -419,6 +419,22 @@ const ProfessionalWorkflowPage = () => {
   const { sharedState, updatePhysicalEvaluation } = useSharedWorkflowState();
   const { user } = useAuth(); // Must be called before useEffect that uses it
   const { profile: professionalProfile } = useProfessionalProfileContext();
+  const consentSmsJurisdiction = useMemo(() => {
+    const practiceCountry = `${professionalProfile?.practiceCountry || professionalProfile?.country || ''}`.trim().toUpperCase();
+    if (practiceCountry === 'ES') return 'ES-ES';
+    if (practiceCountry === 'CA') return 'CA-ON';
+
+    const patientPhone = `${currentPatient?.phone || currentPatient?.personalInfo?.phone || ''}`.trim();
+    if (patientPhone.startsWith('+34')) return 'ES-ES';
+    if (patientPhone.startsWith('+1')) return 'CA-ON';
+
+    return getCurrentJurisdiction();
+  }, [
+    professionalProfile?.practiceCountry,
+    professionalProfile?.country,
+    currentPatient?.phone,
+    currentPatient?.personalInfo?.phone,
+  ]);
 
   // Professional profile loaded (debug logs removed to reduce re-renders)
 
@@ -710,7 +726,8 @@ const ProfessionalWorkflowPage = () => {
         currentPatient.fullName || `${currentPatient.firstName} ${currentPatient.lastName}`.trim(),
         clinicName,
         physioNameForSms,
-        token
+        token,
+        { jurisdiction: consentSmsJurisdiction }
       );
 
       setConsentPending(true);
@@ -722,7 +739,7 @@ const ProfessionalWorkflowPage = () => {
       setSmsError(message);
       setConsentPending(false);
     }
-  }, [currentPatient, user?.uid, patientIdFromUrl, clinicName, clinicianDisplayName]);
+  }, [currentPatient, user?.uid, patientIdFromUrl, clinicName, clinicianDisplayName, consentSmsJurisdiction]);
 
   // ✅ PILOT METRICS: Track session start (only once per session)
   // Use a stable session key based on patientId + user.uid to prevent duplicates
@@ -4584,13 +4601,13 @@ const ProfessionalWorkflowPage = () => {
         <VerbalConsentModal
           patientId={patientIdFromUrl}
           patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
-          patientEmail={currentPatient?.email}
-          patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
+          physiotherapistId={user.uid}
+          physiotherapistName={clinicianDisplayName}
           onClose={() => {
             console.log('[WORKFLOW] Verbal consent modal closed for declined patient');
             setShowVerbalConsentForDeclined(false);
           }}
-          onConsentGranted={async () => {
+          onConsentObtained={async () => {
             console.log('[WORKFLOW] New consent granted after decline - triggering check');
             setShowVerbalConsentForDeclined(false);
 
@@ -4664,6 +4681,7 @@ const ProfessionalWorkflowPage = () => {
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
         clinicName={clinicName}
+        consentJurisdiction={consentSmsJurisdiction}
         consentResolution={consentResolution}
         physiotherapistId={user?.uid}
         physiotherapistName={clinicianDisplayName}
@@ -5648,6 +5666,7 @@ const ProfessionalWorkflowPage = () => {
             physiotherapistName={clinicianDisplayName}
             onConsentObtained={async (consentId) => {
               console.log('[WORKFLOW] ✅ Verbal consent obtained:', consentId);
+              handleConsentGrantedImmediate();
               setWorkflowBlocked(false);
               setShowVerbalConsentModal(false);
               setConsentCheckComplete(false); // Reset to re-check
