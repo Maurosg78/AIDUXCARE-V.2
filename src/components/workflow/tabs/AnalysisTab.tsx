@@ -315,8 +315,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             {t('workflow.analysis.followUpConversation')}
           </h2>
           <p className="text-sm text-blue-700 mb-3">
-            Record your conversation with the patient about their progress since last visit. 
-            Focus on changes, what they can do now, and what's still limiting them.
+            {t('workflow.analysis.followUpConversationBody')}
           </p>
         </div>
       )}
@@ -404,9 +403,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
             {interactiveResults?.redFlags?.length > 0 && (
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
-                <h3 className="text-sm font-semibold text-red-900 mb-3">🚨 Red flags detected — clinical decision required</h3>
+                <h3 className="text-sm font-semibold text-red-900 mb-3">{t('workflow.analysis.redFlagsDetectedTitle')}</h3>
                 <p className="text-xs text-slate-700 mb-3">
-                  Before accessing the SOAP note, document your clinical decision for each red flag.
+                  {t('workflow.analysis.redFlagsDetectedBody')}
                 </p>
                 <div className="space-y-3">
                   {(interactiveResults.redFlags as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
@@ -766,4 +765,3 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
 };
 
 export default AnalysisTab;
-

@@ -224,6 +224,11 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   workflowRoute,
 }) => {
   const { t } = useTranslation();
+  const sourceLabels: Record<EvaluationTestEntry['source'], string> = {
+    ai: t('workflow.evaluation.sourceAi'),
+    manual: t('workflow.evaluation.sourceManual'),
+    custom: t('workflow.evaluation.sourceCustom'),
+  };
   const RESULT_LABELS: Record<EvaluationResult, string> = {
     normal: t('workflow.evaluation.resultLabels.normal'),
     positive: t('workflow.evaluation.resultLabels.positive'),
@@ -597,10 +602,10 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-slate-800">{t('workflow.evaluation.selectedTests')}</p>
               <span className="text-xs text-slate-500">
-                {filteredEvaluationTests.length} selected
+                {t('workflow.evaluation.selectedCount', { count: filteredEvaluationTests.length })}
                 {detectedCaseRegion && filteredEvaluationTests.length !== evaluationTests.length && (
                   <span className="text-amber-600 ml-1">
-                    ({evaluationTests.length - filteredEvaluationTests.length} filtered by region)
+                    ({t('workflow.evaluation.filteredByRegion', { count: evaluationTests.length - filteredEvaluationTests.length })})
                   </span>
                 )}
               </span>
@@ -608,8 +613,8 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             {filteredEvaluationTests.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
                 {detectedCaseRegion 
-                  ? `Add or select tests for ${regionLabels[detectedCaseRegion]} to document your findings.`
-                  : 'Add or select tests to document your findings.'}
+                  ? t('workflow.evaluation.emptyStateWithRegion', { region: regionLabels[detectedCaseRegion] })
+                  : t('workflow.evaluation.emptyState')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -624,7 +629,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <div>
                           <p className="font-semibold text-slate-800">{entry.name}</p>
                           <p className="text-[11px] text-slate-500">
-                            {entry.region ? regionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · Source: {entry.source.toUpperCase()}
+                            {entry.region ? regionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · {t('workflow.evaluation.sourceLabel')}: {sourceLabels[entry.source]}
                           </p>
                           {entry.description && (
                             <p className="mt-1 text-[11px] text-slate-500">{entry.description}</p>
@@ -649,7 +654,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           onClick={() => removeEvaluationTest(entry.id)}
                           className="text-xs text-slate-400 hover:text-rose-500"
                         >
-                          Remove
+                          {t('workflow.evaluation.remove')}
                         </button>
                       </div>
 
@@ -726,7 +731,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           <div className="space-y-3 pt-2 border-t border-slate-200">
                             <div className="flex flex-wrap items-center gap-3">
                               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600">
-                                Status: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
+                                {t('workflow.evaluation.statusLabel')}: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
                               </span>
                               <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                                 <input
@@ -783,7 +788,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <>
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600">
-                              Status: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
+                              {t('workflow.evaluation.statusLabel')}: {RESULT_LABELS[entry.result] || t('workflow.evaluation.statusPending')}
                             </span>
                             <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                               <input
@@ -860,4 +865,3 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
 };
 
 export default EvaluationTab;
-
