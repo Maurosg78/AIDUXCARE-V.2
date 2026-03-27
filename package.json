@@ -27,6 +27,7 @@
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
     "lint": "eslint .",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix --fix-type layout,suggestion",
+    "check:write-facade": "node scripts/check-direct-writes-outside-facade.mjs",
     "validate:canonical": "bash scripts/validate-canonical-imports.sh",
     "typecheck": "echo '⏭️ typecheck saltado temporalmente'",
     "preview": "vite preview",
@@ -139,5 +140,6 @@
   "volta": {
     "node": "20.19.0",
     "npm": "10.8.2"
-  }
+  },
+  "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

@@ -1,1 +1,6 @@
+# Write-facade governance (explicit review path; same owners as default)
+.github/direct-write-facade-allowlist.json @Maurosg78 @AIDUXCARE
+.github/workflows/write-facade-enforcement.yml @Maurosg78 @AIDUXCARE
+docs/adr/0002-enforce-direct-writes-through-persistence-facade.md @Maurosg78 @AIDUXCARE
+
 * @Maurosg78 @AIDUXCARE

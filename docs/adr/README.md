@@ -12,6 +12,7 @@ Lightweight records of consequential decisions. One file per decision.
 <!-- Example:
 - ADR-0001: Enable TypeScript strict mode — 2025-09-25 (status: Accepted)
 -->
+- ADR-0002: Enforce direct writes through the persistence facade — 2026-03-27 (status: Accepted)
 
 ## Pre-push (bypass para cambios meta)
 - Si el cambio incluye **solo** archivos dentro de `docs/adr/**` o el `.gitignore`,

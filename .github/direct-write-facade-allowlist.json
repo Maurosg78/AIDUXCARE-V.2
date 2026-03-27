@@ -1,0 +1,10 @@
+{
+  "allowedWriterFiles": [
+    "src/services/PersistenceService.ts",
+    "src/services/PersistenceService.js",
+    "src/services/PersistenceServiceEnhanced.ts",
+    "src/services/PersistenceServiceEnhanced.js",
+    "src/services/notePersistence.ts",
+    "src/services/notePersistence.js"
+  ]
+}
