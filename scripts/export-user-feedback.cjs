@@ -6,7 +6,10 @@
  * Sirve para rescatar sugerencias y feedback del piloto.
  *
  * Uso:
- *   node scripts/export-user-feedback.cjs [--csv] [--unresolved-only | --resolved-only] [--project PROYECTO]
+ *   node scripts/export-user-feedback.cjs [--csv] [--unresolved-only | --pending-only | --resolved-only] [--limit N] [--sort asc|desc] [--project PROYECTO]
+ *
+ * --pending-only: alias de --unresolved-only (feedback sin resolved:true, igual que FeedbackReviewPage).
+ * --sort: por defecto con --pending-only es asc (más antiguo primero). Sin pendiente, desc.
  *
  * Credenciales (una de las dos):
  *   - GOOGLE_APPLICATION_CREDENTIALS=ruta/real/al/service-account.json
@@ -53,6 +56,8 @@ function initializeAdmin(projectId) {
 function toPlain(obj) {
   if (obj == null) return obj;
   if (obj && typeof obj.toDate === 'function') return obj.toDate().toISOString();
+  /* Valores corruptos (nunca debieron persistir): placeholder de serverTimestamp en cliente */
+  if (typeof obj === 'object' && obj._methodName === 'serverTimestamp') return null;
   if (Array.isArray(obj)) return obj.map(toPlain);
   if (typeof obj === 'object') {
     const out = {};
@@ -88,32 +93,79 @@ function rowToCsvRow(row) {
 async function main() {
   const args = process.argv.slice(2);
   const outCsv = args.includes('--csv');
-  const unresolvedOnly = args.includes('--unresolved-only');
+  const unresolvedOnly = args.includes('--unresolved-only') || args.includes('--pending-only');
   const resolvedOnly = args.includes('--resolved-only');
   const projectIdx = args.indexOf('--project');
+  const limitIdx = args.indexOf('--limit');
+  const limitN = limitIdx >= 0 && args[limitIdx + 1] ? parseInt(args[limitIdx + 1], 10) : null;
   const projectId = projectIdx >= 0 && args[projectIdx + 1] ? args[projectIdx + 1] : PROJECT_ID;
 
   console.log('Proyecto:', projectId);
   console.log('Colección:', COLLECTION);
+  if (limitN && !Number.isNaN(limitN)) {
+    console.log('Límite query (más recientes por timestamp):', limitN);
+  }
 
   const db = initializeAdmin(projectId);
-  const snap = await db.collection(COLLECTION).orderBy('timestamp', 'desc').get();
+  let q = db.collection(COLLECTION).orderBy('timestamp', 'desc');
+  if (limitN && !Number.isNaN(limitN) && limitN > 0) {
+    q = q.limit(limitN);
+  }
+  const snap = await q.get();
+
+  function firestoreTimestampMs(ts) {
+    if (ts == null) return 0;
+    if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+    if (typeof ts === 'object' && typeof ts.seconds === 'number') {
+      return ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1e6);
+    }
+    return 0;
+  }
 
   let rows = snap.docs.map((doc) => {
     const data = doc.data();
+    const rawMs = firestoreTimestampMs(data.timestamp);
+    const createMs = doc.createTime ? doc.createTime.toMillis() : 0;
+    /* Timestamp real en campo no disponible (p. ej. bug que persistió serverTimestamp como objeto) */
+    const sortMs = rawMs > 0 ? rawMs : createMs;
+    const plain = { id: doc.id, ...toPlain(data) };
+    if (!plain.timestamp && doc.createTime) {
+      plain.timestamp = doc.createTime.toDate().toISOString();
+      plain.timestampSource = 'firestore_createTime';
+    }
     return {
-      id: doc.id,
-      ...toPlain(data),
+      ...plain,
+      _sortMs: sortMs,
     };
   });
 
   if (unresolvedOnly) {
     rows = rows.filter((r) => r.resolved !== true);
-    console.log('Filtro: solo no resueltos');
+    console.log('Filtro: solo pendientes (no resueltos; resolved !== true)');
   } else if (resolvedOnly) {
     rows = rows.filter((r) => r.resolved === true);
     console.log('Filtro: solo resueltos');
   }
+
+  const sortIdx = args.indexOf('--sort');
+  let sortOrder = sortIdx >= 0 && args[sortIdx + 1] ? String(args[sortIdx + 1]).toLowerCase() : null;
+  if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+    sortOrder = unresolvedOnly ? 'asc' : 'desc';
+  }
+
+  rows.sort((a, b) => {
+    const da = a._sortMs;
+    const db = b._sortMs;
+    const cmp = sortOrder === 'asc' ? da - db : db - da;
+    if (cmp !== 0) return cmp;
+    return a.id.localeCompare(b.id);
+  });
+
+  rows = rows.map(({ _sortMs, ...r }) => r);
+  console.log(
+    'Orden temporal:',
+    sortOrder === 'asc' ? 'cronológico (más antiguo → más reciente)' : 'anti-cronológico (más reciente primero)'
+  );
 
   console.log('Registros encontrados:', rows.length);
 
@@ -122,7 +174,9 @@ async function main() {
     fs.mkdirSync(outDir, { recursive: true });
   }
 
-  const baseName = `user_feedback_${projectId}_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const baseSuffix = unresolvedOnly ? `pending_${projectId}_${stamp}` : `user_feedback_${projectId}_${stamp}`;
+  const baseName = baseSuffix;
   const jsonPath = resolve(outDir, `${baseName}.json`);
   fs.writeFileSync(jsonPath, JSON.stringify(rows, null, 2), 'utf8');
   console.log('JSON guardado:', jsonPath);

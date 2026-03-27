@@ -80,7 +80,15 @@ async function main() {
       .filter(Boolean);
     console.log('Desde archivo:', filePath, '→', ids.length, 'ids');
   } else {
-    ids = args.filter((a) => !a.startsWith('--') && a.length > 0);
+    const skipVals = new Set();
+    const flagNext = (idx) => {
+      if (idx >= 0 && args[idx + 1] && !args[idx + 1].startsWith('--')) skipVals.add(args[idx + 1]);
+    };
+    flagNext(projectIdx);
+    flagNext(fileIdx);
+    flagNext(fromExportIdx);
+    flagNext(filterIdx);
+    ids = args.filter((a) => !a.startsWith('--') && a.length > 0 && !skipVals.has(a));
     if (unresolve) ids = ids.filter((id) => id !== '--unresolve');
   }
 

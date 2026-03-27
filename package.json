@@ -81,6 +81,7 @@
     "dev:clinical-sim": "tsx scripts/clinical-sim-server.ts",
     "test:clinical-fixtures": "tsx scripts/runClinicalFixtures.ts",
     "verify:locales": "node scripts/verify-locales-json.mjs",
+    "feedback:export-pending": "node scripts/export-user-feedback.cjs --pending-only --csv",
     "postinstall": "npm run check:env"
   },
   "dependencies": {
