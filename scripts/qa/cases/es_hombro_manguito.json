@@ -1,0 +1,43 @@
+{
+  "id": "es_hombro_manguito",
+  "description": "Visita inicial España: mujer de 65 años con dolor de hombro derecho de 3 meses, desgarro de supraespinoso en RM y limitación funcional.",
+  "market": "ES",
+  "language": "es-ES",
+  "visitType": "initial",
+  "transcript": "Paciente mujer de 65 años que consulta por dolor en hombro derecho de tres meses de evolución. Refiere dolor de 7 sobre 10 en la escala NRS, especialmente al elevar el brazo y al vestirse. Aporta resonancia magnética donde se informa rotura del tendón del supraespinoso. Comenta limitación para la abducción activa, que no supera aproximadamente los 90 grados por dolor. Niega traumatismo reciente, fiebre o síntomas neurológicos distales. El dolor interfiere con el sueño cuando se apoya sobre el lado derecho y con tareas domésticas por encima de la cabeza.",
+  "analysis": {
+    "motivo_consulta": "Dolor de hombro derecho con limitación funcional y rotura de supraespinoso en resonancia",
+    "hallazgos_clinicos": [
+      "Dolor hombro derecho 7/10 NRS",
+      "Rotura del supraespinoso en resonancia magnética",
+      "Abducción limitada a 90 grados aproximadamente"
+    ],
+    "red_flags": [],
+    "yellow_flags": []
+  },
+  "physicalTests": [
+    {
+      "testName": "Abducción activa de hombro",
+      "segment": "shoulder",
+      "result": "positive",
+      "findingsText": "Abducción activa limitada a 90 grados por dolor en hombro derecho."
+    }
+  ],
+  "patientContext": {
+    "patientAge": 65,
+    "painScale": "7/10 NRS"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "mustContain": [
+      "hombro",
+      "supraesp",
+      "abdu"
+    ],
+    "mustNotContain": [
+      "diagnosticado con cáncer",
+      "síndrome de cola de caballo"
+    ]
+  }
+}

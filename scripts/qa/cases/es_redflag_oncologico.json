@@ -1,0 +1,54 @@
+{
+  "id": "es_redflag_oncologico",
+  "critical": true,
+  "description": "Visita inicial España: dolor torácico con pérdida de peso inexplicada y sudoración nocturna; debe activar detección de red flag oncológico.",
+  "market": "ES",
+  "language": "es-ES",
+  "visitType": "initial",
+  "transcript": "Paciente varón de 58 años que consulta por dolor dorsal torácico de varias semanas de evolución. Refiere que el dolor empeora en reposo y por la noche, y comenta sudoración nocturna reciente junto con pérdida de peso no explicada en el último mes. Niega traumatismo claro. El dolor no mejora con cambios posturales habituales y le despierta de madrugada. Acude preocupado porque se encuentra más cansado de lo normal. No presenta síntomas urinarios ni anestesia en silla de montar.",
+  "analysis": {
+    "motivo_consulta": "Dolor torácico dorsal con signos de alarma sistémicos",
+    "hallazgos_clinicos": [
+      "Dolor torácico dorsal que empeora en reposo",
+      "Sudoración nocturna",
+      "Pérdida de peso no explicada"
+    ],
+    "red_flags": [
+      "Pérdida de peso inexplicada",
+      "Sudoración nocturna",
+      "Dolor en reposo / nocturno"
+    ],
+    "yellow_flags": []
+  },
+  "physicalTests": [
+    {
+      "testName": "Cribado clínico de dolor torácico dorsal",
+      "segment": "thoracic",
+      "result": "positive",
+      "findingsText": "Dolor dorsal persistente con predominio nocturno y signos sistémicos de alarma."
+    }
+  ],
+  "patientContext": {
+    "patientAge": 58,
+    "painScale": "6/10 NRS"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "suggestContainAny": [
+      "urg",
+      "deriv",
+      "médic",
+      "onc",
+      "hospital"
+    ],
+    "mustContain": [
+      "peso",
+      "noct"
+    ],
+    "mustNotContain": [
+      "mejora mecánica clara sin signos de alarma",
+      "alta sin seguimiento"
+    ]
+  }
+}

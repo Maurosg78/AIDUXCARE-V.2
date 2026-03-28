@@ -1,0 +1,44 @@
+{
+  "id": "es_lumbar_cronico",
+  "description": "Visita inicial España: varón de 45 años con lumbalgia crónica de un año, hernia discal L4-L5 y radiculopatía en pierna derecha.",
+  "market": "ES",
+  "language": "es-ES",
+  "visitType": "initial",
+  "transcript": "Paciente varón de 45 años que consulta por dolor lumbar crónico de un año de evolución. Refiere hernia discal L4-L5 diagnosticada previamente y dolor irradiado por la pierna derecha con intensidad 6 sobre 10 en NRS. Explica hormigueo ocasional en la cara posterior de la pierna derecha y aumento del dolor al estar mucho tiempo sentado. El test de elevación de pierna recta fue positivo en exploraciones previas y hoy reproduce la clínica radicular derecha. Niega alteraciones esfinterianas, anestesia en silla de montar, fiebre o pérdida de peso inexplicada. Quiere volver a trabajar jornadas completas sin dolor irradiado limitante.",
+  "analysis": {
+    "motivo_consulta": "Lumbalgia crónica con hernia discal L4-L5 y radiculopatía derecha",
+    "hallazgos_clinicos": [
+      "Dolor lumbar crónico de un año de evolución",
+      "Hernia discal L4-L5 previa",
+      "Radiculopatía en pierna derecha 6/10 NRS",
+      "Straight leg raise positivo"
+    ],
+    "red_flags": [],
+    "yellow_flags": []
+  },
+  "physicalTests": [
+    {
+      "testName": "Straight leg raise derecho",
+      "segment": "lumbar",
+      "result": "positive",
+      "findingsText": "SLR derecho positivo con reproducción de dolor irradiado compatible con radiculopatía."
+    }
+  ],
+  "patientContext": {
+    "patientAge": 45,
+    "painScale": "6/10 NRS"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "mustContain": [
+      "lumb",
+      "l4-l5",
+      "radic"
+    ],
+    "mustNotContain": [
+      "cáncer",
+      "cola de caballo"
+    ]
+  }
+}
