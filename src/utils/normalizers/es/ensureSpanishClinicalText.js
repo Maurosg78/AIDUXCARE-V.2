@@ -50,6 +50,19 @@ const SPANISH_CLINICAL_REPLACEMENTS = [
     [/for 10 days/gi, 'durante 10 días'],
     [/for 5 days/gi, 'durante 5 días'],
     [/tablet/gi, 'comprimido'],
+    [/\bphysiotherapy\b/gi, 'fisioterapia'],
+    [/\bphysical therapy\b/gi, 'fisioterapia'],
+    [/\bnerve glides?\b/gi, 'deslizamiento neural'],
+    [/\bnerve flossing\b/gi, 'flossing neural'],
+    [/\brange of motion\b/gi, 'rango de movimiento'],
+    [/\bstrengthening\b/gi, 'fortalecimiento'],
+    [/\bmanual therapy\b/gi, 'terapia manual'],
+    [/\bscreening\b/gi, 'cribado'],
+    [/\bimpairments?\b/gi, 'déficits funcionales'],
+    [/\bhome exercise program\b/gi, 'programa de ejercicios en casa'],
+    [/\bHEP\b/g, 'programa de ejercicios en casa'],
+    [/\bcat-cow\b/gi, 'movilización lumbar en cuadrupedia'],
+    [/\bbridge\b/gi, 'puente'],
 ];
 export const ensureSpanishClinicalText = (value) => {
     const inputValue = typeof value === 'string' ? value : String(value ?? '');
