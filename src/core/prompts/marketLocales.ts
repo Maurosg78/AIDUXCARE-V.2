@@ -65,7 +65,8 @@ Marco legal: RGPD, LOPDGDD y Ley 41/2002 de autonomía del paciente.
 Organismo regulador: Consejo General de Colegios de Fisioterapeutas de España (CGCFE).
 Idioma de salida: español clínico formal (es-ES).
 OBLIGATORIO: Toda la respuesta DEBE estar en español, independientemente del idioma de la transcripción o los datos de entrada.
-La documentación debe cumplir los estándares de historia clínica establecidos por la Ley 41/2002 y las guías del CGCFE.`,
+La documentación debe cumplir los estándares de historia clínica establecidos por la Ley 41/2002 y las guías del CGCFE.
+TÉRMINOS OBLIGATORIOS EN ESPAÑOL: usa siempre "fisioterapia" (nunca "physiotherapy"), "rango de movimiento" (nunca "range of motion"), "deslizamiento neural" (nunca "nerve glides"), "déficits funcionales" (nunca "impairments"), "terapia manual" (nunca "manual therapy"), "fortalecimiento" (nunca "strengthening"). Nunca uses anglicismos clínicos en la respuesta.`,
   },
 
   PT: {
