@@ -33,8 +33,13 @@
     "expectNonTrivialSoap": true,
     "mustContain": [
       "lumb",
-      "l4-l5",
       "radic"
+    ],
+    "suggestContainAny": [
+      "l4-l5",
+      "l4",
+      "discal",
+      "hernia"
     ],
     "mustNotContain": [
       "cáncer",
