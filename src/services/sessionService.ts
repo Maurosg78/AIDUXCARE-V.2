@@ -135,7 +135,7 @@ class SessionService {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
       // Include both in-progress and interrupted so Command Center shows "Resume" for interrupted
       const statuses = ['recording_in_progress', 'interrupted'] as const;
-      const results: { id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; updatedAt?: unknown }[] = [];
+      const results: { id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; soapStatus?: string; updatedAt?: unknown }[] = [];
       for (const status of statuses) {
         const q = query(
           sessionsRef,
@@ -154,12 +154,14 @@ class SessionService {
             sessionType: data.sessionType || 'followup',
             transcript: data.transcript || '',
             status,
+            soapStatus: data.soapStatus || undefined,
             updatedAt: data.updatedAt,
           });
         });
       }
+      const filteredResults = results.filter((session) => session.soapStatus !== 'finalized');
       // Sort merged by updatedAt desc and dedupe by id
-      const byId = new Map(results.map(r => [r.id, r]));
+      const byId = new Map(filteredResults.map(r => [r.id, r]));
       const sorted = [...byId.values()].sort((a, b) => {
         const aT = a.updatedAt && typeof (a.updatedAt as { toMillis?: () => number }).toMillis === 'function' ? (a.updatedAt as { toMillis(): number }).toMillis() : 0;
         const bT = b.updatedAt && typeof (b.updatedAt as { toMillis?: () => number }).toMillis === 'function' ? (b.updatedAt as { toMillis(): number }).toMillis() : 0;
