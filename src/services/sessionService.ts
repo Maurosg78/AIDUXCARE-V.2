@@ -159,12 +159,36 @@ class SessionService {
           });
         });
       }
-      const filteredResults = results.filter((session) => session.soapStatus !== 'finalized');
+      const toMillis = (value: unknown): number => {
+        return value && typeof (value as { toMillis?: () => number }).toMillis === 'function'
+          ? (value as { toMillis(): number }).toMillis()
+          : 0;
+      };
+      const latestFinalizedByPatientSessionType = new Map<string, number>();
+      for (const session of results) {
+        if (session.soapStatus !== 'finalized') continue;
+        const key = `${session.patientId}::${session.sessionType}`;
+        const updatedAtMs = toMillis(session.updatedAt);
+        const current = latestFinalizedByPatientSessionType.get(key) ?? 0;
+        if (updatedAtMs > current) {
+          latestFinalizedByPatientSessionType.set(key, updatedAtMs);
+        }
+      }
+      const filteredResults = results.filter((session) => {
+        if (session.soapStatus === 'finalized') return false;
+        const key = `${session.patientId}::${session.sessionType}`;
+        const latestFinalizedAt = latestFinalizedByPatientSessionType.get(key) ?? 0;
+        const sessionUpdatedAt = toMillis(session.updatedAt);
+        if (session.status === 'interrupted' && latestFinalizedAt > 0 && sessionUpdatedAt <= latestFinalizedAt) {
+          return false;
+        }
+        return true;
+      });
       // Sort merged by updatedAt desc and dedupe by id
       const byId = new Map(filteredResults.map(r => [r.id, r]));
       const sorted = [...byId.values()].sort((a, b) => {
-        const aT = a.updatedAt && typeof (a.updatedAt as { toMillis?: () => number }).toMillis === 'function' ? (a.updatedAt as { toMillis(): number }).toMillis() : 0;
-        const bT = b.updatedAt && typeof (b.updatedAt as { toMillis?: () => number }).toMillis === 'function' ? (b.updatedAt as { toMillis(): number }).toMillis() : 0;
+        const aT = toMillis(a.updatedAt);
+        const bT = toMillis(b.updatedAt);
         return bT - aT;
       });
       return sorted.slice(0, 10).map(({ id, patientId, patientName, sessionType, transcript, status }) => ({
