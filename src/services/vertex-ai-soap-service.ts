@@ -16,6 +16,8 @@ import type { SessionType } from './sessionTypeService';
 import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
 import { logRegulatoryLanguageWarnings } from '../utils/regulatoryLanguageGuard';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { ensureSpanishClinicalText } from '../utils/normalizers/es/ensureSpanishClinicalText';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
@@ -127,6 +129,21 @@ function applyPostSOAPQualityGuard(soap: SOAPNote): { soap: SOAPNote; flags: str
   return { soap, flags };
 }
 
+function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
+  if (!isSpainPilot()) return soap;
+
+  const normalizeField = (field: string | undefined) =>
+    field ? ensureSpanishClinicalText(field) : field;
+
+  return {
+    ...soap,
+    subjective: normalizeField(soap.subjective) || '',
+    objective: normalizeField(soap.objective) || '',
+    assessment: normalizeField(soap.assessment) || '',
+    plan: normalizeField(soap.plan) || '',
+  };
+}
+
 /**
  * ✅ WO-PHASE3-CRITICAL-FIXES: Anti-Hallucination Validation
  * 
@@ -230,7 +247,11 @@ export async function generateSOAPNote(
     // ✅ WO-03: Resolve Prompt Brain version (v2 or v3)
     const pbVersion = resolvePromptBrainVersion({
       search: typeof window !== "undefined" ? window.location.search : "",
-      envVersion: import.meta.env.VITE_PROMPT_BRAIN_VERSION,
+      envVersion:
+        (typeof import.meta !== "undefined" &&
+          (import.meta as unknown as { env?: { VITE_PROMPT_BRAIN_VERSION?: string } }).env
+            ?.VITE_PROMPT_BRAIN_VERSION) ||
+        process.env.VITE_PROMPT_BRAIN_VERSION,
     });
 
     // ✅ WO-03: Determine if v3 path should be used
@@ -772,7 +793,7 @@ function parseSOAPResponse(
 
   // Validate and return structured SOAP note
   if (soapData && typeof soapData === 'object') {
-    return {
+    const soap: SOAPNote = {
       subjective: String(soapData.subjective || 'Not documented.'),
       objective: String(soapData.objective || 'Not documented.'),
       assessment: String(soapData.assessment || 'Not documented.'),
@@ -784,16 +805,18 @@ function parseSOAPResponse(
       precautions: soapData.precautions ? String(soapData.precautions) : undefined,
       referrals: soapData.referrals ? String(soapData.referrals) : undefined,
     };
+
+    return normalizeSOAPForSpain(soap);
   }
 
   // Fallback: return empty structure
   console.warn('[ClinicalNotes Service] Could not parse response, returning empty structure');
-  return {
+  return normalizeSOAPForSpain({
     subjective: 'Unable to generate SOAP note. Please try again or enter manually.',
     objective: '',
     assessment: '',
     plan: '',
-  };
+  });
 }
 
 const NOT_DOCUMENTED = 'Not documented.';
@@ -1197,7 +1220,7 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
     throw new Error('Could not parse SOAP from AI response.');
   }
 
-  return soap;
+  return normalizeSOAPForSpain(soap);
 }
 
 /**
@@ -1327,5 +1350,5 @@ export async function generateBaselineSOAPFromOngoingIntake(
     throw new Error('Could not parse SOAP from AI response.');
   }
 
-  return soap;
+  return normalizeSOAPForSpain(soap);
 }
