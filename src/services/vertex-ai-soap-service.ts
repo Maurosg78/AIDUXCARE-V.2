@@ -134,6 +134,8 @@ function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
 
   const normalizeField = (field: string | undefined) =>
     field ? ensureSpanishClinicalText(field) : field;
+  const normalizeArray = (arr: string[] | undefined) =>
+    arr ? arr.map(item => ensureSpanishClinicalText(item)) : arr;
 
   return {
     ...soap,
@@ -141,6 +143,8 @@ function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
     objective: normalizeField(soap.objective) || '',
     assessment: normalizeField(soap.assessment) || '',
     plan: normalizeField(soap.plan) || '',
+    planInClinic: normalizeArray((soap as any).planInClinic),
+    planHomeProgram: normalizeArray((soap as any).planHomeProgram),
   };
 }
 
