@@ -58,6 +58,8 @@ const SPANISH_CLINICAL_REPLACEMENTS = [
     [/\bstrengthening\b/gi, 'fortalecimiento'],
     [/\bmanual therapy\b/gi, 'terapia manual'],
     [/\bscreening\b/gi, 'cribado'],
+    [/\bprimary impairments?\b/gi, 'déficits principales'],
+    [/\bkey impairments?\b/gi, 'déficits principales'],
     [/\bimpairments?\b/gi, 'déficits funcionales'],
     [/\bhome exercise program\b/gi, 'programa de ejercicios en casa'],
     [/\bHEP\b/g, 'programa de ejercicios en casa'],
