@@ -184,7 +184,7 @@ export class PersistenceService {
 
       const data = snapshot.data() as SavedNote;
       // Verify ownership
-      if (data.ownerUid !== userId) {
+      if (data.ownerUid !== userId && data.authorUid !== userId) {
         console.warn('Note access denied: user does not own this note');
         return null;
       }
@@ -273,7 +273,7 @@ export class PersistenceService {
       }
 
       const data = snapshot.data();
-      if (data.ownerUid !== userId) {
+      if (data.ownerUid !== userId && data.authorUid !== userId) {
         console.warn('Note deletion denied: user does not own this note');
         return false;
       }

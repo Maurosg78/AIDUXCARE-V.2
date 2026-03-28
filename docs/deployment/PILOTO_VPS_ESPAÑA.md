@@ -50,14 +50,53 @@ Desde este repo (donde sí está `pilotDetection.ts` y el refactor):
 cd /var/www/pilot
 git fetch origin
 git checkout stable
-git reset --hard origin/stable
-npm install
-# Opción A: build con env España (recomendado para pilot.aiduxcare.com)
+git pull --ff-only origin stable
+# Instalación reproducible (mismo lock que CI)
+npm ci
+# Build con piloto España embebido en el bundle (recomendado para pilot.aiduxcare.com)
 VITE_ENABLE_ES_PILOT=true npm run build
-# Opción B: sin env; la detección será por hostname (pilot.aiduxcare.com) en runtime
-# npm run build
 pm2 restart pilot-web
+# Si usas túnel u otro proceso:
+# pm2 restart pilot-tunnel
+pm2 save
 ```
+
+Comprobación rápida del código desplegado:
+
+```bash
+git log -1 --oneline
+git merge-base --is-ancestor 8bcfaa5 HEAD && echo "incluye fix consentimiento ES" || echo "falta 8bcfaa5"
+git merge-base --is-ancestor cd1f1cf HEAD && echo "incluye fix export SOAP/evaluación ES" || echo "falta cd1f1cf"
+```
+
+`curl` debe apuntar al **puerto que sirva `pilot-web`** (no asumir 5174 en producción salvo que PM2 use ese puerto).
+
+### 2b. QA de cierre en piloto (antes de marcar resuelto en Firestore)
+
+**#1 Consentimiento (ES):** SMS al paciente → abrir portal → textos en español → consentimiento verbal → disclosure → anotar pass/fail por paso.
+
+**#11 Nota / EMR:** generar SOAP → copiar → pegar en HIS real → revisar separadores, IDs y metadatos incómodos → repetir con export .txt si aplica.
+
+**#16 Red flags:** caso con red flags → editar decisión → guardar o continuar → recargar → confirmar persistencia.
+
+### 2c. Desarrollo local si Vite muestra errores `*.js` inexistente tras HMR
+
+Suele ser caché de Vite, no el VPS. En el repo:
+
+```bash
+npm run vite:clean
+npm run dev
+# o: npm run dev:fresh
+```
+
+### 2d. Matriz de pruebas por UI (`/qa/ui-playbook`)
+
+Página interna con enlaces listos (workflow inicial/seguimiento, paciente, notas, disclosure, etc.) usando un **único `patientId` canario** guardado en el navegador.
+
+- **Local:** disponible con `npm run dev` (modo desarrollo).
+- **Piloto:** añadir al build `VITE_ENABLE_UI_PLAYBOOK=true` junto a `VITE_ENABLE_ES_PILOT`; luego, logueado, abrir `https://pilot.aiduxcare.com/qa/ui-playbook`.
+
+En producción deja esta variable en `false` si no queréis exponer la matriz.
 
 ### 3. Comprobar
 

@@ -11,43 +11,23 @@ import type { SOAPNote } from '../../../types/vertex-ai';
 
 // Mock generatePlainTextFormat function (same as in SOAPEditor)
 function generatePlainTextFormat(soapNote: SOAPNote): string {
-  return `NOTA SOAP - ${new Date().toISOString().split('T')[0]}
+  return `NOTA SOAP
 
-${'='.repeat(60)}
+Fecha: ${new Date().toISOString().split('T')[0]}
+Hora: 00:00
+Tipo de visita: Valoracion inicial
 
 S: SUBJETIVO
-${'─'.repeat(60)}
 ${soapNote.subjective || 'Sin informacion subjetiva registrada.'}
 
-${'─'.repeat(60)}
-
 O: OBJETIVO
-${'─'.repeat(60)}
 ${soapNote.objective || 'Sin hallazgos objetivos registrados.'}
 
-${'─'.repeat(60)}
-
 A: VALORACION
-${'─'.repeat(60)}
 ${soapNote.assessment || 'Sin valoracion registrada.'}
 
-${'─'.repeat(60)}
-
 P: PLAN
-${'─'.repeat(60)}
-${soapNote.plan || 'Sin plan terapeutico registrado.'}
-
-${'─'.repeat(60)}
-
-${soapNote.referrals ? `Derivaciones:\n${soapNote.referrals}\n\n${'─'.repeat(60)}\n` : ''}
-${soapNote.precautions ? `Precauciones:\n${soapNote.precautions}\n\n${'─'.repeat(60)}\n` : ''}
-${soapNote.additionalNotes ? `Notas adicionales:\n${soapNote.additionalNotes}\n\n${'─'.repeat(60)}\n` : ''}
-
-Generado por AiDuxCare
-ID del documento: ${Date.now()}
-Estado: Finalizada
-
-${'='.repeat(60)}`;
+${soapNote.plan || 'Sin plan terapeutico registrado.'}${soapNote.referrals ? `\n\nDerivaciones:\n${soapNote.referrals}` : ''}${soapNote.precautions ? `\n\nPrecauciones:\n${soapNote.precautions}` : ''}${soapNote.additionalNotes ? `\n\nNotas adicionales:\n${soapNote.additionalNotes}` : ''}`;
 }
 
 describe('Copy vs Download Consistency', () => {
@@ -114,12 +94,11 @@ describe('Copy vs Download Consistency', () => {
     expect(content1).toBe(content2);
     
     // Verify structure is consistent
-    expect(content1).toMatch(/^NOTA SOAP - \d{4}-\d{2}-\d{2}/);
+    expect(content1).toMatch(/^NOTA SOAP/);
     expect(content1).toContain('S: SUBJETIVO');
     expect(content1).toContain('O: OBJETIVO');
     expect(content1).toContain('A: VALORACION');
     expect(content1).toContain('P: PLAN');
-    expect(content1).toContain('Generado por AiDuxCare');
   });
 
   describe('Edge Cases', () => {

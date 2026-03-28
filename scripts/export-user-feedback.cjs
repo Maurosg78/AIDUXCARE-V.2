@@ -102,13 +102,22 @@ async function main() {
 
   console.log('Proyecto:', projectId);
   console.log('Colección:', COLLECTION);
-  if (limitN && !Number.isNaN(limitN)) {
-    console.log('Límite query (más recientes por timestamp):', limitN);
+  const wantsStatusFilter = unresolvedOnly || resolvedOnly;
+  if (limitN && !Number.isNaN(limitN) && limitN > 0) {
+    if (wantsStatusFilter) {
+      console.log(
+        '--limit:',
+        limitN,
+        '→ se aplica al resultado final tras filtrar (la query ya no limita: evita perder pendientes antiguos).'
+      );
+    } else {
+      console.log('Límite query (más recientes por timestamp):', limitN);
+    }
   }
 
   const db = initializeAdmin(projectId);
   let q = db.collection(COLLECTION).orderBy('timestamp', 'desc');
-  if (limitN && !Number.isNaN(limitN) && limitN > 0) {
+  if (limitN && !Number.isNaN(limitN) && limitN > 0 && !wantsStatusFilter) {
     q = q.limit(limitN);
   }
   const snap = await q.get();
@@ -160,6 +169,11 @@ async function main() {
     if (cmp !== 0) return cmp;
     return a.id.localeCompare(b.id);
   });
+
+  if (wantsStatusFilter && limitN && !Number.isNaN(limitN) && limitN > 0 && rows.length > limitN) {
+    rows = rows.slice(0, limitN);
+    console.log('Registros recortados a --limit', limitN, 'tras filtro y orden.');
+  }
 
   rows = rows.map(({ _sortMs, ...r }) => r);
   console.log(

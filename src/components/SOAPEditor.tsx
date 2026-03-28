@@ -17,6 +17,7 @@ import { generateEsReferralReportForSession, type ReferralReportResult } from '@
 import type { SessionState } from '@/types/sessionState';
 import { getSoapReviewConfig } from '@/core/jurisdiction/JurisdictionEngine';
 import { isSpainPilot } from '@/core/pilotDetection';
+import { buildSoapPlainText } from '@/utils/soapPlainTextExport';
 
 export type SOAPStatus = 'draft' | 'finalized';
 
@@ -278,62 +279,29 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
    * Compatible with most EMR systems (text-only, no formatting)
    */
   const generatePlainTextFormat = (soapNote: SOAPNote): string => {
-    const currentDate = new Date();
-    const dateStr = currentDate.toLocaleDateString(exportLocale, {
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return buildSoapPlainText(soapNote, {
+      locale: exportLocale,
+      visitType,
+      labels: {
+        title: exportCopy.title,
+        date: exportCopy.date,
+        time: exportCopy.time,
+        visitType: exportCopy.visitType,
+        visitTypeInitial: exportCopy.visitTypeInitial,
+        visitTypeFollowUp: exportCopy.visitTypeFollowUp,
+        subjective: exportCopy.subjective,
+        objective: exportCopy.objective,
+        assessment: exportCopy.assessment,
+        plan: exportCopy.plan,
+        referrals: exportCopy.referrals,
+        precautions: exportCopy.precautions,
+        additionalNotes: exportCopy.additionalNotes,
+        noSubjective: exportCopy.noSubjective,
+        noObjective: exportCopy.noObjective,
+        noAssessment: exportCopy.noAssessment,
+        noPlan: exportCopy.noPlan,
+      },
     });
-    const timeStr = currentDate.toLocaleTimeString(exportLocale, {
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-    const visitTypeLabel = visitType === 'initial'
-      ? exportCopy.visitTypeInitial
-      : exportCopy.visitTypeFollowUp;
-
-    return `${exportCopy.title}
-${'='.repeat(60)}
-
-${exportCopy.date}: ${dateStr}
-${exportCopy.time}: ${timeStr}
-${exportCopy.visitType}: ${visitTypeLabel}
-
-${'─'.repeat(60)}
-
-S: ${exportCopy.subjective.toUpperCase()}
-${'─'.repeat(60)}
-${soapNote.subjective || exportCopy.noSubjective}
-
-${'─'.repeat(60)}
-
-O: ${exportCopy.objective.toUpperCase()}
-${'─'.repeat(60)}
-${soapNote.objective || exportCopy.noObjective}
-
-${'─'.repeat(60)}
-
-A: ${exportCopy.assessment.toUpperCase()}
-${'─'.repeat(60)}
-${soapNote.assessment || exportCopy.noAssessment}
-
-${'─'.repeat(60)}
-
-P: ${exportCopy.plan.toUpperCase()}
-${'─'.repeat(60)}
-${soapNote.plan || exportCopy.noPlan}
-
-${'─'.repeat(60)}
-
-${soapNote.referrals ? `${exportCopy.referrals}:\n${soapNote.referrals}\n\n${'─'.repeat(60)}\n` : ''}
-${soapNote.precautions ? `${exportCopy.precautions}:\n${soapNote.precautions}\n\n${'─'.repeat(60)}\n` : ''}
-${soapNote.additionalNotes ? `${exportCopy.additionalNotes}:\n${soapNote.additionalNotes}\n\n${'─'.repeat(60)}\n` : ''}
-
-${exportCopy.generatedBy}
-${exportCopy.documentId}: ${Date.now()}
-${exportCopy.status}: ${exportCopy.statusFinalized}
-
-${'='.repeat(60)}`;
   };
 
   /**

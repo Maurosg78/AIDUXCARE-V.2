@@ -17,6 +17,7 @@ import { AppointmentListPage } from '../pages/AppointmentsPage';
 import { AppointmentDetailPage } from '../pages/AppointmentsPage';
 import { NotesListPage } from '../pages/NotesPage';
 import { NoteDetailPage } from '../pages/NotesPage';
+import DocumentsPage from '../pages/DocumentsPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
 import ProfessionalWorkflowPage from '../pages/ProfessionalWorkflowPage';
 import FollowUpRedirect from '../pages/FollowUpRedirect';
@@ -42,6 +43,7 @@ import TechDashboard from '../pages/Dashboard/TechDashboard';
 import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
 import { FeedbackReviewPage } from '../pages/FeedbackReviewPage';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { UiFeaturePlaybookGate } from '../pages/qa/UiFeaturePlaybookPage';
 
 // LayoutWrapper — Branding oficial: hoja de maple + AiDuxCare (gradient púrpura-azul), fijo en todas las pantallas
 // WO-PILOT-FIX-03: Logout button visible on every authenticated page
@@ -117,11 +119,13 @@ export const createRouter = () => createBrowserRouter([
     element: <AuthGuard><LayoutWrapper><CommandCenterPageSprint3 /></LayoutWrapper></AuthGuard>
   },
   { path: '/feedback-review', element: <AuthGuard><LayoutWrapper><FeedbackReviewPage /></LayoutWrapper></AuthGuard> },
+  { path: '/qa/ui-playbook', element: <AuthGuard><LayoutWrapper><UiFeaturePlaybookGate /></LayoutWrapper></AuthGuard> },
   { path: '/patients', element: <AuthGuard><LayoutWrapper><PatientListPage /></LayoutWrapper></AuthGuard> },
   { path: '/patients/:id/history', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> }, // alias: same content as /patients/:id
   { path: '/patients/:id', element: <AuthGuard><LayoutWrapper><PatientDashboardPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments', element: <AuthGuard><LayoutWrapper><AppointmentListPage /></LayoutWrapper></AuthGuard> },
   { path: '/appointments/:id', element: <AuthGuard><LayoutWrapper><AppointmentDetailPage /></LayoutWrapper></AuthGuard> },
+  { path: '/documents', element: <AuthGuard><LayoutWrapper><DocumentsPage /></LayoutWrapper></AuthGuard> },
   { path: '/notes', element: <AuthGuard><LayoutWrapper><NotesListPage /></LayoutWrapper></AuthGuard> },
   { path: '/notes/:id', element: <AuthGuard><LayoutWrapper><NoteDetailWrapper /></LayoutWrapper></AuthGuard> },
   { path: '/workflow', element: <AuthGuard><LayoutWrapper><ErrorBoundary><ProfessionalWorkflowPage /></ErrorBoundary></LayoutWrapper></AuthGuard> },

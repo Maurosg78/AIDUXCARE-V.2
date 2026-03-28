@@ -1147,6 +1147,10 @@ const ProfessionalWorkflowPage = () => {
     soapStatus: string;
     niagaraResults: unknown;
     selectedRedFlagIds: string[];
+    redFlagDecisions: Record<string, {
+      decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
+      continuationNote?: string;
+    }>;
     initialAssessmentClosedAt: string | null;
     baselineIdFromSession: string | null;
     isRecording: boolean;
@@ -1167,6 +1171,7 @@ const ProfessionalWorkflowPage = () => {
       soapStatus,
       niagaraResults: niagaraResults ?? null,
       selectedRedFlagIds: selectedRedFlagIds ?? [],
+      redFlagDecisions: redFlagDecisions ?? {},
       initialAssessmentClosedAt: initialAssessmentClosedAt ?? null,
       baselineIdFromSession: baselineIdFromSession ?? null,
       isRecording,
@@ -1195,6 +1200,7 @@ const ProfessionalWorkflowPage = () => {
             soapStatus: state.soapStatus,
             niagaraResults: state.niagaraResults,
             redFlagsAccepted: state.selectedRedFlagIds,
+            redFlagDecisions: state.redFlagDecisions,
             initialAssessmentClosedAt: state.initialAssessmentClosedAt,
             baselineId: state.baselineIdFromSession,
             visitType: state.visitType,
@@ -1223,7 +1229,7 @@ const ProfessionalWorkflowPage = () => {
         }
       }
     };
-  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
+  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
 
   const [customTestName, setCustomTestName] = useState("");
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
@@ -1449,6 +1455,8 @@ const ProfessionalWorkflowPage = () => {
           setTranscript('');
           setEvaluationTests([]);
           setSelectedEntityIds([]);
+          setSelectedRedFlagIds([]);
+          setRedFlagDecisions({});
           setLocalSoapNote(null);
           setActiveTab('analysis'); // Always start at analysis tab for initial evaluations
           setPhysioNotes(''); // Clear physio notes
@@ -1470,6 +1478,8 @@ const ProfessionalWorkflowPage = () => {
         const savedState = SessionStorage.getSession(patientId, userId, visitType || 'initial', currentSessionId);
 
         if (!savedState) {
+          setSelectedRedFlagIds([]);
+          setRedFlagDecisions({});
           setInitialAssessmentClosedAt(null);
           setBaselineIdFromSession(null);
           return;
@@ -1503,6 +1513,20 @@ const ProfessionalWorkflowPage = () => {
         if (savedState.selectedEntityIds && Array.isArray(savedState.selectedEntityIds)) {
           setSelectedEntityIds(savedState.selectedEntityIds);
           console.log('[WORKFLOW] ✅ Restored selected entity IDs:', savedState.selectedEntityIds.length);
+        }
+
+        if (savedState.redFlagsAccepted && Array.isArray(savedState.redFlagsAccepted)) {
+          setSelectedRedFlagIds(savedState.redFlagsAccepted);
+          console.log('[WORKFLOW] ✅ Restored selected red flag IDs:', savedState.redFlagsAccepted.length);
+        } else {
+          setSelectedRedFlagIds([]);
+        }
+
+        if (savedState.redFlagDecisions && typeof savedState.redFlagDecisions === 'object') {
+          setRedFlagDecisions(savedState.redFlagDecisions);
+          console.log('[WORKFLOW] ✅ Restored red flag decisions:', Object.keys(savedState.redFlagDecisions).length);
+        } else {
+          setRedFlagDecisions({});
         }
 
         // Restore transcript (only for non-initial sessions)
@@ -1654,6 +1678,7 @@ const ProfessionalWorkflowPage = () => {
           selectedEntityIds: selectedEntityIds || [],
           redFlagsDetected: niagaraResults?.red_flags ?? [],
           redFlagsAccepted: selectedRedFlagIds ?? [],
+          redFlagDecisions: redFlagDecisions || {},
           localSoapNote: localSoapNote || null,
           soapStatus: soapStatus,
           visitType: visitType,
@@ -1670,6 +1695,7 @@ const ProfessionalWorkflowPage = () => {
           activeTab: activeTab,
           selectedEntityIdsCount: selectedEntityIds.length,
           redFlagsAcceptedCount: selectedRedFlagIds.length,
+          redFlagDecisionCount: Object.keys(redFlagDecisions || {}).length,
           soapStatus: soapStatus,
           visitType: visitType,
           initialAssessmentClosedAt,
@@ -1714,7 +1740,7 @@ const ProfessionalWorkflowPage = () => {
       // Final save on cleanup
       saveWorkflowState();
     };
-  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
+  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
   // WO-BUG-011: Auto-save transcript to Firestore every 30s while recording (survives browser close)
   useEffect(() => {
@@ -4197,6 +4223,7 @@ const ProfessionalWorkflowPage = () => {
         selectedEntityIds: selectedEntityIds || [],
         redFlagsDetected: niagaraResults?.red_flags ?? [],
         redFlagsAccepted: selectedRedFlagIds ?? [],
+        redFlagDecisions: redFlagDecisions || {},
         localSoapNote: localSoapNote || null,
         soapStatus,
         visitType: visitType || 'initial',
@@ -4214,7 +4241,7 @@ const ProfessionalWorkflowPage = () => {
       const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
       setAnalysisError(message);
     }
-  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, visitType, currentPatient]);
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     if (isFinalizingRef.current) return;

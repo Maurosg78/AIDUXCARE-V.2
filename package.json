@@ -81,7 +81,11 @@
     "dev:clinical-sim": "tsx scripts/clinical-sim-server.ts",
     "test:clinical-fixtures": "tsx scripts/runClinicalFixtures.ts",
     "verify:locales": "node scripts/verify-locales-json.mjs",
+    "pilot:seed-patients": "node scripts/seed-test-patients.cjs",
+    "feedback:export-full": "node scripts/export-user-feedback.cjs --csv",
     "feedback:export-pending": "node scripts/export-user-feedback.cjs --pending-only --csv",
+    "vite:clean": "rm -rf node_modules/.vite",
+    "dev:fresh": "npm run vite:clean && npm run dev",
     "postinstall": "npm run check:env"
   },
   "dependencies": {

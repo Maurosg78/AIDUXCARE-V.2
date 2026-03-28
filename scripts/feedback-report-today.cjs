@@ -10,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { findLatestFeedbackJson } = require('./lib/feedbackExportUtils.cjs');
 
 const args = process.argv.slice(2);
 const fileArg = args.find((a) => a.endsWith('.json'));
@@ -53,20 +54,15 @@ function priorityScore(item) {
   return w + calc + time / 1e12;
 }
 
-function findLatestExport(dir) {
-  const files = fs.readdirSync(dir).filter((f) => f.startsWith('user_feedback_') && f.endsWith('.json'));
-  if (files.length === 0) return null;
-  files.sort();
-  return path.join(dir, files[files.length - 1]);
-}
-
 const exportsDir = path.resolve(process.cwd(), 'scripts', 'exports');
 const jsonPath = fileArg
   ? path.resolve(process.cwd(), fileArg)
-  : findLatestExport(exportsDir);
+  : findLatestFeedbackJson(exportsDir);
 
 if (!jsonPath || !fs.existsSync(jsonPath)) {
-  console.error('No se encontró archivo de export. Ejecuta: node scripts/export-user-feedback.cjs');
+  console.error('No se encontró archivo de export. Ejecuta:');
+  console.error('  npm run feedback:export-full   # o: node scripts/export-user-feedback.cjs');
+  console.error('  npm run feedback:export-pending');
   process.exit(1);
 }
 
