@@ -151,6 +151,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             patientId: session.patientId,
             patientName: session.patientName || 'Patient',
             sessionType,
+            resumeSessionId: session.id,
             status: 'incomplete',
           });
         } else {
@@ -161,6 +162,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
           if (!isAlreadyCompleted) {
             mergedList[existingIndex] = {
               ...currentItem,
+              resumeSessionId: session.id,
               status: 'incomplete',
             };
           }
@@ -469,17 +471,25 @@ export const CommandCenterPageSprint3: React.FC = () => {
               setCreatePatientFromStartSessionModal(false);
               setShowStartSessionModal(true);
             }}
-            onStartFromToday={async (patientId, sessionType) => {
+            onStartFromToday={async (patientId, sessionType, resumeSessionId) => {
               sessionStorage.setItem(LAST_STARTED_KEY, JSON.stringify({ patientId, sessionType }));
               const patient = await PatientService.getPatientById(patientId);
               if (!patient) return;
               setSelectedPatient(patient);
               if (sessionType === 'initial') {
-                navigate(`/workflow?type=initial&patientId=${patientId}`);
+                if (resumeSessionId) {
+                  navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${resumeSessionId}&resume=true`);
+                } else {
+                  navigate(`/workflow?type=initial&patientId=${patientId}`);
+                }
                 return;
               }
               if (sessionType === 'followup') {
-                navigate(`/workflow?type=followup&patientId=${patientId}`);
+                if (resumeSessionId) {
+                  navigate(`/workflow?type=followup&patientId=${patientId}&sessionId=${resumeSessionId}&resume=true`);
+                } else {
+                  navigate(`/workflow?type=followup&patientId=${patientId}`);
+                }
                 return;
               }
               if (sessionType === 'ongoing') {

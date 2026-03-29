@@ -79,6 +79,11 @@ functions/index.js.pre-esm.*
 .worktrees/
 tmp/
 tmp/**
+
+# QA simulation outputs (may contain synthetic clinical text)
+scripts/qa/results/*.json
+!scripts/qa/results/.gitkeep
+
 docs/_archive/mirror/**/.DS_Store
 
 # npm lockfile (pnpm is source of truth)

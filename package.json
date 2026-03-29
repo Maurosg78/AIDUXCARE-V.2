@@ -82,6 +82,7 @@
     "test:clinical-fixtures": "tsx scripts/runClinicalFixtures.ts",
     "verify:locales": "node scripts/verify-locales-json.mjs",
     "pilot:seed-patients": "node scripts/seed-test-patients.cjs",
+    "qa:simulate": "tsx scripts/qa/run-simulation.ts",
     "feedback:export-full": "node scripts/export-user-feedback.cjs --csv",
     "feedback:export-pending": "node scripts/export-user-feedback.cjs --pending-only --csv",
     "vite:clean": "rm -rf node_modules/.vite",

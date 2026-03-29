@@ -31,7 +31,8 @@
     "src/**/*",
     "src/**/*.d.ts",
     "src/**/*.tsx",
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "scripts/qa/**/*.ts"
   ],
   "exclude": [
     "node_modules",

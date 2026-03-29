@@ -28,6 +28,8 @@ export interface TodayQuickItem {
   patientId: string;
   patientName: string;
   sessionType: 'initial' | 'followup' | 'ongoing';
+  /** Firestore session id when the row comes from an interrupted/in-progress session. */
+  resumeSessionId?: string;
   /** pending = can press Start; done = session completed, Start disabled, recycle to set pending again */
   status?: 'pending' | 'done' | 'incomplete';
 }
@@ -40,7 +42,11 @@ export interface TodayPatientsPanelProps {
   /** Open modal to add patient + type to today's quick list */
   onAddToToday?: () => void;
   /** Start session for a quick-list row (navigate or open Ongoing intake) */
-  onStartFromToday?: (patientId: string, sessionType: 'initial' | 'followup' | 'ongoing') => void;
+  onStartFromToday?: (
+    patientId: string,
+    sessionType: 'initial' | 'followup' | 'ongoing',
+    resumeSessionId?: string,
+  ) => void;
   /** Remove item from today's quick list (index to remove) */
   onRemoveFromToday?: (index: number) => void;
   /** Mark item as pending again (recycle) after it was done */
@@ -242,7 +248,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     </>
                   ) : isIncomplete ? (
                     <>
-                      <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
+                      <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType, item.resumeSessionId)} className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-apple text-xs font-semibold transition-all flex items-center gap-1.5">
                         <Play className="w-4 h-4" /> {t('shell.todayPatients.resume')}
                       </button>
                       {onDismissIncomplete && (
@@ -269,7 +275,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     </>
                   ) : (
                     <>
-                      <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType)} className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5">
+                      <button type="button" onClick={() => onStartFromToday?.(item.patientId, item.sessionType, item.resumeSessionId)} className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5">
                         <Play className="w-4 h-4" /> {t('shell.todayPatients.start')}
                       </button>
                       {onRemoveFromToday && (
@@ -409,4 +415,3 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     </div>
   );
 };
-
