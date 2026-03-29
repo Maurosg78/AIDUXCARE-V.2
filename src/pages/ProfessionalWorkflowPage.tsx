@@ -3500,6 +3500,16 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
 
+  /** Stable Firestore doc id for HEP compliance (same day + patient + baseline → survives full reload). */
+  const hepSessionKey = useMemo(() => {
+    const uid = user?.uid;
+    const pid = patientIdFromUrl;
+    const bid = baselineIdFromSession;
+    const today = new Date().toISOString().slice(0, 10);
+    if (!uid || !pid || !bid) return null;
+    return `${uid}-hep-${pid}-${bid}-${today}`;
+  }, [user?.uid, patientIdFromUrl, baselineIdFromSession]);
+
   /** Sprint A: persist HEP checkbox state to `sessions/{id}.hepCompliance` (merge). */
   const updateHomeProgramItems = useCallback(
     (next: TodayFocusItem[]) => {
@@ -3507,7 +3517,8 @@ const ProfessionalWorkflowPage = () => {
       if (visitType !== 'follow-up') return;
       const uid = user?.uid;
       if (!uid) return;
-      const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+      const stableKey = hepSessionKey;
+      const sid = stableKey ?? sessionId ?? `${uid}-${sessionStartTime.getTime()}`;
       const hepCompliance = next.map((i) => ({
         itemId: i.id,
         done: i.completed,
@@ -3530,6 +3541,7 @@ const ProfessionalWorkflowPage = () => {
     [
       visitType,
       user?.uid,
+      hepSessionKey,
       sessionId,
       sessionStartTime,
       currentPatient?.fullName,
@@ -3577,7 +3589,8 @@ const ProfessionalWorkflowPage = () => {
 
     const uid = user?.uid;
     if (!uid) return;
-    const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+    const stableKey = hepSessionKey;
+    const sid = stableKey ?? sessionId ?? `${uid}-${sessionStartTime.getTime()}`;
     let cancelled = false;
 
     (async () => {
@@ -3612,6 +3625,7 @@ const ProfessionalWorkflowPage = () => {
     patientIdFromUrl,
     followUpClinicalState?.baselineSOAP?.plan,
     previousTreatmentPlan?.planText,
+    hepSessionKey,
     sessionId,
     user?.uid,
     sessionStartTime,
