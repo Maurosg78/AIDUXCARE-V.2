@@ -77,7 +77,7 @@ service cloud.firestore {
 
     // ─── sessions (PHI — documentación clínica) ──────────────────────────
     match /sessions/{sessionId} {
-      allow read: if isOwner(resource);
+      allow read: if isAuthenticated() && (resource == null || isOwner(resource));
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       // Familia B archive — solo campos de archivo, sin tocar PHI
