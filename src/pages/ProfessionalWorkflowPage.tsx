@@ -952,7 +952,7 @@ const ProfessionalWorkflowPage = () => {
 
     let cancelled = false;
     getClinicalState(patientId, user.uid)
-      .then((state) => {
+      .then(async (state) => {
         if (cancelled) return;
         if (!state?.hasBaseline || !state.baselineSOAP) {
           setFollowUpClinicalState(null);
@@ -965,6 +965,15 @@ const ProfessionalWorkflowPage = () => {
               plan: state.baselineSOAP.plan ?? '',
             },
           });
+          try {
+            const patientRecord = await PatientService.getPatientById(patientId);
+            const resolvedBaselineId = patientRecord?.activeBaselineId ?? null;
+            if (resolvedBaselineId !== null) {
+              setBaselineIdFromSession(resolvedBaselineId);
+            }
+          } catch {
+            /* do not clear baselineIdFromSession */
+          }
         }
         setFollowUpBaselineChecked(true);
       })
