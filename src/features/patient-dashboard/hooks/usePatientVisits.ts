@@ -73,7 +73,15 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
               return;
             }
             const sessionStatus = data.status || 'draft';
-            const soapNoteStatus = (data.soapNote as any)?.status ?? (sessionStatus === 'signed' || sessionStatus === 'completed' ? 'finalized' : 'draft');
+            const explicitSoapStatus = (data.soapNote as any)?.status;
+            // Only treat as finalized when status is explicit or session is signed.
+            // `completed` without soapNote.status stays draft so Familia B (archive / pending closure) stays correct.
+            const soapNoteStatus: 'draft' | 'finalized' =
+              explicitSoapStatus === 'finalized' || explicitSoapStatus === 'draft'
+                ? explicitSoapStatus
+                : sessionStatus === 'signed'
+                  ? 'finalized'
+                  : 'draft';
             const sessionType = data.sessionType;
             const date = data.timestamp?.toDate?.() || data.createdAt?.toDate?.() || new Date();
             const hasType = sessionType === 'followup' || sessionType === 'initial';
@@ -183,15 +191,21 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             if (encounterArchived) {
               return;
             }
-            // Single source of truth: session really saved = completed/signed => finalized (avoid "Complete Pending Follow-up" when already closed)
-            const soapNoteStatus = (data.soapNote as any)?.status ?? (data.status === 'signed' || data.status === 'completed' ? 'finalized' : 'draft');
+            const encStatus = data.status || 'draft';
+            const encExplicitSoap = (data.soapNote as any)?.status;
+            const encSoapStatus: 'draft' | 'finalized' =
+              encExplicitSoap === 'finalized' || encExplicitSoap === 'draft'
+                ? encExplicitSoap
+                : encStatus === 'signed'
+                  ? 'finalized'
+                  : 'draft';
 
             visits.push({
               id: doc.id,
               type: 'follow-up', // Encounters are typically follow-ups
               date: data.encounterDate?.toDate?.() || new Date(data.createdAt || Date.now()),
-              status: data.status || 'draft',
-              soapNote: { status: soapNoteStatus === 'finalized' ? 'finalized' : 'draft' },
+              status: encStatus,
+              soapNote: { status: encSoapStatus },
               soap: data.soap,
               chiefComplaint: data.soap?.subjective?.substring(0, 100),
               diagnosis: data.soap?.assessment,

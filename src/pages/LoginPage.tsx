@@ -204,10 +204,13 @@ const LoginPage: React.FC = () => {
       logger.info("[LOGIN] Attempting sign-in", { email });
       await login(email, password);
 
+      const currentUserAfterLogin = auth.currentUser;
+
       // 🔎 Legacy email-activation path (kept for backwards compatibility)
       // For the official pilot we DO NOT block login if there is no legacy
       // professional document; onboarding + ProfessionalProfileContext own the truth.
-      const professional = await emailActivationService.getProfessional(email);
+      // Use uid + getDoc(users/{uid}) so Firestore rules allow read (email queries are denied).
+      const professional = await emailActivationService.getProfessional(email, currentUserAfterLogin?.uid);
 
       if (!professional) {
         logger.info("[LOGIN] No legacy professional document found in users collection, relying on profile context + onboarding", {
@@ -217,7 +220,6 @@ const LoginPage: React.FC = () => {
       }
 
       // Pilot: if Firebase Auth says email is verified, don't block on legacy isActive
-      const currentUserAfterLogin = auth.currentUser;
       const firebaseEmailVerified = currentUserAfterLogin?.emailVerified === true;
       if (professional && professional.isActive === false && !firebaseEmailVerified) {
         setError(t('login.errorPendingActivation'));

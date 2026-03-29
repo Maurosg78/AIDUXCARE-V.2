@@ -1,74 +1,291 @@
-// TEST/EMU: el bloque match /{document=**} al final es permisivo (emulador local).
-// PRODUCCIÓN: antes de firebase deploy, revisar que el catch-all no contradiga vuestra política;
-// si en Console tenéis reglas más estrictas, fusionad este archivo con ellas (no sobrescribir sin revisar).
-// Familia A/B archive — dueño puede marcar archived (patientVisitArchiveService.ts: userId OR authorUid).
 rules_version = '2';
+// AiduxCare Clinical Intelligence Inc.
+// PROD rules — piloto aiduxcare-v2-uat-dev
+// Última actualización: 2026-03-29 (+ path fixes: ownerUid en isOwner; consent_status bajo patients)
+// Principio: denegación implícita. Todo lo no listado está denegado.
+// Auth obligatorio en todas las operaciones salvo patient_consent_tokens read (magic link).
+// PHI protegido por propiedad (userId || authorUid || ownerUid) o por patientId.
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ─── Funciones de utilidad ───────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(resource) {
+      return isAuthenticated()
+        && (resource.data.userId == request.auth.uid
+            || resource.data.authorUid == request.auth.uid
+            || resource.data.ownerUid == request.auth.uid);
+    }
+
+    // Citas antiguas: clinicianUid guardaba email del profesional (no Firebase UID).
+    function appointmentOwner(resource) {
+      return isOwner(resource)
+        || (isAuthenticated()
+            && resource.data.clinicianUid is string
+            && request.auth.token.email != null
+            && resource.data.clinicianUid == request.auth.token.email);
+    }
+
+    function isArchiveOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
+        && request.resource.data.archived == true;
+    }
+
+    function patientDocVisible(uid) {
+      let p = get(/databases/$(database)/documents/patients/$(uid));
+      return p.data.ownerUid == request.auth.uid
+        || p.data.userId == request.auth.uid
+        || p.data.authorUid == request.auth.uid;
+    }
+
+    // ─── users ───────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+
+      match /token_purchases/{purchaseId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == uid;
+      }
+    }
+
+    // ─── professional_profiles ───────────────────────────────────────────
+    match /professionals/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    }
+
+    match /professional_profiles/{uid} {
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // ─── patients ────────────────────────────────────────────────────────
+    match /patients/{patientId} {
+      allow read, write: if isAuthenticated()
+        && (resource == null || isOwner(resource));
+      allow create: if isAuthenticated();
+
+      match /consent_status/{docId} {
+        allow read, write: if isAuthenticated()
+          && exists(/databases/$(database)/documents/patients/$(patientId))
+          && patientDocVisible(patientId);
+      }
+    }
+
+    // ─── sessions (PHI — documentación clínica) ──────────────────────────
     match /sessions/{sessionId} {
-      allow update: if request.auth != null
-        && (resource.data.userId == request.auth.uid
-            || resource.data.authorUid == request.auth.uid)
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
-        && request.resource.data.archived == true;
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      // Familia B archive — solo campos de archivo, sin tocar PHI
+      allow update: if isOwner(resource) && isArchiveOnly();
+      allow delete: if false; // nunca borrado físico
     }
 
+    // ─── encounters ──────────────────────────────────────────────────────
     match /encounters/{encounterId} {
-      allow update: if request.auth != null
-        && (resource.data.userId == request.auth.uid
-            || resource.data.authorUid == request.auth.uid)
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
-        && request.resource.data.archived == true;
-    }
-
-    match /consultations/{consultationId} {
-      allow update: if request.auth != null
-        && (resource.data.userId == request.auth.uid
-            || resource.data.authorUid == request.auth.uid)
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
-        && request.resource.data.archived == true;
-    }
-
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-
-/*
--- PROD RULES (histórico comentado) --
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAuthenticated() { return request.auth != null; }
-    function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }
-
-    match /notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.clinicianUid == request.auth.uid;
-
-      // Nota firmada: SOAP inmutable. Se permiten cambios no clínicos (tags/pinned/audit)
-      allow update: if isAuthenticated() && isOwner(resource.data.clinicianUid) &&
-        (
-          (resource.data.status == 'signed' &&
-           request.resource.data.status == 'signed' &&
-           request.resource.data.soap == resource.data.soap)
-          ||
-          (resource.data.status == 'draft')
-        );
-
-      // Retención legal: no borrar notas clínicas
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow update: if isOwner(resource) && isArchiveOnly();
       allow delete: if false;
     }
 
-    // WO-CONSENT-VERBAL-FIX: consentimiento verbal (single source of truth para gate)
-    match /patients/{patientId}/consent_status/{docId} {
+    // ─── consultations ───────────────────────────────────────────────────
+    match /consultations/{consultationId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow update: if isOwner(resource) && isArchiveOnly();
+      allow delete: if false;
+    }
+
+    // ─── clinical_baselines ──────────────────────────────────────────────
+    match /clinical_baselines/{baselineId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── treatment_plans ─────────────────────────────────────────────────
+    match /treatment_plans/{planId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── episodes / patient_episodes ─────────────────────────────────────
+    match /episodes/{episodeId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    match /patient_episodes/{episodeId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── patient_consent ─────────────────────────────────────────────────
+    match /patient_consent/{consentId} {
+      allow read: if isAuthenticated()
+        && (resource.data.professionalId == request.auth.uid
+            || resource.data.physiotherapistId == request.auth.uid
+            || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated()
+        && (resource.data.professionalId == request.auth.uid
+            || resource.data.physiotherapistId == request.auth.uid
+            || resource.data.userId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    match /patient_consent_tokens/{tokenId} {
+      // Token es el secreto — patrón magic link.
+      // El paciente accede sin Firebase Auth; quien tiene el ID tiene acceso.
+      // Escritura restringida al fisio propietario.
+      allow read: if true;
+      allow create: if isAuthenticated()
+        && request.resource.data.physiotherapistId == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.physiotherapistId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /consent_verifications/{verificationId} {
+      allow read: if isAuthenticated()
+        && resource.data.ownerUid == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /patient_disclosures/{disclosureId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── clinical_decisions ──────────────────────────────────────────────
+    match /clinical_decisions/{decisionId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── appointments ────────────────────────────────────────────────────
+    match /appointments/{appointmentId} {
+      allow read: if appointmentOwner(resource);
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if appointmentOwner(resource);
+      allow delete: if appointmentOwner(resource);
+    }
+
+    // ─── hospital_portal_notes ───────────────────────────────────────────
+    match /hospital_portal_notes/{noteId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── patient_trajectory_events ───────────────────────────────────────
+    match /patient_trajectory_events/{eventId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    match /patient_trace_numbers/{traceId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if false;
+    }
+
+    // ─── pending_sms ─────────────────────────────────────────────────────
+    match /pending_sms/{smsId} {
+      allow read: if isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource);
+      allow delete: if isOwner(resource);
+    }
+
+    // ─── analytics / métricas (no PHI) ───────────────────────────────────
+    match /analytics_events/{eventId} {
       allow read, write: if isAuthenticated();
     }
+
+    match /user_analytics/{docId} {
+      allow read, write: if isAuthenticated()
+        && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /user_feedback/{feedbackId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /time_savings/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /value_analytics/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /business_metrics/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /system_analytics/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /reports/{reportId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ─── compliance / auditoría ───────────────────────────────────────────
+    match /compliance_audit_log/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /deletion_certificates/{certId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ─── métricas de dashboard interno ───────────────────────────────────
+    match /metrics_growth/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /metrics_tech/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ─── SIN CATCH-ALL ────────────────────────────────────────────────────
+    // Todo lo no listado está DENEGADO implícitamente.
+    // Antes de añadir colecciones nuevas al código, añadir su match aquí.
+
   }
 }
-*/

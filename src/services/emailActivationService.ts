@@ -6,7 +6,7 @@
  * @author CTO/Implementador Jefe
  */
 
-import { collection, doc, setDoc, deleteDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, query, where, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, sendEmailVerification, type ActionCodeSettings } from 'firebase/auth';
 
 import { db, auth } from '../lib/firebase';
@@ -324,13 +324,44 @@ export class EmailActivationService {
   }
 
   /**
-   * Obtiene datos del profesional
+   * Obtiene datos del profesional (documento `users/{uid}`).
+   * Tras login, pasar `firebaseUid` para usar `getDoc` — compatible con reglas
+   * `allow read: if request.auth.uid == uid` (las queries por email quedan bloqueadas).
    */
-  public async getProfessional(email: string): Promise<ProfessionalRegistration | null> {
+  public async getProfessional(email: string, firebaseUid?: string | null): Promise<ProfessionalRegistration | null> {
     try {
-      console.log('[DEBUG] Buscando profesional en Firestore:', email);
+      if (firebaseUid) {
+        console.log('[DEBUG] Buscando profesional en Firestore por uid:', firebaseUid);
+        const userDocRef = doc(db, 'users', firebaseUid);
+        const snap = await getDoc(userDocRef);
 
-      // Buscar en la colección 'users' (no 'professionals')
+        if (!snap.exists()) {
+          console.log('❌ [DEBUG] Usuario no encontrado en users/{uid}:', firebaseUid);
+          return null;
+        }
+
+        const data = snap.data();
+
+        console.log('✅ [DEBUG] Usuario encontrado por uid:', {
+          email: data.email,
+          displayName: data.displayName,
+          emailVerified: data.emailVerified,
+          isActive: data.isActive
+        });
+
+        return {
+          ...data,
+          id: snap.id,
+          registrationDate: new Date(data.registrationDate || data.createdAt),
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+          lastLogin: data.lastLogin ? new Date(data.lastLogin) : undefined
+        } as ProfessionalRegistration;
+      }
+
+      console.log('[DEBUG] Buscando profesional en Firestore por email:', email);
+
+      // Sin uid (p.ej. recuperación): query por email — puede fallar si las reglas no permiten list
       const usersRef = collection(db, 'users');
       const emailQuery = query(usersRef, where('email', '==', email.toLowerCase()));
       const snapshot = await getDocs(emailQuery);
@@ -340,8 +371,8 @@ export class EmailActivationService {
         return null;
       }
 
-      const doc = snapshot.docs[0];
-      const data = doc.data();
+      const userSnap = snapshot.docs[0];
+      const data = userSnap.data();
 
       console.log('✅ [DEBUG] Usuario encontrado:', {
         email: data.email,
@@ -352,6 +383,7 @@ export class EmailActivationService {
 
       return {
         ...data,
+        id: userSnap.id,
         registrationDate: new Date(data.registrationDate || data.createdAt),
         createdAt: new Date(data.createdAt),
         updatedAt: new Date(data.updatedAt),

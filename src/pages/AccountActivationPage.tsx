@@ -56,7 +56,7 @@ export const AccountActivationPage: React.FC = () => {
           
           // Obtener datos del profesional para mostrar
           if (result.professionalId) {
-            const professional = await emailActivationService.getProfessional(result.professionalId);
+            const professional = await emailActivationService.getProfessional('', result.professionalId);
             if (professional) {
               setProfessionalData(professional);
             }
