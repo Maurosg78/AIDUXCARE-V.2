@@ -12,6 +12,10 @@ import { useActiveEpisode } from './hooks/useActiveEpisode';
 import { useLastEncounter } from './hooks/useLastEncounter';
 import { usePatientVisits } from './hooks/usePatientVisits';
 import { PatientService } from '@/services/patientService';
+import {
+  archivePatientVisitRecord,
+  type ArchivableVisitSource,
+} from '@/services/patientVisitArchiveService';
 
 export const PatientDashboardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +32,7 @@ export const PatientDashboardPage: React.FC = () => {
   // WO-AUTO-BASELINE-01: Baseline effective = activeBaselineId OR at least one finalized initial SOAP.
   const [hasActiveBaseline, setHasActiveBaseline] = useState(false);
   const [selectedSOAP, setSelectedSOAP] = useState<{subjective?:string;objective?:string;assessment?:string;plan?:string;date?:string} | null>(null);
+  const [archivedVisitIds, setArchivedVisitIds] = useState<Set<string>>(() => new Set());
   useEffect(() => {
     const checkBaseline = async () => {
       if (!patientId) return;
@@ -88,8 +93,10 @@ export const PatientDashboardPage: React.FC = () => {
   const hasActiveEpisode = !!activeEpisode.data;
   const hasPreviousEncounters = !!lastEncounter.data;
   const isEstablishedPatient = hasActiveEpisode || hasPreviousEncounters;
+  const rawVisitList = patientVisits.data ?? [];
+  const visitsForDisplay = rawVisitList.filter((v) => !archivedVisitIds.has(v.id));
   // Ongoing only for patients not yet in AiDuxCare (no baseline, no visits). Same logic as StartSessionTwoStepModal.
-  const ongoingDisabled = hasActiveBaseline || (!!patientVisits.data && patientVisits.data.length > 0);
+  const ongoingDisabled = hasActiveBaseline || visitsForDisplay.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -121,12 +128,12 @@ export const PatientDashboardPage: React.FC = () => {
         <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6 mt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-900">{patientVisits.data?.length || 0}</div>
+              <div className="text-2xl font-bold text-slate-900">{visitsForDisplay.length || 0}</div>
               <div className="text-xs text-slate-600 mt-1">{t('patientDashboard.totalVisits')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {patientVisits.data?.filter(v =>
+                {visitsForDisplay.filter(v =>
                   (v.status === 'completed' || v.status === 'signed') &&
                   v.soapNote?.status === 'finalized'
                 ).length || 0}
@@ -135,12 +142,12 @@ export const PatientDashboardPage: React.FC = () => {
             </div>
             <div className="text-center">
               {(() => {
-                const hasClosedInitial = patientVisits.data?.some(v =>
+                const hasClosedInitial = visitsForDisplay.some(v =>
                   v.type === 'initial' &&
                   v.soapNote?.status === 'finalized' &&
                   hasActiveBaseline
                 );
-                const hasInitialPending = patientVisits.data?.some(v => v.type === 'initial');
+                const hasInitialPending = visitsForDisplay.some(v => v.type === 'initial');
                 const symbol = hasClosedInitial ? '✓' : hasInitialPending ? '⟳' : '?';
                 const colorClass = hasClosedInitial ? 'text-green-600' : hasInitialPending ? 'text-yellow-600' : 'text-yellow-600';
                 return (
@@ -153,8 +160,8 @@ export const PatientDashboardPage: React.FC = () => {
             </div>
             <div className="text-center">
               <div className="text-sm font-semibold text-slate-900">
-                {patientVisits.data && patientVisits.data.length > 0
-                  ? new Date(patientVisits.data[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                {visitsForDisplay.length > 0
+                  ? new Date(visitsForDisplay[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   : t('patientDashboard.never')
                 }
               </div>
@@ -181,15 +188,24 @@ export const PatientDashboardPage: React.FC = () => {
                 <div key={i} className="animate-pulse bg-slate-200 h-24 rounded-lg"></div>
               ))}
             </div>
-          ) : patientVisits.data && patientVisits.data.length > 0 ? (
+          ) : visitsForDisplay.length > 0 ? (
             <div className="space-y-4">
-              {patientVisits.data.map((visit) => {
+              {visitsForDisplay.map((visit) => {
                 // WO-STATE-ALIGN-01: Resumible = initial + SOAP not finalized + session/encounter (id is sessionId)
                 const isResumableInitial = visit.type === 'initial' && visit.soapNote?.status !== 'finalized' && (visit.source === 'session' || visit.source === 'encounter');
                 // Single source of truth: initial closed = hasActiveBaseline (from "Close Initial Assessment" button). Don't show Pending Closure when baseline says closed.
                 const initialClosedByBaseline =
                   visit.type === 'initial' && (hasActiveBaseline || visit.soapNote?.status === 'finalized');
                 const showPendingClosure = (visit.status === 'draft' || (visit.status === 'completed' && visit.soapNote?.status !== 'finalized')) && !initialClosedByBaseline;
+                const soapNoteStatus = visit.soapNote?.status;
+                const isFinalizedSoap = soapNoteStatus === 'finalized';
+                const isFamilyA = isFinalizedSoap;
+                const isFamilyB = !isFinalizedSoap;
+                const visitSource = visit.source;
+                const canArchiveSource =
+                  visitSource === 'session' ||
+                  visitSource === 'encounter' ||
+                  visitSource === 'consultation';
                 const handleVisitClick = () => {
                   if (visit.source === 'consultation') {
                     navigate(`/notes/${visit.id}`);
@@ -197,6 +213,61 @@ export const PatientDashboardPage: React.FC = () => {
                     navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
                   } else if (visit.source === 'encounter' && visit.soap) {
                     setSelectedSOAP({...visit.soap, date: visit.date?.toLocaleDateString?.() || ''});
+                  }
+                };
+                const navigateToEditFinalizedVisit = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const source = visit.source;
+                  if (source === 'consultation') {
+                    const notesPath = `/notes/${visit.id}`;
+                    navigate(notesPath);
+                    return;
+                  }
+                  if (source === 'encounter') {
+                    const encounterSoap = visit.soap;
+                    if (encounterSoap) {
+                      const dateLabel = visit.date?.toLocaleDateString?.() || '';
+                      setSelectedSOAP({ ...encounterSoap, date: dateLabel });
+                    }
+                    return;
+                  }
+                  if (source === 'session') {
+                    const isInitialVisit = visit.type === 'initial';
+                    if (isInitialVisit) {
+                      const initialWorkflowUrl = `/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`;
+                      navigate(initialWorkflowUrl);
+                      return;
+                    }
+                    const sessionSoap = visit.soap;
+                    if (sessionSoap) {
+                      const sessionDateLabel = visit.date?.toLocaleDateString?.() || '';
+                      setSelectedSOAP({ ...sessionSoap, date: sessionDateLabel });
+                      return;
+                    }
+                    const followWorkflowUrl = `/workflow?type=followup&patientId=${patientId}`;
+                    navigate(followWorkflowUrl);
+                  }
+                };
+                const archiveVisitInFirestore = async (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const confirmationMessage = t('patientDashboard.confirmArchiveVisit');
+                  const userConfirmed = window.confirm(confirmationMessage);
+                  if (!userConfirmed) {
+                    return;
+                  }
+                  try {
+                    const archivableSource = visit.source as ArchivableVisitSource;
+                    const visitRowId = visit.id;
+                    await archivePatientVisitRecord(visitRowId, archivableSource);
+                    setArchivedVisitIds((previousIds) => {
+                      const nextIds = new Set(previousIds);
+                      nextIds.add(visitRowId);
+                      return nextIds;
+                    });
+                  } catch (archiveErr) {
+                    console.error('[PatientDashboard] archive visit failed', archiveErr);
+                    const errMsg = t('patientDashboard.archiveVisitError');
+                    window.alert(errMsg);
                   }
                 };
                 return (
@@ -264,8 +335,29 @@ export const PatientDashboardPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col items-end gap-2 shrink-0">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {isFamilyA ? (
+                          <button
+                            type="button"
+                            onClick={navigateToEditFinalizedVisit}
+                            className="text-sm text-slate-700 hover:text-slate-900 font-medium underline-offset-2 hover:underline"
+                          >
+                            {t('patientDashboard.editSoap')}
+                          </button>
+                        ) : null}
+                        {isFamilyB && canArchiveSource ? (
+                          <button
+                            type="button"
+                            onClick={archiveVisitInFirestore}
+                            className="text-sm text-red-600 hover:text-red-800 font-medium"
+                          >
+                            {t('patientDashboard.removeFromHistory')}
+                          </button>
+                        ) : null}
+                      </div>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (visit.source === 'consultation') {

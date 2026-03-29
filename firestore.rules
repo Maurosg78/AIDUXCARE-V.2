@@ -1,8 +1,38 @@
-// TEST/EMU: permisivo (solo para emulador)
-// Consent path (PROD rule ready below): patients/{patientId}/consent_status/latest
+// TEST/EMU: el bloque match /{document=**} al final es permisivo (emulador local).
+// PRODUCCIÓN: antes de firebase deploy, revisar que el catch-all no contradiga vuestra política;
+// si en Console tenéis reglas más estrictas, fusionad este archivo con ellas (no sobrescribir sin revisar).
+// Familia A/B archive — dueño puede marcar archived (patientVisitArchiveService.ts: userId OR authorUid).
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    match /sessions/{sessionId} {
+      allow update: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || resource.data.authorUid == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
+        && request.resource.data.archived == true;
+    }
+
+    match /encounters/{encounterId} {
+      allow update: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || resource.data.authorUid == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
+        && request.resource.data.archived == true;
+    }
+
+    match /consultations/{consultationId} {
+      allow update: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || resource.data.authorUid == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['archived', 'archivedAt', 'archivedByUid'])
+        && request.resource.data.archived == true;
+    }
+
     match /{document=**} {
       allow read, write: if true;
     }
@@ -10,7 +40,7 @@ service cloud.firestore {
 }
 
 /*
--- PROD RULES (comentado; NO habilitar aún) --
+-- PROD RULES (histórico comentado) --
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

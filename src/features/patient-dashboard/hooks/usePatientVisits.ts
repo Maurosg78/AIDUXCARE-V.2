@@ -68,6 +68,10 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const sessionVisits: (PatientVisit & { _missingSessionType?: boolean })[] = [];
           sessionsSnapshot.forEach((docSnap) => {
             const data = docSnap.data();
+            const isArchived = data.archived === true;
+            if (isArchived) {
+              return;
+            }
             const sessionStatus = data.status || 'draft';
             const soapNoteStatus = (data.soapNote as any)?.status ?? (sessionStatus === 'signed' || sessionStatus === 'completed' ? 'finalized' : 'draft');
             const sessionType = data.sessionType;
@@ -126,6 +130,10 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const notes = await PersistenceService.getNotesByPatient(patientId);
 
           notes.forEach((note) => {
+            const noteArchived = (note as { archived?: boolean }).archived === true;
+            if (noteArchived) {
+              return;
+            }
             const soapData = (note.soapData || {}) as { subjective?: string; objective?: string; assessment?: string; plan?: string };
             const sessionId = (note as { sessionId?: string }).sessionId;
             const noteVisitType = (note as { visitType?: 'initial' | 'follow-up' }).visitType;
@@ -171,6 +179,10 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const encountersSnapshot = await getDocs(encountersQuery);
           encountersSnapshot.forEach((doc) => {
             const data = doc.data();
+            const encounterArchived = data.archived === true;
+            if (encounterArchived) {
+              return;
+            }
             // Single source of truth: session really saved = completed/signed => finalized (avoid "Complete Pending Follow-up" when already closed)
             const soapNoteStatus = (data.soapNote as any)?.status ?? (data.status === 'signed' || data.status === 'completed' ? 'finalized' : 'draft');
 
