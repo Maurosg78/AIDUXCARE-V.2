@@ -105,9 +105,13 @@ service cloud.firestore {
 
     // ─── clinical_baselines ──────────────────────────────────────────────
     match /clinical_baselines/{baselineId} {
-      allow read: if isOwner(resource);
+      allow read: if isAuthenticated()
+        && (isOwner(resource)
+            || resource.data.createdBy == request.auth.uid);
       allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow update: if isAuthenticated()
+        && (isOwner(resource)
+            || resource.data.createdBy == request.auth.uid);
       allow delete: if false;
     }
 
@@ -261,6 +265,13 @@ service cloud.firestore {
 
     // ─── compliance / auditoría ───────────────────────────────────────────
     match /compliance_audit_log/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /audit_logs/{logId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if false;
