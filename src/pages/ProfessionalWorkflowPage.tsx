@@ -3500,8 +3500,49 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
 
+  /** Sprint A: persist HEP checkbox state to `sessions/{id}.hepCompliance` (merge). */
+  const updateHomeProgramItems = useCallback(
+    (next: TodayFocusItem[]) => {
+      setHomeProgramItems(next);
+      if (visitType !== 'follow-up') return;
+      const uid = user?.uid;
+      if (!uid) return;
+      const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+      const hepCompliance = next.map((i) => ({
+        itemId: i.id,
+        done: i.completed,
+        date: new Date().toISOString(),
+      }));
+      const patientName =
+        currentPatient?.fullName ||
+        `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim() ||
+        'Unknown';
+      sessionService
+        .updateSession(sid, {
+          hepCompliance,
+          userId: uid,
+          patientId: patientId || '',
+          patientName,
+          sessionType: visitType === 'follow-up' ? 'followup' : sessionTypeFromUrl || 'initial',
+        })
+        .catch(() => {});
+    },
+    [
+      visitType,
+      user?.uid,
+      sessionId,
+      sessionStartTime,
+      currentPatient?.fullName,
+      currentPatient?.firstName,
+      currentPatient?.lastName,
+      patientId,
+      sessionTypeFromUrl,
+    ],
+  );
+
   // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP — FOLLOW-UP ONLY; baseline as primary source (no mock)
   // Single source of truth: baselineSOAP.plan from clinical_baselines; fallback to treatment plan only if no baseline
+  // Sprint A: optional hydrate of `hepCompliance` from the session doc (does not overwrite local toggles).
   useEffect(() => {
     if (visitType !== 'follow-up') {
       setInClinicItems([]);
@@ -3524,17 +3565,57 @@ const ProfessionalWorkflowPage = () => {
         label,
         completed: false,
         source: 'plan' as const,
-      }))
+      })),
     );
-    setHomeProgramItems(
-      derived.homeProgram.map((label, i) => ({
-        id: `hep-${i}`,
-        label,
-        completed: false,
-        source: 'plan' as const,
-      }))
-    );
-  }, [visitType, patientIdFromUrl, followUpClinicalState?.baselineSOAP?.plan, previousTreatmentPlan?.planText]);
+    const hepItems = derived.homeProgram.map((label, i) => ({
+      id: `hep-${i}`,
+      label,
+      completed: false,
+      source: 'plan' as const,
+    }));
+    setHomeProgramItems(hepItems);
+
+    const uid = user?.uid;
+    if (!uid) return;
+    const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const docSnap = await sessionService.getSessionById(sid);
+        if (cancelled || !docSnap) return;
+        const compliance = docSnap.hepCompliance;
+        if (!Array.isArray(compliance) || compliance.length === 0) return;
+        const merged = hepItems.map((item) => {
+          const row = compliance.find((c: { itemId?: string; done?: boolean }) => c?.itemId === item.id);
+          return row ? { ...item, completed: Boolean(row.done) } : item;
+        });
+        setHomeProgramItems((current) => {
+          const sameShape =
+            current.length === hepItems.length &&
+            current.every((c, i) => c.id === hepItems[i].id && c.label === hepItems[i].label);
+          if (!sameShape) return current;
+          const allStillIncomplete = current.every((c) => !c.completed);
+          if (!allStillIncomplete) return current;
+          return merged;
+        });
+      } catch {
+        /* ignore — offline or rules */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    visitType,
+    patientIdFromUrl,
+    followUpClinicalState?.baselineSOAP?.plan,
+    previousTreatmentPlan?.planText,
+    sessionId,
+    user?.uid,
+    sessionStartTime,
+  ]);
 
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
@@ -5087,7 +5168,8 @@ const ProfessionalWorkflowPage = () => {
                         `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim()
                       }
                       assessment={followUpClinicalState?.baselineSOAP?.assessment ?? null}
-                      homeProgramItems={homeProgramItems.map((i) => i.label)}
+                      hepItems={homeProgramItems}
+                      onHepItemsChange={updateHomeProgramItems}
                       nextSessionFocus={previousTreatmentPlan?.nextSessionFocus ?? null}
                       clinicianFirstName={clinicianDisplayName?.split(' ')[0] ?? 'Fisio'}
                       isVisible={showClinicalBriefing}
@@ -5158,11 +5240,11 @@ const ProfessionalWorkflowPage = () => {
                     return (
                       <HomeProgramBlock
                         items={homeProgramItems}
-                        onChange={setHomeProgramItems}
+                        onChange={updateHomeProgramItems}
                         allDone={allHEPDone}
                         onSelectAllClick={() =>
-                          setHomeProgramItems((prev) =>
-                            prev.map((i) => ({ ...i, completed: !allHEPDone }))
+                          updateHomeProgramItems(
+                            homeProgramItems.map((i) => ({ ...i, completed: !allHEPDone })),
                           )
                         }
                       />

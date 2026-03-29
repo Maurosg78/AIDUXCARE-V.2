@@ -117,7 +117,13 @@
       "previousPlanLoaded": "Previous treatment plan loaded",
       "followupNotesDesc": "Update based on patient response, progress, setbacks, and modifications applied today.",
       "initialNotesDesc": "Record, type, or paste your clinical observations.",
-      "followupContextHint": "Based on the initial assessment and previous sessions."
+      "followupContextHint": "Based on the initial assessment and previous sessions.",
+      "briefingIntro": "{{clinician}}, your next patient is {{patient}}.",
+      "briefingFocusPrefix": "Today's focus",
+      "briefingLastAssessment": "Last session — assessment",
+      "briefingHepTitle": "Home exercise program (HEP)",
+      "briefingHepHint": "Check what the patient completed before this visit.",
+      "briefingHepDidTheyDoIt": "Did they do it?"
     },
     "soapTab": {
       "initialAssessmentComplete": "Initial Assessment Complete",

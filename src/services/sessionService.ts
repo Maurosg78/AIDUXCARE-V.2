@@ -27,6 +27,8 @@ interface SessionData {
     recordedAt: string;
   };
   attachments?: ClinicalAttachment[];
+  /** Sprint A (follow-up): HEP compliance for this session doc only — source of truth on `sessions/{id}`. */
+  hepCompliance?: Array<{ itemId: string; done: boolean; date: string }>;
 }
 
 class SessionService {

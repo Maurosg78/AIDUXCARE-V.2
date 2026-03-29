@@ -1,23 +1,31 @@
+import { useTranslation } from 'react-i18next';
+import type { TodayFocusItem } from '../utils/parsePlanToFocus';
+
 export interface ClinicalBriefingPanelProps {
   patientName: string;
   assessment: string | null;
-  homeProgramItems: string[];
+  /** HEP items from the prior plan; `completed` = patient did it before this visit. */
+  hepItems: TodayFocusItem[];
+  onHepItemsChange: (items: TodayFocusItem[]) => void;
   nextSessionFocus: string | null;
   clinicianFirstName: string;
   isVisible: boolean;
 }
 
 /**
- * Read-only pre-session briefing for follow-up. No data fetching — props only.
+ * Pre-session briefing for follow-up (Sprint A): fixed card, no collapsibles,
+ * last-session assessment + interactive HEP compliance before main recording.
  */
 export function ClinicalBriefingPanel({
   patientName,
   assessment,
-  homeProgramItems,
+  hepItems,
+  onHepItemsChange,
   nextSessionFocus,
   clinicianFirstName,
   isVisible,
 }: ClinicalBriefingPanelProps) {
+  const { t } = useTranslation();
   if (!isVisible) return null;
 
   const nameTrim = patientName.trim();
@@ -25,42 +33,66 @@ export function ClinicalBriefingPanel({
   if (!nameTrim || !clinicianTrim) return null;
 
   const assessmentTrimmed = assessment?.trim() ?? '';
-  const hasAssessment = assessmentTrimmed.length > 0;
-  const hasHep = homeProgramItems.length > 0;
-  const showCollapsible = hasAssessment || hasHep;
-
   const focusTrimmed = nextSessionFocus?.trim() ?? '';
   const showFocusLine = focusTrimmed.length > 0;
 
+  const toggleHep = (id: string) => {
+    onHepItemsChange(
+      hepItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)),
+    );
+  };
+
   return (
-    <div className="bg-white border border-blue-200 rounded-lg p-6 mt-4">
-      <p className="text-xl font-semibold text-slate-900 font-apple leading-snug">
-        {clinicianTrim}, tu siguiente paciente es {nameTrim}.
+    <div className="mt-4 bg-white border border-blue-200 rounded-lg p-4 sm:p-5 shadow-sm">
+      <p className="text-base sm:text-lg font-semibold text-slate-900 font-apple leading-snug">
+        {t('workflow.visit.briefingIntro', { clinician: clinicianTrim, patient: nameTrim })}
       </p>
       {showFocusLine && (
-        <p className="mt-3 text-base font-semibold text-blue-800 font-apple">
-          El foco para hoy: {focusTrimmed}
+        <p className="mt-3 text-sm sm:text-base font-semibold text-blue-800 font-apple">
+          {t('workflow.visit.briefingFocusPrefix')}: {focusTrimmed}
         </p>
       )}
-      {showCollapsible && (
-        <details className="mt-4 group border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
-          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-slate-800 font-apple list-none flex items-center justify-between hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
-            <span>Contexto de la última sesión</span>
-            <span className="text-slate-400 text-xs transition-transform group-open:rotate-180">▼</span>
-          </summary>
-          <div className="px-4 pb-4 pt-0 space-y-2 border-t border-slate-200">
-            {hasAssessment && (
-              <p className="text-sm text-slate-700 font-apple font-light pt-3">
-                Trabajamos en: {assessmentTrimmed}
-              </p>
-            )}
-            {hasHep && (
-              <p className="text-sm text-slate-700 font-apple font-light">
-                Enviamos a casa: {homeProgramItems.join(', ')}
-              </p>
-            )}
-          </div>
-        </details>
+
+      {assessmentTrimmed && (
+        <div className="border-t border-slate-200 pt-4 mt-4">
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 font-apple font-semibold mb-2">
+            {t('workflow.visit.briefingLastAssessment')}
+          </h3>
+          <p className="text-sm text-slate-700 font-apple font-light leading-relaxed line-clamp-3">
+            {assessmentTrimmed}
+          </p>
+        </div>
+      )}
+
+      {hepItems.length > 0 && (
+        <div className="border-t border-slate-200 pt-4 mt-4">
+          <h3 className="text-xs uppercase tracking-wide text-slate-500 font-apple font-semibold mb-1">
+            {t('workflow.visit.briefingHepTitle')}
+          </h3>
+          <p className="text-xs text-slate-500 font-apple font-light mb-3">
+            {t('workflow.visit.briefingHepHint')}
+          </p>
+          <ul className="space-y-2">
+            {hepItems.map((item) => {
+              const inputId = `briefing-hep-${item.id}`;
+              return (
+                <li key={item.id} className="flex items-start gap-3">
+                  <input
+                    id={inputId}
+                    type="checkbox"
+                    checked={item.completed}
+                    onChange={() => toggleHep(item.id)}
+                    className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 shrink-0"
+                  />
+                  <label htmlFor={inputId} className="text-sm text-slate-800 font-apple font-light cursor-pointer flex-1">
+                    <span className="font-medium text-slate-900">{item.label}</span>
+                    <span className="block text-xs text-slate-500 mt-0.5">{t('workflow.visit.briefingHepDidTheyDoIt')}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </div>
   );

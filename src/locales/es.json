@@ -101,7 +101,13 @@
       "previousPlanLoaded": "Plan de tratamiento anterior cargado",
       "followupNotesDesc": "Actualiza según respuesta del paciente, progreso, contratiempos y cambios de hoy.",
       "initialNotesDesc": "Graba, escribe o pega tus observaciones clínicas.",
-      "followupContextHint": "En función de la valoración inicial y sesiones anteriores."
+      "followupContextHint": "En función de la valoración inicial y sesiones anteriores.",
+      "briefingIntro": "{{clinician}}, tu siguiente paciente es {{patient}}.",
+      "briefingFocusPrefix": "El foco para hoy",
+      "briefingLastAssessment": "Última sesión — valoración",
+      "briefingHepTitle": "Programa de ejercicios en casa (HEP)",
+      "briefingHepHint": "Marca lo que el paciente completó antes de esta visita.",
+      "briefingHepDidTheyDoIt": "¿Lo hizo?"
     },
     "homeProgram": {
       "allDone": "Todo hecho",
