@@ -92,6 +92,7 @@ import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-ser
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
 import type { FollowUpDetectionInput } from "../services/followUpDetectionService";
 import WorkflowFeedback from "../components/workflow/WorkflowFeedback";
+import { ClinicalBriefingPanel } from "../components/ClinicalBriefingPanel";
 import {
   trackWorkflowSessionStart,
   trackSOAPGeneration,
@@ -4794,6 +4795,10 @@ const ProfessionalWorkflowPage = () => {
   const isFollowUpWithRedFlags = (sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && ((followUpAlerts?.red_flags?.length ?? 0) > 0);
   const effectiveActiveTab: ActiveTab = isFollowUpWithRedFlags ? 'analysis' : activeTab;
 
+  const showClinicalBriefing =
+    visitType === 'follow-up' &&
+    followUpClinicalState?.baselineSOAP != null;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* WO-CPO-BLOCK-MODAL-001 — jurisdiction-aware (CPO / normativa europea-española-autonómica) */}
@@ -5076,6 +5081,17 @@ const ProfessionalWorkflowPage = () => {
                         {getSessionOrdinalLabel((visitCount.data ?? 0) + 1)}
                       </p>
                     </div>
+                    <ClinicalBriefingPanel
+                      patientName={
+                        currentPatient?.fullName ||
+                        `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim()
+                      }
+                      assessment={followUpClinicalState?.baselineSOAP?.assessment ?? null}
+                      homeProgramItems={homeProgramItems.map((i) => i.label)}
+                      nextSessionFocus={previousTreatmentPlan?.nextSessionFocus ?? null}
+                      clinicianFirstName={clinicianDisplayName?.split(' ')[0] ?? 'Fisio'}
+                      isVisible={showClinicalBriefing}
+                    />
                     {previousTreatmentPlan && (
                       <div className="mt-2 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-600" />
