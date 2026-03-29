@@ -17,6 +17,10 @@ import {
   type ArchivableVisitSource,
 } from '@/services/patientVisitArchiveService';
 
+/** Visit row actions: shared tap target + padding; variants below match command-center / brand-in patterns. */
+const VISIT_ACTION_SHELL =
+  'inline-flex items-center justify-center min-h-9 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+
 export const PatientDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { id: patientId } = useParams<{ id: string }>();
@@ -341,7 +345,7 @@ export const PatientDashboardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={navigateToEditFinalizedVisit}
-                            className="text-sm text-slate-700 hover:text-slate-900 font-medium underline-offset-2 hover:underline"
+                            className={`${VISIT_ACTION_SHELL} border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 focus-visible:ring-slate-400`}
                           >
                             {t('patientDashboard.editSoap')}
                           </button>
@@ -350,7 +354,7 @@ export const PatientDashboardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={archiveVisitInFirestore}
-                            className="text-sm text-red-600 hover:text-red-800 font-medium"
+                            className={`${VISIT_ACTION_SHELL} border border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100/90 hover:border-rose-300 hover:text-rose-800 focus-visible:ring-rose-400`}
                           >
                             {t('patientDashboard.removeFromHistory')}
                           </button>
@@ -366,7 +370,7 @@ export const PatientDashboardPage: React.FC = () => {
                             navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
                           }
                         }}
-                        className="text-sm text-brand-in-500 hover:text-brand-in-600 font-medium"
+                        className={`${VISIT_ACTION_SHELL} border border-brand-in-200 bg-white text-brand-in-600 shadow-sm hover:bg-brand-in-50 hover:border-brand-in-300 hover:text-brand-in-700 focus-visible:ring-brand-in-400`}
                       >
                         {t('patientDashboard.viewSoap')} →
                       </button>
