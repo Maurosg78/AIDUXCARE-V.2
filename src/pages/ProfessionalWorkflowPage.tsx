@@ -1570,7 +1570,8 @@ const ProfessionalWorkflowPage = () => {
   // WO-IA-RESUME-01: Load existing session when resume=true&sessionId=YYY — do not create new session
   // Fallback: when session doc does not exist in sessions (e.g. legacy note-only flow), hydrate from consultation/note so user can close initial assessment without redoing
   useEffect(() => {
-    if (!resumeFromUrl || visitType !== 'initial') return;
+    const resumeLoadSupportedForVisitType = visitType === 'initial' || visitType === 'follow-up';
+    if (!resumeFromUrl || !resumeLoadSupportedForVisitType) return;
     if (!sessionIdFromUrl) {
       setAnalysisError('Cannot resume: session ID is missing.');
       hasResumeLoadAttemptedRef.current = 'no-session-id';
@@ -1589,7 +1590,14 @@ const ProfessionalWorkflowPage = () => {
           logger.info('[WO-IA-RESUME-01] loadSession(sessionId)', { sessionId: sessionIdFromUrl });
           setSessionId(sessionIdFromUrl);
           setLocalSoapNote(sessionData.soapNote as SOAPNote);
-          setSoapStatus((sessionData.status === 'completed' ? 'finalized' : 'draft') as SOAPStatus);
+          const soapNoteHasExplicitFinalizedStatus =
+            (sessionData.soapNote as { status?: string })?.status === 'finalized';
+          const sessionIsExplicitlyFinalized =
+            visitType === 'follow-up'
+              ? sessionData.status === 'completed' && soapNoteHasExplicitFinalizedStatus
+              : sessionData.status === 'completed';
+          const resolvedSoapStatus = sessionIsExplicitlyFinalized ? 'finalized' : 'draft';
+          setSoapStatus(resolvedSoapStatus as SOAPStatus);
           if (hasUndecidedFollowUpRedFlags()) {
             console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
             return;
@@ -1625,7 +1633,10 @@ const ProfessionalWorkflowPage = () => {
             assessment: note.soapData.assessment ?? '',
             plan: note.soapData.plan ?? '',
           } as SOAPNote);
-          setSoapStatus('finalized');
+          const noteIsExplicitlyFinalized =
+            (note.soapData as { status?: string })?.status === 'finalized';
+          const resolvedNoteStatus = noteIsExplicitlyFinalized ? 'finalized' : 'draft';
+          setSoapStatus(resolvedNoteStatus as SOAPStatus);
           if (hasUndecidedFollowUpRedFlags()) {
             console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
             return;
@@ -1652,7 +1663,10 @@ const ProfessionalWorkflowPage = () => {
               assessment: note.soapData.assessment ?? '',
               plan: note.soapData.plan ?? '',
             } as SOAPNote);
-            setSoapStatus('finalized');
+            const noteIsExplicitlyFinalized =
+              (note.soapData as { status?: string })?.status === 'finalized';
+            const resolvedNoteStatus = noteIsExplicitlyFinalized ? 'finalized' : 'draft';
+            setSoapStatus(resolvedNoteStatus as SOAPStatus);
             if (hasUndecidedFollowUpRedFlags()) {
               console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
               return;
