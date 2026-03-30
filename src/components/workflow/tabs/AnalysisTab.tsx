@@ -9,7 +9,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight, Brain } from 'lucide-react';
+import { isSpainPilot } from '@/core/pilotDetection';
 import type { Patient } from '../../../services/patientService';
 import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
 import { ClinicalAnalysisResults } from '../../ClinicalAnalysisResults';
@@ -24,6 +25,17 @@ import type { VisitType } from '../../../core/soap/SOAPContextBuilder';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { SuggestedFocusEditor } from '../SuggestedFocusEditor';
 import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parsePlanToFocus';
+
+/** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
+const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
+  ? {
+      analyzingBtnFollowUp: 'Generando nota de seguimiento…',
+      analyzeBtnFollowUp: 'Generar nota de seguimiento',
+    }
+  : {
+      analyzingBtnFollowUp: 'Generating follow-up note...',
+      analyzeBtnFollowUp: 'Generate Follow-up Note',
+    };
 
 const demoPatient = {
   id: "CA-TEST-001",
@@ -379,12 +391,12 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             {(isProcessing || isGeneratingSOAP) ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                {UI.analyzingBtnFollowUp}
+                {FOLLOW_UP_VERTEX_CTA.analyzingBtnFollowUp}
               </>
             ) : (
               <>
                 <Brain className="w-4 h-4" />
-                {UI.analyzeBtnFollowUp}
+                {FOLLOW_UP_VERTEX_CTA.analyzeBtnFollowUp}
               </>
             )}
           </button>

@@ -5478,6 +5478,11 @@ const ProfessionalWorkflowPage = () => {
                     onFinishSession={undefined}
                     hideHeader={true}
                     hideTranscriptArea={visitType === 'follow-up'}
+                    followUpHasContent={
+                      visitType === 'follow-up'
+                        ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)
+                        : undefined
+                    }
                     todayFocusBlockRenderedByParent={visitType === 'follow-up'}
                     resumeLoadFailed={resumeLoadFailed}
                     selectedRedFlagIds={selectedRedFlagIds}
