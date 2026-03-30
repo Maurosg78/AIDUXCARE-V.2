@@ -123,7 +123,8 @@
       "briefingLastAssessment": "Last session — assessment",
       "briefingHepTitle": "Home exercise program (HEP)",
       "briefingHepHint": "Check what the patient completed before this visit.",
-      "briefingHepDidTheyDoIt": "Did they do it?"
+      "briefingHepDidTheyDoIt": "Did they do it?",
+      "briefingHepColumnHeader": "Home program (HEP) — Did they do it?"
     },
     "soapTab": {
       "initialAssessmentComplete": "Initial Assessment Complete",

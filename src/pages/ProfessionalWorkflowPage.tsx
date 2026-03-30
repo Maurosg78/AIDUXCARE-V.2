@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, FileText, Users, Plus, Info, LogOut, ArrowLeft } from "lucide-react";
+import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, Users, Plus, Info, LogOut, ArrowLeft } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
 import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
@@ -92,7 +92,6 @@ import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-ser
 import { routeWorkflow, shouldSkipTab, getInitialTab, type WorkflowRoute } from "../services/workflowRouterService";
 import type { FollowUpDetectionInput } from "../services/followUpDetectionService";
 import WorkflowFeedback from "../components/workflow/WorkflowFeedback";
-import { ClinicalBriefingPanel } from "../components/ClinicalBriefingPanel";
 import {
   trackWorkflowSessionStart,
   trackSOAPGeneration,
@@ -5060,151 +5059,184 @@ const ProfessionalWorkflowPage = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* SECCIÓN 1: Patient context (READ-ONLY) - WO-06.4 + WO-CONSENT-UX/FB-060 (sticky header to avoid invisible patient) */}
-              <div className="sticky top-4 z-30 bg-slate-50/95 border border-blue-200 rounded-lg p-6 backdrop-blur">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">Patient context</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {/* Patient Info */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Patient</p>
-                    <p className="text-lg font-semibold text-slate-900 font-apple">
-                      {currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-slate-500 font-apple font-light">{currentPatient?.email || demoPatient.email}</p>
-                      {(() => {
-                        const dob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
-                        const age = dob ? calculateAge(dob) : null;
-                        return age !== null ? (
+              {/* SECCIÓN 1: Patient context — Sprint B redesign (follow-up; single sticky card, no 3-col grid) */}
+              <div className="sticky top-4 z-30 overflow-hidden bg-white border border-blue-100 rounded-xl shadow-sm backdrop-blur">
+                {(() => {
+                  const patientContextDisplayName =
+                    currentPatient?.fullName ||
+                    `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+                    demoPatient.name;
+                  const patientContextEmail = currentPatient?.email || demoPatient.email;
+                  const patientContextDob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
+                  const patientContextAgeYears = patientContextDob ? calculateAge(patientContextDob) : null;
+                  const visitTypeLabelForContext =
+                    visitType === 'follow-up' ? t('workflow.visit.followupVisit') : t('workflow.visit.initialVisit');
+                  const sessionOrdinalForContext = getSessionOrdinalLabel((visitCount.data ?? 0) + 1);
+                  const visitTypeAndOrdinalLine = `${visitTypeLabelForContext} · ${sessionOrdinalForContext}`;
+                  let lastSessionDateForContext = '';
+                  if (lastEncounter.loading) {
+                    lastSessionDateForContext = 'Loading...';
+                  } else if (lastEncounter.error) {
+                    lastSessionDateForContext = 'Error loading session';
+                  } else if (lastEncounter.data) {
+                    lastSessionDateForContext =
+                      formatLastSessionDate(lastEncounter.data) || 'Previous session';
+                  } else if (isFirstSession === true) {
+                    lastSessionDateForContext = 'Session 1';
+                  } else {
+                    lastSessionDateForContext = 'No previous sessions';
+                  }
+                  const baselineAssessmentRaw = followUpClinicalState?.baselineSOAP?.assessment ?? '';
+                  const baselineAssessmentTrimmed = baselineAssessmentRaw.trim();
+                  const hasBriefingAssessmentColumn = baselineAssessmentTrimmed.length > 0;
+                  const hasBriefingHepColumn = homeProgramItems.length > 0;
+                  const shouldShowBriefingBodyRow =
+                    showClinicalBriefing && (hasBriefingAssessmentColumn || hasBriefingHepColumn);
+                  const briefingGridUsesTwoColumns =
+                    hasBriefingAssessmentColumn && hasBriefingHepColumn;
+                  const todayFocusRaw = previousTreatmentPlan?.nextSessionFocus ?? '';
+                  const todayFocusTrimmed = todayFocusRaw.trim();
+                  const shouldShowTodayFocusRow = showClinicalBriefing && todayFocusTrimmed.length > 0;
+                  return (
+                    <>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 pb-3 border-b border-slate-100">
+                        <span className="text-base font-semibold text-slate-900 font-apple">{patientContextDisplayName}</span>
+                        {patientContextAgeYears !== null ? (
                           <span className="text-sm text-slate-500 font-apple font-light">
-                            · {age} years
+                            {patientContextAgeYears} years
                           </span>
-                        ) : null;
-                      })()}
-                    </div>
-                    {/* Red Flags (Allergies/Contraindications) */}
-                    {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
-                      <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
-                        {patientClinicalInfo.allergies && (
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-amber-800 font-apple">Allergies</p>
-                              <p className="text-xs text-amber-700 font-apple font-light mt-0.5">
-                                {patientClinicalInfo.allergies.join(', ')}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        {patientClinicalInfo.contraindications && (
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-red-800 font-apple">Contraindications</p>
-                              <p className="text-xs text-red-700 font-apple font-light mt-0.5">
-                                {patientClinicalInfo.contraindications.slice(0, 2).join('; ')}
-                                {patientClinicalInfo.contraindications.length > 2 && ` (+${patientClinicalInfo.contraindications.length - 2} more)`}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {/* Consent Status */}
-                    {workflowConsentStatus?.hasValidConsent ? (
-                      <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-xs text-slate-600 font-apple font-light">
-                          Consent valid (ON)
+                        ) : null}
+                        <span className="text-sm text-slate-500 font-apple font-light">{patientContextEmail}</span>
+                        <span className="text-sm text-slate-500 font-apple font-light">{visitTypeAndOrdinalLine}</span>
+                        <span className="text-sm text-slate-500 font-apple font-light inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {lastSessionDateForContext}
+                          {lastEncounter.data?.soap ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sidLastSoap = lastEncounter.data?.sessionId || lastEncounter.data?.id;
+                                if (sidLastSoap) {
+                                  window.open(`/documents?session=${sidLastSoap}`, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
+                            >
+                              View last SOAP note →
+                            </button>
+                          ) : null}
                         </span>
+                        {workflowConsentStatus?.hasValidConsent ? (
+                          <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 font-apple font-light">
+                            <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                            Consent valid (ON)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-800 font-apple">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                            Consent Required
+                          </span>
+                        )}
+                        {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
+                          <div className="w-full basis-full flex flex-wrap gap-3 pt-1 border-t border-slate-100 mt-1">
+                            {patientClinicalInfo.allergies && (
+                              <div className="flex items-start gap-2 min-w-[12rem] flex-1">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-amber-800 font-apple">Allergies</p>
+                                  <p className="text-xs text-amber-700 font-apple font-light mt-0.5">
+                                    {patientClinicalInfo.allergies.join(', ')}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {patientClinicalInfo.contraindications && (
+                              <div className="flex items-start gap-2 min-w-[12rem] flex-1">
+                                <AlertCircle className="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-red-800 font-apple">Contraindications</p>
+                                  <p className="text-xs text-red-700 font-apple font-light mt-0.5">
+                                    {patientClinicalInfo.contraindications.slice(0, 2).join('; ')}
+                                    {patientClinicalInfo.contraindications.length > 2 &&
+                                      ` (+${patientClinicalInfo.contraindications.length - 2} more)`}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="mt-3 pt-3 border-t border-slate-200">
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <p className="text-xs font-semibold text-red-800 font-apple">
-                                Consent Required
+                      {shouldShowBriefingBodyRow ? (
+                        <div
+                          className={
+                            briefingGridUsesTwoColumns
+                              ? 'grid grid-cols-2 gap-0 divide-x divide-slate-100'
+                              : 'grid grid-cols-1 gap-0'
+                          }
+                        >
+                          {hasBriefingAssessmentColumn ? (
+                            <div className="px-5 py-4">
+                              <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
+                                {t('workflow.visit.briefingLastAssessment')}
+                              </p>
+                              <p className="text-sm text-slate-700 font-apple font-light leading-relaxed whitespace-pre-wrap">
+                                {baselineAssessmentTrimmed}
                               </p>
                             </div>
-                          </div>
+                          ) : null}
+                          {hasBriefingHepColumn ? (
+                            <div className="px-5 py-4">
+                              <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
+                                {t('workflow.visit.briefingHepColumnHeader')}
+                              </p>
+                              <ul className="space-y-2">
+                                {homeProgramItems.map((item) => {
+                                  const hepCheckboxId = `patient-context-hep-${item.id}`;
+                                  return (
+                                    <li key={item.id} className="flex items-start gap-3">
+                                      <input
+                                        id={hepCheckboxId}
+                                        type="checkbox"
+                                        checked={item.completed}
+                                        onChange={() => {
+                                          const toggledHepItems = homeProgramItems.map((h) =>
+                                            h.id === item.id ? { ...h, completed: !h.completed } : h,
+                                          );
+                                          updateHomeProgramItems(toggledHepItems);
+                                        }}
+                                        className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 shrink-0"
+                                      />
+                                      <label
+                                        htmlFor={hepCheckboxId}
+                                        className="text-sm text-slate-800 font-apple font-light cursor-pointer flex-1"
+                                      >
+                                        <span className="font-medium text-slate-900">{item.label}</span>
+                                      </label>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Last Session (READ-ONLY link) */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                      <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light">Last Session</p>
-                    </div>
-                    {lastEncounter.loading ? (
-                      <p className="text-sm text-slate-500 font-apple font-light">Loading...</p>
-                    ) : lastEncounter.error ? (
-                      <p className="text-sm text-red-600 font-apple font-light">Error loading session</p>
-                    ) : lastEncounter.data ? (
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 font-apple">
-                          {formatLastSessionDate(lastEncounter.data) || 'Previous session'}
-                        </p>
-                        {lastEncounter.data.soap && (
-                          <button
-                            onClick={() => {
-                              // WO-06.4: Link to last SOAP (read-only view)
-                              const sessionId = lastEncounter.data?.sessionId || lastEncounter.data?.id;
-                              if (sessionId) {
-                                window.open(`/documents?session=${sessionId}`, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
-                            className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
-                          >
-                            View last SOAP note →
-                          </button>
-                        )}
-                      </div>
-                    ) : isFirstSession === true ? (
-                      <p className="text-sm text-slate-700 font-apple font-light">Session 1</p>
-                    ) : (
-                      <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
-                    )}
-                  </div>
-
-                  {/* Visit Type Indicator — session ordinal: Initial = First, Follow-up = Second / Third / … */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">{t('workflow.visit.visitTypeLabel')}</p>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-semibold text-slate-900 font-apple">
-                          {visitType === 'follow-up' ? t('workflow.visit.followupVisit') : t('workflow.visit.initialVisit')}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-600 font-apple font-light">
-                        {getSessionOrdinalLabel((visitCount.data ?? 0) + 1)}
-                      </p>
-                    </div>
-                    <ClinicalBriefingPanel
-                      patientName={
-                        currentPatient?.fullName ||
-                        `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim()
-                      }
-                      assessment={followUpClinicalState?.baselineSOAP?.assessment ?? null}
-                      hepItems={homeProgramItems}
-                      onHepItemsChange={updateHomeProgramItems}
-                      nextSessionFocus={previousTreatmentPlan?.nextSessionFocus ?? null}
-                      clinicianFirstName={clinicianDisplayName?.split(' ')[0] ?? 'Fisio'}
-                      isVisible={showClinicalBriefing}
-                    />
-                    {previousTreatmentPlan && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-xs text-slate-600 font-apple font-light">{t('workflow.visit.previousPlanLoaded')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      ) : null}
+                      {shouldShowTodayFocusRow ? (
+                        <div className="px-5 py-3 bg-blue-50 border-t border-blue-100">
+                          <p className="text-sm font-semibold text-blue-800 font-apple">
+                            {t('workflow.visit.briefingFocusPrefix')}: {todayFocusTrimmed}
+                          </p>
+                        </div>
+                      ) : null}
+                      {previousTreatmentPlan ? (
+                        <div className="px-5 py-2 border-t border-slate-100 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-xs text-slate-600 font-apple font-light">
+                            {t('workflow.visit.previousPlanLoaded')}
+                          </span>
+                        </div>
+                      ) : null}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}

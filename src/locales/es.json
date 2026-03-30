@@ -107,7 +107,8 @@
       "briefingLastAssessment": "Última sesión — valoración",
       "briefingHepTitle": "Programa de ejercicios en casa (HEP)",
       "briefingHepHint": "Marca lo que el paciente completó antes de esta visita.",
-      "briefingHepDidTheyDoIt": "¿Lo hizo?"
+      "briefingHepDidTheyDoIt": "¿Lo hizo?",
+      "briefingHepColumnHeader": "Programa en casa (HEP) — ¿Lo hizo?"
     },
     "homeProgram": {
       "allDone": "Todo hecho",
