@@ -17,6 +17,7 @@ import { validateSOAP, truncateSOAPToLimits } from '../utils/soapValidation';
 import { deidentify, reidentify, logDeidentification } from './dataDeidentificationService';
 import { logRegulatoryLanguageWarnings } from '../utils/regulatoryLanguageGuard';
 import { isSpainPilot } from '@/core/pilotDetection';
+import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
 import { ensureSpanishClinicalText } from '../utils/normalizers/es/ensureSpanishClinicalText';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
@@ -1053,7 +1054,8 @@ function parseConsiderationsFromResponse(text: string): string[] {
 export async function generateFollowUpAnalysis(
   input: FollowUpPromptV3Input
 ): Promise<FollowUpAnalysisResult> {
-  const fullPrompt = buildFollowUpPromptV3(input);
+  const followUpPromptJurisdiction = input.jurisdiction ?? getCurrentJurisdiction();
+  const fullPrompt = buildFollowUpPromptV3({ ...input, jurisdiction: followUpPromptJurisdiction });
   const soapResult = await generateFollowUpSOAPV2Raw(fullPrompt);
 
   if (soapResult.error || !soapResult.soap) {
@@ -1064,6 +1066,8 @@ export async function generateFollowUpAnalysis(
       error: soapResult.error,
     };
   }
+
+  const documentationSoap = normalizeSOAPForSpain(soapResult.soap);
 
   // Structured data first so considerations depend on motor output, not free-text interpretation
   const structured: string[] = [];
@@ -1102,7 +1106,7 @@ export async function generateFollowUpAnalysis(
   }
 
   return {
-    documentation: soapResult.soap,
+    documentation: documentationSoap,
     considerations,
     alerts: soapResult.alerts ?? null,
     planItems: (soapResult as any).planItems ?? null,

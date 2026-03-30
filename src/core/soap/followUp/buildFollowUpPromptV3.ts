@@ -55,6 +55,8 @@ export interface FollowUpPromptV3Input {
   inClinicItems?: string[];
   /** Home exercise program (current or adjusted). Optional. */
   homeProgram?: string[];
+  /** When ES-ES, prompt and model output target Spanish; otherwise en-CA. */
+  jurisdiction?: string;
 }
 
 /**
@@ -78,6 +80,13 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
   if (!baselineSOAP) {
     throw new Error('Follow-up SOAP requires baselineSOAP; do not call Vertex without baseline.');
   }
+
+  const outputLanguage = input.jurisdiction === 'ES-ES' ? 'español' : 'Canadian English (en-CA)';
+  const outputLocale = input.jurisdiction === 'ES-ES' ? 'es-ES' : 'en-CA';
+  const physiotherapyTerminologyGuidance =
+    input.jurisdiction === 'ES-ES'
+      ? 'Use standard Spanish physiotherapy terminology and spelling'
+      : 'Use Canadian physiotherapy terminology and spelling';
 
   const subj = (baselineSOAP.subjective ?? '').trim() || 'Not documented.';
   const obj = (baselineSOAP.objective ?? '').trim() || 'Not documented.';
@@ -146,8 +155,8 @@ ${previousPlansSummary.trim()}
 `
       : '';
 
-  const prompt = `MANDATORY: All output MUST be in Canadian English (en-CA). Do not use any other language regardless of the language of the transcript or input data.
-Today's date: ${new Date().toLocaleDateString('en-CA')}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
+  const prompt = `MANDATORY: All output MUST be in ${outputLanguage}. Do not use any other language regardless of the language of the transcript or input data.
+Today's date: ${new Date().toLocaleDateString(outputLocale)}. Use this as the current date for all clinical reasoning. Do not infer dates from document metadata.
 
 PATIENT CONTEXT — Follow-up visit. The patient and condition were established at the previous visit; the baseline below contains who we are talking about and what injury/condition is being treated.
 
@@ -160,8 +169,8 @@ This follow-up documentation is for Ontario, Canada.
 ROLE AND LANGUAGE:
 - You assist with documentation, you do NOT diagnose
 - Reflect ONLY the information provided in the baseline and today's update
-- Output in Canadian English (en-CA)
-- Use Canadian physiotherapy terminology and spelling
+- Output in ${outputLanguage}
+- ${physiotherapyTerminologyGuidance}
 
 SOURCE OF TRUTH CONSTRAINT:
 - All clinical statements must originate from:
