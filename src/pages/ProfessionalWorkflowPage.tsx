@@ -400,6 +400,7 @@ const ProfessionalWorkflowPage = () => {
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
   const [soapGenerationEndTime, setSoapGenerationEndTime] = useState<Date | null>(null);
   const [hasRestoredFromAutoSave, setHasRestoredFromAutoSave] = useState(false);
+  const [autoSaveRestoreAttempted, setAutoSaveRestoreAttempted] = useState(false);
   const [isRestoringTranscript, setIsRestoringTranscript] = useState(false);
   const [restoredFromInterrupted, setRestoredFromInterrupted] = useState(false);
 
@@ -1351,7 +1352,7 @@ const ProfessionalWorkflowPage = () => {
   // ✅ WO-RESILIENCE-001: Restore transcript from Firestore auto-save for follow-up sessions
   useEffect(() => {
     if (!user?.uid || !patientIdFromUrl) return;
-    if (hasRestoredFromAutoSave) return;
+    if (autoSaveRestoreAttempted) return;
     if (soapStatus === 'completed') return;
     if (sessionTypeFromUrl !== 'followup') return;
 
@@ -1369,6 +1370,7 @@ const ProfessionalWorkflowPage = () => {
         if (match?.transcript?.trim()) {
           setTranscript(match.transcript);
           setHasRestoredFromAutoSave(true);
+          setAutoSaveRestoreAttempted(true);
           console.log('[RESILIENCE] Restored transcript from auto-save for follow-up session:', {
             patientId: patientIdFromUrl,
             sessionTypeFromUrl,
@@ -1378,6 +1380,7 @@ const ProfessionalWorkflowPage = () => {
           const userId = user.uid || TEMP_USER_ID;
           const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
           SessionStorage.clearSession(patientIdFromUrl, userId, 'follow-up', currentSessionId);
+          setAutoSaveRestoreAttempted(true);
         }
       } catch (error) {
         if (!cancelled) {
@@ -1392,7 +1395,7 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, patientIdFromUrl, sessionTypeFromUrl, hasRestoredFromAutoSave, soapStatus]);
+  }, [user?.uid, patientIdFromUrl, sessionTypeFromUrl, autoSaveRestoreAttempted, soapStatus]);
 
   // ✅ WORKFLOW PERSISTENCE: Restore workflow state from localStorage on mount
   // ✅ CRITICAL FIX: URL parameters take priority over localStorage
