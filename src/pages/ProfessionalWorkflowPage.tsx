@@ -5576,7 +5576,6 @@ const ProfessionalWorkflowPage = () => {
                     workflowRoute={workflowRoute}
                     soapTokenOptimization={soapTokenOptimization}
                     niagaraResults={visitType === 'follow-up' ? null : niagaraResults}
-                    followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
                     transcript={transcript}
                     physicalExamResults={physicalExamResults}
                     treatmentReminder={treatmentReminder}
@@ -5776,6 +5775,8 @@ const ProfessionalWorkflowPage = () => {
                   onTodayFocusChange={setTodayFocus}
                   onFinishSession={undefined}
                   hideHeader={false}
+                  hideTranscriptArea={visitType === 'follow-up'}
+                  followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
