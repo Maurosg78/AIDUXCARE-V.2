@@ -28,14 +28,39 @@ Esta mezcla obliga al fisio a hacer scroll y saltar visualmente entre informaci�
 | Antes de que entre el paciente | Contexto: quién es, qué hicimos, foco propuesto para hoy |
 | El paciente entra — escucha | Capturar cómo llega: dolor, cumplimiento HEP, cambios desde última sesión |
 | Después de escuchar — decide | ¿El plan previsto sigue siendo válido? Ajustar si es necesario |
-| Durante la sesión — ejecuta | Ideas de tratamiento propias + propuesta asistida por Vertex |
-| Al cerrar la sesión | SOAP generado con todo el contexto acumulado |
+| Durante la sesión — ejecuta | Plan de hoy (in-clinic) ajustado + grabación principal |
+| Al cerrar la sesión | SOAP en **una** llamada a Vertex con todo el contexto acumulado |
 
 ---
 
-## 2. Flujo de 6 pasos — Especificación
+## 2. Flujo — Especificación
 
 Cada paso corresponde a un momento clínico distinto. La UI debe separarlos visualmente. El fisio nunca debe buscar — la información correcta aparece en el momento correcto.
+
+### Decisión CTO — Marzo 2026: flujo simplificado a 4 momentos clínicos + SOAP
+
+**Eliminados Pasos 3 y 4 del spec original (propuesta intermedia de Vertex).**
+
+*Razón clínica:* el fisio no necesita que la IA proponga ejercicios antes de la sesión. El plan previo ya está cargado y editable en «Today's in-clinic treatment». El fisio ajusta ese plan después de escuchar al paciente (Paso 2) y ejecuta.
+
+*Razón técnica:* elimina una llamada duplicada a Vertex AI (~$0.00143 USD por sesión) y el problema de persistencia de propuestas rechazadas (pregunta abierta resuelta).
+
+**Flujo final confirmado:**
+
+1. **Contexto previo** (tarjeta compacta) — implementado · Sprint A / B (UI)
+2. **¿Cómo llega hoy?** (audio corto — subjetivo) — Sprint B (spec) / preparación
+3. **Plan de hoy** («Today's in-clinic treatment» editable) — implementado · WO-FU-PLAN-SPLIT-01
+4. **Grabación de sesión** — implementado · mismo comportamiento que v1
+5. **Generar SOAP** (**una** llamada a Vertex con todo el contexto) — implementado
+
+**Inputs a Vertex en la llamada única de SOAP:**
+
+- HEP cumplimiento (`hepCompliance` del contexto inicial)
+- Subjetivo del paciente (`subjectiveAudioTranscript` del Paso 2, cuando exista)
+- Plan ejecutado hoy (`inClinicItems` aprobados en «Today's in-clinic treatment»)
+- Grabación completa de la sesión (transcripción principal)
+- Baseline clínico del paciente
+- Perfil del fisio (`specialty`, `practiceAreas`, `techniques`, etc.)
 
 ### PASO 1 — Presentación del paciente
 
@@ -56,41 +81,26 @@ Cada paso corresponde a un momento clínico distinto. La UI debe separarlos visu
 - **Firestore:** `subjectiveAudioTranscript: string` — campo nuevo en `sessions/{id}`
 - **Evolución futura:** Si el campo reporta fricción en campo, evolucionar a stream único con marcadores de tiempo. No en esta iteración.
 
-### PASO 3 — Ideas de tratamiento del fisio
+### PASO 3 — Plan de hoy (in-clinic)
 
-- **Modo:** Decisión clínica — opcional pero de alto valor
-- **Propósito:** El fisio ya tiene en mente qué quiere trabajar antes de que Vertex proponga nada. Capturar esa intención mejora la calidad de la propuesta de Vertex y preserva el criterio clínico.
-- **Implementación:** Campo de texto libre + opción de dictado. Ejemplos: 'movilización glenohumeral + trabajo de cicatriz', 'revisar marcha + propiocepción'. No es obligatorio.
-- **Por qué importa:** Vertex recibe la intención del fisio como input explícito → propuesta más personalizada. El fisio mantiene el control clínico visible.
-- **Output:** `therapistTreatmentIdeas: string` — se inyecta al prompt del Paso 4
-- **Firestore:** `therapistTreatmentIdeas: string` — campo nuevo en `sessions/{id}`
+- **Modo:** Decisión clínica editable — mismo bloque **Today's in-clinic treatment** (checklist derivado del plan previo).
+- **Propósito:** Tras escuchar al paciente (Paso 2), el fisio confirma o ajusta qué se realiza en sala hoy. No hay llamada intermedia a Vertex para generar propuestas.
+- **Output hacia SOAP:** Ítems marcados / editados en `inClinicItems` entran como contexto en la **única** llamada de generación de SOAP.
 
-### PASO 4 — Propuesta de tratamiento (Vertex)
-
-- **Modo:** Asistencia clínica — borrador que requiere aprobación
-- **Inputs al prompt:** Estado actual del paciente (Paso 2) · HEP cumplido (Paso 1) · Ideas del fisio (Paso 3) · Assessment de última sesión · Red flags del baseline · Perfil profesional del fisio · **`baselineId` de referencia** en la petición (trazabilidad de auditoría)
-- **Perfil profesional:** Desde `users/{uid}`: `specialty`, `practiceAreas`, `techniques` (normalizados), `experienceYears`. Si están vacíos → Vertex degrada a propuesta genérica sin bloquear el flujo.
-- **Red flags:** Bloque visible antes de la propuesta: contraindicaciones y alertas del baseline. Derivado de red flag detection ya existente.
-- **Output de Vertex:** Lista de intervenciones propuestas con justificación clínica breve. Formato: 'Técnica — Justificación (1 línea)'
-- **UX crítico:** Etiqueta explícita: 'Propuesta borrador — requiere aprobación del fisioterapeuta'. El fisio aprueba, modifica ítem por ítem, o descarta. Nunca se ejecuta sin revisión.
-- **Persistencia (política CTO):** Solo la versión **aprobada** se guarda en `sessions/{id}.proposedTreatmentPlan: { items: [{technique, rationale, approved}] }`. Borradores y rechazados en memoria únicamente — no inflar documentos ni persistir propuestas descartadas.
-- **Costo estimado:** ~$0.00143 USD por llamada — mismo orden que la llamada de SOAP generation actual (recalcular delta total vs. v1 en documentación de costes; evitar doble conteo si Paso 6 solo añade inputs al SOAP existente).
-
-### PASO 5 — Sesión en curso
+### PASO 4 — Sesión en curso
 
 - **Modo:** Ejecución — grabación principal de la sesión
-- **Contenido:** Grabación de audio principal de la sesión (comportamiento actual sin cambios). El plan aprobado en Paso 4 está visible como referencia lateral.
+- **Contenido:** Grabación de audio principal (comportamiento actual sin cambios). El plan de hoy (Paso 3) permanece en la página como referencia; no se asume sidebar colapsable ni plan generado por Vertex.
 - **Cambios respecto a v1:** Ninguno en esta iteración. El comportamiento actual de grabación, transcripción y análisis se mantiene igual.
-- **Referencia lateral:** El plan aprobado (Paso 4) aparece como sidebar colapsable durante la grabación — el fisio puede verificar qué iba a hacer mientras ejecuta.
 
-### PASO 6 — SOAP generado
+### PASO 5 — SOAP generado (una llamada a Vertex)
 
 - **Modo:** Documentación legal — nota clínica finalizada
-- **Subjetivo:** Transcripción del Paso 2 (cómo llegó el paciente) + transcripción del Paso 5 (sesión completa). Gemini los integra en una narrativa coherente.
-- **Objetivo:** Hallazgos del examen físico + tratamiento ejecutado (del plan aprobado en Paso 4).
-- **Valoración:** Análisis clínico generado por Gemini con todos los inputs del flujo.
-- **Plan:** Plan para próxima sesión: `nextSessionFocus` generado por Gemini basado en el progreso de esta sesión.
-- **Qué entra en el SOAP:** Solo lo ejecutado + lo capturado. Las ideas del fisio (Paso 3) y la propuesta de Vertex (Paso 4) son inputs al proceso, no parte del registro legal (salvo decisión explícita sobre HEP en Plan — ver preguntas abiertas).
+- **Subjetivo:** Transcripción del Paso 2 (cómo llegó el paciente) + transcripción del Paso 4 (sesión completa). Gemini los integra en una narrativa coherente.
+- **Objetivo:** Hallazgos del examen físico + tratamiento ejecutado (según `inClinicItems` y sesión).
+- **Valoración:** Análisis clínico generado por Gemini con todos los inputs del flujo (ver lista en *Decisión CTO* arriba).
+- **Plan:** Plan para próxima sesión: `nextSessionFocus` generado por Gemini según progreso.
+- **Qué entra en el SOAP:** Solo lo ejecutado + lo capturado. No existe propuesta intermedia persistida de Vertex en este flujo.
 - **Cumplimiento PHIPA/CPO:** El fisio revisa y aprueba antes de finalizar — comportamiento actual sin cambios.
 
 ---
@@ -103,19 +113,16 @@ Cada paso corresponde a un momento clínico distinto. La UI debe separarlos visu
 |-------|------|-------------|
 | `hepCompliance` | `Array<{itemId, done, date}>` | Cumplimiento de HEP por ítem |
 | `subjectiveAudioTranscript` | `string` | Transcripción del clip de audio del Paso 2 |
-| `therapistTreatmentIdeas` | `string` | Ideas de tratamiento del fisio (Paso 3) |
-| `proposedTreatmentPlan` | `{ items: [{technique, rationale, approved}] }` | Propuesta aprobada (solo versión final aprobada) |
 
 ### 3.2 Nuevas llamadas a Vertex AI
 
 | Llamada | Cuándo | Inputs | Output | Costo estimado |
 |---------|--------|--------|--------|----------------|
-| Paso 4 — Propuesta de tratamiento | Tras Paso 2 y 3 (según flujo UX) | Estado actual + HEP + ideas fisio + perfil + red flags + `baselineId` | Lista de intervenciones | ~$0.00143 USD |
-| Paso 6 — SOAP generation | Sin cambios respecto a v1 a nivel de producto | Transcripción completa + baseline + plan aprobado + subjetivo Paso 2 | SOAP completo | Revisar delta real vs. v1 |
+| Paso 5 — SOAP generation | Al finalizar documentación (comportamiento producto actual) | `hepCompliance` · `subjectiveAudioTranscript` (si existe) · `inClinicItems` / plan ejecutado · transcripción completa sesión · baseline · perfil fisio (`specialty`, `practiceAreas`, `techniques`, etc.) · `baselineId` de referencia cuando aplique | SOAP completo | Revisar delta real vs. v1 (una sola llamada intermedia eliminada) |
 
 ### 3.3 Perfil profesional en prompts
 
-Campos de `users/{uid}` inyectados al prompt del Paso 4: `specialty`, `practiceAreas`, `techniques`, `experienceYears`. Si `practiceAreas` y `techniques` están vacíos, Vertex recibe solo `specialty` y genera una propuesta genérica; el flujo no se bloquea. Se recomienda completar el perfil en el onboarding.
+Campos de `users/{uid}` inyectados al **prompt de generación de SOAP** (Paso 5): `specialty`, `practiceAreas`, `techniques`, `experienceYears`. Si `practiceAreas` y `techniques` están vacíos, Vertex recibe solo `specialty` y degrada sin bloquear el flujo. Se recomienda completar el perfil en el onboarding.
 
 ### 3.4 Reglas de Firestore
 
@@ -129,8 +136,8 @@ Los nuevos campos son parte del documento `sessions/{id}` existente. Verificar e
 
 ## 4. Lo que NO cambia en esta iteración
 
-- Flujo de grabación principal (Paso 5) — sin cambios
-- SOAP generation (Paso 6) — sin cambios de lógica base del producto; solo inputs adicionales vía orquestador
+- Flujo de grabación principal (Paso 4) — sin cambios
+- SOAP generation (Paso 5) — una llamada Vertex; sin cambios de lógica base del producto salvo consolidación de inputs vía orquestador
 - `handleFinalizeSOAP` — intocable (contrato)
 - Consent gate — intocable
 - Pipeline ES/CA — intocable
@@ -149,7 +156,6 @@ Implementar en este orden. Cada paso es validable independientemente antes de co
 - Rediseñar ClinicalBriefingPanel: una tarjeta con secciones separadas por `border-t` (sin colapsables).
 - Añadir checkboxes de cumplimiento al HEP — persistir `hepCompliance` en `sessions/{id}`.
 - Validar con paciente real en piloto antes de continuar.
-- *(Parcialmente hecho: falta HEP clickeable y rediseño de una sola tarjeta.)*
 
 ### Sprint B — ¿Cómo llega hoy? (Paso 2)
 
@@ -158,17 +164,13 @@ Implementar en este orden. Cada paso es validable independientemente antes de co
 - Inyectar al prompt de SOAP generation como Subjetivo inicial (orquestador).
 - Validar mejora de calidad del campo Subjetivo.
 
-### Sprint C — Ideas del fisio + Propuesta Vertex (Pasos 3 y 4)
+### ~~Sprint C — Ideas fisio + propuesta Vertex (antigua spec)~~
 
-- Campo texto/dictado para `therapistTreatmentIdeas`.
-- Nueva llamada Vertex: `buildTreatmentProposalPrompt()` con todos los inputs + `baselineId`.
-- UI de aprobación por ítem — nunca auto-aprobado; solo aprobado persistido en Firestore.
-- Bloque red flags antes de la propuesta.
-- Verificar perfil profesional — si vacío, mensaje para completar perfil (no bloqueante).
+**Eliminado (marzo 2026, ver §2).** No existe segunda llamada Vertex previa al SOAP. El plan de hoy sigue el bloque **Today's in-clinic treatment** ya integrado en el workflow.
 
 ### Sprint D — Integración completa y validación clínica
 
-- Sesión completa Pasos 1–6 con fisio real.
+- Sesión completa Pasos 1–5 con fisio real.
 - Validar SOAP v2 vs. v1.
 - Medir tiempo de flujo vs. v1.
 - NPS del flujo nuevo.
@@ -181,9 +183,9 @@ Implementar en este orden. Cada paso es validable independientemente antes de co
 |----------|---------|--------|
 | ¿El clip del Paso 2 requiere nuevo aviso de consentimiento? | Legal — PHIPA/RGPD | Consultar asesor antes de Sprint B |
 | ¿HEP clickeable reemplaza o complementa HEP narrativo en el SOAP? | Diseño de datos — Plan | Decidir en Sprint A |
-| ¿Propuesta Vertex rechazada se guarda? | Privacidad | **Decidido:** solo aprobada en Firestore; borradores en memoria |
-| ¿Onboarding captura `practiceAreas`/`techniques` suficientemente? | Calidad prompt | Auditar antes de Sprint C |
-| ¿El flujo de 6 pasos aplica a ongoing además de follow-up? | Alcance | Solo follow-up en v2; ongoing fuera de spec |
+| ¿La propuesta de Vertex (antiguo Paso 4) se guarda siempre o solo si el fisio la aprueba? | Persistencia | **RESUELTA:** Paso 4 eliminado del flujo. No hay propuesta intermedia. |
+| ¿Onboarding captura `practiceAreas`/`techniques` suficientemente? | Calidad prompt | Auditar antes de cerrar calidad de SOAP |
+| ¿El flujo de 5 pasos clínicos + SOAP aplica a ongoing además de follow-up? | Alcance | Solo follow-up en v2; ongoing fuera de spec |
 
 ---
 
@@ -200,4 +202,4 @@ Implementar en este orden. Cada paso es validable independientemente antes de co
 *AiduxCare Clinical Intelligence Inc. · pilot.aiduxcare.com · CONFIDENCIAL*  
 *Follow-up Workflow v2 Spec · Marzo 2026 · Basado en feedback clínico real Fase 1*
 
-*Enriquecido con decisiones CTO (marzo 2026): `sessions` canónico para HEP, auditoría owner fields, propuestas solo aprobadas persistidas, STT pipeline existente, `baselineId` en Paso 4, PersistenceService API pública intacta.*
+*Enriquecido con decisiones CTO (marzo 2026): `sessions` canónico para HEP, auditoría owner fields, **una sola llamada Vertex al SOAP** (sin propuesta intermedia), STT pipeline existente, `baselineId` en trazabilidad de SOAP, PersistenceService API pública intacta.*
