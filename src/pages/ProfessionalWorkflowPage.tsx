@@ -5296,6 +5296,7 @@ const ProfessionalWorkflowPage = () => {
                     removingAttachmentId={removingAttachmentId}
                     handleAttachmentUpload={handleAttachmentUpload}
                     handleAttachmentRemove={handleAttachmentRemove}
+                    hideAnalyzeButton={true}
                   />
                 </div>
               )}

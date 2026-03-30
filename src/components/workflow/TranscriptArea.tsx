@@ -182,6 +182,8 @@ export interface TranscriptAreaProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
+  /** When true, hide Vertex analyze CTA and related processing UI (capture-only surfaces). */
+  hideAnalyzeButton?: boolean;
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -325,8 +327,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
       )}
 
-      {/* Processing Transcription Indicator */}
-      {(isProcessing || isGeneratingSOAP) && !isTranscribing && (
+      {/* Processing Transcription Indicator (Vertex / SOAP generation — hidden in capture-only mode) */}
+      {!hideAnalyzeButton && (isProcessing || isGeneratingSOAP) && !isTranscribing && (
         <div className="mt-4 rounded-lg border border-primary-blue/20 bg-primary-blue/5 px-4 py-3">
           <div className="flex items-center gap-3">
             <Brain className="h-5 w-5 text-primary-blue animate-pulse" />
@@ -392,7 +394,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         onChange={handleChange}
         onPaste={handlePaste}
         onKeyDown={(event) => {
-          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          if (!hideAnalyzeButton && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             handleAnalyzeWithVertex();
           }
@@ -469,34 +471,36 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-slate-200">
-          <button
-            onClick={handleAnalyzeWithVertex}
-            disabled={isProcessing || isGeneratingSOAP || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
-            className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
-          >
-            {(isProcessing || isGeneratingSOAP) ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {visitType === 'follow-up' ? UI.analyzingBtnFollowUp : UI.analyzingBtnInitial}
-              </>
-            ) : (
-              <>
-                <Brain className="w-4 h-4" />
-                {visitType === 'follow-up' ? UI.analyzeBtnFollowUp : UI.analyzeBtnInitial}
-              </>
-            )}
-          </button>
-          <p className="mt-2 text-xs text-slate-500">
-            {transcript?.trim() && attachments.some(att => att.extractedText)
-              ? UI.analyzeHintBoth
-              : transcript?.trim()
-                ? UI.analyzeHintTranscript
-                : attachments.some(att => att.extractedText)
-                  ? UI.analyzeHintAttachments
-                  : UI.analyzeHintEmpty}
-          </p>
-        </div>
+        {!hideAnalyzeButton ? (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <button
+              onClick={handleAnalyzeWithVertex}
+              disabled={isProcessing || isGeneratingSOAP || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+            >
+              {(isProcessing || isGeneratingSOAP) ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {visitType === 'follow-up' ? UI.analyzingBtnFollowUp : UI.analyzingBtnInitial}
+                </>
+              ) : (
+                <>
+                  <Brain className="w-4 h-4" />
+                  {visitType === 'follow-up' ? UI.analyzeBtnFollowUp : UI.analyzeBtnInitial}
+                </>
+              )}
+            </button>
+            <p className="mt-2 text-xs text-slate-500">
+              {transcript?.trim() && attachments.some(att => att.extractedText)
+                ? UI.analyzeHintBoth
+                : transcript?.trim()
+                  ? UI.analyzeHintTranscript
+                  : attachments.some(att => att.extractedText)
+                    ? UI.analyzeHintAttachments
+                    : UI.analyzeHintEmpty}
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -512,7 +516,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     prevProps.mode === nextProps.mode &&
     prevProps.attachments.length === nextProps.attachments.length &&
     prevProps.isUploadingAttachment === nextProps.isUploadingAttachment &&
-    prevProps.attachmentError === nextProps.attachmentError
+    prevProps.attachmentError === nextProps.attachmentError &&
+    prevProps.hideAnalyzeButton === nextProps.hideAnalyzeButton
   );
 });
 
