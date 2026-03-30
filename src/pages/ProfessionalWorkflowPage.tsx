@@ -5060,7 +5060,7 @@ const ProfessionalWorkflowPage = () => {
           ) : (
             <div className="space-y-6">
               {/* SECCIÓN 1: Patient context — Sprint B redesign (follow-up; single sticky card, no 3-col grid) */}
-              <div className="sticky top-4 z-30 overflow-hidden bg-white border border-blue-100 rounded-xl shadow-sm backdrop-blur">
+              <div className="overflow-hidden bg-white border border-blue-100 rounded-xl shadow-sm">
                 {(() => {
                   const patientContextDisplayName =
                     currentPatient?.fullName ||
