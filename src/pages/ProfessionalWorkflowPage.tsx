@@ -121,7 +121,6 @@ import {
 import { lazy, Suspense } from "react";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
-import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
@@ -5240,7 +5239,7 @@ const ProfessionalWorkflowPage = () => {
               </div>
 
               {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}
-              {visitType === 'follow-up' && (inClinicItems.length > 0 || homeProgramItems.length > 0) && (
+              {visitType === 'follow-up' && inClinicItems.length > 0 && (
                 <>
                   {inClinicItems.length > 0 && (() => {
                     const allInClinicDone = inClinicItems.every((i) => i.completed);
@@ -5288,21 +5287,6 @@ const ProfessionalWorkflowPage = () => {
                           hideHeader={true}
                         />
                       </div>
-                    );
-                  })()}
-                  {homeProgramItems.length > 0 && (() => {
-                    const allHEPDone = homeProgramItems.every((i) => i.completed);
-                    return (
-                      <HomeProgramBlock
-                        items={homeProgramItems}
-                        onChange={updateHomeProgramItems}
-                        allDone={allHEPDone}
-                        onSelectAllClick={() =>
-                          updateHomeProgramItems(
-                            homeProgramItems.map((i) => ({ ...i, completed: !allHEPDone })),
-                          )
-                        }
-                      />
                     );
                   })()}
                 </>
