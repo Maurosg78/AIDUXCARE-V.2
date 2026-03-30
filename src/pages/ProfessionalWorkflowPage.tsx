@@ -246,7 +246,7 @@ const ProfessionalWorkflowPage = () => {
   const hasCleanedForInitial = useRef<string | null>(null);
   // Guard against duplicate SOAP saves (double-tap / double-click)
   const isFinalizingRef = useRef(false);
-  // WO-IA-RESUME-01: Only run resume load once per sessionId
+  /** WO-IA-RESUME-01: Dedupe resume fetch per (sessionId, visitType) — visitType can settle after first mount (e.g. initial → follow-up). */
   const hasResumeLoadAttemptedRef = useRef<string | null>(null);
   const restoreTranscriptPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -1577,8 +1577,9 @@ const ProfessionalWorkflowPage = () => {
       hasResumeLoadAttemptedRef.current = 'no-session-id';
       return;
     }
-    if (hasResumeLoadAttemptedRef.current === sessionIdFromUrl) return;
-    hasResumeLoadAttemptedRef.current = sessionIdFromUrl;
+    const resumeLoadDedupeKey = `${sessionIdFromUrl}:${visitType}`;
+    if (hasResumeLoadAttemptedRef.current === resumeLoadDedupeKey) return;
+    hasResumeLoadAttemptedRef.current = resumeLoadDedupeKey;
 
     logger.info('[WO-IA-RESUME-01] resume detected from URL — loading session', { sessionId: sessionIdFromUrl });
     let cancelled = false;
