@@ -211,6 +211,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
+  hideAnalyzeButton = false,
 }) => {
   const [localTranscript, setLocalTranscript] = useState(transcript);
   const isPastingRef = useRef(false);
