@@ -64,12 +64,15 @@ Cada paso corresponde a un momento clínico distinto. La UI debe separarlos visu
 
 ### PASO 1 — Presentación del paciente
 
+- **Estado:** Implementado · Sprint B (tarjeta compacta) — commit `a5e6844`.
 - **Modo:** Read-only — contexto antes de que entre el paciente
-- **Contenido:** Nombre del paciente · Foco propuesto para hoy (`nextSessionFocus`) · Assessment de última sesión (2-3 líneas) · HEP enviado a casa (lista clickeable)
+- **Contenido y layout (implementado):** Una sola tarjeta sticky; **sin colapsables**; el contexto del briefing queda **visible al abrir** (diseño compacto, sin depender de secciones plegables).
+  - **Fila 1** — información del paciente en franja compacta (`flex-wrap`, una línea cuando el ancho lo permite): nombre · edad · email · tipo de visita y ordinal de sesión · fecha / estado de última sesión (y enlace a última nota SOAP cuando aplica) · estado de consentimiento; si hay alergias/contraindicaciones, bloque de alerta debajo en ancho completo.
+  - **Fila 2** — cuando el briefing aplica (`showClinicalBriefing`) y hay texto de valoración o ítems HEP: **dos columnas** con separación vertical si coexisten **assessment** y HEP — columna izquierda: assessment de última sesión **completo** (sin truncar); columna derecha: HEP con checkboxes (pregunta «¿lo hizo?» en el encabezado de columna, no por ítem). Columna omitida si no hay contenido (sin placeholder).
+  - **Fila 3** — solo si existe `nextSessionFocus` (`previousTreatmentPlan`): banda **«Foco para hoy»** con fondo `bg-blue-50` y borde superior azul claro.
 - **HEP clickeable:** Cada ítem del HEP tiene checkbox: ¿Lo hizo? El fisio marca antes de empezar la sesión. Se persiste como evento de cumplimiento (`hepCompliance`) — no como nota narrativa.
 - **Fuente de datos:** `previousTreatmentPlan.nextSessionFocus` · `followUpClinicalState.baselineSOAP.assessment` · `homeProgramItems` (derivados del plan)
 - **Firestore:** `hepCompliance: { itemId, done, date }` — **canon:** documento `sessions/{id}` (fuente de verdad única)
-- **Estado UI:** Tarjeta única, siempre visible, sin colapsables. Tres secciones separadas por `border-t`.
 
 ### PASO 2 — ¿Cómo llega hoy?
 
