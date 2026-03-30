@@ -144,6 +144,8 @@ export interface AnalysisTabProps {
   todayFocusBlockRenderedByParent?: boolean;
   /** When true, parent renders TranscriptArea (e.g. follow-up "How patient arrives" block); skip duplicate here */
   hideTranscriptArea?: boolean;
+  /** When follow-up captures transcript externally, allow rendering the generate button even if TranscriptArea is hidden. */
+  followUpHasContent?: boolean;
   /** When resume failed (session not found), show recovery links to the note or history view. */
   resumeLoadFailed?: { sessionId: string; patientId: string } | null;
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
@@ -222,6 +224,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   hideHeader = false,
   todayFocusBlockRenderedByParent = false,
   hideTranscriptArea = false,
+  followUpHasContent = false,
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
@@ -364,6 +367,29 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           )}
         </>
       ) : null}
+
+      {/* WO-FU-GENERATE-BTN: follow-up may capture transcript outside AnalysisTab; keep SOAP trigger visible when content exists */}
+      {hideTranscriptArea && followUpHasContent && (
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          <button
+            onClick={handleAnalyzeWithVertex}
+            disabled={isProcessing || isGeneratingSOAP}
+            className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+          >
+            {(isProcessing || isGeneratingSOAP) ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {UI.analyzingBtnFollowUp}
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4" />
+                {UI.analyzeBtnFollowUp}
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {analysisError && (
         <>
