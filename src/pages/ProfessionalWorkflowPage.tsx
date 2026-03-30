@@ -121,6 +121,7 @@ import {
 import { lazy, Suspense } from "react";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
+import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
@@ -5096,6 +5097,8 @@ const ProfessionalWorkflowPage = () => {
                   const todayFocusRaw = previousTreatmentPlan?.nextSessionFocus ?? '';
                   const todayFocusTrimmed = todayFocusRaw.trim();
                   const shouldShowTodayFocusRow = showClinicalBriefing && todayFocusTrimmed.length > 0;
+                  const shouldShowProposedInClinicReadOnlyRow =
+                    showClinicalBriefing && inClinicItems.length > 0;
                   return (
                     <>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 pb-3 border-b border-slate-100">
@@ -5218,6 +5221,23 @@ const ProfessionalWorkflowPage = () => {
                           ) : null}
                         </div>
                       ) : null}
+                      {shouldShowProposedInClinicReadOnlyRow ? (
+                        <div className="px-5 py-4 border-t border-slate-100">
+                          <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
+                            {t('workflow.visit.proposedTreatmentToday')}
+                          </p>
+                          <ul className="space-y-1">
+                            {inClinicItems.map((proposedInClinicItem) => (
+                              <li
+                                key={proposedInClinicItem.id}
+                                className="text-sm text-slate-700 font-apple font-light"
+                              >
+                                {proposedInClinicItem.label}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                       {shouldShowTodayFocusRow ? (
                         <div className="px-5 py-3 bg-blue-50 border-t border-blue-100">
                           <p className="text-sm font-semibold text-blue-800 font-apple">
@@ -5237,6 +5257,48 @@ const ProfessionalWorkflowPage = () => {
                   );
                 })()}
               </div>
+
+              {visitType === 'follow-up' && (
+                <div className="bg-white border border-blue-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="text-2xl">🎙️</span>
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                        {t('workflow.visit.howPatientArrivesToday')}
+                      </h2>
+                      <p className="text-sm text-slate-600">
+                        {t('workflow.visit.howPatientArrivesDesc')}
+                      </p>
+                    </div>
+                  </div>
+                  <TranscriptArea
+                    recordingTime={recordingTime}
+                    isRecording={isRecording}
+                    startRecording={startRecording}
+                    stopRecording={stopRecording}
+                    transcript={transcript}
+                    setTranscript={setTranscript}
+                    transcriptError={transcriptError}
+                    transcriptMeta={transcriptMeta}
+                    languagePreference={languagePreference}
+                    setLanguagePreference={setLanguagePreference}
+                    mode={mode}
+                    setMode={setMode}
+                    isTranscribing={isTranscribing}
+                    isProcessing={isProcessing}
+                    isGeneratingSOAP={isGeneratingSOAP}
+                    visitType={visitType}
+                    audioStream={audioStream}
+                    handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                    attachments={attachments}
+                    isUploadingAttachment={isUploadingAttachment}
+                    attachmentError={attachmentError}
+                    removingAttachmentId={removingAttachmentId}
+                    handleAttachmentUpload={handleAttachmentUpload}
+                    handleAttachmentRemove={handleAttachmentRemove}
+                  />
+                </div>
+              )}
 
               {/* WO-FU-PLAN-SPLIT-01: Bloque 1 — In-Clinic + HEP; FOLLOW-UP ONLY (visitType === 'follow-up'); initial assessment no muestra este bloque */}
               {visitType === 'follow-up' && inClinicItems.length > 0 && (
@@ -5285,6 +5347,7 @@ const ProfessionalWorkflowPage = () => {
                           onChange={setInClinicItems}
                           onFinishSession={undefined}
                           hideHeader={true}
+                          allowAdd={true}
                         />
                       </div>
                     );
@@ -5374,6 +5437,7 @@ const ProfessionalWorkflowPage = () => {
                     setMode={setMode}
                     isTranscribing={isTranscribing}
                     isProcessing={isProcessing}
+                    isGeneratingSOAP={isGeneratingSOAP}
                     audioStream={audioStream}
                     handleAnalyzeWithVertex={handleAnalyzeWithVertex}
                     attachments={attachments}
@@ -5394,6 +5458,7 @@ const ProfessionalWorkflowPage = () => {
                     onTodayFocusChange={setTodayFocus}
                     onFinishSession={undefined}
                     hideHeader={true}
+                    hideTranscriptArea={visitType === 'follow-up'}
                     todayFocusBlockRenderedByParent={visitType === 'follow-up'}
                     resumeLoadFailed={resumeLoadFailed}
                     selectedRedFlagIds={selectedRedFlagIds}

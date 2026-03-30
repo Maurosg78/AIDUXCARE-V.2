@@ -124,7 +124,10 @@
       "briefingHepTitle": "Home exercise program (HEP)",
       "briefingHepHint": "Check what the patient completed before this visit.",
       "briefingHepDidTheyDoIt": "Did they do it?",
-      "briefingHepColumnHeader": "Home program (HEP) — Did they do it?"
+      "briefingHepColumnHeader": "Home program (HEP) — Did they do it?",
+      "proposedTreatmentToday": "Proposed treatment for today",
+      "howPatientArrivesToday": "How is the patient today?",
+      "howPatientArrivesDesc": "Capture the patient's current status before starting the session."
     },
     "soapTab": {
       "initialAssessmentComplete": "Initial Assessment Complete",

@@ -142,6 +142,8 @@ export interface AnalysisTabProps {
   hideHeader?: boolean;
   // WO-FU-PLAN-SPLIT-01: Si true, el parent ya muestra In-Clinic + HEP; no duplicar "Today's treatment session"
   todayFocusBlockRenderedByParent?: boolean;
+  /** When true, parent renders TranscriptArea (e.g. follow-up "How patient arrives" block); skip duplicate here */
+  hideTranscriptArea?: boolean;
   /** When resume failed (session not found), show recovery links to the note or history view. */
   resumeLoadFailed?: { sessionId: string; patientId: string } | null;
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
@@ -219,6 +221,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onFinishSession,
   hideHeader = false,
   todayFocusBlockRenderedByParent = false,
+  hideTranscriptArea = false,
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
@@ -324,39 +327,43 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           AnalysisTab now only contains the unified clinical input (Follow-up clinical update).
           Removed duplicate patient context, last session, and "Today's Plan" sections. */}
 
-      <TranscriptArea
-        recordingTime={recordingTime}
-        isRecording={isRecording}
-        startRecording={startRecording}
-        stopRecording={stopRecording}
-        transcript={transcript}
-        setTranscript={setTranscript}
-        transcriptError={transcriptError}
-        transcriptMeta={transcriptMeta}
-        languagePreference={languagePreference}
-        setLanguagePreference={setLanguagePreference}
-        mode={mode}
-        setMode={setMode}
-        isTranscribing={isTranscribing}
-        isProcessing={isProcessing}
-        isGeneratingSOAP={isGeneratingSOAP}
-        visitType={visitType}
-        audioStream={audioStream}
-        handleAnalyzeWithVertex={handleAnalyzeWithVertex}
-        attachments={attachments}
-        isUploadingAttachment={isUploadingAttachment}
-        attachmentError={attachmentError}
-        removingAttachmentId={removingAttachmentId}
-        handleAttachmentUpload={handleAttachmentUpload}
-        handleAttachmentRemove={handleAttachmentRemove}
-      />
+      {!hideTranscriptArea ? (
+        <>
+          <TranscriptArea
+            recordingTime={recordingTime}
+            isRecording={isRecording}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            transcript={transcript}
+            setTranscript={setTranscript}
+            transcriptError={transcriptError}
+            transcriptMeta={transcriptMeta}
+            languagePreference={languagePreference}
+            setLanguagePreference={setLanguagePreference}
+            mode={mode}
+            setMode={setMode}
+            isTranscribing={isTranscribing}
+            isProcessing={isProcessing}
+            isGeneratingSOAP={isGeneratingSOAP}
+            visitType={visitType}
+            audioStream={audioStream}
+            handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+            attachments={attachments}
+            isUploadingAttachment={isUploadingAttachment}
+            attachmentError={attachmentError}
+            removingAttachmentId={removingAttachmentId}
+            handleAttachmentUpload={handleAttachmentUpload}
+            handleAttachmentRemove={handleAttachmentRemove}
+          />
 
-      {isTranscribing && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          {mode === 'dictation' ? 'Processing dictation audio...' : 'Processing live audio sample...'}
-        </div>
-      )}
+          {isTranscribing && (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {mode === 'dictation' ? 'Processing dictation audio...' : 'Processing live audio sample...'}
+            </div>
+          )}
+        </>
+      ) : null}
 
       {analysisError && (
         <>

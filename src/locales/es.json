@@ -108,7 +108,10 @@
       "briefingHepTitle": "Programa de ejercicios en casa (HEP)",
       "briefingHepHint": "Marca lo que el paciente completó antes de esta visita.",
       "briefingHepDidTheyDoIt": "¿Lo hizo?",
-      "briefingHepColumnHeader": "Programa en casa (HEP) — ¿Lo hizo?"
+      "briefingHepColumnHeader": "Programa en casa (HEP) — ¿Lo hizo?",
+      "proposedTreatmentToday": "Tratamiento propuesto para hoy",
+      "howPatientArrivesToday": "¿Cómo llega hoy?",
+      "howPatientArrivesDesc": "Captura el estado actual del paciente antes de iniciar la sesión."
     },
     "homeProgram": {
       "allDone": "Todo hecho",
