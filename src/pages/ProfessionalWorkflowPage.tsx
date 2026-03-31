@@ -3666,16 +3666,26 @@ const ProfessionalWorkflowPage = () => {
       setHomeProgramItems([]);
       return;
     }
-    const planText =
-      followUpClinicalState?.baselineSOAP?.plan?.trim() ||
-      previousTreatmentPlan?.planText?.trim() ||
-      '';
-    if (!planText) {
+    const previousPlanInput = previousTreatmentPlan
+      ? {
+          planText: previousTreatmentPlan.planText,
+          inClinicText: previousTreatmentPlan.inClinicText,
+          homeProgramText: previousTreatmentPlan.homeProgramText,
+        }
+      : null;
+    const hasStructuredPreviousPlan = Boolean(
+      previousTreatmentPlan?.inClinicText?.trim() || previousTreatmentPlan?.homeProgramText?.trim(),
+    );
+    const baselinePlanText = followUpClinicalState?.baselineSOAP?.plan?.trim() || '';
+    const derived = hasStructuredPreviousPlan
+      ? derivePlanFromText(previousPlanInput)
+      : derivePlanFromText(baselinePlanText || previousPlanInput);
+    const hasDerivedPlan = derived.inClinic.length > 0 || derived.homeProgram.length > 0;
+    if (!hasDerivedPlan) {
       setInClinicItems([]);
       setHomeProgramItems([]);
       return;
     }
-    const derived = derivePlanFromText(planText);
     setInClinicItems(
       derived.inClinic.map((label, i) => ({
         id: `in-clinic-${i}`,

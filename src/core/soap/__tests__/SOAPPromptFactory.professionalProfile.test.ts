@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { buildInitialAssessmentPrompt } from '../SOAPPromptFactory';
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import type { SOAPContext } from '../SOAPContextBuilder';
+import { getActiveLocale } from '../../prompts/marketLocales';
 
 const minimalContext: SOAPContext = {
   transcript: 'Patient reports lower back pain.',
@@ -31,9 +32,11 @@ const minimalContext: SOAPContext = {
 };
 
 describe('SOAPPromptFactory professional profile', () => {
+  const activeJurisdiction = getActiveLocale().jurisdiction;
+
   it('uses default physiotherapist role when no profile', () => {
     const prompt = buildInitialAssessmentPrompt(minimalContext, undefined);
-    expect(prompt).toContain('a registered physiotherapist in Ontario, Canada');
+    expect(prompt).toContain(`a registered physiotherapist in ${activeJurisdiction}`);
   });
 
   it('uses chiropractor role when profile.profession is Chiropractor', () => {
@@ -44,7 +47,7 @@ describe('SOAPPromptFactory professional profile', () => {
       createdAt: {} as any,
     };
     const prompt = buildInitialAssessmentPrompt(minimalContext, { professionalProfile: profile });
-    expect(prompt).toContain('a licensed chiropractor in Ontario, Canada');
+    expect(prompt).toContain(`a licensed chiropractor in ${activeJurisdiction}`);
   });
 
   it('uses physiotherapist role when profile.profession is Physiotherapist', () => {
@@ -55,7 +58,7 @@ describe('SOAPPromptFactory professional profile', () => {
       createdAt: {} as any,
     };
     const prompt = buildInitialAssessmentPrompt(minimalContext, { professionalProfile: profile });
-    expect(prompt).toContain('a registered physiotherapist in Ontario, Canada');
+    expect(prompt).toContain(`a registered physiotherapist in ${activeJurisdiction}`);
   });
 
   it('uses healthcare professional when profile.profession is Other and no professionOther', () => {
@@ -66,7 +69,7 @@ describe('SOAPPromptFactory professional profile', () => {
       createdAt: {} as any,
     };
     const prompt = buildInitialAssessmentPrompt(minimalContext, { professionalProfile: profile });
-    expect(prompt).toContain('a registered healthcare professional in Ontario, Canada');
+    expect(prompt).toContain(`a registered healthcare professional in ${activeJurisdiction}`);
   });
 
   it('uses normalized professionOther label when profile.profession is Other and professionOther set', () => {
@@ -78,6 +81,6 @@ describe('SOAPPromptFactory professional profile', () => {
       createdAt: {} as any,
     };
     const prompt = buildInitialAssessmentPrompt(minimalContext, { professionalProfile: profile });
-    expect(prompt).toContain('a registered osteopath in Ontario, Canada');
+    expect(prompt).toContain(`a registered osteopath in ${activeJurisdiction}`);
   });
 });

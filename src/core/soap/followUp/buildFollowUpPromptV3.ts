@@ -15,6 +15,8 @@
  * - inClinicItems, homeProgram: tratamientos en consulta + ejercicios domiciliarios.
  */
 
+import { getSoapJurisdictionContext } from '../../prompts/soapJurisdictionContext';
+
 export interface FollowUpPromptV3BaselineSOAP {
   subjective: string;
   objective: string;
@@ -80,6 +82,12 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
   if (!baselineSOAP) {
     throw new Error('Follow-up SOAP requires baselineSOAP; do not call Vertex without baseline.');
   }
+
+  const soapJurisdiction = getSoapJurisdictionContext(input.jurisdiction);
+  const followUpJurisdictionNarrativeEs = `Este seguimiento se documenta para la práctica en ${soapJurisdiction.region}, conforme a ${soapJurisdiction.regulation} y a ${soapJurisdiction.standard} del ${soapJurisdiction.college}.`;
+  const followUpJurisdictionNarrativeEn = `This follow-up documentation is for ${soapJurisdiction.region}. Regulatory context: ${soapJurisdiction.regulation}. Professional standards: ${soapJurisdiction.college} (${soapJurisdiction.standard}).`;
+  const followApplicableJurisdictionNarrative =
+    input.jurisdiction === 'ES-ES' ? followUpJurisdictionNarrativeEs : followUpJurisdictionNarrativeEn;
 
   const outputLanguage = input.jurisdiction === 'ES-ES' ? 'español' : 'Canadian English (en-CA)';
   const outputLocale = input.jurisdiction === 'ES-ES' ? 'es-ES' : 'en-CA';
@@ -164,7 +172,7 @@ SYSTEM / INSTRUCTION
 
 You are a licensed clinical documentation assistant supporting a follow-up visit.
 
-This follow-up documentation is for Ontario, Canada.
+${followApplicableJurisdictionNarrative}
 
 ROLE AND LANGUAGE:
 - You assist with documentation, you do NOT diagnose

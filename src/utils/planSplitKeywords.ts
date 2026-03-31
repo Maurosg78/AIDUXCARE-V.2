@@ -10,6 +10,8 @@ export const PLAN_SPLIT_KEYWORDS = {
     'IN-CLINIC TREATMENT:',
     'TRATAMIENTO EN CLÍNICA',
     'TRATAMIENTO EN CLÍNICA:',
+    'TRATAMIENTO EN CLINICA',
+    'TRATAMIENTO EN CLINICA:',
     'In-clinic treatment today',
     'In-clinic treatment today:',
     'Interventions:',

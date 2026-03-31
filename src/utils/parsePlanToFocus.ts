@@ -5,6 +5,8 @@
  * Fuente de verdad: lastEncounter.soap.plan (read-only)
  */
 
+import { derivePlanFromText } from './derivePlanFromText';
+
 export interface TodayFocusItem {
   id: string;
   label: string;      // editable
@@ -12,6 +14,16 @@ export interface TodayFocusItem {
   notes?: string;      // editable (collapsible)
   source: 'plan';     // fijo
 }
+
+type PlanToFocusInput =
+  | string
+  | {
+      inClinicText?: string | null;
+      homeProgramText?: string | null;
+      planText?: string | null;
+    }
+  | null
+  | undefined;
 
 /** WO-PLAN-TITLE-001: Discard section headers so they don't render as checklist items. */
 function isSectionHeaderLine(line: string): boolean {
@@ -30,81 +42,49 @@ function isSectionHeaderLine(line: string): boolean {
  * - plan.HomeExercises (sección "Home Exercises:")
  * - (opcional, read-only) plan.Goals
  * 
- * @param planText - Texto del plan previo (lastEncounter.soap.plan)
+ * @param planInput - Texto legacy o plan estructurado previo
  * @returns Array de focos clínicos editables
  */
-export function parsePlanToFocusItems(planText: string | null | undefined): TodayFocusItem[] {
-  if (!planText || typeof planText !== 'string') {
+export function parsePlanToFocusItems(planInput: PlanToFocusInput): TodayFocusItem[] {
+  const hasStringInput = typeof planInput === 'string';
+  const hasObjectInput = typeof planInput === 'object' && planInput !== null;
+  if (!hasStringInput && !hasObjectInput) {
     return [];
   }
 
-  const items: TodayFocusItem[] = [];
+  const derivedLabels = derivePlanFromText(planInput).inClinic;
+  if (derivedLabels.length > 0) {
+    const maxFocusItems = 5;
+    const limitedLabels = derivedLabels.slice(0, maxFocusItems);
+    const focusItems: TodayFocusItem[] = limitedLabels.map((label, itemIdx) => ({
+      id: `intervention-${itemIdx}`,
+      label,
+      completed: false,
+      source: 'plan',
+    }));
+    return focusItems;
+  }
+
+  const fallbackItems: TodayFocusItem[] = [];
   let itemId = 0;
-
-  // Extraer Interventions (incluye variantes recientes del modelo como "In-clinic treatment today:")
-  const interventionsMatch = planText.match(/(?:interventions?|in-?clinic treatment(?: today)?):\s*([^\n]+(?:\n(?!-?\s*(?:Modalities?|Home|Patient|Goals?|Follow-up|Next))[^\n]+)*)/i);
-  if (interventionsMatch) {
-    const interventionsText = interventionsMatch[1];
-    // Parsear lista (bullets, dashes, o comas)
-    const interventionList = interventionsText
-      .split(/[•\-\n]/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0 && !line.match(/^(Interventions?|Modalities?|Home|Patient|Goals?|Follow-up|Next)/i));
-    
-    interventionList.forEach((intervention) => {
-      if (intervention.length > 0 && !isSectionHeaderLine(intervention)) {
-        items.push({
-          id: `intervention-${itemId++}`,
-          label: intervention,
+  const planTextForFallback = hasStringInput
+    ? planInput
+    : (planInput?.inClinicText ?? planInput?.planText ?? '');
+  const rawLines = planTextForFallback.split('\n');
+  rawLines.forEach((line) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine.match(/^[•\-*]\s+/) && trimmedLine.length > 3) {
+      const labelFromBullet = trimmedLine.replace(/^[•\-*]\s+/, '').trim();
+      if (labelFromBullet.length > 0 && !isSectionHeaderLine(labelFromBullet)) {
+        fallbackItems.push({
+          id: `general-${itemId++}`,
+          label: labelFromBullet,
           completed: false,
           source: 'plan',
         });
       }
-    });
-  }
-
-  // Extraer Home Exercises (incluye variantes como "Home Exercise Program:")
-  const homeExercisesMatch = planText.match(/(?:home\s+exercises?|home\s+exercise\s+program(?:\s*\(hep\))?):\s*([^\n]+(?:\n(?!-?\s*(?:Patient|Goals?|Follow-up|Next|Modalities?|Interventions?))[^\n]+)*)/i);
-  if (homeExercisesMatch) {
-    const exercisesText = homeExercisesMatch[1];
-    // Parsear lista (bullets, dashes, o comas)
-    const exerciseList = exercisesText
-      .split(/[•\-\n]/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0 && !line.match(/^(Home\s+Exercises?|Patient|Goals?|Follow-up|Next|Modalities?|Interventions?)/i));
-    
-    exerciseList.forEach((exercise) => {
-      if (exercise.length > 0 && !isSectionHeaderLine(exercise)) {
-        items.push({
-          id: `exercise-${itemId++}`,
-          label: exercise,
-          completed: false,
-          source: 'plan',
-        });
-      }
-    });
-  }
-
-  // Si no se encontraron items estructurados, intentar extraer del texto general
-  if (items.length === 0) {
-    // Buscar líneas que parezcan focos (empiezan con bullet o dash)
-    const lines = planText.split('\n');
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      if (trimmed.match(/^[•\-*]\s+/) && trimmed.length > 3) {
-        const label = trimmed.replace(/^[•\-*]\s+/, '').trim();
-        if (label.length > 0 && !isSectionHeaderLine(label)) {
-          items.push({
-            id: `general-${itemId++}`,
-            label: label,
-            completed: false,
-            source: 'plan',
-          });
-        }
-      }
-    });
-  }
-
-  // Limitar a máximo 5 items para no sobrecargar la UI
-  return items.slice(0, 5);
+    }
+  });
+  const maxFocusItemsFallback = 5;
+  return fallbackItems.slice(0, maxFocusItemsFallback);
 }

@@ -10,6 +10,66 @@ export interface DerivedPlan {
   homeProgram: string[];
 }
 
+type DerivePlanInput =
+  | string
+  | {
+      planText?: string | null;
+      inClinicText?: string | null;
+      homeProgramText?: string | null;
+    }
+  | null
+  | undefined;
+
+/**
+ * WO-ES-PLAN-SPLIT-02: Cortar plan por cabeceras Vertex EN/ES antes de heurísticas por línea.
+ * Evita mezclar HEP en el bloque in-clinic cuando el texto trae ambas secciones en un solo párrafo.
+ */
+function trySplitStructuredPlanSections(planSummary: string): { inClinicText: string; hepText: string } | null {
+  const lineEndingsNormalized = planSummary.replace(/\r\n/g, '\n');
+  const normalizedPlan = lineEndingsNormalized.trim();
+  if (!normalizedPlan) {
+    return null;
+  }
+  const inClinicHeaderPattern =
+    /(?:^|[\n.])\s*(?:IN-CLINIC\s+TREATMENT|TRATAMIENTO\s+EN\s+CL[ÍI]NICA)\s*:\s*/i;
+  const hepHeaderPattern =
+    /(?:^|[\n.])\s*(?:HOME\s+EXERCISE\s+PROGRAM(?:\s*\(\s*HEP\s*\))?|PROGRAMA\s+DE\s+EJERCICIOS\s+EN\s+CASA)\s*:\s*/i;
+  const inClinicHeaderMatch = normalizedPlan.match(inClinicHeaderPattern);
+  const hepHeaderMatch = normalizedPlan.match(hepHeaderPattern);
+  const hasInClinicHeader = inClinicHeaderMatch != null && inClinicHeaderMatch.index !== undefined;
+  const hasHepHeader = hepHeaderMatch != null && hepHeaderMatch.index !== undefined;
+  if (!hasInClinicHeader && !hasHepHeader) {
+    return null;
+  }
+  const inStartIdx = hasInClinicHeader ? inClinicHeaderMatch!.index! : -1;
+  const hepStartIdx = hasHepHeader ? hepHeaderMatch!.index! : -1;
+  const inBodyStart = hasInClinicHeader ? inStartIdx + inClinicHeaderMatch![0].length : -1;
+  const hepBodyStart = hasHepHeader ? hepStartIdx + hepHeaderMatch![0].length : -1;
+
+  let inClinicSlice = '';
+  let hepSlice = '';
+  if (hasInClinicHeader && hasHepHeader) {
+    const inFirst = inStartIdx < hepStartIdx;
+    if (inFirst) {
+      inClinicSlice = normalizedPlan.slice(inBodyStart, hepStartIdx).trim();
+      hepSlice = normalizedPlan.slice(hepBodyStart).trim();
+    } else {
+      hepSlice = normalizedPlan.slice(hepBodyStart, inStartIdx).trim();
+      inClinicSlice = normalizedPlan.slice(inBodyStart).trim();
+    }
+  } else if (hasInClinicHeader) {
+    inClinicSlice = normalizedPlan.slice(inBodyStart).trim();
+  } else if (hasHepHeader) {
+    hepSlice = normalizedPlan.slice(hepBodyStart).trim();
+  }
+  const hasInClinicBody = inClinicSlice.length > 0;
+  const hasHepBody = hepSlice.length > 0;
+  if (!hasInClinicBody && !hasHepBody) {
+    return null;
+  }
+  return { inClinicText: inClinicSlice, hepText: hepSlice };
+}
+
 /**
  * Detecta si una línea es un encabezado de sección in-clinic o HEP (case-insensitive).
  */
@@ -55,12 +115,50 @@ function linesToItems(lines: string[]): string[] {
  * A) Secciones primero; B) línea por línea con keywords; C) híbridos → HEP; D) EN/ES.
  * Todo el texto del plan aparece en alguno de los dos bloques (no pérdida de información).
  */
-export function derivePlanFromText(planSummary: string | null | undefined): DerivedPlan {
+export function derivePlanFromText(planInput: DerivePlanInput): DerivedPlan {
   const inClinic: string[] = [];
   const homeProgram: string[] = [];
+  const planDocument = typeof planInput === 'object' && planInput !== null ? planInput : null;
+  const inClinicText = planDocument?.inClinicText?.trim() ?? '';
+  const homeProgramText = planDocument?.homeProgramText?.trim() ?? '';
+  const hasStructuredPlanFields = Boolean(inClinicText || homeProgramText);
+
+  if (hasStructuredPlanFields) {
+    const splitStructuredText = (text: string): string[] => {
+      const newlineSegments = text.split('\n');
+      const flattenedSegments = newlineSegments.flatMap((segment) => segment.split(/\s-\s/g));
+      return flattenedSegments;
+    };
+    const inClinicSegments = inClinicText ? splitStructuredText(inClinicText) : [];
+    const homeProgramSegments = homeProgramText ? splitStructuredText(homeProgramText) : [];
+    const inClinicLines = linesToItems(inClinicSegments);
+    const homeProgramLines = linesToItems(homeProgramSegments);
+    const structuredResult = {
+      inClinic: [...new Set(inClinicLines)].filter(Boolean),
+      homeProgram: [...new Set(homeProgramLines)].filter(Boolean),
+    };
+    return structuredResult;
+  }
+
+  const planSummary = typeof planInput === 'string' ? planInput : planDocument?.planText;
 
   if (!planSummary || typeof planSummary !== 'string') {
     return { inClinic, homeProgram };
+  }
+
+  const structuredSections = trySplitStructuredPlanSections(planSummary);
+  if (structuredSections) {
+    const inClinicLines = structuredSections.inClinicText.split('\n');
+    const hepLines = structuredSections.hepText.split('\n');
+    const inClinicParsed = linesToItems(inClinicLines);
+    const hepParsed = linesToItems(hepLines);
+    const hasInClinicItems = inClinicParsed.length > 0;
+    const hasHepItems = hepParsed.length > 0;
+    if (hasInClinicItems || hasHepItems) {
+      const inClinicDeduped = [...new Set(inClinicParsed)].filter(Boolean);
+      const hepDeduped = [...new Set(hepParsed)].filter(Boolean);
+      return { inClinic: inClinicDeduped, homeProgram: hepDeduped };
+    }
   }
 
   const lines = planSummary.split(/\n/);

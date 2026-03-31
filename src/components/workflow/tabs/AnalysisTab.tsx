@@ -272,25 +272,31 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   // WO-05-FIX: Mapping explícito del treatment plan a todayFocus (solo follow-up; initial assessment no usa este bloque)
   useEffect(() => {
     if (visitType === 'follow-up') {
-      let planText: string | null = null;
+      let planInput: string | { inClinicText?: string | null; homeProgramText?: string | null; planText?: string | null } | null = null;
       
       // Prioridad: previousTreatmentPlan > lastEncounter.soap.plan
-      if (previousTreatmentPlan?.planText) {
-        planText = previousTreatmentPlan.planText;
+      if (previousTreatmentPlan?.inClinicText) {
+        planInput = previousTreatmentPlan;
+        console.info('[WO-05-FIX][PROOF] Using previousTreatmentPlan.inClinicText as source');
+      } else if (previousTreatmentPlan?.planText) {
+        planInput = previousTreatmentPlan.planText;
         console.info('[WO-05-FIX][PROOF] Using previousTreatmentPlan.planText as source');
       } else if (lastEncounter.data?.soap?.plan) {
-        planText = lastEncounter.data.soap.plan;
+        planInput = lastEncounter.data.soap.plan;
         console.info('[WO-05-FIX][PROOF] Using lastEncounter.soap.plan as source');
       }
       
-      if (planText && planText.trim().length > 0) {
-        const parsed = parsePlanToFocusItems(planText);
+      const planTextLength = typeof planInput === 'string'
+        ? planInput.length
+        : (planInput?.inClinicText ?? planInput?.planText ?? '').length;
+      if (planInput && planTextLength > 0) {
+        const parsed = parsePlanToFocusItems(planInput);
         
         console.info(
           '[WO-05-FIX][PROOF] todayFocus initialized from treatmentPlan',
           {
             source: previousTreatmentPlan ? 'previousTreatmentPlan' : 'lastEncounter',
-            planTextLength: planText.length,
+            planTextLength,
             parsedCount: parsed.length,
             items: parsed.map(item => ({ id: item.id, label: item.label, completed: item.completed }))
           }

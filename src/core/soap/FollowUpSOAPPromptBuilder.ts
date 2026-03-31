@@ -10,6 +10,7 @@
 
 import type { SOAPContext } from './SOAPContextBuilder';
 import type { SOAPPromptOptions } from './SOAPPromptFactory';
+import { getSoapJurisdictionContext } from '../prompts/soapJurisdictionContext';
 
 /**
  * Builds optimized follow-up SOAP prompt (70% token reduction target)
@@ -25,10 +26,21 @@ export function buildOptimizedFollowUpPrompt(
   options?: SOAPPromptOptions
 ): string {
   const previousContext = options?.previousVisitContext?.[0]; // Only last visit
-  
-  const prompt = `Generate FOLLOW-UP SOAP note for Ontario physiotherapist. Focus on CHANGES since last visit.
+  const soapJurisdiction = getSoapJurisdictionContext();
+  const isEsSoap = soapJurisdiction.region === 'España';
+  const optimizedGeoLine = isEsSoap
+    ? `Generate FOLLOW-UP SOAP note for a fisioterapeuta in ${soapJurisdiction.region}. Focus on CHANGES since last visit.`
+    : `Generate FOLLOW-UP SOAP note for Ontario physiotherapist. Focus on CHANGES since last visit.`;
+  const optimizedRoleLanguageLine = isEsSoap
+    ? 'ROLE: Document changes/progress. Use "Patterns consistent with..." language. Spanish clinical formal (es-ES).'
+    : 'ROLE: Document changes/progress. Use "Patterns consistent with..." language. Canadian English (en-CA).';
+  const optimizedTerminologyRuleLine = isEsSoap
+    ? '- Spanish clinical terminology'
+    : '- Canadian terminology';
 
-ROLE: Document changes/progress. Use "Patterns consistent with..." language. Canadian English (en-CA).
+  const prompt = `${optimizedGeoLine}
+
+${optimizedRoleLanguageLine}
 
 FORMAT:
 - S: Changes since last visit, treatment response (MAX 150 chars)
@@ -67,7 +79,7 @@ RULES:
 - No repetition between sections
 - Use numbers to show change (e.g., "Pain 3/10 vs 6/10 previously")
 - Focus on clinical significance only
-- Canadian terminology`;
+${optimizedTerminologyRuleLine}`;
 
   return prompt;
 }

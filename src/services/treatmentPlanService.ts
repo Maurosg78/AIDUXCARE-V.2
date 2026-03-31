@@ -12,6 +12,7 @@ import { db, auth } from '../lib/firebase';
 import { serverTimestamp } from 'firebase/firestore';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
+import { derivePlanFromText } from '@/utils/derivePlanFromText';
 
 export interface TreatmentPlan {
   id: string;
@@ -19,6 +20,8 @@ export interface TreatmentPlan {
   patientName: string;
   clinicianId: string;
   planText: string; // Full plan text from SOAP note
+  inClinicText?: string;
+  homeProgramText?: string;
   acceptedAt: string; // ISO timestamp
   visitType: 'initial' | 'follow-up';
   modalities?: string[]; // Extracted modalities: TENS, US, Tecar, Infrared, Shockwave
@@ -43,6 +46,17 @@ export interface TreatmentReminder {
 
 class TreatmentPlanService {
   private COLLECTION_NAME = 'treatment_plans';
+
+  private buildStructuredPlanFields(planText: string): { inClinicText?: string; homeProgramText?: string } {
+    const derivedPlan = derivePlanFromText(planText);
+    const inClinicText = derivedPlan.inClinic.join('\n').trim();
+    const homeProgramText = derivedPlan.homeProgram.join('\n').trim();
+    const structuredPlanFields = {
+      ...(inClinicText ? { inClinicText } : {}),
+      ...(homeProgramText ? { homeProgramText } : {}),
+    };
+    return structuredPlanFields;
+  }
 
   /**
    * Create manual initial treatment plan for existing patients (without SOAP)
@@ -69,12 +83,15 @@ class TreatmentPlanService {
       // Construct planText from structured data if not provided
       const planText = planData.planText || this.constructPlanTextFromStructured(planData);
       
+      const structuredPlanFields = this.buildStructuredPlanFields(planText);
+
       const treatmentPlan: TreatmentPlan = {
         id: planId,
         patientId,
         patientName,
         clinicianId,
         planText,
+        ...structuredPlanFields,
         acceptedAt: new Date().toISOString(),
         visitType: 'initial', // Mark as initial even though it's manual
         interventions: planData.interventions,
@@ -171,6 +188,7 @@ class TreatmentPlanService {
         ? ensureSpanishClinicalText(planTextForNormalization)
         : planTextForNormalization;
       const planTextToPersist = normalizedPlanText;
+      const structuredPlanFields = this.buildStructuredPlanFields(planTextToPersist);
 
       const modalities = this.extractModalities(planTextToPersist);
       const frequency = this.extractFrequency(planTextToPersist);
@@ -200,6 +218,7 @@ class TreatmentPlanService {
         patientName,
         clinicianId: clinicianIdToStore,
         planText: planTextToPersist,
+        ...structuredPlanFields,
         acceptedAt: new Date().toISOString(),
         visitType,
         ...(modalities && modalities.length > 0 && { modalities }),
@@ -564,4 +583,3 @@ class TreatmentPlanService {
 }
 
 export default new TreatmentPlanService();
-
