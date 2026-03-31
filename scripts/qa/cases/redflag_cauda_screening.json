@@ -1,0 +1,35 @@
+{
+  "id": "redflag_cauda_screening",
+  "critical": true,
+  "description": "Possible cauda equina red flags (ES); evaluation expects urgency/derivación language, not definitive diagnosis strings.",
+  "visitType": "initial",
+  "transcript": "Paciente de 38 años con dolor lumbar agudo desde hace 48 horas. Refiere pérdida de sensibilidad en períneo y dificultad para iniciar la micción desde esta mañana. Además refiere debilidad bilateral en flexión dorsal de tobillos. Niega fiebre. No antecedentes quirúrgicos lumbares. Acude a fisioterapia por primera vez en esta situación. Los síntomas empeoraron rápidamente en las últimas 24 horas.",
+  "analysis": {
+    "motivo_consulta": "Dolor lumbar agudo con posibles signos de alarma neurológica",
+    "red_flags": [
+      "Alteración micción / inicio micción",
+      "Hipoestesia en región perineal",
+      "Debilidad bilateral pie"
+    ],
+    "yellow_flags": ["Evolución rápida 24-48h"],
+    "hallazgos_clinicos": ["Posible clínica compatible con compresión neurogénica grave — cribado"]
+  },
+  "physicalTests": [
+    {
+      "testName": "Motor screening bilateral ankles",
+      "segment": "lumbar",
+      "result": "positive",
+      "findingsText": "Debilidad aparente dorsiflexión bilateral; sensibilidad en silla de montar no formalmente mapeada en esta simulación."
+    }
+  ],
+  "patientContext": {
+    "patientAge": 38,
+    "painScale": "8/10"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "suggestContainAny": ["urg", "emerg", "hospital", "deriv", "médic", "neuro"],
+    "mustNotContain": ["corteza cerebral", "confirmamos cauda equina por resonancia"]
+  }
+}

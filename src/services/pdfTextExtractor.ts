@@ -7,6 +7,8 @@
  * WO-PDF-001: Phase 1 - PDF Processing Implementation
  */
 
+import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
 export interface PDFExtractionResult {
     text: string;
     pageCount: number;
@@ -24,97 +26,80 @@ export interface PDFExtractionResult {
  * Validates if a file is a PDF
  */
 export function isValidPDF(file: File): boolean {
-    return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const byMime = file.type === "application/pdf";
+    const byName = file.name.toLowerCase().endsWith(".pdf");
+    const isPdf = byMime || byName;
+    return isPdf;
 }
 
 /**
  * Extracts text content from a PDF file
  */
 export async function extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
-    console.log("[PDFExtractor] START", file.name);
-    console.log(`[PDFExtractor] Starting extraction from: ${file.name}`);
+    const fileLabel = file.name;
+    console.log("[PDFExtractor] START", fileLabel);
+    console.log(`[PDFExtractor] Starting extraction from: ${fileLabel}`);
 
     try {
-        // ✅ Correct for pdfjs-dist 5.x in Vite: import the package entry
-        const pdfjsLib: any = await import("pdfjs-dist");
+        const pdfjsModule = await import("pdfjs-dist");
+        const pdfjsLib: any = pdfjsModule;
+        const workerUrlForLib = pdfWorkerSrc;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrlForLib;
 
-        // ✅ Vite: worker como asset URL
-        const workerUrl = new URL(
-            "pdfjs-dist/build/pdf.worker.min.mjs",
-            import.meta.url
-        ).toString();
-
-        // En algunos builds, esta forma sigue siendo frágil. Mejor: import con ?url.
-        // Pero como aquí estás dentro de un dynamic import, hacemos fallback robusto:
-        try {
-            // @ts-ignore
-            const w: any = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-            if (w?.default) pdfjsLib.GlobalWorkerOptions.workerSrc = w.default;
-            else pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-        } catch {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-        }
-
-        const arrayBuffer = await file.arrayBuffer();
+        const fileBuffer = await file.arrayBuffer();
 
         console.log("[PDF] workerSrc =", pdfjsLib.GlobalWorkerOptions.workerSrc);
         console.log("[PDFExtractor] Before getDocument");
 
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const loadingTask = pdfjsLib.getDocument({ data: fileBuffer });
         const pdf = await loadingTask.promise;
 
         console.log("[PDFExtractor] Document loaded");
         console.log(`[PDFExtractor] PDF loaded: ${pdf.numPages} pages`);
 
-        const metadata = await pdf.getMetadata().catch(() => null);
-        const metadataObj = metadata?.info
-            ? {
-                title: metadata.info.Title,
-                author: metadata.info.Author,
-                subject: metadata.info.Subject,
-                keywords: metadata.info.Keywords,
-                creationDate: metadata.info.CreationDate,
-            }
-            : undefined;
-
         const textParts: string[] = [];
         const maxPages = 50;
-        const pagesToProcess = Math.min(pdf.numPages, maxPages);
+        const totalPages = pdf.numPages;
+        const pagesToProcess = Math.min(totalPages, maxPages);
 
         for (let pageNum = 1; pageNum <= pagesToProcess; pageNum++) {
             const page = await pdf.getPage(pageNum);
             const textContent = await page.getTextContent();
 
-            const pageText = (textContent.items || [])
+            const items = textContent.items || [];
+            const pageText = items
                 .map((item: any) => item?.str ?? "")
                 .join(" ")
                 .trim();
 
-            if (pageText) textParts.push(pageText);
+            if (pageText) {
+                textParts.push(pageText);
+            }
         }
 
-        if (pdf.numPages > maxPages) {
-            textParts.push(`\n[NOTE: PDF has ${pdf.numPages} pages, only first ${maxPages} processed]`);
+        if (totalPages > maxPages) {
+            const note = `\n[NOTE: PDF has ${totalPages} pages, only first ${maxPages} processed]`;
+            textParts.push(note);
         }
 
         const extractedText = textParts.join("\n\n");
+        const trimmedText = extractedText.trim();
+        const hasText = trimmedText.length > 0;
 
-        if (!extractedText.trim()) {
+        if (!hasText) {
             return {
                 text: "",
-                pageCount: pdf.numPages,
-                metadata: metadataObj,
+                pageCount: totalPages,
                 error: "No text could be extracted. PDF may be scanned (image-based) or password-protected.",
             };
         }
 
-        console.log(`[PDFExtractor] ✅ Extracted ${extractedText.length} characters from ${pdf.numPages} pages`);
+        console.log(`[PDFExtractor] ✅ Extracted ${extractedText.length} characters from ${totalPages} pages`);
         console.log("[PDFExtractor] Extraction finished");
 
         return {
             text: extractedText,
-            pageCount: pdf.numPages,
-            metadata: metadataObj,
+            pageCount: totalPages,
         };
     } catch (error) {
         console.error("[PDFExtractor] ERROR", error);

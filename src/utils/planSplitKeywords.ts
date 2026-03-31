@@ -8,6 +8,8 @@ export const PLAN_SPLIT_KEYWORDS = {
   sectionInClinic: [
     'IN-CLINIC TREATMENT',
     'IN-CLINIC TREATMENT:',
+    'TRATAMIENTO EN CLÍNICA',
+    'TRATAMIENTO EN CLÍNICA:',
     'In-clinic treatment today',
     'In-clinic treatment today:',
     'Interventions:',
@@ -25,6 +27,8 @@ export const PLAN_SPLIT_KEYWORDS = {
   sectionHomeProgram: [
     'HOME EXERCISE PROGRAM (HEP)',
     'HOME EXERCISE PROGRAM (HEP):',
+    'PROGRAMA DE EJERCICIOS EN CASA',
+    'PROGRAMA DE EJERCICIOS EN CASA:',
     'Home Exercise Program',
     'Home Exercise Program:',
     'Home Exercises:',

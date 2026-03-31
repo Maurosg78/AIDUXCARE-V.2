@@ -552,19 +552,42 @@ export async function generateSOAPNote(
 }
 
 /**
- * WO-PROMPT-PLAN-SPLIT-01: Parse plan text into IN-CLINIC TREATMENT and HOME EXERCISE PROGRAM (HEP).
- * Looks for exact headers (case-insensitive). Fallback: whole text as homeProgram, log warning.
+ * WO-PROMPT-PLAN-SPLIT-01: Parse plan text into in-clinic vs HEP blocks (EN or ES pilot headers).
+ * Looks for section headers (case-insensitive). Fallback: whole text as homeProgram, log warning.
  */
 function parsePlanToStructured(planText: string): { inClinic: string[]; homeProgram: string[] } {
   if (!planText || typeof planText !== 'string' || !planText.trim()) {
     return { inClinic: [], homeProgram: [] };
   }
   const normalized = planText.trim();
-  const inClinicHeader = /IN-CLINIC\s+TREATMENT\s*:/i;
-  const hepHeader = /HOME\s+EXERCISE\s+PROGRAM\s*\(\s*HEP\s*\)\s*:/i;
 
-  const inClinicIdx = normalized.search(inClinicHeader);
-  const hepIdx = normalized.search(hepHeader);
+  const inClinicMatchers: RegExp[] = [
+    /IN-CLINIC\s+TREATMENT\s*:/i,
+    /TRATAMIENTO\s+EN\s+CL[ÍI]NICA\s*:/i,
+  ];
+  const hepMatchers: RegExp[] = [
+    /HOME\s+EXERCISE\s+PROGRAM\s*\(\s*HEP\s*\)\s*:/i,
+    /HOME\s+EXERCISE\s+PROGRAM\s*:/i,
+    /PROGRAMA\s+DE\s+EJERCICIOS\s+EN\s+CASA\s*:/i,
+  ];
+
+  const pickFirstMatch = (text: string, patterns: RegExp[]): { idx: number; regex: RegExp } | null => {
+    let best: { idx: number; regex: RegExp } | null = null;
+    for (const regex of patterns) {
+      const idx = text.search(regex);
+      if (idx === -1) {
+        continue;
+      }
+      const isEarlier = best === null || idx < best.idx;
+      if (isEarlier) {
+        best = { idx, regex };
+      }
+    }
+    return best;
+  };
+
+  const inClinicMatch = pickFirstMatch(normalized, inClinicMatchers);
+  const hepMatch = pickFirstMatch(normalized, hepMatchers);
 
   const bulletLine = /^\s*[-•*]\s*(.+)$/;
   const toItems = (block: string): string[] =>
@@ -576,19 +599,24 @@ function parsePlanToStructured(planText: string): { inClinic: string[]; homeProg
       })
       .filter(Boolean);
 
-  if (inClinicIdx !== -1 && hepIdx !== -1) {
+  const hasBothSections = inClinicMatch != null && hepMatch != null;
+  if (hasBothSections) {
+    const inClinicIdx = inClinicMatch.idx;
+    const hepIdx = hepMatch.idx;
     const first = Math.min(inClinicIdx, hepIdx);
     const second = Math.max(inClinicIdx, hepIdx);
     const beforeSecond = normalized.slice(first, second);
     const afterSecond = normalized.slice(second);
     const isInClinicFirst = inClinicIdx < hepIdx;
-    const block1 = beforeSecond.replace(isInClinicFirst ? inClinicHeader : hepHeader, '').trim();
-    const block2 = afterSecond.replace(isInClinicFirst ? hepHeader : inClinicHeader, '').trim();
+    const firstMatchMeta = isInClinicFirst ? inClinicMatch : hepMatch;
+    const secondMatchMeta = isInClinicFirst ? hepMatch : inClinicMatch;
+    const block1 = beforeSecond.replace(firstMatchMeta.regex, '').trim();
+    const block2 = afterSecond.replace(secondMatchMeta.regex, '').trim();
     const items1 = toItems(block1);
     const items2 = toItems(block2);
-    return isInClinicFirst
-      ? { inClinic: items1, homeProgram: items2 }
-      : { inClinic: items2, homeProgram: items1 };
+    const inClinicItems = isInClinicFirst ? items1 : items2;
+    const homeItems = isInClinicFirst ? items2 : items1;
+    return { inClinic: inClinicItems, homeProgram: homeItems };
   }
 
   console.warn('[SOAP][PLAN] Structured sections missing – fallback applied');

@@ -11,6 +11,7 @@ import sessionService from "../services/sessionService";
 import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
 import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
+import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from "../utils/normalizeRedFlagsForDisplay";
 import type { SOAPNote } from "../types/vertex-ai";
 import { ClinicalAnalysisResults } from "../components/ClinicalAnalysisResults";
 import ClinicalAttachmentService, { ClinicalAttachment } from "../services/clinicalAttachmentService";
@@ -461,11 +462,25 @@ const ProfessionalWorkflowPage = () => {
   const sessionIdRef = useRef<string | null>(null);
   /** Set only when recording starts; never overwritten by state so onTranscriptionComplete still has id after new instance mounts */
   const sessionIdForTranscriptRef = useRef<string | null>(null);
+  /** WO-BUG2-RACE: Stable Firestore doc id before sessionId state + before first autosave (skip when resuming from URL). */
+  const workflowReservedSessionIdRef = useRef<string | null>(null);
   const patientIdForPersistRef = useRef<string | null>(null);
   const userForPersistRef = useRef<{ uid: string } | null>(null);
   sessionIdRef.current = sessionId;
   patientIdForPersistRef.current = patientIdFromUrl ?? null;
   userForPersistRef.current = user ? { uid: user.uid } : null;
+
+  useEffect(() => {
+    const authenticatedUid = user?.uid;
+    if (!authenticatedUid) return;
+    const resumeSessionKey = sessionIdFromUrl;
+    if (resumeSessionKey) return;
+    const priorReserved = workflowReservedSessionIdRef.current;
+    if (priorReserved) return;
+    const reservedEpochMs = Date.now();
+    const nextWorkflowSessionKey = `${authenticatedUid}-${reservedEpochMs}`;
+    workflowReservedSessionIdRef.current = nextWorkflowSessionKey;
+  }, [user?.uid, sessionIdFromUrl]);
 
   // ✅ CRITICAL: Initialize hooks BEFORE using their values in useMemo
   // These hooks must be called before detectedCaseRegion which depends on them
@@ -1193,7 +1208,9 @@ const ProfessionalWorkflowPage = () => {
       if (!hasProgress) return;
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
       if (isInitialSession) {
-        const effectiveSessionId = state.sessionId || sessionIdRef.current || null;
+        const reservedWorkflowKey = workflowReservedSessionIdRef.current;
+        const effectiveSessionId =
+          state.sessionId || sessionIdRef.current || reservedWorkflowKey || null;
         const normalizedSessionId = typeof effectiveSessionId === 'string' ? effectiveSessionId.trim() : '';
         const hasValidSessionId = normalizedSessionId.length > 0;
         if (!hasValidSessionId) {
@@ -1775,27 +1792,53 @@ const ProfessionalWorkflowPage = () => {
 
     const autoSaveToFirestore = async () => {
       try {
-        const userId = user?.uid;
-        if (!userId) return;
+        const practitionerUid = user?.uid;
+        if (!practitionerUid) return;
 
-        const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+        const stateSessionKey = sessionId;
+        const reservedWorkflowId = workflowReservedSessionIdRef.current;
+        const mountAnchorMs = sessionStartTime.getTime();
+        const legacyFallbackId = `${practitionerUid}-${mountAnchorMs}`;
+        const proposedNewDocId = reservedWorkflowId ?? legacyFallbackId;
+        const activeDocIdForRead = stateSessionKey ?? proposedNewDocId;
+
+        const transcriptBody = transcript;
+        const autosaveIsoTime = new Date().toISOString();
+        const payloadPatientKey = patientId;
+        const payloadSessionKind = currentSessionType;
         const payload = {
-          transcript,
-          transcriptAutoSavedAt: new Date().toISOString(),
-          patientId,
-          userId,
-          status: 'recording_in_progress',
+          transcript: transcriptBody,
+          transcriptAutoSavedAt: autosaveIsoTime,
+          patientId: payloadPatientKey,
+          userId: practitionerUid,
+          status: 'recording_in_progress' as const,
+          sessionType: payloadSessionKind,
         };
 
-        if (sessionId) {
-          await sessionService.updateSession(sessionId, payload);
+        if (stateSessionKey) {
+          const updateTargetId = stateSessionKey;
+          await sessionService.updateSession(updateTargetId, payload);
         } else {
-          await sessionService.createSessionWithId(currentSessionId, payload);
-          setSessionId(currentSessionId);
+          const idempotencyPatient = patientId;
+          const idempotencyUser = practitionerUid;
+          const idempotencyKind = currentSessionType;
+          const lookupReferenceDate = new Date();
+          const reuseCandidateId = await sessionService.findReusableSessionForDayAndType(
+            idempotencyPatient,
+            idempotencyUser,
+            idempotencyKind,
+            lookupReferenceDate
+          );
+          const hasReuse = reuseCandidateId != null;
+          const createTargetId = hasReuse ? reuseCandidateId : proposedNewDocId;
+          const mergeForWrite = hasReuse;
+          await sessionService.createSessionWithId(createTargetId, payload, { merge: mergeForWrite });
+          const nextStateSessionId = createTargetId;
+          setSessionId(nextStateSessionId);
         }
 
         console.log('[AutoSave] Transcript guardado en Firestore:', {
-          sessionId: currentSessionId,
+          sessionId: activeDocIdForRead,
           transcriptLength: transcript.length,
         });
       } catch (error) {
@@ -1805,26 +1848,50 @@ const ProfessionalWorkflowPage = () => {
 
     const interval = setInterval(autoSaveToFirestore, 10000);
     return () => clearInterval(interval);
-  }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid]);
+  }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid, currentSessionType]);
 
   // WO-RESUME: Create Firestore session as soon as recording starts so sessionId is set before unmount (transcript only exists after stop)
   useEffect(() => {
     if (!isRecording || sessionId || !user?.uid || !patientIdFromUrl) return;
-    const currentSessionId = `${user.uid}-${sessionStartTime.getTime()}`;
-    sessionIdRef.current = currentSessionId;
-    sessionIdForTranscriptRef.current = currentSessionId; // never overwritten by state so onTranscriptionComplete still has id after new instance mounts
-    const patientName = currentPatient?.fullName || `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() || 'Patient';
-    sessionService
-      .createSessionWithId(currentSessionId, {
-        patientId: patientIdFromUrl,
-        patientName,
-        userId: user.uid,
-        status: 'recording_in_progress',
-        transcript: '',
-      })
-      .then(() => setSessionId(currentSessionId))
-      .catch(() => {});
-  }, [isRecording, sessionId, user?.uid, patientIdFromUrl, sessionStartTime, currentPatient]);
+    const patientName =
+      currentPatient?.fullName ||
+      `${(currentPatient as any)?.firstName ?? ''} ${(currentPatient as any)?.lastName ?? ''}`.trim() ||
+      'Patient';
+    const authUid = user.uid;
+    const reservedWorkflowId = workflowReservedSessionIdRef.current;
+    const anchorMs = sessionStartTime.getTime();
+    const computedFallbackId = `${authUid}-${anchorMs}`;
+    const proposedRecordingId = reservedWorkflowId ?? computedFallbackId;
+    void (async () => {
+      const pid = patientIdFromUrl;
+      const kind = currentSessionType;
+      const referenceDate = new Date();
+      const reuseId = await sessionService.findReusableSessionForDayAndType(pid, authUid, kind, referenceDate);
+      const hasReuse = reuseId != null;
+      const targetRecordingId = hasReuse ? reuseId : proposedRecordingId;
+      const mergeBootstrap = hasReuse;
+      try {
+        const actualId = await sessionService.createSessionWithId(
+          targetRecordingId,
+          {
+            patientId: patientIdFromUrl,
+            patientName,
+            userId: authUid,
+            status: 'recording_in_progress',
+            transcript: '',
+            sessionType: currentSessionType,
+          },
+          { merge: mergeBootstrap }
+        );
+        const transcriptPersistId = actualId;
+        sessionIdRef.current = transcriptPersistId;
+        sessionIdForTranscriptRef.current = transcriptPersistId;
+        setSessionId(transcriptPersistId);
+      } catch {
+        /* non-blocking */
+      }
+    })();
+  }, [isRecording, sessionId, user?.uid, patientIdFromUrl, sessionStartTime, currentPatient, currentSessionType]);
 
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
@@ -2771,10 +2838,13 @@ const ProfessionalWorkflowPage = () => {
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
     if (isFollowUpWorkflow) {
-      if (followUpAlerts?.red_flags?.length) {
-        // Inject follow-up red flags into interactiveResults shape
+      const rawFollowUpRedFlags = followUpAlerts?.red_flags;
+      const normalizedFollowUpFlags = normalizeRedFlagsForDisplay(rawFollowUpRedFlags);
+      const followUpFlagsForUi = filterTrivialRedFlagEntries(normalizedFollowUpFlags);
+      const followUpRedFlagCount = followUpFlagsForUi.length;
+      if (followUpRedFlagCount > 0) {
         return {
-          redFlags: followUpAlerts.red_flags,
+          redFlags: followUpFlagsForUi,
           evaluaciones_fisicas_sugeridas: [],
         } as any;
       }
@@ -2921,7 +2991,15 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ FASE 1 FIX: Build interactiveResults with ONLY top 5 tests for Phase 1 display
     // Tests 6+ will be shown in sidebar during Phase 2 (EvaluationTab)
-    const { evaluaciones_fisicas_sugeridas: _, ...niagaraResultsWithoutTests } = niagaraResults;
+    const {
+      evaluaciones_fisicas_sugeridas: _,
+      red_flags: _niagaraRedFlagsStripped,
+      ...niagaraResultsWithoutTests
+    } = niagaraResults;
+
+    const rawNiagaraRedFlags = niagaraResults.red_flags;
+    const normalizedNiagaraRedFlags = normalizeRedFlagsForDisplay(rawNiagaraRedFlags);
+    const niagaraRedFlagsForUi = filterTrivialRedFlagEntries(normalizedNiagaraRedFlags);
 
     // ✅ CRITICAL: Return interactiveResults with ONLY top 5 tests for Phase 1
     return {
@@ -2935,7 +3013,8 @@ const ProfessionalWorkflowPage = () => {
         ...psychosocial,
         ...occupational
       ],
-      redFlags: niagaraResults.red_flags || [],
+      red_flags: niagaraRedFlagsForUi,
+      redFlags: niagaraRedFlagsForUi,
       biopsychosocial: {
         psychosocial,
         occupational
@@ -3932,9 +4011,28 @@ const ProfessionalWorkflowPage = () => {
       if (sessionId) {
         await sessionService.updateSession(sessionId, sessionPayload);
       } else {
-        const currentSessionId = `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
-        await sessionService.createSessionWithId(currentSessionId, sessionPayload);
-        setSessionId(currentSessionId);
+        const reservedWorkflowId = workflowReservedSessionIdRef.current;
+        const soapAnchorMs = sessionStartTime.getTime();
+        const soapUid = user?.uid || TEMP_USER_ID;
+        const soapFallbackId = `${soapUid}-${soapAnchorMs}`;
+        const proposedSoapSessionId = reservedWorkflowId ?? soapFallbackId;
+        const soapPatientKey = patientIdFromUrl || demoPatient.id;
+        const soapLookupUser = TEMP_USER_ID;
+        const soapSessionKind = currentSessionType;
+        const soapReferenceDate = new Date();
+        const soapReuseId = await sessionService.findReusableSessionForDayAndType(
+          soapPatientKey,
+          soapLookupUser,
+          soapSessionKind,
+          soapReferenceDate
+        );
+        const soapHasReuse = soapReuseId != null;
+        const soapTargetId = soapHasReuse ? soapReuseId : proposedSoapSessionId;
+        const soapMergeWrite = soapHasReuse;
+        const soapActualId = await sessionService.createSessionWithId(soapTargetId, sessionPayload, {
+          merge: soapMergeWrite,
+        });
+        setSessionId(soapActualId);
         await trackSessionStarted({
           userId: TEMP_USER_ID,
           patientId: patientIdFromUrl || demoPatient.id,
@@ -4267,13 +4365,33 @@ const ProfessionalWorkflowPage = () => {
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
       };
-      const effectiveSessionId = sessionId ?? sessionIdRef.current;
+      const reservedWorkflowId = workflowReservedSessionIdRef.current;
+      const effectiveSessionId = sessionId ?? sessionIdRef.current ?? reservedWorkflowId;
       if (effectiveSessionId) {
-        await sessionService.updateSession(effectiveSessionId, savePayload);
+        const saveUpdateTarget = effectiveSessionId;
+        await sessionService.updateSession(saveUpdateTarget, savePayload);
       } else {
-        const fallbackSessionId = `${user?.uid}-${sessionStartTime.getTime()}`;
-        await sessionService.createSessionWithId(fallbackSessionId, savePayload);
-        setSessionId(fallbackSessionId);
+        const saveAnchorMs = sessionStartTime.getTime();
+        const saveUid = user?.uid ?? TEMP_USER_ID;
+        const saveFallbackId = `${saveUid}-${saveAnchorMs}`;
+        const proposedSaveSessionId = reservedWorkflowId ?? saveFallbackId;
+        const savePatientKey = patientIdFromUrl || demoPatient.id;
+        const saveLookupUser = TEMP_USER_ID;
+        const saveSessionKind = currentSessionType;
+        const saveReferenceDate = new Date();
+        const saveReuseId = await sessionService.findReusableSessionForDayAndType(
+          savePatientKey,
+          saveLookupUser,
+          saveSessionKind,
+          saveReferenceDate
+        );
+        const saveHasReuse = saveReuseId != null;
+        const saveTargetId = saveHasReuse ? saveReuseId : proposedSaveSessionId;
+        const saveMergeWrite = saveHasReuse;
+        const saveActualId = await sessionService.createSessionWithId(saveTargetId, savePayload, {
+          merge: saveMergeWrite,
+        });
+        setSessionId(saveActualId);
         await trackSessionStarted({
           userId: TEMP_USER_ID,
           patientId: patientIdFromUrl || demoPatient.id,
@@ -4516,16 +4634,13 @@ const ProfessionalWorkflowPage = () => {
         // WO-FOLLOWUP-CREATES-ENCOUNTER: ensure follow-up creates or completes clinical encounter for session count
         if (visitType === 'follow-up' && user?.uid) {
           try {
-            const encounterId = await encountersRepo.createEncounter({
+            const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
               authorUid: user.uid,
               encounterDate: new Date(),
-            });
-            await encountersRepo.updateEncounter(encounterId, {
-              status: 'completed',
               soap: { subjective: s, objective: o, assessment: a, plan: p },
             });
-            console.log('[Workflow] ✅ Follow-up encounter created and completed:', encounterId);
+            console.log('[Workflow] ✅ Follow-up encounter persisted as completed:', encounterId);
             // Patient Clinical Memory: record trajectory event for pattern detection (non-blocking)
             try {
               const memoryService = new PatientTrajectoryMemoryService();
@@ -4569,20 +4684,28 @@ const ProfessionalWorkflowPage = () => {
       );
     }
 
-    // Save treatment plan for future reminders
     if (soap.plan) {
       try {
-        await treatmentPlanService.saveTreatmentPlan(
-          patientIdFromUrl || demoPatient.id,
-          currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
-          TEMP_USER_ID,
-          soap.plan,
-          visitType
-        );
-        console.log('[Workflow] Treatment plan saved for reminders');
+        const patientKeyForTreatmentPlan = patientIdFromUrl || demoPatient.id;
+        const patientLabelForTreatmentPlan =
+          currentPatient?.fullName ||
+          `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+          demoPatient.name;
+        const authorUidForTreatmentPlan = user?.uid;
+        const finalizedPlanText = soap.plan;
+        const visitTypeForTreatmentPlan = visitType;
+        if (authorUidForTreatmentPlan) {
+          await treatmentPlanService.saveTreatmentPlan(
+            patientKeyForTreatmentPlan,
+            patientLabelForTreatmentPlan,
+            authorUidForTreatmentPlan,
+            finalizedPlanText,
+            visitTypeForTreatmentPlan
+          );
+          console.log('[Workflow] Treatment plan saved for reminders');
+        }
       } catch (error) {
         console.error('[Workflow] Failed to save treatment plan:', error);
-        // Non-blocking: continue even if plan save fails
       }
     }
     } finally {
@@ -5004,24 +5127,38 @@ const ProfessionalWorkflowPage = () => {
               onClick={() => {
                 const uid = user?.uid;
                 if (uid) {
-                  const sid = sessionId || `${uid}-${sessionStartTime.getTime()}`;
-                  sessionService.updateSession(sid, {
-                    status: 'interrupted',
-                    patientId: patientId || '',
-                    patientName: currentPatient?.fullName || 'Unknown',
-                    userId: uid,
-                    sessionType: sessionTypeFromUrl || 'initial',
-                    transcript: transcript || '',
-                  }).catch(() => {
-                    sessionService.createSessionWithId(sid, {
-                      status: 'interrupted',
+                  void (async () => {
+                    const stateExitId = sessionId;
+                    const reservedExitId = workflowReservedSessionIdRef.current;
+                    const exitAnchorMs = sessionStartTime.getTime();
+                    const exitFallbackId = `${uid}-${exitAnchorMs}`;
+                    const exitBaseId = stateExitId ?? reservedExitId ?? exitFallbackId;
+                    const exitPatientKey = patientId || '';
+                    const exitSessionKind = currentSessionType;
+                    const exitReferenceDate = new Date();
+                    const exitReuseId = await sessionService.findReusableSessionForDayAndType(
+                      exitPatientKey,
+                      uid,
+                      exitSessionKind,
+                      exitReferenceDate
+                    );
+                    const exitHasReuse = exitReuseId != null;
+                    const exitTargetId = exitHasReuse ? exitReuseId : exitBaseId;
+                    const exitMergeWrite = exitHasReuse;
+                    const interruptDocPayload = {
+                      status: 'interrupted' as const,
                       patientId: patientId || '',
                       patientName: currentPatient?.fullName || 'Unknown',
                       userId: uid,
-                      sessionType: sessionTypeFromUrl || 'initial',
+                      sessionType: currentSessionType,
                       transcript: transcript || '',
-                    }).catch(() => {});
-                  });
+                    };
+                    sessionService.updateSession(exitTargetId, interruptDocPayload).catch(() => {
+                      sessionService
+                        .createSessionWithId(exitTargetId, interruptDocPayload, { merge: exitMergeWrite })
+                        .catch(() => {});
+                    });
+                  })();
                 }
                 navigate('/command-center');
               }}

@@ -8,6 +8,7 @@ import {
   orderBy, 
   limit,
   addDoc,
+  setDoc,
   updateDoc,
   serverTimestamp,
   Timestamp 
@@ -68,6 +69,11 @@ export interface Encounter {
     signedAt: Timestamp;
     version: string;
   };
+
+  /** Soft-archive (Patient Dashboard — remove from history); excluded from clinical “last encounter” reads */
+  archived?: boolean;
+  archivedAt?: Timestamp;
+  archivedByUid?: string;
 }
 
 export interface EncounterCreateData {
@@ -91,6 +97,11 @@ class EncountersRepository {
       throw new Error('User not authenticated');
     }
     return user.uid;
+  }
+
+  /** Documents without `archived` are treated as active (legacy). Only `archived === true` is hidden. */
+  private isEncounterActive(data: Record<string, unknown>): boolean {
+    return data.archived !== true;
   }
 
   async getEncounterById(id: string): Promise<Encounter | null> {
@@ -118,6 +129,7 @@ class EncountersRepository {
   async getLastEncounterByPatient(patientId: string): Promise<Encounter | null> {
     try {
       // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      // WO-P0-ARCHIVED: Exclude soft-archived encounters. Do not use where('archived','==',false) — legacy docs lack the field.
       const currentUserId = this.getCurrentUserId();
       const encountersRef = collection(this.db, this.collectionName);
       const q = query(
@@ -126,13 +138,14 @@ class EncountersRepository {
         where('status', 'in', ['completed', 'signed']),
         where('authorUid', '==', currentUserId),
         orderBy('encounterDate', 'desc'),
-        limit(1)
+        limit(40)
       );
       
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        return { id: doc.id, ...doc.data() } as Encounter;
+      for (const d of querySnapshot.docs) {
+        const data = d.data();
+        if (!this.isEncounterActive(data)) continue;
+        return { id: d.id, ...data } as Encounter;
       }
       
       return null;
@@ -162,10 +175,9 @@ class EncountersRepository {
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })) as Encounter[];
+      return querySnapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((row) => this.isEncounterActive(row as unknown as Record<string, unknown>)) as Encounter[];
     } catch (error) {
       console.error('Error obteniendo encuentros:', error);
       throw error;
@@ -185,10 +197,9 @@ class EncountersRepository {
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })) as Encounter[];
+      return querySnapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((row) => this.isEncounterActive(row as unknown as Record<string, unknown>)) as Encounter[];
     } catch (error) {
       console.error('Error obteniendo encuentros del episodio:', error);
       throw error;
@@ -222,6 +233,44 @@ class EncountersRepository {
       return docRef.id;
     } catch (error) {
       console.error('Error creando encuentro:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * WO-P0-LAST-ENCOUNTER: Single Firestore write for a completed encounter with SOAP.
+   * Avoids draft documents if updateEncounter fails after createEncounter (those drafts
+   * are excluded from getLastEncounterByPatient which only queries completed|signed).
+   */
+  async createEncounterCompleted(
+    data: EncounterCreateData & { soap: NonNullable<Encounter['soap']> }
+  ): Promise<string> {
+    try {
+      const currentUserId = this.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error('Missing authenticated user for ownership');
+      }
+      const authorUid = data.authorUid || currentUserId;
+      if (!authorUid) {
+        throw new Error('Missing authorUid: cannot create encounter without ownership');
+      }
+      const encounterRef = doc(collection(this.db, this.collectionName));
+      const payload: Record<string, unknown> = {
+        patientId: data.patientId,
+        authorUid,
+        status: 'completed',
+        encounterDate: Timestamp.fromDate(data.encounterDate),
+        soap: data.soap,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      if (data.episodeId) payload.episodeId = data.episodeId;
+      if (data.interventions?.length) payload.interventions = data.interventions;
+      if (data.patientResponse) payload.patientResponse = data.patientResponse;
+      await setDoc(encounterRef, payload);
+      return encounterRef.id;
+    } catch (error) {
+      console.error('Error creando encuentro completado:', error);
       throw error;
     }
   }

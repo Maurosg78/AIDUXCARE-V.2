@@ -1,4 +1,6 @@
 const SPANISH_CLINICAL_REPLACEMENTS = [
+    [/HOME\s+EXERCISE\s+PROGRAM\s*(\(\s*HEP\s*\))?\s*:/gi, 'PROGRAMA DE EJERCICIOS EN CASA:'],
+    [/IN-CLINIC\s+TREATMENT\s*:/gi, 'TRATAMIENTO EN CLÍNICA:'],
     [/^Clinical concern:/i, 'Preocupación clínica:'],
     [/Recommend medical review\/referral based on red flags\.?/gi, 'Recomendar revisión/derivación médica según red flags.'],
     [/Recommend medical review based on red flags\.?/gi, 'Recomendar revisión médica según red flags.'],

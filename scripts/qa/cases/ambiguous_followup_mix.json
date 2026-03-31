@@ -1,0 +1,30 @@
+{
+  "id": "ambiguous_followup_mix",
+  "description": "Follow-up with mixed Spanish/ambiguous wording; expects non-empty SOAP, no rigid keyword checks.",
+  "visitType": "follow-up",
+  "transcript": "Buenos días. Bueno es que estoy algo mejor pero a veces peor, depende del día. El dolor a veces está por la rodilla y a veces por la cadera, no estoy seguro si es lo mismo de antes. He hecho algo de ejercicio pero no siempre. Dormir más o menos. Nada de fiebre ni cosas raras que yo sepa. No sé si debo aumentar carga o parar.",
+  "analysis": {
+    "motivo_consulta": "Dolor inconsistente miembro inferior, evolución poco clara.",
+    "hallazgos_clinicos": ["Dolor variable localización", "Historia temporal inconsistente"],
+    "red_flags": [],
+    "yellow_flags": ["Historia heterogénea"]
+  },
+  "physicalTests": [
+    {
+      "testName": "Functional squat",
+      "segment": "knee",
+      "result": "inconclusive",
+      "findingsText": "Marcha observada; squat con compensación leve; sin pruebas específicas concluyentes en esta visita simulada."
+    }
+  ],
+  "patientContext": {
+    "previousVisits": 2,
+    "lastVisitDate": "2026-03-10",
+    "painScale": "variable"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "clinicalStrict": false
+  }
+}

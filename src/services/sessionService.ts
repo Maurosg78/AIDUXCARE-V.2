@@ -1,5 +1,13 @@
-import { collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, orderBy, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+/** WO-BUG2-SESSION-IDEMPOTENCY: same calendar day + same kind (initial vs follow-up), scoped to patient + practitioner */
+export type SessionKind = 'initial' | 'followup';
+
+export type CreateSessionWithIdOptions = {
+  /** When true, merge into existing `sessions/{sessionId}` (e.g. after findReusableSessionForDayAndType hit). */
+  merge?: boolean;
+};
 import type { ClinicalAttachment } from './clinicalAttachmentService';
 import type { EvaluationTestEntry } from '../core/soap/PhysicalExamResultBuilder';
 
@@ -33,6 +41,67 @@ interface SessionData {
 
 class SessionService {
   private COLLECTION_NAME = 'sessions';
+
+  private localDateKey(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  private normalizeSessionKind(raw: unknown): SessionKind | null {
+    if (raw === 'initial') return 'initial';
+    if (raw === 'follow-up' || raw === 'followup') return 'followup';
+    return null;
+  }
+
+  private timestampToLocalDateKey(value: unknown): string | null {
+    if (value == null) return null;
+    if (typeof value === 'object' && value !== null && 'toDate' in value) {
+      const toDate = (value as Timestamp).toDate;
+      if (typeof toDate === 'function') return this.localDateKey(toDate.call(value));
+    }
+    if (value instanceof Date) return this.localDateKey(value);
+    return null;
+  }
+
+  /**
+   * Reuse an open session for the same patient, practitioner, local calendar day, and session kind
+   * (initial vs follow-up). Skips sessions that already have finalized SOAP so a second real visit
+   * the same day can use a new document.
+   */
+  async findReusableSessionForDayAndType(
+    patientId: string,
+    userId: string,
+    sessionKind: SessionKind,
+    referenceDate: Date = new Date()
+  ): Promise<string | null> {
+    try {
+      const targetKey = this.localDateKey(referenceDate);
+      const sessionsRef = collection(db, this.COLLECTION_NAME);
+      const q = query(
+        sessionsRef,
+        where('patientId', '==', patientId),
+        where('userId', '==', userId),
+        orderBy('timestamp', 'desc'),
+        limit(40)
+      );
+      const snapshot = await getDocs(q);
+      for (const d of snapshot.docs) {
+        const data = d.data();
+        const kind = this.normalizeSessionKind(data.sessionType);
+        if (kind == null || kind !== sessionKind) continue;
+        const docKey = this.timestampToLocalDateKey(data.timestamp ?? data.createdAt);
+        if (docKey !== targetKey) continue;
+        if (data.soapStatus === 'finalized') continue;
+        return d.id;
+      }
+      return null;
+    } catch (e) {
+      console.warn('[SessionService] findReusableSessionForDayAndType failed (non-blocking):', e);
+      return null;
+    }
+  }
 
   /**
    * Helper function to remove undefined values from objects (Firestore doesn't accept undefined)
@@ -77,22 +146,37 @@ class SessionService {
 
   /**
    * WO-IA-RESUME-01: Create session with a specific id so resume can find it.
-   * Use the same id the client uses (e.g. userId-timestamp) so notes and URL match.
+   * WO-BUG2-RACE: Callers must run findReusableSessionForDayAndType before the first write, then pass
+   * merge: true when reusing an existing open session.
    */
-  async createSessionWithId(sessionId: string, sessionData: SessionData): Promise<string> {
+  async createSessionWithId(
+    sessionId: string,
+    sessionData: SessionData,
+    options?: CreateSessionWithIdOptions
+  ): Promise<string> {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('aidux_simulate_firestore_fail') === 'true') {
       throw new Error('[Simulación] Firestore no disponible. No se pudo guardar la sesión. Comprueba tu conexión e inténtalo de nuevo.');
     }
     try {
-      const docRef = doc(db, this.COLLECTION_NAME, sessionId);
+      const targetDocId = sessionId;
+      const docRef = doc(db, this.COLLECTION_NAME, targetDocId);
       const cleanedSessionData = this.cleanUndefined(sessionData);
+      const mergeRequested = options?.merge === true;
+      if (mergeRequested) {
+        const mergePayload = {
+          ...cleanedSessionData,
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(docRef, mergePayload, { merge: true });
+        return targetDocId;
+      }
       const newSession = {
         ...cleanedSessionData,
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp()
       };
       await setDoc(docRef, newSession);
-      return sessionId;
+      return targetDocId;
     } catch (error) {
       console.error('Error creating session with id:', error);
       throw new Error('Failed to create session');

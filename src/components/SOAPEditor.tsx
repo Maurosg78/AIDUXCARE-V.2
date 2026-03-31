@@ -102,7 +102,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     date: esPilotEnabled ? 'Fecha' : 'Date',
     time: esPilotEnabled ? 'Hora' : 'Time',
     visitType: esPilotEnabled ? 'Tipo de visita' : 'Visit Type',
-    visitTypeInitial: esPilotEnabled ? 'Valoracion inicial' : 'Initial Assessment',
+    visitTypeInitial: esPilotEnabled ? 'Valoración inicial' : 'Initial Assessment',
     visitTypeFollowUp: esPilotEnabled ? 'Visita de seguimiento' : 'Follow-up Visit',
     subjective: esPilotEnabled ? 'Subjetivo' : 'Subjective',
     objective: esPilotEnabled ? 'Objetivo' : 'Objective',

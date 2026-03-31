@@ -7,7 +7,7 @@
  * @compliance PHIPA-aware (design goal), security audit logging
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, CheckCircle, AlertCircle, Loader2, ChevronsRight, Brain } from 'lucide-react';
 import { isSpainPilot } from '@/core/pilotDetection';
@@ -25,6 +25,7 @@ import type { VisitType } from '../../../core/soap/SOAPContextBuilder';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { SuggestedFocusEditor } from '../SuggestedFocusEditor';
 import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parsePlanToFocus';
+import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from '@/utils/normalizeRedFlagsForDisplay';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -247,6 +248,18 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onConfirmFollowUpRedFlags,
 }) => {
   const { t } = useTranslation();
+  const rawRedFlagsFromInteraction = interactiveResults?.redFlags;
+  const normalizedRedFlagsRaw = useMemo(
+    () => normalizeRedFlagsForDisplay(rawRedFlagsFromInteraction),
+    [rawRedFlagsFromInteraction]
+  );
+  const filteredRedFlagsForRender = useMemo(
+    () => filterTrivialRedFlagEntries(normalizedRedFlagsRaw),
+    [normalizedRedFlagsRaw]
+  );
+  const redFlagsRenderCount = filteredRedFlagsForRender.length;
+  const shouldShowRedFlagsBlock = redFlagsRenderCount > 0;
+
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
   
@@ -442,18 +455,18 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
       {/* WO-REDFLAG-FOLLOWUP-003: Single source of truth for red flags = interactiveResults.redFlags (from alerts.red_flags). No fallback from SOAP assessment. */}
       {visitType === 'follow-up' ? (
-        interactiveResults?.redFlags?.length > 0 ? (
+        shouldShowRedFlagsBlock ? (
           <>
             {console.log('[ANALYSIS-TAB] Rendering red flag decision block')}
             {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
-            {interactiveResults?.redFlags?.length > 0 && (
+            {(
               <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
                 <h3 className="text-sm font-semibold text-red-900 mb-3">{t('workflow.analysis.redFlagsDetectedTitle')}</h3>
                 <p className="text-xs text-slate-700 mb-3">
                   {t('workflow.analysis.redFlagsDetectedBody')}
                 </p>
                 <div className="space-y-3">
-                  {(interactiveResults.redFlags as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
+                  {(filteredRedFlagsForRender as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
                     const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
                     const label = typeof flag === 'string' ? flag : (flag?.label ?? '');
                     const evidence = typeof flag === 'object' && flag && 'evidence' in flag ? (flag as { evidence?: string }).evidence : undefined;
@@ -572,7 +585,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 </div>
               <div className="mt-4 flex justify-end">
                 {(() => {
-                  const flags = (interactiveResults.redFlags as (string | { label?: string })[]) || [];
+                  const flags = filteredRedFlagsForRender as (string | { label?: string })[];
                   const allDecided = flags.length > 0 && flags.every((flag, idx) => {
                     const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
                     return !!redFlagDecisions[id]?.decision;
@@ -614,11 +627,11 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       ) : niagaraResults && interactiveResults ? (
         <>
           {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
-          {interactiveResults?.redFlags?.length > 0 && (
+          {shouldShowRedFlagsBlock ? (
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
               <h3 className="text-sm font-semibold text-red-900 mb-3">⚠️ Red Flags detected</h3>
               <div className="space-y-3">
-                {(interactiveResults.redFlags as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
+                {(filteredRedFlagsForRender as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
                   const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
                   const label = typeof flag === 'string' ? flag : (flag?.label ?? '');
                   const evidence = typeof flag === 'object' && flag && 'evidence' in flag ? (flag as { evidence?: string }).evidence : undefined;
@@ -762,9 +775,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 {t('workflow.analysis.redFlagsHint')}
               </p>
             </div>
-          )}
+          ) : null}
           {/* WO-REDFLAG-FOLLOWUP-003: SoT — if follow-up and red flags already shown above, do not show duplicate block below */}
-          {!((visitType as VisitType) === 'follow-up' && (interactiveResults?.redFlags?.length ?? 0) > 0) && (
+          {!((visitType as VisitType) === 'follow-up' && shouldShowRedFlagsBlock) && (
             <div className="mt-4">
               <ClinicalAnalysisResults
                 results={interactiveResults}

@@ -13,18 +13,15 @@ export function useLastEncounter(patientId: string): AsyncState<Encounter> {
 
   useEffect(() => {
     const auth = getAuth();
+    let cancelled = false;
+    setState({ loading: true });
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setState({ loading: false, error: new Error('Usuario no autenticado') });
-        return;
-      }
-
+    const resolveEncounter = async (errorLabel: string) => {
       try {
         const encounter = await encountersRepo.getLastEncounterByPatient(patientId);
-        
+        if (cancelled) return;
+
         if (!encounter) {
-          // WO-FS-DATA-03: No hay encuentros previos, no es un error - initial state
           if (import.meta.env.DEV) {
             console.info('[FS] No historical data found — initial state (encounters)');
           }
@@ -34,29 +31,49 @@ export function useLastEncounter(patientId: string): AsyncState<Encounter> {
 
         setState({ loading: false, data: encounter });
       } catch (error: any) {
-        // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
-        const isPermissionDenied = error?.code === 'permission-denied' || 
+        if (cancelled) return;
+        const isPermissionDenied = error?.code === 'permission-denied' ||
                                    error?.message?.includes('permission-denied') ||
                                    error?.message?.includes('Missing or insufficient permissions');
-        
+
         if (isPermissionDenied) {
-          // Permission denied in empty state = no data yet, not a fatal error
           if (import.meta.env.DEV) {
             console.info('[FS] No historical data found — initial state (encounters, permission-denied)');
           }
           setState({ loading: false, data: undefined });
           return;
         }
-        
-        console.error('Error obteniendo último encuentro:', error);
-        setState({ 
-          loading: false, 
-          error: error instanceof Error ? error : new Error('Error desconocido') 
+
+        console.error(`Error obteniendo último encuentro (${errorLabel}):`, error);
+        setState({
+          loading: false,
+          error: error instanceof Error ? error : new Error('Error desconocido'),
         });
       }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setState({ loading: false, error: new Error('Usuario no autenticado') });
+        return;
+      }
+
+      setState({ loading: true });
+      await resolveEncounter('auth');
     });
 
-    return unsubscribe;
+    /** WO-P0-LAST-ENCOUNTER: Refetch when tab regains focus (SPA may show stale lastEncounter after finalize elsewhere). */
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible' || !auth.currentUser) return;
+      void resolveEncounter('visibility');
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [patientId]);
 
   return state;

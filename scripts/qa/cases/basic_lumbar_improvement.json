@@ -1,0 +1,26 @@
+{
+  "id": "basic_lumbar_improvement",
+  "description": "Initial visit: mechanical low back pain with numeric pain scale and functional improvement context (EN).",
+  "visitType": "initial",
+  "transcript": "The patient is a 42 year old office worker with no prior spine surgery. They report mechanical low back pain for three weeks, worst with prolonged sitting. Pain was 7 out of 10 at worst last week and is now around 4 out of 10 most days. No saddle anesthesia, no bowel or bladder changes, no fever, no major trauma. They tried heat and light walking with mild relief. Sleep is disturbed when they roll onto the sore side. No radiation below the knee. Goals are to return to cycling on weekends and sit through a full workday without pain over 3 out of 10.",
+  "analysis": null,
+  "physicalTests": [
+    {
+      "testName": "Lumbar flexion range",
+      "segment": "lumbar",
+      "result": "positive",
+      "findingsText": "Flexion limited by pain at end range; no neurological deficit documented."
+    }
+  ],
+  "patientContext": {
+    "patientAge": 42,
+    "painScale": "4/10 current, was 7/10"
+  },
+  "expectations": {
+    "expectSoap": true,
+    "expectNonTrivialSoap": true,
+    "trajectoryImprovement": true,
+    "mustContain": ["dolor", "lumb"],
+    "mustNotContain": ["mri showed a mass", "diagnosed with cancer"]
+  }
+}

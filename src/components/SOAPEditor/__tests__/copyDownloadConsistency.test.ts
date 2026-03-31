@@ -15,7 +15,7 @@ function generatePlainTextFormat(soapNote: SOAPNote): string {
 
 Fecha: ${new Date().toISOString().split('T')[0]}
 Hora: 00:00
-Tipo de visita: Valoracion inicial
+Tipo de visita: Valoración inicial
 
 S: SUBJETIVO
 ${soapNote.subjective || 'Sin informacion subjetiva registrada.'}

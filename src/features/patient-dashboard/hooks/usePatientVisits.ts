@@ -192,11 +192,13 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
               return;
             }
             const encStatus = data.status || 'draft';
-            const encExplicitSoap = (data.soapNote as any)?.status;
+            const encExplicitSoap = (data.soapNote as { status?: string })?.status;
+            // WO-P0-ARCHIVED: `completed` encounters (workflow finalize) often have no soapNote.status on the doc;
+            // treating them as draft put them in "Family B" and surfaced "Remove from history" on closed visits.
             const encSoapStatus: 'draft' | 'finalized' =
               encExplicitSoap === 'finalized' || encExplicitSoap === 'draft'
                 ? encExplicitSoap
-                : encStatus === 'signed'
+                : encStatus === 'signed' || encStatus === 'completed'
                   ? 'finalized'
                   : 'draft';
 

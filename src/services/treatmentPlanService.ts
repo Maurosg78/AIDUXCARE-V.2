@@ -10,6 +10,8 @@
 import { collection, doc, setDoc, getDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { serverTimestamp } from 'firebase/firestore';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
 
 export interface TreatmentPlan {
   id: string;
@@ -159,33 +161,45 @@ class TreatmentPlanService {
     soapNote?: any
   ): Promise<string> {
     try {
-      const planId = `plan-${patientId}-${Date.now()}`;
-      
-      // Extract structured data from plan text
-      const modalities = this.extractModalities(planText);
-      const frequency = this.extractFrequency(planText);
-      const duration = this.extractDuration(planText);
-      const goals = this.extractGoals(planText);
-      const interventions = this.extractInterventions(planText);
-      const homeExercises = this.extractHomeExercises(planText);
-      const patientEducation = this.extractPatientEducation(planText);
-      const nextAppointment = this.extractNextAppointment(planText);
-      const nextSessionFocus = this.extractNextSessionFocus(planText);
+      const timestampMs = Date.now();
+      const planId = `plan-${patientId}-${timestampMs}`;
 
-      // ✅ FIX 1.2: Get current user ID for authorUid (required by Firestore rules)
+      const incomingPlanText = planText;
+      const esPilotEnabled = isSpainPilot();
+      const planTextForNormalization = incomingPlanText;
+      const normalizedPlanText = esPilotEnabled
+        ? ensureSpanishClinicalText(planTextForNormalization)
+        : planTextForNormalization;
+      const planTextToPersist = normalizedPlanText;
+
+      const modalities = this.extractModalities(planTextToPersist);
+      const frequency = this.extractFrequency(planTextToPersist);
+      const duration = this.extractDuration(planTextToPersist);
+      const goals = this.extractGoals(planTextToPersist);
+      const interventions = this.extractInterventions(planTextToPersist);
+      const homeExercises = this.extractHomeExercises(planTextToPersist);
+      const patientEducation = this.extractPatientEducation(planTextToPersist);
+      const nextAppointment = this.extractNextAppointment(planTextToPersist);
+      const nextSessionFocus = this.extractNextSessionFocus(planTextToPersist);
+
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('User must be authenticated to save treatment plan');
       }
       const authorUid = currentUser.uid;
 
-      // Clean undefined values for Firestore
+      const clinicianIdFromCaller = clinicianId;
+      const legacyTempClinicianToken = 'temp-user';
+      const isLegacyTempClinician = clinicianIdFromCaller === legacyTempClinicianToken;
+      const clinicianIdResolved = isLegacyTempClinician ? authorUid : clinicianIdFromCaller;
+      const clinicianIdToStore = clinicianIdResolved;
+
       const treatmentPlan: TreatmentPlan = {
         id: planId,
         patientId,
         patientName,
-        clinicianId,
-        planText,
+        clinicianId: clinicianIdToStore,
+        planText: planTextToPersist,
         acceptedAt: new Date().toISOString(),
         visitType,
         ...(modalities && modalities.length > 0 && { modalities }),
