@@ -123,6 +123,10 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     fileName: esPilotEnabled ? 'nota_soap' : 'soap_note',
     pdfSubtitle: esPilotEnabled ? 'Companero de documentacion clinica' : 'Clinical Documentation Companion',
   };
+  const inClinicPlanHeaderPattern = /(?:IN-CLINIC TREATMENT|TRATAMIENTO EN CL[ÍI]NICA)[:\s]*/i;
+  const hasInClinicPlanSection = (planText?: string | null) =>
+    Boolean(planText && inClinicPlanHeaderPattern.test(planText));
+  const inClinicPlanHeaderLabel = esPilotEnabled ? 'TRATAMIENTO EN CLÍNICA:' : 'IN-CLINIC TREATMENT:';
 
   // Update local state when prop changes
   useEffect(() => {
@@ -187,7 +191,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     if (
       editedSOAP.plan &&
       !isEmpty(editedSOAP.plan) &&
-      !editedSOAP.plan?.toLowerCase().includes('in-clinic treatment') &&
+      !hasInClinicPlanSection(editedSOAP.plan) &&
       !skipPlanValidation
     )
       missing.push(t('clinical.soap.missingFields.planInClinic'));
@@ -874,7 +878,7 @@ Include specific parameters, duration, and frequency for each modality used."
                         if (!isAlreadyAdded) {
                           const modalityLine = `- ${modality.full}`;
                           let updatedPlan: string;
-                          const inClinicMatch = currentPlan.match(/IN-CLINIC TREATMENT[:\s]*/i);
+                          const inClinicMatch = currentPlan.match(inClinicPlanHeaderPattern);
                           if (inClinicMatch && inClinicMatch.index !== undefined) {
                             const headerEnd = currentPlan.indexOf('\n', inClinicMatch.index);
                             if (headerEnd !== -1) {
@@ -887,8 +891,8 @@ Include specific parameters, duration, and frequency for each modality used."
                             }
                           } else {
                             updatedPlan = currentPlan.trim()
-                              ? `IN-CLINIC TREATMENT:\n${modalityLine}\n\n${currentPlan}`
-                              : `IN-CLINIC TREATMENT:\n${modalityLine}`;
+                              ? `${inClinicPlanHeaderLabel}\n${modalityLine}\n\n${currentPlan}`
+                              : `${inClinicPlanHeaderLabel}\n${modalityLine}`;
                           }
                           handleSectionChange('plan', updatedPlan);
                         }
