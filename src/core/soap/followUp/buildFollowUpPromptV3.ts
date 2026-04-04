@@ -312,9 +312,15 @@ Your role is to rewrite the SOAP note reflecting today's encounter. You must NOT
 Using only the information above:
 
 Update the Subjective based on today's report and documented change from prior sessions when longitudinal data is provided
+Subjective MUST be MAX 4 lines
+Include ONLY NEW information from today's session
+Do NOT repeat prior history already documented in the record
+Use concise consensus abbreviations when clinically appropriate: EVA, ROM, HEP, Cx, Rx, AINE
 
 Update the Objective using only newly observed, measured, or explicitly documented objective findings from today
+Objective MUST be MAX 2 lines
 If no new objective measures or examination findings are documented today, state clearly that no new objective measures were recorded today
+If there are no new measurements, prefer a single brief line on general condition only
 Do NOT restate baseline objective findings as if they were newly measured today
 Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective
 Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section
@@ -322,11 +328,14 @@ If attachment-derived findings are included, make clear that they come from mate
 You may reference previous objective findings only as prior clinical reference when needed for continuity
 
 Update the Assessment to summarise progression, response, or tolerance as documented by the clinician
+Assessment MUST be MAX 4 lines
 If longitudinal information is provided, explicitly state the clinical change versus the previous completed session
+Include, when documented, the EVA pain change, HEP adherence percentage, and relevant functional or psychosocial factors affecting progression
 If previous plan or longitudinal data is provided, explicitly link today's status to the patient's documented response to prior care
 If current structured HEP adherence is provided, include that adherence fact in the Assessment or Plan when it is clinically relevant, using only the documented ratio or percentage
 
 Do NOT restate the entire diagnosis unless it has changed
+Do NOT elaborate on known diagnoses already documented in the record
 
 Update the Plan:
 
@@ -339,6 +348,15 @@ If current structured HEP adherence is provided, prefer integrating that adheren
 If TODAY'S CLINICAL UPDATE contains explicit red flags or urgent neurological deficits, the Plan must prioritise urgent medical referral / escalation and must not present routine physiotherapy or home exercise progression as the primary next step unless that continuation is explicitly documented in the input
 If urgent red flags are present, keep the Plan short and safety-first
 Keep the Plan concise and operational. Avoid narrative explanation after the treatment sections
+The Plan must contain ONLY these two treatment sections and no additional section:
+TRATAMIENTO EN CLÍNICA:
+- [item]
+HEP:
+- [item]
+Use HEP exactly as the section label
+Do NOT expand HEP to "programa de ejercicios en casa" inside the Plan section label
+Do NOT include any "additional recommendations" section
+Do NOT include duplicate labels or expanded duplicate headings
 
 Clearly distinguish in-clinic treatment vs home program
 

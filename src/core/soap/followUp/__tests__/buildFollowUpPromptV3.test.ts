@@ -216,5 +216,14 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('Do NOT restate baseline objective findings as if they were newly measured today');
     expect(prompt).toContain('Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective');
     expect(prompt).toContain('Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section');
+    expect(prompt).toContain('Subjective MUST be MAX 4 lines');
+    expect(prompt).toContain('Objective MUST be MAX 2 lines');
+    expect(prompt).toContain('Assessment MUST be MAX 4 lines');
+    expect(prompt).toContain('Use concise consensus abbreviations when clinically appropriate: EVA, ROM, HEP, Cx, Rx, AINE');
+    expect(prompt).toContain('The Plan must contain ONLY these two treatment sections and no additional section:');
+    expect(prompt).toContain('TRATAMIENTO EN CLÍNICA:');
+    expect(prompt).toContain('HEP:');
+    expect(prompt).toContain('Do NOT include any "additional recommendations" section');
+    expect(prompt).toContain('Do NOT include duplicate labels or expanded duplicate headings');
   });
 });
