@@ -68,9 +68,9 @@ import { getTimeBasedGreeting } from "@/utils/timeGreeting";
 import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
-import { SessionComparisonService, type SessionComparisonView, type Session as ComparisonSession } from "../services/sessionComparisonService";
+import { SessionComparisonService } from "../services/sessionComparisonService";
 import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
-import { classifyTrajectoryFromTwoPoints } from "@/core/longitudinal/trajectoryClassifier";
+import { FollowUpClinicalContextService, type FollowUpClinicalContext } from "../services/followUpClinicalContextService";
 import { getAuth, signOut } from "firebase/auth";
 import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -382,6 +382,7 @@ const ProfessionalWorkflowPage = () => {
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<string | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [followUpContext, setFollowUpContext] = useState<FollowUpClinicalContext | null>(null);
 
   // ✅ Day 3: Session Comparison Integration
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -421,6 +422,12 @@ const ProfessionalWorkflowPage = () => {
   const [consentToken, setConsentToken] = useState<string | null>(null);
   const [smsError, setSmsError] = useState<string | null>(null);
   const [copyConsentFeedback, setCopyConsentFeedback] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const resolveFollowUpClinicalContext = useCallback(async (resolvedPatientId: string, currentAttachments: ClinicalAttachment[] = []) => {
+    const service = new FollowUpClinicalContextService();
+    const resolvedContext = await service.resolve(resolvedPatientId, currentAttachments);
+    return resolvedContext;
+  }, []);
 
   const { sharedState, updatePhysicalEvaluation } = useSharedWorkflowState();
   const { user } = useAuth(); // Must be called before useEffect that uses it
@@ -724,6 +731,11 @@ const ProfessionalWorkflowPage = () => {
       }
 
       // Generate new consent token
+      const pilotIsSpain = isSpainPilot();
+      const phoneIsSpain = formattedPhone?.startsWith('+34') ?? false;
+      const tokenConsentJurisdiction = (pilotIsSpain || phoneIsSpain) ? 'ES-ES' : 'CA-ON';
+      const tokenConsentLanguage = tokenConsentJurisdiction === 'ES-ES' ? 'es' : 'en';
+      const tokenConsentTextVersion = tokenConsentJurisdiction === 'ES-ES' ? 'v1-es-ES-written' : 'v2-en-CA';
       const token = await PatientConsentService.generateConsentToken(
         patientId,
         currentPatient.fullName || `${currentPatient.firstName} ${currentPatient.lastName}`.trim(),
@@ -734,9 +746,9 @@ const ProfessionalWorkflowPage = () => {
         clinicianDisplayName,
         undefined,
         {
-          jurisdiction: consentSmsJurisdiction,
-          language: getConsentLanguageForJurisdiction(consentSmsJurisdiction),
-          consentTextVersion: getConsentVersionForPortal(consentSmsJurisdiction),
+          jurisdiction: tokenConsentJurisdiction,
+          language: tokenConsentLanguage,
+          consentTextVersion: tokenConsentTextVersion,
         }
       );
 
@@ -2037,8 +2049,6 @@ const ProfessionalWorkflowPage = () => {
 
         // Use real patient from URL or fallback to demo
         const patientId = patientIdFromUrl || demoPatient.id;
-        const userId = user?.uid || TEMP_USER_ID;
-
         // Get patient data (real or demo)
         // IMPORTANT: Always try to load patient from Firestore if we have patientIdFromUrl
         let patient = currentPatient;
@@ -2068,8 +2078,9 @@ const ProfessionalWorkflowPage = () => {
           };
         }
 
-        // Check if this is the first session
-        const isFirst = await sessionService.isFirstSession(patientId, userId);
+        const longitudinalContext = await resolveFollowUpClinicalContext(patientId, attachments);
+        const isFirst = longitudinalContext.comparisonState.isFirstSession;
+        setFollowUpContext(longitudinalContext);
         setIsFirstSession(isFirst);
 
         // ✅ WO-CONSENT-CLEANUP-03: Check consent via Cloud Function (server-side only)
@@ -2145,7 +2156,7 @@ const ProfessionalWorkflowPage = () => {
     if (patientIdFromUrl || currentPatient) {
       checkFirstSessionAndConsent();
     }
-  }, [user?.uid, patientIdFromUrl, currentPatient]); // Re-check if user or patient changes
+  }, [user?.uid, patientIdFromUrl, currentPatient, resolveFollowUpClinicalContext, attachments]); // Re-check if user or patient changes
 
   // ✅ WO-CONSENT-POLLING-FIX-04: Polling with single instance guard and max attempts
   // NO Firestore listeners - all checks go through Cloud Functions
@@ -3196,7 +3207,7 @@ const ProfessionalWorkflowPage = () => {
           setAttachments((prev) =>
             prev.map((a) =>
               a.id === attachment.id
-                ? { ...a, extractedText: result.extractedText ?? "", error: result.error }
+                ? { ...a, extractedText: result.extractedText ?? "", error: result.error, processingComplete: true }
                 : a
             )
           );
@@ -3206,7 +3217,7 @@ const ProfessionalWorkflowPage = () => {
           setAttachments((prev) =>
             prev.map((a) =>
               a.id === attachment.id
-                ? { ...a, error: error instanceof Error ? error.message : "Processing failed" }
+                ? { ...a, error: error instanceof Error ? error.message : "Processing failed", processingComplete: true }
                 : a
             )
           );
@@ -3241,6 +3252,26 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setRemovingAttachmentId(null);
     }
+  };
+
+  const handleAttachmentReviewedToggle = (attachmentId: string) => {
+    setAttachments((previousAttachments) => {
+      const updatedAttachments = previousAttachments.map((attachment) => {
+        if (attachment.id !== attachmentId) {
+          return attachment;
+        }
+
+        const currentReviewedValue = attachment.reviewedToday === true;
+        const nextReviewedValue = !currentReviewedValue;
+
+        return {
+          ...attachment,
+          reviewedToday: nextReviewedValue,
+        };
+      });
+
+      return updatedAttachments;
+    });
   };
 
   const continueToEvaluation = () => {
@@ -4091,8 +4122,15 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
     const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
+    const hasPendingAttachmentProcessing = attachments.some(
+      (attachment) => attachment.processingComplete !== true,
+    );
     const hasChecklist = inClinicItems.length > 0 || homeProgramItems.length > 0;
     const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
+    if (hasPendingAttachmentProcessing) {
+      setAnalysisError('Espera a que los archivos adjuntos terminen de procesarse antes de generar la nota SOAP.');
+      return;
+    }
     if (!hasChecklist && !hasClinicalUpdate) {
       setAnalysisError('Add at least one confirmed treatment or a clinical update to generate the SOAP note.');
       return;
@@ -4102,36 +4140,45 @@ const ProfessionalWorkflowPage = () => {
     const startTime = Date.now();
     try {
       await trackSOAPGenerationStarted({ visitType: 'follow-up', source: 'followup_single_call' });
+      const currentJurisdiction = getCurrentJurisdiction();
+      const hepCompletedCount = homeProgramItems.filter((item) => item.completed).length;
+      const hepTotalCount = homeProgramItems.length;
+      const hasHepChecklist = hepTotalCount > 0;
+      const hepAdherencePercent = hasHepChecklist ? Math.round((hepCompletedCount / hepTotalCount) * 100) : undefined;
       // Optional longitudinal context from last completed encounter comparison + trajectory pattern + pain series
       let longitudinalSummary: string | undefined;
       let trajectoryPattern: string | undefined;
       let trajectoryConfidence: string | undefined;
       let painSeriesSummary: string | undefined;
+      let patternInsightSummary: string | undefined;
+      let reviewedAttachmentsSummary: string | undefined;
+      let currentHepAdherenceSummary: string | undefined;
+      if (hasHepChecklist && hepAdherencePercent !== undefined) {
+        const adherenceSummaryEs = `Adherencia HEP hoy: ${hepCompletedCount}/${hepTotalCount} completados (${hepAdherencePercent}%).`;
+        const adherenceSummaryEn = `HEP adherence today: ${hepCompletedCount}/${hepTotalCount} completed (${hepAdherencePercent}%).`;
+        currentHepAdherenceSummary = currentJurisdiction === 'ES-ES' ? adherenceSummaryEs : adherenceSummaryEn;
+      }
       try {
         const pid = patientIdFromUrl || demoPatient.id;
         if (pid) {
-          const comparisonService = new SessionComparisonService();
-          const state = await comparisonService.getEncountersComparisonState(pid);
-          if (!state.isFirstSession && state.previousSession && state.currentSession) {
-            const comparison = comparisonService.compareSessions(
-              state.previousSession as ComparisonSession,
-              state.currentSession as ComparisonSession
-            );
-            const uiData: SessionComparisonView = comparisonService.formatComparisonForUI(comparison, false);
-            longitudinalSummary = comparisonService.buildLongitudinalSummaryForPrompt(uiData) ?? undefined;
-            const prev = uiData.metrics.painLevel.previous;
-            const curr = uiData.metrics.painLevel.current;
-            const trajectory = classifyTrajectoryFromTwoPoints(prev ?? undefined, curr ?? undefined);
-            trajectoryPattern = trajectory?.label ?? undefined;
-            trajectoryConfidence = trajectory?.confidence ?? undefined;
-            const painSeries = await comparisonService.getLastNPainSeries(pid, 3);
-            if (painSeries.length >= 2) {
-              painSeriesSummary = painSeries.join(' → ');
-            }
+          const longitudinalContext = await resolveFollowUpClinicalContext(pid, attachments);
+          const resolvedComparisonState = longitudinalContext.comparisonState;
+          const resolvedIsFirstSession = resolvedComparisonState.isFirstSession;
+          setFollowUpContext(longitudinalContext);
+
+          longitudinalSummary = longitudinalContext.longitudinalSummary;
+          trajectoryPattern = longitudinalContext.trajectoryPattern;
+          trajectoryConfidence = longitudinalContext.trajectoryConfidence;
+          painSeriesSummary = longitudinalContext.painSeriesSummary;
+          patternInsightSummary = longitudinalContext.patternInsightSummary;
+          reviewedAttachmentsSummary = longitudinalContext.reviewedAttachmentsSummary;
+
+          if (isFirstSession !== resolvedIsFirstSession) {
+            setIsFirstSession(resolvedIsFirstSession);
           }
         }
-      } catch (e) {
-        console.warn('[Workflow] Longitudinal summary unavailable, continuing without it.', e);
+      } catch (error) {
+        console.warn('[Workflow] Longitudinal summary unavailable, continuing without it.', error);
       }
       // Fase B: previous plan as context only (guardrails in prompt)
       const previousPlansSummary = previousTreatmentPlan?.planText?.trim()
@@ -4150,9 +4197,13 @@ const ProfessionalWorkflowPage = () => {
         trajectoryPattern,
         trajectoryConfidence,
         painSeriesSummary,
+        patternInsightSummary,
+        reviewedAttachmentsSummary,
+        currentHepAdherenceSummary,
         previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
+        jurisdiction: currentJurisdiction,
       };
       // Fase C: documentation + considerations (considerations not part of record until clinician inserts).
       const result = await generateFollowUpAnalysis(followUpInput);
@@ -4217,7 +4268,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [followUpClinicalState, transcript, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, followUpClinicalState, transcript, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -4644,16 +4695,23 @@ const ProfessionalWorkflowPage = () => {
         // WO-FOLLOWUP-CREATES-ENCOUNTER: ensure follow-up creates or completes clinical encounter for session count
         if (visitType === 'follow-up' && user?.uid) {
           try {
+            const memoryService = new PatientTrajectoryMemoryService();
+            const hepCompletedCount = homeProgramItems.filter((item) => item.completed).length;
+            const hepTotalCount = homeProgramItems.length;
+            const hepAdherenceRate = hepTotalCount > 0 ? hepCompletedCount / hepTotalCount : undefined;
+            const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
+              hepAdherenceRate,
+            });
             const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
               authorUid: user.uid,
               encounterDate: new Date(),
               soap: { subjective: s, objective: o, assessment: a, plan: p },
+              longitudinalSnapshot: longitudinalSnapshot ?? undefined,
             });
             console.log('[Workflow] ✅ Follow-up encounter persisted as completed:', encounterId);
             // Patient Clinical Memory: record trajectory event for pattern detection (non-blocking)
             try {
-              const memoryService = new PatientTrajectoryMemoryService();
               await memoryService.recordEncounterTrajectory(patientId, encounterId, s);
             } catch (memErr) {
               console.warn('[Workflow] Patient trajectory memory record failed (non-blocking):', memErr);
@@ -4668,12 +4726,15 @@ const ProfessionalWorkflowPage = () => {
           try {
             const existing = await encountersRepo.getEncountersByPatient(patientId, 1);
             if (existing.length === 0) {
-              const encounterId = await encountersRepo.createEncounter({
+              const memoryService = new PatientTrajectoryMemoryService();
+              const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s);
+              const encounterId = await encountersRepo.createEncounterCompleted({
                 patientId,
                 authorUid: user.uid,
                 encounterDate: new Date(),
+                soap: { subjective: s, objective: o, assessment: a, plan: p },
+                longitudinalSnapshot: longitudinalSnapshot ?? undefined,
               });
-              await encountersRepo.updateEncounter(encounterId, { status: 'completed' });
               console.log('[Workflow] ✅ Initial assessment encounter created and completed:', encounterId);
             }
           } catch (encErr) {
@@ -5236,20 +5297,25 @@ const ProfessionalWorkflowPage = () => {
                   const patientContextAgeYears = patientContextDob ? calculateAge(patientContextDob) : null;
                   const visitTypeLabelForContext =
                     visitType === 'follow-up' ? t('workflow.visit.followupVisit') : t('workflow.visit.initialVisit');
-                  const sessionOrdinalForContext = getSessionOrdinalLabel((visitCount.data ?? 0) + 1);
+                  const sessionOrdinalForContext =
+                    visitType === 'follow-up' && followUpContext?.nextSessionOrdinalLabel
+                      ? followUpContext.nextSessionOrdinalLabel
+                      : getSessionOrdinalLabel((visitCount.data ?? 0) + 1);
                   const visitTypeAndOrdinalLine = `${visitTypeLabelForContext} · ${sessionOrdinalForContext}`;
                   let lastSessionDateForContext = '';
                   if (lastEncounter.loading) {
-                    lastSessionDateForContext = 'Loading...';
+                    lastSessionDateForContext = isSpainPilot() ? 'Cargando...' : 'Loading...';
                   } else if (lastEncounter.error) {
-                    lastSessionDateForContext = 'Error loading session';
+                    lastSessionDateForContext = isSpainPilot() ? 'Error al cargar la sesión' : 'Error loading session';
                   } else if (lastEncounter.data) {
                     lastSessionDateForContext =
-                      formatLastSessionDate(lastEncounter.data) || 'Previous session';
-                  } else if (isFirstSession === true) {
-                    lastSessionDateForContext = 'Session 1';
+                      formatLastSessionDate(lastEncounter.data) || (isSpainPilot() ? 'Sesión previa' : 'Previous session');
+                  } else if (visitType === 'follow-up' && followUpContext?.historyStatusLabel) {
+                    lastSessionDateForContext = followUpContext.historyStatusLabel;
+                  } else if (isFirstSession === false) {
+                    lastSessionDateForContext = isSpainPilot() ? 'Historial clínico previo disponible' : 'Previous clinical history available';
                   } else {
-                    lastSessionDateForContext = 'No previous sessions';
+                    lastSessionDateForContext = isSpainPilot() ? 'Sesión 1' : 'Session 1';
                   }
                   const baselineAssessmentRaw = followUpClinicalState?.baselineSOAP?.assessment ?? '';
                   const baselineAssessmentTrimmed = baselineAssessmentRaw.trim();
@@ -5270,7 +5336,7 @@ const ProfessionalWorkflowPage = () => {
                         <span className="text-base font-semibold text-slate-900 font-apple">{patientContextDisplayName}</span>
                         {patientContextAgeYears !== null ? (
                           <span className="text-sm text-slate-500 font-apple font-light">
-                            {patientContextAgeYears} years
+                            {patientContextAgeYears} {isSpainPilot() ? 'años' : 'years'}
                           </span>
                         ) : null}
                         <span className="text-sm text-slate-500 font-apple font-light">{patientContextEmail}</span>
@@ -5295,12 +5361,12 @@ const ProfessionalWorkflowPage = () => {
                         {workflowConsentStatus?.hasValidConsent ? (
                           <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 font-apple font-light">
                             <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                            Consent valid (ON)
+                            Consentimiento válido (activo)
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-800 font-apple">
                             <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                            Consent Required
+                            Consentimiento requerido
                           </span>
                         )}
                         {(patientClinicalInfo.allergies || patientClinicalInfo.contraindications) && (
@@ -5461,6 +5527,7 @@ const ProfessionalWorkflowPage = () => {
                     removingAttachmentId={removingAttachmentId}
                     handleAttachmentUpload={handleAttachmentUpload}
                     handleAttachmentRemove={handleAttachmentRemove}
+                    handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                     hideAnalyzeButton={true}
                   />
                 </div>
@@ -5477,10 +5544,10 @@ const ProfessionalWorkflowPage = () => {
                           <span className="text-2xl">🗓️</span>
                           <div className="flex-1">
                             <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                              Today&apos;s in-clinic treatment
+                              {t('workflow.followupSurface.inClinicTitle')}
                             </h2>
                             <p className="text-sm text-slate-600">
-                              Confirm or adjust what was planned previously.
+                              {t('workflow.followupSurface.inClinicSubtitle')}
                             </p>
                           </div>
                           <div className="flex items-center gap-3">
@@ -5612,6 +5679,7 @@ const ProfessionalWorkflowPage = () => {
                     removingAttachmentId={removingAttachmentId}
                     handleAttachmentUpload={handleAttachmentUpload}
                     handleAttachmentRemove={handleAttachmentRemove}
+                    handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                     niagaraResults={niagaraResults}
                     interactiveResults={interactiveResults}
                     selectedEntityIds={selectedEntityIds}
@@ -5657,16 +5725,16 @@ const ProfessionalWorkflowPage = () => {
                   <span className="text-2xl">📝</span>
                   <div className="flex-1">
                     <h2 className="text-lg font-semibold text-slate-900 mb-1">
-                      Documentation
+                      {t('workflow.followupSurface.documentationTitle')}
                     </h2>
                     <p className="text-sm text-slate-600">
-                      Review and finalize your SOAP note.
+                      {t('workflow.followupSurface.documentationSubtitle')}
                     </p>
                   </div>
                   {localSoapNote && (
                     <div className="flex items-center gap-2 text-sm text-blue-600">
                       <CheckCircle className="w-4 h-4" />
-                      <span>SOAP note generated</span>
+                      <span>{t('workflow.followupSurface.soapGenerated')}</span>
                     </div>
                   )}
                 </div>
@@ -5674,9 +5742,9 @@ const ProfessionalWorkflowPage = () => {
                 {visitType === 'follow-up' && followUpPatternInsight && (
                   <div className="mb-6 rounded-lg border border-slate-200 bg-sky-50/50 p-4">
                     <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                      AI Patient Pattern Insight
+                      {t('workflow.followupSurface.patternInsightTitle')}
                     </h3>
-                    <p className="text-xs text-slate-500 mb-2">(Not part of the medical record)</p>
+                    <p className="text-xs text-slate-500 mb-2">{t('workflow.followupSurface.notPartOfMedicalRecord')}</p>
                     <p className="text-sm text-slate-700">{followUpPatternInsight.description}</p>
                   </div>
                 )}
@@ -5684,9 +5752,9 @@ const ProfessionalWorkflowPage = () => {
                 {visitType === 'follow-up' && followUpConsiderations && followUpConsiderations.length > 0 && (
                   <div className="mb-6 rounded-lg border border-slate-200 bg-amber-50/50 p-4">
                     <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                      AI Clinical Considerations
+                      {t('workflow.followupSurface.clinicalConsiderationsTitle')}
                     </h3>
-                    <p className="text-xs text-slate-500 mb-3">(Not part of the medical record)</p>
+                    <p className="text-xs text-slate-500 mb-3">{t('workflow.followupSurface.notPartOfMedicalRecord')}</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 mb-3">
                       {followUpConsiderations.map((line, i) => (
                         <li key={i}>{line}</li>
@@ -5705,7 +5773,7 @@ const ProfessionalWorkflowPage = () => {
                       }}
                       className="text-sm font-medium text-amber-800 hover:text-amber-900 underline"
                     >
-                      Insert into plan
+                      {t('workflow.followupSurface.insertIntoPlan')}
                     </button>
                   </div>
                 )}
@@ -5915,6 +5983,7 @@ const ProfessionalWorkflowPage = () => {
                   removingAttachmentId={removingAttachmentId}
                   handleAttachmentUpload={handleAttachmentUpload}
                   handleAttachmentRemove={handleAttachmentRemove}
+                  handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                   niagaraResults={niagaraResults}
                   interactiveResults={interactiveResults}
                   selectedEntityIds={selectedEntityIds}

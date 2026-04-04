@@ -597,7 +597,7 @@ const FollowUpWorkflowPage = () => {
                   <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-200">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                     <span className="text-xs text-slate-600 font-apple font-light">
-                      Consent valid (ON)
+                      Consentimiento válido (activo)
                     </span>
                   </div>
                 ) : (
@@ -607,7 +607,7 @@ const FollowUpWorkflowPage = () => {
                         <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
                           <p className="text-xs font-semibold text-red-800 font-apple">
-                            Consent Required
+                            Consentimiento requerido
                           </p>
                         </div>
                       </div>
@@ -629,7 +629,7 @@ const FollowUpWorkflowPage = () => {
                 ) : lastEncounter.data ? (
                   <div>
                     <p className="text-sm font-semibold text-slate-900 font-apple">
-                      {formatLastSessionDate(lastEncounter.data) || 'Previous session'}
+                      {formatLastSessionDate(lastEncounter.data) || 'Sesión previa'}
                     </p>
                     {lastEncounter.data.soap && (
                       <button
@@ -641,25 +641,25 @@ const FollowUpWorkflowPage = () => {
                         }}
                         className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline font-apple font-light"
                       >
-                        View last SOAP note →
+                        Ver última nota SOAP →
                       </button>
                     )}
                   </div>
                 ) : isFirstSession ? (
-                  <p className="text-sm text-slate-700 font-apple font-light">First session</p>
+                  <p className="text-sm text-slate-700 font-apple font-light">Primera sesión</p>
                 ) : (
-                  <p className="text-sm text-slate-500 font-apple font-light">No previous sessions</p>
+                  <p className="text-sm text-slate-500 font-apple font-light">Sin sesiones previas</p>
                 )}
               </div>
 
               {/* Visit Type Indicator — session ordinal: Follow-up = Second / Third / … */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Visit Type</p>
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-light mb-2">Tipo de visita</p>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-semibold text-slate-900 font-apple">
-                      Follow-up visit
+                      Visita de seguimiento
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 font-apple font-light">
@@ -669,7 +669,7 @@ const FollowUpWorkflowPage = () => {
                 {previousTreatmentPlan && (
                   <div className="mt-2 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-slate-600 font-apple font-light">Previous treatment plan loaded</span>
+                    <span className="text-xs text-slate-600 font-apple font-light">Plan de tratamiento anterior cargado</span>
                   </div>
                 )}
               </div>
@@ -681,7 +681,7 @@ const FollowUpWorkflowPage = () => {
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
               <h2 className="text-lg font-semibold text-amber-900 mb-2">Follow-up no disponible</h2>
               <p className="text-slate-700 font-apple font-light max-w-xl mx-auto">
-                Initial assessment required before follow-up.
+                Se requiere una valoración inicial antes del seguimiento.
               </p>
             </div>
           )}

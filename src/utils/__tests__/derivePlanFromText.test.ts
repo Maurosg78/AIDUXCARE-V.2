@@ -22,7 +22,20 @@ PROGRAMA DE EJERCICIOS EN CASA:
 HOME EXERCISE PROGRAM (HEP):
 - Home stretches`;
     const derived = derivePlanFromText(planRaw);
-    expect(derived.inClinic).toContain('Manual therapy');
+    expect(derived.inClinic).toContain('terapia manual');
     expect(derived.homeProgram).toContain('Home stretches');
+  });
+
+  it('normalizes markdown and mixed-language plan text into structured sections', () => {
+    const planRaw = `**TRATAMIENTO EN CLÍNICA:** - Ejercicios de Strength & Conditioning supervisados para mejorar fuerza y ROM. - Ejercicios assitidos de flexibilización y extensión de muñeca y mano.
+
+**PROGRAMA DE EJERCICIOS EN CASA (HEP):** - Ejercicios activos asistidos de ROM para muñeca y dedos, 3x/día. - Desensibilización de la cicatriz quirúrgica.`;
+
+    const derived = derivePlanFromText(planRaw);
+
+    expect(derived.inClinic).toContain('Ejercicios de fuerza y acondicionamiento supervisados para mejorar fuerza y ROM');
+    expect(derived.inClinic).toContain('Ejercicios asistidos de flexibilización y extensión de muñeca y mano');
+    expect(derived.homeProgram).toContain('Ejercicios activos asistidos de ROM para muñeca y dedos, 3x/día');
+    expect(derived.homeProgram).toContain('Desensibilización de la cicatriz quirúrgica');
   });
 });

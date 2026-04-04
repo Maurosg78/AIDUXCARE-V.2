@@ -49,7 +49,12 @@
       "addTests": "Añadir pruebas",
       "addTestsHint": "Elige de la biblioteca o añade una prueba personalizada. Aparecerán a la derecha para documentar.",
       "libraryTests": "Pruebas de biblioteca",
+      "quickPicks": "Selección rápida recomendada",
+      "quickPicksWithRegion": "Selección rápida para {{region}}",
+      "quickPicksHint": "Pruebas frecuentes para empezar sin tener que buscarlas por nombre.",
       "selectTestPlaceholder": "Elegir una prueba…",
+      "addButton": "Añadir",
+      "alreadyAddedButton": "Ya añadida",
       "customTest": "Prueba personalizada",
       "customTestHint": "Registra valoraciones que no estén en la biblioteca.",
       "addCustomTest": "Añadir prueba personalizada",
@@ -63,6 +68,24 @@
         "inconclusive": "No concluyente"
       },
       "customEntry": "Entrada personalizada desde transcripción.",
+      "typicalUseLabel": "Útil cuando",
+      "expectedInputsLabel": "Campos esperados",
+      "categoryLabels": {
+        "rom": "ROM",
+        "neuro": "Neuro",
+        "inspection": "Inspección",
+        "strength": "Fuerza",
+        "functional": "Funcional",
+        "orthopedic": "Ortopédica",
+        "general": "General"
+      },
+      "fieldPreviewLabels": {
+        "bilateralAngle": "ángulo bilateral",
+        "unilateralAngle": "ángulo",
+        "yesNo": "sí/no",
+        "score": "escala 0-10",
+        "text": "texto clínico"
+      },
       "regionOther": "Otro / General",
       "resultOptional": "Resultado (opcional)",
       "notesOptional": "Notas (opcional)",
@@ -90,6 +113,17 @@
       "generateSoap": "Generar nota SOAP",
       "progressText": "Progreso: {{completed}} de {{total}} pruebas documentadas ({{percent}}%)"
     },
+    "followupSurface": {
+      "inClinicTitle": "Tratamiento en clínica de hoy",
+      "inClinicSubtitle": "Confirma o ajusta lo que estaba previsto previamente.",
+      "documentationTitle": "Documentación",
+      "documentationSubtitle": "Revisa y finaliza tu nota SOAP.",
+      "soapGenerated": "Nota SOAP generada",
+      "patternInsightTitle": "Patrón longitudinal del paciente",
+      "clinicalConsiderationsTitle": "Consideraciones clínicas de IA",
+      "notPartOfMedicalRecord": "(No forma parte de la historia clínica)",
+      "insertIntoPlan": "Insertar en el plan"
+    },
     "visit": {
       "visitTypeLabel": "Tipo de visita",
       "initialVisit": "Visita inicial",
@@ -115,11 +149,19 @@
     },
     "homeProgram": {
       "allDone": "Todo hecho",
+      "blockSubtitle": "Prescrito para casa. Marca lo completado en este seguimiento, edita si hace falta y añade notas por ejercicio si lo necesitas.",
+      "markAllDoneTitle": "Marcar todo como realizado",
+      "unmarkAllTitle": "Desmarcar todo",
       "includedInFollowUp": "Incluido en seguimiento — clic para desmarcar",
       "checkToInclude": "Marcar para incluir en este seguimiento",
+      "editItem": "Editar ejercicio",
+      "removeItem": "Eliminar ejercicio",
       "notesLabel": "Notas (dictadas o escritas)",
       "notesPlaceholder": "Añadir notas (dictadas o escritas)...",
-      "newExercisePlaceholder": "Nuevo ejercicio (ej. Movilidad lumbar, Activación del core)"
+      "newExercisePlaceholder": "Nuevo ejercicio (ej. Movilidad lumbar, Activación del core)",
+      "addButton": "Añadir",
+      "cancelButton": "Cancelar",
+      "addItemButton": "Añadir ejercicio"
     },
     "treatment": {
       "performedInClinic": "Realizado en clínica hoy — clic para desmarcar",
@@ -127,7 +169,10 @@
       "removeItem": "Eliminar elemento",
       "notesLabel": "Notas (dictadas o escritas)",
       "notesPlaceholder": "Añadir notas (dictadas o escritas)...",
-      "newTreatmentPlaceholder": "Nuevo tratamiento (ej. Terapia manual, Ejercicio)"
+      "newTreatmentPlaceholder": "Nuevo tratamiento (ej. Terapia manual, Ejercicio)",
+      "addButton": "Añadir",
+      "cancelButton": "Cancelar",
+      "addItemButton": "Añadir tratamiento"
     },
     "soapTab": {
       "initialAssessmentComplete": "Valoración inicial lista",

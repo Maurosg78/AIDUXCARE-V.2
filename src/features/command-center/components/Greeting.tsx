@@ -1,6 +1,7 @@
 import React from 'react';
 import { Timestamp } from 'firebase/firestore';
 
+import { isSpainPilot } from '@/core/pilotDetection';
 import { useProfessionalProfile } from '../../../context/ProfessionalProfileContext';
 
 interface GreetingProps {
@@ -13,21 +14,32 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
   // Function to get greeting based on time of day (using local time)
   const getGreeting = (): string => {
     const now = new Date();
-    const localHour = now.getHours(); // getHours() already returns local time
+    const localHour = now.getHours();
+    const esPilotEnabled = isSpainPilot();
     
+    if (esPilotEnabled) {
+      if (localHour >= 5 && localHour < 12) return 'Buenos días';
+      if (localHour >= 12 && localHour < 17) return 'Buenas tardes';
+      if (localHour >= 17 && localHour < 21) return 'Buenas noches';
+      return 'Buenas noches';
+    }
+
     if (localHour >= 5 && localHour < 12) return 'Good morning';
     if (localHour >= 12 && localHour < 17) return 'Good afternoon';
     if (localHour >= 17 && localHour < 21) return 'Good evening';
-    return 'Good night'; // 21:00 - 04:59
+    return 'Good night';
   };
 
   // Function to format last access date
   const formatLastAccess = (timestamp: Date | Timestamp | undefined): string => {
-    if (!timestamp) return 'First time';
+    const esPilotEnabled = isSpainPilot();
+
+    if (!timestamp) return esPilotEnabled ? 'Primera vez' : 'First time';
     
     try {
       const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
-      return new Intl.DateTimeFormat('en-CA', {
+      const locale = esPilotEnabled ? 'es-ES' : 'en-CA';
+      return new Intl.DateTimeFormat(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -35,7 +47,7 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
         minute: '2-digit'
       }).format(date);
     } catch (_error) {
-      return 'Recent';
+      return esPilotEnabled ? 'Reciente' : 'Recent';
     }
   };
 
@@ -57,7 +69,7 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
       const emailName = profile.email.split('@')[0];
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    return 'User';
+    return isSpainPilot() ? 'Usuario' : 'User';
   };
 
   if (loading) {
@@ -73,8 +85,8 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
   if (!profile) {
     return (
       <div className={`text-slate-600 ${className}`}>
-        <h1 className="text-2xl font-semibold mb-1">Command Center</h1>
-        <p className="text-slate-500">Loading profile...</p>
+        <h1 className="text-2xl font-semibold mb-1">{isSpainPilot() ? 'Centro de mando' : 'Command Center'}</h1>
+        <p className="text-slate-500">{isSpainPilot() ? 'Cargando perfil...' : 'Loading profile...'}</p>
       </div>
     );
   }
@@ -107,7 +119,9 @@ export const Greeting: React.FC<GreetingProps> = ({ className = '' }) => {
         </p>
         
         <p className="text-sm text-gray-500 font-apple font-light">
-          You are in your secure space. Last access: {lastAccess} ({timezone})
+          {isSpainPilot()
+            ? `Estás en tu espacio seguro. Último acceso: ${lastAccess} (${timezone})`
+            : `You are in your secure space. Last access: ${lastAccess} (${timezone})`}
         </p>
       </div>
     </div>

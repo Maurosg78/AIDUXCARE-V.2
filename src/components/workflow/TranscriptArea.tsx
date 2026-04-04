@@ -48,6 +48,7 @@ const UI = esPilot
       uploadingFileTitle: 'Subiendo archivo…',
       uploadingFileBody: 'Espera mientras subimos y procesamos tu archivo',
       attachmentsEmpty: 'Adjunta analíticas, informes de imagen o fotos del paciente. Los archivos se almacenan cifrados.',
+      reviewedTodayLabel: 'Revisado hoy',
       analyzingBtnFollowUp: 'Generando nota de seguimiento…',
       analyzingBtnInitial: 'Analizando…',
       analyzeBtnFollowUp: 'Generar nota de seguimiento',
@@ -96,6 +97,7 @@ const UI = esPilot
       uploadingFileTitle: 'Uploading file...',
       uploadingFileBody: 'Please wait while we upload and process your file',
       attachmentsEmpty: 'Attach lab work, imaging reports, or patient-provided photos. Files stay in encrypted Firebase Storage.',
+      reviewedTodayLabel: 'Reviewed today',
       analyzingBtnFollowUp: 'Generating follow-up note...',
       analyzingBtnInitial: 'Analyzing...',
       analyzeBtnFollowUp: 'Generate Follow-up Note',
@@ -182,6 +184,7 @@ export interface TranscriptAreaProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
+  handleAttachmentReviewedToggle?: (attachmentId: string) => void;
   /** When true, hide Vertex analyze CTA and related processing UI (capture-only surfaces). */
   hideAnalyzeButton?: boolean;
 }
@@ -211,11 +214,20 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
+  handleAttachmentReviewedToggle,
   hideAnalyzeButton = false,
 }) => {
   const [localTranscript, setLocalTranscript] = useState(transcript);
   const isPastingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
+  const hasReadyAttachments = attachments.some((attachment) => Boolean(attachment.extractedText));
+  const hasPendingAttachments = attachments.some((attachment) => attachment.processingComplete !== true);
+  const canAnalyze =
+    !isUploadingAttachment &&
+    !isProcessing &&
+    !isGeneratingSOAP &&
+    !hasPendingAttachments &&
+    (Boolean(transcript?.trim()) || hasReadyAttachments);
 
   useEffect(() => {
     return () => {
@@ -467,6 +479,21 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
                 attachment={attachment}
                 onDelete={() => handleAttachmentRemove(attachment)}
                 isRemoving={removingAttachmentId === attachment.id}
+                onToggleReviewedToday={
+                  handleAttachmentReviewedToggle
+                    ? () => handleAttachmentReviewedToggle(attachment.id)
+                    : undefined
+                }
+                reviewedTodayLabel={UI.reviewedTodayLabel}
+                extractedTextLabel={esPilot ? 'Texto extraído' : 'Extracted text'}
+                extractedContentPreviewLabel={esPilot ? 'Vista previa del contenido extraído' : 'Preview extracted content'}
+                extractionFailedLabel={esPilot ? 'No se pudo extraer texto' : 'Could not extract text'}
+                extractionFallbackLabel={esPilot ? 'El archivo se subió, pero su contenido no pudo analizarse automáticamente' : 'File uploaded but content could not be analyzed automatically'}
+                processingFileLabel={esPilot ? 'Procesando archivo...' : 'Processing file...'}
+                extractingPdfLabel={esPilot ? 'Extrayendo texto del PDF' : 'Extracting text from PDF'}
+                analyzingImageLabel={esPilot ? 'Analizando contenido de la imagen' : 'Analyzing image content'}
+                readingFileLabel={esPilot ? 'Leyendo contenido del archivo' : 'Reading file content'}
+                viewDownloadLabel={esPilot ? 'Ver o descargar' : 'View/Download'}
               />
             ))}
           </div>
@@ -476,7 +503,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
           <div className="mt-4 pt-4 border-t border-slate-200">
             <button
               onClick={handleAnalyzeWithVertex}
-              disabled={isProcessing || isGeneratingSOAP || (!transcript?.trim() && attachments.every(att => !att.extractedText))}
+              disabled={!canAnalyze}
               className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
             >
               {(isProcessing || isGeneratingSOAP) ? (
@@ -492,11 +519,16 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
               )}
             </button>
             <p className="mt-2 text-xs text-slate-500">
-              {transcript?.trim() && attachments.some(att => att.extractedText)
+              {hasPendingAttachments
+                || isUploadingAttachment
+                ? (esPilot
+                    ? 'Espera a que los archivos adjuntos terminen de procesarse antes de analizar.'
+                    : 'Wait for attachments to finish processing before analyzing.')
+                : transcript?.trim() && hasReadyAttachments
                 ? UI.analyzeHintBoth
                 : transcript?.trim()
                   ? UI.analyzeHintTranscript
-                  : attachments.some(att => att.extractedText)
+                  : hasReadyAttachments
                     ? UI.analyzeHintAttachments
                     : UI.analyzeHintEmpty}
             </p>
@@ -506,6 +538,22 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
+  const previousAttachmentState = prevProps.attachments.map((attachment) => ({
+    id: attachment.id,
+    reviewedToday: attachment.reviewedToday === true,
+    processingComplete: attachment.processingComplete === true,
+    extractedText: attachment.extractedText ?? '',
+    error: attachment.error ?? '',
+  }));
+  const nextAttachmentState = nextProps.attachments.map((attachment) => ({
+    id: attachment.id,
+    reviewedToday: attachment.reviewedToday === true,
+    processingComplete: attachment.processingComplete === true,
+    extractedText: attachment.extractedText ?? '',
+    error: attachment.error ?? '',
+  }));
+  const sameAttachmentState = JSON.stringify(previousAttachmentState) === JSON.stringify(nextAttachmentState);
+
   return (
     prevProps.transcript === nextProps.transcript &&
     prevProps.isRecording === nextProps.isRecording &&
@@ -515,7 +563,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     prevProps.transcriptError === nextProps.transcriptError &&
     prevProps.languagePreference === nextProps.languagePreference &&
     prevProps.mode === nextProps.mode &&
-    prevProps.attachments.length === nextProps.attachments.length &&
+    sameAttachmentState &&
     prevProps.isUploadingAttachment === nextProps.isUploadingAttachment &&
     prevProps.attachmentError === nextProps.attachmentError &&
     prevProps.hideAnalyzeButton === nextProps.hideAnalyzeButton

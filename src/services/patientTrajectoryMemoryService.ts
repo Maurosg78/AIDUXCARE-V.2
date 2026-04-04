@@ -15,6 +15,7 @@ import {
   type TrajectoryLabel,
 } from '../core/longitudinal/patientTrajectoryMemory';
 import type { TrajectoryConfidence } from '../core/longitudinal/trajectoryClassifier';
+import type { EncounterLongitudinalSnapshot } from '../core/longitudinal/encounterLongitudinalSnapshot';
 
 const COLLECTION = 'patient_trajectory_events';
 const MIN_EVENTS_FOR_PATTERN = 5;
@@ -39,6 +40,37 @@ function toEvent(doc: any): PatientTrajectoryEvent {
 export class PatientTrajectoryMemoryService {
   private comparisonService = new SessionComparisonService();
 
+  async buildEncounterLongitudinalSnapshot(
+    patientId: string,
+    subjectiveText: string,
+    options?: { hepAdherenceRate?: number }
+  ): Promise<EncounterLongitudinalSnapshot | null> {
+    const painScore = extractPainFromSubjective(subjectiveText);
+    const hepAdherenceRate = options?.hepAdherenceRate;
+    const hasPainScore = painScore !== null;
+    const hasHepAdherenceRate = typeof hepAdherenceRate === 'number';
+    if (!hasPainScore && !hasHepAdherenceRate) return null;
+    if (!hasPainScore) {
+      return { hepAdherenceRate };
+    }
+
+    const previousSeries = await this.comparisonService.getLastNPainSeries(patientId, 3);
+    const fullSeries = [...previousSeries, painScore];
+    if (fullSeries.length < 2) {
+      return { painScore, hepAdherenceRate };
+    }
+
+    const classification = classifyTrajectory(fullSeries);
+    const trajectory = (classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel;
+
+    return {
+      painScore,
+      hepAdherenceRate,
+      trajectory,
+      trajectoryConfidence: classification.confidence,
+    };
+  }
+
   /**
    * Record this encounter's trajectory (pain + classification) after finalize.
    * Uses previous encounters' pain to classify; does not require SOAP to be on encounter yet.
@@ -48,23 +80,15 @@ export class PatientTrajectoryMemoryService {
     encounterId: string,
     subjectiveText: string
   ): Promise<void> {
-    const painScore = extractPainFromSubjective(subjectiveText);
-    if (painScore === null) return;
-
-    // Use last 3 *previous* sessions (current not yet in encounters or we'd double-count)
-    const previousSeries = await this.comparisonService.getLastNPainSeries(patientId, 3);
-    const fullSeries = [...previousSeries, painScore];
-    if (fullSeries.length < 2) return;
-
-    const classification = classifyTrajectory(fullSeries);
-    const trajectory = (classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel;
+    const snapshot = await this.buildEncounterLongitudinalSnapshot(patientId, subjectiveText);
+    if (snapshot?.painScore == null || !snapshot.trajectory || !snapshot.trajectoryConfidence) return;
 
     await addDoc(collection(db, COLLECTION), {
       patientId,
       encounterId,
-      painScore,
-      trajectory,
-      trajectoryConfidence: classification.confidence,
+      painScore: snapshot.painScore,
+      trajectory: snapshot.trajectory,
+      trajectoryConfidence: snapshot.trajectoryConfidence,
       createdAt: serverTimestamp(),
     });
   }

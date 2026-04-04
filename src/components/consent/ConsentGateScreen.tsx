@@ -13,6 +13,7 @@ import {
   getConsentVersionForPortal,
   normalizeConsentJurisdiction,
 } from '@/services/verbalConsentService';
+import { isSpainPilot } from '@/core/pilotDetection';
 import { useAuth } from '@/hooks/useAuth';
 import type { ConsentResolution } from '@/domain/consent/resolveConsentChannel';
 
@@ -54,6 +55,11 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const normalizedJurisdiction = normalizeConsentJurisdiction(consentJurisdiction);
   const consentLanguage = getConsentLanguageForJurisdiction(normalizedJurisdiction);
   const consentTextVersion = getConsentVersionForPortal(normalizedJurisdiction);
+  const pilotIsSpain = isSpainPilot();
+  const phoneIsSpain = patientPhone?.trim().startsWith('+34') ?? false;
+  const tokenJurisdiction = normalizeConsentJurisdiction((pilotIsSpain || phoneIsSpain) ? 'ES-ES' : normalizedJurisdiction);
+  const tokenLanguage = tokenJurisdiction === 'ES-ES' ? 'es' : 'en';
+  const tokenConsentTextVersion = tokenJurisdiction === 'ES-ES' ? 'v1-es-ES-written' : 'v2-en-CA';
 
   const handleConsentObtained = async (consentId: string) => {
     console.log('[ConsentGate] ✅ Verbal consent recorded', { consentId: consentId ? '***' : '' });
@@ -78,9 +84,9 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         physiotherapistName ?? 'Physiotherapist',
         undefined,
         {
-          jurisdiction: normalizedJurisdiction,
-          language: consentLanguage,
-          consentTextVersion,
+          jurisdiction: tokenJurisdiction,
+          language: tokenLanguage,
+          consentTextVersion: tokenConsentTextVersion,
         }
       );
       const url = `${window.location.origin}/consent/${token}`;
@@ -111,9 +117,9 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         physiotherapistName ?? 'Physiotherapist',
         undefined,
         {
-          jurisdiction: normalizedJurisdiction,
-          language: consentLanguage,
-          consentTextVersion,
+          jurisdiction: tokenJurisdiction,
+          language: tokenLanguage,
+          consentTextVersion: tokenConsentTextVersion,
         }
       );
       const tokenDoc = await PatientConsentService.getConsentByToken(token);

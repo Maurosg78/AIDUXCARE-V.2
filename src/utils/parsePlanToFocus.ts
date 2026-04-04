@@ -34,6 +34,16 @@ function isSectionHeaderLine(line: string): boolean {
   return false;
 }
 
+function splitFallbackCandidateLines(planText: string): string[] {
+  const normalizedPlanText = planText.replace(/\*\*/g, '');
+  const normalizedBullets = normalizedPlanText.replace(/\s+-\s+/g, '\n- ');
+  const newlineSegments = normalizedBullets.split('\n');
+  const sentenceSegments = newlineSegments.flatMap((segment) => segment.split(/;(?=\s+[A-ZÁÉÍÓÚÑa-záéíóúñ])/));
+  const cleanedSegments = sentenceSegments.map((segment) => segment.replace(/^[•\-*]\s+/, '').replace(/[.;]\s*$/, '').trim());
+  const filteredSegments = cleanedSegments.filter(Boolean);
+  return filteredSegments;
+}
+
 /**
  * Parsea el plan previo (texto estructurado) a focos clínicos editables
  * 
@@ -70,19 +80,18 @@ export function parsePlanToFocusItems(planInput: PlanToFocusInput): TodayFocusIt
   const planTextForFallback = hasStringInput
     ? planInput
     : (planInput?.inClinicText ?? planInput?.planText ?? '');
-  const rawLines = planTextForFallback.split('\n');
-  rawLines.forEach((line) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.match(/^[•\-*]\s+/) && trimmedLine.length > 3) {
-      const labelFromBullet = trimmedLine.replace(/^[•\-*]\s+/, '').trim();
-      if (labelFromBullet.length > 0 && !isSectionHeaderLine(labelFromBullet)) {
-        fallbackItems.push({
-          id: `general-${itemId++}`,
-          label: labelFromBullet,
-          completed: false,
-          source: 'plan',
-        });
-      }
+  const fallbackSegments = splitFallbackCandidateLines(planTextForFallback);
+  fallbackSegments.forEach((segment) => {
+    const labelFromSegment = segment.trim();
+    const hasUsefulLength = labelFromSegment.length > 3;
+    const isHeader = isSectionHeaderLine(labelFromSegment);
+    if (hasUsefulLength && !isHeader) {
+      fallbackItems.push({
+        id: `general-${itemId++}`,
+        label: labelFromSegment,
+        completed: false,
+        source: 'plan',
+      });
     }
   });
   const maxFocusItemsFallback = 5;

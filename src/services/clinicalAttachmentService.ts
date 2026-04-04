@@ -15,6 +15,10 @@ export interface ClinicalAttachment {
   error?: string | null;
   /** Optional page count detected for PDFs */
   pageCount?: number;
+  /** Explicit clinician signal: attachment reviewed in today's follow-up */
+  reviewedToday?: boolean;
+  /** Explicit processing lifecycle flag for upload/extraction pipeline */
+  processingComplete?: boolean;
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB per attachment
@@ -31,7 +35,7 @@ const ALLOWED_MIME_PREFIXES = [
 const ATTACHMENT_ROOT = 'clinical-attachments';
 
 /** Infer MIME from file extension when browser sends empty or wrong type (e.g. some PDFs). */
-function inferMimeFromName(fileName: string): string | null {
+export function inferMimeFromName(fileName: string): string | null {
   const ext = fileName.split('.').pop()?.toLowerCase();
   if (!ext) return null;
   const map: Record<string, string> = {
@@ -40,6 +44,12 @@ function inferMimeFromName(fileName: string): string | null {
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     rtf: 'application/rtf',
     txt: 'text/plain',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    heic: 'image/heic',
+    heif: 'image/heif',
   };
   return map[ext] ?? null;
 }
@@ -89,6 +99,8 @@ export class ClinicalAttachmentService {
       storagePath,
       downloadURL,
       uploadedAt: new Date(timestamp).toISOString(),
+      reviewedToday: false,
+      processingComplete: false,
     };
   }
 

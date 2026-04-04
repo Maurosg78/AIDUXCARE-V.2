@@ -49,10 +49,25 @@ export interface FollowUpPromptV3Input {
    */
   painSeriesSummary?: string;
   /**
+   * Optional pattern insight from patient trajectory memory.
+   * Use as longitudinal memory to describe recurrent response patterns only.
+   */
+  patternInsightSummary?: string;
+  /**
+   * Optional structured summary of current HEP adherence from today's checklist.
+   * Use only to document adherence explicitly confirmed today.
+   */
+  currentHepAdherenceSummary?: string;
+  /**
    * Optional summary of previous treatment plan(s) (e.g. last 1–2 plans from treatment_plans).
-   * For documentation continuity only. Model must use ONLY as context; no new interventions unless in today's input.
+   * For documentation continuity and linkage to today's response; no new interventions unless in today's input.
    */
   previousPlansSummary?: string;
+  /**
+   * Optional structured summary of attachments explicitly reviewed in today's session.
+   * Attachment findings may enter Objective only when this section is present.
+   */
+  reviewedAttachmentsSummary?: string;
   /** In-clinic treatment performed today. Optional. */
   inClinicItems?: string[];
   /** Home exercise program (current or adjusted). Optional. */
@@ -74,7 +89,10 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     trajectoryPattern,
     trajectoryConfidence,
     painSeriesSummary,
+    patternInsightSummary,
+    currentHepAdherenceSummary,
     previousPlansSummary,
+    reviewedAttachmentsSummary,
     inClinicItems = [],
     homeProgram = [],
   } = input;
@@ -131,10 +149,10 @@ ${homeProgram.map((item) => `${item}`).join('\n\n')}
     longitudinalSummary && longitudinalSummary.trim().length > 0
       ? `LONGITUDINAL CONTEXT — CHANGES SINCE LAST VISIT (if provided)
 
-Use this ONLY to understand evolution between the previous completed session and today.
+Use this to understand and document evolution between the previous completed session and today.
 Do NOT invent new findings; reflect only what is clearly documented here.
-The longitudinal context is provided for documentation continuity. Do not infer new diagnoses or treatment decisions from it.
-If longitudinal context is provided, use it only to describe evolution of symptoms or response to care. Do not transform the longitudinal information into treatment strategy.
+The longitudinal context is part of the documentation source of truth for symptom evolution, functional change, response to care, and continuity with the previous session.
+Do not infer new diagnoses or undocumented treatment decisions from it.
 
 ${longitudinalSummary.trim()}
 
@@ -143,22 +161,66 @@ ${longitudinalSummary.trim()}
 
   const trajectorySection =
     (trajectoryPattern && trajectoryPattern.trim().length > 0) || (painSeriesSummary && painSeriesSummary.trim().length > 0)
-      ? `TRAJECTORY PATTERN (context only)
+      ? `TRAJECTORY PATTERN AND PAIN TREND
 
 ${painSeriesSummary && painSeriesSummary.trim().length > 0 ? `Pain series (recent visits): ${painSeriesSummary.trim()}\n\n` : ''}${trajectoryPattern && trajectoryPattern.trim().length > 0 ? `Pain trajectory classification: ${trajectoryPattern.trim()}${trajectoryConfidence ? ` (confidence: ${trajectoryConfidence})` : ''}\nSignal source: longitudinal analysis.\n` : ''}Use this information only to describe patient evolution. Do not infer treatment decisions.
 
 `
       : '';
 
+  const patternInsightSection =
+    patternInsightSummary && patternInsightSummary.trim().length > 0
+      ? `PATIENT LONGITUDINAL MEMORY PATTERN
+
+Use this pattern insight to keep continuity with how this patient has been responding across sessions.
+Use it to describe the patient's usual response pattern only when it is compatible with today's documented update.
+Do not convert this pattern into a new diagnosis or an undocumented treatment recommendation.
+
+${patternInsightSummary.trim()}
+
+`
+      : '';
+
+  const currentHepAdherenceSection =
+    currentHepAdherenceSummary && currentHepAdherenceSummary.trim().length > 0
+      ? `CURRENT HOME PROGRAM ADHERENCE
+
+Use this as a structured fact from today's follow-up checklist.
+Use it only to document adherence confirmed today.
+Do not infer longer-term adherence beyond what is explicitly provided here.
+
+${currentHepAdherenceSummary.trim()}
+
+`
+      : '';
+
   const previousPlansSection =
     previousPlansSummary && previousPlansSummary.trim().length > 0
-      ? `PREVIOUS TREATMENT PLAN(S) — CONTEXT ONLY
+      ? `PREVIOUS TREATMENT PLAN(S)
 
-Use the previous plan ONLY as context to maintain narrative continuity.
+Use the previous plan to maintain clinical continuity with today's encounter.
+Use it to describe whether today's documented care continues, adjusts, or progresses the prior plan.
 Do NOT introduce new interventions, progressions, or recommendations unless explicitly documented in today's session input.
 Your task is to document what was done and decided today, not to decide next treatment strategy.
 
 ${previousPlansSummary.trim()}
+
+`
+      : '';
+
+  const reviewedAttachmentsSection =
+    reviewedAttachmentsSummary && reviewedAttachmentsSummary.trim().length > 0
+      ? `OBJECTIVE FINDINGS FROM ATTACHMENTS REVIEWED TODAY
+
+Use this section only when the clinician reviewed attachments in today's follow-up session.
+Findings from this section may be documented in Objective only if they are clearly attributable to a reviewed attachment or report from today.
+Do NOT convert ambiguous patient retelling into objective findings.
+If you use this section in Objective, make the source explicit as attachment/report review from today.
+For image-based attachments, describe findings as suggestive visual observations only.
+Do NOT write that an image "confirms" a diagnosis, fracture status, cartilage injury, hyperlaxity, bone quality, or prognosis.
+If image quality or provenance is limited, state that interpretation is limited and that the image does not constitute a diagnosis.
+
+${reviewedAttachmentsSummary.trim()}
 
 `
       : '';
@@ -179,13 +241,23 @@ ROLE AND LANGUAGE:
 - Reflect ONLY the information provided in the baseline and today's update
 - Output in ${outputLanguage}
 - ${physiotherapyTerminologyGuidance}
+- Prefer concise EMR-style clinical wording over narrative prose
+- Do NOT reproduce conversations verbatim or include unnecessary quotations
+- Prioritise what changed since the last session over repeating the full baseline
 
 SOURCE OF TRUTH CONSTRAINT:
-- All clinical statements must originate from:
+  - All clinical statements must originate from:
   - the baseline SOAP,
   - today's clinical update,
-  - in-clinic items and home program items provided.
+  - in-clinic items and home program items provided,
+  - current structured HEP adherence provided,
+  - longitudinal context / pain trend / trajectory data provided,
+  - previous treatment plan information provided,
+  - patient longitudinal memory pattern provided,
+  - attachment findings explicitly marked as reviewed today.
 - Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
+- Longitudinal memory may be used to document change over time, response to prior care, and continuity of the plan.
+- Longitudinal memory must NOT be used to invent undocumented interventions or new diagnoses.
 
 This is NOT an initial assessment.
 
@@ -233,23 +305,40 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${previousPlansSection}TASK
+${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}TASK
 
 Your role is to rewrite the SOAP note reflecting today's encounter. You must NOT decide next treatment strategy.
 
 Using only the information above:
 
-Update the Subjective based on today's report
+Update the Subjective based on today's report and documented change from prior sessions when longitudinal data is provided
 
-Update the Objective based on observed or reported changes
+Update the Objective using only newly observed, measured, or explicitly documented objective findings from today
+If no new objective measures or examination findings are documented today, state clearly that no new objective measures were recorded today
+Do NOT restate baseline objective findings as if they were newly measured today
+Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective
+Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section
+If attachment-derived findings are included, make clear that they come from material reviewed today rather than from direct measurement by the physiotherapist
+You may reference previous objective findings only as prior clinical reference when needed for continuity
 
 Update the Assessment to summarise progression, response, or tolerance as documented by the clinician
+If longitudinal information is provided, explicitly state the clinical change versus the previous completed session
+If previous plan or longitudinal data is provided, explicitly link today's status to the patient's documented response to prior care
+If current structured HEP adherence is provided, include that adherence fact in the Assessment or Plan when it is clinically relevant, using only the documented ratio or percentage
 
 Do NOT restate the entire diagnosis unless it has changed
 
 Update the Plan:
 
 Reflect progressions or adjustments ONLY if they are clearly documented in the baseline and today's inputs
+When supported by the input, connect today's plan to the patient's response, tolerance, adherence, or progression since the prior session
+If previous plan or longitudinal data is provided, begin the Plan with one brief continuity sentence stating whether today's care continues, progresses, or adjusts the prior plan, and why, using only documented input
+If the documented input shows improved pain, function, tolerance, or adherence, avoid saying "without changes" unless the input explicitly states that today's plan was unchanged
+When improvement is documented but no new intervention is listed, prefer wording such as continuing care with progression according to tolerance, rather than implying a static plan
+If current structured HEP adherence is provided, prefer integrating that adherence fact into the continuity sentence rather than appending it as an isolated line
+If TODAY'S CLINICAL UPDATE contains explicit red flags or urgent neurological deficits, the Plan must prioritise urgent medical referral / escalation and must not present routine physiotherapy or home exercise progression as the primary next step unless that continuation is explicitly documented in the input
+If urgent red flags are present, keep the Plan short and safety-first
+Keep the Plan concise and operational. Avoid narrative explanation after the treatment sections
 
 Clearly distinguish in-clinic treatment vs home program
 
@@ -288,6 +377,7 @@ Red flags MUST include urgent neurological deficits such as:
 CRITICAL: Only report red flags if they are explicitly mentioned in TODAY'S CLINICAL UPDATE.
 Do NOT report red flags based on the baseline alone.
 If the baseline documents a prior referral for these symptoms, do NOT re-report them unless today's update confirms they are new or ongoing.
+If red flags are reported, the SOAP Plan must align with that urgency.
 
 Do NOT include any text outside the JSON object.`;
 

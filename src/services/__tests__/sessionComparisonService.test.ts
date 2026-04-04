@@ -21,6 +21,11 @@ import type { EvaluationTestEntry } from '../../core/soap/PhysicalExamResultBuil
 // Mock Firestore
 vi.mock('../../lib/firebase', () => ({
   db: {},
+  auth: {
+    currentUser: {
+      uid: 'user-1',
+    },
+  },
 }));
 
 vi.mock('firebase/firestore', async () => {
@@ -40,6 +45,13 @@ const mockGetEncountersByPatient = vi.fn();
 vi.mock('../../repositories/encountersRepo', () => ({
   encountersRepo: {
     getEncountersByPatient: (...args: unknown[]) => mockGetEncountersByPatient(...args),
+  },
+}));
+
+const mockGetNotesByPatient = vi.fn();
+vi.mock('../PersistenceService', () => ({
+  PersistenceService: {
+    getNotesByPatient: (...args: unknown[]) => mockGetNotesByPatient(...args),
   },
 }));
 
@@ -98,6 +110,7 @@ describe('SessionComparisonService', () => {
     // Create a new instance for each test to avoid state pollution
     service = new SessionComparisonService();
     vi.clearAllMocks();
+    mockGetNotesByPatient.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -195,6 +208,58 @@ describe('SessionComparisonService', () => {
       await expect(
         service.getPreviousSession('patient-1', 'current-session-1', 'user-1')
       ).rejects.toThrow('Failed to retrieve previous session');
+    });
+  });
+
+  describe('consultation fallback', () => {
+    it('uses consultations when completed encounters are not enough for comparison', async () => {
+      mockGetEncountersByPatient.mockResolvedValue([]);
+      mockGetNotesByPatient.mockResolvedValue([
+        {
+          id: 'note-1',
+          patientId: 'patient-1',
+          sessionId: 'session-1',
+          ownerUid: 'user-1',
+          authorUid: 'user-1',
+          createdAt: '2026-03-01T10:00:00.000Z',
+          updatedAt: '2026-03-01T10:00:00.000Z',
+          encryptedData: { iv: 'iv', encryptedData: 'data' },
+          soapData: {
+            subjective: 'Dolor 7/10',
+            objective: 'Sin cambios',
+            assessment: 'Seguimiento',
+            plan: 'Plan 1',
+            confidence: 0.9,
+            timestamp: '2026-03-01T10:00:00.000Z',
+          },
+          visitType: 'follow-up',
+        },
+        {
+          id: 'note-2',
+          patientId: 'patient-1',
+          sessionId: 'session-2',
+          ownerUid: 'user-1',
+          authorUid: 'user-1',
+          createdAt: '2026-03-10T10:00:00.000Z',
+          updatedAt: '2026-03-10T10:00:00.000Z',
+          encryptedData: { iv: 'iv', encryptedData: 'data' },
+          soapData: {
+            subjective: 'Dolor 4/10',
+            objective: 'Sin cambios',
+            assessment: 'Seguimiento',
+            plan: 'Plan 2',
+            confidence: 0.9,
+            timestamp: '2026-03-10T10:00:00.000Z',
+          },
+          visitType: 'follow-up',
+        },
+      ]);
+
+      const state = await service.getEncountersComparisonState('patient-1');
+
+      expect(state.isFirstSession).toBe(false);
+      expect(state.previousSession?.id).toBe('note-1');
+      expect(state.currentSession?.id).toBe('note-2');
     });
   });
 
@@ -693,6 +758,28 @@ describe('SessionComparisonService', () => {
   });
 
   describe('getLastNPainSeries', () => {
+    it('prefers persisted longitudinal snapshot pain over parsing free text', async () => {
+      const baseTime = Date.now();
+      mockGetEncountersByPatient.mockResolvedValue([
+        {
+          id: 'e1',
+          status: 'signed',
+          encounterDate: new Timestamp(baseTime / 1000, 0),
+          soap: { subjective: 'pain not documented clearly' },
+          longitudinalSnapshot: { painScore: 6, trajectory: 'plateau', trajectoryConfidence: 'medium' },
+        },
+        {
+          id: 'e2',
+          status: 'completed',
+          encounterDate: new Timestamp((baseTime + 1e6) / 1000, 0),
+          soap: { subjective: 'texto ambiguo' },
+          longitudinalSnapshot: { painScore: 4, trajectory: 'improved', trajectoryConfidence: 'high' },
+        },
+      ]);
+      const series = await service.getLastNPainSeries('patient-1', 3);
+      expect(series).toEqual([6, 4]);
+    });
+
     it('returns last N pain values (max 3) from completed encounters, oldest to newest', async () => {
       const baseTime = Date.now();
       mockGetEncountersByPatient.mockResolvedValue([
@@ -720,6 +807,69 @@ describe('SessionComparisonService', () => {
       expect(series).toHaveLength(2);
       expect(series).toEqual([6, 5]);
     });
+
+    it('falls back to consultations when encounters do not provide enough pain series', async () => {
+      mockGetEncountersByPatient.mockResolvedValue([]);
+      mockGetNotesByPatient.mockResolvedValue([
+        {
+          id: 'note-1',
+          patientId: 'patient-1',
+          sessionId: 'session-1',
+          ownerUid: 'user-1',
+          authorUid: 'user-1',
+          createdAt: '2026-03-01T10:00:00.000Z',
+          updatedAt: '2026-03-01T10:00:00.000Z',
+          encryptedData: { iv: 'iv', encryptedData: 'data' },
+          soapData: {
+            subjective: 'Dolor 7/10',
+            objective: '',
+            assessment: '',
+            plan: '',
+            confidence: 0.9,
+            timestamp: '2026-03-01T10:00:00.000Z',
+          },
+        },
+        {
+          id: 'note-2',
+          patientId: 'patient-1',
+          sessionId: 'session-2',
+          ownerUid: 'user-1',
+          authorUid: 'user-1',
+          createdAt: '2026-03-10T10:00:00.000Z',
+          updatedAt: '2026-03-10T10:00:00.000Z',
+          encryptedData: { iv: 'iv', encryptedData: 'data' },
+          soapData: {
+            subjective: 'Dolor 5/10',
+            objective: '',
+            assessment: '',
+            plan: '',
+            confidence: 0.9,
+            timestamp: '2026-03-10T10:00:00.000Z',
+          },
+        },
+        {
+          id: 'note-3',
+          patientId: 'patient-1',
+          sessionId: 'session-3',
+          ownerUid: 'user-1',
+          authorUid: 'user-1',
+          createdAt: '2026-03-20T10:00:00.000Z',
+          updatedAt: '2026-03-20T10:00:00.000Z',
+          encryptedData: { iv: 'iv', encryptedData: 'data' },
+          soapData: {
+            subjective: 'Dolor 3/10',
+            objective: '',
+            assessment: '',
+            plan: '',
+            confidence: 0.9,
+            timestamp: '2026-03-20T10:00:00.000Z',
+          },
+        },
+      ]);
+
+      const series = await service.getLastNPainSeries('patient-1', 3);
+
+      expect(series).toEqual([7, 5, 3]);
+    });
   });
 });
-

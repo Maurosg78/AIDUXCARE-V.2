@@ -6,15 +6,37 @@ interface ClinicalAttachmentCardProps {
   attachment: ClinicalAttachment;
   onDelete?: () => void;
   isRemoving?: boolean;
+  onToggleReviewedToday?: () => void;
+  reviewedTodayLabel?: string;
+  extractedTextLabel?: string;
+  extractedContentPreviewLabel?: string;
+  extractionFailedLabel?: string;
+  extractionFallbackLabel?: string;
+  processingFileLabel?: string;
+  extractingPdfLabel?: string;
+  analyzingImageLabel?: string;
+  readingFileLabel?: string;
+  viewDownloadLabel?: string;
 }
 
 export function ClinicalAttachmentCard({ 
   attachment, 
   onDelete,
-  isRemoving = false
+  isRemoving = false,
+  onToggleReviewedToday,
+  reviewedTodayLabel = 'Reviewed today',
+  extractedTextLabel = 'Texto extraído',
+  extractedContentPreviewLabel = 'Vista previa del contenido extraído',
+  extractionFailedLabel = 'No se pudo extraer texto',
+  extractionFallbackLabel = 'El archivo se subió, pero su contenido no pudo analizarse automáticamente',
+  processingFileLabel = 'Procesando archivo...',
+  extractingPdfLabel = 'Extrayendo texto del PDF',
+  analyzingImageLabel = 'Analizando contenido de la imagen',
+  readingFileLabel = 'Leyendo contenido del archivo',
+  viewDownloadLabel = 'Ver o descargar',
 }: ClinicalAttachmentCardProps) {
   // WO-PDF-STUCK-001: instrumental logs (temporary)
-  if (!attachment.extractedText && !attachment.error) {
+  if (attachment.processingComplete !== true && !attachment.extractedText && !attachment.error) {
     console.log("[AttachmentCard] Upload triggered", attachment.name, attachment.contentType);
   }
 
@@ -58,12 +80,12 @@ export function ClinicalAttachmentCard({
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className="w-4 h-4 text-green-600" />
             <p className="text-xs font-medium text-green-800 font-apple">
-              Text extracted: {attachment.extractedText.length.toLocaleString()} characters
+              {extractedTextLabel}: {attachment.extractedText.length.toLocaleString()} caracteres
             </p>
           </div>
           <details className="mt-2">
             <summary className="cursor-pointer text-xs text-green-700 hover:text-green-900 font-apple font-light">
-              Preview extracted content
+              {extractedContentPreviewLabel}
             </summary>
             <pre className="mt-2 text-xs text-slate-700 bg-white p-2 rounded border border-green-200 max-h-40 overflow-y-auto whitespace-pre-wrap font-mono font-apple">
               {attachment.extractedText.substring(0, 500)}
@@ -79,20 +101,20 @@ export function ClinicalAttachmentCard({
             <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-yellow-800 font-apple">
-                ⚠️ Could not extract text
+                ⚠️ {extractionFailedLabel}
               </p>
               <p className="text-xs text-yellow-700 mt-1 font-apple font-light">
                 {attachment.error}
               </p>
               <p className="text-xs text-yellow-600 mt-1 font-apple font-light">
-                File uploaded but content not analyzed by AI
+                {extractionFallbackLabel}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {!attachment.extractedText && !attachment.error && (
+      {attachment.processingComplete !== true && !attachment.extractedText && !attachment.error && (
         <>
           {console.log("[AttachmentCard] Setting status = processing")}
           <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
@@ -100,14 +122,14 @@ export function ClinicalAttachmentCard({
             <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
             <div className="flex-1">
               <p className="text-xs font-medium text-blue-800 font-apple">
-                Processing file...
+                {processingFileLabel}
               </p>
               <p className="text-xs text-blue-700 mt-0.5 font-apple font-light">
                 {attachment.contentType?.includes('pdf') 
-                  ? 'Extracting text from PDF'
+                  ? extractingPdfLabel
                   : attachment.contentType?.startsWith('image/')
-                  ? 'Analyzing image content'
-                  : 'Reading file content'}
+                  ? analyzingImageLabel
+                  : readingFileLabel}
               </p>
             </div>
           </div>
@@ -117,16 +139,28 @@ export function ClinicalAttachmentCard({
 
       {/* Download Link */}
       <div className="mt-3 pt-2 border-t border-slate-100">
-        <a
-          href={attachment.downloadURL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-primary-blue hover:text-primary-blue-hover font-apple font-medium inline-flex items-center gap-1"
-        >
-          View/Download →
-        </a>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <a
+            href={attachment.downloadURL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary-blue hover:text-primary-blue-hover font-apple font-medium inline-flex items-center gap-1"
+          >
+            {viewDownloadLabel} →
+          </a>
+          {onToggleReviewedToday && (
+            <label className="inline-flex items-center gap-2 text-xs text-slate-600 font-apple font-light cursor-pointer">
+              <input
+                type="checkbox"
+                checked={attachment.reviewedToday === true}
+                onChange={onToggleReviewedToday}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span>{reviewedTodayLabel}</span>
+            </label>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-

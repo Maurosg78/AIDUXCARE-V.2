@@ -36,10 +36,153 @@ const VERTEX_PROXY_URL =
 // Reuse assistant model configuration (defaults to Gemini 2.5 Flash)
 const GEMINI_OCR_MODEL = env.VITE_AIDUX_ASSISTANT_MODEL || 'gemini-2.5-flash';
 
-// Prompt tailored for strict OCR behaviour (no summarization/commentary)
 const IMAGE_OCR_PROMPT =
   'You are a medical document OCR system. Extract ALL text from this medical image exactly as written. ' +
   'Include all findings, measurements, diagnoses, and clinical data. Return only the extracted text, no commentary.';
+
+const IMAGE_CLINICAL_DESCRIPTION_PROMPT =
+  'You are reviewing a clinical attachment image for a physiotherapy follow-up workflow. ' +
+  'The image may be a radiograph, a photo of a report, or a screenshot shared by the patient. ' +
+  'Describe only directly visible clinically relevant features in cautious Spanish. ' +
+  'If readable text is visible, include only the clinically relevant text. ' +
+  'Do not diagnose. Do not invent findings. Explicitly state uncertainty when image quality limits interpretation. ' +
+  'End with this exact sentence on its own line: "Imagen sugerente de hallazgos visibles; no constituye diagnóstico."';
+
+const IMAGE_NON_DIAGNOSTIC_DISCLAIMER =
+  'Imagen sugerente de hallazgos visibles; no constituye diagnóstico.';
+
+const CLINICAL_KEYWORDS = [
+  'fractura',
+  'radiografía',
+  'rx',
+  'muñeca',
+  'mano',
+  'cúbito',
+  'cubito',
+  'radio',
+  'carpo',
+  'osteosíntesis',
+  'placa',
+  'tornillo',
+  'edema',
+  'alineación',
+  'desplazamiento',
+  'consolidación',
+  'cartílago',
+  'cartilago',
+  'estiloides',
+  'densidad',
+  'calcificación',
+  'calcificacion',
+  'material',
+];
+
+export function isLowSignalImageExtraction(value: string): boolean {
+  const rawValue = typeof value === 'string' ? value : '';
+  const trimmedValue = rawValue.trim();
+  const normalizedWhitespace = trimmedValue.replace(/\s+/g, ' ');
+  const alphanumericCharacters = normalizedWhitespace.replace(/[^a-zA-Z0-9ÁÉÍÓÚáéíóúÑñ]/g, '');
+  const hasVeryShortText = normalizedWhitespace.length < 24;
+  const hasVeryFewAlphanumericCharacters = alphanumericCharacters.length < 8;
+  return hasVeryShortText || hasVeryFewAlphanumericCharacters;
+}
+
+export function scoreImageExtractionUtility(value: string): number {
+  const rawValue = typeof value === 'string' ? value : '';
+  const trimmedValue = rawValue.trim();
+  if (!trimmedValue) {
+    return 0;
+  }
+
+  const normalizedValue = trimmedValue.toLowerCase();
+  const normalizedWithoutDisclaimer = normalizedValue
+    .replace(IMAGE_NON_DIAGNOSTIC_DISCLAIMER.toLowerCase(), '')
+    .trim();
+  const compactValue = normalizedWithoutDisclaimer.replace(/\s+/g, ' ');
+  const clinicalKeywordMatches = CLINICAL_KEYWORDS.filter((keyword) => compactValue.includes(keyword)).length;
+  const hasEnoughLength = compactValue.length >= 80;
+  const hasStrongLength = compactValue.length >= 160;
+  const hasBulletLikeStructure = compactValue.includes(':') || compactValue.includes('\n');
+
+  let score = 0;
+  if (hasEnoughLength) {
+    score += 2;
+  }
+  if (hasStrongLength) {
+    score += 1;
+  }
+  if (clinicalKeywordMatches > 0) {
+    score += Math.min(clinicalKeywordMatches, 4);
+  }
+  if (hasBulletLikeStructure) {
+    score += 1;
+  }
+  if (isLowSignalImageExtraction(compactValue)) {
+    score -= 3;
+  }
+
+  return Math.max(score, 0);
+}
+
+function ensureImageDisclaimer(value: string): string {
+  const rawValue = typeof value === 'string' ? value : '';
+  const trimmedValue = rawValue.trim();
+  const hasDisclaimer = trimmedValue.includes(IMAGE_NON_DIAGNOSTIC_DISCLAIMER);
+  if (!trimmedValue) {
+    return IMAGE_NON_DIAGNOSTIC_DISCLAIMER;
+  }
+  if (hasDisclaimer) {
+    return trimmedValue;
+  }
+  const normalizedValue = `${trimmedValue}\n${IMAGE_NON_DIAGNOSTIC_DISCLAIMER}`;
+  return normalizedValue;
+}
+
+function stripImageDisclaimer(value: string): string {
+  const rawValue = typeof value === 'string' ? value : '';
+  const withoutDisclaimer = rawValue.replace(IMAGE_NON_DIAGNOSTIC_DISCLAIMER, '');
+  const trimmedValue = withoutDisclaimer.trim();
+  return trimmedValue;
+}
+
+export function mergeImageExtractionResults(
+  visualExtraction: string,
+  ocrExtraction: string,
+): string {
+  const visualScore = scoreImageExtractionUtility(visualExtraction);
+  const ocrScore = scoreImageExtractionUtility(ocrExtraction);
+  const visualBody = stripImageDisclaimer(visualExtraction);
+  const ocrBody = stripImageDisclaimer(ocrExtraction);
+  const hasUsefulVisual = visualScore >= 2;
+  const hasUsefulOcr = ocrScore >= 2;
+  const normalizedVisualBody = visualBody.replace(/\s+/g, ' ').trim().toLowerCase();
+  const normalizedOcrBody = ocrBody.replace(/\s+/g, ' ').trim().toLowerCase();
+  const bothBodiesAreEquivalent =
+    normalizedVisualBody.length > 0 &&
+    normalizedOcrBody.length > 0 &&
+    (normalizedVisualBody.includes(normalizedOcrBody) || normalizedOcrBody.includes(normalizedVisualBody));
+
+  if (hasUsefulVisual && hasUsefulOcr && !bothBodiesAreEquivalent) {
+    const combinedValue =
+      `Hallazgos visibles del adjunto:\n${visualBody}\n\nTexto clínico visible en el adjunto:\n${ocrBody}`;
+    const combinedWithDisclaimer = ensureImageDisclaimer(combinedValue);
+    return combinedWithDisclaimer;
+  }
+
+  if (hasUsefulVisual && visualScore >= ocrScore) {
+    const visualWithDisclaimer = ensureImageDisclaimer(visualBody);
+    return visualWithDisclaimer;
+  }
+
+  if (hasUsefulOcr) {
+    const ocrWithDisclaimer = ensureImageDisclaimer(ocrBody);
+    return ocrWithDisclaimer;
+  }
+
+  const fallbackBody = visualBody.length >= ocrBody.length ? visualBody : ocrBody;
+  const fallbackWithDisclaimer = ensureImageDisclaimer(fallbackBody);
+  return fallbackWithDisclaimer;
+}
 
 export class FileProcessorService {
   /**
@@ -114,11 +257,11 @@ export class FileProcessorService {
     if (file.type.startsWith('image/')) {
       console.log(`[FileProcessor] 📷 Image uploaded: ${file.name}`);
       try {
-        const ocrText = await FileProcessorService.extractImageTextWithGemini(file);
+        const extractedText = await FileProcessorService.extractImageTextWithGemini(file);
 
         // Limitar texto extraído para prevenir prompts muy largos (mismo límite que PDFs)
         const MAX_TEXT_LENGTH = 15000;
-        let processedText = ocrText;
+        let processedText = extractedText;
 
         if (processedText.length > MAX_TEXT_LENGTH) {
           const originalLength = processedText.length;
@@ -194,6 +337,25 @@ export class FileProcessorService {
    * Sends the image as base64 and uses a strict OCR prompt to obtain raw extracted text.
    */
   private static async extractImageTextWithGemini(file: File): Promise<string> {
+    const visualExtraction = await FileProcessorService.callVertexImagePrompt(
+      file,
+      IMAGE_CLINICAL_DESCRIPTION_PROMPT,
+    );
+    const ocrExtraction = await FileProcessorService.callVertexImagePrompt(file, IMAGE_OCR_PROMPT);
+    const mergedExtraction = mergeImageExtractionResults(visualExtraction, ocrExtraction);
+    const mergedScore = scoreImageExtractionUtility(mergedExtraction);
+
+    console.info('[FileProcessor] Image analysis completed', {
+      fileName: file.name,
+      visualScore: scoreImageExtractionUtility(visualExtraction),
+      ocrScore: scoreImageExtractionUtility(ocrExtraction),
+      mergedScore,
+    });
+
+    return mergedExtraction;
+  }
+
+  private static async callVertexImagePrompt(file: File, prompt: string): Promise<string> {
     // Convert image file to base64 for transport
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
@@ -206,7 +368,7 @@ export class FileProcessorService {
     const payload = {
       action: 'image-ocr' as const,
       model: GEMINI_OCR_MODEL,
-      prompt: IMAGE_OCR_PROMPT,
+      prompt,
       image: {
         mimeType: file.type || 'image/*',
         data: base64Data,

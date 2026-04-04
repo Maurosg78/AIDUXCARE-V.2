@@ -8,6 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Edit2, X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
 export interface SuggestedFocusEditorProps {
@@ -31,6 +33,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
   allowAdd = false,
 }) => {
   const { t } = useTranslation();
+  const esPilotEnabled = isSpainPilot();
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
     completed: item.completed ?? false,
@@ -141,10 +144,10 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
           <span className="text-lg">🗓️</span>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-slate-900 font-apple">
-              In-clinic treatment (proposed for today)
+              {t('workflow.followupSurface.inClinicTitle')}
             </h2>
             <p className="text-sm text-slate-600 font-apple font-light mt-1">
-              Proposed for this session. Modify as needed. Check when performed in clinic today. Add notes (dictated or typed) per item if needed.
+              {t('workflow.followupSurface.inClinicSubtitle')}
             </p>
           </div>
         </div>
@@ -178,7 +181,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                   checked={false}
                   onChange={() => handleToggleCompleted(item.id)}
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  title="Check when performed in clinic today"
+                  title={t('workflow.treatment.performedInClinic')}
                 />
               )}
 
@@ -216,7 +219,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                           <CheckCircle className="w-3.5 h-3.5 text-green-600" />
                         </span>
                       )}
-                      {item.label}
+                      {esPilotEnabled ? ensureSpanishClinicalText(item.label) : item.label}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -271,7 +274,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                     onClick={() => handleToggleNotes(item.id)}
                     className="mt-1 text-xs text-slate-400 hover:text-slate-600 font-apple font-light"
                   >
-                    ▸ Notes (optional — dictated or typed)
+                    ▸ {t('workflow.treatment.notesLabel')}
                   </button>
                 )}
               </div>
@@ -302,14 +305,14 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                   disabled={!newItemLabel.trim()}
                   className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  Add
+                  {t('workflow.treatment.addButton')}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelAdd}
                   className="px-2 py-1.5 text-sm text-slate-600 hover:text-slate-800"
                 >
-                  Cancel
+                  {t('workflow.treatment.cancelButton')}
                 </button>
               </div>
             ) : (
@@ -319,7 +322,7 @@ export const SuggestedFocusEditor: React.FC<SuggestedFocusEditorProps> = ({
                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-apple"
               >
                 <Plus className="w-4 h-4" />
-                Add treatment item
+                {t('workflow.treatment.addItemButton')}
               </button>
             )}
           </div>

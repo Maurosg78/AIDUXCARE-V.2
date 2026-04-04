@@ -16,6 +16,13 @@ import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
+type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
+type PhysicalTest = {
+  id?: string;
+  name?: string;
+  test?: string;
+  description?: string;
+};
 
 type EvaluationTestEntry = {
   id: string;
@@ -36,6 +43,62 @@ type EvaluationTestEntry = {
 // RESULT_LABELS is defined inside the component so t() can be used (see below)
 
 const RESULT_OPTIONS: EvaluationResult[] = ["normal", "positive", "negative", "inconclusive"];
+
+const deriveTestCategory = (definition?: MskTestDefinition | null): TestCategoryKey => {
+  const fallbackCategory = 'general';
+  if (!definition) {
+    return fallbackCategory;
+  }
+
+  const nameText = definition.name.toLowerCase();
+  const descriptionText = definition.description.toLowerCase();
+  const typicalUseText = (definition.typicalUse || '').toLowerCase();
+  const combinedText = `${nameText} ${descriptionText} ${typicalUseText}`;
+  const fields = definition.fields ?? [];
+  const hasAngleField = fields.some((field) => field.kind === 'angle_bilateral' || field.kind === 'angle_unilateral');
+  const hasStrengthField = fields.some((field) => field.unit === 'kg');
+  const hasNeurologicalSignal = /neuro|neural|radicular|slump|straight leg raise|slr|sensation|reflex/i.test(combinedText);
+  const hasInspectionSignal = /inspection|edema|swelling|scar|deformity|visual|skin/i.test(combinedText);
+  const hasStrengthSignal = /strength|weakness|resisted|dynamometer|grip|pinch|empty can/i.test(combinedText);
+  const hasFunctionalSignal = /functional|gait|balance|sit to stand|squat|step|reach/i.test(combinedText);
+  const hasRomSignal = /range of motion|rom|rotation|flexion|extension|abduction|adduction|pronation|supination/i.test(combinedText);
+
+  if (hasNeurologicalSignal) {
+    return 'neuro';
+  }
+  if (hasInspectionSignal) {
+    return 'inspection';
+  }
+  if (hasStrengthField || hasStrengthSignal) {
+    return 'strength';
+  }
+  if (hasAngleField || hasRomSignal) {
+    return 'rom';
+  }
+  if (hasFunctionalSignal) {
+    return 'functional';
+  }
+  return 'orthopedic';
+};
+
+const isMskTest = (t: MskTestDefinition | PhysicalTest): t is MskTestDefinition =>
+  'normalTemplate' in t;
+
+const getFieldPreviewKey = (field: TestFieldDefinition): string => {
+  if (field.kind === 'angle_bilateral') {
+    return 'bilateralAngle';
+  }
+  if (field.kind === 'angle_unilateral') {
+    return 'unilateralAngle';
+  }
+  if (field.kind === 'yes_no') {
+    return 'yesNo';
+  }
+  if (field.kind === 'score_0_10') {
+    return 'score';
+  }
+  return 'text';
+};
 
 // Render field input based on field kind
 // Bloque 6: Firma actualizada para aceptar testDefinition como parámetro opcional adicional
@@ -224,6 +287,22 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   workflowRoute,
 }) => {
   const { t } = useTranslation();
+  const categoryLabels: Record<TestCategoryKey, string> = {
+    rom: t('workflow.evaluation.categoryLabels.rom'),
+    neuro: t('workflow.evaluation.categoryLabels.neuro'),
+    inspection: t('workflow.evaluation.categoryLabels.inspection'),
+    strength: t('workflow.evaluation.categoryLabels.strength'),
+    functional: t('workflow.evaluation.categoryLabels.functional'),
+    orthopedic: t('workflow.evaluation.categoryLabels.orthopedic'),
+    general: t('workflow.evaluation.categoryLabels.general'),
+  };
+  const fieldPreviewLabels: Record<string, string> = {
+    bilateralAngle: t('workflow.evaluation.fieldPreviewLabels.bilateralAngle'),
+    unilateralAngle: t('workflow.evaluation.fieldPreviewLabels.unilateralAngle'),
+    yesNo: t('workflow.evaluation.fieldPreviewLabels.yesNo'),
+    score: t('workflow.evaluation.fieldPreviewLabels.score'),
+    text: t('workflow.evaluation.fieldPreviewLabels.text'),
+  };
   const sourceLabels: Record<EvaluationTestEntry['source'], string> = {
     ai: t('workflow.evaluation.sourceAi'),
     manual: t('workflow.evaluation.sourceManual'),
@@ -379,6 +458,14 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
     
     return finalResult;
   }, [allAiSuggestions, pendingAiSuggestions, filteredEvaluationTests]);
+  const quickPickTests = useMemo(() => {
+    const relevantRegion = detectedCaseRegion;
+    const candidateTests = relevantRegion
+      ? MSK_TEST_LIBRARY.filter((test) => test.region === relevantRegion)
+      : MSK_TEST_LIBRARY;
+    const limitedTests = candidateTests.slice(0, 6);
+    return limitedTests;
+  }, [detectedCaseRegion]);
 
   return (
     <div className="space-y-6">
@@ -431,16 +518,44 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   additionalAiSuggestions.map((item: any) => {
                     const matched = item.match;
                     const displayName = matched ? matched.name : item.rawName;
+                    const categoryKey = deriveTestCategory(matched);
+                    const categoryLabel = categoryLabels[categoryKey];
+                    const fieldPreviewItems = (matched?.fields ?? []).slice(0, 3).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
                     return (
                       <div
                         key={`ai-additional-${item.originalIndex || item.key}`}
                         className="flex items-start justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
                       >
                         <div className="flex-1">
-                          <p className="font-semibold text-slate-700">{displayName}</p>
-                          <p className="text-[11px] text-slate-500">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-700">{displayName}</p>
+                            <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                              {categoryLabel}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] text-slate-500">
                             {matched ? matched.description : t('workflow.evaluation.customEntry')}
                           </p>
+                          {matched?.typicalUse && (
+                            <p className="mt-1 text-[11px] text-slate-600">
+                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {matched.typicalUse}
+                            </p>
+                          )}
+                          {fieldPreviewItems.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                {t('workflow.evaluation.expectedInputsLabel')}
+                              </span>
+                              {fieldPreviewItems.map((fieldPreview) => (
+                                <span
+                                  key={`${displayName}-${fieldPreview}`}
+                                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600"
+                                >
+                                  {fieldPreview}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -478,6 +593,86 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     {t('workflow.evaluation.libraryTests')}
                   </label>
+                  {quickPickTests.length > 0 && (
+                    <div className="mt-2 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">
+                          {detectedCaseRegion
+                            ? t('workflow.evaluation.quickPicksWithRegion', { region: regionLabels[detectedCaseRegion] })
+                            : t('workflow.evaluation.quickPicks')}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          {t('workflow.evaluation.quickPicksHint')}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {quickPickTests.map((test) => {
+                          const alreadySelected = isTestAlreadySelected(test.id, test.name);
+                          const isLibraryTest = isMskTest(test);
+                          const categorySource = isLibraryTest ? test : null;
+                          const categoryKey = deriveTestCategory(categorySource);
+                          const categoryLabel = categoryLabels[categoryKey];
+                          const fieldDefinitions = isLibraryTest ? (test.fields ?? []) : [];
+                          const expectedFieldLabels = fieldDefinitions.map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
+                          const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels));
+                          const typicalUseText = isLibraryTest ? test.typicalUse : undefined;
+                          const canCreateEntry = isLibraryTest;
+                          return (
+                            <div
+                              key={`quick-pick-${test.id}`}
+                              className="rounded-2xl border border-slate-200 bg-white px-3 py-3"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm font-semibold text-slate-800">{test.name}</p>
+                                    <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                                      {categoryLabel}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-[11px] text-slate-500">{test.description}</p>
+                                  {typicalUseText && (
+                                    <p className="mt-1 text-[11px] text-slate-600">
+                                      <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {typicalUseText}
+                                    </p>
+                                  )}
+                                  {expectedFieldUniqueLabels.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                        {t('workflow.evaluation.expectedInputsLabel')}
+                                      </span>
+                                      {expectedFieldUniqueLabels.map((fieldPreview) => (
+                                        <span
+                                          key={`${test.id}-${fieldPreview}`}
+                                          className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-600"
+                                        >
+                                          {fieldPreview}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={alreadySelected || !canCreateEntry}
+                                  onClick={() => {
+                                    if (!canCreateEntry) {
+                                      return;
+                                    }
+                                    const nextEntry = createEntryFromLibrary(test, 'manual');
+                                    addEvaluationTest(nextEntry);
+                                  }}
+                                  className="rounded-full bg-[#7c3aed] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#6d28d9] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                                >
+                                  {alreadySelected ? t('workflow.evaluation.alreadyAddedButton') : t('workflow.evaluation.addButton')}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <select
                     onChange={handleLibrarySelect}
                     defaultValue=""
@@ -622,17 +817,46 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   const definition = getTestDefinition(entry.id);
                   const hasFields = definition && hasFieldDefinitions(definition);
                   const testDefinition = hasFields ? definition as MskTestDefinition : null;
+                  const categoryKey = deriveTestCategory(testDefinition);
+                  const categoryLabel = categoryLabels[categoryKey];
+                  const expectedFieldLabels = (testDefinition?.fields ?? []).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
+                  const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels));
 
                   return (
                     <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-3 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-800">{entry.name}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-800">{entry.name}</p>
+                            <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                              {categoryLabel}
+                            </span>
+                          </div>
                           <p className="text-[11px] text-slate-500">
                             {entry.region ? regionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · {t('workflow.evaluation.sourceLabel')}: {sourceLabels[entry.source]}
                           </p>
                           {entry.description && (
                             <p className="mt-1 text-[11px] text-slate-500">{entry.description}</p>
+                          )}
+                          {testDefinition?.typicalUse && (
+                            <p className="mt-1 text-[11px] text-slate-600">
+                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {testDefinition.typicalUse}
+                            </p>
+                          )}
+                          {expectedFieldUniqueLabels.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                {t('workflow.evaluation.expectedInputsLabel')}
+                              </span>
+                              {expectedFieldUniqueLabels.map((fieldPreview) => (
+                                <span
+                                  key={`${entry.id}-${fieldPreview}`}
+                                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600"
+                                >
+                                  {fieldPreview}
+                                </span>
+                              ))}
+                            </div>
                           )}
                           {(entry.sensitivity !== undefined || entry.sensitivityQualitative || entry.specificity !== undefined || entry.specificityQualitative) && (
                             <div className="flex gap-2 mt-1 flex-wrap">

@@ -18,9 +18,8 @@ import { auth } from '../lib/firebase';
 import { SMSService } from './smsService';
 import { PatientConsentService } from './patientConsentService';
 import { checkConsentViaServer } from './consentServerService';
+import { isSpainPilot } from '@/core/pilotDetection';
 import {
-  getConsentLanguageForJurisdiction,
-  getConsentVersionForPortal,
   normalizeConsentJurisdiction,
 } from './verbalConsentService';
 
@@ -126,7 +125,11 @@ export class ConsentVerificationService {
       // Send SMS if phone available
       if (patientPhone) {
         try {
-          const consentJurisdiction = normalizeConsentJurisdiction(patientPhone?.startsWith('+34') ? 'ES-ES' : 'CA-ON');
+          const pilotIsSpain = isSpainPilot();
+          const phoneIsSpain = patientPhone?.startsWith('+34') ?? false;
+          const consentJurisdiction = normalizeConsentJurisdiction((pilotIsSpain || phoneIsSpain) ? 'ES-ES' : 'CA-ON');
+          const consentLanguage = consentJurisdiction === 'ES-ES' ? 'es' : 'en';
+          const consentTextVersion = consentJurisdiction === 'ES-ES' ? 'v1-es-ES-written' : 'v2-en-CA';
           // Generate consent token
           const token = await PatientConsentService.generateConsentToken(
             patientId,
@@ -139,8 +142,8 @@ export class ConsentVerificationService {
             undefined,
             {
               jurisdiction: consentJurisdiction,
-              language: getConsentLanguageForJurisdiction(consentJurisdiction),
-              consentTextVersion: getConsentVersionForPortal(consentJurisdiction),
+              language: consentLanguage,
+              consentTextVersion,
             }
           );
 

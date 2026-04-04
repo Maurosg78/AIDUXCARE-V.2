@@ -130,7 +130,25 @@ function applyPostSOAPQualityGuard(soap: SOAPNote): { soap: SOAPNote; flags: str
   return { soap, flags };
 }
 
-function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
+export function normalizeSpanishObjectiveField(value: string): string {
+  const normalizedValue = ensureSpanishClinicalText(value);
+  const cleanedValue = normalizedValue.replace(/\s+/g, ' ').trim();
+  const noNewObjectivePattern = /No se (?:registraron|realizaron) nuevas (?:medidas|mediciones) objetivas hoy\.?/i;
+  const hasNoNewObjectiveStatement = noNewObjectivePattern.test(cleanedValue);
+
+  if (!hasNoNewObjectiveStatement) {
+    return cleanedValue;
+  }
+
+  const matchedStatement = cleanedValue.match(noNewObjectivePattern);
+  const noNewObjectiveStatement = matchedStatement?.[0]?.trim() || 'No se registraron nuevas medidas objetivas hoy.';
+
+  return noNewObjectiveStatement.endsWith('.')
+    ? noNewObjectiveStatement
+    : `${noNewObjectiveStatement}.`;
+}
+
+export function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
   if (!isSpainPilot()) return soap;
 
   const normalizeField = (field: string | undefined) =>
@@ -141,7 +159,7 @@ function normalizeSOAPForSpain(soap: SOAPNote): SOAPNote {
   return {
     ...soap,
     subjective: normalizeField(soap.subjective) || '',
-    objective: normalizeField(soap.objective) || '',
+    objective: soap.objective ? normalizeSpanishObjectiveField(soap.objective) : '',
     assessment: normalizeField(soap.assessment) || '',
     plan: normalizeField(soap.plan) || '',
     planInClinic: normalizeArray((soap as any).planInClinic),
@@ -1064,15 +1082,104 @@ export interface FollowUpAnalysisResult {
   error?: FollowUpSOAPV2Error;
 }
 
-const CONSIDERATIONS_SYSTEM = `You are a clinical documentation assistant. List 1–3 brief clinical considerations based on the session trajectory and pain series. These are reflections only. Do NOT recommend treatment. Do NOT provide diagnosis. Keep them short and neutral. Output only a bullet list (one line per item, use • or -). No other text.`;
+const CONSIDERATIONS_SYSTEM_EN = `You are a clinical documentation assistant. List 1–3 brief clinical considerations based on the session trajectory and pain series. These are reflections only. Do NOT recommend treatment. Do NOT provide diagnosis. Keep them short and neutral. Output plain text bullet lines only (one line per item, use • or -). Do NOT output JSON, arrays, brackets, quotes, or code fences. No other text.`;
+const CONSIDERATIONS_SYSTEM_ES = `Eres un asistente de documentación clínica. Enumera 1–3 consideraciones clínicas breves basadas en la trayectoria de la sesión y la serie de dolor. Son solo reflexiones. NO recomiendes tratamiento. NO proporciones diagnóstico. Mantén las frases breves y neutrales. Devuelve solo líneas con viñetas en texto plano (una por línea, usando • o -). NO devuelvas JSON, arrays, corchetes, comillas ni bloques de código. Ningún otro texto.`;
 
-function parseConsiderationsFromResponse(text: string): string[] {
+function buildPainSeriesRepair(line: string, painSeriesSummary?: string, jurisdiction?: string): string {
+  const hasPainSeriesSummary = typeof painSeriesSummary === 'string' && painSeriesSummary.trim().length > 0;
+  if (!hasPainSeriesSummary) {
+    return line;
+  }
+
+  const painSeriesParts = painSeriesSummary
+    .split('→')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const hasTwoPainPoints = painSeriesParts.length >= 2;
+  if (!hasTwoPainPoints) {
+    return line;
+  }
+
+  const firstPainPoint = painSeriesParts[0];
+  const lastPainPoint = painSeriesParts[painSeriesParts.length - 1];
+  const isSpanish = jurisdiction === 'ES-ES';
+  const isTruncatedSpanishPainLine = /disminuid[oa].*de\s+\d+\s+a\s*$/i.test(line);
+  const isTruncatedEnglishPainLine = /decreased.*from\s+\d+\s+to\s*$/i.test(line);
+
+  if (isSpanish && isTruncatedSpanishPainLine) {
+    return `El puntaje de dolor ha disminuido de ${firstPainPoint} a ${lastPainPoint}.`;
+  }
+
+  if (!isSpanish && isTruncatedEnglishPainLine) {
+    return `Pain score has decreased from ${firstPainPoint} to ${lastPainPoint}.`;
+  }
+
+  return line;
+}
+
+function repairConsiderations(considerations: string[], painSeriesSummary?: string, jurisdiction?: string): string[] {
+  return considerations.map((line) => buildPainSeriesRepair(line, painSeriesSummary, jurisdiction));
+}
+
+export function parseConsiderationsFromResponse(text: string): string[] {
   if (!text || typeof text !== 'string') return [];
-  const lines = text
+  const trimmed = text.trim();
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
+        .map((line) => line.replace(/^[\s•\-*]\s*|\d+\.\s*/g, '').trim())
+        .filter((line) => line.length > 0 && line.length <= 200)
+        .slice(0, 3);
+    }
+    const objectArray =
+      Array.isArray((parsed as any)?.clinical_considerations)
+        ? (parsed as any).clinical_considerations
+        : Array.isArray((parsed as any)?.considerations)
+          ? (parsed as any).considerations
+          : null;
+    if (objectArray) {
+      return objectArray
+        .map((item: unknown) => (typeof item === 'string' ? item : String(item ?? '')))
+        .map((line) => line.replace(/^[\s•\-*]\s*|\d+\.\s*/g, '').trim())
+        .filter((line) => line.length > 0 && line.length <= 200)
+        .slice(0, 3);
+    }
+  } catch (_) {
+    // not JSON array; continue with text parsing
+  }
+
+  const rawLines = text
     .split(/\n/)
-    .map((l) => l.replace(/^[\s•\-*]\s*|\d+\.\s*/g, '').trim())
-    .filter((l) => l.length > 0 && l.length <= 200);
-  return lines.slice(0, 3);
+    .map((line) => line.replace(/\r/g, '').trim())
+    .filter((line) => line.length > 0);
+
+  const mergedLines: string[] = [];
+
+  for (const rawLine of rawLines) {
+    const startsNewBullet = /^[•\-*]\s+|^\d+\.\s+/.test(rawLine);
+    const hasPreviousLine = mergedLines.length > 0;
+
+    if (!startsNewBullet && hasPreviousLine) {
+      const previousLine = mergedLines[mergedLines.length - 1];
+      const mergedLine = `${previousLine} ${rawLine}`.trim();
+      mergedLines[mergedLines.length - 1] = mergedLine;
+      continue;
+    }
+
+    mergedLines.push(rawLine);
+  }
+
+  const sanitizedLines = mergedLines
+    .map((line) => line.replace(/^[\s•\-*"\[,]*|\d+\.\s*/g, '').replace(/[",\]]+$/g, '').trim())
+    .filter((line) => line.length > 0 && line.length <= 200)
+    .filter((line) => !/[{}[\]":]/.test(line) || /^[^:]+$/.test(line));
+
+  return sanitizedLines
+    .filter((line) => line !== '[' && line !== ']')
+    .slice(0, 3);
 }
 
 /**
@@ -1106,7 +1213,10 @@ export async function generateFollowUpAnalysis(
   const contextBlock =
     structured.length > 0 ? structured.join('\n') + narrative : narrative || 'No trajectory or pain series data.';
 
-  const considerationsPrompt = `${CONSIDERATIONS_SYSTEM}\n\nContext:\n${contextBlock}`;
+  const considerationsSystem =
+    followUpPromptJurisdiction === 'ES-ES' ? CONSIDERATIONS_SYSTEM_ES : CONSIDERATIONS_SYSTEM_EN;
+  const considerationsContextLabel = followUpPromptJurisdiction === 'ES-ES' ? 'Contexto' : 'Context';
+  const considerationsPrompt = `${considerationsSystem}\n\n${considerationsContextLabel}:\n${contextBlock}`;
   const traceId = `followup-considerations-${Date.now()}`;
 
   let considerations: string[] = [];
@@ -1127,7 +1237,15 @@ export async function generateFollowUpAnalysis(
         (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
         (data as any)?.text ??
         '';
-      if (raw && typeof raw === 'string') considerations = parseConsiderationsFromResponse(raw);
+      if (raw && typeof raw === 'string') {
+        const parsedConsiderations = parseConsiderationsFromResponse(raw);
+        const repairedConsiderations = repairConsiderations(
+          parsedConsiderations,
+          input.painSeriesSummary,
+          followUpPromptJurisdiction
+        );
+        considerations = repairedConsiderations;
+      }
     }
   } catch (e) {
     console.warn('[FollowUpAnalysis] Considerations call failed, returning documentation only.', e);

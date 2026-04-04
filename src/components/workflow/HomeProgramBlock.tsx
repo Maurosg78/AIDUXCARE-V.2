@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Edit2, X, ChevronDown, ChevronUp, CheckCircle, Plus } from 'lucide-react';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
 import type { TodayFocusItem } from '../../utils/parsePlanToFocus';
 
 export interface HomeProgramBlockProps {
@@ -30,6 +32,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
   onSelectAllClick,
 }) => {
   const { t } = useTranslation();
+  const esPilotEnabled = isSpainPilot();
   const [items, setItems] = useState<TodayFocusItem[]>(initialItems.map(item => ({
     ...item,
     completed: item.completed ?? false,
@@ -134,10 +137,10 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
         <span className="text-lg">🏠</span>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-slate-900 font-apple">
-            Home Exercise Program (HEP)
+            {t('workflow.visit.briefingHepTitle')}
           </h2>
           <p className="text-sm text-slate-600 font-apple font-light mt-1">
-            Prescribed for home. Check to include in this follow-up. Edit as needed. Add notes (dictated or typed) per item if needed.
+            {t('workflow.homeProgram.blockSubtitle')}
           </p>
         </div>
         {onSelectAllClick != null && (
@@ -145,7 +148,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
             type="button"
             onClick={onSelectAllClick}
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors flex-shrink-0"
-            title={allDone ? 'Unmark all' : 'Mark all as done'}
+            title={allDone ? t('workflow.homeProgram.unmarkAllTitle') : t('workflow.homeProgram.markAllDoneTitle')}
           >
             <input
               type="checkbox"
@@ -214,13 +217,13 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                           <CheckCircle className="w-3.5 h-3.5 text-green-600" />
                         </span>
                       )}
-                      {item.label}
+                      {esPilotEnabled ? ensureSpanishClinicalText(item.label) : item.label}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleEditLabel(item.id)}
                         className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-colors"
-                        title="Edit exercise"
+                        title={t('workflow.homeProgram.editItem')}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -228,7 +231,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                         <button
                           onClick={() => handleRemove(item.id)}
                           className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Remove exercise"
+                          title={t('workflow.homeProgram.removeItem')}
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -262,7 +265,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                     onClick={() => handleToggleNotes(item.id)}
                     className="mt-1 text-xs text-slate-400 hover:text-slate-600 font-apple font-light"
                   >
-                    ▸ Notes (optional — dictated or typed)
+                    ▸ {t('workflow.homeProgram.notesLabel')}
                   </button>
                 )}
               </div>
@@ -293,14 +296,14 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                   disabled={!newItemLabel.trim()}
                   className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  Add
+                  {t('workflow.homeProgram.addButton')}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelAdd}
                   className="px-2 py-1.5 text-sm text-slate-600 hover:text-slate-800"
                 >
-                  Cancel
+                  {t('workflow.homeProgram.cancelButton')}
                 </button>
               </div>
             ) : (
@@ -310,7 +313,7 @@ export const HomeProgramBlock: React.FC<HomeProgramBlockProps> = ({
                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-apple"
               >
                 <Plus className="w-4 h-4" />
-                Add exercise
+                {t('workflow.homeProgram.addItemButton')}
               </button>
             )}
           </div>

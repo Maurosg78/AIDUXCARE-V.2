@@ -115,10 +115,8 @@ describe('buildFollowUpPromptV3', () => {
     });
     expect(prompt).toContain('LONGITUDINAL CONTEXT — CHANGES SINCE LAST VISIT');
     expect(prompt).toContain('Pain 7/10 → 4/10');
-    expect(prompt).toContain('documentation continuity');
-    expect(prompt).toContain('Do not infer new diagnoses or treatment decisions from it');
-    expect(prompt).toContain('use it only to describe evolution of symptoms or response to care');
-    expect(prompt).toContain('Do not transform the longitudinal information into treatment strategy');
+    expect(prompt).toContain('documentation source of truth for symptom evolution');
+    expect(prompt).toContain('Do not infer new diagnoses or undocumented treatment decisions from it');
   });
 
   it('includes TRAJECTORY PATTERN block when trajectoryPattern provided', () => {
@@ -128,7 +126,7 @@ describe('buildFollowUpPromptV3', () => {
       trajectoryPattern: 'improved',
       trajectoryConfidence: 'high',
     });
-    expect(prompt).toContain('TRAJECTORY PATTERN (context only)');
+    expect(prompt).toContain('TRAJECTORY PATTERN AND PAIN TREND');
     expect(prompt).toContain('Pain trajectory classification: improved');
     expect(prompt).toContain('confidence: high');
     expect(prompt).toContain('Use this information only to describe patient evolution');
@@ -141,20 +139,82 @@ describe('buildFollowUpPromptV3', () => {
       clinicalUpdate: 'Update',
       painSeriesSummary: '7 → 5 → 4',
     });
-    expect(prompt).toContain('TRAJECTORY PATTERN (context only)');
+    expect(prompt).toContain('TRAJECTORY PATTERN AND PAIN TREND');
     expect(prompt).toContain('Pain series (recent visits): 7 → 5 → 4');
     expect(prompt).toContain('Use this information only to describe patient evolution');
   });
 
-  it('includes PREVIOUS TREATMENT PLAN(S) and context-only guardrail when previousPlansSummary provided', () => {
+  it('includes PATIENT LONGITUDINAL MEMORY PATTERN when patternInsightSummary provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      patternInsightSummary: 'This patient typically shows gradual improvement with short plateaus before further progress.',
+    });
+    expect(prompt).toContain('PATIENT LONGITUDINAL MEMORY PATTERN');
+    expect(prompt).toContain('gradual improvement with short plateaus');
+    expect(prompt).toContain('keep continuity with how this patient has been responding across sessions');
+    expect(prompt).toContain('Do not convert this pattern into a new diagnosis');
+  });
+
+  it('includes CURRENT HOME PROGRAM ADHERENCE when provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      currentHepAdherenceSummary: 'HEP adherence today: 3/4 completed (75%).',
+    });
+    expect(prompt).toContain('CURRENT HOME PROGRAM ADHERENCE');
+    expect(prompt).toContain('HEP adherence today: 3/4 completed (75%).');
+    expect(prompt).toContain('current structured HEP adherence provided');
+  });
+
+  it('includes PREVIOUS TREATMENT PLAN(S) and continuity guardrail when previousPlansSummary provided', () => {
     const prompt = buildFollowUpPromptV3({
       baselineSOAP,
       clinicalUpdate: 'Update',
       previousPlansSummary: 'Focus: Reassess ROM. Interventions: Manual therapy.',
     });
-    expect(prompt).toContain('PREVIOUS TREATMENT PLAN(S) — CONTEXT ONLY');
-    expect(prompt).toContain('Use the previous plan ONLY as context');
+    expect(prompt).toContain('PREVIOUS TREATMENT PLAN(S)');
+    expect(prompt).toContain('Use the previous plan to maintain clinical continuity');
     expect(prompt).toContain('Do NOT introduce new interventions');
     expect(prompt).toContain('Reassess ROM');
+  });
+
+  it('includes reviewed attachments section and source guardrails when provided', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      reviewedAttachmentsSummary: 'Imagen clínica revisada hoy — descripción automática no diagnóstica — RX muñeca: hallazgos sugerentes de cambios estables.',
+    });
+    expect(prompt).toContain('OBJECTIVE FINDINGS FROM ATTACHMENTS REVIEWED TODAY');
+    expect(prompt).toContain('Imagen clínica revisada hoy — descripción automática no diagnóstica');
+    expect(prompt).toContain('Do NOT convert ambiguous patient retelling into objective findings');
+    expect(prompt).toContain('make the source explicit as attachment/report review from today');
+    expect(prompt).toContain('Do NOT write that an image "confirms"');
+    expect(prompt).toContain('the image does not constitute a diagnosis');
+  });
+
+  it('includes longitudinal and previous plan inputs in source of truth and task requirements', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      longitudinalSummary: 'Pain reduced since last visit.',
+      previousPlansSummary: 'Continue ROM and loading progression.',
+      patternInsightSummary: 'Usually improves gradually.',
+      reviewedAttachmentsSummary: 'Adjunto revisado hoy — imagen: cambios estables.',
+    });
+    expect(prompt).toContain('longitudinal context / pain trend / trajectory data provided');
+    expect(prompt).toContain('previous treatment plan information provided');
+    expect(prompt).toContain('patient longitudinal memory pattern provided');
+    expect(prompt).toContain('attachment findings explicitly marked as reviewed today');
+    expect(prompt).toContain('explicitly state the clinical change versus the previous completed session');
+    expect(prompt).toContain('connect today\'s plan to the patient\'s response, tolerance, adherence, or progression');
+    expect(prompt).toContain('begin the Plan with one brief continuity sentence stating whether today\'s care continues, progresses, or adjusts the prior plan');
+    expect(prompt).toContain('avoid saying "without changes" unless the input explicitly states that today\'s plan was unchanged');
+    expect(prompt).toContain('prefer wording such as continuing care with progression according to tolerance');
+    expect(prompt).toContain('Prefer concise EMR-style clinical wording over narrative prose');
+    expect(prompt).toContain('If no new objective measures or examination findings are documented today, state clearly that no new objective measures were recorded today');
+    expect(prompt).toContain('Do NOT restate baseline objective findings as if they were newly measured today');
+    expect(prompt).toContain('Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective');
+    expect(prompt).toContain('Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section');
   });
 });

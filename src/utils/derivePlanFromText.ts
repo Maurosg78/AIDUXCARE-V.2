@@ -4,6 +4,7 @@
  */
 
 import { PLAN_SPLIT_KEYWORDS } from './planSplitKeywords';
+import { ensureSpanishClinicalText } from './normalizers/es/ensureSpanishClinicalText';
 
 export interface DerivedPlan {
   inClinic: string[];
@@ -31,9 +32,9 @@ function trySplitStructuredPlanSections(planSummary: string): { inClinicText: st
     return null;
   }
   const inClinicHeaderPattern =
-    /(?:^|[\n.])\s*(?:IN-CLINIC\s+TREATMENT|TRATAMIENTO\s+EN\s+CL[ÍI]NICA)\s*:\s*/i;
+    /(?:^|[\n.])\s*(?:IN-CLINIC\s+TREATMENT|TRATAMIENTO\s+EN\s+CL[ÍI]NICA)(?:\s*\([^)]*\))?\s*:\s*/i;
   const hepHeaderPattern =
-    /(?:^|[\n.])\s*(?:HOME\s+EXERCISE\s+PROGRAM(?:\s*\(\s*HEP\s*\))?|PROGRAMA\s+DE\s+EJERCICIOS\s+EN\s+CASA)\s*:\s*/i;
+    /(?:^|[\n.])\s*(?:HOME\s+EXERCISE\s+PROGRAM|PROGRAMA\s+DE\s+EJERCICIOS\s+EN\s+CASA)(?:\s*\([^)]*\))?\s*:\s*/i;
   const inClinicHeaderMatch = normalizedPlan.match(inClinicHeaderPattern);
   const hepHeaderMatch = normalizedPlan.match(hepHeaderPattern);
   const hasInClinicHeader = inClinicHeaderMatch != null && inClinicHeaderMatch.index !== undefined;
@@ -104,10 +105,26 @@ function classifyLine(line: string): 'inClinic' | 'homeProgram' {
 function linesToItems(lines: string[]): string[] {
   const items: string[] = [];
   for (const line of lines) {
-    const trimmed = line.replace(/^[\s•\-*]+\s*/, '').trim();
-    if (trimmed.length > 0) items.push(trimmed);
+    const withoutMarkdown = line.replace(/\*\*/g, '');
+    const withoutBullet = withoutMarkdown.replace(/^[\s•\-*]+\s*/, '');
+    const normalizedInlineBullets = withoutBullet.replace(/\s+-\s+/g, '\n- ');
+    const candidateSegments = normalizedInlineBullets.split('\n');
+    for (const segment of candidateSegments) {
+      const trimmed = segment.replace(/^[\s•\-*]+\s*/, '').trim();
+      const withoutTrailingPunctuation = trimmed.replace(/[.;]\s*$/, '').trim();
+      if (withoutTrailingPunctuation.length > 0) items.push(withoutTrailingPunctuation);
+    }
   }
   return items;
+}
+
+function normalizePlanSummary(planSummary: string): string {
+  const withoutMarkdown = planSummary.replace(/\*\*/g, '');
+  const withoutTabs = withoutMarkdown.replace(/\t/g, ' ');
+  const normalizedBullets = withoutTabs.replace(/\s+-\s+/g, '\n- ');
+  const normalizedHeaders = normalizedBullets.replace(/(^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ()/-]{6,}:)/gm, '\n$1');
+  const normalizedLanguage = ensureSpanishClinicalText(normalizedHeaders);
+  return normalizedLanguage.trim();
 }
 
 /**
@@ -140,7 +157,8 @@ export function derivePlanFromText(planInput: DerivePlanInput): DerivedPlan {
     return structuredResult;
   }
 
-  const planSummary = typeof planInput === 'string' ? planInput : planDocument?.planText;
+  const rawPlanSummary = typeof planInput === 'string' ? planInput : planDocument?.planText;
+  const planSummary = rawPlanSummary ? normalizePlanSummary(rawPlanSummary) : rawPlanSummary;
 
   if (!planSummary || typeof planSummary !== 'string') {
     return { inClinic, homeProgram };
@@ -202,7 +220,13 @@ export function derivePlanFromText(planInput: DerivePlanInput): DerivedPlan {
 
   // Si no hubo secciones ni líneas clasificadas, tratar todo el texto como una lista mixta por línea
   if (inClinic.length === 0 && homeProgram.length === 0 && planSummary.trim()) {
-    const allLines = planSummary.split(/\n/).map(l => l.replace(/^[\s•\-*]+\s*/, '').trim()).filter(Boolean);
+    const allLines = planSummary
+      .split(/\n/)
+      .map(l => l.replace(/^[\s•\-*]+\s*/, '').trim())
+      .flatMap((line) => line.split(/;(?=\s+[A-ZÁÉÍÓÚÑa-záéíóúñ])/))
+      .map((line) => line.replace(/[.;]\s*$/, '').trim())
+      .map((line) => line.trim())
+      .filter(Boolean);
     for (const l of allLines) {
       const bucket = classifyLine(l);
       if (bucket === 'inClinic') inClinic.push(l);

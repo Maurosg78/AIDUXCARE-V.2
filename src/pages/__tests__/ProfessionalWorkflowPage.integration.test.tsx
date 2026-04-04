@@ -64,8 +64,14 @@ vi.mock('../../services/session-storage', () => ({
 vi.mock('../../services/sessionComparisonService', () => ({
   SessionComparisonService: vi.fn().mockImplementation(() => ({
     getPreviousSession: vi.fn(),
+    getEncountersComparisonState: vi.fn().mockResolvedValue({
+      isFirstSession: true,
+      reason: 'no_previous_session',
+    }),
+    getLastNPainSeries: vi.fn().mockResolvedValue([]),
     compareSessions: vi.fn(),
     formatComparisonForUI: vi.fn(),
+    buildLongitudinalSummaryForPrompt: vi.fn().mockReturnValue(null),
   })),
 }));
 
@@ -236,18 +242,30 @@ vi.mock('../../features/patient-dashboard/hooks/usePatientVisitCount', () => ({
 describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
   let mockSessionComparisonService: any;
   let mockGetPreviousSession: any;
+  let mockGetEncountersComparisonState: any;
+  let mockGetLastNPainSeries: any;
   let mockCompareSessions: any;
   let mockFormatComparisonForUI: any;
+  let mockBuildLongitudinalSummaryForPrompt: any;
 
   beforeEach(() => {
     mockGetPreviousSession = vi.fn();
+    mockGetEncountersComparisonState = vi.fn().mockResolvedValue({
+      isFirstSession: true,
+      reason: 'no_previous_session',
+    });
+    mockGetLastNPainSeries = vi.fn().mockResolvedValue([]);
     mockCompareSessions = vi.fn();
     mockFormatComparisonForUI = vi.fn();
+    mockBuildLongitudinalSummaryForPrompt = vi.fn().mockReturnValue(null);
 
     mockSessionComparisonService = {
       getPreviousSession: mockGetPreviousSession,
+      getEncountersComparisonState: mockGetEncountersComparisonState,
+      getLastNPainSeries: mockGetLastNPainSeries,
       compareSessions: mockCompareSessions,
       formatComparisonForUI: mockFormatComparisonForUI,
+      buildLongitudinalSummaryForPrompt: mockBuildLongitudinalSummaryForPrompt,
     };
 
     (SessionComparisonService as any).mockImplementation(() => mockSessionComparisonService);

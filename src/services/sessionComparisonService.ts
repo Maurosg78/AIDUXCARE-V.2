@@ -9,13 +9,15 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { Timestamp, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { PersistenceService, type SavedNote } from './PersistenceService';
 import type { EvaluationTestEntry } from '../core/soap/PhysicalExamResultBuilder';
 import type { SOAPNote } from '../types/vertex-ai';
 import { encountersRepo, type Encounter } from '../repositories/encountersRepo';
 import { classifyTrajectory } from '../core/longitudinal/trajectoryClassifier';
 import { buildReferralEvolutionSentence } from '../core/longitudinal/referralEvolutionSentence';
+import type { EncounterLongitudinalSnapshot } from '../core/longitudinal/encounterLongitudinalSnapshot';
 
 // ============================================================================
 // INTERFACES
@@ -49,6 +51,7 @@ export interface Session {
     durationSeconds?: number;
     recordedAt: string;
   };
+  longitudinalSnapshot?: EncounterLongitudinalSnapshot;
 }
 
 /**
@@ -183,6 +186,56 @@ export class SessionComparisonService {
   private readonly COLLECTION_NAME = 'sessions';
   private readonly REGRESSION_THRESHOLD = 0.20; // 20% threshold for regression alerts
 
+  private noteToSession(note: SavedNote): Session | null {
+    const soapData = note.soapData;
+    const hasSoapData = soapData && typeof soapData === 'object';
+    if (!hasSoapData) {
+      return null;
+    }
+
+    const updatedAtValue = note.updatedAt ?? note.createdAt ?? new Date().toISOString();
+    const updatedAtDate = new Date(updatedAtValue);
+
+    return {
+      id: note.id,
+      userId: note.authorUid ?? note.ownerUid ?? '',
+      patientId: note.patientId ?? '',
+      patientName: '',
+      transcript: '',
+      soapNote: {
+        subjective: String(soapData.subjective ?? ''),
+        objective: String(soapData.objective ?? ''),
+        assessment: String(soapData.assessment ?? ''),
+        plan: String(soapData.plan ?? ''),
+      },
+      physicalTests: [],
+      timestamp: updatedAtDate,
+      createdAt: updatedAtDate,
+      status: 'completed',
+      sessionType: note.visitType === 'follow-up' ? 'followup' : 'initial',
+      longitudinalSnapshot: {
+        painScore: this.extractPainFromSubjective(String(soapData.subjective ?? '')),
+      },
+    };
+  }
+
+  private async getConsultationFallbackSessions(patientId: string, limitCount = 100): Promise<Session[]> {
+    const notes = await PersistenceService.getNotesByPatient(patientId);
+    const limitedNotes = notes.slice(0, limitCount);
+    const sessions = limitedNotes
+      .map((note) => this.noteToSession(note))
+      .filter((session): session is Session => session !== null)
+      .sort((a, b) => {
+        const leftTimestamp = a.timestamp;
+        const rightTimestamp = b.timestamp;
+        const leftTime = (leftTimestamp instanceof Date ? leftTimestamp : leftTimestamp.toDate()).getTime();
+        const rightTime = (rightTimestamp instanceof Date ? rightTimestamp : rightTimestamp.toDate()).getTime();
+        const timeDelta = leftTime - rightTime;
+        return timeDelta;
+      });
+    return sessions;
+  }
+
   /**
    * WO-SESSION-COMPARISON-HARDENING: Convert Encounter to Session for comparison pipeline.
    * Encounter is source of truth; Session type is used for existing compareSessions/formatComparisonForUI.
@@ -206,6 +259,7 @@ export class SessionComparisonService {
       physicalTests: [],
       timestamp: date,
       status: enc.status === 'signed' ? 'completed' : (enc.status === 'draft' || enc.status === 'completed' ? enc.status : 'draft'),
+      longitudinalSnapshot: enc.longitudinalSnapshot,
     };
   }
 
@@ -225,10 +279,22 @@ export class SessionComparisonService {
         return ta - tb;
       });
 
-      if (byDateAsc.length === 0) {
-        return { isFirstSession: true, reason: 'no_previous_session' };
-      }
-      if (byDateAsc.length === 1) {
+      if (byDateAsc.length < 2) {
+        const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100);
+        if (consultationSessions.length >= 2) {
+          const previousSession = consultationSessions[consultationSessions.length - 2];
+          const currentSession = consultationSessions[consultationSessions.length - 1];
+          return {
+            isFirstSession: false,
+            previousSession,
+            currentSession,
+            currentSessionNumber: consultationSessions.length,
+            previousSessionNumber: consultationSessions.length - 1,
+          };
+        }
+        if (byDateAsc.length === 0) {
+          return { isFirstSession: true, reason: 'no_previous_session' };
+        }
         return {
           isFirstSession: true,
           reason: 'no_previous_session',
@@ -291,8 +357,29 @@ export class SessionComparisonService {
       const lastN = byDateAsc.slice(-maxPoints);
       const series: number[] = [];
       for (const enc of lastN) {
-        const pain = this.extractPainFromSubjective(enc.soap?.subjective);
+        const snapshotPain = enc.longitudinalSnapshot?.painScore;
+        const pain =
+          typeof snapshotPain === 'number' && !Number.isNaN(snapshotPain)
+            ? snapshotPain
+            : this.extractPainFromSubjective(enc.soap?.subjective);
         if (pain !== null) series.push(pain);
+      }
+      if (series.length >= Math.min(maxPoints, 2) || byDateAsc.length >= maxPoints) {
+        return series;
+      }
+
+      const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100);
+      const consultationSeries = consultationSessions
+        .slice(-maxPoints)
+        .map((session) => {
+          const snapshotPain = session.longitudinalSnapshot?.painScore;
+          return typeof snapshotPain === 'number' && !Number.isNaN(snapshotPain)
+            ? snapshotPain
+            : this.extractPainFromSubjective(session.soapNote?.subjective);
+        })
+        .filter((pain): pain is number => pain !== null);
+      if (consultationSeries.length > 0) {
+        return consultationSeries;
       }
       return series;
     } catch (err) {
@@ -472,7 +559,11 @@ export class SessionComparisonService {
       completedTests: 0,
     };
 
-    const pain = this.extractPainFromSubjective(session.soapNote?.subjective);
+    const snapshotPain = session.longitudinalSnapshot?.painScore;
+    const pain =
+      typeof snapshotPain === 'number' && !Number.isNaN(snapshotPain)
+        ? snapshotPain
+        : this.extractPainFromSubjective(session.soapNote?.subjective);
     if (pain !== null) metrics.painLevel = pain;
 
     // Extract range of motion from SOAP objective
@@ -886,4 +977,3 @@ export class SessionComparisonService {
 
 // Export singleton instance
 export default new SessionComparisonService();
-

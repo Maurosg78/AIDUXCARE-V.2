@@ -18,6 +18,7 @@ import logger from '@/shared/utils/logger';
 import { db as sharedDb, auth } from "@/lib/firebase";
 import type { BillingEncounterExport } from '@/types/billing';
 import { BillingClassificationService } from '@/services/billingClassificationService';
+import type { EncounterLongitudinalSnapshot } from '@/core/longitudinal/encounterLongitudinalSnapshot';
 
 export interface Encounter {
   id: string;
@@ -54,6 +55,8 @@ export interface Encounter {
     tolerance?: 'excellent' | 'good' | 'fair' | 'poor';
     notes?: string;
   };
+
+  longitudinalSnapshot?: EncounterLongitudinalSnapshot;
   
   // Archivos adjuntos
   attachments?: {
@@ -84,6 +87,7 @@ export interface EncounterCreateData {
   soap?: Encounter['soap'];
   interventions?: Encounter['interventions'];
   patientResponse?: Encounter['patientResponse'];
+  longitudinalSnapshot?: Encounter['longitudinalSnapshot'];
 }
 
 class EncountersRepository {
@@ -267,6 +271,7 @@ class EncountersRepository {
       if (data.episodeId) payload.episodeId = data.episodeId;
       if (data.interventions?.length) payload.interventions = data.interventions;
       if (data.patientResponse) payload.patientResponse = data.patientResponse;
+      if (data.longitudinalSnapshot) payload.longitudinalSnapshot = data.longitudinalSnapshot;
       await setDoc(encounterRef, payload);
       return encounterRef.id;
     } catch (error) {

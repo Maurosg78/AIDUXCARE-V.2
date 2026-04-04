@@ -133,6 +133,7 @@ export interface AnalysisTabProps {
   removingAttachmentId: string | null;
   handleAttachmentUpload: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleAttachmentRemove: (attachment: ClinicalAttachment) => Promise<void>;
+  handleAttachmentReviewedToggle?: (attachmentId: string) => void;
   
   // Analysis results
   niagaraResults: ClinicalAnalysis | null;
@@ -223,6 +224,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   removingAttachmentId,
   handleAttachmentUpload,
   handleAttachmentRemove,
+  handleAttachmentReviewedToggle,
   niagaraResults,
   interactiveResults,
   selectedEntityIds,
@@ -388,6 +390,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             removingAttachmentId={removingAttachmentId}
             handleAttachmentUpload={handleAttachmentUpload}
             handleAttachmentRemove={handleAttachmentRemove}
+            handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
           />
 
           {isTranscribing && (
