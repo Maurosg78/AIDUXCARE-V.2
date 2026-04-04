@@ -104,9 +104,9 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     visitType: esPilotEnabled ? 'Tipo de visita' : 'Visit Type',
     visitTypeInitial: esPilotEnabled ? 'Valoración inicial' : 'Initial Assessment',
     visitTypeFollowUp: esPilotEnabled ? 'Visita de seguimiento' : 'Follow-up Visit',
-    subjective: esPilotEnabled ? 'Subjetivo' : 'Subjective',
-    objective: esPilotEnabled ? 'Objetivo' : 'Objective',
-    assessment: esPilotEnabled ? 'Valoracion' : 'Assessment',
+    subjective: esPilotEnabled ? 'SUBJETIVO' : 'Subjective',
+    objective: esPilotEnabled ? 'OBJETIVO' : 'Objective',
+    assessment: esPilotEnabled ? 'VALORACIÓN' : 'Assessment',
     plan: esPilotEnabled ? 'Plan' : 'Plan',
     referrals: esPilotEnabled ? 'Derivaciones' : 'Referrals',
     precautions: esPilotEnabled ? 'Precauciones' : 'Precautions',
@@ -152,9 +152,9 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
     const a = soap.assessment?.trim() || '';
     const p = soap.plan?.trim() || '';
     const parts: string[] = [];
-    if (s) parts.push(`S: Subjective\n${s}`);
-    if (o) parts.push(`O: Objective\n${o}`);
-    if (a) parts.push(`A: Assessment\n${a}`);
+    if (s) parts.push(`S: ${esPilotEnabled ? 'SUBJETIVO' : 'Subjective'}\n${s}`);
+    if (o) parts.push(`O: ${esPilotEnabled ? 'OBJETIVO' : 'Objective'}\n${o}`);
+    if (a) parts.push(`A: ${esPilotEnabled ? 'VALORACIÓN' : 'Assessment'}\n${a}`);
     if (p) parts.push(`P: Plan\n${p}`);
     return parts.join('\n\n');
   };
@@ -773,7 +773,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
               className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono ${
                 isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
               }`}
-              placeholder="S: Subjective\n\nO: Objective\n\nA: Assessment\n\nP: Plan"
+              placeholder={esPilotEnabled ? "S: SUBJETIVO\n\nO: OBJETIVO\n\nA: VALORACIÓN\n\nP: PLAN" : "S: Subjective\n\nO: Objective\n\nA: Assessment\n\nP: Plan"}
             />
           </div>
         ) : (

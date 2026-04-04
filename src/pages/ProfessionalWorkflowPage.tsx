@@ -4796,18 +4796,19 @@ const ProfessionalWorkflowPage = () => {
   };
 
   const copySoapToClipboard = async () => {
+    const isSpainPilotActive = isSpainPilot();
     if (!localSoapNote) return;
     const plain = [
-      "Subjective:",
+      isSpainPilotActive ? "SUBJETIVO:" : "Subjective:",
       localSoapNote.subjective || "Not documented.",
       "",
-      "Objective:",
+      isSpainPilotActive ? "OBJETIVO:" : "Objective:",
       localSoapNote.objective || "Not documented.",
       "",
-      "Assessment:",
+      isSpainPilotActive ? "VALORACIÓN:" : "Assessment:",
       localSoapNote.assessment || "Pending clinician review.",
       "",
-      "Plan:",
+      isSpainPilotActive ? "PLAN:" : "Plan:",
       localSoapNote.plan || "To be defined with patient.",
     ].join("\n");
 
@@ -6180,16 +6181,16 @@ const ProfessionalWorkflowPage = () => {
           onClose={() => setIsShareMenuOpen(false)}
           shareOptions={{
             noteContent: [
-              "Subjective:",
+              isSpainPilotActive ? "SUBJETIVO:" : "Subjective:",
               localSoapNote.subjective || "Not documented.",
               "",
-              "Objective:",
+              isSpainPilotActive ? "OBJETIVO:" : "Objective:",
               localSoapNote.objective || "Not documented.",
               "",
-              "Assessment:",
+              isSpainPilotActive ? "VALORACIÓN:" : "Assessment:",
               localSoapNote.assessment || "Pending clinician review.",
               "",
-              "Plan:",
+              isSpainPilotActive ? "PLAN:" : "Plan:",
               localSoapNote.plan || "To be defined with patient.",
             ].join("\n"),
             noteId: sessionId,
