@@ -87,7 +87,7 @@ service cloud.firestore {
 
     // ─── encounters ──────────────────────────────────────────────────────
     match /encounters/{encounterId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow update: if isOwner(resource) && isArchiveOnly();
@@ -96,7 +96,7 @@ service cloud.firestore {
 
     // ─── consultations ───────────────────────────────────────────────────
     match /consultations/{consultationId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow update: if isOwner(resource) && isArchiveOnly();
@@ -117,7 +117,7 @@ service cloud.firestore {
 
     // ─── treatment_plans ─────────────────────────────────────────────────
     match /treatment_plans/{planId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -125,14 +125,14 @@ service cloud.firestore {
 
     // ─── episodes / patient_episodes ─────────────────────────────────────
     match /episodes/{episodeId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
     }
 
     match /patient_episodes/{episodeId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -175,7 +175,7 @@ service cloud.firestore {
     }
 
     match /patient_disclosures/{disclosureId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -183,7 +183,7 @@ service cloud.firestore {
 
     // ─── clinical_decisions ──────────────────────────────────────────────
     match /clinical_decisions/{decisionId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -200,7 +200,7 @@ service cloud.firestore {
 
     // ─── hospital_portal_notes ───────────────────────────────────────────
     match /hospital_portal_notes/{noteId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -208,14 +208,14 @@ service cloud.firestore {
 
     // ─── patient_trajectory_events ───────────────────────────────────────
     match /patient_trajectory_events/{eventId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
     }
 
     match /patient_trace_numbers/{traceId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if false;
@@ -223,7 +223,7 @@ service cloud.firestore {
 
     // ─── pending_sms ─────────────────────────────────────────────────────
     match /pending_sms/{smsId} {
-      allow read: if isOwner(resource);
+      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
       allow create: if isAuthenticated();
       allow update: if isOwner(resource);
       allow delete: if isOwner(resource);
