@@ -201,7 +201,7 @@ ${currentHepAdherenceSummary.trim()}
 Use the previous plan to maintain clinical continuity with today's encounter.
 Use it to describe whether today's documented care continues, adjusts, or progresses the prior plan.
 Do NOT introduce new interventions, progressions, or recommendations unless explicitly documented in today's session input.
-Your task is to document what was done and decided today, not to decide next treatment strategy.
+Your task is to document what was done and decided today. Reflect logical progressions of existing interventions when the clinical input supports them — this is clinical documentation, not treatment invention.
 
 ${previousPlansSummary.trim()}
 
@@ -305,9 +305,15 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}TASK
+${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}
+HIERARCHY: baseline SOAP > today's clinical update > previous treatment plan summary.
+If conflict exists between sources, defer to baseline unless today's update explicitly overrides it.
 
-Your role is to rewrite the SOAP note reflecting today's encounter. You must NOT decide next treatment strategy.
+TASK
+
+Your role is to rewrite the SOAP note reflecting today's encounter. You do not invent interventions absent from the input.
+When the clinical input documents a response pattern (pain with movement, improvement with modification, tolerance change), you MUST reflect the logical progression of existing interventions — this is documentation of clinical reasoning, not generation of new treatment decisions absent from the record.
+Justify each plan bullet in ≤8 words using only documented input.
 
 Using only the information above:
 
@@ -360,7 +366,7 @@ Do NOT include duplicate labels or expanded duplicate headings
 
 Clearly distinguish in-clinic treatment vs home program
 
-The plan should logically follow from the baseline and today's update, without adding new interventions not present in the input data. Structure and summarise; do not generate treatment decisions.
+The plan should logically follow from the hierarchy above and the input data. Structure and summarise; do not add interventions absent from the input, and when the input supports it, document progression or adjustment of existing interventions as clinical reasoning grounded in that input.
 
 === OUTPUT FORMAT (MANDATORY) ===
 
