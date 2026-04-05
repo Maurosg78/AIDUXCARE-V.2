@@ -1212,6 +1212,14 @@ export async function generateFollowUpAnalysis(
   const narrative = input.longitudinalSummary?.trim() ? `\nLongitudinal context: ${input.longitudinalSummary.trim()}` : '';
   const contextBlock =
     structured.length > 0 ? structured.join('\n') + narrative : narrative || 'No trajectory or pain series data.';
+  if (structured.length === 0 && !narrative.trim()) {
+    return {
+      documentation: documentationSoap,
+      considerations: [],
+      alerts: soapResult.alerts ?? null,
+      planItems: (soapResult as any).planItems ?? null,
+    };
+  }
 
   const considerationsSystem =
     followUpPromptJurisdiction === 'ES-ES' ? CONSIDERATIONS_SYSTEM_ES : CONSIDERATIONS_SYSTEM_EN;

@@ -3711,6 +3711,8 @@ const ProfessionalWorkflowPage = () => {
     const derived = hasStructuredPreviousPlan
       ? derivePlanFromText(previousPlanInput)
       : derivePlanFromText(baselinePlanText || previousPlanInput);
+    console.log('[DEBUG-HEP] previousPlanInput:', JSON.stringify(previousPlanInput));
+    console.log('[DEBUG-HEP] derived:', JSON.stringify(derived));
     const hasDerivedPlan = derived.inClinic.length > 0 || derived.homeProgram.length > 0;
     if (!hasDerivedPlan) {
       setInClinicItems([]);
