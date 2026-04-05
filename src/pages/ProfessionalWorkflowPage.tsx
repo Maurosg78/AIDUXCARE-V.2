@@ -3770,6 +3770,8 @@ const ProfessionalWorkflowPage = () => {
     visitType,
     patientIdFromUrl,
     followUpClinicalState?.baselineSOAP?.plan,
+    previousTreatmentPlan?.inClinicText,
+    previousTreatmentPlan?.homeProgramText,
     previousTreatmentPlan?.planText,
     hepSessionKey,
     sessionId,

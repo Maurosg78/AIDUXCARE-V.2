@@ -313,7 +313,13 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       // Reset en initial assessment
       setTodayFocus([]);
     }
-  }, [visitType, lastEncounter.data?.soap?.plan, previousTreatmentPlan?.planText]);
+  }, [
+    visitType,
+    lastEncounter.data?.soap?.plan,
+    previousTreatmentPlan?.inClinicText,
+    previousTreatmentPlan?.homeProgramText,
+    previousTreatmentPlan?.planText,
+  ]);
 
   // WO-05-FIX: Log solo cuando este tab realmente renderiza "Today's treatment session" (follow-up; parent no muestra ya In-Clinic+HEP)
   useEffect(() => {
