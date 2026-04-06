@@ -95,7 +95,8 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('"plan":');
     expect(prompt).toContain('Return anything other than the single JSON object');
     expect(prompt).toContain('rewrite the SOAP note reflecting today\'s encounter');
-    expect(prompt).toContain('You must NOT decide next treatment strategy');
+    expect(prompt).toContain('You do not invent interventions absent from the input');
+    expect(prompt).toContain('HIERARCHY: baseline SOAP > today\'s clinical update > previous treatment plan summary');
   });
 
   it('states this is NOT an initial assessment', () => {

@@ -16,6 +16,7 @@ import {
 } from '../core/longitudinal/patientTrajectoryMemory';
 import type { TrajectoryConfidence } from '../core/longitudinal/trajectoryClassifier';
 import type { EncounterLongitudinalSnapshot } from '../core/longitudinal/encounterLongitudinalSnapshot';
+import { getAuth } from 'firebase/auth';
 
 const COLLECTION = 'patient_trajectory_events';
 const MIN_EVENTS_FOR_PATTERN = 5;
@@ -82,8 +83,13 @@ export class PatientTrajectoryMemoryService {
   ): Promise<void> {
     const snapshot = await this.buildEncounterLongitudinalSnapshot(patientId, subjectiveText);
     if (snapshot?.painScore == null || !snapshot.trajectory || !snapshot.trajectoryConfidence) return;
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    const userId = currentUser?.uid;
+    if (!userId) return;
 
     await addDoc(collection(db, COLLECTION), {
+      userId,
       patientId,
       encounterId,
       painScore: snapshot.painScore,
