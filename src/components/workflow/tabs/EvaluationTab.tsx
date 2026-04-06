@@ -7,13 +7,14 @@
  * @compliance PHIPA-aware (design goal), security audit logging
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Stethoscope, Loader2, FileText, ChevronRight } from 'lucide-react';
+import { Stethoscope, Loader2, FileText, ChevronRight, Mic, Square } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
 import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDefinitions } from '../../../core/msk-tests/library/mskTestLibrary';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
+import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
@@ -98,6 +99,115 @@ const getFieldPreviewKey = (field: TestFieldDefinition): string => {
     return 'score';
   }
   return 'text';
+};
+
+type VoiceInputStatus = 'idle' | 'recording' | 'transcribing';
+
+const VoiceInputButton: React.FC<{
+  onTranscribedText: (text: string) => void;
+}> = ({ onTranscribedText }) => {
+  const [status, setStatus] = useState<VoiceInputStatus>('idle');
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const stopTracks = () => {
+    const activeStream = streamRef.current;
+    if (activeStream) {
+      const activeTracks = activeStream.getTracks();
+      activeTracks.forEach((track) => track.stop());
+    }
+    streamRef.current = null;
+  };
+
+  const startRecording = async () => {
+    const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    streamRef.current = mediaStream;
+    chunksRef.current = [];
+
+    const preferredTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+    const supportedType = preferredTypes.find((type) => MediaRecorder.isTypeSupported(type));
+    const recorderOptions = supportedType ? { mimeType: supportedType } : undefined;
+    const mediaRecorder = recorderOptions ? new MediaRecorder(mediaStream, recorderOptions) : new MediaRecorder(mediaStream);
+    recorderRef.current = mediaRecorder;
+
+    mediaRecorder.ondataavailable = (event: BlobEvent) => {
+      const eventBlob = event.data;
+      if (eventBlob && eventBlob.size > 0) {
+        chunksRef.current.push(eventBlob);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      setStatus('transcribing');
+      try {
+        const recordedChunks = chunksRef.current;
+        const audioType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(recordedChunks, { type: audioType });
+        const transcriptionResult = await FirebaseWhisperService.transcribe(audioBlob, {
+          mode: 'dictation',
+          languageHint: 'auto',
+        });
+        const transcribedText = transcriptionResult.text.trim();
+        if (transcribedText) {
+          onTranscribedText(transcribedText);
+        }
+      } catch (error) {
+        console.error('[EvaluationTab] Voice dictation failed:', error);
+      } finally {
+        chunksRef.current = [];
+        recorderRef.current = null;
+        stopTracks();
+        setStatus('idle');
+      }
+    };
+
+    mediaRecorder.start();
+    setStatus('recording');
+  };
+
+  const stopRecording = () => {
+    const activeRecorder = recorderRef.current;
+    if (activeRecorder && activeRecorder.state !== 'inactive') {
+      activeRecorder.stop();
+    }
+  };
+
+  const handleClick = async () => {
+    if (status === 'transcribing') return;
+    if (status === 'recording') {
+      stopRecording();
+      return;
+    }
+    try {
+      await startRecording();
+    } catch (error) {
+      console.error('[EvaluationTab] Microphone start failed:', error);
+      stopTracks();
+      setStatus('idle');
+    }
+  };
+
+  const isRecording = status === 'recording';
+  const isTranscribing = status === 'transcribing';
+  const isDisabled = isTranscribing;
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isDisabled}
+      className={`absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+        isRecording
+          ? 'border-red-300 bg-red-50 text-red-600'
+          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+      } ${isDisabled ? 'cursor-not-allowed opacity-70' : ''}`}
+      title={isRecording ? 'Detener dictado' : isTranscribing ? 'Transcribiendo...' : 'Dictar por voz'}
+      aria-label={isRecording ? 'Detener dictado' : isTranscribing ? 'Transcribiendo' : 'Dictar por voz'}
+    >
+      {isTranscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isRecording ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+    </button>
+  );
 };
 
 // Render field input based on field kind
@@ -187,13 +297,24 @@ const renderFieldInput = (
           <label className="text-xs font-medium text-slate-700">
             {field.label}
           </label>
-          <textarea
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
-            rows={2}
-            placeholder={field.notesPlaceholder}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => onChange(e.target.value)}
-          />
+          <div className="relative">
+            <textarea
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 pr-10 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
+              rows={2}
+              placeholder={field.notesPlaceholder}
+              value={typeof value === 'string' ? value : ''}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            <VoiceInputButton
+              onTranscribedText={(transcribedText) => {
+                const currentText = typeof value === 'string' ? value : '';
+                const needsSpacer = currentText.trim().length > 0;
+                const spacerText = needsSpacer ? ' ' : '';
+                const nextText = `${currentText}${spacerText}${transcribedText}`;
+                onChange(nextText);
+              }}
+            />
+          </div>
         </div>
       );
   }
