@@ -271,7 +271,12 @@ class EncountersRepository {
       if (data.episodeId) payload.episodeId = data.episodeId;
       if (data.interventions?.length) payload.interventions = data.interventions;
       if (data.patientResponse) payload.patientResponse = data.patientResponse;
-      if (data.longitudinalSnapshot) payload.longitudinalSnapshot = data.longitudinalSnapshot;
+      if (data.longitudinalSnapshot) {
+        const snapshotClean = Object.fromEntries(
+          Object.entries(data.longitudinalSnapshot).filter(([_, v]) => v !== undefined)
+        );
+        payload.longitudinalSnapshot = snapshotClean;
+      }
       await setDoc(encounterRef, payload);
       return encounterRef.id;
     } catch (error) {
