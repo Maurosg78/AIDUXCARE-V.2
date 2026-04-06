@@ -250,8 +250,23 @@ class SessionService {
           ? (value as { toMillis(): number }).toMillis()
           : 0;
       };
+      const completedSessionsQuery = query(
+        sessionsRef,
+        where('userId', '==', userId),
+        where('status', '==', 'completed'),
+        orderBy('updatedAt', 'desc'),
+        limit(20)
+      );
+      const completedSnapshot = await getDocs(completedSessionsQuery);
+      const completedSessionDocs = completedSnapshot.docs;
+      const completedSessions: { id: string; patientId?: string; sessionType?: string; soapStatus?: string; updatedAt?: unknown }[] =
+        completedSessionDocs.map((d) => {
+          const docId = d.id;
+          const docData = d.data();
+          return { id: docId, ...docData };
+        });
       const latestFinalizedByPatientSessionType = new Map<string, number>();
-      for (const session of results) {
+      for (const session of completedSessions) {
         if (session.soapStatus !== 'finalized') continue;
         const key = `${session.patientId}::${session.sessionType}`;
         const updatedAtMs = toMillis(session.updatedAt);
