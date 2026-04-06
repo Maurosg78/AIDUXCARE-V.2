@@ -855,7 +855,7 @@ Include specific parameters, duration, and frequency for each modality used."
           />
           {!isReadOnly && (
             <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-800 font-medium mb-2">💡 Treatment Modalities Available (click to add):</p>
+              <p className="text-xs text-blue-800 font-medium mb-2">{`💡 ${esPilotEnabled ? 'Modalidades de tratamiento disponibles (click para añadir)' : 'Treatment Modalities Available (click to add)'}:`}</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: 'TENS', full: 'TENS (Transcutaneous Electrical Nerve Stimulation)' },
