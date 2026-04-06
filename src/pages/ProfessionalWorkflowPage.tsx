@@ -234,6 +234,7 @@ const ProfessionalWorkflowPage = () => {
     ? 'followup'
     : (rawType || null)) as 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
 
+  const isSpainPilotActive = isSpainPilot();
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
 
   // WO-IA-RESUME-01: Resume Initial Assessment — load existing session, do not create new one
@@ -4798,7 +4799,6 @@ const ProfessionalWorkflowPage = () => {
   };
 
   const copySoapToClipboard = async () => {
-    const isSpainPilotActive = isSpainPilot();
     if (!localSoapNote) return;
     const plain = [
       isSpainPilotActive ? "SUBJETIVO:" : "Subjective:",
