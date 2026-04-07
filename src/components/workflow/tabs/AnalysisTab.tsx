@@ -746,13 +746,14 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
               <h3 className="text-sm font-semibold text-red-900 mb-3">⚠️ Red Flags detected</h3>
               <div className="space-y-3">
-                {(filteredRedFlagsForRender as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
-                  const id = typeof flag === 'string' ? flag : (flag?.label ?? `red-${idx}`);
+                {(visibleRedFlagsForRender as (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]).map((flag, idx) => {
+                  const id = getRedFlagId(flag, idx);
                   const label = typeof flag === 'string' ? flag : (flag?.label ?? '');
                   const evidence = typeof flag === 'object' && flag && 'evidence' in flag ? (flag as { evidence?: string }).evidence : undefined;
                   const suggestedAction = typeof flag === 'object' && flag && 'suggested_action' in flag ? (flag as { suggested_action?: string }).suggested_action : undefined;
                   const urgency = typeof flag === 'object' && flag && 'urgency' in flag ? (flag as { urgency?: string }).urgency : undefined;
                   const isChecked = selectedRedFlagIds.includes(id);
+                  const isDismissTarget = dismissTargetId === id;
                   const urgencyBadgeClass = urgency === 'immediate' ? 'bg-red-600 text-white' : urgency === 'today' ? 'bg-amber-500 text-white' : urgency === 'monitor' ? 'bg-slate-500 text-white' : '';
                   return (
                     <label
@@ -770,7 +771,21 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-red-900">{label}</span>
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="font-medium text-red-900">{label}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setDismissTargetId(id);
+                                setDismissNote('');
+                              }}
+                              className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
                           {urgency && (
                             <span className={`ml-2 text-xs px-2 py-0.5 rounded ${urgencyBadgeClass}`}>{urgency}</span>
                           )}
@@ -778,6 +793,50 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">{t('workflow.analysis.suggestedAction', { action: suggestedAction })}</p>}
                         </div>
                       </div>
+
+                      {isDismissTarget && (
+                        <div className="ml-7 mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                          <textarea
+                            className="w-full text-xs border border-slate-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
+                            rows={2}
+                            placeholder="Justificación opcional — para tu protección clínica"
+                            value={dismissNote}
+                            onChange={(event) => {
+                              const nextDismissNote = event.target.value;
+                              setDismissNote(nextDismissNote);
+                            }}
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const dismissalTimestamp = new Date().toISOString();
+                                const dismissalNote = dismissNote;
+                                const nextDismissedRedFlags = {
+                                  ...dismissedRedFlags,
+                                  [id]: {
+                                    timestamp: dismissalTimestamp,
+                                    note: dismissalNote,
+                                  },
+                                };
+                                const nextSelectedRedFlagIds = selectedRedFlagIds.filter((flagId) => flagId !== id);
+                                const nextRedFlagDecisions = { ...redFlagDecisions };
+                                delete nextRedFlagDecisions[id];
+                                setDismissedRedFlags(nextDismissedRedFlags);
+                                onRedFlagSelectionChange(nextSelectedRedFlagIds);
+                                onRedFlagDecisionChange?.(nextRedFlagDecisions);
+                                setDismissTargetId(null);
+                                setDismissNote('');
+                              }}
+                              className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium bg-slate-700 text-white hover:bg-slate-800 transition"
+                            >
+                              Confirmar eliminación
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {isChecked && (
                         <div className="mt-2 ml-7 space-y-2">
@@ -799,7 +858,14 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                     })
                                   }
                                   />
-                                  {t('workflow.analysis.redFlag.options.continue')}
+                                  <span className="flex flex-col">
+                                    <span className="text-xs font-medium text-slate-700">
+                                      {t('workflow.analysis.redFlag.options.continue')}
+                                    </span>
+                                    <span className="text-xs text-slate-500 block mt-0.5">
+                                      Ej: sintomatología conocida y documentada, bajo control farmacológico, en seguimiento médico activo, informada al médico derivador.
+                                    </span>
+                                  </span>
                                 </label>
 
                                 <label className="flex items-center gap-2 text-xs text-red-700 cursor-pointer">
