@@ -47,7 +47,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="relative w-full max-w-3xl mx-4 rounded-xl bg-white shadow-xl border border-slate-200">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-900">Medical Referral Report</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Informe de Derivación Fisioterapéutica</h2>
           <button
             type="button"
             onClick={onClose}
@@ -58,40 +58,35 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
         </div>
 
         <div className="px-6 py-4 max-h-[70vh] overflow-y-auto space-y-4">
-          <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-            This report is a clinical communication to the patient&apos;s physician. It does not
-            replace formal medical referral processes required by your jurisdiction.
-          </div>
-
           <section className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-800">Patient Information</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Datos del Paciente</h3>
             <p className="text-sm text-slate-700">
-              <span className="font-medium">Name:</span> {reportData.patientName}
+              <span className="font-medium">Nombre:</span> {reportData.patientName}
             </p>
             <p className="text-sm text-slate-700">
-              <span className="font-medium">Date of Birth:</span>{' '}
-              {reportData.patientDOB || "Not specified"}{reportData.patientDOB ? ` (Age: ${calcAgeUI(reportData.patientDOB)} yrs)` : ""}
+              <span className="font-medium">Fecha de nacimiento:</span>{' '}
+              {reportData.patientDOB || "No especificada"}{reportData.patientDOB ? ` (Edad: ${calcAgeUI(reportData.patientDOB)} años)` : ""}
             </p>
             <p className="text-sm text-slate-700">
-              <span className="font-medium">Session Date:</span> {reportData.sessionDate}
+              <span className="font-medium">Fecha de sesión:</span> {reportData.sessionDate}
             </p>
           </section>
 
           <section className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-800">Referring Physiotherapist</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Fisioterapeuta Derivador</h3>
             <p className="text-sm text-slate-700">
-              <span className="font-medium">Physiotherapist:</span> {reportData.physiotherapistName}
+              <span className="font-medium">Fisioterapeuta:</span> {reportData.physiotherapistName}
             </p>
             <p className="text-sm text-slate-700">
-              <span className="font-medium">Referring Physician on file:</span>{' '}
-              {reportData.referringDoctor || 'Not specified'}
+              <span className="font-medium">Médico derivador registrado:</span>{' '}
+              {reportData.referringDoctor || 'No especificado'}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h3 className="text-sm font-semibold text-slate-800">Clinical Red Flags Identified</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Alertas Clínicas Identificadas</h3>
             {reportData.redFlags.length === 0 ? (
-              <p className="text-sm text-slate-600">No specific red flags documented.</p>
+              <p className="text-sm text-slate-600">No se documentaron alertas clínicas específicas.</p>
             ) : (
               <div className="space-y-2">
                 {reportData.redFlags.map((flag, idx) => (
@@ -108,22 +103,22 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
                       )}
                     </div>
                     <p className="mt-1 text-xs text-red-800">
-                      <span className="font-semibold">Decision:</span>{' '}
+                      <span className="font-semibold">Decisión:</span>{' '}
                       {flag.decision === 'referral_stop'
-                        ? 'Referral + stop physiotherapy'
-                        : 'Referral + continue safe modalities'}
+                        ? 'Derivación + suspensión de fisioterapia'
+                        : 'Derivación + continuidad con modalidades seguras'}
                     </p>
                     {(flag.evidence || flag.continuationNote) && (
                       <p className="mt-1 text-xs text-slate-700">
                         {flag.evidence && (
                           <>
-                            <span className="font-semibold">Evidence:</span> {flag.evidence}
+                            <span className="font-semibold">Evidencia:</span> {flag.evidence}
                           </>
                         )}
                         {flag.evidence && flag.continuationNote && <span> · </span>}
                         {flag.continuationNote && (
                           <>
-                            <span className="font-semibold">Continuation plan:</span>{' '}
+                            <span className="font-semibold">Plan de continuidad:</span>{' '}
                             {flag.continuationNote}
                           </>
                         )}
@@ -137,7 +132,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
 
           {reportData.clinicalEvolutionSummary && (
             <section className="space-y-1">
-              <h3 className="text-sm font-semibold text-slate-800">Clinical evolution</h3>
+              <h3 className="text-sm font-semibold text-slate-800">Evolución clínica</h3>
               <p className="text-sm text-slate-700">
                 {reportData.clinicalEvolutionSummary}
               </p>
@@ -146,7 +141,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
 
           {reportData.clinicalNotes && (
             <section className="space-y-1">
-              <h3 className="text-sm font-semibold text-slate-800">Current session findings</h3>
+              <h3 className="text-sm font-semibold text-slate-800">Hallazgos de la sesión actual</h3>
               <p className="text-sm text-slate-700 whitespace-pre-line">
                 {reportData.clinicalNotes}
               </p>
@@ -154,16 +149,16 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
           )}
 
           <section className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-800">Recommended Action</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Acción Recomendada</h3>
             <p className="text-sm text-slate-700">
               {hasUrgentFlags ? (
                 <>
                   {reportData.redFlags.some((f) => f.decision === 'referral_stop')
-                    ? 'Immediate medical evaluation recommended. Physiotherapy treatment suspended pending specialist response.'
-                    : 'Medical evaluation recommended. Physiotherapy continuing with safe modalities only.'}
+                    ? 'Se recomienda evaluación médica inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.'
+                    : 'Se recomienda evaluación médica. La fisioterapia continúa solo con modalidades seguras.'}
                 </>
               ) : (
-                'No explicit referral-stop decision recorded in this report.'
+                'No se registró una decisión explícita de derivación con suspensión en este informe.'
               )}
             </p>
           </section>
@@ -175,7 +170,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-md border border-slate-300 text-sm text-slate-700 hover:bg-slate-50 transition"
           >
-            Close
+            Cerrar
           </button>
           <button
             type="button"
@@ -183,7 +178,7 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition shadow-sm"
           >
             <span>📋</span>
-            <span>Download PDF</span>
+            <span>Descargar PDF</span>
           </button>
         </div>
       </div>
@@ -192,4 +187,3 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
 };
 
 export default ReferralReportModal;
-
