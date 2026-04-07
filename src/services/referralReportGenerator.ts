@@ -43,12 +43,12 @@ export class ReferralReportGenerator {
     // Header
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('PHYSIOTHERAPY CLINICAL COMMUNICATION', 105, yPos, { align: 'center' });
+    doc.text('COMUNICACIÓN CLÍNICA FISIOTERAPÉUTICA', 105, yPos, { align: 'center' });
     yPos += 10;
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text('Medical Referral — Urgent Review Requested', 105, yPos, { align: 'center' });
+    doc.text('Derivación Médica — Revisión Urgente Solicitada', 105, yPos, { align: 'center' });
     yPos += 6;
 
     // Separator line
@@ -59,15 +59,15 @@ export class ReferralReportGenerator {
     // Patient Information
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('PATIENT INFORMATION', 14, yPos);
+    doc.text('DATOS DEL PACIENTE', 14, yPos);
     yPos += 6;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     const patientLines = [
-      `Name: ${data.patientName}`,
-      `Date of Birth: ${data.patientDOB || "Not specified"}${calcAge(data.patientDOB) ? " (Age: " + calcAge(data.patientDOB) + " yrs)" : ""}`,
-      `Session Date: ${data.sessionDate}`,
+      `Nombre: ${data.patientName}`,
+      `Fecha de nacimiento: ${data.patientDOB || "No especificada"}${calcAge(data.patientDOB) ? " (Edad: " + calcAge(data.patientDOB) + " años)" : ""}`,
+      `Fecha de sesión: ${data.sessionDate}`,
     ];
     patientLines.forEach((line) => {
       doc.text(line, 14, yPos);
@@ -78,15 +78,15 @@ export class ReferralReportGenerator {
     // Referring Physiotherapist
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('REFERRING PHYSIOTHERAPIST', 14, yPos);
+    doc.text('FISIOTERAPEUTA DERIVADOR', 14, yPos);
     yPos += 6;
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const referringPhysicianText = data.referringDoctor || 'Not specified';
+    const referringPhysicianText = data.referringDoctor || 'No especificado';
     const physioLines = [
-      `Physiotherapist: ${data.physiotherapistName}`,
-      `Referring Physician on file: ${referringPhysicianText}`,
+      `Fisioterapeuta: ${data.physiotherapistName}`,
+      `Médico derivador registrado: ${referringPhysicianText}`,
     ];
     physioLines.forEach((line) => {
       doc.text(line, 14, yPos);
@@ -97,7 +97,7 @@ export class ReferralReportGenerator {
     // Clinical Red Flags table
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('CLINICAL RED FLAGS IDENTIFIED', 14, yPos);
+    doc.text('ALERTAS CLÍNICAS IDENTIFICADAS', 14, yPos);
     yPos += 6;
 
     doc.setFontSize(10);
@@ -108,12 +108,12 @@ export class ReferralReportGenerator {
         ? data.redFlags.map((flag) => {
             const decisionLabel =
               flag.decision === 'referral_stop'
-                ? 'Referral + Stop physiotherapy'
-                : 'Referral + Continue safe modalities';
+                ? 'Derivación + Suspender fisioterapia'
+                : 'Derivación + Continuar con modalidades seguras';
 
             const notesParts: string[] = [];
-            if (flag.continuationNote) notesParts.push(`Continuation: ${flag.continuationNote}`);
-            if (flag.evidence) notesParts.push(`Evidence: ${flag.evidence}`);
+            if (flag.continuationNote) notesParts.push(`Continuación: ${flag.continuationNote}`);
+            if (flag.evidence) notesParts.push(`Evidencia: ${flag.evidence}`);
 
             return [
               flag.label,
@@ -122,11 +122,11 @@ export class ReferralReportGenerator {
               notesParts.join(' | '),
             ];
           })
-        : [['No specific red flags documented', '', '', '']];
+        : [['No se documentaron alertas clínicas específicas', '', '', '']];
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Flag', 'Urgency', 'Decision', 'Notes']],
+      head: [['Alerta', 'Urgencia', 'Decisión', 'Notas']],
       body: tableBody,
       theme: 'striped',
       styles: { fontSize: 9 },
@@ -150,7 +150,7 @@ export class ReferralReportGenerator {
       }
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('CHIEF COMPLAINT', 14, yPos);
+      doc.text('MOTIVO DE CONSULTA', 14, yPos);
       yPos += 6;
 
       doc.setFontSize(10);
@@ -167,7 +167,7 @@ export class ReferralReportGenerator {
       }
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('CLINICAL EVOLUTION', 14, yPos);
+      doc.text('EVOLUCIÓN CLÍNICA', 14, yPos);
       yPos += 6;
 
       doc.setFontSize(10);
@@ -184,7 +184,7 @@ export class ReferralReportGenerator {
       }
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('CLINICAL NOTES', 14, yPos);
+      doc.text('NOTAS CLÍNICAS', 14, yPos);
       yPos += 6;
 
       doc.setFontSize(10);
@@ -207,7 +207,7 @@ export class ReferralReportGenerator {
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('RECOMMENDED ACTION', 14, yPos);
+    doc.text('ACCIÓN RECOMENDADA', 14, yPos);
     yPos += 6;
 
     doc.setFontSize(10);
@@ -216,13 +216,13 @@ export class ReferralReportGenerator {
     let recommendedActionText = '';
     if (hasReferralStop) {
       recommendedActionText =
-        'Immediate medical evaluation recommended. Physiotherapy treatment suspended pending specialist response.';
+        'Se recomienda evaluación médica inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.';
     } else if (hasReferralContinuePartial) {
       recommendedActionText =
-        'Medical evaluation recommended. Physiotherapy continuing with safe modalities only.';
+        'Se recomienda evaluación médica. La fisioterapia continúa solo con modalidades seguras.';
     } else {
       recommendedActionText =
-        'Medical review may be considered based on clinical context. No explicit referral-stop decision recorded.';
+        'Puede considerarse revisión médica según el contexto clínico. No se registró una decisión explícita de suspensión por derivación.';
     }
 
     const actionLines = doc.splitTextToSize(recommendedActionText, 180);
@@ -235,7 +235,7 @@ export class ReferralReportGenerator {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.text(
-        'This document is generated by AiduxCare Clinical Intelligence. The treating physiotherapist retains full clinical responsibility.',
+        'Documento generado por AiduxCare. El fisioterapeuta tratante mantiene la responsabilidad clínica completa.',
         105,
         285,
         { align: 'center' }
@@ -245,4 +245,3 @@ export class ReferralReportGenerator {
     return doc.output('blob');
   }
 }
-
