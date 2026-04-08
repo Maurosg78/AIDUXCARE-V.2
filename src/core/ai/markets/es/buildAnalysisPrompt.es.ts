@@ -59,6 +59,7 @@ REGLAS DE DISTRIBUCIÓN:
 - key_findings: hallazgos clínicos únicos no repetidos en chief_complaint.
 - medical_history: antecedentes y eventos previos.
 - medications: lista estructurada de medicación actual en español clínico.
+- yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
 - summary: síntesis breve sin repetir todo lo anterior.`;
 
 const defaultFollowUpInstructions = `Analiza esta visita de seguimiento como asistente de razonamiento clínico para un fisioterapeuta en España. Céntrate en evolución clínica, continuidad asistencial y cambios respecto a la línea basal. Expón respuesta al tratamiento, progresión sintomática, cambios funcionales, adherencia, nuevas incidencias y modificaciones biopsicosociales. Recomienda valoraciones de fisioterapia sólo si son necesarias para control evolutivo o por nuevas preocupaciones clínicas.
