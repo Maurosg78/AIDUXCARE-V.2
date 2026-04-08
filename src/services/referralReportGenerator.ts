@@ -16,6 +16,7 @@ export interface ReferralReportData {
   patientDOB?: string;
   sessionDate: string;
   physiotherapistName: string;
+  physiotherapistLicense?: string;
   referringDoctor?: string;
   redFlags: ReferralReportRedFlag[];
   chiefComplaint?: string;
@@ -227,6 +228,37 @@ export class ReferralReportGenerator {
 
     const actionLines = doc.splitTextToSize(recommendedActionText, 180);
     doc.text(actionLines, 14, yPos);
+    const actionLinesCount = actionLines.length;
+    const actionSectionHeight = actionLinesCount * 5;
+    yPos += actionSectionHeight;
+    yPos += 10;
+
+    if (yPos > 245) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    const physiotherapistLicense = data.physiotherapistLicense || 'No especificado';
+    const signatureTitle = 'FISIOTERAPEUTA RESPONSABLE';
+    const signatureName = `Nombre: ${data.physiotherapistName}`;
+    const signatureLicense = `Nº Colegiado: ${physiotherapistLicense}`;
+    const signatureLine = '_______________________________';
+    const signatureLabel = 'Firma';
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(signatureTitle, 14, yPos);
+    yPos += 6;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(signatureName, 14, yPos);
+    yPos += 5;
+    doc.text(signatureLicense, 14, yPos);
+    yPos += 10;
+    doc.text(signatureLine, 14, yPos);
+    yPos += 6;
+    doc.text(signatureLabel, 14, yPos);
 
     // Footer
     const pageCount = doc.getNumberOfPages();

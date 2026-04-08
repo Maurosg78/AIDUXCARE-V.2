@@ -3506,13 +3506,14 @@ const ProfessionalWorkflowPage = () => {
     const sessionDate = new Date().toLocaleDateString("en-CA");
     const physiotherapistName =
       professionalProfile?.firstName && professionalProfile?.lastName
-        ? `PT. ${professionalProfile.firstName} ${professionalProfile.lastName}`
+        ? `Ft. ${professionalProfile.firstName} ${professionalProfile.lastName}`
         : professionalProfile?.displayName
-          ? `PT. ${professionalProfile.displayName}`
+          ? `Ft. ${professionalProfile.displayName}`
           : user?.displayName
-            ? `PT. ${user.displayName}`
-            : 'PT.';
-    const referringDoctor = currentPatient.referringDoctor;
+            ? `Ft. ${user.displayName}`
+            : 'Ft.';
+    const physiotherapistLicense = professionalProfile?.licenseNumber || '';
+    const referringDoctor = currentPatient.referringDoctor || 'No especificado';
 
     const redFlagsSource = (interactiveResults as any).redFlags as
       | (string | { label: string; evidence?: string; suggested_action?: string; urgency?: string })[]
@@ -3562,6 +3563,7 @@ const ProfessionalWorkflowPage = () => {
       patientDOB,
       sessionDate,
       physiotherapistName,
+      physiotherapistLicense,
       referringDoctor,
       redFlags,
       chiefComplaint,
