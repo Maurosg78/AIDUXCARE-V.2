@@ -50,6 +50,7 @@ REQUISITOS DE PRUEBAS FÍSICAS:
 - Ordénalas por prioridad clínica.
 - Intenta incluir sensibilidad/especificidad sólo si existe fuente fiable.
 - Si no hay fuente fiable, devuelve "unknown".
+- Si la transcripción menciona diagnóstico confirmado por imagen (RMN, ecografía, TAC, radiografía con diagnóstico explícito), prioriza tests funcionales de baseline (movilidad activa/pasiva, fuerza isométrica, goniometría, perimetría) sobre tests diagnósticos de provocación. Incluye los tests de provocación como opcionales con rationale: "Baseline funcional para monitorizar evolución — diagnóstico ya confirmado por imagen."
 `;
 
 const defaultInitialInstructions = `Analiza la transcripción como asistente de razonamiento clínico para un fisioterapeuta en España. Expón variables clínicas, patrones y correlaciones documentadas en la presentación del paciente. Presenta consideraciones clínicas completas sin diagnosticar ni prescribir. Recomienda valoraciones de fisioterapia basadas en evidencia como consideraciones, no como indicaciones. Resume los factores biopsicosociales de forma estructurada. Señala cuándo procede revisión médica, pruebas complementarias o derivación por exceder el ámbito fisioterapéutico o por riesgo para la seguridad.
