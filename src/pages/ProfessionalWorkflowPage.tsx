@@ -3504,14 +3504,21 @@ const ProfessionalWorkflowPage = () => {
     }
 
     const sessionDate = new Date().toLocaleDateString("en-CA");
+    const profileFullName = (professionalProfile as any)?.fullName;
+    const profileFirstName = professionalProfile?.firstName;
+    const profileLastName = professionalProfile?.lastName;
+    const profileDisplayName = professionalProfile?.displayName;
+    const userDisplayName = user?.displayName;
     const physiotherapistName =
-      professionalProfile?.firstName && professionalProfile?.lastName
-        ? `Ft. ${professionalProfile.firstName} ${professionalProfile.lastName}`
-        : professionalProfile?.displayName
-          ? `Ft. ${professionalProfile.displayName}`
-          : user?.displayName
-            ? `Ft. ${user.displayName}`
-            : 'Ft.';
+      profileFirstName && profileLastName
+        ? `Ft. ${profileFirstName} ${profileLastName}`
+        : profileFullName
+          ? `Ft. ${profileFullName}`
+          : profileDisplayName
+            ? `Ft. ${profileDisplayName}`
+            : userDisplayName
+              ? `Ft. ${userDisplayName}`
+              : 'Ft.';
     const physiotherapistLicense = professionalProfile?.licenseNumber || '';
     const referringDoctor = currentPatient.referringDoctor || 'No especificado';
 
