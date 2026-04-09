@@ -52,6 +52,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
 
       try {
         const visits: PatientVisit[] = [];
+        const consultationSessionIds = new Set<string>();
+        const encounterSessionIds = new Set<string>();
+        const sessionDateById = new Map<string, Date>();
 
         // 0. Fetch sessions once: build sessionIdToType (for consultations without visitType) and session visits
         const sessionIdToType = new Map<string, 'initial' | 'follow-up'>();
@@ -87,6 +90,7 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             const hasType = sessionType === 'followup' || sessionType === 'initial';
             const type: 'initial' | 'follow-up' = sessionType === 'followup' ? 'follow-up' : 'initial';
             sessionIdToType.set(docSnap.id, type);
+            sessionDateById.set(docSnap.id, date);
             sessionVisits.push({
               id: docSnap.id,
               type,
@@ -146,11 +150,18 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             const sessionId = (note as { sessionId?: string }).sessionId;
             const noteVisitType = (note as { visitType?: 'initial' | 'follow-up' }).visitType;
             const type: 'initial' | 'follow-up' = noteVisitType ?? sessionIdToType.get(sessionId ?? '') ?? 'initial';
+            const hasSessionId = typeof sessionId === 'string' && sessionId.trim() !== '';
+            const linkedSessionDate = hasSessionId ? sessionDateById.get(sessionId as string) : undefined;
+            const noteDate = linkedSessionDate ?? new Date(note.createdAt || Date.now());
+
+            if (hasSessionId) {
+              consultationSessionIds.add(sessionId as string);
+            }
 
             visits.push({
               id: note.id,
               type,
-              date: new Date(note.createdAt || Date.now()),
+              date: noteDate,
               status: 'completed', // Consultations are saved as completed
               soapNote: { status: 'finalized' }, // Saved notes treated as finalized
               sessionIdForResume: sessionId, // For "Resume" / "Close IA" in workflow
@@ -185,14 +196,31 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           );
 
           const encountersSnapshot = await getDocs(encountersQuery);
-          encountersSnapshot.forEach((doc) => {
+          const orderedEncounters = encountersSnapshot.docs
+            .map((docSnap) => ({ id: docSnap.id, data: docSnap.data() }))
+            .filter((entry) => entry.data.archived !== true)
+            .sort((leftEntry, rightEntry) => {
+              const leftDate = leftEntry.data.encounterDate?.toDate?.() || new Date(leftEntry.data.createdAt || Date.now());
+              const rightDate = rightEntry.data.encounterDate?.toDate?.() || new Date(rightEntry.data.createdAt || Date.now());
+              return leftDate.getTime() - rightDate.getTime();
+            });
+          let legacyEncounterIndex = 0;
+
+          orderedEncounters.forEach((entry) => {
+            const doc = { id: entry.id, data: () => entry.data };
             const data = doc.data();
-            const encounterArchived = data.archived === true;
-            if (encounterArchived) {
-              return;
-            }
             const encStatus = data.status || 'draft';
             const encExplicitSoap = (data.soapNote as { status?: string })?.status;
+            const encounterSessionId = typeof data.sessionId === 'string' ? data.sessionId : undefined;
+            const explicitVisitType = data.visitType === 'follow-up' || data.visitType === 'initial'
+              ? data.visitType
+              : undefined;
+            const inferredVisitType: 'initial' | 'follow-up' = legacyEncounterIndex === 0 ? 'initial' : 'follow-up';
+            const encounterVisitType = explicitVisitType ?? inferredVisitType;
+            const linkedSessionDate = encounterSessionId ? sessionDateById.get(encounterSessionId) : undefined;
+            const encounterStoredDate = data.encounterDate?.toDate?.();
+            const fallbackEncounterDate = encounterStoredDate || new Date(data.createdAt || Date.now());
+            const encounterDate = linkedSessionDate ?? fallbackEncounterDate;
             // WO-P0-ARCHIVED: `completed` encounters (workflow finalize) often have no soapNote.status on the doc;
             // treating them as draft put them in "Family B" and surfaced "Remove from history" on closed visits.
             const encSoapStatus: 'draft' | 'finalized' =
@@ -201,13 +229,23 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
                 : encStatus === 'signed' || encStatus === 'completed'
                   ? 'finalized'
                   : 'draft';
+            const isCompletedEncounter = encStatus === 'completed' || encStatus === 'signed';
+
+            if (isCompletedEncounter) {
+              legacyEncounterIndex += 1;
+            }
+
+            if (encounterSessionId) {
+              encounterSessionIds.add(encounterSessionId);
+            }
 
             visits.push({
               id: doc.id,
-              type: 'follow-up', // Encounters are typically follow-ups
-              date: data.encounterDate?.toDate?.() || new Date(data.createdAt || Date.now()),
+              type: encounterVisitType,
+              date: encounterDate,
               status: encStatus,
               soapNote: { status: encSoapStatus },
+              sessionIdForResume: encounterSessionId,
               soap: data.soap,
               chiefComplaint: data.soap?.subjective?.substring(0, 100),
               diagnosis: data.soap?.assessment,
@@ -223,10 +261,36 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           }
         }
 
-        // Sort all visits by date (newest first)
-        visits.sort((a, b) => b.date.getTime() - a.date.getTime());
+        const filteredVisits = visits.filter((visit) => {
+          if (visit.source === 'encounter') {
+            return true;
+          }
 
-        setState({ loading: false, data: visits });
+          if (visit.source === 'consultation') {
+            const consultationSessionId = visit.sessionIdForResume;
+            const hasEncounterTwin =
+              typeof consultationSessionId === 'string' &&
+              consultationSessionId.trim() !== '' &&
+              encounterSessionIds.has(consultationSessionId);
+            return !hasEncounterTwin;
+          }
+
+          if (visit.source === 'session') {
+            const isDraftSession = visit.status === 'draft' || visit.soapNote?.status !== 'finalized';
+            if (isDraftSession) {
+              return true;
+            }
+
+            const hasConsultationTwin = consultationSessionIds.has(visit.id);
+            const hasEncounterTwin = encounterSessionIds.has(visit.id);
+            return !hasConsultationTwin && !hasEncounterTwin;
+          }
+
+          return true;
+        });
+
+        filteredVisits.sort((leftVisit, rightVisit) => rightVisit.date.getTime() - leftVisit.date.getTime());
+        setState({ loading: false, data: filteredVisits });
       } catch (error: any) {
         console.error('[usePatientVisits] Error:', error);
         setState({

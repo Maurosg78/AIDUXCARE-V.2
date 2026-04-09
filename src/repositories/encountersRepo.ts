@@ -23,6 +23,8 @@ import type { EncounterLongitudinalSnapshot } from '@/core/longitudinal/encounte
 export interface Encounter {
   id: string;
   patientId: string;
+  sessionId?: string;
+  visitType?: 'initial' | 'follow-up';
   episodeId?: string;
   authorUid: string;
   status: 'draft' | 'completed' | 'signed';
@@ -81,6 +83,8 @@ export interface Encounter {
 
 export interface EncounterCreateData {
   patientId: string;
+  sessionId?: string;
+  visitType?: 'initial' | 'follow-up';
   episodeId?: string;
   authorUid: string;
   encounterDate: Date;
@@ -268,6 +272,8 @@ class EncountersRepository {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
+      if (data.sessionId) payload.sessionId = data.sessionId;
+      if (data.visitType) payload.visitType = data.visitType;
       if (data.episodeId) payload.episodeId = data.episodeId;
       if (data.interventions?.length) payload.interventions = data.interventions;
       if (data.patientResponse) payload.patientResponse = data.patientResponse;

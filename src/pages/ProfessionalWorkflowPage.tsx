@@ -4636,7 +4636,17 @@ const ProfessionalWorkflowPage = () => {
     // ✅ P1.3: Save finalized SOAP to Clinical Vault (Firestore)
     try {
       const patientId = patientIdFromUrl || demoPatient.id;
-      const sessionId = `${TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+      const activeSessionId =
+        sessionId ||
+        sessionIdRef.current ||
+        workflowReservedSessionIdRef.current ||
+        `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
+      const linkedSession = await sessionService.getSessionById(activeSessionId);
+      const linkedSessionTimestamp = linkedSession?.timestamp;
+      const linkedSessionCreatedAt = linkedSession?.createdAt;
+      const openedAtFromTimestamp = linkedSessionTimestamp?.toDate?.();
+      const openedAtFromCreatedAt = linkedSessionCreatedAt?.toDate?.();
+      const clinicalVisitDate = openedAtFromTimestamp || openedAtFromCreatedAt || sessionStartTime;
 
       // WO-FOLLOWUP-PLAN-NEXT: If note only has followUp (raw JSON/text), derive S/O/A/P so the next follow-up has baseline/plan
       const hasStructured = (soap.subjective || soap.objective || soap.assessment || soap.plan || '').trim().length > 0;
@@ -4670,7 +4680,7 @@ const ProfessionalWorkflowPage = () => {
 
       console.log('[Workflow] Saving SOAP to Clinical Vault:', {
         patientId,
-        sessionId,
+        sessionId: activeSessionId,
         soapDataLength: {
           subjective: soapDataToSave.subjective.length,
           objective: soapDataToSave.objective.length,
@@ -4684,7 +4694,7 @@ const ProfessionalWorkflowPage = () => {
       const result = await saveSOAPNoteWithRetry(
         soapDataToSave,
         patientId,
-        sessionId,
+        activeSessionId,
         {
           maxRetries: 3,
           retryDelay: 1000,
@@ -4697,7 +4707,7 @@ const ProfessionalWorkflowPage = () => {
         console.log('[Workflow] ✅ SOAP note saved to Clinical Vault:', {
           noteId: result.noteId,
           patientId,
-          sessionId,
+          sessionId: activeSessionId,
           retries: result.retries,
           usedBackup: result.usedBackup,
           timestamp: new Date().toISOString()
@@ -4716,8 +4726,10 @@ const ProfessionalWorkflowPage = () => {
             });
             const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
+              sessionId: activeSessionId,
+              visitType,
               authorUid: user.uid,
-              encounterDate: new Date(),
+              encounterDate: clinicalVisitDate,
               soap: { subjective: s, objective: o, assessment: a, plan: p },
               longitudinalSnapshot: longitudinalSnapshot ?? undefined,
             });
@@ -4742,8 +4754,10 @@ const ProfessionalWorkflowPage = () => {
               const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s);
               const encounterId = await encountersRepo.createEncounterCompleted({
                 patientId,
+                sessionId: activeSessionId,
+                visitType,
                 authorUid: user.uid,
-                encounterDate: new Date(),
+                encounterDate: clinicalVisitDate,
                 soap: { subjective: s, objective: o, assessment: a, plan: p },
                 longitudinalSnapshot: longitudinalSnapshot ?? undefined,
               });
@@ -5866,6 +5880,7 @@ const ProfessionalWorkflowPage = () => {
                   let buttonAction: () => void;
                   let buttonLabel: string;
                   let buttonDisabled = false;
+                  let buttonIsLoading = false;
 
                   if (!hasClinicalNotes) {
                     buttonAction = () => {
@@ -5881,6 +5896,7 @@ const ProfessionalWorkflowPage = () => {
                     buttonAction = handleGenerateSoap;
                     buttonLabel = "Generate SOAP note";
                     buttonDisabled = isGeneratingSOAP;
+                    buttonIsLoading = isGeneratingSOAP;
                   } else {
                     buttonAction = () => {
                       // Scroll a SOAP section
@@ -5899,7 +5915,14 @@ const ProfessionalWorkflowPage = () => {
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                           }`}
                       >
-                        {buttonDisabled ? 'Processing...' : buttonLabel}
+                        {buttonIsLoading ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Generating SOAP note...</span>
+                          </span>
+                        ) : (
+                          buttonDisabled ? 'Processing...' : buttonLabel
+                        )}
                       </button>
                     </div>
                   );
