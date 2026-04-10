@@ -246,7 +246,19 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
     hallazgos_relevantes: [],
     contexto_ocupacional: occupational,
     contexto_psicosocial: psychosocialContext,
-    medicacion_actual: transformArray(ensureStringArray(highlights.medications), transformText),
+    medicacion_actual: (() => {
+      const meds = highlights.medications;
+      if (!Array.isArray(meds) || meds.length === 0) return [];
+      const firstItem = meds[0];
+      const isStructured = firstItem && typeof firstItem === 'object' && 'original_text' in firstItem;
+      if (isStructured) {
+        return meds.map((med: any) => ({
+          text: med.normalized_name || med.original_text || '',
+          medication_data: med,
+        }));
+      }
+      return transformArray(ensureStringArray(meds), transformText);
+    })() as any,
     antecedentes_medicos: transformArray(ensureStringArray(highlights.medical_history), transformText),
     diagnosticos_probables: [],
     red_flags: redFlags,

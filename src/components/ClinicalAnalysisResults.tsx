@@ -170,6 +170,14 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   const criticalMeds = editedResults.entities?.filter((e: any) =>
     e.type === 'medication' && e.text?.toLowerCase().includes('sin prescri')
   ) || [];
+  const renderMedicationText = (entity: any): { displayName: string; requiresReview: boolean; originalText: string } => {
+    const rawMed = entity.medication_data;
+    const hasStructuredData = rawMed && typeof rawMed === 'object' && 'original_text' in rawMed;
+    const displayName = hasStructuredData ? (rawMed.normalized_name || rawMed.original_text) : entity.text;
+    const requiresReview = hasStructuredData ? rawMed.requires_review === true : false;
+    const originalText = hasStructuredData ? rawMed.original_text : entity.text;
+    return { displayName, requiresReview, originalText };
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -266,16 +274,32 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
             <div className="space-y-1">
               {editedResults.entities?.filter((e: any) => e.type === 'medication' && !e.text?.toLowerCase().includes('sin prescri'))
-                .map((entity: any) => (
-                  <EditableCheckbox
-                    key={entity.id}
-                    id={entity.id}
-                    text={entity.text}
-                    checked={selectedIds.includes(entity.id)}
-                    onToggle={handleToggle}
-                    onTextChange={handleTextChange}
-                  />
-                ))}
+                .map((entity: any) => {
+                  const medInfo = renderMedicationText(entity);
+                  return (
+                    <div key={entity.id}>
+                      <EditableCheckbox
+                        id={entity.id}
+                        text={medInfo.displayName}
+                        checked={selectedIds.includes(entity.id)}
+                        onToggle={handleToggle}
+                        onTextChange={handleTextChange}
+                      />
+                      {medInfo.requiresReview && (
+                        <div className="ml-6 mt-1 flex flex-wrap items-center gap-1">
+                          <span className="inline-flex items-center rounded border border-yellow-300 bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
+                            ⚠ verificar nombre
+                          </span>
+                          {medInfo.originalText !== medInfo.displayName && (
+                            <span className="text-xs text-gray-400">
+                              (transcrito: "{medInfo.originalText}")
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
