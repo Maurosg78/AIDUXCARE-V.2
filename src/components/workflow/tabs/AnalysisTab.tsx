@@ -26,6 +26,7 @@ import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { SuggestedFocusEditor } from '../SuggestedFocusEditor';
 import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parsePlanToFocus';
 import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from '@/utils/normalizeRedFlagsForDisplay';
+import { trackRedFlagAccepted } from '../../../services/analytics/AnalyticsEvents';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -145,6 +146,7 @@ export interface AnalysisTabProps {
   interactiveResults: any;
   selectedEntityIds: string[];
   setSelectedEntityIds: (ids: string[]) => void;
+  onEditedResultsChange?: (editedResults: any) => void;
   continueToEvaluation: () => void;
   
   // Messages
@@ -234,6 +236,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   interactiveResults,
   selectedEntityIds,
   setSelectedEntityIds,
+  onEditedResultsChange,
   continueToEvaluation,
   analysisError,
   successMessage,
@@ -532,6 +535,10 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                             checked={isChecked}
                             onChange={() => {
                               const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
+                              const shouldTrackAcceptance = !isChecked;
+                              if (shouldTrackAcceptance) {
+                                void trackRedFlagAccepted({ visitType });
+                              }
                               onRedFlagSelectionChange(next);
                             }}
                             className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
@@ -766,6 +773,10 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           checked={isChecked}
                           onChange={() => {
                             const next = isChecked ? selectedRedFlagIds.filter((x) => x !== id) : [...selectedRedFlagIds, id];
+                            const shouldTrackAcceptance = !isChecked;
+                            if (shouldTrackAcceptance) {
+                              void trackRedFlagAccepted({ visitType });
+                            }
                             onRedFlagSelectionChange(next);
                           }}
                           className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
@@ -964,6 +975,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 results={interactiveResults}
                 selectedIds={selectedEntityIds}
                 onSelectionChange={setSelectedEntityIds}
+                onEditedResultsChange={onEditedResultsChange}
                 visitType={visitType}
                 selectedRedFlagIds={selectedRedFlagIds}
                 redFlagsDetected={redFlagsDetected}

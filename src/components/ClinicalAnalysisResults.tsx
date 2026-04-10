@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
 import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
@@ -10,6 +10,7 @@ interface ClinicalAnalysisResultsProps {
   results: any;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  onEditedResultsChange?: (editedResults: any) => void;
   visitType?: 'initial' | 'follow-up';
   /** WO-BUG-009: Resumen de solo lectura; red flags decididos en AnalysisTab */
   selectedRedFlagIds?: string[];
@@ -20,6 +21,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   results,
   selectedIds,
   onSelectionChange,
+  onEditedResultsChange,
   visitType = 'initial',
   selectedRedFlagIds,
   redFlagsDetected = [],
@@ -59,6 +61,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         testsBody: 'Select the assessments you plan to run in the evaluation tab.',
       };
   const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
+
+  useEffect(() => {
+    onEditedResultsChange?.(editedResults);
+  }, [editedResults, onEditedResultsChange]);
 
   const physicalTests = useMemo(() => {
     const rawTests = editedResults?.physicalTests || [];

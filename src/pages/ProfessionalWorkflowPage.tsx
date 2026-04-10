@@ -117,6 +117,7 @@ import {
   trackEvaluationPhaseEntered,
   trackEvaluationTestSelected,
   trackEvaluationTestCompleted,
+  trackSOAPFinalized,
   trackError,
 } from "@/services/analytics/AnalyticsEvents";
 import { lazy, Suspense } from "react";
@@ -621,6 +622,7 @@ const ProfessionalWorkflowPage = () => {
     isProcessing,
     reset: resetNiagaraProcessor,
   } = useNiagaraProcessor();
+  const [editedAnalysisResults, setEditedAnalysisResults] = useState<any>(null);
 
   const clinicName = useMemo(
     () => deriveClinicName(professionalProfile),
@@ -3844,10 +3846,11 @@ const ProfessionalWorkflowPage = () => {
       setAnalysisError(null);
 
       // Step 1: Organize unified data from Tab 1 and Tab 2
+      const analysisSource = editedAnalysisResults ?? niagaraResults;
       const unifiedData: UnifiedClinicalData = {
         tab1: {
           transcript: transcript || '',
-          analysis: niagaraResults,
+          analysis: analysisSource,
           attachments: attachments,
         },
         tab2: {
@@ -4711,6 +4714,15 @@ const ProfessionalWorkflowPage = () => {
           retries: result.retries,
           usedBackup: result.usedBackup,
           timestamp: new Date().toISOString()
+        });
+        const subjectiveLength = soapDataToSave.subjective?.length || 0;
+        const objectiveLength = soapDataToSave.objective?.length || 0;
+        const assessmentLength = soapDataToSave.assessment?.length || 0;
+        const planLength = soapDataToSave.plan?.length || 0;
+        const soapCharacterCount = subjectiveLength + objectiveLength + assessmentLength + planLength;
+        void trackSOAPFinalized({
+          characterCount: soapCharacterCount,
+          visitType,
         });
         setSuccessMessage('SOAP note saved successfully to Clinical Vault.');
 
@@ -5708,6 +5720,7 @@ const ProfessionalWorkflowPage = () => {
                     handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                     niagaraResults={niagaraResults}
                     interactiveResults={interactiveResults}
+                    onEditedResultsChange={setEditedAnalysisResults}
                     selectedEntityIds={selectedEntityIds}
                     setSelectedEntityIds={setSelectedEntityIds}
                     continueToEvaluation={continueToEvaluation}
@@ -6021,6 +6034,7 @@ const ProfessionalWorkflowPage = () => {
                   handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                   niagaraResults={niagaraResults}
                   interactiveResults={interactiveResults}
+                  onEditedResultsChange={setEditedAnalysisResults}
                   selectedEntityIds={selectedEntityIds}
                   setSelectedEntityIds={setSelectedEntityIds}
                   continueToEvaluation={continueToEvaluation}
