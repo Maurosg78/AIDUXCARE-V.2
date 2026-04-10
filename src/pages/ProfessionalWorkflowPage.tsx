@@ -3809,6 +3809,8 @@ const ProfessionalWorkflowPage = () => {
       console.warn('[Workflow] Cannot generate clinical note: no analysis results');
       return;
     }
+    setIsGeneratingSOAP(true);
+    setAnalysisError(null);
 
     // ✅ WO-CONSENT-VERBAL-01-LANG: Patient Consent Gate with jurisdiction validation
     const patientId = patientIdFromUrl || demoPatient.id;
@@ -3817,6 +3819,7 @@ const ProfessionalWorkflowPage = () => {
     const consentCheck = await checkConsentViaServer(patientId);
 
     if (!consentCheck.hasValidConsent) {
+      setIsGeneratingSOAP(false);
       // Show notification that consent is required
       setAnalysisError(
         t('workflow.consentRequiredForSoap')
@@ -3841,9 +3844,6 @@ const ProfessionalWorkflowPage = () => {
       if (!soapGenerationStartTime) {
         setSoapGenerationStartTime(new Date());
       }
-
-      setIsGeneratingSOAP(true);
-      setAnalysisError(null);
 
       // Step 1: Organize unified data from Tab 1 and Tab 2
       const analysisSource = editedAnalysisResults ?? niagaraResults;
