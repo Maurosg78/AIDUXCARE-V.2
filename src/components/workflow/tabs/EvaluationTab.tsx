@@ -15,6 +15,7 @@ import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDef
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
 import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService';
+import { trackEvaluationCompleted } from '../../../services/analytics/AnalyticsEvents';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
@@ -437,6 +438,11 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   };
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
+  const handleGenerateSoapWithTracking = () => {
+    const testCount = filteredEvaluationTests.length;
+    void trackEvaluationCompleted({ testCount });
+    void handleGenerateSoap();
+  };
 
   // ✅ FIX: Separate ALL AI suggestions into top 5 (phase 1) and additional tests (sidebar)
   // IMPORTANT: Calculate top 5 based on ALL suggestions (not filtered), then filter only top 5 for display
@@ -1188,7 +1194,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           {t('workflow.evaluation.progressText', { completed: completedCount, total: totalTests, percent: progressPercent })}
         </div>
         <button
-          onClick={handleGenerateSoap}
+          onClick={handleGenerateSoapWithTracking}
           disabled={filteredEvaluationTests.length === 0 || isGeneratingSOAP}
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white hover:from-sky-600 hover:to-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >

@@ -89,6 +89,10 @@ export const trackEvaluationTestCompleted = (metadata?: Record<string, any>) => 
   return phipaAnalytics.trackWorkflowEvent('evaluation_test_completed', metadata);
 };
 
+export const trackEvaluationCompleted = (metadata?: Record<string, any>) => {
+  return phipaAnalytics.trackWorkflowEvent('evaluation_completed', metadata);
+};
+
 /**
  * SOAP Events
  */
@@ -98,6 +102,22 @@ export const trackSOAPGenerationStarted = (metadata?: Record<string, any>) => {
 
 export const trackSOAPGenerationCompleted = (metadata?: Record<string, any>) => {
   return phipaAnalytics.trackWorkflowEvent('soap_generation_completed', metadata);
+};
+
+export const trackSOAPFinalized = (metadata?: Record<string, any>) => {
+  return phipaAnalytics.trackWorkflowEvent('soap_finalized', metadata);
+};
+
+export const trackSOAPEdited = (metadata?: Record<string, any>) => {
+  return phipaAnalytics.trackWorkflowEvent('soap_edited', metadata);
+};
+
+export const trackRedFlagAccepted = (metadata?: Record<string, any>) => {
+  return phipaAnalytics.trackWorkflowEvent('red_flag_accepted', metadata);
+};
+
+export const trackCertificateGenerated = (metadata?: Record<string, any>) => {
+  return phipaAnalytics.trackWorkflowEvent('certificate_generated', metadata);
 };
 
 /**

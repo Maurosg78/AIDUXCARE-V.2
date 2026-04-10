@@ -53,6 +53,7 @@ export interface SOAPEditorProps {
   sessionState?: Partial<SessionState> & { soapNote?: SOAPNote };
   /** Red flag decisions — used to gate the referral report button. */
   redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
+  onFieldEdited?: (fieldEdited: 'subjective' | 'objective' | 'assessment' | 'plan' | 'follow_up') => void;
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -76,6 +77,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   tokenOptimization,
   sessionState,
   redFlagDecisions,
+  onFieldEdited,
 }) => {
   const { t } = useTranslation();
   const soapReview = getSoapReviewConfig();
@@ -141,6 +143,12 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
       ...editedSOAP,
       [section]: value,
     });
+    const editableSections = ['subjective', 'objective', 'assessment', 'plan'];
+    const isEditableSoapSection = editableSections.includes(section);
+    if (isEditableSoapSection) {
+      const fieldEdited = section as 'subjective' | 'objective' | 'assessment' | 'plan';
+      onFieldEdited?.(fieldEdited);
+    }
     setHasChanges(true);
   };
 
@@ -163,6 +171,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const handleFollowUpSingleBlockChange = (value: string) => {
     if (!editedSOAP) return;
     setEditedSOAP({ ...editedSOAP, followUp: value });
+    onFieldEdited?.('follow_up');
     setHasChanges(true);
   };
 

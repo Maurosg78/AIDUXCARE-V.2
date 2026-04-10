@@ -26,6 +26,7 @@ import type { ClinicalAnalysis } from '../../../utils/cleanVertexResponse';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import type { ClinicalAttachment } from '../../../services/clinicalAttachmentService';
 import type { WhisperSupportedLanguage } from '../../../services/OpenAIWhisperService';
+import { trackSOAPEdited } from '../../../services/analytics/AnalyticsEvents';
 
 export interface SOAPTabProps {
   // SOAP note state
@@ -115,6 +116,8 @@ export interface SOAPTabProps {
   redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
 }
 
+type EditableSOAPField = 'subjective' | 'objective' | 'assessment' | 'plan' | 'follow_up';
+
 export const SOAPTab: React.FC<SOAPTabProps> = ({
   localSoapNote,
   soapStatus,
@@ -175,6 +178,9 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   const { t } = useTranslation();
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [summarySent, setSummarySent] = useState(false);
+  const handleSoapFieldEdited = (fieldEdited: EditableSOAPField) => {
+    void trackSOAPEdited({ fieldEdited });
+  };
 
   return (
     <div className="space-y-6">
@@ -327,6 +333,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
                 : undefined
             }
             redFlagDecisions={redFlagDecisions}
+            onFieldEdited={handleSoapFieldEdited}
           />
 
           {/* Spain pilot: Enviar resumen al paciente */}

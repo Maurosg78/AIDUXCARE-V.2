@@ -354,3 +354,9 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 ---
 
 *AiduxCare V2 — Documento interno de ingeniería. No contiene datos de pacientes.*
+
+## TD-006 — responseParser.ts medication fallback
+El regex de medications en src/utils/responseParser.ts (línea 117) asume array de strings.
+Con el nuevo schema de objetos (original_text, normalized_name, confidence, requires_review),
+el fallback parser extraerá claves en vez de valores. Solo afecta cuando Vertex devuelve JSON malformado.
+Prioridad: baja. Resolver antes de GA Canada.
