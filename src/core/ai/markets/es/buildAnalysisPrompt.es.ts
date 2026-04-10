@@ -22,7 +22,7 @@ Todas las afirmaciones clínicas deben proceder de:
 No inventes hallazgos, tratamientos, pruebas ni recomendaciones ajenas a la entrada.
 
 Salida JSON obligatoria:
-{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[{original_text:"",normalized_name:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 REGLAS DE REDACCIÓN:
 - Español clínico formal (es-ES).
@@ -59,7 +59,13 @@ REGLAS DE DISTRIBUCIÓN:
 - chief_complaint: motivo principal de consulta.
 - key_findings: hallazgos clínicos únicos no repetidos en chief_complaint.
 - medical_history: antecedentes y eventos previos.
-- medications: lista estructurada de medicación actual en español clínico.
+- medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, confidence, requires_review, dose, frequency, duration}. Reglas:
+  - original_text: exactamente como apareció en la transcripción.
+  - normalized_name: nombre farmacológico correcto en español si lo reconoces con certeza; si no, igual a original_text.
+  - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
+  - requires_review: true si confidence es "low" o "medium", false si es "high".
+  - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
+  - Nunca autocorregir en silencio. Si normalized_name difiere de original_text, siempre marcar requires_review: true.
 - yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
 - summary: síntesis breve sin repetir todo lo anterior.`;
 
@@ -94,7 +100,7 @@ export const buildSpanishAnalysisPrompt = (params: AnalysisPromptParams): string
       correlationLine: '- Correlaciona los hallazgos del documento con la presentación clínica',
       discrepancyLine: '- Señala discrepancias entre el informe y la situación clínica actual',
       medicationLineOne: '- Si el documento contiene medicación al alta o tratamiento activo, incluye toda la lista claramente presente',
-      medicationLineTwo: '- Normaliza la pauta al español clínico: "nombre, dosis, frecuencia, duración" cuando esté disponible',
+      medicationLineTwo: '- Para cada medicamento: extrae original_text tal como aparece, propón normalized_name si lo reconoces, marca confidence (high/medium/low) y requires_review: true si hay incertidumbre en el nombre',
       medicationLineThree: '- No omitas medicamentos claramente presentes y no dejes instrucciones de pauta en inglés',
       errorNotePrefix: '⚠️ **NOTA:** No se pudo extraer texto de este archivo',
       errorBody: 'El documento se subió, pero su contenido no fue analizado.',
