@@ -3,7 +3,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
+const appVersion = process.env.npm_package_version || "0.1.0";
+const buildId = `${appVersion}-${new Date().toISOString()}`;
+
 export default defineConfig({
+  define: {
+    __AIDUX_APP_VERSION__: JSON.stringify(appVersion),
+    __AIDUX_BUILD_ID__: JSON.stringify(buildId),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -14,6 +21,15 @@ export default defineConfig({
       jsxRuntime: "automatic",
       // fastRefresh: true, // ❌ no existe en @vitejs/plugin-react v4
     }),
+    {
+      name: "aidux-build-meta",
+      transformIndexHtml(html) {
+        return html.replace(
+          "<head>",
+          `<head>\n    <meta name="aidux-app-version" content="${appVersion}" />\n    <meta name="aidux-build-id" content="${buildId}" />`
+        );
+      },
+    },
   ],
   css: {
     postcss: "./postcss.config.cjs",

@@ -19,4 +19,7 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
-} 
+}
+
+declare const __AIDUX_APP_VERSION__: string;
+declare const __AIDUX_BUILD_ID__: string;

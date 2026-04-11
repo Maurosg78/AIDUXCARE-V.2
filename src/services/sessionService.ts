@@ -37,6 +37,16 @@ interface SessionData {
   attachments?: ClinicalAttachment[];
   /** Sprint A (follow-up): HEP compliance for this session doc only — source of truth on `sessions/{id}`. */
   hepCompliance?: Array<{ itemId: string; done: boolean; date: string }>;
+  writeState?: 'draft' | 'soap_generated' | 'soap_saved' | 'encounter_saved' | 'fully_committed' | 'commit_failed';
+  lastCommitStep?: string;
+  lastCommitError?: string | null;
+  finalizationOperationId?: string | null;
+  commitAttemptCount?: number;
+  soapNoteId?: string;
+  encounterId?: string;
+  encounterPersisted?: boolean;
+  clientBuildId?: string;
+  clientAppVersion?: string;
 }
 
 class SessionService {
@@ -275,13 +285,38 @@ class SessionService {
           latestFinalizedByPatientSessionType.set(key, updatedAtMs);
         }
       }
+      const consultationsRef = collection(db, 'consultations');
+      const consultationsQuery = query(
+        consultationsRef,
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+      const consultationsSnapshot = await getDocs(consultationsQuery);
+      const latestConsultationByPatientSessionType = new Map<string, number>();
+      for (const consultationDoc of consultationsSnapshot.docs) {
+        const data = consultationDoc.data();
+        const patientId = data.patientId;
+        const sessionType = data.visitType || 'initial';
+        if (!patientId) continue;
+        const key = `${patientId}::${sessionType}`;
+        const createdAtMs = data.createdAt?.toMillis?.() ?? 0;
+        const current = latestConsultationByPatientSessionType.get(key) ?? 0;
+        if (createdAtMs > current) {
+          latestConsultationByPatientSessionType.set(key, createdAtMs);
+        }
+      }
       const filteredResults = results.filter((session) => {
         if (session.soapStatus === 'finalized') return false;
-        const key = `${session.patientId}::${session.sessionType}`;
-        const latestFinalizedAt = latestFinalizedByPatientSessionType.get(key) ?? 0;
-        const sessionUpdatedAt = toMillis(session.updatedAt);
-        if (session.status === 'interrupted' && latestFinalizedAt > 0 && sessionUpdatedAt <= latestFinalizedAt) {
-          return false;
+        if (session.status === 'interrupted') {
+          const key = `${session.patientId}::${session.sessionType}`;
+          const latestFinalizedAt = latestFinalizedByPatientSessionType.get(key) ?? 0;
+          const latestConsultationAt = latestConsultationByPatientSessionType.get(key) ?? 0;
+          const latestCompletedAt = Math.max(latestFinalizedAt, latestConsultationAt);
+          const sessionUpdatedAt = toMillis(session.updatedAt);
+          if (latestCompletedAt > 0 && sessionUpdatedAt <= latestCompletedAt) {
+            return false;
+          }
         }
         return true;
       });

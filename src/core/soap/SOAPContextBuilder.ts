@@ -60,6 +60,66 @@ export interface VisitTypeDetectionResult {
   canOverride: boolean;
 }
 
+type StructuredMedication = {
+  text?: string;
+  medication_data?: {
+    original_text?: string;
+    normalized_name?: string;
+    confidence?: string;
+    requires_review?: boolean;
+    dose?: string;
+    frequency?: string;
+    duration?: string;
+  };
+};
+
+const formatMedicationForSOAP = (medication: unknown): string | null => {
+  if (typeof medication === 'string') {
+    const trimmedMedication = medication.trim();
+    return trimmedMedication || null;
+  }
+  if (!medication || typeof medication !== 'object') {
+    return null;
+  }
+  const structuredMedication = medication as StructuredMedication;
+  const medicationData = structuredMedication.medication_data;
+  if (!medicationData) {
+    const fallbackText = structuredMedication.text?.trim() || '';
+    return fallbackText || null;
+  }
+  const originalText = medicationData.original_text?.trim() || '';
+  const normalizedName = medicationData.normalized_name?.trim() || '';
+  const dose = medicationData.dose?.trim() || '';
+  const frequency = medicationData.frequency?.trim() || '';
+  const duration = medicationData.duration?.trim() || '';
+  const confidence = medicationData.confidence?.trim().toLowerCase() || '';
+  const requiresReview = medicationData.requires_review === true;
+  const displayName = normalizedName || originalText || structuredMedication.text?.trim() || '';
+  if (!displayName) {
+    return null;
+  }
+  const detailParts = [dose, frequency, duration].filter(Boolean);
+  const hasReviewMarker = requiresReview || (confidence !== '' && confidence !== 'high');
+  const reviewLabel = hasReviewMarker ? '[nombre de medicación por confirmar]' : '';
+  const namePortion = [displayName, reviewLabel].filter(Boolean).join(' ');
+  const confidencePortion = hasReviewMarker && confidence ? `confianza: ${confidence}` : '';
+  const originalPortion =
+    hasReviewMarker && originalText && originalText !== displayName
+      ? `transcrito como: ${originalText}`
+      : '';
+  const formattedParts = [namePortion, ...detailParts, confidencePortion, originalPortion].filter(Boolean);
+  return formattedParts.join(', ');
+};
+
+const buildSOAPMedicationList = (medications: unknown): string[] => {
+  if (!Array.isArray(medications)) {
+    return [];
+  }
+  return medications
+    .map((medication) => formatMedicationForSOAP(medication))
+    .filter((medication): medication is string => Boolean(medication));
+};
+
 /**
  * Detects visit type using hybrid approach:
  * - Heuristic 1: No previous SOAP = Initial
@@ -132,7 +192,7 @@ export function buildSOAPContext(
     analysis: {
       redFlags: analysis?.red_flags || [],
       yellowFlags: analysis?.yellow_flags || [],
-      medications: analysis?.medicacion_actual || [],
+      medications: buildSOAPMedicationList(analysis?.medicacion_actual || []),
       chiefComplaint: analysis?.motivo_consulta || undefined,
       keyFindings: analysis?.hallazgos_clinicos || [],
       medicalHistory: analysis?.antecedentes_medicos || [],
@@ -179,4 +239,3 @@ export function validateSOAPContext(context: SOAPContext): {
     missingFields,
   };
 }
-

@@ -55,6 +55,8 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
         const consultationSessionIds = new Set<string>();
         const encounterSessionIds = new Set<string>();
         const sessionDateById = new Map<string, Date>();
+        const latestConsultationDateByType = new Map<'initial' | 'follow-up', number>();
+        const latestEncounterDateByType = new Map<'initial' | 'follow-up', number>();
 
         // 0. Fetch sessions once: build sessionIdToType (for consultations without visitType) and session visits
         const sessionIdToType = new Map<string, 'initial' | 'follow-up'>();
@@ -157,6 +159,11 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             if (hasSessionId) {
               consultationSessionIds.add(sessionId as string);
             }
+            const noteDateMs = noteDate.getTime();
+            const currentLatestConsultationDate = latestConsultationDateByType.get(type) ?? 0;
+            if (noteDateMs > currentLatestConsultationDate) {
+              latestConsultationDateByType.set(type, noteDateMs);
+            }
 
             visits.push({
               id: note.id,
@@ -238,6 +245,11 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             if (encounterSessionId) {
               encounterSessionIds.add(encounterSessionId);
             }
+            const encounterDateMs = encounterDate.getTime();
+            const currentLatestEncounterDate = latestEncounterDateByType.get(encounterVisitType) ?? 0;
+            if (encounterDateMs > currentLatestEncounterDate) {
+              latestEncounterDateByType.set(encounterVisitType, encounterDateMs);
+            }
 
             visits.push({
               id: doc.id,
@@ -276,6 +288,27 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           }
 
           if (visit.source === 'session') {
+            if (visit.status === 'draft') {
+              return true;
+            }
+
+            if (visit.status === 'completed' || visit.status === 'signed') {
+              const hasConsultationTwin = consultationSessionIds.has(visit.id);
+              const hasEncounterTwin = encounterSessionIds.has(visit.id);
+              return !hasConsultationTwin && !hasEncounterTwin;
+            }
+
+            if (visit.status === 'interrupted') {
+              const visitType = visit.type === 'follow-up' ? 'follow-up' : 'initial';
+              const latestConsultationAt = latestConsultationDateByType.get(visitType) ?? 0;
+              const latestEncounterAt = latestEncounterDateByType.get(visitType) ?? 0;
+              const latestCompletedAt = Math.max(latestConsultationAt, latestEncounterAt);
+              const visitDateMs = visit.date.getTime();
+              if (latestCompletedAt > 0 && visitDateMs <= latestCompletedAt) {
+                return false;
+              }
+            }
+
             const isDraftSession = visit.status === 'draft' || visit.soapNote?.status !== 'finalized';
             if (isDraftSession) {
               return true;

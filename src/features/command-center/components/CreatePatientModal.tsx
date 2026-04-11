@@ -191,7 +191,10 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({ isOpen, 
             hasEmail: !!formData.email?.trim(),
             hasChiefComplaint: !!formData.chiefComplaint?.trim()
           });
-          console.log('✅ [PILOT METRICS] Pilot patient creation tracked:', patientId, intendedFlow);
+          console.log('✅ [PILOT METRICS] Pilot patient creation tracked:', {
+            hasPatientId: Boolean(patientId),
+            patientType: intendedFlow,
+          });
         }
       } catch (error) {
         console.error('⚠️ [PILOT METRICS] Error tracking pilot patient creation:', error);

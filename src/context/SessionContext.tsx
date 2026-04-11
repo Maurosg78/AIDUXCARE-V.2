@@ -79,7 +79,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Log para tracking ML futuro
     console.log('[SessionContext] Selection updated:', {
       count: ids.length,
-      ids: ids,
+      hasSelections: ids.length > 0,
       timestamp: new Date().toISOString()
     });
   }, []);
@@ -97,7 +97,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       // Log para ML tracking
       console.log('[SessionContext] Toggle:', {
-        id,
+        hasId: Boolean(id),
         action: isCurrentlySelected ? 'deselected' : 'selected',
         timestamp: new Date().toISOString()
       });

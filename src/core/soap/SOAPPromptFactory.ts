@@ -263,6 +263,7 @@ ${context.physicalEvaluation.summary || context.physicalEvaluation.tests.map((te
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
+- If a medication line contains "[nombre de medicación por confirmar]", preserve that uncertainty in the SOAP and do not autocorrect the drug name.
 - Scope: Physiotherapy assessment and treatment planning only
 - Language: ${activeLocale.language}, CONCISE, clinically appropriate
 ${terminologyCriticalLine}
@@ -460,6 +461,7 @@ ${context.physicalEvaluation.summary || context.physicalEvaluation.tests.map((te
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
+- If a medication line contains "[nombre de medicación por confirmar]", preserve that uncertainty in the SOAP and do not autocorrect the drug name.
 - Scope: Physiotherapy assessment and treatment planning only
 - Language: ${activeLocale.language}, CONCISE, clinically appropriate
 ${followUpTerminologyCriticalLine}
@@ -672,6 +674,7 @@ ${JSON.stringify(context.physicalEvaluation.tests, null, 2)}
 CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
+- If a medication line contains "[nombre de medicación por confirmar]", preserve that uncertainty in the SOAP and do not autocorrect the drug name.
 - Scope: Physiotherapy assessment and treatment planning only
 - Language: ${activeLocale.language}, CONCISE, legally precise, clinically appropriate
 - Terminology: Use abbreviations (ROM, B/L, R/L, /10) and numbers

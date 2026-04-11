@@ -5,6 +5,64 @@ export class SessionStorage {
   private static readonly KEY_PREFIX_LEGACY = 'aidux_';
   private static readonly KEY_PREFIX_V2 = 'aidux_v2_';
 
+  private static getPreferredStorage(): Storage | null {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage;
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      return localStorage;
+    }
+
+    return null;
+  }
+
+  private static getLegacyStorage(): Storage | null {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage;
+    }
+
+    return null;
+  }
+
+  private static readValue(key: string): string | null {
+    const preferredStorage = this.getPreferredStorage();
+    const legacyStorage = this.getLegacyStorage();
+
+    const preferredValue = preferredStorage?.getItem(key) ?? null;
+    if (preferredValue) {
+      return preferredValue;
+    }
+
+    if (legacyStorage && legacyStorage !== preferredStorage) {
+      const legacyValue = legacyStorage.getItem(key);
+      if (legacyValue) {
+        return legacyValue;
+      }
+    }
+
+    return null;
+  }
+
+  private static writeValue(key: string, value: string): void {
+    const preferredStorage = this.getPreferredStorage();
+    const legacyStorage = this.getLegacyStorage();
+
+    preferredStorage?.setItem(key, value);
+
+    if (legacyStorage && legacyStorage !== preferredStorage) {
+      legacyStorage.removeItem(key);
+    }
+  }
+
+  private static removeValue(key: string): void {
+    const preferredStorage = this.getPreferredStorage();
+    const legacyStorage = this.getLegacyStorage();
+
+    preferredStorage?.removeItem(key);
+    legacyStorage?.removeItem(key);
+  }
+
   /**
    * Build v2 key: aidux_v2_${userId}_${patientId}_${visitType}_${sessionId}
    */
@@ -27,7 +85,9 @@ export class SessionStorage {
   private static migrateLegacySession(patientId: string, userId: string, visitType: string, sessionId: string): void {
     try {
       const legacyKey = this.buildKeyLegacy(patientId);
-      const legacyData = localStorage.getItem(legacyKey);
+      const legacyStorage = this.getLegacyStorage();
+      const preferredStorage = this.getPreferredStorage();
+      const legacyData = legacyStorage?.getItem(legacyKey) ?? null;
       
       if (!legacyData) return; // No legacy data to migrate
       
@@ -48,11 +108,11 @@ export class SessionStorage {
         version: '2.0',
         migratedFrom: 'legacy'
       };
-      localStorage.setItem(v2Key, JSON.stringify(migratedData));
+      preferredStorage?.setItem(v2Key, JSON.stringify(migratedData));
       
       // Remove legacy key only if migration successful
-      localStorage.removeItem(legacyKey);
-      console.log('[SessionStorage] Migrated legacy session to v2:', { patientId, visitType, sessionId });
+      legacyStorage?.removeItem(legacyKey);
+      console.log('[SessionStorage] Migrated legacy session to v2');
     } catch (e) {
       console.warn('[SessionStorage] Error migrating legacy session:', e);
       // Don't throw - migration failure shouldn't block normal operation
@@ -100,7 +160,8 @@ export class SessionStorage {
         sessionId: data?.sessionId != null && String(data.sessionId).trim() !== '' ? data.sessionId : finalSessionId
       };
       
-      localStorage.setItem(v2Key, JSON.stringify(sessionData));
+      const serializedData = JSON.stringify(sessionData);
+      this.writeValue(v2Key, serializedData);
     } catch (e) {
       console.error('[SessionStorage] Error guardando sesión:', e);
     }
@@ -125,7 +186,7 @@ export class SessionStorage {
       // If v2 params provided, try v2 key first
       if (userId && visitType && sessionId) {
         const v2Key = this.buildKeyV2(userId, patientId, visitType, sessionId);
-        const v2Data = localStorage.getItem(v2Key);
+        const v2Data = this.readValue(v2Key);
         if (v2Data) {
           return JSON.parse(v2Data);
         }
@@ -133,7 +194,7 @@ export class SessionStorage {
       
       // Fallback to legacy key (for backward compatibility)
       const legacyKey = this.buildKeyLegacy(patientId);
-      const legacyData = localStorage.getItem(legacyKey);
+      const legacyData = this.readValue(legacyKey);
       if (legacyData) {
         const parsed = JSON.parse(legacyData);
         // If we have v2 params, attempt migration
@@ -168,18 +229,18 @@ export class SessionStorage {
       // If v2 params provided, clear v2 key
       if (userId && visitType && sessionId) {
         const v2Key = this.buildKeyV2(userId, patientId, visitType, sessionId);
-        localStorage.removeItem(v2Key);
+        this.removeValue(v2Key);
       }
 
       // Also clear "latest initial" slot when clearing initial session so resume doesn't restore stale data
       if (userId && visitType && String(visitType).replace(/-/g, '_').toLowerCase() === 'initial') {
         const latestKey = this.buildKeyV2(userId, patientId, visitType, SESSION_ID_LATEST_INITIAL);
-        localStorage.removeItem(latestKey);
+        this.removeValue(latestKey);
       }
       
       // Also clear legacy key for backward compatibility
       const legacyKey = this.buildKeyLegacy(patientId);
-      localStorage.removeItem(legacyKey);
+      this.removeValue(legacyKey);
     } catch (e) {
       console.error('[SessionStorage] Error limpiando sesión:', e);
     }
