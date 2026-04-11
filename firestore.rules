@@ -15,11 +15,25 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(resource) {
+    function isAdmin() {
       return isAuthenticated()
-        && (resource.data.userId == request.auth.uid
-            || resource.data.authorUid == request.auth.uid
-            || resource.data.ownerUid == request.auth.uid);
+        && request.auth.token.admin == true;
+    }
+
+    function matchesCurrentUser(data) {
+      return isAuthenticated()
+        && (data.userId == request.auth.uid
+            || data.authorUid == request.auth.uid
+            || data.ownerUid == request.auth.uid
+            || data.professionalId == request.auth.uid
+            || data.physiotherapistId == request.auth.uid
+            || data.createdBy == request.auth.uid
+            || data.deletedBy == request.auth.uid
+            || data.resolvedBy == request.auth.uid);
+    }
+
+    function isOwner(resource) {
+      return matchesCurrentUser(resource.data);
     }
 
     // Citas antiguas: clinicianUid guardaba email del profesional (no Firebase UID).
@@ -42,6 +56,23 @@ service cloud.firestore {
       return p.data.ownerUid == request.auth.uid
         || p.data.userId == request.auth.uid
         || p.data.authorUid == request.auth.uid;
+    }
+
+    function patientBelongsToCurrentUser(patientId) {
+      return isAuthenticated()
+        && patientId is string
+        && exists(/databases/$(database)/documents/patients/$(patientId))
+        && patientDocVisible(patientId);
+    }
+
+    function canAccessClinicalRecord(resource) {
+      return isOwner(resource)
+        || patientBelongsToCurrentUser(resource.data.patientId);
+    }
+
+    function canCreateClinicalRecord() {
+      return matchesCurrentUser(request.resource.data)
+        || patientBelongsToCurrentUser(request.resource.data.patientId);
     }
 
     // ─── users ───────────────────────────────────────────────────────────
@@ -87,19 +118,19 @@ service cloud.firestore {
 
     // ─── encounters ──────────────────────────────────────────────────────
     match /encounters/{encounterId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
-      allow update: if isOwner(resource) && isArchiveOnly();
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
+      allow update: if canAccessClinicalRecord(resource) && isArchiveOnly();
       allow delete: if false;
     }
 
     // ─── consultations ───────────────────────────────────────────────────
     match /consultations/{consultationId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
-      allow update: if isOwner(resource) && isArchiveOnly();
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
+      allow update: if canAccessClinicalRecord(resource) && isArchiveOnly();
       allow delete: if false;
     }
 
@@ -117,24 +148,24 @@ service cloud.firestore {
 
     // ─── treatment_plans ─────────────────────────────────────────────────
     match /treatment_plans/{planId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     // ─── episodes / patient_episodes ─────────────────────────────────────
     match /episodes/{episodeId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     match /patient_episodes/{episodeId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
@@ -143,12 +174,15 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (resource.data.professionalId == request.auth.uid
             || resource.data.physiotherapistId == request.auth.uid
-            || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated();
+            || resource.data.userId == request.auth.uid
+            || patientBelongsToCurrentUser(resource.data.patientId));
+      allow create: if matchesCurrentUser(request.resource.data)
+        || patientBelongsToCurrentUser(request.resource.data.patientId);
       allow update: if isAuthenticated()
         && (resource.data.professionalId == request.auth.uid
             || resource.data.physiotherapistId == request.auth.uid
-            || resource.data.userId == request.auth.uid);
+            || resource.data.userId == request.auth.uid
+            || patientBelongsToCurrentUser(resource.data.patientId));
       allow delete: if false;
     }
 
@@ -175,17 +209,17 @@ service cloud.firestore {
     }
 
     match /patient_disclosures/{disclosureId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     // ─── clinical_decisions ──────────────────────────────────────────────
     match /clinical_decisions/{decisionId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
@@ -200,38 +234,40 @@ service cloud.firestore {
 
     // ─── hospital_portal_notes ───────────────────────────────────────────
     match /hospital_portal_notes/{noteId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     // ─── patient_trajectory_events ───────────────────────────────────────
     match /patient_trajectory_events/{eventId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     match /patient_trace_numbers/{traceId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
       allow delete: if false;
     }
 
     // ─── pending_sms ─────────────────────────────────────────────────────
     match /pending_sms/{smsId} {
-      allow read: if isOwner(resource) || (isAuthenticated() && resource.data.patientId != null);
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource);
-      allow delete: if isOwner(resource);
+      allow read: if canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if canAccessClinicalRecord(resource);
+      allow delete: if canAccessClinicalRecord(resource);
     }
 
     // ─── analytics / métricas (no PHI) ───────────────────────────────────
     match /analytics_events/{eventId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /user_analytics/{docId} {
@@ -240,58 +276,77 @@ service cloud.firestore {
     }
 
     match /user_feedback/{feedbackId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin() || isOwner(resource);
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
     match /time_savings/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin() || isOwner(resource);
+      allow create: if matchesCurrentUser(request.resource.data);
+      allow update: if isAdmin() || isOwner(resource);
+      allow delete: if false;
     }
 
     match /value_analytics/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /business_metrics/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /system_analytics/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /reports/{reportId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin() || canAccessClinicalRecord(resource);
+      allow create: if canCreateClinicalRecord();
+      allow update: if isAdmin() || canAccessClinicalRecord(resource);
+      allow delete: if false;
     }
 
     // ─── compliance / auditoría ───────────────────────────────────────────
     match /compliance_audit_log/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && (isAdmin() || matchesCurrentUser(request.resource.data));
       allow update: if false;
       allow delete: if false;
     }
 
     match /audit_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isAdmin() || isOwner(resource);
+      allow create: if isAuthenticated() && (isAdmin() || matchesCurrentUser(request.resource.data));
       allow update: if false;
       allow delete: if false;
     }
 
     match /deletion_certificates/{certId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isAdmin() || isOwner(resource);
+      allow create: if isAuthenticated() && (isAdmin() || matchesCurrentUser(request.resource.data));
       allow update: if false;
       allow delete: if false;
     }
 
     // ─── métricas de dashboard interno ───────────────────────────────────
     match /metrics_growth/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     match /metrics_tech/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     // ─── SIN CATCH-ALL ────────────────────────────────────────────────────
