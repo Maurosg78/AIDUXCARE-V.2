@@ -1,4 +1,5 @@
 import { extractTextFromPDF, isValidPDF } from './pdfTextExtractor';
+import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
 
 export interface ProcessedFile {
   fileName: string;
@@ -375,9 +376,10 @@ export class FileProcessorService {
       },
     };
 
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch(VERTEX_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     });
 

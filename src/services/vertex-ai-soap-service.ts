@@ -23,6 +23,7 @@ import { ensureSpanishClinicalText } from '../utils/normalizers/es/ensureSpanish
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
 import { enforceContractOrBuildRepair } from "../core/prompts/v3/validators/contractRuntime";
+import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
 // ✅ WO-JSON-PARSER-001: Centralized JSON sanitizer — prevents silent parse failures
 // Handles trailing commas, single quotes, and code block wrappers from Vertex AI responses
 function sanitizeAndExtractJson(raw: string): string | null {
@@ -47,6 +48,17 @@ function sanitizeAndExtractJson(raw: string): string | null {
 
 // ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
 const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+
+async function callAuthenticatedVertexProxy(payload: unknown): Promise<Response> {
+  const headers = await buildAuthenticatedJsonHeaders();
+  const body = JSON.stringify(payload);
+  const response = await fetch(VERTEX_PROXY_URL, {
+    method: 'POST',
+    headers,
+    body,
+  });
+  return response;
+}
 
 export interface SOAPGenerationResponse {
   soap: SOAPNote | null;
@@ -328,17 +340,11 @@ export async function generateSOAPNote(
     }
 
     // Call Vertex AI via proxy
-    const response = await fetch(VERTEX_PROXY_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt,
-        action: 'analyze',
-        traceId,
-        model: 'gemini-2.0-flash-exp', // Use same model as clinical analysis
-      }),
+    const response = await callAuthenticatedVertexProxy({
+      prompt,
+      action: 'analyze',
+      traceId,
+      model: 'gemini-2.0-flash-exp', // Use same model as clinical analysis
     });
 
     if (!response.ok) {
@@ -380,17 +386,11 @@ export async function generateSOAPNote(
         // Bloque 4: Type narrowing - repairPrompt solo existe cuando ok: false
         const repairPrompt = (firstCheck as { ok: false; repairPrompt: string }).repairPrompt;
 
-        const repairResponse = await fetch(VERTEX_PROXY_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: repairPrompt,
-            action: 'analyze',
-            traceId: `${traceId}-repair`,
-            model: 'gemini-2.0-flash-exp',
-          }),
+        const repairResponse = await callAuthenticatedVertexProxy({
+          prompt: repairPrompt,
+          action: 'analyze',
+          traceId: `${traceId}-repair`,
+          model: 'gemini-2.0-flash-exp',
         });
 
         if (repairResponse.ok) {
@@ -421,17 +421,11 @@ export async function generateSOAPNote(
             console.warn('[SOAP Service] v3 contract enforcement failed after retry, falling back to v2');
             const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
 
-            const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                prompt: fallbackPrompt,
-                action: 'analyze',
-                traceId: `${traceId}-fallback`,
-                model: 'gemini-2.0-flash-exp',
-              }),
+            const fallbackResponse = await callAuthenticatedVertexProxy({
+              prompt: fallbackPrompt,
+              action: 'analyze',
+              traceId: `${traceId}-fallback`,
+              model: 'gemini-2.0-flash-exp',
             });
 
             if (fallbackResponse.ok) {
@@ -445,17 +439,11 @@ export async function generateSOAPNote(
           console.warn('[SOAP Service] v3 repair request failed, falling back to v2');
           const fallbackPrompt = buildSOAPPrompt(deidentifiedContext, promptOptions);
 
-          const fallbackResponse = await fetch(VERTEX_PROXY_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              prompt: fallbackPrompt,
-              action: 'analyze',
-              traceId: `${traceId}-fallback`,
-              model: 'gemini-2.0-flash-exp',
-            }),
+          const fallbackResponse = await callAuthenticatedVertexProxy({
+            prompt: fallbackPrompt,
+            action: 'analyze',
+            traceId: `${traceId}-fallback`,
+            model: 'gemini-2.0-flash-exp',
           });
 
           if (fallbackResponse.ok) {
@@ -950,9 +938,10 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
 
   let response: Response;
   try {
+    const headers = await buildAuthenticatedJsonHeaders();
     response = await fetch(VERTEX_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: bodyStr,
     });
   } catch (err) {
@@ -1229,15 +1218,11 @@ export async function generateFollowUpAnalysis(
 
   let considerations: string[] = [];
   try {
-    const res = await fetch(VERTEX_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: considerationsPrompt,
-        action: 'analyze',
-        traceId,
-        model: 'gemini-2.0-flash-exp',
-      }),
+    const res = await callAuthenticatedVertexProxy({
+      prompt: considerationsPrompt,
+      action: 'analyze',
+      traceId,
+      model: 'gemini-2.0-flash-exp',
     });
     if (res.ok) {
       const data = await res.json();
@@ -1328,16 +1313,13 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
   const fullPrompt = `${BASELINE_FROM_TEXT_SYSTEM}\n\n${userPrompt}`;
 
   const traceId = `baseline-from-text-${Date.now()}`;
-  const response = await fetch(VERTEX_PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      action: 'analyze',
-      traceId,
-      model: 'gemini-2.0-flash-exp',
-    }),
-  }); if (!response.ok) {
+  const response = await callAuthenticatedVertexProxy({
+    prompt: fullPrompt,
+    action: 'analyze',
+    traceId,
+    model: 'gemini-2.0-flash-exp',
+  });
+  if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(`Vertex AI error: ${response.status} - ${errorData.error || 'Unknown error'}`);
   }
@@ -1456,15 +1438,11 @@ export async function generateBaselineSOAPFromOngoingIntake(
   const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
   const traceId = `baseline-ongoing-${Date.now()}`;
-  const response = await fetch(VERTEX_PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      action: 'analyze',
-      traceId,
-      model: 'gemini-2.0-flash-exp',
-    }),
+  const response = await callAuthenticatedVertexProxy({
+    prompt: fullPrompt,
+    action: 'analyze',
+    traceId,
+    model: 'gemini-2.0-flash-exp',
   });
 
   if (!response.ok) {

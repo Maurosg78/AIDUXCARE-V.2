@@ -4,6 +4,7 @@ import { deidentify, reidentify, logDeidentification } from "./dataDeidentificat
 import { buildAnalysisPrompt } from "../core/ai/markets/buildAnalysisPrompt";
 import type { ClinicalAttachment } from '../core/ai/markets/buildAnalysisPrompt';
 import { resolveClinicalMarket, type ClinicalMarket } from "@/core/market/resolveClinicalMarket";
+import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
 
 type NiagaraProxyPayload = {
   text: string;
@@ -56,9 +57,10 @@ const sanitizeTranscript = (value: string): string => {
 };
 
 const callVertexWithPrompt = async (prompt: string, traceId: string) => {
+  const headers = await buildAuthenticatedJsonHeaders();
   const response = await fetch(VERTEX_PROXY_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       action: 'analyze',
       prompt,
@@ -201,9 +203,10 @@ export async function analyzeWithVertexProxy(payload: {
     finalPrompt = structuredPrompt;
   }
   
+  const headers = await buildAuthenticatedJsonHeaders();
   const response = await fetch(VERTEX_PROXY_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       action: payload.action,
       prompt: finalPrompt,
@@ -296,9 +299,10 @@ export class VertexAIServiceViaFirebase {
       })
       .join('\n');
 
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch(VERTEX_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         action: 'generate_soap',
         transcript: deidentifiedText, // Use de-identified transcript

@@ -16,6 +16,7 @@ import { SMS_TEMPLATES, validateSMSTemplate, validateSMSTemplateEs } from '../co
 import { getPublicBaseUrl } from '../utils/urlHelpers';
 import { normalizeNameForSMS } from '../utils/textNormalizer';
 import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
+import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
 
 const SMS_COLLECTION = 'pending_sms'; // Audit trail for SMS sends
 
@@ -114,13 +115,12 @@ export class SMSService {
       if (SMS_PROVIDER === 'vonage' && VONAGE_ENABLED) {
         // Vonage implementation (same as sendConsentLink)
         const region = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'northamerica-northeast1';
+        const headers = await buildAuthenticatedJsonHeaders();
         const response = await fetch(
           `https://${region}-${import.meta.env.VITE_FIREBASE_PROJECT_ID}.cloudfunctions.net/sendConsentSMS`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
               phone: validatedPhone,
               message,
@@ -553,11 +553,10 @@ export class SMSService {
     });
 
     // Call Cloud Function instead of Vonage directly (avoids CORS)
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         phone,
         message,
@@ -683,11 +682,10 @@ export class SMSService {
         });
 
         // Call Cloud Function
+        const headers = await buildAuthenticatedJsonHeaders();
         const response = await fetch(FUNCTION_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             phone,
             message,
