@@ -16,6 +16,27 @@ import { AnalyticsService } from './analyticsService';
 import logger from '@/shared/utils/logger';
 import { getPublicBaseUrl } from '@/utils/urlHelpers';
 
+const maskEmailForLog = (email?: string | null): string => {
+  if (!email) {
+    return 'missing';
+  }
+
+  const parts = email.split('@');
+  const localPart = parts[0] || '';
+  const domainPart = parts[1] || '';
+  const visibleLocalPart = localPart.slice(0, 2);
+  return `${visibleLocalPart}***@${domainPart || 'hidden'}`;
+};
+
+const maskTokenForLog = (token?: string | null): string => {
+  if (!token) {
+    return 'missing';
+  }
+
+  const visiblePrefix = token.slice(0, 4);
+  return `${visiblePrefix}...`;
+};
+
 // Pilot start date - users registered from this date onwards are pilot users
 const PILOT_START_DATE = new Date('2024-12-19T00:00:00Z');
 
@@ -79,7 +100,7 @@ export class EmailActivationService {
     password: string
   ): Promise<ActivationResult> {
     try {
-      console.log('[DEBUG] Iniciando registro de profesional:', professionalData.email);
+      console.log('[DEBUG] Iniciando registro de profesional:', maskEmailForLog(professionalData.email));
 
       // Generar token de activación único y ID inmediatamente (no requiere esperar)
       const activationToken = this.generateActivationToken();
@@ -173,7 +194,7 @@ export class EmailActivationService {
                 isPilotUser: true,
                 pilotPhase: 'pilot_1'
               });
-              console.log('✅ [PILOT METRICS] Pilot user registration tracked:', professionalId);
+              console.log('✅ [PILOT METRICS] Pilot user registration tracked');
             } catch (error) {
               console.error('⚠️ [PILOT METRICS] Error tracking pilot user registration:', error);
               // Non-blocking: don't fail registration if analytics fails
@@ -186,8 +207,8 @@ export class EmailActivationService {
           logger.info("[SMS Activation] skipped: email-only mode");
         // Log link de activación para testing (no bloquea con alert)
         const activationLink = `${window.location.origin}/activate?token=${activationToken}`;
-        console.log('[DEBUG] Link de activación:', activationLink);
-        console.log('[DEBUG] Token de activación:', activationToken);
+        console.log('[DEBUG] Link de activación generado');
+        console.log('[DEBUG] Token de activación generado:', maskTokenForLog(activationToken));
 
         return {
           success: true,
@@ -248,7 +269,7 @@ export class EmailActivationService {
    */
   public async activateAccount(token: string): Promise<ActivationResult> {
     try {
-      console.log('[DEBUG] Activando cuenta con token:', token);
+      console.log('[DEBUG] Activando cuenta con token:', maskTokenForLog(token));
 
       // Buscar usuario por token en la colección 'users'
       const usersRef = collection(db, 'users');
@@ -256,7 +277,7 @@ export class EmailActivationService {
       const tokenSnapshot = await getDocs(tokenQuery);
 
       if (tokenSnapshot.empty) {
-        console.log('❌ [DEBUG] Token no encontrado:', token);
+        console.log('❌ [DEBUG] Token no encontrado:', maskTokenForLog(token));
         return {
           success: false,
           message: 'Token de activación inválido o expirado'
@@ -271,7 +292,7 @@ export class EmailActivationService {
       if (userData.tokenExpiry) {
         const expiresAt = new Date(userData.tokenExpiry);
         if (expiresAt < new Date()) {
-          console.log('❌ [DEBUG] Token expirado:', token);
+          console.log('❌ [DEBUG] Token expirado:', maskTokenForLog(token));
           return {
             success: false,
             message: 'Token de activación expirado'
@@ -287,7 +308,7 @@ export class EmailActivationService {
         updatedAt: new Date().toISOString()
       });
 
-      console.log('✅ [DEBUG] Cuenta activada exitosamente:', email);
+      console.log('✅ [DEBUG] Cuenta activada exitosamente:', maskEmailForLog(email));
 
       return {
         success: true,
@@ -331,20 +352,20 @@ export class EmailActivationService {
   public async getProfessional(email: string, firebaseUid?: string | null): Promise<ProfessionalRegistration | null> {
     try {
       if (firebaseUid) {
-        console.log('[DEBUG] Buscando profesional en Firestore por uid:', firebaseUid);
+        console.log('[DEBUG] Buscando profesional en Firestore por uid');
         const userDocRef = doc(db, 'users', firebaseUid);
         const snap = await getDoc(userDocRef);
 
         if (!snap.exists()) {
-          console.log('❌ [DEBUG] Usuario no encontrado en users/{uid}:', firebaseUid);
+          console.log('❌ [DEBUG] Usuario no encontrado en users/{uid}');
           return null;
         }
 
         const data = snap.data();
 
         console.log('✅ [DEBUG] Usuario encontrado por uid:', {
-          email: data.email,
-          displayName: data.displayName,
+          hasEmail: Boolean(data.email),
+          hasDisplayName: Boolean(data.displayName),
           emailVerified: data.emailVerified,
           isActive: data.isActive
         });
@@ -359,7 +380,7 @@ export class EmailActivationService {
         } as ProfessionalRegistration;
       }
 
-      console.log('[DEBUG] Buscando profesional en Firestore por email:', email);
+      console.log('[DEBUG] Buscando profesional en Firestore por email');
 
       // Sin uid (p.ej. recuperación): query por email — puede fallar si las reglas no permiten list
       const usersRef = collection(db, 'users');
@@ -367,7 +388,7 @@ export class EmailActivationService {
       const snapshot = await getDocs(emailQuery);
 
       if (snapshot.empty) {
-        console.log('❌ [DEBUG] Usuario no encontrado en colección users:', email);
+        console.log('❌ [DEBUG] Usuario no encontrado en colección users');
         return null;
       }
 
@@ -375,8 +396,8 @@ export class EmailActivationService {
       const data = userSnap.data();
 
       console.log('✅ [DEBUG] Usuario encontrado:', {
-        email: data.email,
-        displayName: data.displayName,
+        hasEmail: Boolean(data.email),
+        hasDisplayName: Boolean(data.displayName),
         emailVerified: data.emailVerified,
         isActive: data.isActive
       });
@@ -436,13 +457,13 @@ export class EmailActivationService {
    */
   public async sendPasswordRecovery(email: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('[DEBUG] Iniciando recuperación de contraseña para:', email);
+      console.log('[DEBUG] Iniciando recuperación de contraseña');
 
       // Verificar si el profesional existe
       const professional = await this.getProfessional(email);
 
       if (!professional) {
-        console.log('❌ [DEBUG] Profesional no encontrado:', email);
+        console.log('❌ [DEBUG] Profesional no encontrado');
         return {
           success: false,
           message: 'No se encontró una cuenta con este email. Verifica la dirección o regístrate.'
@@ -451,7 +472,7 @@ export class EmailActivationService {
 
       // Verificar que el email esté verificado
       if (!professional.emailVerified) {
-        console.log('❌ [DEBUG] Email no verificado:', email);
+        console.log('❌ [DEBUG] Email no verificado');
         return {
           success: false,
           message: 'Tu cuenta no está verificada. Revisa tu email y activa tu cuenta antes de solicitar recuperación de contraseña.'
@@ -460,14 +481,14 @@ export class EmailActivationService {
 
       // Verificar que la cuenta esté activa
       if (!professional.isActive) {
-        console.log('❌ [DEBUG] Cuenta no activa:', email);
+        console.log('❌ [DEBUG] Cuenta no activa');
         return {
           success: false,
           message: 'Tu cuenta no está activa. Contacta al administrador para activar tu cuenta.'
         };
       }
 
-      console.log('✅ [DEBUG] Usuario verificado y activo, procediendo con recuperación:', email);
+      console.log('✅ [DEBUG] Usuario verificado y activo, procediendo con recuperación');
 
       // Generar token de recuperación único
       const recoveryToken = this.generateRecoveryToken();
@@ -487,12 +508,12 @@ export class EmailActivationService {
       }
 
       // En desarrollo, mostrar el token en consola
-      console.log('[DEBUG] Email de recuperación enviado a:', email);
-      console.log('[DEBUG] Token de recuperación:', recoveryToken);
-      console.log('[DEBUG] Link de recuperación:', `${window.location.origin}/reset-password?token=${recoveryToken}`);
+      console.log('[DEBUG] Email de recuperación enviado');
+      console.log('[DEBUG] Token de recuperación generado');
+      console.log('[DEBUG] Link de recuperación generado');
       console.log('✅ [DEBUG] Usuario validado:', {
-        email: professional.email,
-        displayName: professional.displayName,
+        hasEmail: Boolean(professional.email),
+        hasDisplayName: Boolean(professional.displayName),
         emailVerified: professional.emailVerified,
         isActive: professional.isActive
       });
@@ -531,13 +552,13 @@ export class EmailActivationService {
    */
   public async resendEmailVerification(email: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('[DEBUG] Reenviando verificación para:', email);
+      console.log('[DEBUG] Reenviando verificación');
 
       // Verificar si el profesional existe
       const professional = await this.getProfessional(email);
 
       if (!professional) {
-        console.log('❌ [DEBUG] Profesional no encontrado:', email);
+        console.log('❌ [DEBUG] Profesional no encontrado');
         return {
           success: false,
           message: 'No se encontró una cuenta con este email. Verifica la dirección o regístrate.'
@@ -546,18 +567,18 @@ export class EmailActivationService {
 
       // Solo reenviar si no está verificado
       if (professional.emailVerified) {
-        console.log('✅ [DEBUG] Usuario ya verificado:', email);
+        console.log('✅ [DEBUG] Usuario ya verificado');
         return {
           success: true,
           message: 'Tu cuenta ya está verificada. Puedes iniciar sesión normalmente.'
         };
       }
 
-      console.log('[DEBUG] Reenviando email de verificación a:', email);
+      console.log('[DEBUG] Reenviando email de verificación');
 
       // En desarrollo, mostrar información en consola
-      console.log('[DEBUG] Email de verificación enviado a:', email);
-      console.log('[DEBUG] Link de verificación:', `${window.location.origin}/activate?token=${professional.activationToken}`);
+      console.log('[DEBUG] Email de verificación enviado');
+      console.log('[DEBUG] Link de verificación generado');
 
       // En producción, aquí se enviaría el email real
       // await this.sendEmail({

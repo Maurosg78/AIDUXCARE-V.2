@@ -70,7 +70,7 @@ export class EmailValidationService {
   public async sendPasswordRecovery(email: string): Promise<boolean> {
     // Simular envío de email
     await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(`Email de recuperación enviado a: ${email}`);
+    console.log('Email de recuperación enviado');
     return true;
   }
 
@@ -80,7 +80,7 @@ export class EmailValidationService {
   public async sendAccountActivation(email: string): Promise<boolean> {
     // Simular envío de email
     await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log(`Email de activación enviado a: ${email}`);
+    console.log('Email de activación enviado');
     return true;
   }
 

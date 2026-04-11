@@ -25,8 +25,9 @@ exports.whisperProxy = onCall(
   async (request) => {
     const startTime = Date.now();
     const userId = request.auth?.uid || 'anonymous';
+    const hasAuthenticatedUser = request.auth?.uid != null;
     
-    console.log(`[whisperProxy] Request from user: ${userId}`);
+    console.log(`[whisperProxy] Request received`, { hasAuthenticatedUser, userId });
     console.log(`[whisperProxy] Request data keys:`, Object.keys(request.data || {}));
 
     try {
@@ -58,7 +59,7 @@ exports.whisperProxy = onCall(
         );
       }
 
-      console.log(`[whisperProxy] API Key status: ${OPENAI_API_KEY ? `Present (${OPENAI_API_KEY.length} chars, starts with: ${OPENAI_API_KEY.substring(0, 10)}...)` : 'MISSING'}`);
+      console.log(`[whisperProxy] API key configured: ${Boolean(OPENAI_API_KEY)}`);
 
       // Decodificar audio base64
       let audioBuffer;
@@ -134,7 +135,10 @@ exports.whisperProxy = onCall(
 
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error(`[whisperProxy] Whisper API error: ${response.status}`, errorBody);
+        console.error(`[whisperProxy] Whisper API error`, {
+          status: response.status,
+          hasErrorBody: Boolean(errorBody),
+        });
         console.error(`[whisperProxy] Request details:`, {
           model,
           language,
@@ -154,9 +158,13 @@ exports.whisperProxy = onCall(
           try {
             const errorJson = JSON.parse(errorBody);
             errorMessage = errorJson.error?.message || errorMessage;
-            console.error(`[whisperProxy] OpenAI error details:`, errorJson);
+            console.error(`[whisperProxy] OpenAI error metadata:`, {
+              type: errorJson.error?.type || null,
+              code: errorJson.error?.code || null,
+              param: errorJson.error?.param || null,
+            });
           } catch (parseError) {
-            console.error(`[whisperProxy] Could not parse error response:`, errorBody);
+            console.error(`[whisperProxy] Could not parse error response`);
           }
         }
 

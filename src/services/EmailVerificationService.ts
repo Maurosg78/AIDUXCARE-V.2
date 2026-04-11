@@ -1,5 +1,26 @@
 import logger from '@/shared/utils/logger';
 
+const maskEmailForLog = (email: string): string => {
+  if (!email) {
+    return 'missing';
+  }
+
+  const parts = email.split('@');
+  const localPart = parts[0] || '';
+  const domainPart = parts[1] || '';
+  const visibleLocalPart = localPart.slice(0, 2);
+  return `${visibleLocalPart}***@${domainPart || 'hidden'}`;
+};
+
+const maskTokenForLog = (token: string): string => {
+  if (!token) {
+    return 'missing';
+  }
+
+  const visiblePrefix = token.slice(0, 4);
+  return `${visiblePrefix}...`;
+};
+
 
 export interface EmailVerificationData {
   email: string;
@@ -130,10 +151,10 @@ class EmailVerificationService {
    */
   async simulateWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
     console.log('📧 SIMULANDO ENVÍO DE EMAIL DE BIENVENIDA:');
-    console.log('📧 Para:', data.email);
-    console.log('📧 Nombre:', data.professionalName);
+    console.log('📧 Para:', maskEmailForLog(data.email));
+    console.log('📧 Nombre disponible:', Boolean(data.professionalName));
     console.log('📧 Profesión:', data.profession);
-    console.log('📧 URL de verificación:', data.verificationUrl);
+    console.log('📧 URL de verificación generada');
     console.log('📧 Email simulado enviado exitosamente');
     
     // Simular delay de red
@@ -147,7 +168,7 @@ class EmailVerificationService {
    */
   async simulateEmailVerification(token: string): Promise<{ success: boolean; message: string; userId?: string }> {
     console.log('🔍 SIMULANDO VERIFICACIÓN DE EMAIL:');
-    console.log('🔍 Token:', token);
+    console.log('🔍 Token:', maskTokenForLog(token));
     console.log('🔍 Verificación simulado exitosa');
     
     // Simular delay de red

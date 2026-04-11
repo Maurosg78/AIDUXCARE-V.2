@@ -19,6 +19,18 @@ if (!admin.apps.length) {
 
 const LOCATION = 'northamerica-northeast1'; // ✅ CANADÁ (Montreal) - PHIPA compliance
 
+const maskEmailForLog = (email) => {
+  if (!email) {
+    return 'missing';
+  }
+
+  const parts = String(email).split('@');
+  const localPart = parts[0] || '';
+  const domainPart = parts[1] || '';
+  const visibleLocalPart = localPart.slice(0, 2);
+  return `${visibleLocalPart}***@${domainPart || 'hidden'}`;
+};
+
 /**
  * Email template HTML
  */
@@ -111,7 +123,7 @@ exports.sendWelcomeEmail = functions.region(LOCATION).firestore
     // Note: You'll need to generate this URL or get it from Firebase Auth
     const verificationUrl = `https://${functions.config().app?.domain || 'aiduxcare-v2-uat-dev.firebaseapp.com'}/email-verified?mode=verifyEmail&oobCode=GENERATE_FROM_FIREBASE_AUTH`;
     
-    console.log('[Welcome Email] Preparing to send welcome email to:', email);
+    console.log('[Welcome Email] Preparing to send welcome email to:', maskEmailForLog(email));
 
     // TODO: Implement email sending using your preferred service:
     // Option 1: SendGrid
@@ -136,14 +148,13 @@ exports.sendWelcomeEmail = functions.region(LOCATION).firestore
 
     // For now, log the email (remove this in production)
     console.log('[Welcome Email] Email would be sent:', {
-      to: email,
+      to: maskEmailForLog(email),
       subject: 'Welcome to AiDuxCare - Verify Your Email 🍁',
-      displayName,
+      hasDisplayName: Boolean(displayName),
     });
 
     return null;
   });
 
 console.log("[OK] functions/sendWelcomeEmail.js: Welcome email function ready");
-
 

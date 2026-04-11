@@ -106,9 +106,9 @@ export class PersistenceService {
       console.log(`[PersistenceService] Saving note to Firestore:`, {
         collection: this.COLLECTION_NAME,
         noteId: resolvedNoteId,
-        ownerUid: userId,
-        patientId: savedNote.patientId,
-        sessionId: savedNote.sessionId,
+        hasOwnerUid: Boolean(userId),
+        hasPatientId: Boolean(savedNote.patientId),
+        hasSessionId: Boolean(savedNote.sessionId),
         createdAt: savedNote.createdAt,
       });
 
@@ -136,7 +136,7 @@ export class PersistenceService {
 
       console.log(`[PersistenceService] Querying notes from Firestore:`, {
         collection: this.COLLECTION_NAME,
-        authorUid: userId,
+        hasAuthorUid: Boolean(userId),
       });
 
       const snapshot = await getDocs(q);
@@ -145,14 +145,14 @@ export class PersistenceService {
         const data = doc.data() as SavedNote;
         console.log(`[PersistenceService] Found note:`, {
           id: doc.id,
-          patientId: data.patientId,
+          hasPatientId: Boolean(data.patientId),
           createdAt: data.createdAt,
-          authorUid: data.authorUid || data.ownerUid, // Support both for backward compatibility
+          hasAuthorUid: Boolean(data.authorUid || data.ownerUid), // Support both for backward compatibility
         });
         return { ...data, id: doc.id };
       });
 
-      console.log(`✅ [PersistenceService] Retrieved ${notes.length} notes for user ${userId}`);
+      console.log(`✅ [PersistenceService] Retrieved ${notes.length} notes for current user`);
       return notes;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet"
@@ -215,7 +215,10 @@ export class PersistenceService {
       );
       const snapshot = await getDocs(q);
 
-      console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for patient ${patientId} (user: ${userId})`);
+      console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for requested patient`, {
+        hasPatientId: Boolean(patientId),
+        hasUserId: Boolean(userId),
+      });
 
       return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
         const data = doc.data() as SavedNote;

@@ -102,8 +102,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     }
 
     console.info('[getConsentStatus] Request received', {
-      patientId,
-      professionalId,
+      patientIdPresent: Boolean(patientId),
+      professionalIdPresent: Boolean(professionalId),
       origin: req.headers.origin || 'unknown'
     });
 
@@ -116,9 +116,8 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
 
     if (snapshot.empty) {
       console.info('[getConsentStatus] No consent documents found', {
-        patientId,
-        professionalId,
-        collection: CONSENT_COLLECTION
+        documentCount: 0,
+        collection: CONSENT_COLLECTION,
       });
       return res.status(200).json({
         success: true,
@@ -130,14 +129,10 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     }
 
     console.info('[getConsentStatus] Found consent documents', {
-      patientId,
-      professionalId,
       documentCount: snapshot.docs.length,
-      documentIds: snapshot.docs.map(doc => doc.id),
-      documentStatuses: snapshot.docs.map(doc => {
+      statusSummary: snapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id,
           status: data.consentStatus || data.status,
           consentMethod: data.consentMethod,
           consentDate: data.consentDate?.toDate?.()?.toISOString() || null
@@ -176,8 +171,6 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
       }
 
       console.info('[getConsentStatus] Granted consent found (decline reversal)', {
-        patientId,
-        professionalId,
         consentMethod,
         displayStatus,
         grantedAt: latestGranted.consentDate?.toDate?.()?.toISOString() ||
@@ -212,9 +205,6 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
     if (declinedConsents.length > 0) {
       const latestDeclined = declinedConsents[0];
       console.info('[getConsentStatus] Declined consent found - HARD BLOCK', {
-        patientId,
-        professionalId,
-        documentId: latestDeclined.id,
         consentStatus: latestDeclined.consentStatus,
         status: latestDeclined.status,
         declinedAt: latestDeclined.declinedAt?.toDate?.()?.toISOString() ||
@@ -248,8 +238,6 @@ exports.getConsentStatus = functions.region(LOCATION).https.onRequest(async (req
 
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Log if no declined found (for debugging)
     console.info('[getConsentStatus] No declined consent found, checking for granted', {
-      patientId,
-      professionalId,
       totalDocuments: snapshot.docs.length
     });
 

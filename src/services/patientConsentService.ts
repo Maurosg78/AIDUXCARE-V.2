@@ -14,6 +14,15 @@
 import { collection, doc, setDoc, getDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 
+const redactConsentToken = (token: string): string => {
+  if (!token) {
+    return 'missing';
+  }
+
+  const visiblePrefix = token.slice(0, 4);
+  return `${visiblePrefix}...`;
+};
+
 // UUID generator - uses crypto.randomUUID if available, otherwise fallback
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -158,9 +167,9 @@ export class PatientConsentService {
       await setDoc(tokenRef, tokenData);
 
       console.log('[PATIENT CONSENT] Token generated:', {
-        token,
-        patientId,
-        patientName,
+        tokenPreview: redactConsentToken(token),
+        hasPatientId: Boolean(patientId),
+        hasPatientName: Boolean(patientName),
         expiresAt: expiresAt.toISOString(),
       });
 
@@ -191,13 +200,13 @@ export class PatientConsentService {
       // Check if token is expired
       const expiresAt = data.expiresAt?.toDate();
       if (expiresAt && new Date() > expiresAt) {
-        console.warn('[PATIENT CONSENT] Token expired:', token);
+        console.warn('[PATIENT CONSENT] Token expired:', redactConsentToken(token));
         return null;
       }
 
       // Check if token is already used
       if (data.used) {
-        console.warn('[PATIENT CONSENT] Token already used:', token);
+        console.warn('[PATIENT CONSENT] Token already used:', redactConsentToken(token));
         return null;
       }
 
@@ -249,16 +258,23 @@ export class PatientConsentService {
     obtainmentMethod?: 'SMS' | 'Portal' | 'Email' | 'Manual'
   ): Promise<void> {
     try {
-      console.log('[PATIENT CONSENT] recordConsent called:', { token, scope, hasSignature: !!digitalSignature });
+      console.log('[PATIENT CONSENT] recordConsent called:', {
+        tokenPreview: redactConsentToken(token),
+        scope,
+        hasSignature: !!digitalSignature,
+      });
       
       // Get token data
       const tokenData = await PatientConsentService.getConsentByToken(token);
       if (!tokenData) {
-        console.error('[PATIENT CONSENT] Token not found or invalid:', token);
+        console.error('[PATIENT CONSENT] Token not found or invalid:', redactConsentToken(token));
         throw new Error('Invalid or expired token');
       }
 
-      console.log('[PATIENT CONSENT] Token data retrieved:', { patientId: tokenData.patientId, used: tokenData.used });
+      console.log('[PATIENT CONSENT] Token data retrieved:', {
+        hasPatientId: Boolean(tokenData.patientId),
+        used: tokenData.used,
+      });
 
       // ✅ CRITICAL FIX: Mark token as used (may fail on mobile if not authenticated, but consent record creation should still work)
       const tokenRef = doc(db, TOKEN_COLLECTION, token);
@@ -318,7 +334,7 @@ export class PatientConsentService {
 
       const consentRef = doc(db, CONSENT_COLLECTION, `${tokenData.patientId}_${Date.now()}`);
       console.log('[PATIENT CONSENT] Attempting to create consent record:', {
-        patientId: tokenData.patientId,
+        hasPatientId: Boolean(tokenData.patientId),
         scope,
         consented,
         consentId: consentRef.id,
@@ -327,7 +343,7 @@ export class PatientConsentService {
       await setDoc(consentRef, consentRecord);
 
       console.log('[PATIENT CONSENT] ✅ Consent recorded successfully:', {
-        patientId: tokenData.patientId,
+        hasPatientId: Boolean(tokenData.patientId),
         scope,
         consented,
         consentId: consentRef.id,
@@ -544,9 +560,9 @@ export class PatientConsentService {
       await setDoc(consentRef, consentRecord);
 
       console.log('[PATIENT CONSENT] Consent authorized manually:', {
-        patientId: tokenData.patientId,
+        hasPatientId: Boolean(tokenData.patientId),
         scope,
-        physiotherapistId,
+        hasPhysiotherapistId: Boolean(physiotherapistId),
       });
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error authorizing consent:', error);
@@ -601,9 +617,9 @@ export class PatientConsentService {
       await setDoc(consentRef, consentRecord);
 
       console.log('[PATIENT CONSENT] Manual consent recorded:', {
-        patientId,
+        hasPatientId: Boolean(patientId),
         scope,
-        physiotherapistId,
+        hasPhysiotherapistId: Boolean(physiotherapistId),
       });
     } catch (error) {
       console.error('❌ [PATIENT CONSENT] Error recording manual consent:', error);
@@ -672,7 +688,7 @@ export class PatientConsentService {
       await setDoc(consentRef, consentRecord);
 
       console.log('[PATIENT CONSENT] ✅ Verbal consent recorded (NON-BLOCKING):', {
-        patientId: details.patientId,
+        hasPatientId: Boolean(details.patientId),
         status: details.consentStatus,
         method: 'verbal',
       });
@@ -692,7 +708,7 @@ export class PatientConsentService {
           ).catch((error) => {
             // Log but don't throw - consent is still valid
             console.warn('[PATIENT CONSENT] Disclosure delivery failed (non-blocking):', {
-              patientId: details.patientId,
+              hasPatientId: Boolean(details.patientId),
               error: error?.message || 'Unknown error'
             });
           });
@@ -744,8 +760,8 @@ export class PatientConsentService {
       await setDoc(consentRef, consentRecord);
 
       console.log('[PATIENT CONSENT] SMS consent request recorded:', {
-        patientId,
-        token,
+        hasPatientId: Boolean(patientId),
+        tokenPreview: redactConsentToken(token),
         status: 'sms_requested',
       });
     } catch (error) {

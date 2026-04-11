@@ -369,7 +369,11 @@ export class AnalyticsService {
         createdAt: serverTimestamp()
       });
 
-      console.log('⏰ [CAOU] Time saved tracked:', { patientId, timeSavedMinutes, sessionType });
+      console.log('⏰ [CAOU] Time saved tracked:', {
+        hasPatientId: Boolean(patientId),
+        timeSavedMinutes,
+        sessionType,
+      });
     } catch (error) {
       console.error('❌ [CAOU] Error tracking time saved:', error);
     }
@@ -502,7 +506,11 @@ export class AnalyticsService {
       const docRef = doc(collection(db, 'analytics_events'));
       await setDoc(docRef, cleanedEvent);
 
-      console.log(`[ANALYTICS] Evento registrado: ${eventName}`, eventData);
+      console.log(`[ANALYTICS] Evento registrado: ${eventName}`, {
+        hasUserId: Boolean((eventData as Record<string, unknown>)?.userId),
+        hasPatientId: Boolean((eventData as Record<string, unknown>)?.patientId),
+        hasSessionId: Boolean((eventData as Record<string, unknown>)?.sessionId),
+      });
     } catch (error) {
       console.error('❌ [ANALYTICS] Error registrando evento:', error);
       // No lanzar error para no interrumpir el flujo principal

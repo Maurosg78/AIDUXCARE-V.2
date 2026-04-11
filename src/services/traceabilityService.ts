@@ -181,7 +181,10 @@ export class TraceabilityService {
         },
       });
 
-      console.log(`[Traceability] Generated trace number: ${patientTraceNumber}`);
+      console.log(`[Traceability] Generated trace number`, {
+        hasTraceNumber: Boolean(patientTraceNumber),
+        hospitalCode,
+      });
       return patientTraceNumber;
     } catch (error) {
       console.error('[Traceability] Error generating trace number:', error);
@@ -310,4 +313,3 @@ export class TraceabilityService {
 }
 
 export default TraceabilityService;
-

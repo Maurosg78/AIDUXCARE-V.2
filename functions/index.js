@@ -85,6 +85,7 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
     if (!/^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
       return res.status(400).json({ ok: false, error: 'invalid_phone_format', message: 'Phone must be in E.164 format' });
     }
+    const maskedPhone = `${cleanPhone.slice(0, 4)}***${cleanPhone.slice(-2)}`;
 
     // Send SMS via Vonage REST API
     const payload = new URLSearchParams({
@@ -97,10 +98,10 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
 
     // Log credentials status (without exposing secrets)
     console.log('[SMS Function] Vonage config check:', {
-      apiKey: VONAGE_API_KEY ? `${VONAGE_API_KEY.substring(0, 4)}...` : 'MISSING',
+      apiKeyConfigured: Boolean(VONAGE_API_KEY),
       apiSecret: VONAGE_API_SECRET ? 'SET' : 'MISSING',
-      fromNumber: VONAGE_FROM_NUMBER,
-      to: cleanPhone,
+      fromNumberConfigured: Boolean(VONAGE_FROM_NUMBER),
+      to: maskedPhone,
     });
 
     const response = await fetch('https://rest.nexmo.com/sms/json', {
@@ -112,7 +113,7 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
     const result = await response.json();
     console.log('[SMS Function] Vonage API response:', {
       status: response.status,
-      result: JSON.stringify(result).substring(0, 500), // Limit log size
+      messageCount: Array.isArray(result.messages) ? result.messages.length : 0,
     });
 
     // Check Vonage response (status '0' = accepted for delivery; actual delivery may still fail for international numbers)
@@ -137,7 +138,7 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
       console.error('[SMS Function] Vonage error:', {
         errorText,
         errorCode,
-        fullResponse: JSON.stringify(result).substring(0, 1000),
+        hasMessages: Array.isArray(result.messages),
       });
 
       // Map common Vonage errors to user-friendly messages
@@ -956,7 +957,8 @@ exports.sendPatientSummary = onCallV2(
       throw new HttpsErrorV2('internal', error.message || 'Email send failed');
     }
 
-    console.log('[sendPatientSummary] Sent:', data?.id, '→', patientEmail);
+    const maskedPatientEmail = patientEmail.replace(/(^.{2}).*(@.*$)/, '$1***$2');
+    console.log('[sendPatientSummary] Sent:', { id: data?.id, to: maskedPatientEmail });
     return { ok: true, id: data?.id };
   }
 );

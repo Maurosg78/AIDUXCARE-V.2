@@ -13,6 +13,18 @@ import { app, db } from '../firebase/firebaseClient';
 
 import logger from '@/shared/utils/logger';
 
+const maskEmailForLog = (email?: string | null): string => {
+  if (!email) {
+    return 'missing';
+  }
+
+  const parts = email.split('@');
+  const localPart = parts[0] || '';
+  const domainPart = parts[1] || '';
+  const visibleLocalPart = localPart.slice(0, 2);
+  return `${visibleLocalPart}***@${domainPart || 'hidden'}`;
+};
+
 // Eliminar inicialización directa:
 // const app: FirebaseApp = initializeApp(firebaseConfig);
 // const auth: Auth = getAuth(app);
@@ -71,7 +83,9 @@ export class FirebaseAuthService {
    */
   async signIn(email: string, password: string): Promise<UserProfile> {
     try {
-      console.log('🔥 Firebase Auth: Iniciando sesión...', { email });
+      console.log('🔥 Firebase Auth: Iniciando sesión...', {
+        email: maskEmailForLog(email),
+      });
       
       const userCredential: UserCredential = await signInWithEmailAndPassword(
         this.auth, 
@@ -113,7 +127,10 @@ export class FirebaseAuthService {
    */
   async signUp(email: string, password: string, name: string, specialization?: string): Promise<UserProfile> {
     try {
-      console.log('🔥 Firebase Auth: Registrando nuevo usuario...', { email, name });
+      console.log('🔥 Firebase Auth: Registrando nuevo usuario...', {
+        email: maskEmailForLog(email),
+        hasName: Boolean(name),
+      });
       
       const userCredential: UserCredential = await createUserWithEmailAndPassword(
         this.auth, 
@@ -180,7 +197,7 @@ export class FirebaseAuthService {
           userId: userProfile.id,
           userRole: userProfile.role,
           metadata: { 
-            email: userProfile.email,
+            hasEmail: Boolean(userProfile.email),
             sessionDuration: userProfile.lastLoginAt ? 
               Date.now() - userProfile.lastLoginAt.getTime() : null
           },

@@ -99,7 +99,7 @@ export class FirebaseAuthService {
   public static async checkEmailExists(email: string): Promise<boolean> {
     try {
       console.log('=== VERIFICACIÓN DE EMAIL ===');
-      console.log('Email a verificar:', email);
+      console.log('Email presence for verification:', Boolean(email));
       console.log('Proyecto Firebase:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
       console.log('Auth Domain:', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
       
@@ -156,7 +156,7 @@ export class FirebaseAuthService {
   public static async register(credentials: LoginCredentials): Promise<AuthResult> {
     try {
       console.log('=== REGISTRO DE USUARIO ===');
-      console.log('Email a registrar:', credentials.email);
+      console.log('Registration requested:', { hasEmail: Boolean(credentials.email) });
       console.log('Proyecto Firebase:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
       console.log('Auth Domain:', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
       
@@ -183,7 +183,7 @@ export class FirebaseAuthService {
       const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       const user = userCredential.user;
       
-      console.log('Usuario creado exitosamente:', user.uid);
+      console.log('Usuario creado exitosamente');
       console.log('Email verificado:', user.emailVerified);
       
       // Enviar email de verificación
