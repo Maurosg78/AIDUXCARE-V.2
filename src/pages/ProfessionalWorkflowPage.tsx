@@ -539,6 +539,10 @@ const ProfessionalWorkflowPage = () => {
     },
   });
 
+  const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
+    (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
+  );
+
   const hasActiveWorkflowDraft = Boolean(
     transcript?.trim() ||
     evaluationTests.length > 0 ||
@@ -1257,9 +1261,6 @@ const ProfessionalWorkflowPage = () => {
       checkValidConsent();
     }
   }, [patientIdFromUrl, user?.uid, currentPatient, consentCheckComplete]);
-  const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
-    (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
-  );
 
   // WO-RESUME-INTERRUPTED: On unmount, persist state so user can resume after accidental leave (battery, click, etc.)
   // Placed here so evaluationTests (and all other state below) are in scope.
