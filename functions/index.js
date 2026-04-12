@@ -1,4 +1,6 @@
 const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const crypto = require('crypto');
 const { GoogleAuth } = require('google-auth-library');
 
 const PROJECT = 'aiduxcare-v2-uat-dev';
@@ -7,6 +9,64 @@ const MODEL = 'gemini-2.5-flash';
 const ENDPOINT = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
 
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const APP_ALLOWED_ORIGINS = [
+  'https://aiduxcare-v2-uat-dev.web.app',
+  'https://pilot.aiduxcare.com',
+  'https://aiduxcare.com',
+];
+
+const maskIdentifierForLog = (value) => {
+  if (!value) {
+    return 'missing';
+  }
+
+  const stringValue = String(value);
+  const visiblePrefix = stringValue.slice(0, 4);
+  return `${visiblePrefix}...`;
+};
+
+const hashToken = (token) => {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+};
+
+const resolveCorsOrigin = (req) => {
+  const requestOrigin = req.headers.origin || '';
+  if (APP_ALLOWED_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  return APP_ALLOWED_ORIGINS[0];
+};
+
+const applyRestrictedCors = (req, res, methods) => {
+  const allowedOrigin = resolveCorsOrigin(req);
+  res.set('Access-Control-Allow-Origin', allowedOrigin);
+  res.set('Vary', 'Origin');
+  res.set('Access-Control-Allow-Methods', methods.join(', '));
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.set('Access-Control-Max-Age', '3600');
+};
+
+const verifyAuthenticatedRequest = async (req) => {
+  const authHeader = req.get('authorization') || '';
+  const bearerPrefix = 'Bearer ';
+  if (!authHeader.startsWith(bearerPrefix)) {
+    return null;
+  }
+
+  const token = authHeader.slice(bearerPrefix.length).trim();
+  if (!token) {
+    return null;
+  }
+
+  const decodedToken = await admin.auth().verifyIdToken(token);
+  return decodedToken;
+};
 
 /**
  * Callable conservado (por compatibilidad)
@@ -49,11 +109,7 @@ exports.processWithVertexAI = functions.region(LOCATION).https.onCall(async (dat
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS - Handle preflight
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.set('Access-Control-Max-Age', '3600');
+  applyRestrictedCors(req, res, ['POST', 'OPTIONS']);
 
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
@@ -64,6 +120,11 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
   }
 
   try {
+    const decodedToken = await verifyAuthenticatedRequest(req);
+    if (!decodedToken) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+
     const { phone, message, clinicName, patientName, consentToken } = req.body || {};
 
     if (!phone || !message) {
@@ -98,6 +159,7 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
 
     // Log credentials status (without exposing secrets)
     console.log('[SMS Function] Vonage config check:', {
+      uid: decodedToken.uid,
       apiKeyConfigured: Boolean(VONAGE_API_KEY),
       apiSecret: VONAGE_API_SECRET ? 'SET' : 'MISSING',
       fromNumberConfigured: Boolean(VONAGE_FROM_NUMBER),
@@ -177,14 +239,16 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
  * NUEVO vertexAIProxy: passthrough limpio (sin 'entities'), con CORS
  */
 exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyRestrictedCors(req, res, ['POST', 'OPTIONS']);
   if (req.method === 'OPTIONS') return res.status(204).send('');
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
 
   try {
+    const decodedToken = await verifyAuthenticatedRequest(req);
+    if (!decodedToken) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+
     const { action = 'analyze', prompt, transcript, text, traceId } = req.body || {};
     // WO-IMAGE-OCR-001: Gemini Vision OCR
     if (action === 'image-ocr') {
@@ -226,6 +290,10 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
       return res.status(400).json({ ok: false, error: 'missing_input', message: "Provide 'prompt' or 'transcript' or 'text'." });
     }
 
+    if (inputText.length > 50000) {
+      return res.status(400).json({ ok: false, error: 'input_too_large' });
+    }
+
     const client = await auth.getClient();
     const tokenObj = await client.getAccessToken();
     const accessToken = tokenObj?.token || tokenObj;
@@ -252,7 +320,13 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
         console.warn(`[vertexAIProxy] 429 — retry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAYS[attempt]}ms`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
       } else {
-        return res.status(502).json({ ok: false, error: 'vertex_upstream_error', message: 'Resource exhausted. Please try again later.', code: 429, traceId: traceId || null, vertexRaw: data });
+        return res.status(502).json({
+          ok: false,
+          error: 'vertex_upstream_error',
+          message: 'Resource exhausted. Please try again later.',
+          code: 429,
+          traceId: traceId || null,
+        });
       }
     }
     return res.status(200).json({
@@ -263,7 +337,6 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
       model: MODEL,
       traceId: traceId || null,
       text: data?.candidates?.[0]?.content?.parts?.[0]?.text || '',
-      vertexRaw: data
     });
   } catch (err) {
     console.error('vertexAIProxy error:', err?.stack || err);
@@ -440,11 +513,7 @@ if (VALIDATION_ENABLED) {
  * Compliance: PIPEDA Principle 4.1.8, PHIPA Section 52
  */
 exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  // CORS - Handle preflight
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Max-Age', '3600');
+  applyRestrictedCors(req, res, ['POST', 'OPTIONS']);
 
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
@@ -455,27 +524,31 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
   }
 
   try {
-    const admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      admin.initializeApp();
+    const decodedToken = await verifyAuthenticatedRequest(req);
+    if (!decodedToken) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
     }
+
+    const isAdminCaller = decodedToken.admin === true;
+    if (!isAdminCaller) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
     const db = admin.firestore();
     const storage = admin.storage();
 
-    const { patientId } = req.params;
+    const patientId = req.body?.patientId || req.query?.patientId || req.params?.patientId;
     const { requestedBy, reason, authorizationProof } = req.body || {};
 
     if (!patientId) {
       return res.status(400).json({ ok: false, error: 'missing_patient_id' });
     }
 
-    if (!requestedBy) {
-      return res.status(400).json({ ok: false, error: 'missing_requested_by' });
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return res.status(400).json({ ok: false, error: 'missing_reason' });
     }
 
-    // TODO: Implement authorization check
-    // Verify that requestedBy is authorized HIC for this patient
-    // Verify patient authorization proof if provided
+    const requesterUid = decodedToken.uid;
 
     const deletedCounts = {};
     const deletedCollections = [];
@@ -549,7 +622,7 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
       id: certificateId,
       patientId,
       deletedAt: admin.firestore.FieldValue.serverTimestamp(),
-      deletedBy: requestedBy,
+      deletedBy: requesterUid,
       deletedCollections,
       deletedCounts,
       verificationHash: require('crypto').createHash('sha256')
@@ -567,14 +640,16 @@ exports.apiErasePatientData = functions.region(LOCATION).https.onRequest(async (
     // Log erasure event
     await db.collection('audit_logs').add({
       type: 'data_erasure_completed',
-      userId: requestedBy,
+      userId: requesterUid,
       userRole: 'HIC',
       patientId,
       metadata: {
         certificateId,
         deletedCounts,
         verificationHash: certificate.verificationHash,
-        reason,
+        reason: reason.trim(),
+        hasAuthorizationProof: Boolean(authorizationProof),
+        requestedByMatchesToken: requestedBy ? requestedBy === requesterUid : true,
       },
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -622,10 +697,7 @@ exports.getConsentStatus = getConsentStatus.getConsentStatus;
  * Note: IAM permissions must be set separately via gcloud to allow public access
  */
 exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Max-Age', '3600');
+  applyRestrictedCors(req, res, ['GET', 'POST', 'OPTIONS']);
   if (req.method === 'OPTIONS') {
     return res.status(204).send('');
   }
@@ -702,6 +774,7 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
 
     // ✅ PHIPA-compliant: Create consent record in patient_consent collection (new schema)
     // This is the canonical collection used by ConsentGateScreen and all consent listeners
+    const tokenHash = hashToken(token.trim());
     const consentRecord = {
       patientId: data.patientId,
       patientName: data.patientName,
@@ -715,7 +788,7 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
       jurisdiction: jurisdiction,
       consented: !isDeclined,
       consentScope: consentScope,
-      tokenUsed: token.trim(),
+      tokenHash,
       ipAddress: ip || null,
       userAgent: ua || null,
       obtainmentMethod: 'SMS',
@@ -732,14 +805,14 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
 
     // Log para audit
     await db.collection('audit_logs').add({
-      type: 'consent_granted',
+      type: isDeclined ? 'consent_declined' : 'consent_granted',
       userId: data.physiotherapistId || 'system',
       userRole: 'professional',
       patientId: data.patientId,
       metadata: {
-        token,
+        tokenHash,
         method: 'sms_token',
-        scope: 'ongoing',
+        scope: consentScope,
         ipAddress: ip || null,
         userAgent: ua || null,
       },

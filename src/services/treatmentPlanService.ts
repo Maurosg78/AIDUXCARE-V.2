@@ -13,6 +13,7 @@ import { serverTimestamp } from 'firebase/firestore';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
 import { derivePlanFromText } from '@/utils/derivePlanFromText';
+import { localizeModalityList } from '@/utils/treatmentPlanModalities';
 
 export interface TreatmentPlan {
   id: string;
@@ -322,11 +323,13 @@ class TreatmentPlanService {
 
       // Build reminder text
       const reminderParts: string[] = [];
+      const esPilotEnabled = isSpainPilot();
       
       if (plan.interventions && plan.interventions.length > 0) {
         reminderParts.push(...plan.interventions);
       } else if (plan.modalities && plan.modalities.length > 0) {
-        reminderParts.push(...plan.modalities.map(m => `${m} therapy`));
+        const localizedModalities = localizeModalityList(plan.modalities);
+        reminderParts.push(...localizedModalities);
       } else {
         // Fallback: extract from plan text
         const extracted = this.extractInterventions(plan.planText);
@@ -336,8 +339,12 @@ class TreatmentPlanService {
       }
 
       const reminderText = reminderParts.length > 0
-        ? `According to treatment plan, today corresponds to: ${reminderParts.join(', ')}`
-        : `According to treatment plan, continue with prescribed interventions.`;
+        ? esPilotEnabled
+          ? `Según el plan de tratamiento, hoy corresponde: ${reminderParts.join(', ')}`
+          : `According to treatment plan, today corresponds to: ${reminderParts.join(', ')}`
+        : esPilotEnabled
+          ? 'Según el plan de tratamiento, continúa con las intervenciones prescritas.'
+          : `According to treatment plan, continue with prescribed interventions.`;
 
       return {
         planId: plan.id,

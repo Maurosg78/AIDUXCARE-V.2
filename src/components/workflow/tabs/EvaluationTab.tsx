@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Stethoscope, Loader2, FileText, ChevronRight, Mic, Square } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
 import { MSK_TEST_LIBRARY, regions, regionLabels, getTestDefinition, hasFieldDefinitions } from '../../../core/msk-tests/library/mskTestLibrary';
+import { localizeMskTestForEs, regionLabelsEs } from '../../../core/msk-tests/library/mskTestLibrary.es';
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
 import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService';
@@ -407,7 +408,17 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   sessionTypeFromUrl,
   workflowRoute,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isSpanishLocale = i18n.language.toLowerCase().startsWith('es');
+  const visibleRegionLabels = isSpanishLocale ? regionLabelsEs : regionLabels;
+  const localizeTestForDisplay = (test: any) => {
+    if (!isSpanishLocale) {
+      return test;
+    }
+
+    const localizedTest = localizeMskTestForEs(test);
+    return localizedTest;
+  };
   const categoryLabels: Record<TestCategoryKey, string> = {
     rom: t('workflow.evaluation.categoryLabels.rom'),
     neuro: t('workflow.evaluation.categoryLabels.neuro'),
@@ -628,20 +639,21 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             <section className="rounded-3xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-800">{t('workflow.additionalTests')}</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Additional tests for deeper exploration. Click to add to your evaluation.
+                {t('workflow.evaluation.additionalTestsHint')}
               </p>
               <div className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
                 {additionalAiSuggestions.length === 0 ? (
                   <p className="text-[11px] text-slate-500 text-center py-2">
-                    All additional tests have been added to your evaluation.
+                    {t('workflow.evaluation.additionalTestsEmpty')}
                   </p>
                 ) : (
                   additionalAiSuggestions.map((item: any) => {
                     const matched = item.match;
-                    const displayName = matched ? matched.name : item.rawName;
+                    const localizedMatched = matched ? localizeTestForDisplay(matched) : null;
+                    const displayName = localizedMatched ? localizedMatched.name : item.rawName;
                     const categoryKey = deriveTestCategory(matched);
                     const categoryLabel = categoryLabels[categoryKey];
-                    const fieldPreviewItems = (matched?.fields ?? []).slice(0, 3).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
+                    const fieldPreviewItems = (localizedMatched?.fields ?? []).slice(0, 3).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
                     return (
                       <div
                         key={`ai-additional-${item.originalIndex || item.key}`}
@@ -655,11 +667,11 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                             </span>
                           </div>
                           <p className="mt-1 text-[11px] text-slate-500">
-                            {matched ? matched.description : t('workflow.evaluation.customEntry')}
+                            {localizedMatched ? localizedMatched.description : t('workflow.evaluation.customEntry')}
                           </p>
-                          {matched?.typicalUse && (
+                          {localizedMatched?.typicalUse && (
                             <p className="mt-1 text-[11px] text-slate-600">
-                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {matched.typicalUse}
+                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {localizedMatched.typicalUse}
                             </p>
                           )}
                           {fieldPreviewItems.length > 0 && (
@@ -689,7 +701,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                           }}
                           className="ml-2 rounded-full bg-[#8b5cf6] px-3 py-1 text-xs text-white transition hover:bg-[#7c3aed]"
                         >
-                          Add
+                          {t('workflow.evaluation.addButton')}
                         </button>
                       </div>
                     );
@@ -719,7 +731,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                       <div>
                         <p className="text-xs font-semibold text-slate-700">
                           {detectedCaseRegion
-                            ? t('workflow.evaluation.quickPicksWithRegion', { region: regionLabels[detectedCaseRegion] })
+                            ? t('workflow.evaluation.quickPicksWithRegion', { region: visibleRegionLabels[detectedCaseRegion] })
                             : t('workflow.evaluation.quickPicks')}
                         </p>
                         <p className="mt-1 text-[11px] text-slate-500">
@@ -728,15 +740,16 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                       </div>
                       <div className="space-y-2">
                         {quickPickTests.map((test) => {
+                          const localizedTest = localizeTestForDisplay(test);
                           const alreadySelected = isTestAlreadySelected(test.id, test.name);
-                          const isLibraryTest = isMskTest(test);
-                          const categorySource = isLibraryTest ? test : null;
+                          const isLibraryTest = isMskTest(localizedTest);
+                          const categorySource = isMskTest(test) ? test : null;
                           const categoryKey = deriveTestCategory(categorySource);
                           const categoryLabel = categoryLabels[categoryKey];
-                          const fieldDefinitions = isLibraryTest ? (test.fields ?? []) : [];
+                          const fieldDefinitions = isLibraryTest ? (localizedTest.fields ?? []) : [];
                           const expectedFieldLabels = fieldDefinitions.map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
-                          const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels));
-                          const typicalUseText = isLibraryTest ? test.typicalUse : undefined;
+                          const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels)) as string[];
+                          const typicalUseText = isLibraryTest ? localizedTest.typicalUse : undefined;
                           const canCreateEntry = isLibraryTest;
                           return (
                             <div
@@ -746,12 +759,12 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-semibold text-slate-800">{test.name}</p>
+                                    <p className="text-sm font-semibold text-slate-800">{localizedTest.name}</p>
                                     <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
                                       {categoryLabel}
                                     </span>
                                   </div>
-                                  <p className="mt-1 text-[11px] text-slate-500">{test.description}</p>
+                                  <p className="mt-1 text-[11px] text-slate-500">{localizedTest.description}</p>
                                   {typicalUseText && (
                                     <p className="mt-1 text-[11px] text-slate-600">
                                       <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {typicalUseText}
@@ -780,7 +793,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                     if (!canCreateEntry) {
                                       return;
                                     }
-                                    const nextEntry = createEntryFromLibrary(test, 'manual');
+                                    const nextEntry = createEntryFromLibrary(test as MskTestDefinition, 'manual');
                                     addEvaluationTest(nextEntry);
                                   }}
                                   className="rounded-full bg-[#7c3aed] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#6d28d9] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
@@ -801,12 +814,13 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   >
                     <option value="">{t('workflow.evaluation.selectTestPlaceholder')}</option>
                     {regions.map((region) => (
-                      <optgroup key={region} label={regionLabels[region]}>
+                      <optgroup key={region} label={visibleRegionLabels[region]}>
                         {MSK_TEST_LIBRARY.filter((test) => test.region === region).map((test) => {
+                          const localizedTest = localizeTestForDisplay(test);
                           const disabled = isTestAlreadySelected(test.id, test.name);
                           return (
                             <option key={test.id} value={test.id} disabled={disabled}>
-                              {test.name}
+                              {localizedTest.name}
                               {disabled ? t('workflow.evaluation.addedSuffix') : ""}
                             </option>
                           );
@@ -929,7 +943,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             {filteredEvaluationTests.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
                 {detectedCaseRegion 
-                  ? t('workflow.evaluation.emptyStateWithRegion', { region: regionLabels[detectedCaseRegion] })
+                  ? t('workflow.evaluation.emptyStateWithRegion', { region: visibleRegionLabels[detectedCaseRegion] })
                   : t('workflow.evaluation.emptyState')}
               </div>
             ) : (
@@ -938,30 +952,33 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   const definition = getTestDefinition(entry.id);
                   const hasFields = definition && hasFieldDefinitions(definition);
                   const testDefinition = hasFields ? definition as MskTestDefinition : null;
+                  const localizedDefinition = testDefinition ? localizeTestForDisplay(testDefinition) : null;
+                  const displayName = localizedDefinition?.name || entry.name;
+                  const displayDescription = localizedDefinition?.description || entry.description;
                   const categoryKey = deriveTestCategory(testDefinition);
                   const categoryLabel = categoryLabels[categoryKey];
-                  const expectedFieldLabels = (testDefinition?.fields ?? []).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
-                  const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels));
+                  const expectedFieldLabels = (localizedDefinition?.fields ?? []).map((field) => fieldPreviewLabels[getFieldPreviewKey(field)]);
+                  const expectedFieldUniqueLabels = Array.from(new Set(expectedFieldLabels)) as string[];
 
                   return (
                     <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-3 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-slate-800">{entry.name}</p>
+                            <p className="font-semibold text-slate-800">{displayName}</p>
                             <span className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
                               {categoryLabel}
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-500">
-                            {entry.region ? regionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · {t('workflow.evaluation.sourceLabel')}: {sourceLabels[entry.source]}
+                            {entry.region ? visibleRegionLabels[entry.region] : t('workflow.evaluation.regionGeneral')} · {t('workflow.evaluation.sourceLabel')}: {sourceLabels[entry.source]}
                           </p>
-                          {entry.description && (
-                            <p className="mt-1 text-[11px] text-slate-500">{entry.description}</p>
+                          {displayDescription && (
+                            <p className="mt-1 text-[11px] text-slate-500">{displayDescription}</p>
                           )}
-                          {testDefinition?.typicalUse && (
+                          {localizedDefinition?.typicalUse && (
                             <p className="mt-1 text-[11px] text-slate-600">
-                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {testDefinition.typicalUse}
+                              <span className="font-medium text-slate-700">{t('workflow.evaluation.typicalUseLabel')}:</span> {localizedDefinition.typicalUse}
                             </p>
                           )}
                           {expectedFieldUniqueLabels.length > 0 && (
@@ -1004,11 +1021,11 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                       </div>
 
                       {/* Render specific fields if test has field definitions */}
-                      {hasFields && testDefinition?.fields && testDefinition.fields.length > 0 ? (
+                      {hasFields && localizedDefinition?.fields && localizedDefinition.fields.length > 0 ? (
                         <div className="space-y-4">
                           {/* Test-specific fields */}
                           <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-100">
-                            {testDefinition.fields.map((field) => (
+                            {localizedDefinition.fields.map((field) => (
                               <div key={field.id}>
                                 {renderFieldInput(
                                   field,
@@ -1023,7 +1040,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                       if (newValue === true) {
                                         newResult = "positive";
                                       } else if (newValue === false) {
-                                        const hasOtherAbnormalFindings = testDefinition.fields.some(f => {
+                                        const hasOtherAbnormalFindings = localizedDefinition.fields.some(f => {
                                           if (f.id === field.id) return false;
                                           const val = updatedValues[f.id];
                                           if (f.kind === 'yes_no' && val === true) return true;
@@ -1042,7 +1059,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                       if (newValue !== null && typeof newValue === 'number' && newValue > 0) {
                                         newResult = "positive";
                                       } else if (newValue === 0 || newValue === null) {
-                                        const hasOtherAbnormalFindings = testDefinition.fields.some(f => {
+                                        const hasOtherAbnormalFindings = localizedDefinition.fields.some(f => {
                                           if (f.id === field.id) return false;
                                           const val = updatedValues[f.id];
                                           if (f.kind === 'yes_no' && val === true) return true;

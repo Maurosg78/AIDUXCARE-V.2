@@ -52,6 +52,8 @@
       "quickPicks": "Recommended quick picks",
       "quickPicksWithRegion": "Quick picks for {{region}}",
       "quickPicksHint": "Common tests to start with, without searching by name.",
+      "additionalTestsHint": "Additional tests for deeper exploration. Click to add them to your evaluation.",
+      "additionalTestsEmpty": "All additional tests have been added to your evaluation.",
       "selectTestPlaceholder": "Select a test…",
       "addButton": "Add",
       "alreadyAddedButton": "Added",

@@ -62,6 +62,7 @@ import {
   hasFieldDefinitions,
   getTestDefinition,
 } from "@/core/msk-tests/library/mskTestLibrary";
+import { localizeMskTestForEs } from "@/core/msk-tests/library/mskTestLibrary.es";
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from "@/utils/sortPhysicalTestsByImportance";
 import { deriveClinicName, deriveClinicianDisplayName } from "@/utils/clinicProfile";
 import { getTimeBasedGreeting } from "@/utils/timeGreeting";
@@ -2805,12 +2806,17 @@ const ProfessionalWorkflowPage = () => {
         });
       }
 
+      const shouldLocalizeLibraryTest = isSpainPilot();
+      const localizedTest = shouldLocalizeLibraryTest
+        ? localizeMskTestForEs(test)
+        : test;
+
       return {
         id: test.id,
-        name: test.name,
+        name: localizedTest.name,
         region: test.region,
         source,
-        description: test.description,
+        description: localizedTest.description,
         result: "normal",
         notes: "", // Do not prefill written text - leave empty for manual entry
         values: hasFields ? initialValues : undefined,

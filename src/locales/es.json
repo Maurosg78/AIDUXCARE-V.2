@@ -52,6 +52,8 @@
       "quickPicks": "Selección rápida recomendada",
       "quickPicksWithRegion": "Selección rápida para {{region}}",
       "quickPicksHint": "Pruebas frecuentes para empezar sin tener que buscarlas por nombre.",
+      "additionalTestsHint": "Pruebas adicionales para profundizar. Haz clic para añadirlas a tu evaluación.",
+      "additionalTestsEmpty": "Todas las pruebas adicionales ya se han añadido a tu evaluación.",
       "selectTestPlaceholder": "Elegir una prueba…",
       "addButton": "Añadir",
       "alreadyAddedButton": "Ya añadida",

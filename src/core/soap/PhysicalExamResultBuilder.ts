@@ -9,6 +9,8 @@
 
 import type { PhysicalExamResult } from '../../types/vertex-ai';
 import type { MskTestDefinition } from '../msk-tests/library/mskTestLibrary';
+import { localizeMskTestForEs } from '../msk-tests/library/mskTestLibrary.es';
+import { isSpainPilot } from '../pilotDetection';
 
 // Extended interface for evaluation entries
 // This should match the EvaluationTestEntry type used in ProfessionalWorkflowPage
@@ -112,6 +114,8 @@ export function buildPhysicalExamResults(
   evaluationEntries: EvaluationTestEntry[],
   library: (MskTestDefinition | any)[]
 ): PhysicalExamResult[] {
+  const shouldLocalizeLibrary = isSpainPilot();
+
   return evaluationEntries.map((entry) => {
     // Find definition by testId, by entry.id, or by matching name (for custom tests)
     let definition: MskTestDefinition | undefined;
@@ -130,7 +134,11 @@ export function buildPhysicalExamResults(
       ) as MskTestDefinition | undefined;
     }
 
-    const findingsText = buildFindingsText(entry, definition);
+    const visibleDefinition = definition && shouldLocalizeLibrary
+      ? localizeMskTestForEs(definition)
+      : definition;
+
+    const findingsText = buildFindingsText(entry, visibleDefinition);
 
     // Determine testId: use entry.testId, or entry.id if it matches a library test, or undefined
     // In ProfessionalWorkflowPage, entry.id is set to test.id for library tests
@@ -138,7 +146,7 @@ export function buildPhysicalExamResults(
 
     const result: PhysicalExamResult = {
       testId: testId,
-      testName: entry.name,
+      testName: visibleDefinition?.name || entry.name,
       segment: entry.region || undefined,
       result: entry.result === 'normal' ? 'normal' : 
               entry.result === 'positive' ? 'positive' : 
@@ -173,4 +181,3 @@ export function buildPhysicalEvaluationSummary(
 
   return summaryLines.join('\n');
 }
-

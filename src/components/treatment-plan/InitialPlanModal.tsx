@@ -14,6 +14,8 @@ import React, { useState } from 'react';
 import { X, Plus, Trash2, AlertCircle } from 'lucide-react';
 import treatmentPlanService from '../../services/treatmentPlanService';
 import { useAuth } from '../../hooks/useAuth';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { CANONICAL_MODALITIES, localizeModalityLabel } from '../../utils/treatmentPlanModalities';
 
 interface InitialPlanModalProps {
   isOpen: boolean;
@@ -33,8 +35,6 @@ interface PlanFormData {
   nextSessionFocus: string;
 }
 
-const AVAILABLE_MODALITIES = ['TENS', 'US', 'Tecar therapy', 'Infrared light', 'Shockwave therapy'];
-
 export const InitialPlanModal: React.FC<InitialPlanModalProps> = ({
   isOpen,
   onClose,
@@ -42,6 +42,7 @@ export const InitialPlanModal: React.FC<InitialPlanModalProps> = ({
   patientName,
   onPlanCreated,
 }) => {
+  const esPilotEnabled = isSpainPilot();
   const [formData, setFormData] = useState<PlanFormData>({
     interventions: [''],
     modalities: [],
@@ -242,7 +243,7 @@ export const InitialPlanModal: React.FC<InitialPlanModalProps> = ({
               Modalities
             </label>
             <div className="flex flex-wrap gap-2">
-              {AVAILABLE_MODALITIES.map(modality => (
+              {CANONICAL_MODALITIES.map((modality) => (
                 <button
                   key={modality}
                   type="button"
@@ -253,12 +254,16 @@ export const InitialPlanModal: React.FC<InitialPlanModalProps> = ({
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {modality}
+                  {localizeModalityLabel(modality)}
                 </button>
               ))}
             </div>
             {formData.modalities.length === 0 && (
-              <p className="text-xs text-slate-500 mt-2">No modalities selected (will be saved as "None")</p>
+              <p className="text-xs text-slate-500 mt-2">
+                {esPilotEnabled
+                  ? 'No se han seleccionado modalidades (se guardará como "Ninguna").'
+                  : 'No modalities selected (will be saved as "None")'}
+              </p>
             )}
           </div>
 
@@ -440,4 +445,3 @@ export const InitialPlanModal: React.FC<InitialPlanModalProps> = ({
     </div>
   );
 };
-

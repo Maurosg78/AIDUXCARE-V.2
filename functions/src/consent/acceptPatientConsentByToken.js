@@ -16,12 +16,17 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const LOCATION = 'northamerica-northeast1'; // ✅ CANADÁ (Montreal) - PHIPA compliance
+
+const hashToken = (token) => {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+};
 
 /**
  * Accept Patient Consent By Token
@@ -139,6 +144,7 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
     // Create consent record in patient_consent collection (canonical collection)
     // Append-only: create new document, never overwrite
     // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Write fields that getConsentStatus reads
+    const tokenHash = hashToken(trimmedToken);
     const consentRecord = {
       patientId: tokenData.patientId,
       patientName: tokenData.patientName || 'Patient',
@@ -146,7 +152,7 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
       status: decision === 'granted' ? 'granted' : 'declined',
       consentStatus: decision === 'granted' ? 'granted' : 'declined', // For query compatibility
       consentMethod: 'digital', // ✅ Canonical: 'digital' for SMS portal consent
-      token: trimmedToken,
+      tokenHash,
       jurisdiction: 'CA-ON', // Default jurisdiction (can be enhanced to read from token)
       // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Write BOTH version fields for compatibility
       consentVersion: '1.0.0', // ✅ Required by getConsentStatus
@@ -198,7 +204,7 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
       userRole: 'patient',
       patientId: tokenData.patientId,
       metadata: {
-        token: trimmedToken,
+        tokenHash,
         method: 'patient_portal',
         decision,
         ipAddress: ip || null,

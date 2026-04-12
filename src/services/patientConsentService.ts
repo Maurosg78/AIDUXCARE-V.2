@@ -23,6 +23,15 @@ const redactConsentToken = (token: string): string => {
   return `${visiblePrefix}...`;
 };
 
+const hashConsentToken = async (token: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const tokenBytes = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', tokenBytes);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const tokenHash = hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return tokenHash;
+};
+
 // UUID generator - uses crypto.randomUUID if available, otherwise fallback
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -71,7 +80,7 @@ export interface PatientConsent {
   consented: boolean;
   consentDate: Date;
   consentVersion: string;
-  tokenUsed: string; // Reference to consent token
+  tokenHash: string; // Reference hash to consent token
   digitalSignature?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -301,6 +310,7 @@ export class PatientConsentService {
 
       // Create consent record
       const consented = scope !== 'declined';
+      const tokenHash = await hashConsentToken(token);
 
       // Build consent record - only include optional fields if provided (Firestore doesn't accept undefined)
       const consentRecord: any = {
@@ -313,7 +323,7 @@ export class PatientConsentService {
         consented,
         consentDate: serverTimestamp(),
         consentVersion: CONSENT_VERSION,
-        tokenUsed: token,
+        tokenHash,
         ipAddress: 'client-side', // TODO: Get from backend
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       };
@@ -539,6 +549,7 @@ export class PatientConsentService {
       }, { merge: true });
 
       // Create consent record
+      const tokenHash = await hashConsentToken(token);
       const consentRecord: any = {
         patientId: tokenData.patientId,
         patientName: tokenData.patientName,
@@ -549,7 +560,7 @@ export class PatientConsentService {
         consented: true,
         consentDate: serverTimestamp(),
         consentVersion: CONSENT_VERSION,
-        tokenUsed: token,
+        tokenHash,
         ipAddress: 'manual-authorization',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         digitalSignature: `Authorized by ${physiotherapistId}`,
@@ -742,6 +753,7 @@ export class PatientConsentService {
     token: string
   ): Promise<void> {
     try {
+      const tokenHash = await hashConsentToken(token);
       const consentRecord: any = {
         patientId,
         patientName,
@@ -751,7 +763,7 @@ export class PatientConsentService {
         status: 'sms_requested', // For query compatibility
         consentTextVersion: CONSENT_VERSION,
         requestedAt: serverTimestamp(),
-        tokenUsed: token,
+        tokenHash,
         jurisdiction: 'CA-ON',
         consented: false, // Not yet granted
       };
