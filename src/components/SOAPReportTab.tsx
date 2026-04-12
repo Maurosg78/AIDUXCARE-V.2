@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../shared/ui';
 import { FileText, Download, Edit3, Save, Copy } from 'lucide-react';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 interface SOAPReportTabProps {
   analysisData: any;
@@ -18,6 +19,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
   onSaveReport
 }) => {
   const { t } = useTranslation();
+  const esPilotEnabled = isSpainPilot();
   const [soapReport, setSoapReport] = useState({
     subjective: '',
     objective: '',
@@ -47,7 +49,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
 
   const generateSubjective = () => {
     const newline = '\n';
-    let text = 'CHIEF COMPLAINT:\n';
+    let text = esPilotEnabled ? 'MOTIVO DE CONSULTA:\n' : 'CHIEF COMPLAINT:\n';
     
     // Main symptoms
     if (analysisData?.entities) {
@@ -59,7 +61,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
     
     // Psychosocial factors
     if (analysisData?.yellowFlags?.length > 0) {
-      text += '\n\nCONTEXTUAL FACTORS:\n';
+      text += esPilotEnabled ? '\n\nFACTORES CONTEXTUALES:\n' : '\n\nCONTEXTUAL FACTORS:\n';
       text += analysisData.yellowFlags.map(f => `- ${f}`).join(newline);
     }
     
@@ -67,7 +69,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
   };
 
   const generateObjective = () => {
-    let text = 'PHYSICAL EVALUATION:\n';
+    let text = esPilotEnabled ? 'VALORACIÓN FÍSICA:\n' : 'PHYSICAL EVALUATION:\n';
     
     // Test results
     if (evaluationResults?.tests) {
@@ -78,7 +80,7 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
         }
       });
     } else {
-      text += 'Physical evaluation pending completion.';
+      text += esPilotEnabled ? 'Valoración física pendiente de completar.' : 'Physical evaluation pending completion.';
     }
     
     return text;
@@ -86,53 +88,55 @@ export const SOAPReportTab: React.FC<SOAPReportTabProps> = ({
 
   const generateAssessment = () => {
     const newline = '\n';
-    let text = 'CLINICAL ASSESSMENT:\n';
+    let text = esPilotEnabled ? 'VALORACIÓN CLÍNICA:\n' : 'CLINICAL ASSESSMENT:\n';
     
     const redFlags = Array.isArray(analysisData?.redFlags) ? analysisData.redFlags : [];
     if (redFlags.length > 0) {
-      text += '\nCRITICAL ALERTS:\n';
+      text += esPilotEnabled ? '\nALERTAS CRÍTICAS:\n' : '\nCRITICAL ALERTS:\n';
       text += redFlags
         .map(rf => {
           if (typeof rf === 'string') {
             return `- ${rf}`;
           }
           if (rf && typeof rf === 'object') {
-            const pattern = 'pattern' in rf ? rf.pattern : 'Red flag';
-            const action = 'action' in rf ? rf.action : 'Requires medical evaluation.';
+            const pattern = 'pattern' in rf ? rf.pattern : esPilotEnabled ? 'Red flag' : 'Red flag';
+            const action = 'action' in rf ? rf.action : esPilotEnabled ? 'Requiere valoración médica.' : 'Requires medical evaluation.';
             return `- ${pattern}: ${action}`;
           }
-          return '- Red flag detected';
+          return esPilotEnabled ? '- Red flag detectada' : '- Red flag detected';
         })
         .join(newline);
     }
     
     // Functional diagnosis
-    text += '\n\nFUNCTIONAL DIAGNOSIS:\n';
-    text += 'Based on the evaluation performed...';
+    text += esPilotEnabled ? '\n\nDIAGNÓSTICO FUNCIONAL:\n' : '\n\nFUNCTIONAL DIAGNOSIS:\n';
+    text += esPilotEnabled ? 'Basado en la valoración realizada...' : 'Based on the evaluation performed...';
     
     return text;
   };
 
   const generatePlan = () => {
-    let text = 'TREATMENT PLAN:\n';
+    let text = esPilotEnabled ? 'PLAN DE TRATAMIENTO:\n' : 'TREATMENT PLAN:\n';
     
     const redFlags = Array.isArray(analysisData?.redFlags) ? analysisData.redFlags : [];
     if (redFlags.length > 0) {
-      text += '\nURGENT REFERRAL REQUIRED\n';
+      text += esPilotEnabled ? '\nDERIVACIÓN URGENTE REQUERIDA\n' : '\nURGENT REFERRAL REQUIRED\n';
     }
     
-    text += '\nGOALS:\n';
+    text += esPilotEnabled ? '\nOBJETIVOS:\n' : '\nGOALS:\n';
     text += '1. \n2. \n3. \n';
     
-    text += '\nINTERVENTIONS:\n';
-    text += '- Manual therapy\n';
-    text += '- Therapeutic exercise\n';
-    text += '- Modalities (TENS, US, Tecar therapy, Infrared light, Shockwave therapy)\n';
-    text += '- Patient education\n';
+    text += esPilotEnabled ? '\nINTERVENCIONES:\n' : '\nINTERVENTIONS:\n';
+    text += esPilotEnabled ? '- Terapia manual\n' : '- Manual therapy\n';
+    text += esPilotEnabled ? '- Ejercicio terapéutico\n' : '- Therapeutic exercise\n';
+    text += esPilotEnabled
+      ? '- Modalidades (TENS, US, Terapia Tecar, Luz infrarroja, Ondas de choque)\n'
+      : '- Modalities (TENS, US, Tecar therapy, Infrared light, Shockwave therapy)\n';
+    text += esPilotEnabled ? '- Educación al paciente\n' : '- Patient education\n';
     
-    text += '\nFREQUENCY: ___ sessions per week\n';
-    text += 'ESTIMATED DURATION: ___ weeks\n';
-    text += 'NEXT APPOINTMENT: ___';
+    text += esPilotEnabled ? '\nFRECUENCIA: ___ sesiones por semana\n' : '\nFREQUENCY: ___ sessions per week\n';
+    text += esPilotEnabled ? 'DURACIÓN ESTIMADA: ___ semanas\n' : 'ESTIMATED DURATION: ___ weeks\n';
+    text += esPilotEnabled ? 'SIGUIENTE CITA: ___' : 'NEXT APPOINTMENT: ___';
     
     return text;
   };
@@ -162,8 +166,8 @@ PLAN:
 ${soapReport.plan}
 
 =============================================
-Signed: ${patientData?.therapist || 'Physiotherapist'}
-Date: ${new Date().toLocaleString()}
+${esPilotEnabled ? 'Firmado:' : 'Signed:'} ${patientData?.therapist || (esPilotEnabled ? 'Fisioterapeuta' : 'Physiotherapist')}
+${esPilotEnabled ? 'Fecha:' : 'Date:'} ${new Date().toLocaleString()}
     `;
     
     onSaveReport(fullReport);
@@ -254,7 +258,7 @@ Date: ${new Date().toLocaleString()}
 
           {/* ASSESSMENT */}
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-purple-600">A - Assessment</h3>
+            <h3 className="font-semibold text-lg mb-2 text-purple-600">A - {esPilotEnabled ? 'Valoración' : 'Assessment'}</h3>
             {isEditing ? (
               <textarea
                 value={soapReport.assessment}

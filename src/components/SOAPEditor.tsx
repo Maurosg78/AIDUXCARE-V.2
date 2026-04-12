@@ -17,6 +17,7 @@ import { generateEsReferralReportForSession, type ReferralReportResult } from '@
 import type { SessionState } from '@/types/sessionState';
 import { getSoapReviewConfig } from '@/core/jurisdiction/JurisdictionEngine';
 import { isSpainPilot } from '@/core/pilotDetection';
+import { localizeModalityLabel } from '@/utils/treatmentPlanModalities';
 import { buildSoapPlainText } from '@/utils/soapPlainTextExport';
 
 export type SOAPStatus = 'draft' | 'finalized';
@@ -129,6 +130,55 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const hasInClinicPlanSection = (planText?: string | null) =>
     Boolean(planText && inClinicPlanHeaderPattern.test(planText));
   const inClinicPlanHeaderLabel = esPilotEnabled ? 'TRATAMIENTO EN CLÍNICA:' : 'IN-CLINIC TREATMENT:';
+  const soapSectionPlaceholders = {
+    subjective: esPilotEnabled
+      ? 'Motivo de consulta, historia del cuadro actual, antecedentes relevantes, medicacion y limitaciones funcionales...'
+      : 'Chief complaint, history of present condition, relevant medical history, medications, functional limitations...',
+    objective: esPilotEnabled
+      ? 'Hallazgos de exploracion fisica, resultados de pruebas, mediciones y observaciones...'
+      : 'Physical examination findings, test results, measurements, observations...',
+    assessment: esPilotEnabled
+      ? 'Razonamiento clinico, identificacion de patrones y consideraciones diferenciales en lenguaje no diagnostico...'
+      : 'Clinical reasoning, pattern identification, differential considerations (non-diagnostic language)...',
+    plan: esPilotEnabled
+      ? `Plan terapeutico, objetivos, intervenciones, frecuencia, duracion y seguimiento...\n\nModalidades disponibles:\n- TENS (Estimulación eléctrica nerviosa transcutánea)\n- US (Ultrasonido terapéutico)\n- Terapia Tecar (Diatermia capacitiva/resistiva)\n- Luz infrarroja\n- Ondas de choque (Terapia extracorpórea por ondas de choque)\n\nIncluye parámetros, duración y frecuencia específicos para cada modalidad utilizada.`
+      : `Treatment plan, goals, interventions, frequency, duration, follow-up schedule...\n\nAvailable modalities:\n- TENS (Transcutaneous Electrical Nerve Stimulation)\n- US (Ultrasound therapy)\n- Tecar therapy (Capacitive/Resistive diathermy)\n- Infrared light therapy\n- Shockwave therapy (Extracorporeal Shock Wave Therapy)\n\nInclude specific parameters, duration, and frequency for each modality used.`,
+    additionalNotes: esPilotEnabled ? 'Notas adicionales' : 'Additional Notes',
+    alreadyAdded: esPilotEnabled ? 'Ya añadido al plan' : 'Already added to plan',
+    clickToAdd: esPilotEnabled ? 'Haz clic para añadir {{label}} al plan de tratamiento' : 'Click to add {{label}} to treatment plan',
+  };
+  const availablePlanModalities = [
+    {
+      label: 'TENS',
+      full: esPilotEnabled
+        ? 'TENS (Estimulación eléctrica nerviosa transcutánea)'
+        : 'TENS (Transcutaneous Electrical Nerve Stimulation)',
+    },
+    {
+      label: 'US',
+      full: esPilotEnabled
+        ? 'US (Ultrasonido terapéutico)'
+        : 'US (Ultrasound therapy)',
+    },
+    {
+      label: esPilotEnabled ? localizeModalityLabel('Tecar therapy') : 'Tecar',
+      full: esPilotEnabled
+        ? 'Terapia Tecar (Diatermia capacitiva/resistiva)'
+        : 'Tecar therapy (Capacitive/Resistive diathermy)',
+    },
+    {
+      label: esPilotEnabled ? localizeModalityLabel('Infrared light') : 'Infrared',
+      full: esPilotEnabled
+        ? 'Luz infrarroja'
+        : 'Infrared light therapy',
+    },
+    {
+      label: esPilotEnabled ? localizeModalityLabel('Shockwave therapy') : 'Shockwave',
+      full: esPilotEnabled
+        ? 'Ondas de choque (Terapia extracorpórea por ondas de choque)'
+        : 'Shockwave therapy (Extracorporeal Shock Wave Therapy)',
+    },
+  ];
 
   // Update local state when prop changes
   useEffect(() => {
@@ -800,7 +850,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
             className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
               isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
             }`}
-            placeholder="Chief complaint, history of present condition, relevant medical history, medications, functional limitations..."
+            placeholder={soapSectionPlaceholders.subjective}
           />
         </div>
 
@@ -817,7 +867,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
             className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
               isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
             }`}
-            placeholder="Physical examination findings, test results, measurements, observations..."
+            placeholder={soapSectionPlaceholders.objective}
           />
         </div>
 
@@ -834,7 +884,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
             className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
               isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
             }`}
-            placeholder="Clinical reasoning, pattern identification, differential considerations (non-diagnostic language)..."
+            placeholder={soapSectionPlaceholders.assessment}
           />
         </div>
 
@@ -851,28 +901,13 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
             className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
               isReadOnly ? 'bg-slate-50 border-slate-200 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-purple-200'
             }`}
-            placeholder="Treatment plan, goals, interventions, frequency, duration, follow-up schedule...
-
-Available modalities:
-- TENS (Transcutaneous Electrical Nerve Stimulation)
-- US (Ultrasound therapy)
-- Tecar therapy (Capacitive/Resistive diathermy)
-- Infrared light therapy
-- Shockwave therapy (Extracorporeal Shock Wave Therapy)
-
-Include specific parameters, duration, and frequency for each modality used."
+            placeholder={soapSectionPlaceholders.plan}
           />
           {!isReadOnly && (
             <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-xs text-blue-800 font-medium mb-2">{`💡 ${esPilotEnabled ? 'Modalidades de tratamiento disponibles (click para añadir)' : 'Treatment Modalities Available (click to add)'}:`}</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: 'TENS', full: 'TENS (Transcutaneous Electrical Nerve Stimulation)' },
-                  { label: 'US', full: 'US (Ultrasound therapy)' },
-                  { label: 'Tecar', full: 'Tecar therapy (Capacitive/Resistive diathermy)' },
-                  { label: 'Infrared', full: 'Infrared light therapy' },
-                  { label: 'Shockwave', full: 'Shockwave therapy (Extracorporeal Shock Wave Therapy)' },
-                ].map((modality) => {
+                {availablePlanModalities.map((modality) => {
                   const isAlreadyAdded = currentSOAP?.plan?.includes(modality.full) || false;
                   return (
                     <button
@@ -912,7 +947,7 @@ Include specific parameters, duration, and frequency for each modality used."
                           ? 'bg-blue-200 border-blue-400 text-blue-800 cursor-not-allowed opacity-60'
                           : 'hover:bg-blue-100 border-transparent hover:border-blue-300 text-blue-700 active:bg-blue-200'
                       }`}
-                      title={isAlreadyAdded ? 'Already added to plan' : `Click to add ${modality.label} to treatment plan`}
+                      title={isAlreadyAdded ? soapSectionPlaceholders.alreadyAdded : soapSectionPlaceholders.clickToAdd.replace('{{label}}', modality.label)}
                     >
                       • {modality.full}
                     </button>
@@ -932,7 +967,7 @@ Include specific parameters, duration, and frequency for each modality used."
             {currentSOAP.additionalNotes && (
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                  Additional Notes
+                  {soapSectionPlaceholders.additionalNotes}
                 </label>
                 <textarea
                   value={currentSOAP.additionalNotes}
