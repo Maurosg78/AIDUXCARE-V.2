@@ -6,6 +6,7 @@
 import { collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { SessionComparisonService } from './sessionComparisonService';
+import { encountersRepo } from '../repositories/encountersRepo';
 import { classifyTrajectory } from '../core/longitudinal/trajectoryClassifier';
 import { extractPainFromSubjective } from '../core/longitudinal/extractPainFromSubjective';
 import {
@@ -38,8 +39,60 @@ function toEvent(doc: any): PatientTrajectoryEvent {
   };
 }
 
+function isPermissionDeniedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as { code?: unknown }).code) : '';
+  const hasPermissionCode = code.includes('permission-denied');
+  const hasPermissionMessage = message.includes('permission-denied') || message.includes('Missing or insufficient permissions');
+  return hasPermissionCode || hasPermissionMessage;
+}
+
 export class PatientTrajectoryMemoryService {
   private comparisonService = new SessionComparisonService();
+
+  private async getRecentEventsFromEncounters(
+    patientId: string,
+    maxEvents: number,
+    options?: { withinLastDays?: number }
+  ): Promise<PatientTrajectoryEvent[]> {
+    const encounters = await encountersRepo.getEncountersByPatient(patientId, 100);
+    const completedEncounters = encounters.filter((encounter) => encounter.status === 'completed' || encounter.status === 'signed');
+    const encountersWithSnapshot = completedEncounters.filter((encounter) => {
+      const painScore = encounter.longitudinalSnapshot?.painScore;
+      const trajectory = encounter.longitudinalSnapshot?.trajectory;
+      const confidence = encounter.longitudinalSnapshot?.trajectoryConfidence;
+      const hasPainScore = typeof painScore === 'number' && !Number.isNaN(painScore);
+      const hasTrajectory = typeof trajectory === 'string' && trajectory.length > 0;
+      const hasConfidence = typeof confidence === 'string' && confidence.length > 0;
+      return hasPainScore && hasTrajectory && hasConfidence;
+    });
+    const withinLastDays = options?.withinLastDays;
+    const cutoffMs = withinLastDays != null && withinLastDays > 0
+      ? Date.now() - withinLastDays * 24 * 60 * 60 * 1000
+      : null;
+    const recentEncounters = encountersWithSnapshot.filter((encounter) => {
+      if (cutoffMs == null) {
+        return true;
+      }
+      const encounterDateMs = encounter.encounterDate.toMillis();
+      return encounterDateMs >= cutoffMs;
+    });
+    const byDateAsc = [...recentEncounters].sort((left, right) => left.encounterDate.toMillis() - right.encounterDate.toMillis());
+    const lastEncounters = byDateAsc.slice(-maxEvents);
+    const events = lastEncounters.map((encounter) => {
+      const snapshot = encounter.longitudinalSnapshot!;
+      const event: PatientTrajectoryEvent = {
+        patientId,
+        encounterId: encounter.id,
+        painScore: snapshot.painScore!,
+        trajectory: snapshot.trajectory as TrajectoryLabel,
+        trajectoryConfidence: snapshot.trajectoryConfidence as TrajectoryConfidence,
+        createdAt: new Date(encounter.encounterDate.toMillis()),
+      };
+      return event;
+    });
+    return events;
+  }
 
   async buildEncounterLongitudinalSnapshot(
     patientId: string,
@@ -108,24 +161,32 @@ export class PatientTrajectoryMemoryService {
     maxEvents = MAX_EVENTS_READ,
     options?: { withinLastDays?: number }
   ): Promise<PatientTrajectoryEvent[]> {
-    const withinLastDays = options?.withinLastDays;
-    const constraints: ReturnType<typeof where>[] = [where('patientId', '==', patientId)];
+    try {
+      const withinLastDays = options?.withinLastDays;
+      const constraints: ReturnType<typeof where>[] = [where('patientId', '==', patientId)];
 
-    if (withinLastDays != null && withinLastDays > 0) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - withinLastDays);
-      constraints.push(where('createdAt', '>=', Timestamp.fromDate(cutoff)));
+      if (withinLastDays != null && withinLastDays > 0) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - withinLastDays);
+        constraints.push(where('createdAt', '>=', Timestamp.fromDate(cutoff)));
+      }
+
+      const q = query(
+        collection(db, COLLECTION),
+        ...constraints,
+        orderBy('createdAt', 'asc'),
+        limit(maxEvents)
+      );
+      const snap = await getDocs(q);
+      const events = snap.docs.map((d) => toEvent({ ...d.data(), id: d.id }));
+      return events;
+    } catch (error) {
+      if (!isPermissionDeniedError(error)) {
+        throw error;
+      }
+      const fallbackEvents = await this.getRecentEventsFromEncounters(patientId, maxEvents, options);
+      return fallbackEvents;
     }
-
-    const q = query(
-      collection(db, COLLECTION),
-      ...constraints,
-      orderBy('createdAt', 'asc'),
-      limit(maxEvents)
-    );
-    const snap = await getDocs(q);
-    const events = snap.docs.map((d) => toEvent({ ...d.data(), id: d.id }));
-    return events;
   }
 
   /**
