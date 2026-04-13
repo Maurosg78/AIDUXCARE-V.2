@@ -33,12 +33,12 @@ const CERTIFICATE_TYPE_OPTIONS: Array<{ value: CertificateTypeEs; label: string;
   {
     value: 'restricciones-funcionales',
     label: 'Restricciones funcionales',
-    description: 'Describe limitaciones o restricciones recomendadas.',
+    description: 'Describe limitaciones físicas recomendadas para el paciente.',
   },
   {
     value: 'certificado-escolar',
-    label: 'Certificado escolar',
-    description: 'Indica adaptación o restricción temporal en entorno escolar.',
+    label: 'Certificado para instituciones de educación',
+    description: 'Indica adaptación o restricción temporal en entorno educativo.',
   },
   {
     value: 'otro',
@@ -53,9 +53,10 @@ function buildInitialData(
   defaultClinicName?: string,
 ): CertificateEsData {
   const issueDate = new Date().toLocaleDateString('es-ES');
+  const institutionPreset = 'A petición del paciente';
   const initialData: CertificateEsData = {
     tipo: 'asistencia-tratamiento',
-    institucionDestinataria: '',
+    institucionDestinataria: institutionPreset,
     emisor: 'clinica',
     nombreClinica: defaultClinicName || '',
     detallesEspecificos: '',
@@ -144,17 +145,17 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
   const [formData, setFormData] = useState<CertificateEsData>(initialData);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    setFormData((previous) => {
+      const nextData = {
+        ...previous,
+        profesional: professional,
+        paciente: patient,
+        nombreClinica: previous.emisor === 'clinica' ? (previous.nombreClinica || defaultClinicName || '') : previous.nombreClinica,
+      };
 
-    const resetData = buildInitialData(professional, patient, defaultClinicName);
-
-    setFormData(resetData);
-    setStep(1);
-    setIsGenerating(false);
-    setError(null);
-  }, [defaultClinicName, isOpen, patient, professional]);
+      return nextData;
+    });
+  }, [defaultClinicName, patient, professional]);
 
   if (!pilotIsSpain || !isOpen) {
     return null;
@@ -162,7 +163,7 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
 
   const selectedType = CERTIFICATE_TYPE_OPTIONS.find((item) => item.value === formData.tipo);
   const canContinueFromStepOne = Boolean(formData.tipo);
-  const canContinueFromStepTwo = Boolean(formData.institucionDestinataria.trim() && formData.detallesEspecificos.trim());
+  const canContinueFromStepTwo = Boolean(formData.detallesEspecificos.trim());
   const canContinueFromStepThree = Boolean(formData.borrador.trim());
 
   const updateField = <K extends keyof CertificateEsData>(field: K, value: CertificateEsData[K]) => {
@@ -204,6 +205,19 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
     downloadCertificatePdf(formData);
   };
 
+  const handleClose = () => {
+    const resetData = buildInitialData(professional, patient, defaultClinicName);
+    const firstStep = 1;
+    const idleGeneratingState = false;
+    const emptyError = null;
+
+    setFormData(resetData);
+    setStep(firstStep);
+    setIsGenerating(idleGeneratingState);
+    setError(emptyError);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
@@ -214,7 +228,7 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
@@ -286,8 +300,18 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
                   type="text"
                   value={formData.institucionDestinataria}
                   onChange={(event) => updateField('institucionDestinataria', event.target.value)}
+                  placeholder="Opcional"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-blue-500"
                 />
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => updateField('institucionDestinataria', 'A petición del paciente')}
+                    className="inline-flex rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    A petición del paciente
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -407,7 +431,7 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
             >
               Cerrar

@@ -17,6 +17,22 @@ function extractGeneratedText(responseData: unknown): string {
   return trimmedText;
 }
 
+function parseCertificateBody(rawText: string): string {
+  const trimmedText = rawText.trim();
+
+  try {
+    const parsed = JSON.parse(trimmedText) as { certificado_clinico_cuerpo?: string };
+    const parsedText = parsed.certificado_clinico_cuerpo || trimmedText;
+    const cleanText = parsedText.replace(/\\n/g, '\n');
+
+    return cleanText;
+  } catch {
+    const cleanText = trimmedText.replace(/\\n/g, '\n');
+
+    return cleanText;
+  }
+}
+
 export async function generateCertificateBodyEs(
   data: CertificateEsData,
   soapAssessment: string,
@@ -39,7 +55,8 @@ VALORACIÓN CLÍNICA (SOAP): ${soapAssessment}`;
     traceId,
     market: 'ES',
   });
-  const generatedText = extractGeneratedText(response);
+  const rawText = extractGeneratedText(response);
+  const generatedText = parseCertificateBody(rawText);
   const fallbackText = 'No se pudo generar el borrador del certificado.';
   const resolvedText = generatedText || fallbackText;
 
