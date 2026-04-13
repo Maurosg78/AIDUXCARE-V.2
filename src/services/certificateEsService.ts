@@ -23,13 +23,14 @@ function parseCertificateBody(rawText: string): string {
   try {
     const parsed = JSON.parse(trimmedText) as {
       certificado_clinico_cuerpo?: string;
-      certificado_clinico?: { cuerpo?: string };
+      certificado_clinico?: { cuerpo?: string } | string;
       cuerpo?: string;
     };
     const flatKey = typeof parsed.certificado_clinico_cuerpo === 'string' ? parsed.certificado_clinico_cuerpo : null;
-    const nestedKey = typeof parsed.certificado_clinico?.cuerpo === 'string' ? parsed.certificado_clinico.cuerpo : null;
+    const nestedKey = typeof parsed.certificado_clinico === 'object' && parsed.certificado_clinico !== null && typeof parsed.certificado_clinico.cuerpo === 'string' ? parsed.certificado_clinico.cuerpo : null;
+    const stringDirectKey = typeof parsed.certificado_clinico === 'string' ? parsed.certificado_clinico : null;
     const directKey = typeof parsed.cuerpo === 'string' ? parsed.cuerpo : null;
-    const resolvedBody = flatKey ?? nestedKey ?? directKey ?? trimmedText;
+    const resolvedBody = flatKey ?? nestedKey ?? stringDirectKey ?? directKey ?? trimmedText;
     const cleanText = resolvedBody.replace(/\\n/g, '\n');
 
     return cleanText;
@@ -46,6 +47,7 @@ export async function generateCertificateBodyEs(
 ): Promise<string> {
   const prompt = `Eres un asistente clínico para fisioterapeutas en España.
 Genera el cuerpo de un certificado clínico en español formal.
+Responde ÚNICAMENTE con el texto del certificado. Sin JSON, sin llaves, sin comillas, sin estructura. Solo el texto clínico directamente.
 Tono: directo, causa-efecto. NO uses lenguaje legal ni notarial.
 Máximo 120 palabras.
 Estructura: 1 párrafo contexto clínico + 1 párrafo indicaciones/restricciones.
