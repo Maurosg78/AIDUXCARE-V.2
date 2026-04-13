@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileText, Play, History } from 'lucide-react';
+import { FileText, Play, History, Award } from 'lucide-react';
 
-import ClinicalAssistantPanel from "../../shared/components/Assistant/ClinicalAssistantPanel";
+import CertificateEsModal from '@/components/CertificateEsModal';
+import { isSpainPilot } from '@/core/pilotDetection';
+import { useProfessionalProfile } from '@/context/ProfessionalProfileContext';
 
 import { PatientHeaderCard } from './components/PatientHeaderCard';
 import { LastTherapyCard } from './components/LastTherapyCard';
@@ -60,6 +62,7 @@ export const PatientDashboardPage: React.FC = () => {
   const activeEpisode = useActiveEpisode(patientId!);
   const lastEncounter = useLastEncounter(patientId!);
   const patientVisits = usePatientVisits(patientId!);
+  const { profile: professionalProfile } = useProfessionalProfile();
 
   // WO-AUTO-BASELINE-01: Baseline effective = activeBaselineId OR at least one finalized initial SOAP.
   const [hasActiveBaseline, setHasActiveBaseline] = useState(false);
@@ -70,6 +73,7 @@ export const PatientDashboardPage: React.FC = () => {
   const [editPatientError, setEditPatientError] = useState<string | null>(null);
   const [isSavingPatient, setIsSavingPatient] = useState(false);
   const [patientDisplayOverride, setPatientDisplayOverride] = useState<Record<string, unknown> | null>(null);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
   useEffect(() => {
     const checkBaseline = async () => {
       if (!patientId) return;
@@ -602,19 +606,41 @@ export const PatientDashboardPage: React.FC = () => {
               <History className="w-4 h-4" />
               {t('patientDashboard.ongoingPatient')}
             </button>
+            {isSpainPilot() && visitsForDisplay.some(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized') && (
+              <button
+                type="button"
+                onClick={() => setShowCertificateModal(true)}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-medium transition-colors"
+              >
+                <Award className="w-4 h-4" />
+                Certificado
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Assistant clínico (panel básico) */}
-        {lastEncounter.data && (
-          <div className="mt-6">
-            <ClinicalAssistantPanel
-              patientId={patientId!}
-              visitId={lastEncounter.data.id}
-            />
-          </div>
-        )}
       </div>
+
+      {showCertificateModal && isSpainPilot() && (() => {
+        const completedVisits = visitsForDisplay.filter(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized');
+        const mostRecentVisit = completedVisits[0];
+        const soapAssessment = mostRecentVisit?.soap?.assessment || mostRecentVisit?.diagnosis || '';
+        const patientName = `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim();
+        const patientBirthDate = String((patient as { birthDate?: string }).birthDate || '');
+        const professionalName = professionalProfile?.fullName || professionalProfile?.displayName || '';
+        const professionalLicense = professionalProfile?.licenseNumber || '';
+        const professionalSpecialty = professionalProfile?.specialty || professionalProfile?.profession || '';
+        return (
+          <CertificateEsModal
+            isOpen={showCertificateModal}
+            onClose={() => setShowCertificateModal(false)}
+            soapAssessment={soapAssessment}
+            professional={{ nombre: professionalName, numeroColegiado: professionalLicense, especialidad: professionalSpecialty }}
+            patient={{ nombre: patientName, fechaNacimiento: patientBirthDate }}
+            defaultClinicName={professionalProfile?.clinic?.name}
+          />
+        );
+      })()}
 
       {selectedSOAP && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedSOAP(null)}>
