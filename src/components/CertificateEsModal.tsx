@@ -387,7 +387,8 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
                   value={formData.borrador}
                   onChange={(event) => updateField('borrador', event.target.value)}
                   rows={10}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-blue-500"
+                  style={{ minHeight: '200px' }}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-blue-500 resize-y"
                 />
               </div>
             </div>

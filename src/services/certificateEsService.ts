@@ -21,9 +21,16 @@ function parseCertificateBody(rawText: string): string {
   const trimmedText = rawText.trim();
 
   try {
-    const parsed = JSON.parse(trimmedText) as { certificado_clinico_cuerpo?: string };
-    const parsedText = parsed.certificado_clinico_cuerpo || trimmedText;
-    const cleanText = parsedText.replace(/\\n/g, '\n');
+    const parsed = JSON.parse(trimmedText) as {
+      certificado_clinico_cuerpo?: string;
+      certificado_clinico?: { cuerpo?: string };
+      cuerpo?: string;
+    };
+    const flatKey = typeof parsed.certificado_clinico_cuerpo === 'string' ? parsed.certificado_clinico_cuerpo : null;
+    const nestedKey = typeof parsed.certificado_clinico?.cuerpo === 'string' ? parsed.certificado_clinico.cuerpo : null;
+    const directKey = typeof parsed.cuerpo === 'string' ? parsed.cuerpo : null;
+    const resolvedBody = flatKey ?? nestedKey ?? directKey ?? trimmedText;
+    const cleanText = resolvedBody.replace(/\\n/g, '\n');
 
     return cleanText;
   } catch {
@@ -43,6 +50,7 @@ Tono: directo, causa-efecto. NO uses lenguaje legal ni notarial.
 Máximo 120 palabras.
 Estructura: 1 párrafo contexto clínico + 1 párrafo indicaciones/restricciones.
 No inventes datos no presentes en el SOAP.
+No uses siglas en inglés (WAD, ROM, AINE, HEP, etc.). Usa siempre el término en español: WAD → cervicalgia post-traumática, ROM → rango de movimiento, HEP → programa de ejercicios en casa, AINE → antiinflamatorio no esteroideo.
 
 TIPO: ${data.tipo}
 INSTITUCIÓN DESTINATARIA: ${data.institucionDestinataria}
