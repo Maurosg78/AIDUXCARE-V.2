@@ -1,6 +1,7 @@
 import { deidentify, reidentify, logDeidentification } from "./dataDeidentificationService";
 import { buildAnalysisPrompt } from "../core/ai/markets/buildAnalysisPrompt";
 import { resolveClinicalMarket } from "@/core/market/resolveClinicalMarket";
+import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
 // ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
 // Fallback: Si la función está en us-central1, redirigir a región canadiense
 const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
@@ -16,9 +17,10 @@ const sanitizeTranscript = (value) => {
     return collapsed.slice(collapsed.length - MAX_TRANSCRIPT_CHARS);
 };
 const callVertexWithPrompt = async (prompt, traceId) => {
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch(VERTEX_PROXY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
             action: 'analyze',
             prompt,
@@ -143,9 +145,10 @@ export async function analyzeWithVertexProxy(payload) {
         });
         finalPrompt = structuredPrompt;
     }
+    const headers = await buildAuthenticatedJsonHeaders();
     const response = await fetch(VERTEX_PROXY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
             action: payload.action,
             prompt: finalPrompt,
@@ -219,9 +222,10 @@ export class VertexAIServiceViaFirebase {
             return `- ${item.testName}: ${resultLabel}${noteSegment}`;
         })
             .join('\n');
+        const headers = await buildAuthenticatedJsonHeaders();
         const response = await fetch(VERTEX_PROXY_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({
                 action: 'generate_soap',
                 transcript: deidentifiedText, // Use de-identified transcript

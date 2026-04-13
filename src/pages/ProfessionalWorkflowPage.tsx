@@ -315,7 +315,6 @@ const ProfessionalWorkflowPage = () => {
     continuationNote?: string;
   }>>({});
   const [followUpDecisionResolved, setFollowUpDecisionResolved] = useState(false);
-  const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
 
@@ -543,6 +542,16 @@ const ProfessionalWorkflowPage = () => {
   const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
     (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
   );
+  const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
+  const {
+    processText,
+    generateSOAPNote,
+    niagaraResults,
+    soapNote,
+    isProcessing,
+    reset: resetNiagaraProcessor,
+  } = useNiagaraProcessor();
+  const [editedAnalysisResults, setEditedAnalysisResults] = useState<any>(null);
 
   const hasActiveWorkflowDraft = Boolean(
     transcript?.trim() ||
@@ -697,16 +706,6 @@ const ProfessionalWorkflowPage = () => {
   }, [transcriptError]);
 
   const { time: recordingTime } = useTimer(isRecording);
-
-  const {
-    processText,
-    generateSOAPNote,
-    niagaraResults,
-    soapNote,
-    isProcessing,
-    reset: resetNiagaraProcessor,
-  } = useNiagaraProcessor();
-  const [editedAnalysisResults, setEditedAnalysisResults] = useState<any>(null);
 
   const clinicName = useMemo(
     () => deriveClinicName(professionalProfile),

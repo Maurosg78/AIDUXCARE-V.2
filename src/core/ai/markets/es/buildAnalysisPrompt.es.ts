@@ -22,7 +22,7 @@ Todas las afirmaciones clínicas deben proceder de:
 No inventes hallazgos, tratamientos, pruebas ni recomendaciones ajenas a la entrada.
 
 Salida JSON obligatoria:
-{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[{original_text:"",normalized_name:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 REGLAS DE REDACCIÓN:
 - Español clínico formal (es-ES).
@@ -59,12 +59,13 @@ REGLAS DE DISTRIBUCIÓN:
 - chief_complaint: motivo principal de consulta.
 - key_findings: hallazgos clínicos únicos no repetidos en chief_complaint.
 - medical_history: antecedentes y eventos previos.
-- medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, confidence, requires_review, dose, frequency, duration}. Reglas:
+- medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, active_ingredient, confidence, requires_review, dose, frequency, duration}. Reglas:
   - original_text: exactamente como apareció en la transcripción.
-  - normalized_name: nombre farmacológico correcto en español si lo reconoces con certeza; si no, igual a original_text.
+  - normalized_name: busca primero si el nombre mencionado es un nombre comercial válido en España (vademécum ES). Si lo reconoces como nombre comercial, escribe: "NombreComercial (principioActivo)" — por ejemplo: "Robaxin (metocarbamol)" o "Nolotil (metamizol)". Si es directamente un principio activo, úsalo tal cual. Si el nombre no corresponde a ningún medicamento conocido en España, escribe el original_text seguido de " [nombre por confirmar]". Nunca inventes un medicamento.
   - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
   - requires_review: true si confidence es "low" o "medium", false si es "high".
   - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
+  - active_ingredient: principio activo en español cuando normalized_name sea un nombre comercial. Vacío si normalized_name ya es principio activo.
   - Nunca autocorregir en silencio. Si normalized_name difiere de original_text, siempre marcar requires_review: true.
 - yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
 - summary: síntesis breve sin repetir todo lo anterior.`;

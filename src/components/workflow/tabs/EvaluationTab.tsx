@@ -1133,13 +1133,24 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                             <label className="block text-xs font-medium text-slate-700 mb-1.5">
                               {t('workflow.evaluation.addNotes')}
                             </label>
-                            <textarea
-                              value={entry.notes || ''}
-                              onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
-                              rows={2}
-                              placeholder={t('workflow.evaluation.notesPlaceholder')}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
-                            />
+                            <div className="relative">
+                              <textarea
+                                value={entry.notes || ''}
+                                onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
+                                rows={2}
+                                placeholder={t('workflow.evaluation.notesPlaceholder')}
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 pr-10 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"
+                              />
+                              <VoiceInputButton
+                                onTranscribedText={(transcribedText) => {
+                                  const currentNotes = entry.notes || '';
+                                  const hasExistingNotes = currentNotes.trim().length > 0;
+                                  const spacerText = hasExistingNotes ? ' ' : '';
+                                  const nextNotes = `${currentNotes}${spacerText}${transcribedText}`;
+                                  updateEvaluationTest(entry.id, { notes: nextNotes });
+                                }}
+                              />
+                            </div>
                             <p className="mt-1 text-[10px] text-slate-400">
                               {t('workflow.evaluation.notesHelper')}
                             </p>
@@ -1182,13 +1193,24 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               </button>
                             ))}
                           </div>
-                          <textarea
-                            value={entry.notes}
-                            onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
-                            rows={3}
-                            placeholder={t('workflow.evaluation.fallbackNotesPlaceholder')}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                          />
+                          <div className="relative">
+                            <textarea
+                              value={entry.notes}
+                              onChange={(event) => updateEvaluationTest(entry.id, { notes: event.target.value })}
+                              rows={3}
+                              placeholder={t('workflow.evaluation.fallbackNotesPlaceholder')}
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 pr-10 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                            />
+                            <VoiceInputButton
+                              onTranscribedText={(transcribedText) => {
+                                const currentNotes = entry.notes || '';
+                                const hasExistingNotes = currentNotes.trim().length > 0;
+                                const spacerText = hasExistingNotes ? ' ' : '';
+                                const nextNotes = `${currentNotes}${spacerText}${transcribedText}`;
+                                updateEvaluationTest(entry.id, { notes: nextNotes });
+                              }}
+                            />
+                          </div>
                         </>
                       )}
                     </div>
