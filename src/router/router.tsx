@@ -41,6 +41,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetCompletePage } from '../pages/ResetCompletePage';
 import TechDashboard from '../pages/Dashboard/TechDashboard';
 import GrowthDashboard from '../pages/Dashboard/GrowthDashboard';
+import PilotMetricsDashboard from '../pages/PilotMetricsDashboard';
 import { FeedbackReviewPage } from '../pages/FeedbackReviewPage';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { UiFeaturePlaybookGate } from '../pages/qa/UiFeaturePlaybookPage';
@@ -134,6 +135,7 @@ export const createRouter = () => createBrowserRouter([
   { path: '/follow-up', element: <AuthGuard><FollowUpRedirect /></AuthGuard> },
   { path: '/dashboard/tech', element: <AuthGuard><LayoutWrapper><TechDashboard /></LayoutWrapper></AuthGuard> },
   { path: '/dashboard/growth', element: <AuthGuard><LayoutWrapper><GrowthDashboard /></LayoutWrapper></AuthGuard> },
+  { path: '/pilot-metrics', element: <AuthGuard><LayoutWrapper><PilotMetricsDashboard /></LayoutWrapper></AuthGuard> },
   // ✅ T2: Legacy/internal page — do not verify without token (redirects to /consent/:token if token provided)
   { path: '/consent-verification/:patientId', element: <AuthGuard><LayoutWrapper><ConsentVerificationPage /></LayoutWrapper></AuthGuard> },
   { path: '/consent/:token', element: <PatientConsentPortalPage /> }, // ✅ Public consent link (no auth required) - ÚNICA ruta de verificación real

@@ -10,7 +10,7 @@
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, Users, MessageSquare } from 'lucide-react';
+import { CalendarDays, Users, MessageSquare, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useIsAdmin } from '../../../hooks/useIsAdmin';
 import { isSpainPilot } from '@/core/pilotDetection';
@@ -108,6 +108,17 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             </Link>
           )}
 
+          {isSpainPilot() && (
+            <Link
+              to="/pilot-metrics"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-apple"
+              title="Ver métricas del piloto"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Métricas piloto
+            </Link>
+          )}
+
           {/* Current date (jurisdiction-aware long format) */}
           <div className="flex items-center gap-2 text-base text-slate-500 font-apple">
             <CalendarDays className="w-4 h-4 text-slate-500" />
@@ -118,4 +129,3 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
     </header>
   );
 };
-
