@@ -5048,8 +5048,11 @@ const ProfessionalWorkflowPage = () => {
         const assessmentLength = soapDataToSave.assessment?.length || 0;
         const planLength = soapDataToSave.plan?.length || 0;
         const soapCharacterCount = subjectiveLength + objectiveLength + assessmentLength + planLength;
+        const finalizedAt = new Date().toISOString();
         void trackSOAPFinalized({
           characterCount: soapCharacterCount,
+          character_count: soapCharacterCount,
+          finalizedAt,
           visitType,
         });
         setSuccessMessage('SOAP note saved successfully to Clinical Vault.');

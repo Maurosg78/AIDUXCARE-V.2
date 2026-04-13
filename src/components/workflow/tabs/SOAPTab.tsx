@@ -179,7 +179,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [summarySent, setSummarySent] = useState(false);
   const handleSoapFieldEdited = (fieldEdited: EditableSOAPField) => {
-    void trackSOAPEdited({ fieldEdited });
+    void trackSOAPEdited({ fieldEdited, field_name: fieldEdited });
   };
 
   return (
