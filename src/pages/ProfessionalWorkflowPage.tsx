@@ -87,6 +87,7 @@ import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clini
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
 import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
 import ReferralReportModal from "../components/ReferralReportModal";
+import CertificateEsModal from "../components/CertificateEsModal";
 import type { ReferralReportData } from "../services/referralReportGenerator";
 import { generateBaselineSOAPFromFreeText } from "../services/vertex-ai-soap-service";
 // FIX 1: WorkflowSelector commented out - system auto-detects Initial vs Follow-up
@@ -3652,6 +3653,7 @@ const ProfessionalWorkflowPage = () => {
   const [referralReportOpen, setReferralReportOpen] = useState(false);
   const [referralReportData, setReferralReportData] = useState<ReferralReportData | null>(null);
   const [isBuildingReferralReport, setIsBuildingReferralReport] = useState(false);
+  const [isCertificateEsModalOpen, setIsCertificateEsModalOpen] = useState(false);
 
   // Initial Plan Modal state (for existing patients without initial assessment)
   const [isInitialPlanModalOpen, setIsInitialPlanModalOpen] = useState(false);
@@ -3762,6 +3764,28 @@ const ProfessionalWorkflowPage = () => {
     user,
     professionalProfile,
   ]);
+
+  const certificateProfessionalName =
+    professionalProfile?.fullName ||
+    [professionalProfile?.firstName, professionalProfile?.lastName].filter(Boolean).join(' ') ||
+    professionalProfile?.displayName ||
+    user?.displayName ||
+    clinicianDisplayName ||
+    'Fisioterapeuta';
+  const certificateProfessionalLicense = professionalProfile?.licenseNumber || '';
+  const certificateProfessionalSpecialty =
+    professionalProfile?.profession ||
+    professionalProfile?.specialty ||
+    'Fisioterapia';
+  const certificatePatientName =
+    currentPatient?.fullName ||
+    `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+    demoPatient.name;
+  const certificatePatientBirthDate = currentPatient?.dateOfBirth || '';
+  const certificateClinicName =
+    professionalProfile?.clinic?.name ||
+    professionalProfile?.workplace ||
+    '';
 
   const handleOpenReferralReport = useCallback(async () => {
     setIsBuildingReferralReport(true);
@@ -6324,6 +6348,18 @@ const ProfessionalWorkflowPage = () => {
                     redFlagDecisions={redFlagDecisions}
                   />
                 </Suspense>
+                {isSpainPilotActive && localSoapNote && soapStatus === 'finalized' && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsCertificateEsModalOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Certificado
+                    </button>
+                  </div>
+                )}
               </div>
               )}
 
@@ -6545,47 +6581,61 @@ const ProfessionalWorkflowPage = () => {
               </Suspense>
             )}
             {effectiveActiveTab === "soap" && (
-              <Suspense fallback={<LoadingSpinner />}>
-                <SOAPTab
-                  localSoapNote={localSoapNote}
-                  soapStatus={soapStatus}
-                  visitType={visitType}
-                  isGeneratingSOAP={isGeneratingSOAP}
-                  patientId={patientId}
-                  sessionId={sessionId}
-                  handleGenerateSoap={visitType === 'follow-up' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
-                  handleSaveSOAP={handleSaveSOAP}
-                  handleRegenerateSOAP={handleRegenerateSOAP}
-                  handleFinalizeSOAP={handleFinalizeSOAP}
-                  handleUnfinalizeSOAP={handleUnfinalizeSOAP}
-                  setIsShareMenuOpen={setIsShareMenuOpen}
-                  skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
-                  workflowMetrics={workflowMetrics}
-                  workflowRoute={workflowRoute}
-                  soapTokenOptimization={soapTokenOptimization}
-                  niagaraResults={niagaraResults}
-                  transcript={transcript}
-                  physicalExamResults={physicalExamResults}
-                  treatmentReminder={treatmentReminder}
-                  analysisError={analysisError}
-                  successMessage={successMessage}
-                  setAnalysisError={setAnalysisError}
-                  setSuccessMessage={setSuccessMessage}
-                  setVisitType={setVisitType}
-                  onBackToCommandCenter={() => {
-                    if (sessionId) {
-                      sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
-                    }
-                    navigate('/command-center');
-                  }}
-                  patientEmail={currentPatient?.email}
-                  patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
-                  professionalName={clinicianDisplayName || ''}
-                  professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
-                  patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
-                  redFlagDecisions={redFlagDecisions}
-                />
-              </Suspense>
+              <>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <SOAPTab
+                    localSoapNote={localSoapNote}
+                    soapStatus={soapStatus}
+                    visitType={visitType}
+                    isGeneratingSOAP={isGeneratingSOAP}
+                    patientId={patientId}
+                    sessionId={sessionId}
+                    handleGenerateSoap={visitType === 'follow-up' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
+                    handleSaveSOAP={handleSaveSOAP}
+                    handleRegenerateSOAP={handleRegenerateSOAP}
+                    handleFinalizeSOAP={handleFinalizeSOAP}
+                    handleUnfinalizeSOAP={handleUnfinalizeSOAP}
+                    setIsShareMenuOpen={setIsShareMenuOpen}
+                    skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
+                    workflowMetrics={workflowMetrics}
+                    workflowRoute={workflowRoute}
+                    soapTokenOptimization={soapTokenOptimization}
+                    niagaraResults={niagaraResults}
+                    transcript={transcript}
+                    physicalExamResults={physicalExamResults}
+                    treatmentReminder={treatmentReminder}
+                    analysisError={analysisError}
+                    successMessage={successMessage}
+                    setAnalysisError={setAnalysisError}
+                    setSuccessMessage={setSuccessMessage}
+                    setVisitType={setVisitType}
+                    onBackToCommandCenter={() => {
+                      if (sessionId) {
+                        sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
+                      }
+                      navigate('/command-center');
+                    }}
+                    patientEmail={currentPatient?.email}
+                    patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
+                    professionalName={clinicianDisplayName || ''}
+                    professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
+                    redFlagDecisions={redFlagDecisions}
+                  />
+                </Suspense>
+                {isSpainPilotActive && localSoapNote && soapStatus === 'finalized' && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsCertificateEsModalOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Certificado
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -6667,6 +6717,22 @@ const ProfessionalWorkflowPage = () => {
           />
         </div>
       )}
+
+      <CertificateEsModal
+        isOpen={isSpainPilotActive && isCertificateEsModalOpen && Boolean(localSoapNote) && soapStatus === 'finalized'}
+        onClose={() => setIsCertificateEsModalOpen(false)}
+        soapAssessment={localSoapNote?.assessment || ''}
+        professional={{
+          nombre: certificateProfessionalName,
+          numeroColegiado: certificateProfessionalLicense,
+          especialidad: certificateProfessionalSpecialty,
+        }}
+        patient={{
+          nombre: certificatePatientName,
+          fechaNacimiento: certificatePatientBirthDate,
+        }}
+        defaultClinicName={certificateClinicName}
+      />
 
       {/* Universal Share Menu - Available after SOAP is finalized */}
       {localSoapNote && soapStatus === 'finalized' && user?.uid && (

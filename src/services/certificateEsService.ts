@@ -1,0 +1,47 @@
+import { analyzeWithVertexProxy } from './vertex-ai-service-firebase';
+import type { CertificateEsData } from '@/types/certificate.es';
+
+function extractGeneratedText(responseData: unknown): string {
+  const rawResponse = responseData as Record<string, unknown> | null;
+  const textValue = typeof rawResponse?.text === 'string' ? rawResponse.text : null;
+  const directString = typeof responseData === 'string' ? responseData : null;
+  const candidates = rawResponse?.candidates as Array<Record<string, unknown>> | undefined;
+  const firstCandidate = candidates?.[0];
+  const firstContent = firstCandidate?.content as Record<string, unknown> | undefined;
+  const parts = firstContent?.parts as Array<Record<string, unknown>> | undefined;
+  const firstPart = parts?.[0];
+  const partText = typeof firstPart?.text === 'string' ? firstPart.text : null;
+  const resolvedText = textValue || directString || partText || '';
+  const trimmedText = resolvedText.trim();
+
+  return trimmedText;
+}
+
+export async function generateCertificateBodyEs(
+  data: CertificateEsData,
+  soapAssessment: string,
+): Promise<string> {
+  const prompt = `Eres un asistente clínico para fisioterapeutas en España.
+Genera el cuerpo de un certificado clínico en español formal.
+Tono: directo, causa-efecto. NO uses lenguaje legal ni notarial.
+Máximo 120 palabras.
+Estructura: 1 párrafo contexto clínico + 1 párrafo indicaciones/restricciones.
+No inventes datos no presentes en el SOAP.
+
+TIPO: ${data.tipo}
+INSTITUCIÓN DESTINATARIA: ${data.institucionDestinataria}
+DETALLES ESPECÍFICOS: ${data.detallesEspecificos}
+VALORACIÓN CLÍNICA (SOAP): ${soapAssessment}`;
+  const traceId = `certificate-es|${data.tipo}|${Date.now()}`;
+  const response = await analyzeWithVertexProxy({
+    action: 'analyze',
+    prompt,
+    traceId,
+    market: 'ES',
+  });
+  const generatedText = extractGeneratedText(response);
+  const fallbackText = 'No se pudo generar el borrador del certificado.';
+  const resolvedText = generatedText || fallbackText;
+
+  return resolvedText;
+}
