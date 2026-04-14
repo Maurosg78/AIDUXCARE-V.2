@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, Users, Plus, Info, LogOut, ArrowLeft } from "lucide-react";
+import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, Users, Plus, Info, LogOut, ArrowLeft, FileText } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
 import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
@@ -24,7 +23,6 @@ import { getClinicalState } from "../services/clinicalStateService";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
 import { AnalyticsService } from "../services/analyticsService";
-import type { ValueMetricsEvent } from "../services/analyticsService";
 import { checkConsentViaServer } from "../services/consentServerService";
 import {
   getConsentLanguageForJurisdiction,
@@ -32,6 +30,7 @@ import {
   VerbalConsentService,
 } from "../services/verbalConsentService";
 import { SMSService } from "../services/smsService";
+import { PatientConsentService } from "../services/patientConsentService";
 import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { isSpainPilot } from "@/core/pilotDetection";
@@ -39,7 +38,7 @@ import { ConsentVerificationService } from "../services/consentVerificationServi
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, useLocation, Link, Navigate } from "react-router-dom";
 import treatmentPlanService from "../services/treatmentPlanService";
-import PersistenceService from "../services/PersistenceService";
+import PersistenceService, { type SavedNote } from "../services/PersistenceService";
 import { encountersRepo } from "../repositories/encountersRepo";
 import { FeedbackWidget } from "../components/feedback/FeedbackWidget";
 import { FeedbackService } from "../services/feedbackService";
@@ -69,7 +68,7 @@ import { getTimeBasedGreeting } from "@/utils/timeGreeting";
 import { getSessionOrdinalLabel } from "@/utils/sessionOrdinalLabel";
 import { AudioWaveform } from "../components/AudioWaveform";
 import SessionComparison from "../components/SessionComparison";
-import { SessionComparisonService } from "../services/sessionComparisonService";
+import { SessionComparisonService, type Session } from "../services/sessionComparisonService";
 import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
 import { FollowUpClinicalContextService, type FollowUpClinicalContext } from "../services/followUpClinicalContextService";
 import { getAuth, signOut } from "firebase/auth";
@@ -128,6 +127,10 @@ import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
+import {
+  buildSoapReviewMetadata,
+  buildValueMetricsEvent,
+} from "@/features/workflow/finalization/finalizationAnalytics";
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -176,6 +179,12 @@ const isValidResult = (value: any): value is EvaluationResult =>
 
 const sanitizeSource = (value: any): EvaluationTestEntry["source"] =>
   value === "ai" || value === "custom" ? value : "manual";
+
+const isLibraryTestDefinition = (
+  value: MskTestDefinition | PhysicalTest | null | undefined
+): value is MskTestDefinition => {
+  return Boolean(value && 'normalTemplate' in value);
+};
 
 const sanitizeEvaluationEntry = (
   entry: Partial<EvaluationTestEntry> & { id: string; name: string }
@@ -483,8 +492,14 @@ const ProfessionalWorkflowPage = () => {
   const userForPersistRef = useRef<{ uid: string } | null>(null);
   const lastFirestoreTranscriptRef = useRef<string>('');
   const lastFirestoreTranscriptSessionIdRef = useRef<string | null>(null);
-  const currentClientBuildId = __AIDUX_BUILD_ID__;
-  const currentClientAppVersion = __AIDUX_APP_VERSION__;
+  const currentClientBuildId =
+    typeof __AIDUX_BUILD_ID__ !== 'undefined'
+      ? __AIDUX_BUILD_ID__
+      : 'dev-build';
+  const currentClientAppVersion =
+    typeof __AIDUX_APP_VERSION__ !== 'undefined'
+      ? __AIDUX_APP_VERSION__
+      : 'dev-version';
   sessionIdRef.current = sessionId;
   patientIdForPersistRef.current = patientIdFromUrl ?? null;
   userForPersistRef.current = user ? { uid: user.uid } : null;
@@ -569,10 +584,16 @@ const ProfessionalWorkflowPage = () => {
       setDeploymentVersionMismatch(null);
       return;
     }
+    if (import.meta.env.MODE === 'test') {
+      setDeploymentVersionMismatch(null);
+      return;
+    }
     let cancelled = false;
     const detectServedBuildVersion = async () => {
       try {
-        const response = await fetch(`/index.html?aidux-build-check=${Date.now()}`, {
+        const requestOrigin = window.location.origin || 'http://localhost';
+        const requestUrl = new URL(`/index.html?aidux-build-check=${Date.now()}`, requestOrigin);
+        const response = await fetch(requestUrl.toString(), {
           cache: 'no-store',
           credentials: 'same-origin',
         });
@@ -617,6 +638,89 @@ const ProfessionalWorkflowPage = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [deploymentVersionMismatch, hasActiveWorkflowDraft]);
+
+  const hydrateResumeFromNote = useCallback(
+    async (
+      note: SavedNote,
+      requestedSessionId: string,
+      source: 'missing-session' | 'session-load-error'
+    ): Promise<void> => {
+      const noteSoapData = note.soapData;
+      const hydratedSoapNote = {
+        subjective: noteSoapData.subjective ?? '',
+        objective: noteSoapData.objective ?? '',
+        assessment: noteSoapData.assessment ?? '',
+        plan: noteSoapData.plan ?? '',
+      } as SOAPNote;
+      const noteHasExplicitFinalizedStatus =
+        (note.soapData as { status?: string })?.status === 'finalized';
+      const resolvedNoteStatus = noteHasExplicitFinalizedStatus ? 'finalized' : 'draft';
+      const sessionOwnerId = user?.uid ?? null;
+      const sessionPatientId = patientIdFromUrl ?? note.patientId;
+      const sessionPatientName =
+        currentPatient?.fullName ||
+        `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+        demoPatient.name;
+      const canCreateRecoverySession =
+        sessionOwnerId != null &&
+        sessionPatientId != null &&
+        sessionPatientId.trim() !== '';
+      let resolvedSessionId = note.sessionId;
+
+      if (canCreateRecoverySession) {
+        const recoveryAnchorMs = Date.now();
+        const recoverySessionId = `${sessionOwnerId}-${recoveryAnchorMs}`;
+        const recoverySessionPayload = {
+          userId: sessionOwnerId,
+          patientName: sessionPatientName,
+          patientId: sessionPatientId,
+          transcript: '',
+          soapNote: hydratedSoapNote,
+          physicalTests: [],
+          status: resolvedNoteStatus === 'finalized' ? 'completed' as const : 'draft' as const,
+          soapStatus: resolvedNoteStatus,
+          sessionType: currentSessionType,
+          clientBuildId: currentClientBuildId,
+          clientAppVersion: currentClientAppVersion,
+        };
+        const createdRecoverySessionId = await sessionService.createSessionWithId(
+          recoverySessionId,
+          recoverySessionPayload
+        );
+        resolvedSessionId = createdRecoverySessionId;
+      }
+
+      logger.info('[WO-IA-RESUME-01] hydrated from note fallback', {
+        noteId: note.id,
+        requestedSessionId,
+        resolvedSessionId,
+        source,
+      });
+      sessionIdRef.current = resolvedSessionId;
+      sessionIdForTranscriptRef.current = resolvedSessionId;
+      setSessionId(resolvedSessionId);
+      setLocalSoapNote(hydratedSoapNote);
+      setSoapStatus(resolvedNoteStatus as SOAPStatus);
+      if (hasUndecidedFollowUpRedFlags()) {
+        console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
+        return;
+      }
+      setActiveTab('soap');
+      setAnalysisError(null);
+      setResumeLoadFailed(null);
+    },
+    [
+      currentClientAppVersion,
+      currentClientBuildId,
+      currentPatient?.firstName,
+      currentPatient?.fullName,
+      currentPatient?.lastName,
+      currentSessionType,
+      demoPatient.name,
+      patientIdFromUrl,
+      user?.uid,
+    ]
+  );
 
   // ✅ WO-04: Recording events tracking
   const recordingStartTimeRef = useRef<number | null>(null);
@@ -1446,7 +1550,7 @@ const ProfessionalWorkflowPage = () => {
       soapNote: localSoapNote,
       physicalTests: evaluationTests,
       timestamp: new Date(),
-      status: soapStatus === 'completed' ? 'completed' : 'draft',
+      status: soapStatus === 'finalized' ? 'completed' : 'draft',
       transcriptionMeta: transcriptMeta ? {
         lang: transcriptMeta.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : null),
         languagePreference: languagePreference,
@@ -1481,7 +1585,7 @@ const ProfessionalWorkflowPage = () => {
   useEffect(() => {
     if (!user?.uid || !patientIdFromUrl) return;
     if (autoSaveRestoreAttempted) return;
-    if (soapStatus === 'completed') return;
+    if (soapStatus === 'finalized') return;
     if (sessionTypeFromUrl !== 'followup') return;
 
     let cancelled = false;
@@ -1760,25 +1864,7 @@ const ProfessionalWorkflowPage = () => {
         if (cancelled) return;
         const note = notes.find((n) => n.sessionId === sessionIdFromUrl) ?? notes[0];
         if (note?.soapData) {
-          logger.info('[WO-IA-RESUME-01] hydrated from note (session not in sessions collection)', { noteId: note.id, sessionId: sessionIdFromUrl });
-          setSessionId(note.sessionId);
-          setLocalSoapNote({
-            subjective: note.soapData.subjective ?? '',
-            objective: note.soapData.objective ?? '',
-            assessment: note.soapData.assessment ?? '',
-            plan: note.soapData.plan ?? '',
-          } as SOAPNote);
-          const noteIsExplicitlyFinalized =
-            (note.soapData as { status?: string })?.status === 'finalized';
-          const resolvedNoteStatus = noteIsExplicitlyFinalized ? 'finalized' : 'draft';
-          setSoapStatus(resolvedNoteStatus as SOAPStatus);
-          if (hasUndecidedFollowUpRedFlags()) {
-            console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
-            return;
-          }
-          setActiveTab('soap');
-          setAnalysisError(null);
-          setResumeLoadFailed(null);
+          await hydrateResumeFromNote(note, sessionIdFromUrl, 'missing-session');
           return;
         }
         setAnalysisError('Session not found or could not be loaded. The data may be saved as a note — use the links below.');
@@ -1790,25 +1876,7 @@ const ProfessionalWorkflowPage = () => {
           if (cancelled) return;
           const note = notes.find((n) => n.sessionId === sessionIdFromUrl) ?? notes[0];
           if (note?.soapData) {
-            logger.info('[WO-IA-RESUME-01] hydrated from note after session load error', { noteId: note.id, sessionId: sessionIdFromUrl });
-            setSessionId(note.sessionId);
-            setLocalSoapNote({
-              subjective: note.soapData.subjective ?? '',
-              objective: note.soapData.objective ?? '',
-              assessment: note.soapData.assessment ?? '',
-              plan: note.soapData.plan ?? '',
-            } as SOAPNote);
-            const noteIsExplicitlyFinalized =
-              (note.soapData as { status?: string })?.status === 'finalized';
-            const resolvedNoteStatus = noteIsExplicitlyFinalized ? 'finalized' : 'draft';
-            setSoapStatus(resolvedNoteStatus as SOAPStatus);
-            if (hasUndecidedFollowUpRedFlags()) {
-              console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
-              return;
-            }
-            setActiveTab('soap');
-            setAnalysisError(null);
-            setResumeLoadFailed(null);
+            await hydrateResumeFromNote(note, sessionIdFromUrl, 'session-load-error');
             return;
           }
         } catch (_) {
@@ -1820,7 +1888,7 @@ const ProfessionalWorkflowPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [resumeFromUrl, sessionIdFromUrl, visitType, patientIdFromUrl]);
+  }, [hydrateResumeFromNote, patientIdFromUrl, resumeFromUrl, sessionIdFromUrl, visitType]);
 
   // ✅ WORKFLOW PERSISTENCE: Auto-save workflow state to localStorage
   // Use refs to track previous values and only save when there are actual changes
@@ -1935,6 +2003,10 @@ const ProfessionalWorkflowPage = () => {
           transcript: transcriptBody,
           transcriptAutoSavedAt: autosaveIsoTime,
           patientId: payloadPatientKey,
+          patientName:
+            currentPatient?.fullName ||
+            `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+            demoPatient.name,
           userId: practitionerUid,
           status: 'recording_in_progress' as const,
           sessionType: payloadSessionKind,
@@ -2083,7 +2155,10 @@ const ProfessionalWorkflowPage = () => {
         const sharedTestIds = new Set(sanitized.map(t => t.id));
         const hasNewTests = sanitized.some(t => !currentTestIds.has(t.id));
         const isInitialLoad = currentTests.length === 0;
-        const currentTestsHaveResults = currentTests.some(t => t.result && t.result !== '' && t.notes !== '');
+        const currentTestsHaveResults = currentTests.some((testEntry) => {
+          const hasResult = testEntry.result !== 'normal' || testEntry.notes.trim() !== '';
+          return hasResult;
+        });
         if (!hasNewTests && !isInitialLoad) {
           console.log(`[PHASE2] No new tests in sharedState and not initial load, preserving current ${currentTests.length} tests`);
           return currentTests;
@@ -2201,6 +2276,38 @@ const ProfessionalWorkflowPage = () => {
             lastName: demoPatient.name.split(' ').slice(1).join(' ') || '',
             email: demoPatient.email,
             phone: demoPatient.phone,
+            dateOfBirth: '',
+            gender: 'other',
+            idNumber: '',
+            medicalHistory: '',
+            allergies: '',
+            medications: '',
+            previousInjuries: '',
+            referringPhysician: '',
+            referringCenter: '',
+            referralDate: '',
+            referralReason: '',
+            insuranceProvider: '',
+            insurancePolicy: '',
+            insuranceGroup: '',
+            copayAmount: 0,
+            deductibleAmount: 0,
+            emergencyContact: { name: '', relationship: '', phone: '', email: '' },
+            occupation: '',
+            workplace: '',
+            workPhone: '',
+            workEmail: '',
+            billingAddress: { street: '', city: '', state: '', zipCode: '', country: '' },
+            preferredContactMethod: 'email',
+            preferredAppointmentTime: 'morning',
+            notes: '',
+            source: 'direct',
+            marketingChannel: 'direct',
+            initialConsultationType: 'assessment',
+            status: 'active',
+            lastVisit: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
         }
 
@@ -2246,7 +2353,7 @@ const ProfessionalWorkflowPage = () => {
         // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Include declined status
         setWorkflowConsentStatus({
           hasValidConsent: consentResult.hasValidConsent,
-          isDeclined: consentResult.isDeclined === true,
+          isDeclined: Boolean(consentResult.isDeclined),
           status: consentResult.status || null,
           consentMethod: consentResult.consentMethod || null,
           declineReasons: consentResult.declineReasons || undefined
@@ -2258,7 +2365,7 @@ const ProfessionalWorkflowPage = () => {
         }
 
         setPatientHasConsent(hasConsent);
-        setConsentStatus(consentResult.status);
+        setConsentStatus(consentResult.status ?? null);
 
         // ✅ WO-CONSENT-01: DO NOT send SMS automatically
         // The physiotherapist must explicitly click "Send Consent via SMS" button
@@ -2470,7 +2577,7 @@ const ProfessionalWorkflowPage = () => {
           // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted (irreversible)
           consentGrantedRef.current = true;
           setPatientHasConsent(true);
-          setConsentStatus(consentResult.status);
+          setConsentStatus(consentResult.status ?? null);
           setConsentPending(false);
           setSmsError(null);
           console.log('[WORKFLOW] ✅ Consent granted! UI updated. Stopping polling permanently.');
@@ -2486,7 +2593,7 @@ const ProfessionalWorkflowPage = () => {
           // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Only update if not already granted
           if (!consentGrantedRef.current) {
             setPatientHasConsent(false);
-            setConsentStatus(consentResult.status);
+            setConsentStatus(consentResult.status ?? null);
           }
         }
       } catch (error) {
@@ -2876,7 +2983,10 @@ const ProfessionalWorkflowPage = () => {
     // WO-FOLLOWUP-SOAP-03: Follow-up generates SOAP via generateFollowUpAnalysis (Fase C: documentation + considerations),
     // not via useNiagaraProcessor. Skip overwrite when visitType is follow-up.
     if (soapNote && visitType !== 'follow-up') {
-      setLocalSoapNote(soapNote);
+      const derivedSoapNote = deriveSOAPDataFromRawText(soapNote);
+      if (derivedSoapNote) {
+        setLocalSoapNote(derivedSoapNote);
+      }
     }
   }, [soapNote, visitType]);
 
@@ -2954,7 +3064,13 @@ const ProfessionalWorkflowPage = () => {
     setDismissedSuggestionKeys([]);
   }, [niagaraResults?.evaluaciones_fisicas_sugeridas]);
 
-  const aiSuggestions = useMemo(() => {
+  const aiSuggestions = useMemo<Array<{
+    key: number;
+    originalIndex: number;
+    rawName: string;
+    displayName: string;
+    match: MskTestDefinition | null;
+  }>>(() => {
     // ✅ CRITICAL FIX 3: Skip physical tests for follow-up visits
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
@@ -2977,7 +3093,10 @@ const ProfessionalWorkflowPage = () => {
             originalIndex, // Store original index
             rawName: trimmed,
             displayName: trimmed,
-            match: matchTestName(trimmed, detectedCaseRegion), // ✅ FIX: Pass detectedCaseRegion for region filtering
+            match: (() => {
+              const libraryMatch = matchTestName(trimmed, detectedCaseRegion);
+              return isLibraryTestDefinition(libraryMatch) ? libraryMatch : null;
+            })(),
           };
         }
         const name = test.test || test.name || `Suggested test ${originalIndex + 1}`;
@@ -2988,7 +3107,10 @@ const ProfessionalWorkflowPage = () => {
           originalIndex, // Store original index
           rawName: name,
           displayName: description ? `${name} — ${description}` : name,
-          match: matchTestName(name, detectedCaseRegion), // ✅ FIX: Pass detectedCaseRegion for region filtering
+          match: (() => {
+            const libraryMatch = matchTestName(name, detectedCaseRegion);
+            return isLibraryTestDefinition(libraryMatch) ? libraryMatch : null;
+          })(),
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null); // Filter nulls but keep original indices
@@ -3050,8 +3172,8 @@ const ProfessionalWorkflowPage = () => {
             specificity: libraryMatch?.specificity ? Number(libraryMatch.specificity) : undefined,
             sensitivityQualitative: (libraryMatch as any)?.sensitivityQualitative || undefined,
             specificityQualitative: (libraryMatch as any)?.specificityQualitative || undefined,
-            evidence_level: (libraryMatch as any)?.evidence_level || test.evidence_level || test.evidencia,
-            evidencia: test.evidencia || test.evidence_level || (libraryMatch as any)?.evidence_level,
+            evidence_level: (libraryMatch as any)?.evidence_level,
+            evidencia: (libraryMatch as any)?.evidence_level,
             indication: "",
             justification: "",
             libraryMatch: libraryMatch // Store match for reference
@@ -3237,7 +3359,7 @@ const ProfessionalWorkflowPage = () => {
   );
 
   const completedCount = useMemo(
-    () => filteredEvaluationTests.filter((entry) => entry.result && entry.result !== "").length, // ✅ P1.1: Use filtered tests
+    () => filteredEvaluationTests.filter((entry) => entry.notes.trim() !== '' || entry.result !== 'normal').length,
     [filteredEvaluationTests]
   );
 
@@ -3286,7 +3408,7 @@ const ProfessionalWorkflowPage = () => {
         lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : undefined),
         mode,
         timestamp: Date.now(),
-        visitType: visitType === 'follow-up' ? 'follow-up' : 'initial', // Pass visit type for follow-up specific prompts
+        visitType: 'initial' as const,
         attachments: promptAttachments && promptAttachments.length > 0 ? promptAttachments : undefined
       };
       await processText({
@@ -4045,6 +4167,9 @@ const ProfessionalWorkflowPage = () => {
 
       // Step 1: Organize unified data from Tab 1 and Tab 2
       const analysisSource = editedAnalysisResults ?? niagaraResults;
+      const localizedLibrary = MSK_TEST_LIBRARY.filter((definition): definition is MskTestDefinition => {
+        return 'normalTemplate' in definition;
+      });
       const unifiedData: UnifiedClinicalData = {
         tab1: {
           transcript: transcript || '',
@@ -4053,7 +4178,7 @@ const ProfessionalWorkflowPage = () => {
         },
         tab2: {
           evaluationTests: filteredEvaluationTests, // ✅ P1.1: Use filtered tests (only matching region)
-          library: MSK_TEST_LIBRARY,
+          library: localizedLibrary,
         },
         visit: {
           type: visitType,
@@ -4113,7 +4238,10 @@ const ProfessionalWorkflowPage = () => {
 
       // Step 4: Generate SOAP using organized context
       // ✅ WORKFLOW OPTIMIZATION: Pass analysisLevel from workflowRoute
-      const analysisLevel = workflowRoute?.analysisLevel || 'full';
+      const analysisLevel =
+        workflowRoute?.analysisLevel === 'follow-up'
+          ? 'optimized'
+          : workflowRoute?.analysisLevel || 'full';
 
       // Track SOAP generation started
       await trackSOAPGenerationStarted({
@@ -4195,7 +4323,7 @@ const ProfessionalWorkflowPage = () => {
 
         // Si el error es por falta de tokens, mostrar mensaje al usuario
         if (tokenError.message?.includes('insufficient') || tokenError.message?.includes('not enough')) {
-          setError('Insufficient tokens to generate SOAP. Please purchase more tokens or contact support.');
+          setAnalysisError('Insufficient tokens to generate SOAP. Please purchase more tokens or contact support.');
         }
         // No marcar como cobrado si falló
       }
@@ -4241,8 +4369,9 @@ const ProfessionalWorkflowPage = () => {
       setActiveTab("soap");
 
       // Step 5: Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
+      const sessionOwnerId = user?.uid || TEMP_USER_ID;
       const sessionPayload = {
-        userId: TEMP_USER_ID,
+        userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
@@ -4269,11 +4398,11 @@ const ProfessionalWorkflowPage = () => {
       } else {
         const reservedWorkflowId = workflowReservedSessionIdRef.current;
         const soapAnchorMs = sessionStartTime.getTime();
-        const soapUid = user?.uid || TEMP_USER_ID;
+        const soapUid = sessionOwnerId;
         const soapFallbackId = `${soapUid}-${soapAnchorMs}`;
         const proposedSoapSessionId = reservedWorkflowId ?? soapFallbackId;
         const soapPatientKey = patientIdFromUrl || demoPatient.id;
-        const soapLookupUser = TEMP_USER_ID;
+        const soapLookupUser = sessionOwnerId;
         const soapSessionKind = currentSessionType;
         const soapReferenceDate = new Date();
         const soapReuseId = await sessionService.findReusableSessionForDayAndType(
@@ -4290,7 +4419,7 @@ const ProfessionalWorkflowPage = () => {
         });
         setSessionId(soapActualId);
         await trackSessionStarted({
-          userId: TEMP_USER_ID,
+          userId: sessionOwnerId,
           patientId: patientIdFromUrl || demoPatient.id,
           sessionType: currentSessionType,
         });
@@ -4467,7 +4596,7 @@ const ProfessionalWorkflowPage = () => {
         setFollowUpAlerts({ ...alerts, red_flags: safeAlerts.red_flags } as any);
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', {
           redFlagCount: safeAlerts.red_flags.length,
-          yellowFlagCount: safeAlerts.yellow_flags?.length || 0,
+          yellowFlagCount: Array.isArray((alerts as any)?.yellow_flags) ? (alerts as any).yellow_flags.length : 0,
         });
         // Do NOT setActiveTab('analysis') here — see useEffect below so AnalysisTab mounts with followUpAlerts already in state
       } else {
@@ -4578,7 +4707,14 @@ const ProfessionalWorkflowPage = () => {
   ) => {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown finalization error';
-    const payload = {
+    const payload: {
+      writeState: FinalizationWriteState;
+      lastCommitStep: string;
+      lastCommitError: string;
+      finalizationOperationId: string;
+      clientBuildId: string;
+      clientAppVersion: string;
+    } & Record<string, unknown> = {
       writeState: 'commit_failed',
       lastCommitStep: step,
       lastCommitError: errorMessage,
@@ -4597,52 +4733,30 @@ const ProfessionalWorkflowPage = () => {
   // Calculate and track value metrics when SOAP is finalized
   const calculateAndTrackValueMetrics = useCallback(async (finalizedAt: Date) => {
     try {
-      // Calculate times (in minutes)
-
-
-      const transcriptionTime =
-        transcriptionStartTime && transcriptionEndTime
-          ? (transcriptionEndTime.getTime() - transcriptionStartTime.getTime()) / 1000 / 60
-          : undefined;
-
-      const aiGenerationTime =
-        soapGenerationStartTime && soapGenerationEndTime
-          ? (soapGenerationEndTime.getTime() - soapGenerationStartTime.getTime()) / 1000 / 60
-          : undefined;
-
-      const totalDocumentationTime =
-        (new Date().getTime() - sessionStartTime.getTime()) / 1000 / 60;
-
-      const rawManualEditingTime =
-        totalDocumentationTime -
-        (aiGenerationTime || 0) -
-        (transcriptionTime || 0);
-
-      const manualEditingTime =
-        rawManualEditingTime > 0 ? rawManualEditingTime : 0;
-      const metrics = {
-        transcriptionTime,
-        aiGenerationTime,
-        manualEditingTime,
-        featuresUsed,
-        quality: {
-          soapSectionsCompleted,
-          suggestionsOffered,
-          suggestionsAccepted,
-          suggestionsRejected,
-          editsMadeToSOAP,
-        },
-        sessionType: visitType,
-        region: undefined, // TODO: Extract from patient data or session metadata
-        // ✅ CRITICAL: NO transcript content, NO SOAP content, NO PHI
-        // Only metadata (counts, booleans, timestamps) are sent
-      };
+      const activeUserId = user?.uid || TEMP_USER_ID;
+      const activeSessionId = getActiveWorkflowSessionId();
+      const metrics = buildValueMetricsEvent({
+        filteredEvaluationTestsCount: filteredEvaluationTests.length,
+        finalizedAt,
+        localSoapNote,
+        region: undefined,
+        sessionId: activeSessionId,
+        sessionStartTime,
+        soapGenerationEndTime,
+        soapGenerationStartTime,
+        transcriptionEndTime,
+        transcriptionStartTime,
+        transcript: transcript || "",
+        userId: activeUserId,
+        visitType,
+        wasClinicalAnalysisGenerated: Boolean(sharedState.analysisResults),
+      });
 
       // Track metrics
       await AnalyticsService.trackValueMetrics(metrics);
       console.log('[VALUE METRICS] Metrics tracked successfully:', {
-        totalTime: totalDocumentationTime,
-        featuresUsed: Object.values(featuresUsed).filter(Boolean).length,
+        totalTime: metrics.calculatedTimes.totalDocumentationTime,
+        featuresUsed: Object.values(metrics.featuresUsed).filter(Boolean).length,
       });
     } catch (error) {
       console.error('❌ [VALUE METRICS] Error tracking value metrics:', error);
@@ -4653,9 +4767,11 @@ const ProfessionalWorkflowPage = () => {
     transcriptionStartTime,
     transcriptionEndTime,
     soapGenerationStartTime,
+    soapGenerationEndTime,
+    user?.uid,
     transcript,
     filteredEvaluationTests,
-    sharedState.clinicalAnalysis,
+    sharedState.analysisResults,
     localSoapNote,
     visitType,
   ]);
@@ -4671,11 +4787,14 @@ const ProfessionalWorkflowPage = () => {
 
       // Si requiere review y fue reviewado, agregar metadata de review
       if (soap.requiresReview && soap.isReviewed && !soap.reviewed) {
-        soap.reviewed = {
-          reviewedBy: TEMP_USER_ID,
-          reviewedAt: new Date(),
-          reviewerName: 'Current User', // TODO: Get from auth
-        };
+        const reviewerId = user?.uid || TEMP_USER_ID;
+        const reviewerName = clinicianDisplayName || 'Unknown clinician';
+        const reviewedAt = new Date();
+        soap.reviewed = buildSoapReviewMetadata(
+          reviewerId,
+          reviewerName,
+          reviewedAt
+        );
       }
     }
 
@@ -4719,15 +4838,20 @@ const ProfessionalWorkflowPage = () => {
 
     // Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
     try {
+      const sessionOwnerId = user?.uid || TEMP_USER_ID;
+      const persistedSessionStatus: 'completed' | 'draft' =
+        status === 'finalized' ? 'completed' : 'draft';
+      const persistedSoapStatus: 'finalized' | 'draft' =
+        status === 'finalized' ? 'finalized' : 'draft';
       const savePayload = {
-        userId: TEMP_USER_ID,
+        userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
         soapNote: cleanedSoap,
         physicalTests: physicalExamResults || [],
-        status: status === 'finalized' ? 'completed' : 'draft',
-        soapStatus: status === 'finalized' ? 'finalized' : 'draft',
+        status: persistedSessionStatus,
+        soapStatus: persistedSoapStatus,
         sessionType: currentSessionType,
         transcriptionMeta: finalTranscriptionMeta,
         attachments: attachments || [],
@@ -4741,11 +4865,11 @@ const ProfessionalWorkflowPage = () => {
         await sessionService.updateSession(saveUpdateTarget, savePayload);
       } else {
         const saveAnchorMs = sessionStartTime.getTime();
-        const saveUid = user?.uid ?? TEMP_USER_ID;
+        const saveUid = sessionOwnerId;
         const saveFallbackId = `${saveUid}-${saveAnchorMs}`;
         const proposedSaveSessionId = reservedWorkflowId ?? saveFallbackId;
         const savePatientKey = patientIdFromUrl || demoPatient.id;
-        const saveLookupUser = TEMP_USER_ID;
+        const saveLookupUser = sessionOwnerId;
         const saveSessionKind = currentSessionType;
         const saveReferenceDate = new Date();
         const saveReuseId = await sessionService.findReusableSessionForDayAndType(
@@ -4762,7 +4886,7 @@ const ProfessionalWorkflowPage = () => {
         });
         setSessionId(saveActualId);
         await trackSessionStarted({
-          userId: TEMP_USER_ID,
+          userId: sessionOwnerId,
           patientId: patientIdFromUrl || demoPatient.id,
           sessionType: currentSessionType,
         });
@@ -4897,11 +5021,15 @@ const ProfessionalWorkflowPage = () => {
           patientIdFromUrl || demoPatient.id
         );
         if (metrics) {
+          const workflowDurationMs =
+            metrics.endTime && metrics.startTime
+              ? new Date(metrics.endTime).getTime() - new Date(metrics.startTime).getTime()
+              : 0;
           console.log('[WORKFLOW] Workflow session metrics:', {
-            totalDurationMs: metrics.totalDurationMs,
-            tabCount: metrics.tabTransitions.length,
-            errorCount: metrics.errorsEncountered.length,
-            wasCompleted: metrics.completionStatus === 'completed',
+            totalDurationMs: workflowDurationMs,
+            tabCount: 0,
+            errorCount: 0,
+            wasCompleted: Boolean(metrics.endTime),
           });
           // Build WorkflowMetrics from session metrics
           const workflowMetricsData: WorkflowMetrics = {
@@ -5344,7 +5472,8 @@ const ProfessionalWorkflowPage = () => {
           allergies.push(...parsed.split(/[,;]/).map(a => a.trim()).filter(Boolean));
         }
       } else if (Array.isArray(currentPatient.allergies)) {
-        allergies.push(...currentPatient.allergies.filter(Boolean));
+        const allergyList = currentPatient.allergies;
+        allergies.push(...allergyList.filter(Boolean));
       }
     }
 
@@ -5438,6 +5567,7 @@ const ProfessionalWorkflowPage = () => {
     if (showVerbalConsentForDeclined) {
       return (
         <VerbalConsentModal
+          isOpen={showVerbalConsentForDeclined}
           patientId={patientIdFromUrl}
           patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
           physiotherapistId={user.uid}
@@ -6528,8 +6658,8 @@ const ProfessionalWorkflowPage = () => {
                   onTodayFocusChange={setTodayFocus}
                   onFinishSession={undefined}
                   hideHeader={false}
-                  hideTranscriptArea={visitType === 'follow-up'}
-                  followUpHasContent={visitType === 'follow-up' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
+                  hideTranscriptArea={currentSessionType === 'followup'}
+                  followUpHasContent={currentSessionType === 'followup' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
@@ -6577,6 +6707,7 @@ const ProfessionalWorkflowPage = () => {
                   resetCustomForm={resetCustomForm}
                   handleAddCustomTest={handleAddCustomTest}
                   handleLibrarySelect={handleLibrarySelect}
+                  isGeneratingSOAP={isGeneratingSOAP}
                   handleGenerateSoap={handleGenerateSoapFromEvaluation}
                   sessionTypeFromUrl={sessionTypeFromUrl}
                   workflowRoute={workflowRoute}
@@ -6593,7 +6724,7 @@ const ProfessionalWorkflowPage = () => {
                     isGeneratingSOAP={isGeneratingSOAP}
                     patientId={patientId}
                     sessionId={sessionId}
-                    handleGenerateSoap={visitType === 'follow-up' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
+                    handleGenerateSoap={currentSessionType === 'followup' ? handleGenerateSOAPFollowUp : handleGenerateSoap}
                     handleSaveSOAP={handleSaveSOAP}
                     handleRegenerateSOAP={handleRegenerateSOAP}
                     handleFinalizeSOAP={handleFinalizeSOAP}
