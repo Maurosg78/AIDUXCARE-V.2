@@ -86,28 +86,29 @@ function downloadCertificatePdf(data: CertificateEsData): void {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const usableWidth = pageWidth - margin * 2;
   const headerTitle = 'CERTIFICADO CLÍNICO';
-  const issuerLabel = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Emisión particular';
-  const bodyLines = pdf.splitTextToSize(data.borrador || '', usableWidth);
+  const clinicLine = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Consulta particular';
+  const bodyText = (data.borrador || '').replace(/^["«»""]|["«»""]$/g, '').trim();
+  const bodyLines = pdf.splitTextToSize(bodyText, usableWidth);
   let y = 22;
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(16);
   pdf.text(headerTitle, margin, y);
-  y += 8;
+  y += 7;
 
   pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(11);
+  pdf.text(data.profesional.nombre, margin, y);
+  y += 6;
+
   pdf.setFontSize(10);
-  pdf.text(`Profesional: ${data.profesional.nombre}`, margin, y);
+  pdf.text(clinicLine, margin, y);
   y += 6;
   pdf.text(`N.º colegiado: ${data.profesional.numeroColegiado || 'No informado'}`, margin, y);
-  y += 6;
-  pdf.text(`Especialidad: ${data.profesional.especialidad || 'Fisioterapia'}`, margin, y);
   y += 6;
   pdf.text(`Fecha de emisión: ${data.fechaEmision}`, margin, y);
   y += 6;
   pdf.text(`Institución destinataria: ${data.institucionDestinataria || 'No especificada'}`, margin, y);
-  y += 6;
-  pdf.text(`Emisor: ${issuerLabel}`, margin, y);
   y += 10;
 
   pdf.setFont('helvetica', 'bold');
@@ -115,21 +116,29 @@ function downloadCertificatePdf(data: CertificateEsData): void {
   y += 8;
 
   pdf.setFont('helvetica', 'normal');
-  pdf.text(bodyLines, margin, y);
+  pdf.text(bodyLines, margin, y, { align: 'justify', maxWidth: usableWidth });
   y += bodyLines.length * 5 + 18;
 
-  if (y > 250) {
+  if (y > 245) {
     pdf.addPage();
     y = 30;
   }
 
+  pdf.text(data.profesional.nombre, margin, y);
+  y += 6;
   pdf.line(margin, y, margin + 70, y);
   y += 6;
   pdf.text('Firma', margin, y);
-  y += 12;
-  pdf.line(margin, y, margin + 70, y);
-  y += 6;
-  pdf.text('Sello', margin, y);
+
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const disclaimerY = pageHeight - 18;
+  const disclaimerText =
+    'Este certificado ha sido emitido a petición del interesado con fines informativos. No sustituye el diagnóstico médico\n' +
+    'ni constituye baja laboral. El profesional firmante no asume responsabilidad por el uso indebido de este documento.';
+  const disclaimerLines = pdf.splitTextToSize(disclaimerText, usableWidth);
+
+  pdf.setFontSize(8);
+  pdf.text(disclaimerLines, margin, disclaimerY);
 
   const filename = buildFilename(data);
   pdf.save(filename);
@@ -189,7 +198,6 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
       const trimmedDraft = draft.trim();
 
       updateField('borrador', trimmedDraft);
-      setStep(4);
     } catch (generationError) {
       const message = generationError instanceof Error ? generationError.message : 'No se pudo generar el borrador.';
 
