@@ -111,12 +111,8 @@ function downloadCertificatePdf(data: CertificateEsData): void {
   pdf.text(`Institución destinataria: ${data.institucionDestinataria || 'No especificada'}`, margin, y);
   y += 10;
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('Cuerpo del certificado', margin, y);
-  y += 8;
-
   pdf.setFont('helvetica', 'normal');
-  pdf.text(bodyLines, margin, y, { align: 'justify', maxWidth: usableWidth });
+  pdf.text(bodyLines, margin, y);
   y += bodyLines.length * 5 + 18;
 
   if (y > 245) {
