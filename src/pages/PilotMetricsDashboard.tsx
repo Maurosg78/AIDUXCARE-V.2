@@ -8,9 +8,10 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { db } from '@/lib/firebase';
 import { isSpainPilot } from '@/core/pilotDetection';
+import { useAuth } from '@/hooks/useAuth';
 
 type GrowthMetricRow = {
   id: string;
@@ -139,11 +140,41 @@ function severityBadgeClasses(severity: string): string {
 }
 
 export default function PilotMetricsDashboard() {
+  const navigate = useNavigate();
+  const authState = useAuth();
+  const user = authState.user;
+  const authLoading = authState.loading;
   const [growthMetrics, setGrowthMetrics] = useState<GrowthMetricRow[]>([]);
   const [techMetrics, setTechMetrics] = useState<TechMetricRow[]>([]);
   const [feedbackItems, setFeedbackItems] = useState<FeedbackRow[]>([]);
   const [sessionEvents, setSessionEvents] = useState<SessionEventRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
+  useEffect(() => {
+    const isAuthResolved = !authLoading;
+    const isAnonymous = !user;
+
+    if (!isAuthResolved) {
+      return;
+    }
+
+    if (!isAnonymous) {
+      return;
+    }
+
+    const loginPath = '/login';
+    navigate(loginPath);
+  }, [authLoading, navigate, user]);
+
+  if (authLoading) {
+    const loadingClassName = 'mx-auto max-w-7xl px-6 py-10 text-slate-600';
+    const loadingLabel = 'Cargando acceso…';
+    return <div className={loadingClassName}>{loadingLabel}</div>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     async function loadDashboard() {
@@ -262,7 +293,7 @@ export default function PilotMetricsDashboard() {
       } catch (error) {
         console.error('[PilotMetricsDashboard] Error loading metrics', error);
       } finally {
-        setLoading(false);
+        setDashboardLoading(false);
       }
     }
 
@@ -309,7 +340,7 @@ export default function PilotMetricsDashboard() {
     return <Navigate to="/command-center" replace />;
   }
 
-  if (loading) {
+  if (dashboardLoading) {
     return <div className="mx-auto max-w-7xl px-6 py-10 text-slate-600">Cargando métricas del piloto…</div>;
   }
 
