@@ -6388,8 +6388,8 @@ const ProfessionalWorkflowPage = () => {
                     <p className="text-sm text-slate-700">{followUpPatternInsight.description}</p>
                   </div>
                 )}
-                {/* Fase C: AI Clinical Considerations — not part of the medical record until clinician inserts */}
-                {visitType === 'follow-up' && followUpConsiderations && followUpConsiderations.length > 0 && (
+                {/* Hidden from UI - internal AI scaffolding, not for clinician view */}
+                {false && visitType === 'follow-up' && followUpConsiderations && followUpConsiderations.length > 0 && (
                   <div className="mb-6 rounded-lg border border-slate-200 bg-amber-50/50 p-4">
                     <h3 className="text-sm font-semibold text-slate-700 mb-1">
                       {t('workflow.followupSurface.clinicalConsiderationsTitle')}
