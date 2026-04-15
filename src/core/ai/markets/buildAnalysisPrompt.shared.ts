@@ -267,6 +267,23 @@ const buildAttachmentsSection = (attachments: ClinicalAttachment[] | undefined, 
   return section;
 };
 
+function deduplicateTranscript(rawTranscript: string): string {
+  const sentences = rawTranscript.split(/(?<=[.!?])\s+/);
+  const seen = new Set<string>();
+  const deduplicated: string[] = [];
+
+  for (const sentence of sentences) {
+    const normalized = sentence.trim().toLowerCase().replace(/\s+/g, ' ');
+    const key = normalized.slice(0, 60);
+    if (!seen.has(key) && normalized.length > 10) {
+      seen.add(key);
+      deduplicated.push(sentence.trim());
+    }
+  }
+
+  return deduplicated.join(' ');
+}
+
 export const buildAnalysisPromptDocument = (
   params: AnalysisPromptParams,
   copy: AnalysisPromptCopy
@@ -280,7 +297,8 @@ export const buildAnalysisPromptDocument = (
   const defaultInstructions = visitType === 'follow-up' ? copy.defaultFollowUpInstructions : copy.defaultInitialInstructions;
   const visitTypeContext = visitType === 'follow-up' ? copy.followUpVisitContext : copy.initialVisitContext;
   const effectiveInstructions = (params.instrucciones || defaultInstructions).trim();
-  const transcript = params.transcript.trim();
+  const rawTranscript = params.transcript.trim();
+  const transcript = deduplicateTranscript(rawTranscript);
   const patientContext = validatedPatientContext.trim();
 
   return `
