@@ -36,7 +36,7 @@ export const AddCustomItemButton: React.FC<AddCustomItemButtonProps> = ({
   onAdd,
   placeholder = 'Add a custom item…',
   labelAddButton = 'Add',
-  labelOpenComposer = 'Add custom item',
+  labelOpenComposer = 'Añadir elemento',
   maxLength = 256,
   analyticsCategory = 'CustomItem',
 }) => {

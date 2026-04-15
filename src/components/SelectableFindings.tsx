@@ -72,17 +72,26 @@ export const SelectableFindings: React.FC<SelectableFindingsProps> = ({
     onSelectionChange(Array.from(newSelected));
   };
 
-  const renderCheckbox = (entity: ClinicalEntity) => (
-    <label key={entity.id} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-      <input
-        type="checkbox"
-        checked={localSelectedIds.has(entity.id)}
-        onChange={() => handleToggle(entity.id)}
-        className="mt-1 cursor-pointer"
-      />
-      <span className="text-xs">{entity.text.replace("⚠️", "").replace("��", "").replace("💊", "").replace("📋", "").replace("🟡", "").replace("📅", "").trim()}</span>
-    </label>
-  );
+  const renderCheckbox = (entity: ClinicalEntity) => {
+    const rawText = entity.text;
+    const resolvedText = typeof rawText === 'string'
+      ? rawText
+      : ((rawText as any)?.name || (rawText as any)?.normalized_name || (rawText as any)?.text || JSON.stringify(rawText));
+    const displayText = resolvedText
+      .replace("⚠️", "").replace("��", "").replace("💊", "").replace("📋", "").replace("🟡", "").replace("📅", "").trim();
+
+    return (
+      <label key={entity.id} className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+        <input
+          type="checkbox"
+          checked={localSelectedIds.has(entity.id)}
+          onChange={() => handleToggle(entity.id)}
+          className="mt-1 cursor-pointer"
+        />
+        <span className="text-xs">{displayText}</span>
+      </label>
+    );
+  };
 
   return (
     <div className="space-y-3">

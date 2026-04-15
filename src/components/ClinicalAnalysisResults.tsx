@@ -52,8 +52,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         redFlagMultiple: (count: number) => `${count} red flags selected in the analysis step above.`,
         conversationTitle: 'Conversation Highlights',
         conversationBody: 'Capture chief complaint, key findings, and medication.',
-        selectAll: 'Select all',
-        clear: 'Clear',
+        selectAll: 'Seleccionar todo',
+        clear: 'Limpiar',
         chiefComplaintTitle: 'Chief complaint & key findings',
         addClinicalHighlight: 'Add clinical highlight...',
         currentMedicationTitle: 'Current medication',
@@ -351,7 +351,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                 evidenceParts.push(`Specificity ${Math.round(specificity * 100)}%`);
               }
               if (test.evidencia || test.evidence || test.evidence_level) {
-                evidenceParts.push(`Evidence level: ${String(test.evidencia || test.evidence || test.evidence_level)}`);
+                evidenceParts.push(`Evidencia: ${String(test.evidencia || test.evidence || test.evidence_level)}`);
               }
               if (test.justificacion || test.justification) {
                 evidenceParts.push(test.justificacion || test.justification);
@@ -388,8 +388,8 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               <AlertTriangle className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Biopsychosocial Factors</h3>
-              <p className="text-xs text-slate-500">Track psychosocial, occupational, and protective elements.</p>
+              <h3 className="text-base font-semibold text-slate-900">Factores biopsicosociales</h3>
+              <p className="text-xs text-slate-500">Factores psicosociales, ocupacionales y protectores.</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -397,13 +397,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               onClick={() => handleSelectAll('psychosocial')}
               className="px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-[#e6ddff] to-[#d7ecff] text-slate-700 border border-transparent hover:shadow-sm"
             >
-              Select all
+              Seleccionar todo
             </button>
             <button
               onClick={() => handleSelectNone('psychosocial')}
               className="px-3 py-1 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
             >
-              Clear
+              Limpiar
             </button>
           </div>
         </div>

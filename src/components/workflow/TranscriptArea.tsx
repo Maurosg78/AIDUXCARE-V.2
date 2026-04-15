@@ -392,7 +392,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
       </div>
 
-      {transcriptError && (
+      {transcriptError && !transcript.trim() && (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-apple">
           <p className="font-medium">{UI.transcriptionError}</p>
           <p>{transcriptError}</p>
