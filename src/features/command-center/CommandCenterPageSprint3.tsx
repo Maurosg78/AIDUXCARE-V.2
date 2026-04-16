@@ -227,6 +227,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
     ? pendingPatientsItems.length
     : 0;
   const nextPendingPatientName = pendingPatientsItems[0]?.patientName;
+  const incompleteSessionItems = isSelectedDateToday
+    ? todayQuickList.filter((item) => item.status === 'incomplete')
+    : [];
+  const incompleteSessionsCount = isSelectedDateToday
+    ? incompleteSessionItems.length
+    : 0;
 
   const workQueue: WorkQueueSummary = {
     pendingNotes: pendingNotes.data || 0,
@@ -234,7 +240,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     draftDocuments: 0, // TODO: Implement draft documents
     pendingPatients: pendingPatientsCount,
     nextPendingPatientName,
-    incompleteSessions: inProgressSessions.data.length,
+    incompleteSessions: incompleteSessionsCount,
   };
 
   // withPatientRequired implementation
