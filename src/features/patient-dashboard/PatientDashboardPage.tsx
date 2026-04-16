@@ -671,7 +671,7 @@ export const PatientDashboardPage: React.FC = () => {
           }}
         >
           <div
-            className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
@@ -689,7 +689,7 @@ export const PatientDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="max-h-[75vh] overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-6 py-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label htmlFor="editPatientFirstName" className="mb-2 block text-sm font-medium text-slate-700">
@@ -826,7 +826,7 @@ export const PatientDashboardPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+            <div className="flex-shrink-0 flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setIsEditPatientModalOpen(false)}
