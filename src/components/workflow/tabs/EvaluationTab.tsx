@@ -368,7 +368,7 @@ export interface EvaluationTabProps {
   handleLibrarySelect: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   
   // SOAP generation
-  handleGenerateSoap: () => void | Promise<void>;
+  handleGenerateSoap: () => Promise<void>;
   isGeneratingSOAP: boolean;
   
   // Workflow
