@@ -2033,8 +2033,10 @@ const ProfessionalWorkflowPage = () => {
           const hasReuse = reuseCandidateId != null;
           const createTargetId = hasReuse ? reuseCandidateId : proposedNewDocId;
           const mergeForWrite = hasReuse;
-          await sessionService.createSessionWithId(createTargetId, payload, { merge: mergeForWrite });
-          const nextStateSessionId = createTargetId;
+          const persistedSessionId = await sessionService.createSessionWithId(createTargetId, payload, {
+            merge: mergeForWrite,
+          });
+          const nextStateSessionId = persistedSessionId;
           lastFirestoreTranscriptRef.current = transcriptBody;
           lastFirestoreTranscriptSessionIdRef.current = nextStateSessionId;
           setSessionId(nextStateSessionId);
@@ -5409,10 +5411,11 @@ const ProfessionalWorkflowPage = () => {
     await handleGenerateSoap();
   };
 
-  const handleGenerateSoapFromEvaluation = () => {
+  const handleGenerateSoapFromEvaluation = async (): Promise<void> => {
     const testCount = filteredEvaluationTests.length;
-    void trackEvaluationCompleted({ testCount });
-    void handleGenerateSoap();
+    const trackingPayload = { testCount };
+    await trackEvaluationCompleted(trackingPayload);
+    await handleGenerateSoap();
   };
 
   const copySoapToClipboard = async () => {

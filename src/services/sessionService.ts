@@ -53,6 +53,22 @@ interface SessionData {
 class SessionService {
   private COLLECTION_NAME = 'sessions';
 
+  private getSessionOwnerId(data: Record<string, unknown>): string | null {
+    const userId = data.userId;
+    if (typeof userId === 'string' && userId.trim() !== '') {
+      return userId;
+    }
+    const authorUid = data.authorUid;
+    if (typeof authorUid === 'string' && authorUid.trim() !== '') {
+      return authorUid;
+    }
+    const ownerUid = data.ownerUid;
+    if (typeof ownerUid === 'string' && ownerUid.trim() !== '') {
+      return ownerUid;
+    }
+    return null;
+  }
+
   private localDateKey(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -183,6 +199,29 @@ class SessionService {
         };
         await setDoc(docRef, mergePayload, { merge: true });
         return targetDocId;
+      }
+      const existingDocSnapshot = await getDoc(docRef);
+      const targetDocExists = existingDocSnapshot.exists();
+      if (targetDocExists) {
+        const existingDocData = existingDocSnapshot.data();
+        const existingOwnerId = this.getSessionOwnerId(existingDocData);
+        const requestedOwnerId = cleanedSessionData.userId;
+        const ownerMismatch =
+          typeof requestedOwnerId === 'string' &&
+          requestedOwnerId.trim() !== '' &&
+          existingOwnerId !== null &&
+          existingOwnerId !== requestedOwnerId;
+        if (ownerMismatch) {
+          const sessionsRef = collection(db, this.COLLECTION_NAME);
+          const collisionSafeSession = {
+            ...cleanedSessionData,
+            timestamp: serverTimestamp(),
+            createdAt: serverTimestamp(),
+          };
+          const collisionSafeDocRef = await addDoc(sessionsRef, collisionSafeSession);
+          const collisionSafeDocId = collisionSafeDocRef.id;
+          return collisionSafeDocId;
+        }
       }
       const newSession = {
         ...cleanedSessionData,
