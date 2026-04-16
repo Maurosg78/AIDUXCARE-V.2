@@ -27,6 +27,7 @@ import { SuggestedFocusEditor } from '../SuggestedFocusEditor';
 import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parsePlanToFocus';
 import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from '@/utils/normalizeRedFlagsForDisplay';
 import { trackRedFlagAccepted } from '../../../services/analytics/AnalyticsEvents';
+import type { AsyncState } from '../../../features/command-center/hooks/useUserProfile';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -85,20 +86,13 @@ export interface AnalysisTabProps {
   handleResendConsentSMS: () => Promise<void>;
   
   // Session data
-  lastEncounter: {
-    loading: boolean;
-    error: any;
-    data: any;
-  };
+  lastEncounter: AsyncState<any>;
   isFirstSession: boolean | null;
   formatLastSessionDate: (encounter: any) => string | null;
   
   // Visit and session type
   visitType: VisitType;
-  visitCount: {
-    loading: boolean;
-    data: number | null;
-  };
+  visitCount: AsyncState<number>;
   sessionTypeConfig: {
     label: string;
   };

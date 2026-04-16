@@ -18,6 +18,8 @@ export interface ProfessionalProfile {
   email: string;
   displayName?: string;
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   role?: 'physio' | 'admin' | 'assistant';
   specialty?: string;
   professionalTitle?: string;

@@ -12,6 +12,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { db } from '@/lib/firebase';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 type GrowthMetricRow = {
   id: string;
@@ -144,6 +145,7 @@ export default function PilotMetricsDashboard() {
   const authState = useAuth();
   const user = authState.user;
   const authLoading = authState.loading;
+  const isAdmin = useIsAdmin();
   const [growthMetrics, setGrowthMetrics] = useState<GrowthMetricRow[]>([]);
   const [techMetrics, setTechMetrics] = useState<TechMetricRow[]>([]);
   const [feedbackItems, setFeedbackItems] = useState<FeedbackRow[]>([]);
@@ -174,6 +176,10 @@ export default function PilotMetricsDashboard() {
 
   if (!user) {
     return null;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/command-center" replace />;
   }
 
   useEffect(() => {

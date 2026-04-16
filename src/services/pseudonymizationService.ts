@@ -19,6 +19,22 @@ async function sha256Hash(data: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function getRequiredSalt(...candidates: Array<string | undefined>): string {
+  const salt = candidates.find((candidate) => {
+    return typeof candidate === 'string' && candidate.length > 0;
+  });
+
+  if (!salt) {
+    throw new Error('Analytics pseudonymization salt is not configured');
+  }
+
+  if (salt.length < 32) {
+    throw new Error('Analytics pseudonymization salt must be at least 32 characters');
+  }
+
+  return salt;
+}
+
 /**
  * Pseudonymize user ID for analytics
  * 
@@ -33,20 +49,26 @@ async function sha256Hash(data: string): Promise<string> {
  * @throws Error if salt is not configured or invalid
  */
 export async function pseudonymizeUserId(userId: string): Promise<string> {
-  // CRITICAL: Salt must be stored in environment variable, never hardcoded
-  const salt = import.meta.env.VITE_ANALYTICS_USER_SALT || process.env.ANALYTICS_USER_SALT;
-  if (!salt) {
-    throw new Error('ANALYTICS_USER_SALT environment variable not set');
-  }
-  
-  // CRITICAL: Ensure salt is at least 32 characters
-  if (salt.length < 32) {
-    throw new Error('ANALYTICS_USER_SALT must be at least 32 characters');
-  }
-  
+  const salt = getRequiredSalt(
+    import.meta.env.VITE_ANALYTICS_USER_SALT,
+    process.env.ANALYTICS_USER_SALT
+  );
+
   // SHA-256 hash of userId + salt
   const combined = userId + salt;
   return await sha256Hash(combined); // Returns 64-character hex string
+}
+
+export async function pseudonymizeSessionId(sessionId: string): Promise<string> {
+  const salt = getRequiredSalt(
+    import.meta.env.VITE_ANALYTICS_SESSION_SALT,
+    process.env.ANALYTICS_SESSION_SALT,
+    import.meta.env.VITE_ANALYTICS_USER_SALT,
+    process.env.ANALYTICS_USER_SALT
+  );
+
+  const combined = sessionId + salt;
+  return await sha256Hash(combined);
 }
 
 /**
@@ -62,10 +84,10 @@ export async function pseudonymizeUserId(userId: string): Promise<string> {
  * @throws Error if salt is not configured or invalid
  */
 export async function pseudonymizeTestId(testId: string): Promise<string> {
-  const salt = import.meta.env.VITE_ANALYTICS_TEST_SALT || process.env.ANALYTICS_TEST_SALT;
-  if (!salt || salt.length < 32) {
-    throw new Error('ANALYTICS_TEST_SALT must be set and at least 32 characters');
-  }
+  const salt = getRequiredSalt(
+    import.meta.env.VITE_ANALYTICS_TEST_SALT,
+    process.env.ANALYTICS_TEST_SALT
+  );
   
   const combined = testId + salt;
   return await sha256Hash(combined);
@@ -93,10 +115,10 @@ export async function pseudonymizeStoragePath(storagePath: string): Promise<stri
   // Build anonymized path (no user/patient IDs)
   const anonymizedPath = `${rootDir}/[REDACTED]/[REDACTED].${fileExt}`;
   
-  const salt = import.meta.env.VITE_ANALYTICS_PATH_SALT || process.env.ANALYTICS_PATH_SALT;
-  if (!salt || salt.length < 32) {
-    throw new Error('ANALYTICS_PATH_SALT must be set and at least 32 characters');
-  }
+  const salt = getRequiredSalt(
+    import.meta.env.VITE_ANALYTICS_PATH_SALT,
+    process.env.ANALYTICS_PATH_SALT
+  );
   
   const combined = anonymizedPath + salt;
   return await sha256Hash(combined);
@@ -126,4 +148,3 @@ export async function validatePseudonymization(userId: string, hashedUserId: str
   const rehashed = await pseudonymizeUserId(userId);
   return rehashed === hashedUserId;
 }
-

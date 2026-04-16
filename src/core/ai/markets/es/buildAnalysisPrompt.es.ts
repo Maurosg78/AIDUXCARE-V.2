@@ -31,6 +31,19 @@ REGLAS DE REDACCIÓN:
 - No mezcles inglés en red flags, hallazgos, medicación ni pruebas.
 - No dejes texto en inglés en biopsychosocial_factors, objective, rationale, summary, chief_complaint ni medications.
 
+CLASIFICACIÓN BIOPSICOSOCIAL — INSTRUCCIONES EXPLÍCITAS:
+- occupational: profesión, tipo de trabajo, movimientos repetitivos laborales,
+  herramientas o vehículos usados (ejemplo: "tipea todo el día", "conduce moto",
+  "trabajo físico con cargas"). Incluir aunque se mencione brevemente.
+- patient_strengths: capacidades funcionales preservadas, actividad física
+  sin dolor, rendimiento deportivo conservado (ejemplo: "press banca 80kg sin dolor",
+  "entrena sin molestias", "actividad X sin limitación"). Incluir siempre que
+  el paciente mencione algo que SÍ puede hacer sin dolor.
+- protective_factors: factores que favorecen la recuperación: motivación,
+  adherencia anticipada, apoyo social, ausencia de banderas amarillas.
+- psychological: emociones, miedos, catastrofismo, ansiedad relacionada
+  con el dolor o la recuperación.
+
 INSTRUCCIONES CRÍTICAS:
 - Red flags: pérdida de peso no explicada, dolor nocturno, déficits neurológicos, incontinencia, infección sistémica, traumatismo mayor, debilidad progresiva, antecedentes oncológicos, anticoagulantes, esteroides, traumatismo en >65 años, empeoramiento en reposo, interacciones farmacológicas clínicamente relevantes.
 - Formula las red flags como: "Preocupación clínica: [hallazgo/riesgo]. Recomendar revisión/derivación médica según red flags."

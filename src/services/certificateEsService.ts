@@ -52,9 +52,12 @@ Tono: directo, causa-efecto. NO uses lenguaje legal ni notarial.
 Máximo 120 palabras.
 Estructura: 1 párrafo contexto clínico + 1 párrafo indicaciones/restricciones.
 No inventes datos no presentes en el SOAP.
+No incluyas encabezado, firma, fecha, nombre del paciente, nombre del fisioterapeuta, número de colegiado ni institución destinataria.
+No empieces con "El presente certificado se emite..." ni con fórmulas de identificación nominal. Ese bloque lo compone el frontend.
 No uses siglas en inglés (WAD, ROM, AINE, HEP, etc.). Usa siempre el término en español: WAD → cervicalgia post-traumática, ROM → rango de movimiento, HEP → programa de ejercicios en casa, AINE → antiinflamatorio no esteroideo.
 
 TIPO: ${data.tipo}
+PACIENTE: ${data.paciente.nombre}
 INSTITUCIÓN DESTINATARIA: ${data.institucionDestinataria}
 DETALLES ESPECÍFICOS: ${data.detallesEspecificos}
 VALORACIÓN CLÍNICA (SOAP): ${soapAssessment}`;

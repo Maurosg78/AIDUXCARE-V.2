@@ -12,7 +12,7 @@ import { consentLogger } from '@/domain/consent/consentLogger';
 
 export interface ConsentCheckResult {
   hasValidConsent: boolean;
-  status: string | null;
+  status: 'ongoing' | 'session-only' | 'declined' | null;
   consentMethod: string | null;
   isDeclined?: boolean;
   declineReasons?: string[];
@@ -90,7 +90,7 @@ function parseConsentStatusDoc(data: Record<string, unknown>): ConsentCheckResul
 
   const result: ConsentCheckResult = {
     hasValidConsent,
-    status: (status == null ? null : String(status)) as string | null,
+    status: (status == null ? null : String(status)) as ConsentCheckResult['status'],
     consentMethod: (source as string) ?? (hasValidConsent ? 'verbal' : null),
     isDeclined: isDeclined || false,
     declineReasons: data?.declineReasons as string[] | undefined,

@@ -4,10 +4,11 @@ import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWh
 import { hasMediaRecorderSupport } from '../utils/mobileDetection';
 import { micController } from '@/core/audio/micController';
 
-type TranscriptMeta = {
+export type TranscriptMeta = {
   detectedLanguage: string | null;
   averageLogProb: number | null;
   durationSeconds?: number;
+  recordedAt?: string;
 };
 
 const LIVE_CHUNK_INTERVAL_MS = 3000;
@@ -46,6 +47,7 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   const interimTranscriptRef = useRef<string>('');
   const pendingChunksRef = useRef<Blob[]>([]);
   const isTranscribingChunkRef = useRef<boolean>(false);
+  const transcriptPartsRef = useRef<string[]>([]);
 
   const appendTranscript = useCallback((text: string, isInterim: boolean = false) => {
     if (!text) return;
@@ -183,6 +185,7 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       // Reset chunk tracking
       pendingChunksRef.current = [];
       isTranscribingChunkRef.current = false;
+      transcriptPartsRef.current = [];
 
       // ✅ PHASE 1: Function to handle large audio files
       // IMPORTANT: Blob.slice() creates invalid WebM chunks (same problem as MediaRecorder chunks)
@@ -310,18 +313,13 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
             console.warn('[useTranscript] Discarding hallucinated transcript (short/silent audio):', trimmed.substring(0, 60) + '...');
             setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
           } else if (trimmed) {
-            appendTranscript(result.text!);
+            transcriptPartsRef.current.push(result.text!.trim());
             setMeta({
               detectedLanguage: result.detectedLanguage ?? null,
               averageLogProb: result.averageLogProb ?? null,
               durationSeconds: result.durationSeconds
             });
             setError(null);
-            // Fire callback in next tick so it runs even if component unmounted (setState updater may not run)
-            const fullText = result.text!;
-            setTimeout(() => {
-              onTranscriptionCompleteRef.current?.(fullText);
-            }, 0);
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
@@ -456,61 +454,71 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
           setIsRecording(false);
         }
         
-        // ✅ SPRINT 2 P3: Transcribe complete audio when recording stops
-        // This ensures we have a complete, valid audio file instead of partial chunks
-        if (audioChunksRef.current.length > 0 && pendingChunksRef.current.length === 0) {
-          // ✅ SPRINT 2 P3: Ensure final blob has normalized MIME type
-          const normalizedMimeType = mimeType
-            .replace(/\/+/g, '/') // Fix multiple slashes
-            .replace(/webrm/gi, 'webm') // Fix typo
-            .trim();
-          
-          const finalBlob = new Blob(audioChunksRef.current, { type: normalizedMimeType });
-          const fileSizeMB = finalBlob.size / (1024 * 1024);
-          
-          // ✅ PHASE 1: Enhanced production logging
-          const durationMinutes = audioChunksRef.current.length > 0 
-            ? (audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0) / (1024 * 1024) / 16) * 60 // Rough estimate
-            : 0;
-          const estimatedBitrate = durationMinutes > 0 
-            ? (fileSizeMB * 8 * 1024) / durationMinutes 
-            : 0;
-          
-          console.log(`[useTranscript] 📊 Audio stats:`, {
-            duration: durationMinutes > 0 ? `${durationMinutes.toFixed(1)} min` : 'unknown',
-            size: `${fileSizeMB.toFixed(2)} MB`,
-            sizeBytes: finalBlob.size,
-            estimatedBitrate: estimatedBitrate > 0 ? `${estimatedBitrate.toFixed(0)} kbps` : 'unknown',
-            mimeType: normalizedMimeType,
-            originalMimeType: mimeType,
-            chunks: audioChunksRef.current.length,
-            limit: '25 MB',
-            margin: `${(25 - fileSizeMB).toFixed(2)} MB`,
-            timestamp: new Date().toISOString()
-          });
-          
-          console.log(`[useTranscript] Final blob created: ${finalBlob.size} bytes (${fileSizeMB.toFixed(2)} MB), type: "${normalizedMimeType}"`);
-          
-          // ✅ SPRINT 2 P3: Check if audio is too large
-          // NOTE: We don't split manually because Blob.slice() creates invalid WebM chunks
-          // Instead, we attempt full transcription with timeout, or suggest manual splitting
-          const MAX_FILE_SIZE_MB = 25; // Whisper API practical limit
-          if (fileSizeMB > MAX_FILE_SIZE_MB) {
-            console.warn(`[useTranscript] Audio very large (${fileSizeMB.toFixed(2)} MB), attempting full transcription with extended timeout`);
-            setError(`The audio file is very large (${fileSizeMB.toFixed(2)} MB). Processing with extended timeout. This may take several minutes. For best results, please record in segments of 10-15 minutes each.`);
-            setIsTranscribing(true);
-            
-            // Attempt full transcription (will timeout if too large)
-            await handleLargeAudio(finalBlob, normalizedMimeType);
-          } else if (finalBlob.size >= MIN_AUDIO_SIZE_BYTES && !isTranscribingChunkRef.current) {
-            console.log('[useTranscript] Transcribing complete audio recording...');
-            await transcribeChunk(finalBlob);
-          } else if (finalBlob.size < MIN_AUDIO_SIZE_BYTES) {
-            console.warn(`[useTranscript] Final audio too short to transcribe: ${finalBlob.size} bytes (min ${MIN_AUDIO_SIZE_BYTES})`);
-            setError('Recording too short or interrupted. Stay on this page while recording and record at least a few seconds of speech, then stop.');
+        const processChunksSequentially = async () => {
+          const chunks = audioChunksRef.current;
+
+          if (!chunks || chunks.length === 0) return;
+
+          setIsTranscribing(true);
+
+          // Ajuste 2: group raw chunks into ≤8MB segments before sending to Whisper
+          const MAX_SEGMENT_SIZE = 8 * 1024 * 1024; // 8MB
+          const groupedChunks: Blob[] = [];
+          let currentGroup: Blob[] = [];
+          let currentSize = 0;
+
+          for (const chunk of chunks) {
+            currentGroup.push(chunk);
+            currentSize += chunk.size;
+
+            if (currentSize >= MAX_SEGMENT_SIZE) {
+              groupedChunks.push(new Blob(currentGroup, { type: chunk.type }));
+              currentGroup = [];
+              currentSize = 0;
+            }
           }
-        }
-        
+
+          if (currentGroup.length > 0) {
+            groupedChunks.push(new Blob(currentGroup, { type: currentGroup[0].type }));
+          }
+
+          for (let i = 0; i < groupedChunks.length; i++) {
+            const segment = groupedChunks[i];
+
+            try {
+              await transcribeChunk(segment);
+            } catch (err) {
+              console.error('[useTranscript] Error processing chunk:', err);
+            }
+          }
+
+          // Ajuste 1: deduplicate adjacent parts that overlap at their boundary
+          const deduplicatedParts: string[] = [];
+
+          for (let i = 0; i < transcriptPartsRef.current.length; i++) {
+            const current = transcriptPartsRef.current[i];
+            const prev = deduplicatedParts[deduplicatedParts.length - 1];
+
+            if (!prev || !current.startsWith(prev.slice(-30))) {
+              deduplicatedParts.push(current);
+            }
+          }
+
+          const finalTranscript = deduplicatedParts.join('\n').trim();
+
+          if (finalTranscript) {
+            appendTranscript(finalTranscript);
+
+            setTimeout(() => {
+              onTranscriptionCompleteRef.current?.(finalTranscript);
+            }, 0);
+          }
+
+          setIsTranscribing(false);
+        };
+
+        await processChunksSequentially();
+
         // Wait for any pending transcriptions to complete before clearing
         setTimeout(() => {
           audioChunksRef.current = [];

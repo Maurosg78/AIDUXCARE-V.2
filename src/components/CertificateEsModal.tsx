@@ -80,61 +80,147 @@ function buildFilename(data: CertificateEsData): string {
   return filename;
 }
 
+function resolveInstitutionDisplay(data: CertificateEsData): string {
+  const clinicLine = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Consulta particular';
+  const trimmedInstitution = data.institucionDestinataria.trim();
+  const isApeticion =
+    trimmedInstitution === 'A petición del paciente' ||
+    trimmedInstitution === '';
+  const institucionDisplay = isApeticion ? '—' : trimmedInstitution;
+  void clinicLine;
+
+  return institucionDisplay;
+}
+
+function buildCertificateHeaderLines(data: CertificateEsData): string[] {
+  const clinicLine = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Consulta particular';
+  const institutionDisplay = resolveInstitutionDisplay(data);
+  const patientLine = `Paciente: ${data.paciente.nombre}`;
+  const professionalLine = `Fisioterapeuta: ${data.profesional.nombre}`;
+  const clinicLabelLine = `Centro: ${clinicLine}`;
+  const licenseLine = `N.º de colegiado: ${data.profesional.numeroColegiado || 'No informado'}`;
+  const issueDateLine = `Fecha de emisión: ${data.fechaEmision}`;
+  const institutionLine = `Institución destinataria: ${institutionDisplay}`;
+  const headerLines = [
+    patientLine,
+    professionalLine,
+    clinicLabelLine,
+    licenseLine,
+    issueDateLine,
+    institutionLine,
+  ];
+
+  return headerLines;
+}
+
+function buildCertificateBodyText(data: CertificateEsData): string {
+  const rawBodyText = (data.borrador || '').replace(/^["«»""]|["«»""]$/g, '').trim();
+  const normalizedBodyStart = rawBodyText.replace(
+    /^\s*(El presente certificado se emite a nombre de .*?\.\s*)?(El\/La paciente|El paciente|La paciente)\s+/i,
+    '',
+  ).trim();
+  const patientPresentationPrefix = `El presente certificado se emite a nombre de ${data.paciente.nombre}. `;
+  const bodyText = `${patientPresentationPrefix}${normalizedBodyStart}`;
+  const trimmedBodyText = bodyText.trim();
+
+  return trimmedBodyText;
+}
+
+function buildCertificateParagraphs(data: CertificateEsData): string[] {
+  const bodyText = buildCertificateBodyText(data);
+  const rawParagraphs = bodyText.split(/\n\s*\n/);
+  const paragraphTexts = rawParagraphs.filter((paragraph) => paragraph.trim().length > 0);
+  const normalizedParagraphs = paragraphTexts.length > 0 ? paragraphTexts : [bodyText];
+
+  return normalizedParagraphs;
+}
+
 function downloadCertificatePdf(data: CertificateEsData): void {
   const pdf = new jsPDF();
   const margin = 18;
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageCenterX = pageWidth / 2;
+  const pageHeight = pdf.internal.pageSize.getHeight();
   const usableWidth = pageWidth - margin * 2;
+  const bodyBlockWidth = usableWidth - 18;
+  const bodyBlockX = (pageWidth - bodyBlockWidth) / 2;
+  const topFrameY = 12;
+  const bottomFrameY = pageHeight - 24;
+  const paragraphSpacing = 6;
+  const signatureOffset = paragraphSpacing * 3;
+  const bodyLineHeight = 5.8;
   const headerTitle = 'CERTIFICADO CLÍNICO';
-  const clinicLine = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Consulta particular';
-  const bodyText = (data.borrador || '').replace(/^["«»""]|["«»""]$/g, '').trim();
-  const bodyLines = pdf.splitTextToSize(bodyText, usableWidth);
-  let y = 22;
+  const headerLines = buildCertificateHeaderLines(data);
+  const institutionDisplay = resolveInstitutionDisplay(data);
+  const normalizedParagraphs = buildCertificateParagraphs(data);
+  let y = 24;
+
+  pdf.setDrawColor(160, 160, 160);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, topFrameY, pageWidth - margin, topFrameY);
+  pdf.line(margin, bottomFrameY, pageWidth - margin, bottomFrameY);
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(16);
-  pdf.text(headerTitle, margin, y);
+  pdf.text(headerTitle, pageCenterX, y, { align: 'center' });
   y += 7;
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(11);
-  pdf.text(data.profesional.nombre, margin, y);
-  y += 6;
-
-  pdf.setFontSize(10);
-  pdf.text(clinicLine, margin, y);
-  y += 6;
-  pdf.text(`N.º colegiado: ${data.profesional.numeroColegiado || 'No informado'}`, margin, y);
-  y += 6;
-  pdf.text(`Fecha de emisión: ${data.fechaEmision}`, margin, y);
-  y += 6;
-  pdf.text(`Institución destinataria: ${data.institucionDestinataria || 'No especificada'}`, margin, y);
-  y += 10;
+  headerLines.forEach((line, index) => {
+    const isPrimaryLine = index < 2;
+    const fontSize = isPrimaryLine ? 11 : 10;
+    pdf.setFontSize(fontSize);
+    pdf.text(line, pageCenterX, y, { align: 'center' });
+    y += 6;
+  });
+  y += 4;
 
   pdf.setFont('helvetica', 'normal');
-  pdf.text(bodyLines, margin, y);
-  y += bodyLines.length * 5 + 18;
+  let currentBodyY = y;
 
-  if (y > 245) {
-    pdf.addPage();
-    y = 30;
-  }
+  normalizedParagraphs.forEach((paragraph) => {
+    const paragraphLines = pdf.splitTextToSize(paragraph.trim(), bodyBlockWidth);
+    pdf.text(paragraphLines, bodyBlockX, currentBodyY, {
+      align: 'left',
+      maxWidth: bodyBlockWidth,
+      lineHeightFactor: 1.25,
+    });
+    const paragraphHeight = paragraphLines.length * bodyLineHeight;
+    currentBodyY += paragraphHeight + paragraphSpacing;
+  });
 
-  pdf.text(data.profesional.nombre, margin, y);
-  y += 6;
-  pdf.line(margin, y, margin + 70, y);
-  y += 6;
-  pdf.text('Firma', margin, y);
+  const bodyBottomY = currentBodyY - paragraphSpacing;
+  const signatureStartY = bodyBottomY + signatureOffset;
+  const minimumSignatureStartY = pageHeight * 0.75;
+  const maximumSignatureStartY = bottomFrameY - 26;
+  const preferredSignatureStartY = Math.max(signatureStartY, minimumSignatureStartY);
+  const resolvedSignatureStartY = Math.min(preferredSignatureStartY, maximumSignatureStartY);
+  const signatureLineWidth = 70;
+  const signatureLineStartX = pageCenterX - signatureLineWidth / 2;
+  const signatureLineEndX = pageCenterX + signatureLineWidth / 2;
+  const signatureName = `Ft. ${data.profesional.nombre}`;
+  const signatureTextY = resolvedSignatureStartY;
+  const signatureLineY = signatureTextY + 10;
 
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const disclaimerY = pageHeight - 18;
+  pdf.text(signatureName, pageCenterX, signatureTextY, { align: 'center' });
+  pdf.line(signatureLineStartX, signatureLineY, signatureLineEndX, signatureLineY);
+
+  const disclaimerY = pageHeight - 15;
   const disclaimerText =
-    'Este certificado ha sido emitido a petición del interesado con fines informativos. No sustituye el diagnóstico médico\n' +
-    'ni constituye baja laboral. El profesional firmante no asume responsabilidad por el uso indebido de este documento.';
-  const disclaimerLines = pdf.splitTextToSize(disclaimerText, usableWidth);
-
+    'Certificado emitido en el ejercicio de la práctica fisioterapéutica. No constituye prescripción médica ni baja laboral.';
   pdf.setFontSize(8);
-  pdf.text(disclaimerLines, margin, disclaimerY);
+
+  if (institutionDisplay === '—') {
+    const petitionLine = 'Emitido a petición del interesado/a.';
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(petitionLine, margin, disclaimerY);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(disclaimerText, margin, disclaimerY + 5, { maxWidth: usableWidth });
+  } else {
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(disclaimerText, margin, disclaimerY, { maxWidth: usableWidth });
+  }
 
   const filename = buildFilename(data);
   pdf.save(filename);
@@ -167,6 +253,8 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
   }
 
   const selectedType = CERTIFICATE_TYPE_OPTIONS.find((item) => item.value === formData.tipo);
+  const previewHeaderLines = buildCertificateHeaderLines(formData);
+  const previewParagraphs = buildCertificateParagraphs(formData);
   const canContinueFromStepOne = Boolean(formData.tipo);
   const canContinueFromStepTwo = Boolean(formData.detallesEspecificos.trim());
   const canContinueFromStepThree = Boolean(formData.borrador.trim());
@@ -401,14 +489,23 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
           {step === 4 && (
             <div className="space-y-4">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <div className="text-sm text-slate-500">Emitido por</div>
-                <div className="text-lg font-semibold text-slate-900">{formData.profesional.nombre}</div>
-                <div className="text-sm text-slate-700">N.º colegiado: {formData.profesional.numeroColegiado || 'No informado'}</div>
-                <div className="text-sm text-slate-700">Fecha: {formData.fechaEmision}</div>
-                <div className="mt-4 border-t border-slate-200 pt-4 text-sm leading-6 text-slate-800 whitespace-pre-wrap">
-                  {formData.borrador}
+                <div className="text-center">
+                  <div className="text-xl font-semibold text-slate-900">CERTIFICADO CLÍNICO</div>
+                  <div className="mt-3 space-y-1 text-sm text-slate-700">
+                    {previewHeaderLines.map((line) => (
+                      <div key={line}>{line}</div>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-6 text-sm text-slate-500">Firma y sello</div>
+                <div className="mt-5 border-t border-slate-200 pt-5 text-sm leading-7 text-slate-800">
+                  {previewParagraphs.map((paragraph) => (
+                    <p key={paragraph} className="mb-5 last:mb-0">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+                <div className="mt-16 text-center text-sm text-slate-700">Ft. {formData.profesional.nombre}</div>
+                <div className="mx-auto mt-6 w-48 border-t border-slate-300" />
               </div>
 
               <button

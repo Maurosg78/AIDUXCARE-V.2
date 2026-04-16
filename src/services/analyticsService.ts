@@ -756,14 +756,14 @@ export class AnalyticsService {
     try {
       // Import validators (dynamic to avoid circular deps)
       const { validateAnalyticsQuery, validateKAnonymity } = await import('./analyticsValidationService');
-      const { pseudonymizeUserId } = await import('./pseudonymizationService');
+      const { pseudonymizeSessionId, pseudonymizeUserId } = await import('./pseudonymizationService');
       
       // Validate query doesn't contain PHI
       validateAnalyticsQuery(metrics, 'value_analytics');
       
       // Pseudonymize user ID
-      const hashedUserId = await pseudonymizeUserId(metrics.hashedUserId);
-      const hashedSessionId = metrics.hashedSessionId; // Already hashed or generate hash
+      const hashedUserId = await pseudonymizeUserId(metrics.userId);
+      const hashedSessionId = await pseudonymizeSessionId(metrics.sessionId);
       
       // Prepare event for Firestore
       const valueEvent = {
@@ -783,7 +783,13 @@ export class AnalyticsService {
           manualEditingTime: metrics.calculatedTimes.manualEditingTime || null,
         },
         featuresUsed: metrics.featuresUsed,
-        quality: metrics.quality,
+        quality: {
+          soapSectionsCompleted: metrics.quality.soapSectionsCompleted,
+          suggestionsOffered: metrics.quality.suggestionsOffered ?? null,
+          suggestionsAccepted: metrics.quality.suggestionsAccepted ?? null,
+          suggestionsRejected: metrics.quality.suggestionsRejected ?? null,
+          editsMadeToSOAP: metrics.quality.editsMadeToSOAP ?? null,
+        },
         sessionType: metrics.sessionType,
         region: metrics.region || null,
         timestamp: serverTimestamp(),
@@ -818,9 +824,9 @@ export const analyticsService = AnalyticsService.getInstance();
  */
 
 export interface ValueMetricsEvent {
-  // Session identifiers (pseudonymized)
-  hashedUserId: string;
-  hashedSessionId: string;
+  // Session identifiers (raw in app memory, pseudonymized before persistence)
+  userId: string;
+  sessionId: string;
   
   // Time-to-Value metrics
   timestamps: {
@@ -854,14 +860,14 @@ export interface ValueMetricsEvent {
       assessment: boolean;
       plan: boolean;
     };
-    suggestionsOffered: number;
-    suggestionsAccepted: number;
-    suggestionsRejected: number;
-    editsMadeToSOAP: number; // Número de cambios después de generación
+    suggestionsOffered?: number;
+    suggestionsAccepted?: number;
+    suggestionsRejected?: number;
+    editsMadeToSOAP?: number; // Número de cambios después de generación
   };
   
   // Metadata
-  sessionType: 'initial' | 'follow-up';
+  sessionType: 'initial' | 'follow-up' | 'followup';
   region?: string; // Provincias (sin granularidad específica)
   timestamp: Date;
 }

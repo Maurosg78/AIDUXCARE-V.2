@@ -1,8 +1,9 @@
 import { collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, orderBy, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import type { PhysicalExamResult, SOAPNote } from '../types/vertex-ai';
 
 /** WO-BUG2-SESSION-IDEMPOTENCY: same calendar day + same kind (initial vs follow-up), scoped to patient + practitioner */
-export type SessionKind = 'initial' | 'followup';
+export type SessionKind = 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate';
 
 export type CreateSessionWithIdOptions = {
   /** When true, merge into existing `sessions/{sessionId}` (e.g. after findReusableSessionForDayAndType hit). */
@@ -16,8 +17,8 @@ interface SessionData {
   patientName: string;
   patientId: string;
   transcript: string;
-  soapNote: any;
-  physicalTests?: EvaluationTestEntry[]; // Fixed: Changed from any[] to EvaluationTestEntry[]
+  soapNote?: SOAPNote | Record<string, unknown> | null;
+  physicalTests?: Array<EvaluationTestEntry | PhysicalExamResult>;
   timestamp?: any;
   status: 'draft' | 'completed' | 'recording_in_progress' | 'interrupted' | 'cancelled';
   // ✅ Sprint 2A: Session Type Integration
@@ -62,6 +63,9 @@ class SessionService {
   private normalizeSessionKind(raw: unknown): SessionKind | null {
     if (raw === 'initial') return 'initial';
     if (raw === 'follow-up' || raw === 'followup') return 'followup';
+    if (raw === 'wsib') return 'wsib';
+    if (raw === 'mva') return 'mva';
+    if (raw === 'certificate') return 'certificate';
     return null;
   }
 
@@ -278,7 +282,9 @@ class SessionService {
       const latestFinalizedByPatientSessionType = new Map<string, number>();
       for (const session of completedSessions) {
         if (session.soapStatus !== 'finalized') continue;
-        const key = `${session.patientId}::${session.sessionType}`;
+        const normalizedSessionType = this.normalizeSessionKind(session.sessionType);
+        if (normalizedSessionType == null) continue;
+        const key = `${session.patientId}::${normalizedSessionType}`;
         const updatedAtMs = toMillis(session.updatedAt);
         const current = latestFinalizedByPatientSessionType.get(key) ?? 0;
         if (updatedAtMs > current) {
@@ -297,9 +303,10 @@ class SessionService {
       for (const consultationDoc of consultationsSnapshot.docs) {
         const data = consultationDoc.data();
         const patientId = data.patientId;
-        const sessionType = data.visitType || 'initial';
+        const normalizedSessionType = this.normalizeSessionKind(data.visitType || 'initial');
         if (!patientId) continue;
-        const key = `${patientId}::${sessionType}`;
+        if (normalizedSessionType == null) continue;
+        const key = `${patientId}::${normalizedSessionType}`;
         const createdAtMs = data.createdAt?.toMillis?.() ?? 0;
         const current = latestConsultationByPatientSessionType.get(key) ?? 0;
         if (createdAtMs > current) {

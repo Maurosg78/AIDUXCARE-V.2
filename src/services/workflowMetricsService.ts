@@ -65,6 +65,10 @@ export interface WorkflowSessionMetrics {
   };
   userClicks: number;
   tabsSkipped: number;
+  totalDurationMs?: number;
+  tabTransitions?: string[];
+  errorsEncountered?: string[];
+  completionStatus?: 'completed' | 'abandoned';
 }
 
 /**
@@ -282,5 +286,4 @@ export function getWorkflowEfficiencySummary(metrics: WorkflowMetrics): {
     efficiencyGain,
   };
 }
-
 

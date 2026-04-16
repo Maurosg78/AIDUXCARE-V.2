@@ -108,7 +108,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             </Link>
           )}
 
-          {isSpainPilot() && (
+          {isSpainPilot() && isAdmin && (
             <Link
               to="/pilot-metrics"
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-apple"

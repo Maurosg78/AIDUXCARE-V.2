@@ -4369,7 +4369,10 @@ const ProfessionalWorkflowPage = () => {
       setActiveTab("soap");
 
       // Step 5: Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
-      const sessionOwnerId = user?.uid || TEMP_USER_ID;
+      if (!user?.uid) {
+        throw new Error("Auth not ready: cannot persist session without authenticated user");
+      }
+      const sessionOwnerId = user.uid;
       const sessionPayload = {
         userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
@@ -4838,7 +4841,10 @@ const ProfessionalWorkflowPage = () => {
 
     // Save to session — WO-IA-RESUME-01: update existing if sessionId set (resume), else create new
     try {
-      const sessionOwnerId = user?.uid || TEMP_USER_ID;
+      if (!user?.uid) {
+        throw new Error("Auth not ready: cannot persist session without authenticated user");
+      }
+      const sessionOwnerId = user.uid;
       const persistedSessionStatus: 'completed' | 'draft' =
         status === 'finalized' ? 'completed' : 'draft';
       const persistedSoapStatus: 'finalized' | 'draft' =

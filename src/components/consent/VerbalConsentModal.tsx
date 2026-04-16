@@ -36,7 +36,7 @@ export interface VerbalConsentModalProps {
   physiotherapistName?: string;
   hospitalId?: string;
   jurisdiction?: string;
-  onConsentObtained: (consentId: string) => void;
+  onConsentObtained: (consentId: string) => void | Promise<void>;
   onConsentDenied?: () => void;
 }
 
@@ -494,4 +494,3 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
 };
 
 export default VerbalConsentModal;
-

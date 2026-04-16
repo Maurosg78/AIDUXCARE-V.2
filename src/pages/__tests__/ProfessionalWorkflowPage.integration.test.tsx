@@ -1,20 +1,15 @@
 /**
- * Integration Tests: ProfessionalWorkflowPage with SessionComparison
- * 
- * Tests for integration of SessionComparison component in ProfessionalWorkflowPage,
- * including E2E workflow testing and regression testing.
- * 
- * Sprint 1 - Day 3: Integration
+ * Integration Tests: ProfessionalWorkflowPage guardrails
+ *
+ * Focus on workflow render and draft-resume protections that must remain stable.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ProfessionalWorkflowPage from '../ProfessionalWorkflowPage';
 import { SessionComparisonService } from '../../services/sessionComparisonService';
 import sessionService from '../../services/sessionService';
-import { AnalyticsService } from '../../services/analyticsService';
 
 const hoistedMocks = vi.hoisted(() => {
   const mockSetTranscript = vi.fn();
@@ -150,6 +145,23 @@ vi.mock('../../services/consentVerificationService', () => ({
     },
 }));
 
+vi.mock('../../services/consentServerService', () => ({
+  checkConsentViaServer: vi.fn().mockResolvedValue({
+    hasValidConsent: true,
+    status: 'ongoing',
+    consentMethod: 'verbal',
+    isDeclined: false,
+  }),
+}));
+
+vi.mock('../../services/verbalConsentService', () => ({
+  VerbalConsentService: {
+    hasValidConsent: vi.fn().mockResolvedValue(true),
+  },
+  getConsentLanguageForJurisdiction: vi.fn().mockReturnValue('en'),
+  getConsentVersionForPortal: vi.fn().mockReturnValue('1.0.0'),
+}));
+
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     user: { uid: 'test-user-id' },
@@ -239,7 +251,7 @@ vi.mock('../../features/patient-dashboard/hooks/usePatientVisitCount', () => ({
   }),
 }));
 
-describe('ProfessionalWorkflowPage Integration - SessionComparison', () => {
+describe('ProfessionalWorkflowPage Integration - Workflow Guardrails', () => {
   let mockSessionComparisonService: any;
   let mockGetPreviousSession: any;
   let mockGetEncountersComparisonState: any;
@@ -294,8 +306,8 @@ vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
   },
 }));
 
-  describe('Component Integration', () => {
-    it('should render SessionComparison component in sidebar', async () => {
+  describe('Workflow Rendering', () => {
+    it('should render the workflow shell without mounting the removed SessionComparison panel', async () => {
       mockGetPreviousSession.mockResolvedValue(null);
       mockFormatComparisonForUI.mockReturnValue({
         hasComparison: false,
@@ -320,105 +332,11 @@ vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
       );
 
       await waitFor(() => {
-        // SessionComparison should render (check for first session message)
-        expect(screen.getByText(/First Session/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should pass currentSession data to SessionComparison when SOAP is generated', async () => {
-      // This test would require mocking the full workflow
-      // For now, we verify the integration point exists
-      expect(SessionComparisonService).toBeDefined();
-    });
-  });
-
-  describe('Analytics Integration', () => {
-    it('should track comparison load event when comparison is loaded', async () => {
-      const mockComparison = {
-        patientId: 'test-patient-1',
-        previousSession: { id: 'prev-1', date: new Date(), metrics: {} },
-        currentSession: { id: 'curr-1', date: new Date(), metrics: {} },
-        deltas: {
-          overallProgress: 'improved' as const,
-          daysBetweenSessions: 7,
-          painLevel: -0.4,
-          rangeOfMotion: {},
-          functionalTests: {},
-          testCountChange: 0,
-        },
-        alerts: [],
-      };
-
-      mockGetPreviousSession.mockResolvedValue({ id: 'prev-1' });
-      mockCompareSessions.mockReturnValue(mockComparison);
-      mockFormatComparisonForUI.mockReturnValue({
-        hasComparison: true,
-        isFirstSession: false,
-        previousSessionDate: '2024-01-01',
-        currentSessionDate: '2024-01-08',
-        daysBetween: 7,
-        metrics: {
-          painLevel: { previous: 7, current: 5, delta: -0.4, trend: 'improved' },
-          rangeOfMotion: [],
-          functionalTests: [],
-        },
-        overallProgress: 'improved',
-        alerts: [],
-        summary: 'Patient shows improvement',
+        expect(screen.getByText('Test Patient')).toBeInTheDocument();
       });
 
-      // Verify analytics service is called
-      expect(AnalyticsService.trackSystemEvent).toBeDefined();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should not break main workflow if SessionComparison fails', async () => {
-      mockGetPreviousSession.mockRejectedValue(new Error('Comparison failed'));
-
-      render(
-        <MemoryRouter initialEntries={['/workflow?patientId=test-patient-1']}>
-          <ProfessionalWorkflowPage />
-        </MemoryRouter>
-      );
-
-      // Main workflow should still render
-      await waitFor(() => {
-        // Check for main workflow elements (this would need actual component rendering)
-        expect(true).toBe(true); // Placeholder - would check for actual UI elements
-      });
-    });
-  });
-
-  describe('Session ID Management', () => {
-    it('should store sessionId after creating session', async () => {
-      const mockSessionId = 'test-session-id';
-      (sessionService.createSession as any).mockResolvedValue(mockSessionId);
-
-      // This would be tested in actual workflow
-      expect(sessionService.createSession).toBeDefined();
-    });
-  });
-
-  describe('Data Flow', () => {
-    it('should build currentSession correctly from workflow data', async () => {
-      // Verify that buildCurrentSession function exists and works
-      // This would require testing the actual component
-      expect(SessionComparisonService).toBeDefined();
-    });
-
-    it('should update currentSession when SOAP note changes', async () => {
-      // Verify useEffect triggers correctly
-      // This would require testing the actual component
-      expect(true).toBe(true); // Placeholder
-    });
-  });
-
-  describe('Layout Responsiveness', () => {
-    it('should maintain responsive layout with SessionComparison', async () => {
-      // Verify layout doesn't break
-      // This would require visual regression testing
-      expect(true).toBe(true); // Placeholder
+      expect(screen.queryByText(/First Session/i)).not.toBeInTheDocument();
+      expect(mockGetEncountersComparisonState).toHaveBeenCalledWith('test-patient-1');
     });
   });
 

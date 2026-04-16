@@ -178,7 +178,21 @@ export class PatientTrajectoryMemoryService {
         limit(maxEvents)
       );
       const snap = await getDocs(q);
-      const events = snap.docs.map((d) => toEvent({ ...d.data(), id: d.id }));
+      const docs = Array.isArray((snap as { docs?: unknown[] } | null)?.docs)
+        ? (snap as { docs: Array<{ id: string; data: () => unknown }> }).docs
+        : [];
+      if (docs.length === 0) {
+        return [];
+      }
+      const events = docs.map((d) => {
+        const rawEvent = d.data();
+        const eventData =
+          rawEvent != null && typeof rawEvent === 'object'
+            ? (rawEvent as Record<string, unknown>)
+            : {};
+        const event = toEvent({ ...eventData, id: d.id });
+        return event;
+      });
       return events;
     } catch (error) {
       if (!isPermissionDeniedError(error)) {

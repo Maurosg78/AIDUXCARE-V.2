@@ -10,6 +10,13 @@ export interface Patient {
   // T3: Added firstName/lastName for pilot compatibility
   firstName?: string;
   lastName?: string;
+  province?: string;
+  personalInfo?: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    province?: string;
+  };
   email: string;
   phone: string;
   dateOfBirth: string;
@@ -18,7 +25,7 @@ export interface Patient {
   
   // Datos Clínicos
   medicalHistory: string;
-  allergies: string;
+  allergies: string | string[];
   medications: string;
   previousInjuries: string;
   
