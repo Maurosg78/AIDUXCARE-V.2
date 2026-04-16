@@ -671,7 +671,8 @@ export const PatientDashboardPage: React.FC = () => {
           }}
         >
           <div
-            className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col"
+            className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl flex flex-col"
+            style={{ maxHeight: '90vh' }}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
