@@ -670,11 +670,13 @@ const ProfessionalWorkflowPage = () => {
       if (canCreateRecoverySession) {
         const recoveryAnchorMs = Date.now();
         const recoverySessionId = `${sessionOwnerId}-${recoveryAnchorMs}`;
+        const recoverySessionDateKey = toLocalDateKey(sessionStartTime);
         const recoverySessionPayload = {
           userId: sessionOwnerId,
           patientName: sessionPatientName,
           patientId: sessionPatientId,
           transcript: '',
+          sessionDateKey: recoverySessionDateKey,
           soapNote: hydratedSoapNote,
           physicalTests: [],
           status: resolvedNoteStatus === 'finalized' ? 'completed' as const : 'draft' as const,
@@ -2008,6 +2010,7 @@ const ProfessionalWorkflowPage = () => {
             `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
             demoPatient.name,
           userId: practitionerUid,
+          sessionDateKey: toLocalDateKey(sessionStartTime),
           status: 'recording_in_progress' as const,
           sessionType: payloadSessionKind,
           clientBuildId: currentClientBuildId,
@@ -2082,6 +2085,7 @@ const ProfessionalWorkflowPage = () => {
             patientId: patientIdFromUrl,
             patientName,
             userId: authUid,
+            sessionDateKey: toLocalDateKey(sessionStartTime),
             status: 'recording_in_progress',
             transcript: '',
             sessionType: currentSessionType,
@@ -4375,11 +4379,13 @@ const ProfessionalWorkflowPage = () => {
         throw new Error("Auth not ready: cannot persist session without authenticated user");
       }
       const sessionOwnerId = user.uid;
+      const sessionDateKey = toLocalDateKey(sessionStartTime);
       const sessionPayload = {
         userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
+        sessionDateKey,
         soapNote: soapWithReviewFlags,
         physicalTests: organized.structuredData.physicalExamResults,
         status: "draft" as const,
@@ -4859,11 +4865,13 @@ const ProfessionalWorkflowPage = () => {
         status === 'finalized' ? 'completed' : 'draft';
       const persistedSoapStatus: 'finalized' | 'draft' =
         status === 'finalized' ? 'finalized' : 'draft';
+      const sessionDateKey = toLocalDateKey(sessionStartTime);
       const savePayload = {
         userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
         patientId: patientIdFromUrl || demoPatient.id,
         transcript: transcript || "",
+        sessionDateKey,
         soapNote: cleanedSoap,
         physicalTests: physicalExamResults || [],
         status: persistedSessionStatus,
@@ -5860,6 +5868,7 @@ const ProfessionalWorkflowPage = () => {
                       patientId: patientId || '',
                       patientName: currentPatient?.fullName || 'Unknown',
                       userId: uid,
+                      sessionDateKey: toLocalDateKey(sessionStartTime),
                       sessionType: currentSessionType,
                       transcript: transcript || '',
                       clientBuildId: currentClientBuildId,

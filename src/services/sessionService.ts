@@ -17,6 +17,7 @@ interface SessionData {
   patientName: string;
   patientId: string;
   transcript: string;
+  sessionDateKey?: string;
   soapNote?: SOAPNote | Record<string, unknown> | null;
   physicalTests?: Array<EvaluationTestEntry | PhysicalExamResult>;
   timestamp?: any;
@@ -95,6 +96,22 @@ class SessionService {
     return null;
   }
 
+  private resolveSessionDateKey(data: Record<string, unknown>): string | null {
+    const explicitSessionDateKey = data.sessionDateKey;
+    if (typeof explicitSessionDateKey === 'string' && explicitSessionDateKey.trim() !== '') {
+      return explicitSessionDateKey;
+    }
+    const timestampDateKey = this.timestampToLocalDateKey(data.timestamp);
+    if (timestampDateKey != null) {
+      return timestampDateKey;
+    }
+    const createdAtDateKey = this.timestampToLocalDateKey(data.createdAt);
+    if (createdAtDateKey != null) {
+      return createdAtDateKey;
+    }
+    return null;
+  }
+
   /**
    * Reuse an open session for the same patient, practitioner, local calendar day, and session kind
    * (initial vs follow-up). Skips sessions that already have finalized SOAP so a second real visit
@@ -121,7 +138,7 @@ class SessionService {
         const data = d.data();
         const kind = this.normalizeSessionKind(data.sessionType);
         if (kind == null || kind !== sessionKind) continue;
-        const docKey = this.timestampToLocalDateKey(data.timestamp ?? data.createdAt);
+        const docKey = this.resolveSessionDateKey(data);
         if (docKey !== targetKey) continue;
         if (data.soapStatus === 'finalized') continue;
         return d.id;
@@ -159,9 +176,11 @@ class SessionService {
       
       // ✅ FIX: Clean undefined values before saving to Firestore
       const cleanedSessionData = this.cleanUndefined(sessionData);
+      const sessionDateKey = cleanedSessionData.sessionDateKey;
       
       const newSession = {
         ...cleanedSessionData,
+        ...(typeof sessionDateKey === 'string' && sessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp()
       };
@@ -191,6 +210,7 @@ class SessionService {
       const targetDocId = sessionId;
       const docRef = doc(db, this.COLLECTION_NAME, targetDocId);
       const cleanedSessionData = this.cleanUndefined(sessionData);
+      const requestedSessionDateKey = cleanedSessionData.sessionDateKey;
       const mergeRequested = options?.merge === true;
       if (mergeRequested) {
         const mergePayload = {
@@ -215,6 +235,7 @@ class SessionService {
           const sessionsRef = collection(db, this.COLLECTION_NAME);
           const collisionSafeSession = {
             ...cleanedSessionData,
+            ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
             timestamp: serverTimestamp(),
             createdAt: serverTimestamp(),
           };
@@ -225,6 +246,7 @@ class SessionService {
       }
       const newSession = {
         ...cleanedSessionData,
+        ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp()
       };
@@ -286,8 +308,7 @@ class SessionService {
         const snapshot = await getDocs(q);
         snapshot.docs.forEach(d => {
           const data = d.data();
-          const sessionDateValue = data.timestamp ?? data.createdAt ?? data.updatedAt;
-          const sessionDateKey = this.timestampToLocalDateKey(sessionDateValue);
+          const sessionDateKey = this.resolveSessionDateKey(data);
           results.push({
             id: d.id,
             patientId: data.patientId || '',
