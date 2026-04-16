@@ -116,7 +116,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
     getTodayList(user.uid, dateKey).then((list) => {
       // Mark done when workflow explicitly completed
-      const completed = getAndClearSessionCompleted();
+      const completed = getAndClearSessionCompleted(dateKey);
       if (completed) {
         const idx = list.findIndex(
           (i) =>
@@ -141,6 +141,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
       // Merge in-progress sessions from Firestore as 'incomplete' items
       const mergedList = [...list];
       for (const session of inProgressSessions.data) {
+        const sessionDateKey = session.dateKey;
+        const isMatchingSelectedDate = sessionDateKey === dateKey;
+        if (!isMatchingSelectedDate) {
+          continue;
+        }
         const sessionType =
           (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
         const existingIndex = mergedList.findIndex(

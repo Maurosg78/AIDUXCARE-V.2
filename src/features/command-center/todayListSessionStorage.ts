@@ -12,21 +12,39 @@ export type SessionTypeForList = 'initial' | 'followup' | 'ongoing';
 export interface SessionCompletedPayload {
   patientId: string;
   sessionType: SessionTypeForList;
+  dateKey: string;
 }
 
-export function setSessionCompleted(patientId: string, sessionType: SessionTypeForList): void {
+export function setSessionCompleted(
+  patientId: string,
+  sessionType: SessionTypeForList,
+  dateKey: string
+): void {
   try {
-    sessionStorage.setItem(SESSION_COMPLETED_KEY, JSON.stringify({ patientId, sessionType }));
+    const payload = {
+      patientId,
+      sessionType,
+      dateKey,
+    };
+    const serializedPayload = JSON.stringify(payload);
+    sessionStorage.setItem(SESSION_COMPLETED_KEY, serializedPayload);
   } catch {
     // ignore
   }
 }
 
-export function getAndClearSessionCompleted(): SessionCompletedPayload | null {
+export function getAndClearSessionCompleted(
+  expectedDateKey: string
+): SessionCompletedPayload | null {
   try {
     const raw = sessionStorage.getItem(SESSION_COMPLETED_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as SessionCompletedPayload;
+    const payloadDateKey = data.dateKey;
+    const isMatchingDateKey = payloadDateKey === expectedDateKey;
+    if (!isMatchingDateKey) {
+      return null;
+    }
     sessionStorage.removeItem(SESSION_COMPLETED_KEY);
     return data;
   } catch {

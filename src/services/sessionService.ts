@@ -269,12 +269,12 @@ class SessionService {
     }
   }
 
-  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string }[]> {
+  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; dateKey?: string }[]> {
     try {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
       // Include both in-progress and interrupted so Command Center shows "Resume" for interrupted
       const statuses = ['recording_in_progress', 'interrupted'] as const;
-      const results: { id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; soapStatus?: string; updatedAt?: unknown }[] = [];
+      const results: { id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; soapStatus?: string; updatedAt?: unknown; dateKey?: string }[] = [];
       for (const status of statuses) {
         const q = query(
           sessionsRef,
@@ -286,6 +286,8 @@ class SessionService {
         const snapshot = await getDocs(q);
         snapshot.docs.forEach(d => {
           const data = d.data();
+          const sessionDateValue = data.timestamp ?? data.createdAt ?? data.updatedAt;
+          const sessionDateKey = this.timestampToLocalDateKey(sessionDateValue);
           results.push({
             id: d.id,
             patientId: data.patientId || '',
@@ -295,6 +297,7 @@ class SessionService {
             status,
             soapStatus: data.soapStatus || undefined,
             updatedAt: data.updatedAt,
+            dateKey: sessionDateKey ?? undefined,
           });
         });
       }
@@ -373,13 +376,14 @@ class SessionService {
         const bT = toMillis(b.updatedAt);
         return bT - aT;
       });
-      return sorted.slice(0, 10).map(({ id, patientId, patientName, sessionType, transcript, status }) => ({
+      return sorted.slice(0, 10).map(({ id, patientId, patientName, sessionType, transcript, status, dateKey }) => ({
         id,
         patientId,
         patientName,
         sessionType,
         transcript,
         status,
+        dateKey,
       }));
     } catch (error) {
       console.error('Error fetching in-progress sessions:', error);

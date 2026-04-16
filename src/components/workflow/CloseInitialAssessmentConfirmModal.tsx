@@ -18,6 +18,7 @@ export interface CloseInitialAssessmentConfirmModalProps {
   patientId?: string;
   patientName?: string;
   baselineId?: string;
+  sessionDateKey?: string;
 }
 
 export function CloseInitialAssessmentConfirmModal({
@@ -26,6 +27,7 @@ export function CloseInitialAssessmentConfirmModal({
   patientId,
   patientName,
   baselineId,
+  sessionDateKey,
 }: CloseInitialAssessmentConfirmModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -35,12 +37,15 @@ export function CloseInitialAssessmentConfirmModal({
     if (!isOpen) return;
     setSecondsLeft(Math.ceil(REDIRECT_DELAY_MS / 1000));
     const t = setTimeout(() => {
-      if (patientId) setSessionCompleted(patientId, 'initial');
+      const completionDateKey = sessionDateKey;
+      if (patientId && completionDateKey) {
+        setSessionCompleted(patientId, 'initial', completionDateKey);
+      }
       onClose();
       navigate('/command-center');
     }, REDIRECT_DELAY_MS);
     return () => clearTimeout(t);
-  }, [isOpen, onClose, navigate, patientId]);
+  }, [isOpen, onClose, navigate, patientId, sessionDateKey]);
 
   useEffect(() => {
     if (!isOpen) return;

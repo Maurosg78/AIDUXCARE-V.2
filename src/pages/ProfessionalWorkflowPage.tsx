@@ -4640,6 +4640,14 @@ const ProfessionalWorkflowPage = () => {
     return obj;
   };
 
+  const toLocalDateKey = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+    return dateKey;
+  };
+
   type FinalizationWriteState =
     | 'soap_generated'
     | 'soap_saved'
@@ -4892,7 +4900,11 @@ const ProfessionalWorkflowPage = () => {
         const saveActualId = await sessionService.createSessionWithId(saveTargetId, savePayload, {
           merge: saveMergeWrite,
         });
-        setSessionId(saveActualId);
+        const persistedSessionId = saveActualId;
+        sessionIdRef.current = persistedSessionId;
+        sessionIdForTranscriptRef.current = persistedSessionId;
+        lastFirestoreTranscriptSessionIdRef.current = persistedSessionId;
+        setSessionId(persistedSessionId);
         await trackSessionStarted({
           userId: sessionOwnerId,
           patientId: patientIdFromUrl || demoPatient.id,
@@ -5004,7 +5016,8 @@ const ProfessionalWorkflowPage = () => {
     );
     const pid = patientIdFromUrl;
     const stype = visitType === 'initial' ? 'initial' : 'followup';
-    if (pid) setSessionCompleted(pid, stype);
+    const sessionDateKey = toLocalDateKey(sessionStartTime);
+    if (pid) setSessionCompleted(pid, stype, sessionDateKey);
 
     // ✅ HOSPITAL PORTAL: Show share menu after finalization
     // The share menu will allow physiotherapists to share the note securely
@@ -5772,6 +5785,7 @@ const ProfessionalWorkflowPage = () => {
         patientId={patientIdFromUrl ?? undefined}
         patientName={closeInitialConfirmData?.patientName}
         baselineId={closeInitialConfirmData?.baselineId}
+        sessionDateKey={toLocalDateKey(sessionStartTime)}
       />
       {/* WO-PILOT-FIX-07: Two-line header - Professional identity + Session context */}
       <header className="border-b border-slate-200 bg-white px-6 py-4">

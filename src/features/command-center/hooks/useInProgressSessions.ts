@@ -10,6 +10,7 @@ export interface InProgressSession {
   transcript: string;
   /** 'recording_in_progress' | 'interrupted' — interrupted sessions can be resumed */
   status?: string;
+  dateKey?: string;
 }
 
 export interface InProgressSessionsState {
