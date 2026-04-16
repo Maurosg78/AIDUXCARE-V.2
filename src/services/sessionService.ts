@@ -354,15 +354,15 @@ class SessionService {
       }
       const filteredResults = results.filter((session) => {
         if (session.soapStatus === 'finalized') return false;
-        if (session.status === 'interrupted') {
-          const key = `${session.patientId}::${session.sessionType}`;
-          const latestFinalizedAt = latestFinalizedByPatientSessionType.get(key) ?? 0;
-          const latestConsultationAt = latestConsultationByPatientSessionType.get(key) ?? 0;
-          const latestCompletedAt = Math.max(latestFinalizedAt, latestConsultationAt);
-          const sessionUpdatedAt = toMillis(session.updatedAt);
-          if (latestCompletedAt > 0 && sessionUpdatedAt <= latestCompletedAt) {
-            return false;
-          }
+        const sessionKey = `${session.patientId}::${session.sessionType}`;
+        const latestFinalizedAt = latestFinalizedByPatientSessionType.get(sessionKey) ?? 0;
+        const latestConsultationAt = latestConsultationByPatientSessionType.get(sessionKey) ?? 0;
+        const latestCompletedAt = Math.max(latestFinalizedAt, latestConsultationAt);
+        const sessionUpdatedAt = toMillis(session.updatedAt);
+        const hasLaterCompletedRecord = latestCompletedAt > 0;
+        const sessionIsOlderThanCompletion = sessionUpdatedAt <= latestCompletedAt;
+        if (hasLaterCompletedRecord && sessionIsOlderThanCompletion) {
+          return false;
         }
         return true;
       });
