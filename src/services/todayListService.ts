@@ -19,7 +19,18 @@ export async function getTodayList(
     if (!snap.exists()) return [];
     const data = snap.data();
     const items: TodayQuickItem[] = Array.isArray(data?.items) ? data.items : [];
-    return items.map((item) => ({ ...item, status: item.status ?? 'pending' }));
+    return items.map((item) => {
+      const persistedStatus = item.status;
+      const normalizedStatus =
+        persistedStatus === 'incomplete'
+          ? 'pending'
+          : persistedStatus ?? 'pending';
+      const normalizedItem = {
+        ...item,
+        status: normalizedStatus,
+      };
+      return normalizedItem;
+    });
   } catch {
     return [];
   }
