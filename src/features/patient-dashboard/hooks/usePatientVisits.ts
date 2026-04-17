@@ -288,13 +288,18 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           }
 
           if (visit.source === 'session') {
+            const sessionId = visit.id;
+            const hasEncounterTwin = encounterSessionIds.has(sessionId);
+            if (hasEncounterTwin) {
+              return false;
+            }
+
             if (visit.status === 'draft') {
               return true;
             }
 
             if (visit.status === 'completed' || visit.status === 'signed') {
               const hasConsultationTwin = consultationSessionIds.has(visit.id);
-              const hasEncounterTwin = encounterSessionIds.has(visit.id);
               return !hasConsultationTwin && !hasEncounterTwin;
             }
 
@@ -315,7 +320,6 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             }
 
             const hasConsultationTwin = consultationSessionIds.has(visit.id);
-            const hasEncounterTwin = encounterSessionIds.has(visit.id);
             return !hasConsultationTwin && !hasEncounterTwin;
           }
 
