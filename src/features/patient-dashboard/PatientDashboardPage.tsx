@@ -359,13 +359,36 @@ export const PatientDashboardPage: React.FC = () => {
                   visitSource === 'session' ||
                   visitSource === 'encounter' ||
                   visitSource === 'consultation';
+                const openSoapPreview = () => {
+                  const visitSoap = visit.soap;
+                  if (!visitSoap) {
+                    return;
+                  }
+                  const visitDateLabel = visit.date?.toLocaleDateString?.() || '';
+                  const nextSelectedSoap = {
+                    ...visitSoap,
+                    date: visitDateLabel,
+                  };
+                  setSelectedSOAP(nextSelectedSoap);
+                };
+                const navigateToResumeWorkflow = () => {
+                  const isSessionSource = visit.source === 'session';
+                  const sessionIdForResume = isSessionSource ? visit.id : visit.sessionIdForResume;
+                  if (!sessionIdForResume) {
+                    return false;
+                  }
+                  const workflowType = visit.type === 'follow-up' ? 'followup' : 'initial';
+                  const workflowUrl = `/workflow?type=${workflowType}&patientId=${patientId}&sessionId=${sessionIdForResume}&resume=true`;
+                  navigate(workflowUrl);
+                  return true;
+                };
                 const handleVisitClick = () => {
                   if (visit.source === 'consultation') {
                     navigate(`/notes/${visit.id}`);
                   } else if (isResumableInitial) {
                     navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
                   } else if (visit.source === 'encounter' && visit.soap) {
-                    setSelectedSOAP({...visit.soap, date: visit.date?.toLocaleDateString?.() || ''});
+                    openSoapPreview();
                   }
                 };
                 const navigateToEditFinalizedVisit = (e: React.MouseEvent) => {
@@ -377,11 +400,11 @@ export const PatientDashboardPage: React.FC = () => {
                     return;
                   }
                   if (source === 'encounter') {
-                    const encounterSoap = visit.soap;
-                    if (encounterSoap) {
-                      const dateLabel = visit.date?.toLocaleDateString?.() || '';
-                      setSelectedSOAP({ ...encounterSoap, date: dateLabel });
+                    const didResumeWorkflow = navigateToResumeWorkflow();
+                    if (didResumeWorkflow) {
+                      return;
                     }
+                    openSoapPreview();
                     return;
                   }
                   if (source === 'session') {
@@ -515,6 +538,8 @@ export const PatientDashboardPage: React.FC = () => {
                           e.stopPropagation();
                           if (visit.source === 'consultation') {
                             navigate(`/notes/${visit.id}`);
+                          } else if (visit.source === 'encounter') {
+                            openSoapPreview();
                           } else if (isResumableInitial) {
                             navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
                           }
