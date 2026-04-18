@@ -5022,94 +5022,6 @@ const ProfessionalWorkflowPage = () => {
       finalizationOperationId,
       'soap_generated'
     );
-    const pid = patientIdFromUrl;
-    const stype = visitType === 'initial' ? 'initial' : 'followup';
-    const sessionDateKey = toLocalDateKey(sessionStartTime);
-    if (pid) setSessionCompleted(pid, stype, sessionDateKey);
-
-    // ✅ HOSPITAL PORTAL: Show share menu after finalization
-    // The share menu will allow physiotherapists to share the note securely
-    // This is especially important for hospital workflows
-    // Note: Share menu will be opened via onShare callback in SOAPEditor
-
-    // ✅ WORKFLOW OPTIMIZATION: Track workflow session end and show feedback
-    try {
-      if (!sessionId || !user?.uid || !workflowRoute) {
-        console.warn(
-          '[WORKFLOW] Skipping workflow end tracking (missing sessionId or user)',
-          {
-            hasSessionId: Boolean(sessionId),
-            hasUserId: Boolean(user?.uid),
-            hasWorkflowRoute: Boolean(workflowRoute),
-          }
-        );
-      } else {
-        const metrics = await trackWorkflowSessionEnd(
-          sessionId,
-          user.uid,
-          patientIdFromUrl || demoPatient.id
-        );
-        if (metrics) {
-          const workflowDurationMs =
-            metrics.endTime && metrics.startTime
-              ? new Date(metrics.endTime).getTime() - new Date(metrics.startTime).getTime()
-              : 0;
-          console.log('[WORKFLOW] Workflow session metrics:', {
-            totalDurationMs: workflowDurationMs,
-            tabCount: 0,
-            errorCount: 0,
-            wasCompleted: Boolean(metrics.endTime),
-          });
-          // Build WorkflowMetrics from session metrics
-          const workflowMetricsData: WorkflowMetrics = {
-            workflowType: workflowRoute.type === 'follow-up' ? 'follow-up' : 'initial',
-            timeToSOAP: metrics.timeToSOAP || 0,
-            tokenUsage: metrics.tokenUsage || { input: 0, output: 0, total: 0 },
-            tokenOptimization: metrics.tokenOptimization,
-            userClicks: metrics.userClicks,
-            tabsSkipped: metrics.tabsSkipped,
-            timestamp: metrics.endTime || new Date(),
-          };
-          setWorkflowMetrics(workflowMetricsData);
-          // Show feedback after a short delay
-          setTimeout(() => {
-            setShowWorkflowFeedback(true);
-          }, 2000);
-        }
-      }
-    } catch (error) {
-      console.error('[WORKFLOW] Error tracking workflow session end:', error);
-      // Non-blocking
-    }
-
-    // ✅ PILOT METRICS: Track session completion
-    try {
-      const pilotStartDate = new Date('2024-12-19T00:00:00Z');
-      const isPilotUser = new Date() >= pilotStartDate;
-
-      if (isPilotUser && user?.uid) {
-        const sessionDuration = Math.round((new Date().getTime() - sessionStartTime.getTime()) / 1000 / 60); // minutes
-        await AnalyticsService.trackEvent('pilot_session_completed', {
-          patientId: patientIdFromUrl || demoPatient.id,
-          userId: user.uid,
-          sessionStartTime: sessionStartTime.toISOString(),
-          sessionEndTime: new Date().toISOString(),
-          sessionDurationMinutes: sessionDuration,
-          visitType,
-          soapFinalized: true,
-          hasTranscript: !!transcript?.trim(),
-          hasPhysicalTests: evaluationTests.length > 0,
-          isPilotUser: true
-        });
-        console.log('✅ [PILOT METRICS] Session completion tracked:', {
-          hasPatientId: Boolean(patientId),
-          durationMinutes: sessionDuration,
-        });
-      }
-    } catch (error) {
-      console.error('⚠️ [PILOT METRICS] Error tracking session completion:', error);
-      // Non-blocking: don't fail finalization if analytics fails
-    }
 
     // ✅ P1.3: Save finalized SOAP to Clinical Vault (Firestore)
     try {
@@ -5179,10 +5091,47 @@ const ProfessionalWorkflowPage = () => {
           retryDelay: 1000,
           enableBackup: true,
           validateBeforeSave: true,
+          noteOptions: {
+            requestedStatus: 'finalized',
+            acceptedAt: new Date().toISOString(),
+            acceptedBy: user?.uid,
+            acceptanceOperationId: finalizationOperationId,
+          },
         }
       );
 
       if (result.success && result.noteId) {
+        const persistedNoteStatusFromResult = result.noteStatus;
+        const requiresPersistedNoteLookup =
+          persistedNoteStatusFromResult == null;
+        const persistedNote =
+          requiresPersistedNoteLookup
+            ? await PersistenceService.getNoteById(result.noteId)
+            : null;
+        const persistedNoteStatus =
+          persistedNoteStatusFromResult ?? persistedNote?.status;
+        const persistedNoteWasForkedToDraft =
+          persistedNoteStatus === 'draft';
+        if (persistedNoteWasForkedToDraft) {
+          const forkWarningMessage =
+            'SOAP version forked to draft. Explicit acceptance is still required before clinical closure.';
+          await markSessionFinalizationFailed(
+            activeSessionId,
+            finalizationOperationId,
+            'soap_requires_acceptance',
+            new Error(forkWarningMessage),
+            {
+              soapNoteId: result.noteId,
+              persistedNoteStatus,
+            }
+          );
+          console.warn('[SOAP-VERSION] Note forked to draft — requires explicit acceptance', {
+            noteId: result.noteId,
+            persistedNoteStatus,
+          });
+          setAnalysisError(forkWarningMessage);
+          return;
+        }
         await updateSessionFinalizationState(
           activeSessionId,
           'soap_saved',
@@ -5361,6 +5310,118 @@ const ProfessionalWorkflowPage = () => {
               soapNoteId: result.noteId,
             }
           );
+          const completedPatientId = patientIdFromUrl;
+          const completedSessionType =
+            visitType === 'initial' ? 'initial' : 'followup';
+          const completedSessionDateKey =
+            toLocalDateKey(sessionStartTime);
+          if (completedPatientId) {
+            setSessionCompleted(
+              completedPatientId,
+              completedSessionType,
+              completedSessionDateKey
+            );
+          }
+
+          // ✅ HOSPITAL PORTAL: Show share menu after finalization
+          // The share menu will allow physiotherapists to share the note securely
+          // This is especially important for hospital workflows
+          // Note: Share menu will be opened via onShare callback in SOAPEditor
+
+          // ✅ WORKFLOW OPTIMIZATION: Track workflow session end and show feedback
+          try {
+            const hasWorkflowTrackingContext =
+              Boolean(sessionId) &&
+              Boolean(user?.uid) &&
+              Boolean(workflowRoute);
+            if (!hasWorkflowTrackingContext) {
+              console.warn(
+                '[WORKFLOW] Skipping workflow end tracking (missing sessionId or user)',
+                {
+                  hasSessionId: Boolean(sessionId),
+                  hasUserId: Boolean(user?.uid),
+                  hasWorkflowRoute: Boolean(workflowRoute),
+                }
+              );
+            } else {
+              const trackedWorkflowSessionId = sessionId as string;
+              const trackedWorkflowUserId = user?.uid as string;
+              const trackedWorkflowPatientId =
+                patientIdFromUrl || demoPatient.id;
+              const metrics = await trackWorkflowSessionEnd(
+                trackedWorkflowSessionId,
+                trackedWorkflowUserId,
+                trackedWorkflowPatientId
+              );
+              if (metrics) {
+                const hasWorkflowTimes =
+                  Boolean(metrics.endTime) &&
+                  Boolean(metrics.startTime);
+                const workflowDurationMs =
+                  hasWorkflowTimes
+                    ? new Date(metrics.endTime).getTime() - new Date(metrics.startTime).getTime()
+                    : 0;
+                console.log('[WORKFLOW] Workflow session metrics:', {
+                  totalDurationMs: workflowDurationMs,
+                  tabCount: 0,
+                  errorCount: 0,
+                  wasCompleted: Boolean(metrics.endTime),
+                });
+                const workflowType =
+                  workflowRoute?.type === 'follow-up' ? 'follow-up' : 'initial';
+                const workflowMetricsData: WorkflowMetrics = {
+                  workflowType,
+                  timeToSOAP: metrics.timeToSOAP || 0,
+                  tokenUsage: metrics.tokenUsage || { input: 0, output: 0, total: 0 },
+                  tokenOptimization: metrics.tokenOptimization,
+                  userClicks: metrics.userClicks,
+                  tabsSkipped: metrics.tabsSkipped,
+                  timestamp: metrics.endTime || new Date(),
+                };
+                setWorkflowMetrics(workflowMetricsData);
+                setTimeout(() => {
+                  setShowWorkflowFeedback(true);
+                }, 2000);
+              }
+            }
+          } catch (error) {
+            console.error('[WORKFLOW] Error tracking workflow session end:', error);
+          }
+
+          // ✅ PILOT METRICS: Track session completion
+          try {
+            const pilotStartDate = new Date('2024-12-19T00:00:00Z');
+            const currentDate = new Date();
+            const isPilotUser = currentDate >= pilotStartDate;
+            const hasPilotTrackingContext =
+              isPilotUser &&
+              Boolean(user?.uid);
+            if (hasPilotTrackingContext) {
+              const sessionDuration =
+                Math.round((currentDate.getTime() - sessionStartTime.getTime()) / 1000 / 60);
+              const trackedPilotPatientId =
+                patientIdFromUrl || demoPatient.id;
+              const trackedPilotUserId = user?.uid as string;
+              await AnalyticsService.trackEvent('pilot_session_completed', {
+                patientId: trackedPilotPatientId,
+                userId: trackedPilotUserId,
+                sessionStartTime: sessionStartTime.toISOString(),
+                sessionEndTime: currentDate.toISOString(),
+                sessionDurationMinutes: sessionDuration,
+                visitType,
+                soapFinalized: true,
+                hasTranscript: !!transcript?.trim(),
+                hasPhysicalTests: evaluationTests.length > 0,
+                isPilotUser: true
+              });
+              console.log('✅ [PILOT METRICS] Session completion tracked:', {
+                hasPatientId: Boolean(completedPatientId),
+                durationMinutes: sessionDuration,
+              });
+            }
+          } catch (error) {
+            console.error('⚠️ [PILOT METRICS] Error tracking session completion:', error);
+          }
         } else {
           await markSessionFinalizationFailed(
             activeSessionId,

@@ -14,10 +14,13 @@
 
 import PersistenceService, { SavedNote } from './PersistenceService';
 import type { SOAPData } from './PersistenceService';
+import type { NoteStatus } from './PersistenceService';
+import type { SaveSOAPNoteOptions } from './PersistenceService';
 
 export interface PersistenceResult {
   success: boolean;
   noteId?: string;
+  noteStatus?: NoteStatus;
   error?: string;
   retries?: number;
   usedBackup?: boolean;
@@ -28,6 +31,7 @@ export interface PersistenceOptions {
   retryDelay?: number; // milliseconds
   enableBackup?: boolean;
   validateBeforeSave?: boolean;
+  noteOptions?: SaveSOAPNoteOptions;
 }
 
 const DEFAULT_OPTIONS: Required<PersistenceOptions> = {
@@ -35,6 +39,7 @@ const DEFAULT_OPTIONS: Required<PersistenceOptions> = {
   retryDelay: 1000, // 1 second
   enableBackup: true,
   validateBeforeSave: true,
+  noteOptions: {},
 };
 
 /**
@@ -113,6 +118,7 @@ async function restoreFromBackup(backupKey: string): Promise<PersistenceResult |
     }
 
     const backupData = JSON.parse(backupDataStr);
+    const restoredAcceptanceOperationId = createAcceptanceOperationId();
     const result = await saveSOAPNoteWithRetry(
       backupData.soapData,
       backupData.patientId,
@@ -120,6 +126,9 @@ async function restoreFromBackup(backupKey: string): Promise<PersistenceResult |
       {
         maxRetries: 1, // Only one retry for backup restoration
         enableBackup: false, // Don't create backup of backup
+        noteOptions: {
+          acceptanceOperationId: restoredAcceptanceOperationId,
+        },
       }
     );
 
@@ -146,6 +155,20 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function createAcceptanceOperationId(): string {
+  const cryptoApi = globalThis.crypto;
+  const hasRandomUuid =
+    typeof cryptoApi?.randomUUID === 'function';
+  if (hasRandomUuid) {
+    const randomUuid = cryptoApi.randomUUID();
+    return randomUuid;
+  }
+  const fallbackTimestamp = Date.now();
+  const fallbackRandom = Math.random().toString(36).substring(2, 10);
+  const fallbackOperationId = `accept_${fallbackTimestamp}_${fallbackRandom}`;
+  return fallbackOperationId;
+}
+
 /**
  * Saves SOAP note with automatic retry and backup mechanisms
  */
@@ -156,6 +179,20 @@ export async function saveSOAPNoteWithRetry(
   options: PersistenceOptions = {}
 ): Promise<PersistenceResult> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const noteOptions = opts.noteOptions ?? {};
+  const requestedStatus = noteOptions.requestedStatus ?? 'finalized';
+  const shouldEnsureAcceptanceOperationId =
+    requestedStatus === 'finalized';
+  const acceptanceOperationId =
+    noteOptions.acceptanceOperationId;
+  const resolvedAcceptanceOperationId =
+    shouldEnsureAcceptanceOperationId && !acceptanceOperationId
+      ? createAcceptanceOperationId()
+      : acceptanceOperationId;
+  const resolvedNoteOptions = {
+    ...noteOptions,
+    acceptanceOperationId: resolvedAcceptanceOperationId,
+  };
   let lastError: Error | null = null;
   let backupKey: string | null = null;
 
@@ -183,7 +220,15 @@ export async function saveSOAPNoteWithRetry(
   // Retry loop
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
-      const noteId = await PersistenceService.saveSOAPNote(soapData, patientId, sessionId, stableNoteId);
+      const noteId = await PersistenceService.saveSOAPNote(
+        soapData,
+        patientId,
+        sessionId,
+        stableNoteId,
+        resolvedNoteOptions
+      );
+      const persistedNote = await PersistenceService.getNoteById(noteId);
+      const persistedNoteStatus = persistedNote?.status;
       
       // Success - remove backup if exists
       if (backupKey) {
@@ -196,6 +241,7 @@ export async function saveSOAPNoteWithRetry(
       return {
         success: true,
         noteId,
+        noteStatus: persistedNoteStatus,
         retries: attempt,
         usedBackup: false,
       };
@@ -340,4 +386,3 @@ export async function validateDataIntegrity(): Promise<{
     };
   }
 }
-
