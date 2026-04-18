@@ -22,6 +22,8 @@ export type SOAPData = {
   timestamp: string;
 };
 
+export type NoteStatus = 'draft' | 'finalized';
+
 type EncryptedData = {
   iv: string;
   encryptedData: string;
@@ -42,7 +44,35 @@ export interface SavedNote {
   /** WO-FIX-FOLLOWUP-VISITTYPE-SESSION-COUNT: preserve for History and session count */
   visitType?: 'initial' | 'follow-up';
   source?: 'workflow' | 'consultation';
+  status?: NoteStatus;
+  versionNumber?: number;
+  parentNoteId?: string;
+  supersedesNoteId?: string;
+  acceptedAt?: string;
+  acceptedBy?: string;
+  acceptanceOperationId?: string;
 }
+
+export interface SaveSOAPNoteOptions {
+  requestedStatus?: NoteStatus;
+  acceptedAt?: string;
+  acceptedBy?: string;
+  acceptanceOperationId?: string;
+}
+
+type PreparedNoteWrite = {
+  noteId: string;
+  createdAt: string;
+  updatedAt: string;
+  status: NoteStatus;
+  versionNumber: number;
+  parentNoteId?: string;
+  supersedesNoteId?: string;
+  acceptedAt?: string;
+  acceptedBy?: string;
+  acceptanceOperationId?: string;
+  skipWrite?: boolean;
+};
 
 export class PersistenceService {
   private static readonly COLLECTION_NAME = 'consultations';
@@ -65,7 +95,8 @@ export class PersistenceService {
     soapData: SOAPData,
     patientId: string = 'default-patient',
     sessionId: string = 'default-session',
-    noteId?: string
+    noteId?: string,
+    options: SaveSOAPNoteOptions = {}
   ): Promise<string> {
     try {
       const userId = this.getCurrentUserId();
@@ -77,22 +108,39 @@ export class PersistenceService {
         throw new Error('Patient consent (verbal or digital) is required before saving clinical notes. Please obtain consent first.');
       }
 
+      const preparedWrite = await this.prepareNoteWrite(
+        patientId,
+        sessionId,
+        noteId,
+        options
+      );
+
+      if (preparedWrite.skipWrite) {
+        return preparedWrite.noteId;
+      }
+
       // Cifrar los datos SOAP
       const encryptedData = await CryptoService.encryptMedicalData(soapData);
 
-      // Use provided noteId (idempotent retries) or generate a new one
-      const resolvedNoteId = noteId ?? this.generateNoteId();
+      const resolvedNoteId = preparedWrite.noteId;
       const savedNote: SavedNote = {
         id: resolvedNoteId,
         patientId,
         sessionId,
         soapData, // Mantener una copia sin cifrar para visualización
         encryptedData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: preparedWrite.createdAt,
+        updatedAt: preparedWrite.updatedAt,
         ownerUid: userId, // Mantener para compatibilidad con SavedNote interface
         visitType: (soapData as { visitType?: 'initial' | 'follow-up' }).visitType,
         source: (soapData as { source?: 'workflow' | 'consultation' }).source,
+        status: preparedWrite.status,
+        versionNumber: preparedWrite.versionNumber,
+        parentNoteId: preparedWrite.parentNoteId,
+        supersedesNoteId: preparedWrite.supersedesNoteId,
+        acceptedAt: preparedWrite.acceptedAt,
+        acceptedBy: preparedWrite.acceptedBy,
+        acceptanceOperationId: preparedWrite.acceptanceOperationId,
       };
 
       // ✅ FIX 1.1: Save to Firestore - Use authorUid to match Firestore rules
@@ -102,6 +150,7 @@ export class PersistenceService {
         authorUid: userId, // ✅ CRITICAL: Firestore rules expect authorUid, not ownerUid
         ownerUid: userId, // Keep for backward compatibility
       };
+      const sanitizedDataToSave = this.sanitizeForFirestore(dataToSave);
 
       console.log(`[PersistenceService] Saving note to Firestore:`, {
         collection: this.COLLECTION_NAME,
@@ -112,7 +161,7 @@ export class PersistenceService {
         createdAt: savedNote.createdAt,
       });
 
-      await setDoc(noteRef, dataToSave);
+      await setDoc(noteRef, sanitizedDataToSave);
 
       console.log(`✅ [PersistenceService] Note saved successfully with ID: ${resolvedNoteId}`);
       return resolvedNoteId;
@@ -129,31 +178,10 @@ export class PersistenceService {
    */
   static async getAllNotes(): Promise<SavedNote[]> {
     try {
-      const userId = this.getCurrentUserId();
-      const notesRef = collection(db, this.COLLECTION_NAME);
-      // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
-      const q = query(notesRef, where('authorUid', '==', userId), orderBy('createdAt', 'desc'));
-
-      console.log(`[PersistenceService] Querying notes from Firestore:`, {
-        collection: this.COLLECTION_NAME,
-        hasAuthorUid: Boolean(userId),
-      });
-
-      const snapshot = await getDocs(q);
-
-      const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-        const data = doc.data() as SavedNote;
-        console.log(`[PersistenceService] Found note:`, {
-          id: doc.id,
-          hasPatientId: Boolean(data.patientId),
-          createdAt: data.createdAt,
-          hasAuthorUid: Boolean(data.authorUid || data.ownerUid), // Support both for backward compatibility
-        });
-        return { ...data, id: doc.id };
-      });
-
-      console.log(`✅ [PersistenceService] Retrieved ${notes.length} notes for current user`);
-      return notes;
+      const notes = await this.fetchAllNotesRaw();
+      const latestNotes = this.selectLatestNotes(notes);
+      console.log(`✅ [PersistenceService] Retrieved ${latestNotes.length} notes for current user`);
+      return latestNotes;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet"
       const isPermissionDenied = error?.code === 'permission-denied' ||
@@ -203,28 +231,9 @@ export class PersistenceService {
    */
   static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
-      const userId = this.getCurrentUserId();
-      const notesRef = collection(db, this.COLLECTION_NAME);
-      // ✅ CRITICAL FIX: Use authorUid to match Firestore rules (not ownerUid)
-      // Firestore rules require: resource.data.authorUid == request.auth.uid
-      const q = query(
-        notesRef,
-        where('authorUid', '==', userId),
-        where('patientId', '==', patientId),
-        orderBy('createdAt', 'desc') // Most recent first
-      );
-      const snapshot = await getDocs(q);
-
-      console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for requested patient`, {
-        hasPatientId: Boolean(patientId),
-        hasUserId: Boolean(userId),
-      });
-
-      return snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-        const data = doc.data() as SavedNote;
-        // Ensure we have the document ID
-        return { ...data, id: doc.id };
-      });
+      const notes = await this.fetchNotesByPatientRaw(patientId);
+      const latestNotes = this.selectLatestNotes(notes);
+      return latestNotes;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet" for historical queries
       const isPermissionDenied = error?.code === 'permission-denied' ||
@@ -324,6 +333,333 @@ export class PersistenceService {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `note_${timestamp}_${random}`;
+  }
+
+  private static async fetchAllNotesRaw(): Promise<SavedNote[]> {
+    const userId = this.getCurrentUserId();
+    const notesRef = collection(db, this.COLLECTION_NAME);
+    const notesQuery = query(
+      notesRef,
+      where('authorUid', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    console.log(`[PersistenceService] Querying notes from Firestore:`, {
+      collection: this.COLLECTION_NAME,
+      hasAuthorUid: Boolean(userId),
+    });
+
+    const snapshot = await getDocs(notesQuery);
+    const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+      const data = doc.data() as SavedNote;
+      console.log(`[PersistenceService] Found note:`, {
+        id: doc.id,
+        hasPatientId: Boolean(data.patientId),
+        createdAt: data.createdAt,
+        hasAuthorUid: Boolean(data.authorUid || data.ownerUid),
+      });
+      return { ...data, id: doc.id };
+    });
+    return notes;
+  }
+
+  private static async fetchNotesByPatientRaw(patientId: string): Promise<SavedNote[]> {
+    const userId = this.getCurrentUserId();
+    const notesRef = collection(db, this.COLLECTION_NAME);
+    const notesQuery = query(
+      notesRef,
+      where('authorUid', '==', userId),
+      where('patientId', '==', patientId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(notesQuery);
+
+    console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for requested patient`, {
+      hasPatientId: Boolean(patientId),
+      hasUserId: Boolean(userId),
+    });
+
+    const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+      const data = doc.data() as SavedNote;
+      return { ...data, id: doc.id };
+    });
+    return notes;
+  }
+
+  private static async prepareNoteWrite(
+    patientId: string,
+    sessionId: string,
+    noteId: string | undefined,
+    options: SaveSOAPNoteOptions
+  ): Promise<PreparedNoteWrite> {
+    const latestNote = await this.getLatestNoteForSession(patientId, sessionId);
+    const requestedStatus = options.requestedStatus ?? 'finalized';
+    const acceptanceOperationId = options.acceptanceOperationId;
+    const explicitTargetNoteId = noteId;
+    const existingTargetNoteId = explicitTargetNoteId ?? latestNote?.id;
+    const existingTargetNote =
+      existingTargetNoteId != null
+        ? await this.getNoteById(existingTargetNoteId)
+        : null;
+    const acceptedAt =
+      requestedStatus === 'finalized'
+        ? options.acceptedAt ?? new Date().toISOString()
+        : undefined;
+    const acceptedBy =
+      requestedStatus === 'finalized'
+        ? options.acceptedBy
+        : undefined;
+    const latestNoteStatus = this.resolveNoteStatus(latestNote);
+    const latestDraftExists =
+      latestNote != null &&
+      latestNoteStatus === 'draft';
+    const latestAcceptedWithSameOperation =
+      latestNote != null &&
+      requestedStatus === 'finalized' &&
+      acceptanceOperationId != null &&
+      latestNote.acceptanceOperationId === acceptanceOperationId;
+
+    if (latestAcceptedWithSameOperation) {
+      const preservedCreatedAt = latestNote.createdAt || new Date().toISOString();
+      const currentVersionNumber = this.resolveNoteVersionNumber(latestNote);
+      return {
+        noteId: latestNote.id,
+        createdAt: preservedCreatedAt,
+        updatedAt: latestNote.updatedAt || preservedCreatedAt,
+        status: 'finalized',
+        versionNumber: currentVersionNumber,
+        parentNoteId: latestNote.parentNoteId,
+        supersedesNoteId: latestNote.supersedesNoteId,
+        acceptedAt: latestNote.acceptedAt,
+        acceptedBy: latestNote.acceptedBy,
+        acceptanceOperationId: latestNote.acceptanceOperationId,
+        skipWrite: true,
+      };
+    }
+
+    if (latestDraftExists) {
+      const latestDraft = latestNote;
+      const preservedCreatedAt = latestDraft.createdAt || new Date().toISOString();
+      const nextUpdatedAt = new Date().toISOString();
+      const currentVersionNumber = this.resolveNoteVersionNumber(latestDraft);
+      return {
+        noteId: latestDraft.id,
+        createdAt: preservedCreatedAt,
+        updatedAt: nextUpdatedAt,
+        status: requestedStatus,
+        versionNumber: currentVersionNumber,
+        parentNoteId: latestDraft.parentNoteId,
+        supersedesNoteId: latestDraft.supersedesNoteId,
+        acceptedAt,
+        acceptedBy,
+        acceptanceOperationId,
+      };
+    }
+
+    const explicitTargetStatus = this.resolveNoteStatus(existingTargetNote);
+    const shouldCreateNewVersion =
+      existingTargetNote != null &&
+      explicitTargetStatus === 'finalized' &&
+      requestedStatus === 'draft';
+
+    const shouldForkFinalizedIntoDraft =
+      existingTargetNote != null &&
+      explicitTargetStatus === 'finalized' &&
+      requestedStatus === 'finalized';
+
+    if (shouldCreateNewVersion) {
+      const finalizedSourceNote = latestNote ?? existingTargetNote;
+      if (!finalizedSourceNote) {
+        throw new Error('Cannot create note version without source note');
+      }
+      const latestVersionNumber = this.resolveNoteVersionNumber(finalizedSourceNote);
+      const nextVersionNumber = latestVersionNumber + 1;
+      const baseRootId = finalizedSourceNote.parentNoteId ?? finalizedSourceNote.id;
+      const nextNoteId = this.buildVersionedNoteId(baseRootId, nextVersionNumber);
+      const nextCreatedAt = new Date().toISOString();
+      const nextUpdatedAt = nextCreatedAt;
+      return {
+        noteId: nextNoteId,
+        createdAt: nextCreatedAt,
+        updatedAt: nextUpdatedAt,
+        status: requestedStatus,
+        versionNumber: nextVersionNumber,
+        parentNoteId: baseRootId,
+        supersedesNoteId: finalizedSourceNote.id,
+        acceptedAt,
+        acceptedBy,
+        acceptanceOperationId,
+      };
+    }
+
+    if (shouldForkFinalizedIntoDraft) {
+      const finalizedSourceNote = latestNote ?? existingTargetNote;
+      if (!finalizedSourceNote) {
+        throw new Error('Cannot fork finalized note without source note');
+      }
+      const latestVersionNumber = this.resolveNoteVersionNumber(finalizedSourceNote);
+      const nextVersionNumber = latestVersionNumber + 1;
+      const baseRootId = finalizedSourceNote.parentNoteId ?? finalizedSourceNote.id;
+      const nextNoteId = this.buildVersionedNoteId(baseRootId, nextVersionNumber);
+      const nextCreatedAt = new Date().toISOString();
+      const nextUpdatedAt = nextCreatedAt;
+      return {
+        noteId: nextNoteId,
+        createdAt: nextCreatedAt,
+        updatedAt: nextUpdatedAt,
+        status: 'draft',
+        versionNumber: nextVersionNumber,
+        parentNoteId: baseRootId,
+        supersedesNoteId: finalizedSourceNote.id,
+      };
+    }
+
+    if (existingTargetNote) {
+      const preservedCreatedAt = existingTargetNote.createdAt || new Date().toISOString();
+      const nextUpdatedAt = new Date().toISOString();
+      const currentVersionNumber = this.resolveNoteVersionNumber(existingTargetNote);
+      return {
+        noteId: existingTargetNote.id,
+        createdAt: preservedCreatedAt,
+        updatedAt: nextUpdatedAt,
+        status: requestedStatus,
+        versionNumber: currentVersionNumber,
+        parentNoteId: existingTargetNote.parentNoteId,
+        supersedesNoteId: existingTargetNote.supersedesNoteId,
+        acceptedAt,
+        acceptedBy,
+        acceptanceOperationId,
+      };
+    }
+
+    const freshNoteId = noteId ?? this.generateNoteId();
+    const freshCreatedAt = new Date().toISOString();
+    const freshUpdatedAt = freshCreatedAt;
+    return {
+      noteId: freshNoteId,
+      createdAt: freshCreatedAt,
+      updatedAt: freshUpdatedAt,
+      status: requestedStatus,
+      versionNumber: 1,
+      acceptedAt,
+      acceptedBy,
+      acceptanceOperationId,
+    };
+  }
+
+  private static async getLatestNoteForSession(
+    patientId: string,
+    sessionId: string
+  ): Promise<SavedNote | null> {
+    try {
+      const notes = await this.fetchNotesByPatientRaw(patientId);
+      const matchingNotes = notes.filter((note) => note.sessionId === sessionId);
+      if (matchingNotes.length === 0) {
+        return null;
+      }
+      const sortedNotes = matchingNotes.sort((leftNote, rightNote) => {
+        const leftVersionNumber = this.resolveNoteVersionNumber(leftNote);
+        const rightVersionNumber = this.resolveNoteVersionNumber(rightNote);
+        const versionDifference = rightVersionNumber - leftVersionNumber;
+        if (versionDifference !== 0) {
+          return versionDifference;
+        }
+        const leftTimestamp = this.resolveNoteOrderingTimestamp(leftNote);
+        const rightTimestamp = this.resolveNoteOrderingTimestamp(rightNote);
+        return rightTimestamp - leftTimestamp;
+      });
+      const latestNote = sortedNotes[0];
+      return latestNote ?? null;
+    } catch (error) {
+      console.error('[PersistenceService] Error resolving latest note for session:', error);
+      return null;
+    }
+  }
+
+  private static selectLatestNotes(notes: SavedNote[]): SavedNote[] {
+    const latestBySessionId = new Map<string, SavedNote>();
+    notes.forEach((note) => {
+      const groupingKey = note.sessionId || note.id;
+      const currentLatest = latestBySessionId.get(groupingKey);
+      if (!currentLatest) {
+        latestBySessionId.set(groupingKey, note);
+        return;
+      }
+      const currentVersionNumber = this.resolveNoteVersionNumber(currentLatest);
+      const candidateVersionNumber = this.resolveNoteVersionNumber(note);
+      if (candidateVersionNumber > currentVersionNumber) {
+        latestBySessionId.set(groupingKey, note);
+        return;
+      }
+      if (candidateVersionNumber < currentVersionNumber) {
+        return;
+      }
+      const currentTimestamp = this.resolveNoteOrderingTimestamp(currentLatest);
+      const candidateTimestamp = this.resolveNoteOrderingTimestamp(note);
+      if (candidateTimestamp > currentTimestamp) {
+        latestBySessionId.set(groupingKey, note);
+      }
+    });
+    const latestNotes = Array.from(latestBySessionId.values());
+    const sortedLatestNotes = latestNotes.sort((leftNote, rightNote) => {
+      const leftTimestamp = this.resolveNoteOrderingTimestamp(leftNote);
+      const rightTimestamp = this.resolveNoteOrderingTimestamp(rightNote);
+      return rightTimestamp - leftTimestamp;
+    });
+    return sortedLatestNotes;
+  }
+
+  private static resolveNoteStatus(note: SavedNote | null | undefined): NoteStatus {
+    const explicitStatus = note?.status;
+    if (explicitStatus === 'draft' || explicitStatus === 'finalized') {
+      return explicitStatus;
+    }
+    return 'finalized';
+  }
+
+  private static resolveNoteVersionNumber(note: SavedNote | null | undefined): number {
+    const explicitVersion = note?.versionNumber;
+    const hasValidVersion =
+      typeof explicitVersion === 'number' &&
+      Number.isFinite(explicitVersion) &&
+      explicitVersion > 0;
+    if (hasValidVersion) {
+      return explicitVersion;
+    }
+    return 1;
+  }
+
+  private static resolveNoteOrderingTimestamp(note: SavedNote): number {
+    const updatedAtValue = Date.parse(note.updatedAt || '');
+    if (Number.isFinite(updatedAtValue)) {
+      return updatedAtValue;
+    }
+    const createdAtValue = Date.parse(note.createdAt || '');
+    if (Number.isFinite(createdAtValue)) {
+      return createdAtValue;
+    }
+    return 0;
+  }
+
+  private static buildVersionedNoteId(baseNoteId: string, versionNumber: number): string {
+    const baseId = baseNoteId.replace(/_v\d+$/, '');
+    if (versionNumber <= 1) {
+      return baseId;
+    }
+    return `${baseId}_v${versionNumber}`;
+  }
+
+  private static sanitizeForFirestore<T extends Record<string, unknown>>(payload: T): T {
+    const sanitizedPayload = { ...payload };
+    const payloadKeys = Object.keys(sanitizedPayload) as Array<keyof T>;
+    payloadKeys.forEach((payloadKey) => {
+      const payloadValue = sanitizedPayload[payloadKey];
+      const isUndefinedValue = payloadValue === undefined;
+      if (isUndefinedValue) {
+        delete sanitizedPayload[payloadKey];
+      }
+    });
+    return sanitizedPayload;
   }
 }
 

@@ -86,29 +86,32 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
       setError(null);
       setSaveSuccessMessage(null);
       const updatedTimestamp = new Date().toISOString();
+      const requestedStatus = 'draft';
       const updatedSOAP = {
         ...currentSOAP,
         timestamp: updatedTimestamp,
       };
-      const updatedNote = {
-        ...currentNote,
-        soapData: updatedSOAP,
-        updatedAt: updatedTimestamp,
-      };
       const savedNoteId = await PersistenceService.saveSOAPNote(
-        updatedNote.soapData,
+        updatedSOAP,
         currentNote.patientId,
         currentNote.sessionId,
         currentNote.id,
+        {
+          requestedStatus,
+        }
       );
-      const persistedNote = {
-        ...updatedNote,
+      const persistedNote = await PersistenceService.getNoteById(savedNoteId);
+      const nextNote = persistedNote ?? {
+        ...currentNote,
         id: savedNoteId,
+        soapData: updatedSOAP,
+        updatedAt: updatedTimestamp,
+        status: requestedStatus,
       };
-      setNote(persistedNote);
-      setEditedSOAP(persistedNote.soapData);
+      setNote(nextNote);
+      setEditedSOAP(nextNote.soapData);
       setIsEditing(false);
-      setSaveSuccessMessage('Cambios guardados correctamente.');
+      setSaveSuccessMessage('Nueva revisión guardada correctamente.');
     } catch (saveError) {
       console.error('Error saving note changes:', saveError);
       setError('No se pudieron guardar los cambios.');
@@ -207,7 +210,7 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({ id }) => {
               <button
                 onClick={handleSaveChanges}
                 disabled={!editedSOAP}
-                className="rounded-lg bg-brand-in-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-in-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Guardar cambios
               </button>
