@@ -256,15 +256,16 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4 py-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center overflow-x-hidden px-4 py-4 sm:py-6">
+      <div className="w-full max-w-5xl">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] md:items-center md:gap-8 lg:gap-12">
         {/* Header Section - Apple-Style Thin Typography */}
-        <div className="text-center mb-8">
+        <div className="text-center md:text-left">
           <p className="text-[10px] font-light text-gray-500 uppercase tracking-[0.02em] mb-4 font-apple">
             {t('landing.headerBadge')}
           </p>
 
-          <h1 className="text-3xl sm:text-4xl font-light mb-3 tracking-[-0.02em] leading-[1.1] font-apple">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light mb-3 tracking-[-0.02em] leading-[1.1] font-apple">
             {t('landing.welcomeTitle')}{' '}
             <span className="bg-gradient-to-r from-primary-blue to-primary-purple bg-clip-text text-transparent font-medium">
               AiduxCare
@@ -272,13 +273,14 @@ const LoginPage: React.FC = () => {
             {!isSpainPilot() && <span className="ml-2 text-2xl">🍁</span>}
           </h1>
 
-          <p className="text-lg text-gray-600 font-light leading-[1.3] font-apple">
+          <p className="text-base sm:text-lg text-gray-600 font-light leading-[1.3] font-apple max-w-xl md:max-w-md">
             {t('landing.tagline')}
           </p>
         </div>
 
+        <div>
         {/* Single Login Card - Compact Design */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-5 text-center font-apple">
             {t('login.title')}
           </h2>
@@ -436,8 +438,8 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Trust Footer — Canada: PHIPA; Spain pilot: RGPD */}
-        <div className="text-center">
-          <p className="text-[12px] text-gray-500 font-apple font-light flex items-center justify-center gap-1">
+        <div className="text-center mt-4">
+          <p className="text-[12px] text-gray-500 font-apple font-light flex flex-wrap items-center justify-center gap-1 sm:gap-2">
             {!isSpainPilot() && <span>🍁</span>}
             <span>
               {isSpainPilot()
@@ -445,6 +447,8 @@ const LoginPage: React.FC = () => {
                 : 'PHIPA Compliant • SSL Secured • 100% Canadian Data'}
             </span>
           </p>
+        </div>
+        </div>
         </div>
       </div>
     </div>
