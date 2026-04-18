@@ -99,7 +99,7 @@ const UnifiedLandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <div className="min-h-screen flex flex-col overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-4">
@@ -111,10 +111,10 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 sm:py-8 lg:py-10 xl:py-12">
+      <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 flex-1 flex flex-col justify-between py-4 sm:py-6">
         {/* Main Title */}
-        <div className="text-center mb-6 sm:mb-8 lg:mb-10">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light text-gray-900 mb-3 tracking-tight leading-tight">
+        <div className="text-center mb-3 sm:mb-4 lg:mb-5">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-3xl xl:text-4xl font-light text-gray-900 mb-3 tracking-tight leading-tight">
             {t('landing.welcomeTitle')} <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent font-normal">AiduxCare</span>{!esPilot && ' 🍁'}
           </h1>
           <p className="text-lg sm:text-xl lg:text-xl text-gray-600 font-light">
@@ -126,7 +126,7 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
 
         {/* Compliance Badge */}
-        <div className="flex justify-center mb-6 sm:mb-8 lg:mb-10">
+        <div className="flex justify-center mb-3 sm:mb-4 lg:mb-5">
           <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 bg-gradient-to-r from-green-50 via-blue-50 to-green-50 border border-green-300/50 rounded-full text-xs font-medium text-gray-700 shadow-sm max-w-2xl">
             <Shield className="w-3.5 h-3.5 text-green-600" />
             <span>{t('landing.complianceBadge')}</span>
@@ -134,7 +134,7 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
 
         {/* Three Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 xl:gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-4 xl:gap-5 mb-4">
           {/* CARD 1: Hospital Patient */}
           <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-5 xl:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 flex flex-col">
             <div className="text-center mb-4">
