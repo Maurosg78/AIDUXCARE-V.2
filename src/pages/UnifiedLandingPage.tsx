@@ -111,41 +111,41 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 sm:py-16 lg:py-20 xl:py-24">
+      <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 sm:py-8 lg:py-10 xl:py-12">
         {/* Main Title */}
-        <div className="text-center mb-10 sm:mb-12 lg:mb-16">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light text-gray-900 mb-4 tracking-tight leading-tight">
+        <div className="text-center mb-6 sm:mb-8 lg:mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-light text-gray-900 mb-3 tracking-tight leading-tight">
             {t('landing.welcomeTitle')} <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent font-normal">AiduxCare</span>{!esPilot && ' 🍁'}
           </h1>
-          <p className="text-xl sm:text-2xl text-gray-600 font-light">
+          <p className="text-lg sm:text-xl lg:text-xl text-gray-600 font-light">
             {t('landing.tagline')}
           </p>
-          <p className="text-sm text-gray-500 mt-4 font-light">
+          <p className="text-sm text-gray-500 mt-3 font-light">
             {t('landing.chooseWorkflow')}
           </p>
         </div>
 
         {/* Compliance Badge */}
-        <div className="flex justify-center mb-10 sm:mb-12 lg:mb-16">
-          <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-gradient-to-r from-green-50 via-blue-50 to-green-50 border border-green-300/50 rounded-full text-xs font-medium text-gray-700 shadow-sm max-w-2xl">
+        <div className="flex justify-center mb-6 sm:mb-8 lg:mb-10">
+          <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 bg-gradient-to-r from-green-50 via-blue-50 to-green-50 border border-green-300/50 rounded-full text-xs font-medium text-gray-700 shadow-sm max-w-2xl">
             <Shield className="w-3.5 h-3.5 text-green-600" />
             <span>{t('landing.complianceBadge')}</span>
           </div>
         </div>
 
         {/* Three Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 xl:gap-10 2xl:gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 xl:gap-8 mb-8">
           {/* CARD 1: Hospital Patient */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 xl:p-9 2xl:p-10 border border-gray-200 hover:shadow-xl transition-all duration-300 flex flex-col">
-            <div className="text-center mb-6">
-              <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-200/80">
-                <Building2 className="w-11 h-11 text-gray-700" strokeWidth={1.5} />
+          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-5 xl:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 flex flex-col">
+            <div className="text-center mb-4">
+              <div className="bg-gradient-to-br from-gray-50 via-white to-gray-100 rounded-full w-16 h-16 lg:w-14 lg:h-14 xl:w-16 xl:h-16 flex items-center justify-center mx-auto mb-4 shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-200/80">
+                <Building2 className="w-9 h-9 lg:w-8 lg:h-8 xl:w-9 xl:h-9 text-gray-700" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-normal text-gray-900 mb-2">{t('landing.hospitalPatient')}</h2>
+              <h2 className="text-xl lg:text-lg xl:text-xl font-normal text-gray-900 mb-2">{t('landing.hospitalPatient')}</h2>
               <p className="text-sm text-gray-500 font-light">{t('landing.hospitalPatientDesc')}</p>
             </div>
 
-            <form onSubmit={handleInpatientAccess} className="space-y-4">
+            <form onSubmit={handleInpatientAccess} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">{t('landing.visitCode')}</label>
                 <input
@@ -157,7 +157,7 @@ const UnifiedLandingPage: React.FC = () => {
                   }}
                   placeholder={t('landing.visitCodePlaceholder')}
                   maxLength={20}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase bg-white text-gray-900 text-sm placeholder-gray-400 transition-all"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase bg-white text-gray-900 text-sm placeholder-gray-400 transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1.5 font-light">
                   {t('landing.visitCodeHint')}
@@ -174,7 +174,7 @@ const UnifiedLandingPage: React.FC = () => {
                     setInpatientError(null);
                   }}
                   placeholder={t('landing.passwordPlaceholder')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 text-sm placeholder-gray-400 transition-all"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 text-sm placeholder-gray-400 transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1.5 font-light">
                   {t('landing.passwordHint')}
@@ -193,7 +193,7 @@ const UnifiedLandingPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || !visitCode.trim() || !visitPassword.trim()}
-                className={`w-full px-6 py-3.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-base shadow-lg ${isLoading || !visitCode.trim() || !visitPassword.trim()
+                className={`w-full px-5 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm lg:text-base shadow-lg ${isLoading || !visitCode.trim() || !visitPassword.trim()
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl shadow-blue-500/30'
                   }`}
@@ -213,7 +213,7 @@ const UnifiedLandingPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-start gap-2 text-xs text-gray-600">
                 <Shield className="w-4 h-4 mt-0.5 text-gray-700 flex-shrink-0" />
                 <div className="font-light">
@@ -225,26 +225,26 @@ const UnifiedLandingPage: React.FC = () => {
           </div>
 
           {/* CARD 2: Private Practice */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 xl:p-9 2xl:p-10 border border-gray-200 hover:shadow-xl transition-all duration-300 flex flex-col">
-            <div className="text-center mb-6">
-              <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-[0_10px_40px_rgba(59,130,246,0.35)] ring-4 ring-blue-100/50">
-                <User className="w-11 h-11 text-white" strokeWidth={1.5} />
+          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-5 xl:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 flex flex-col">
+            <div className="text-center mb-4">
+              <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full w-16 h-16 lg:w-14 lg:h-14 xl:w-16 xl:h-16 flex items-center justify-center mx-auto mb-4 shadow-[0_10px_40px_rgba(59,130,246,0.35)] ring-4 ring-blue-100/50">
+                <User className="w-9 h-9 lg:w-8 lg:h-8 xl:w-9 xl:h-9 text-white" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-normal text-gray-900 mb-2">{t('landing.privatePractice')}</h2>
+              <h2 className="text-xl lg:text-lg xl:text-xl font-normal text-gray-900 mb-2">{t('landing.privatePractice')}</h2>
               <p className="text-sm text-gray-500 font-light">{t('landing.privatePracticeDesc')}</p>
             </div>
 
-            <div className="space-y-6 mb-6">
+            <div className="space-y-4 mb-4">
               <button
                 onClick={() => navigate('/login')}
-                className="w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl shadow-blue-500/30 text-base"
+                className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl shadow-blue-500/30 text-sm lg:text-base"
               >
                 <span>{t('landing.loginToDashboard')}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2.5 mb-4">
               <div className="flex items-start gap-2 text-sm text-gray-700">
                 <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600 flex-shrink-0" />
                 <span className="font-light">{t('landing.accessCommandCenter')}</span>
@@ -259,7 +259,7 @@ const UnifiedLandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-gray-200">
+            <div className="mt-auto pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center font-light">
                 {t('landing.commandCenterFlow')}
               </p>
@@ -267,25 +267,25 @@ const UnifiedLandingPage: React.FC = () => {
           </div>
 
           {/* CARD 3: Get Started (Onboarding) - PROTAGONISTA */}
-          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 sm:p-8 xl:p-9 2xl:p-10 border-2 border-blue-400/50 ring-4 ring-blue-100/50 hover:shadow-2xl transition-all duration-300 flex flex-col">
-            <div className="text-center mb-6">
-              <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-[0_10px_40px_rgba(99,102,241,0.45)] ring-4 ring-indigo-100/50">
-                <UserPlus className="w-11 h-11 text-white" strokeWidth={1.5} />
+          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl shadow-xl p-5 sm:p-6 lg:p-5 xl:p-6 border-2 border-blue-400/50 ring-4 ring-blue-100/50 hover:shadow-2xl transition-all duration-300 flex flex-col">
+            <div className="text-center mb-4">
+              <div className="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full w-16 h-16 lg:w-14 lg:h-14 xl:w-16 xl:h-16 flex items-center justify-center mx-auto mb-4 shadow-[0_10px_40px_rgba(99,102,241,0.45)] ring-4 ring-indigo-100/50">
+                <UserPlus className="w-9 h-9 lg:w-8 lg:h-8 xl:w-9 xl:h-9 text-white" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-normal text-gray-900 mb-2">{t('landing.getStarted')}</h2>
+              <h2 className="text-xl lg:text-lg xl:text-xl font-normal text-gray-900 mb-2">{t('landing.getStarted')}</h2>
               <p className="text-sm text-gray-500 font-light">{t('landing.newToAiduxCare')}</p>
             </div>
 
-            <div className="space-y-6 mb-6">
+            <div className="space-y-4 mb-4">
               <button
                 onClick={() => navigate('/professional-onboarding')}
-                className="w-full px-6 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-xl font-semibold hover:bg-blue-50 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl shadow-blue-500/30 text-base"
+                className="w-full px-5 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-xl font-semibold hover:bg-blue-50 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl shadow-blue-500/30 text-sm lg:text-base"
               >
                 <span>{t('landing.signUpHere')}</span>
               </button>
             </div>
 
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2.5 mb-4">
               <div className="flex items-start gap-2 text-sm text-gray-700">
                 <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600 flex-shrink-0" />
                 <span className="font-light">{t('landing.createAccount')}</span>
@@ -300,7 +300,7 @@ const UnifiedLandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-auto pt-6 border-t border-gray-200">
+            <div className="mt-auto pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center font-light">
                 {t('landing.notPartYet')}
               </p>
@@ -310,24 +310,24 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
 
         {/* Footer Compliance Bar */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-gray-200">
-          <div className="flex items-center justify-center gap-12 flex-wrap text-center">
-            <div className="flex items-center gap-3 bg-green-50 px-4 py-2.5 rounded-xl border border-green-200/50">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-5 border border-gray-200">
+          <div className="flex items-center justify-center gap-4 sm:gap-6 lg:gap-8 flex-wrap text-center">
+            <div className="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-xl border border-green-200/50">
               <Shield className="w-5 h-5 text-green-600" />
               <span className="text-sm text-gray-700 font-medium">{t('landing.phipaCompliant')}</span>
             </div>
-            <div className="flex items-center gap-3 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200/50">
+            <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200/50">
               <Lock className="w-5 h-5 text-blue-600" />
               <span className="text-sm text-gray-700 font-medium">{t('landing.sslSecured')}</span>
             </div>
             {!esPilot && (
-              <div className="flex items-center gap-3 bg-red-50 px-4 py-2.5 rounded-xl border border-red-200/50">
+              <div className="flex items-center gap-3 bg-red-50 px-4 py-2 rounded-xl border border-red-200/50">
                 <span className="text-lg" aria-hidden>🍁</span>
                 <span className="text-sm text-gray-700 font-medium">{t('landing.canadianData')}</span>
               </div>
             )}
             {esPilot && (
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200/50">
+              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200/50">
                 <Shield className="w-5 h-5 text-slate-600" />
                 <span className="text-sm text-gray-700 font-medium">{t('landing.canadianData')}</span>
               </div>
@@ -336,8 +336,8 @@ const UnifiedLandingPage: React.FC = () => {
         </div>
 
         {/* Footer Links */}
-        <div className="text-center mt-8">
-          <div className="flex items-center justify-center gap-6 text-xs text-gray-600 font-light">
+        <div className="text-center mt-5">
+          <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs text-gray-600 font-light flex-wrap">
             <a
               href="/privacy-policy"
               className="hover:text-gray-900 transition-colors"
@@ -358,4 +358,3 @@ const UnifiedLandingPage: React.FC = () => {
 };
 
 export default UnifiedLandingPage;
-
