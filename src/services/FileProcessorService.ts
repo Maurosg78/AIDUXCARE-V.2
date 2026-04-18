@@ -148,8 +148,14 @@ function stripImageDisclaimer(value: string): string {
 
 export function mergeImageExtractionResults(
   visualExtraction: string,
-  ocrExtraction: string,
+  ocrExtraction: string | null,
 ): string {
+  const hasMissingOcrExtraction = !ocrExtraction || ocrExtraction.trim() === '';
+  if (hasMissingOcrExtraction) {
+    const visualOnlyResult = ensureImageDisclaimer(stripImageDisclaimer(visualExtraction));
+    return visualOnlyResult;
+  }
+
   const visualScore = scoreImageExtractionUtility(visualExtraction);
   const ocrScore = scoreImageExtractionUtility(ocrExtraction);
   const visualBody = stripImageDisclaimer(visualExtraction);
@@ -342,14 +348,23 @@ export class FileProcessorService {
       file,
       IMAGE_CLINICAL_DESCRIPTION_PROMPT,
     );
-    const ocrExtraction = await FileProcessorService.callVertexImagePrompt(file, IMAGE_OCR_PROMPT);
-    const mergedExtraction = mergeImageExtractionResults(visualExtraction, ocrExtraction);
+    const ocrExtractionResult = await (async () => {
+      try {
+        const ocrResult = await FileProcessorService.callVertexImagePrompt(file, IMAGE_OCR_PROMPT);
+        return ocrResult;
+      } catch (ocrError) {
+        console.warn('[FileProcessor] OCR extraction failed, falling back to visual only:', ocrError);
+        return null;
+      }
+    })();
+    const mergedExtraction = mergeImageExtractionResults(visualExtraction, ocrExtractionResult);
     const mergedScore = scoreImageExtractionUtility(mergedExtraction);
+    const ocrScore = scoreImageExtractionUtility(ocrExtractionResult ?? '');
 
     console.info('[FileProcessor] Image analysis completed', {
       fileName: file.name,
       visualScore: scoreImageExtractionUtility(visualExtraction),
-      ocrScore: scoreImageExtractionUtility(ocrExtraction),
+      ocrScore,
       mergedScore,
     });
 
