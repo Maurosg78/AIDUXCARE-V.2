@@ -79,6 +79,7 @@ const CONSENT_COPY = {
     acceptButton: 'I Accept and Provide Consent',
     or: 'or',
     declineButton: 'I Decline Consent',
+    printButton: 'Print consent',
     footerLaw: "This consent is governed by Ontario's Personal Health Information Protection Act (PHIPA)",
     footerWithdraw: 'You can withdraw consent at any time by contacting your healthcare provider',
     acceptRecorded: 'Consent accepted via Cloud Function',
@@ -125,6 +126,7 @@ const CONSENT_COPY = {
     acceptButton: 'Acepto y doy mi consentimiento',
     or: 'o',
     declineButton: 'Rechazo el consentimiento',
+    printButton: 'Imprimir consentimiento',
     footerLaw: 'Este consentimiento se rige por la normativa aplicable de protección de datos y documentación clínica.',
     footerWithdraw: 'Puedes retirar el consentimiento en cualquier momento contactando con tu profesional sanitario',
     acceptRecorded: 'Consentimiento aceptado mediante Cloud Function',
@@ -312,6 +314,11 @@ export default function PatientConsentPortalPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePrintConsent = () => {
+    const printWindow = window;
+    printWindow.print();
   };
 
   const handleDeclineConsent = async () => {
@@ -505,6 +512,16 @@ export default function PatientConsentPortalPage() {
                 {consentText}
               </div>
             </div>
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handlePrintConsent}
+              className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-900 font-medium py-3 px-5 rounded-lg transition-colors border border-gray-300"
+            >
+              {copy.printButton}
+            </button>
           </div>
 
           {error && (
