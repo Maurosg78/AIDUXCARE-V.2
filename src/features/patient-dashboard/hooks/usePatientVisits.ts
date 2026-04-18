@@ -29,6 +29,23 @@ export interface PatientVisit {
   source: 'consultation' | 'encounter' | 'episode' | 'session';
 }
 
+const parseClinicalDate = (clinicalDate: string | undefined): Date | null => {
+  const hasClinicalDate =
+    typeof clinicalDate === 'string' &&
+    clinicalDate.trim() !== '';
+  if (!hasClinicalDate) {
+    return null;
+  }
+  const safeDateString = `${clinicalDate}T12:00:00`;
+  const parsedDate = new Date(safeDateString);
+  const parsedDateMs = parsedDate.getTime();
+  const isValidDate = Number.isFinite(parsedDateMs);
+  if (!isValidDate) {
+    return null;
+  }
+  return parsedDate;
+};
+
 /**
  * Hook to fetch all visits (consultations, encounters) for a patient
  * Combines data from multiple collections to show complete history
@@ -156,7 +173,11 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             const type: 'initial' | 'follow-up' = noteVisitType ?? sessionIdToType.get(sessionId ?? '') ?? 'initial';
             const hasSessionId = typeof sessionId === 'string' && sessionId.trim() !== '';
             const linkedSessionDate = hasSessionId ? sessionDateById.get(sessionId as string) : undefined;
-            const noteDate = linkedSessionDate ?? new Date(note.createdAt || Date.now());
+            const noteClinicalDate = parseClinicalDate(note.clinicalDate);
+            const noteDate = linkedSessionDate ?? noteClinicalDate ?? new Date(note.createdAt || Date.now());
+            const noteStatus = note.status === 'draft' ? 'draft' : 'finalized';
+            const visitStatus = noteStatus === 'draft' ? 'draft' : 'completed';
+            const soapStatus = noteStatus === 'draft' ? 'draft' : 'finalized';
 
             if (hasSessionId) {
               const normalizedSessionId = sessionId as string;
@@ -173,8 +194,8 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
               id: note.id,
               type,
               date: noteDate,
-              status: 'completed', // Consultations are saved as completed
-              soapNote: { status: 'finalized' }, // Saved notes treated as finalized
+              status: visitStatus,
+              soapNote: { status: soapStatus },
               sessionIdForResume: sessionId, // For "Resume" / "Close IA" in workflow
               soap: {
                 subjective: soapData.subjective,

@@ -34,6 +34,7 @@ export interface SavedNote {
   id: string;
   patientId: string;
   sessionId: string;
+  clinicalDate?: string;
   soapData: SOAPData;
   encryptedData: EncryptedData;
   createdAt: string;
@@ -55,6 +56,9 @@ export interface SavedNote {
 
 export interface SaveSOAPNoteOptions {
   requestedStatus?: NoteStatus;
+  clinicalDate?: string;
+  visitType?: 'initial' | 'follow-up';
+  source?: 'workflow' | 'consultation';
   acceptedAt?: string;
   acceptedBy?: string;
   acceptanceOperationId?: string;
@@ -62,6 +66,9 @@ export interface SaveSOAPNoteOptions {
 
 type PreparedNoteWrite = {
   noteId: string;
+  clinicalDate?: string;
+  visitType?: 'initial' | 'follow-up';
+  source?: 'workflow' | 'consultation';
   createdAt: string;
   updatedAt: string;
   status: NoteStatus;
@@ -127,13 +134,14 @@ export class PersistenceService {
         id: resolvedNoteId,
         patientId,
         sessionId,
+        clinicalDate: preparedWrite.clinicalDate,
         soapData, // Mantener una copia sin cifrar para visualización
         encryptedData,
         createdAt: preparedWrite.createdAt,
         updatedAt: preparedWrite.updatedAt,
         ownerUid: userId, // Mantener para compatibilidad con SavedNote interface
-        visitType: (soapData as { visitType?: 'initial' | 'follow-up' }).visitType,
-        source: (soapData as { source?: 'workflow' | 'consultation' }).source,
+        visitType: preparedWrite.visitType,
+        source: preparedWrite.source,
         status: preparedWrite.status,
         versionNumber: preparedWrite.versionNumber,
         parentNoteId: preparedWrite.parentNoteId,
@@ -409,6 +417,37 @@ export class PersistenceService {
       requestedStatus === 'finalized'
         ? options.acceptedBy
         : undefined;
+    const providedClinicalDate = typeof options.clinicalDate === 'string'
+      ? options.clinicalDate.trim()
+      : '';
+    const hasProvidedClinicalDate = providedClinicalDate !== '';
+    const requestedClinicalDate = this.normalizeClinicalDate(options.clinicalDate);
+    const isInvalidProvidedClinicalDate =
+      hasProvidedClinicalDate &&
+      requestedClinicalDate === undefined;
+    if (isInvalidProvidedClinicalDate) {
+      throw new Error('Clinical date must be a valid past or present date.');
+    }
+    const latestNoteClinicalDate = this.normalizeClinicalDate(latestNote?.clinicalDate);
+    const existingTargetClinicalDate = this.normalizeClinicalDate(existingTargetNote?.clinicalDate);
+    const resolvedClinicalDate =
+      requestedClinicalDate ??
+      existingTargetClinicalDate ??
+      latestNoteClinicalDate;
+    const requestedVisitType = options.visitType;
+    const latestNoteVisitType = latestNote?.visitType;
+    const existingTargetVisitType = existingTargetNote?.visitType;
+    const resolvedVisitType =
+      requestedVisitType ??
+      existingTargetVisitType ??
+      latestNoteVisitType;
+    const requestedSource = options.source;
+    const latestNoteSource = latestNote?.source;
+    const existingTargetSource = existingTargetNote?.source;
+    const resolvedSource =
+      requestedSource ??
+      existingTargetSource ??
+      latestNoteSource;
     const latestNoteStatus = this.resolveNoteStatus(latestNote);
     const latestDraftExists =
       latestNote != null &&
@@ -424,6 +463,9 @@ export class PersistenceService {
       const currentVersionNumber = this.resolveNoteVersionNumber(latestNote);
       return {
         noteId: latestNote.id,
+        clinicalDate: latestNote.clinicalDate,
+        visitType: latestNote.visitType,
+        source: latestNote.source,
         createdAt: preservedCreatedAt,
         updatedAt: latestNote.updatedAt || preservedCreatedAt,
         status: 'finalized',
@@ -444,6 +486,9 @@ export class PersistenceService {
       const currentVersionNumber = this.resolveNoteVersionNumber(latestDraft);
       return {
         noteId: latestDraft.id,
+        clinicalDate: resolvedClinicalDate,
+        visitType: resolvedVisitType,
+        source: resolvedSource,
         createdAt: preservedCreatedAt,
         updatedAt: nextUpdatedAt,
         status: requestedStatus,
@@ -480,6 +525,9 @@ export class PersistenceService {
       const nextUpdatedAt = nextCreatedAt;
       return {
         noteId: nextNoteId,
+        clinicalDate: resolvedClinicalDate,
+        visitType: resolvedVisitType,
+        source: resolvedSource,
         createdAt: nextCreatedAt,
         updatedAt: nextUpdatedAt,
         status: requestedStatus,
@@ -505,6 +553,9 @@ export class PersistenceService {
       const nextUpdatedAt = nextCreatedAt;
       return {
         noteId: nextNoteId,
+        clinicalDate: resolvedClinicalDate,
+        visitType: resolvedVisitType,
+        source: resolvedSource,
         createdAt: nextCreatedAt,
         updatedAt: nextUpdatedAt,
         status: 'draft',
@@ -520,6 +571,9 @@ export class PersistenceService {
       const currentVersionNumber = this.resolveNoteVersionNumber(existingTargetNote);
       return {
         noteId: existingTargetNote.id,
+        clinicalDate: resolvedClinicalDate,
+        visitType: resolvedVisitType,
+        source: resolvedSource,
         createdAt: preservedCreatedAt,
         updatedAt: nextUpdatedAt,
         status: requestedStatus,
@@ -537,6 +591,9 @@ export class PersistenceService {
     const freshUpdatedAt = freshCreatedAt;
     return {
       noteId: freshNoteId,
+      clinicalDate: resolvedClinicalDate,
+      visitType: resolvedVisitType,
+      source: resolvedSource,
       createdAt: freshCreatedAt,
       updatedAt: freshUpdatedAt,
       status: requestedStatus,
@@ -647,6 +704,28 @@ export class PersistenceService {
       return baseId;
     }
     return `${baseId}_v${versionNumber}`;
+  }
+
+  private static normalizeClinicalDate(value: string | undefined): string | undefined {
+    const rawValue = typeof value === 'string' ? value.trim() : '';
+    const hasClinicalDate = rawValue !== '';
+    if (!hasClinicalDate) {
+      return undefined;
+    }
+    const matchesClinicalDateFormat = /^\d{4}-\d{2}-\d{2}$/.test(rawValue);
+    if (!matchesClinicalDateFormat) {
+      return undefined;
+    }
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const todayDay = String(today.getDate()).padStart(2, '0');
+    const todayDateKey = `${todayYear}-${todayMonth}-${todayDay}`;
+    const isFutureDate = rawValue > todayDateKey;
+    if (isFutureDate) {
+      return undefined;
+    }
+    return rawValue;
   }
 
   private static sanitizeForFirestore<T extends Record<string, unknown>>(payload: T): T {
