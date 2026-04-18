@@ -400,8 +400,13 @@ export const PatientDashboardPage: React.FC = () => {
                     return;
                   }
                   if (source === 'encounter') {
-                    const didResumeWorkflow = navigateToResumeWorkflow();
-                    if (didResumeWorkflow) {
+                    const linkedNoteId = visit.noteId;
+                    const hasLinkedNoteId =
+                      typeof linkedNoteId === 'string' &&
+                      linkedNoteId.trim() !== '';
+                    if (hasLinkedNoteId) {
+                      const notesPath = `/notes/${linkedNoteId}`;
+                      navigate(notesPath);
                       return;
                     }
                     openSoapPreview();

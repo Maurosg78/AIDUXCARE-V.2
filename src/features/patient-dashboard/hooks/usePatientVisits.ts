@@ -16,6 +16,7 @@ export interface PatientVisit {
   };
   /** When present, use this for workflow resume (consultations: note.sessionId; session/encounter: id) */
   sessionIdForResume?: string;
+  noteId?: string;
   soap?: {
     subjective?: string;
     objective?: string;
@@ -54,6 +55,7 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
         const visits: PatientVisit[] = [];
         const consultationSessionIds = new Set<string>();
         const encounterSessionIds = new Set<string>();
+        const consultationNoteIdBySessionId = new Map<string, string>();
         const sessionDateById = new Map<string, Date>();
         const latestConsultationDateByType = new Map<'initial' | 'follow-up', number>();
         const latestEncounterDateByType = new Map<'initial' | 'follow-up', number>();
@@ -157,7 +159,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             const noteDate = linkedSessionDate ?? new Date(note.createdAt || Date.now());
 
             if (hasSessionId) {
-              consultationSessionIds.add(sessionId as string);
+              const normalizedSessionId = sessionId as string;
+              consultationSessionIds.add(normalizedSessionId);
+              consultationNoteIdBySessionId.set(normalizedSessionId, note.id);
             }
             const noteDateMs = noteDate.getTime();
             const currentLatestConsultationDate = latestConsultationDateByType.get(type) ?? 0;
@@ -245,6 +249,10 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             if (encounterSessionId) {
               encounterSessionIds.add(encounterSessionId);
             }
+            const linkedNoteId =
+              encounterSessionId
+                ? consultationNoteIdBySessionId.get(encounterSessionId)
+                : undefined;
             const encounterDateMs = encounterDate.getTime();
             const currentLatestEncounterDate = latestEncounterDateByType.get(encounterVisitType) ?? 0;
             if (encounterDateMs > currentLatestEncounterDate) {
@@ -258,6 +266,7 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
               status: encStatus,
               soapNote: { status: encSoapStatus },
               sessionIdForResume: encounterSessionId,
+              noteId: linkedNoteId,
               soap: data.soap,
               chiefComplaint: data.soap?.subjective?.substring(0, 100),
               diagnosis: data.soap?.assessment,
