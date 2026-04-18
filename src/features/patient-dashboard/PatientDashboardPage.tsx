@@ -327,12 +327,20 @@ export const PatientDashboardPage: React.FC = () => {
         <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-slate-900">{t('patientDashboard.visitHistory')}</h2>
-            <button
-              onClick={() => navigate(`/workflow?type=initial&patientId=${patientId}`)}
-              className="bg-brand-in-500 hover:bg-brand-in-600 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
-            >
-              {t('patientDashboard.startNewEvaluation')}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(`/notes/new?patientId=${patientId}`)}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-colors"
+              >
+                Documentar atención pasada
+              </button>
+              <button
+                onClick={() => navigate(`/workflow?type=initial&patientId=${patientId}`)}
+                className="bg-brand-in-500 hover:bg-brand-in-600 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                {t('patientDashboard.startNewEvaluation')}
+              </button>
+            </div>
           </div>
 
           {patientVisits.loading ? (
@@ -568,6 +576,12 @@ export const PatientDashboardPage: React.FC = () => {
                 className="bg-brand-in-500 hover:bg-brand-in-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
               >
                 {t('shell.startInitialAssessment')}
+              </button>
+              <button
+                onClick={() => navigate(`/notes/new?patientId=${patientId}`)}
+                className="ml-3 rounded-lg border border-slate-300 bg-white px-6 py-2 font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-colors"
+              >
+                Documentar atención pasada
               </button>
             </div>
           )}
