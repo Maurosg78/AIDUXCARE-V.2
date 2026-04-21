@@ -29,7 +29,90 @@ vi.mock('../../core/longitudinal/trajectoryClassifier', () => {
   };
 });
 
-import { PatientTrajectoryMemoryService } from '../patientTrajectoryMemoryService';
+import {
+  extractAdherenceLevel,
+  extractFunctionStatus,
+  extractRomStatus,
+  PatientTrajectoryMemoryService,
+} from '../patientTrajectoryMemoryService';
+
+describe('extractRomStatus', () => {
+  it('returns improved when text has a clear ROM improvement signal', () => {
+    const text = 'Paciente con mejoría clara y mayor rango de movimiento en muñeca.';
+
+    const result = extractRomStatus(text);
+
+    expect(result).toBe('improved');
+  });
+
+  it('returns decreased when text has a clear ROM deterioration signal', () => {
+    const text = 'Persiste limitación importante con movilidad limitada y reduced range.';
+
+    const result = extractRomStatus(text);
+
+    expect(result).toBe('decreased');
+  });
+
+  it('returns null when text has no clear ROM signal', () => {
+    const text = 'Paciente motivada y con buena tolerancia general.';
+
+    const result = extractRomStatus(text);
+
+    expect(result).toBeNull();
+  });
+});
+
+describe('extractFunctionStatus', () => {
+  it('returns improved when text has a clear function improvement signal', () => {
+    const text = 'Ahora puede realizar actividades básicas y returned to work part-time.';
+
+    const result = extractFunctionStatus(text);
+
+    expect(result).toBe('improved');
+  });
+
+  it('returns decreased when text has a clear function deterioration signal', () => {
+    const text = 'Refiere dificultad para vestirse y unable to lift objects overhead.';
+
+    const result = extractFunctionStatus(text);
+
+    expect(result).toBe('decreased');
+  });
+
+  it('returns null when text has no clear function signal', () => {
+    const text = 'Se revisan resultados de imagen y educación del dolor.';
+
+    const result = extractFunctionStatus(text);
+
+    expect(result).toBeNull();
+  });
+});
+
+describe('extractAdherenceLevel', () => {
+  it('returns high when text has a clear high adherence signal', () => {
+    const text = 'HEP 100%, completed all exercises and cumplió con el plan.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBe('high');
+  });
+
+  it('returns low when text has a clear low adherence signal', () => {
+    const text = 'No realizó ejercicios en casa, forgot routine and skipped sessions.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBe('low');
+  });
+
+  it('returns null when text has no clear adherence signal', () => {
+    const text = 'Se discuten objetivos terapéuticos de la próxima semana.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBeNull();
+  });
+});
 
 describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', () => {
   beforeEach(() => {
@@ -43,11 +126,15 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
     const patientId = 'patient-1';
     const subjectiveText = 'Sin dolor cuantificado hoy.';
     const hepAdherenceRate = 0.67;
+    const objectiveText = 'Sin cambios objetivos relevantes.';
+    const assessmentText = 'Mantiene actividades habituales.';
 
     testMocks.mockExtractPainFromSubjective.mockReturnValue(null);
 
     const result = await service.buildEncounterLongitudinalSnapshot(patientId, subjectiveText, {
       hepAdherenceRate,
+      objectiveText,
+      assessmentText,
     });
 
     expect(result).toEqual({
@@ -56,7 +143,7 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
       trajectory: null,
       trajectoryConfidence: null,
       romStatus: null,
-      functionStatus: null,
+      functionStatus: 'stable',
       adherenceLevel: null,
       keyLimitations: undefined,
       alerts: undefined,
@@ -70,6 +157,8 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
     const patientId = 'patient-2';
     const subjectiveText = 'Dolor actual 4/10.';
     const hepAdherenceRate = 0.75;
+    const objectiveText = 'Mayor rango de movimiento y better mobility.';
+    const assessmentText = 'Ahora puede realizar tareas básicas con menos limitación.';
     const previousSeries = [7, 5];
     const classification = {
       label: 'improved',
@@ -82,6 +171,8 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
 
     const result = await service.buildEncounterLongitudinalSnapshot(patientId, subjectiveText, {
       hepAdherenceRate,
+      objectiveText,
+      assessmentText,
     });
 
     expect(testMocks.mockClassifyTrajectory).toHaveBeenCalledWith([7, 5, 4]);
@@ -90,8 +181,8 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
       hepAdherenceRate,
       trajectory: 'improved',
       trajectoryConfidence: 'high',
-      romStatus: null,
-      functionStatus: null,
+      romStatus: 'improved',
+      functionStatus: 'improved',
       adherenceLevel: null,
       keyLimitations: undefined,
       alerts: undefined,
@@ -102,20 +193,25 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
     const service = new PatientTrajectoryMemoryService();
     const patientId = 'patient-3';
     const subjectiveText = 'Dolor actual 5/10.';
+    const objectiveText = 'Movilidad limitada y reduced range today.';
+    const assessmentText = 'Paciente parcialmente adherente, some exercises completed.';
 
     testMocks.mockExtractPainFromSubjective.mockReturnValue(5);
     testMocks.mockGetLastNPainSeries.mockResolvedValue([]);
 
-    const result = await service.buildEncounterLongitudinalSnapshot(patientId, subjectiveText);
+    const result = await service.buildEncounterLongitudinalSnapshot(patientId, subjectiveText, {
+      objectiveText,
+      assessmentText,
+    });
 
     expect(result).toEqual({
       painScore: 5,
       hepAdherenceRate: null,
       trajectory: null,
       trajectoryConfidence: null,
-      romStatus: null,
+      romStatus: 'decreased',
       functionStatus: null,
-      adherenceLevel: null,
+      adherenceLevel: 'medium',
       keyLimitations: undefined,
       alerts: undefined,
     });

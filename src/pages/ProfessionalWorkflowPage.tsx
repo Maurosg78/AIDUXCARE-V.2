@@ -5185,6 +5185,8 @@ const ProfessionalWorkflowPage = () => {
             const hepAdherenceRate = hepTotalCount > 0 ? hepCompletedCount / hepTotalCount : undefined;
             const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
               hepAdherenceRate,
+              objectiveText: o,
+              assessmentText: a,
             });
             const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
@@ -5246,7 +5248,10 @@ const ProfessionalWorkflowPage = () => {
                 }
               );
               const memoryService = new PatientTrajectoryMemoryService();
-              const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s);
+              const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
+                objectiveText: o,
+                assessmentText: a,
+              });
               const encounterId = await encountersRepo.createEncounterCompleted({
                 patientId,
                 sessionId: activeSessionId,

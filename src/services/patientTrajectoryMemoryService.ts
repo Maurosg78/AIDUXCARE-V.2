@@ -24,6 +24,188 @@ const MIN_EVENTS_FOR_PATTERN = 5;
 const MAX_EVENTS_READ = 15;
 /** Default temporal window for pattern detection (rehab cycles). Events older than this are ignored. */
 const DEFAULT_WITHIN_LAST_DAYS = 90;
+const EMPTY_TEXT = '';
+
+function normalizeClinicalText(text: string): string {
+  const lowerCasedText = text.toLowerCase();
+  const normalizedText = lowerCasedText.normalize('NFD');
+  const withoutDiacriticsText = normalizedText.replace(/[\u0300-\u036f]/g, EMPTY_TEXT);
+  return withoutDiacriticsText;
+}
+
+function hasAnyKeyword(text: string, keywords: string[]): boolean {
+  const hasKeyword = keywords.some((keyword) => text.includes(keyword));
+  return hasKeyword;
+}
+
+function joinLongitudinalTexts(subjectiveText: string, objectiveText?: string, assessmentText?: string): string {
+  const textParts = [subjectiveText, objectiveText, assessmentText];
+  const definedTextParts = textParts.filter((textPart): textPart is string => typeof textPart === 'string' && textPart.trim().length > 0);
+  const joinedText = definedTextParts.join(' ');
+  return joinedText;
+}
+
+export function extractRomStatus(text: string): 'improved' | 'stable' | 'decreased' | null {
+  const normalizedText = normalizeClinicalText(text);
+  const improvedKeywords = [
+    'mejoria',
+    'mejora',
+    'aumento',
+    'aumento del rango',
+    'incremento',
+    'mayor rango',
+    'mejor movilidad',
+    'improved',
+    'improved rom',
+    'increased range',
+    'better mobility',
+    'improved mobility',
+    'full range',
+    'functional range',
+  ];
+  const decreasedKeywords = [
+    'disminuyo',
+    'redujo',
+    'limitacion',
+    'restriccion',
+    'perdio',
+    'rango limitado',
+    'movilidad limitada',
+    'decreased',
+    'reduced range',
+    'limited mobility',
+    'loss of',
+    'loss of range',
+    'restricted rom',
+    'limited rom',
+  ];
+  const stableKeywords = [
+    'sin cambios',
+    'estable',
+    'igual',
+    'mantenido',
+    'unchanged',
+    'stable',
+    'no change',
+    'maintained',
+  ];
+  const hasImprovedSignal = hasAnyKeyword(normalizedText, improvedKeywords);
+  if (hasImprovedSignal) {
+    return 'improved';
+  }
+  const hasDecreasedSignal = hasAnyKeyword(normalizedText, decreasedKeywords);
+  if (hasDecreasedSignal) {
+    return 'decreased';
+  }
+  const hasStableSignal = hasAnyKeyword(normalizedText, stableKeywords);
+  if (hasStableSignal) {
+    return 'stable';
+  }
+  return null;
+}
+
+export function extractFunctionStatus(text: string): 'improved' | 'stable' | 'decreased' | null {
+  const normalizedText = normalizeClinicalText(text);
+  const improvedKeywords = [
+    'puede realizar',
+    'logra',
+    'capaz de',
+    'retomo',
+    'volvio a',
+    'able to',
+    'returned to',
+    'resumed',
+    'functional improvement',
+    'improved function',
+    'back to work',
+    'back to activities',
+  ];
+  const decreasedKeywords = [
+    'dificultad para',
+    'incapaz',
+    'no puede',
+    'limitado para',
+    'difficulty with',
+    'unable to',
+    'cannot',
+    'functional limitation',
+    'limited in',
+    'struggles with',
+  ];
+  const stableKeywords = [
+    'sin cambios funcionales',
+    'mantiene actividades',
+    'no functional change',
+    'maintaining activities',
+    'stable function',
+    'funcion estable',
+  ];
+  const hasImprovedSignal = hasAnyKeyword(normalizedText, improvedKeywords);
+  if (hasImprovedSignal) {
+    return 'improved';
+  }
+  const hasDecreasedSignal = hasAnyKeyword(normalizedText, decreasedKeywords);
+  if (hasDecreasedSignal) {
+    return 'decreased';
+  }
+  const hasStableSignal = hasAnyKeyword(normalizedText, stableKeywords);
+  if (hasStableSignal) {
+    return 'stable';
+  }
+  return null;
+}
+
+export function extractAdherenceLevel(text: string): 'high' | 'medium' | 'low' | null {
+  const normalizedText = normalizeClinicalText(text);
+  const highKeywords = [
+    '100%',
+    'realizo todos',
+    'cumplio',
+    'completo',
+    'adhirio',
+    'completed all',
+    'full adherence',
+    'did all exercises',
+    'performed all',
+    'completed every exercise',
+  ];
+  const mediumKeywords = [
+    'parcialmente',
+    'algunos',
+    'la mayoria',
+    'occasionally',
+    'most of',
+    'partial adherence',
+    'some exercises',
+    'did some',
+    'partial compliance',
+  ];
+  const lowKeywords = [
+    'no realizo',
+    'no hizo',
+    'no cumplio',
+    'olvido',
+    'did not',
+    'non-adherent',
+    'forgot',
+    'skipped',
+    'did not do exercises',
+    'poor adherence',
+  ];
+  const hasHighSignal = hasAnyKeyword(normalizedText, highKeywords);
+  if (hasHighSignal) {
+    return 'high';
+  }
+  const hasLowSignal = hasAnyKeyword(normalizedText, lowKeywords);
+  if (hasLowSignal) {
+    return 'low';
+  }
+  const hasMediumSignal = hasAnyKeyword(normalizedText, mediumKeywords);
+  if (hasMediumSignal) {
+    return 'medium';
+  }
+  return null;
+}
 
 function toEvent(doc: any): PatientTrajectoryEvent {
   const raw = doc.createdAt;
@@ -118,12 +300,18 @@ export class PatientTrajectoryMemoryService {
   async buildEncounterLongitudinalSnapshot(
     patientId: string,
     subjectiveText: string,
-    options?: { hepAdherenceRate?: number }
+    options?: { hepAdherenceRate?: number; objectiveText?: string; assessmentText?: string }
   ): Promise<EncounterLongitudinalSnapshot> {
     const extractedPainScore = extractPainFromSubjective(subjectiveText);
     const painScore = extractedPainScore ?? null;
     const rawHepAdherenceRate = options?.hepAdherenceRate;
     const hepAdherenceRate = typeof rawHepAdherenceRate === 'number' ? rawHepAdherenceRate : null;
+    const objectiveText = options?.objectiveText;
+    const assessmentText = options?.assessmentText;
+    const combinedLongitudinalText = joinLongitudinalTexts(subjectiveText, objectiveText, assessmentText);
+    const romStatus = extractRomStatus(combinedLongitudinalText);
+    const functionStatus = extractFunctionStatus(combinedLongitudinalText);
+    const adherenceLevel = extractAdherenceLevel(combinedLongitudinalText);
     const hasPainScore = painScore !== null;
     const previousSeries = hasPainScore ? await this.comparisonService.getLastNPainSeries(patientId, 3) : [];
     const fullSeries = hasPainScore ? [...previousSeries, painScore] : previousSeries;
@@ -139,9 +327,9 @@ export class PatientTrajectoryMemoryService {
       hepAdherenceRate,
       trajectory,
       trajectoryConfidence,
-      romStatus: null,
-      functionStatus: null,
-      adherenceLevel: null,
+      romStatus,
+      functionStatus,
+      adherenceLevel,
       keyLimitations: undefined,
       alerts: undefined,
     };
