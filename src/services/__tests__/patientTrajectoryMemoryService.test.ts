@@ -38,7 +38,7 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
     testMocks.mockClassifyTrajectory.mockReset();
   });
 
-  it('returns hep adherence snapshot when pain score is unavailable', async () => {
+  it('returns partial snapshot with explicit nulls when pain score is unavailable', async () => {
     const service = new PatientTrajectoryMemoryService();
     const patientId = 'patient-1';
     const subjectiveText = 'Sin dolor cuantificado hoy.';
@@ -51,10 +51,13 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
     });
 
     expect(result).toEqual({
+      painScore: null,
       hepAdherenceRate,
-      romStatus: undefined,
-      functionStatus: undefined,
-      adherenceLevel: undefined,
+      trajectory: null,
+      trajectoryConfidence: null,
+      romStatus: null,
+      functionStatus: null,
+      adherenceLevel: null,
       keyLimitations: undefined,
       alerts: undefined,
     });
@@ -87,11 +90,35 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
       hepAdherenceRate,
       trajectory: 'improved',
       trajectoryConfidence: 'high',
-      romStatus: undefined,
-      functionStatus: undefined,
-      adherenceLevel: undefined,
+      romStatus: null,
+      functionStatus: null,
+      adherenceLevel: null,
       keyLimitations: undefined,
       alerts: undefined,
     });
+  });
+
+  it('returns partial snapshot with null trajectory when pain exists but history is insufficient', async () => {
+    const service = new PatientTrajectoryMemoryService();
+    const patientId = 'patient-3';
+    const subjectiveText = 'Dolor actual 5/10.';
+
+    testMocks.mockExtractPainFromSubjective.mockReturnValue(5);
+    testMocks.mockGetLastNPainSeries.mockResolvedValue([]);
+
+    const result = await service.buildEncounterLongitudinalSnapshot(patientId, subjectiveText);
+
+    expect(result).toEqual({
+      painScore: 5,
+      hepAdherenceRate: null,
+      trajectory: null,
+      trajectoryConfidence: null,
+      romStatus: null,
+      functionStatus: null,
+      adherenceLevel: null,
+      keyLimitations: undefined,
+      alerts: undefined,
+    });
+    expect(testMocks.mockClassifyTrajectory).not.toHaveBeenCalled();
   });
 });

@@ -29,12 +29,33 @@ function toEvent(doc: any): PatientTrajectoryEvent {
   const raw = doc.createdAt;
   const createdAt =
     typeof raw?.toMillis === 'function' ? new Date(raw.toMillis()) : raw instanceof Date ? raw : new Date(String(raw));
+  const rawPainScore = doc.painScore;
+  const painScore =
+    typeof rawPainScore === 'number' && !Number.isNaN(rawPainScore)
+      ? rawPainScore
+      : rawPainScore == null
+        ? null
+        : Number(rawPainScore);
+  const normalizedPainScore =
+    typeof painScore === 'number' && !Number.isNaN(painScore)
+      ? painScore
+      : null;
+  const rawTrajectory = doc.trajectory;
+  const trajectory =
+    typeof rawTrajectory === 'string' && rawTrajectory.length > 0
+      ? (rawTrajectory as TrajectoryLabel)
+      : null;
+  const rawTrajectoryConfidence = doc.trajectoryConfidence;
+  const trajectoryConfidence =
+    typeof rawTrajectoryConfidence === 'string' && rawTrajectoryConfidence.length > 0
+      ? (rawTrajectoryConfidence as TrajectoryConfidence)
+      : null;
   return {
     patientId: doc.patientId,
     encounterId: doc.encounterId,
-    painScore: Number(doc.painScore),
-    trajectory: doc.trajectory as TrajectoryLabel,
-    trajectoryConfidence: doc.trajectoryConfidence as TrajectoryConfidence,
+    painScore: normalizedPainScore,
+    trajectory,
+    trajectoryConfidence,
     createdAt: createdAt ? new Date(createdAt) : new Date(),
   };
 }
@@ -98,50 +119,29 @@ export class PatientTrajectoryMemoryService {
     patientId: string,
     subjectiveText: string,
     options?: { hepAdherenceRate?: number }
-  ): Promise<EncounterLongitudinalSnapshot | null> {
-    const painScore = extractPainFromSubjective(subjectiveText);
-    const hepAdherenceRate = options?.hepAdherenceRate;
+  ): Promise<EncounterLongitudinalSnapshot> {
+    const extractedPainScore = extractPainFromSubjective(subjectiveText);
+    const painScore = extractedPainScore ?? null;
+    const rawHepAdherenceRate = options?.hepAdherenceRate;
+    const hepAdherenceRate = typeof rawHepAdherenceRate === 'number' ? rawHepAdherenceRate : null;
     const hasPainScore = painScore !== null;
-    const hasHepAdherenceRate = typeof hepAdherenceRate === 'number';
-    if (!hasPainScore && !hasHepAdherenceRate) return null;
-    if (!hasPainScore) {
-      const snapshot: EncounterLongitudinalSnapshot = {
-        hepAdherenceRate,
-        romStatus: undefined,
-        functionStatus: undefined,
-        adherenceLevel: undefined,
-        keyLimitations: undefined,
-        alerts: undefined,
-      };
-      return snapshot;
-    }
-
-    const previousSeries = await this.comparisonService.getLastNPainSeries(patientId, 3);
-    const fullSeries = [...previousSeries, painScore];
-    if (fullSeries.length < 2) {
-      const snapshot: EncounterLongitudinalSnapshot = {
-        painScore,
-        hepAdherenceRate,
-        romStatus: undefined,
-        functionStatus: undefined,
-        adherenceLevel: undefined,
-        keyLimitations: undefined,
-        alerts: undefined,
-      };
-      return snapshot;
-    }
-
-    const classification = classifyTrajectory(fullSeries);
-    const trajectory = (classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel;
-
+    const previousSeries = hasPainScore ? await this.comparisonService.getLastNPainSeries(patientId, 3) : [];
+    const fullSeries = hasPainScore ? [...previousSeries, painScore] : previousSeries;
+    const hasEnoughSeries = fullSeries.length >= 2;
+    const classification = hasEnoughSeries ? classifyTrajectory(fullSeries) : null;
+    const trajectory =
+      classification != null
+        ? ((classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel)
+        : null;
+    const trajectoryConfidence = classification?.confidence ?? null;
     const snapshot: EncounterLongitudinalSnapshot = {
       painScore,
       hepAdherenceRate,
       trajectory,
-      trajectoryConfidence: classification.confidence,
-      romStatus: undefined,
-      functionStatus: undefined,
-      adherenceLevel: undefined,
+      trajectoryConfidence,
+      romStatus: null,
+      functionStatus: null,
+      adherenceLevel: null,
       keyLimitations: undefined,
       alerts: undefined,
     };
@@ -158,7 +158,6 @@ export class PatientTrajectoryMemoryService {
     subjectiveText: string
   ): Promise<void> {
     const snapshot = await this.buildEncounterLongitudinalSnapshot(patientId, subjectiveText);
-    if (snapshot?.painScore == null || !snapshot.trajectory || !snapshot.trajectoryConfidence) return;
     const auth = getAuth();
     const currentUser = auth.currentUser;
     const userId = currentUser?.uid;

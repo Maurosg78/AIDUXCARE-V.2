@@ -12,9 +12,9 @@ export type TrajectoryLabel = 'improved' | 'regressed' | 'plateau' | 'stable' | 
 export interface PatientTrajectoryEvent {
   patientId: string;
   encounterId: string;
-  painScore: number;
-  trajectory: TrajectoryLabel;
-  trajectoryConfidence: TrajectoryConfidence;
+  painScore?: number | null;
+  trajectory?: TrajectoryLabel | null;
+  trajectoryConfidence?: TrajectoryConfidence | null;
   createdAt: Date;
 }
 
@@ -35,7 +35,16 @@ export function detectPatternFromEvents(
 ): PatientPatternInsight | null {
   if (!events || events.length < minEvents) return null;
 
-  const labels = events.map((e) => (e.trajectory === 'stable' ? 'plateau' : e.trajectory));
+  const completeEvents = events.filter((event) => {
+    const hasPainScore = typeof event.painScore === 'number' && !Number.isNaN(event.painScore);
+    const hasTrajectory = typeof event.trajectory === 'string' && event.trajectory.length > 0;
+    const hasConfidence = typeof event.trajectoryConfidence === 'string' && event.trajectoryConfidence.length > 0;
+    return hasPainScore && hasTrajectory && hasConfidence;
+  });
+
+  if (completeEvents.length < minEvents) return null;
+
+  const labels = completeEvents.map((e) => (e.trajectory === 'stable' ? 'plateau' : e.trajectory));
 
   const plateauCount = labels.filter((l) => l === 'plateau').length;
   const improvedCount = labels.filter((l) => l === 'improved').length;

@@ -5193,7 +5193,7 @@ const ProfessionalWorkflowPage = () => {
               authorUid: user.uid,
               encounterDate: clinicalVisitDate,
               soap: { subjective: s, objective: o, assessment: a, plan: p },
-              longitudinalSnapshot: longitudinalSnapshot ?? undefined,
+              longitudinalSnapshot,
             });
             await updateSessionFinalizationState(
               activeSessionId,
@@ -5254,7 +5254,7 @@ const ProfessionalWorkflowPage = () => {
                 authorUid: user.uid,
                 encounterDate: clinicalVisitDate,
                 soap: { subjective: s, objective: o, assessment: a, plan: p },
-                longitudinalSnapshot: longitudinalSnapshot ?? undefined,
+                longitudinalSnapshot,
               });
               await updateSessionFinalizationState(
                 activeSessionId,
