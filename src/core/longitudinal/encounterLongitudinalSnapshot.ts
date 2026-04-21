@@ -10,4 +10,9 @@ export interface EncounterLongitudinalSnapshot {
   hepAdherenceRate?: number;
   trajectory?: TrajectoryLabel;
   trajectoryConfidence?: TrajectoryConfidence;
+  romStatus?: 'improved' | 'stable' | 'decreased' | null;
+  functionStatus?: 'improved' | 'stable' | 'decreased' | null;
+  adherenceLevel?: 'high' | 'medium' | 'low' | null;
+  keyLimitations?: string[];
+  alerts?: string[];
 }

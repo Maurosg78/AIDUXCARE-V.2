@@ -52,6 +52,11 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
 
     expect(result).toEqual({
       hepAdherenceRate,
+      romStatus: undefined,
+      functionStatus: undefined,
+      adherenceLevel: undefined,
+      keyLimitations: undefined,
+      alerts: undefined,
     });
     expect(testMocks.mockGetLastNPainSeries).not.toHaveBeenCalled();
     expect(testMocks.mockClassifyTrajectory).not.toHaveBeenCalled();
@@ -82,6 +87,11 @@ describe('PatientTrajectoryMemoryService.buildEncounterLongitudinalSnapshot', ()
       hepAdherenceRate,
       trajectory: 'improved',
       trajectoryConfidence: 'high',
+      romStatus: undefined,
+      functionStatus: undefined,
+      adherenceLevel: undefined,
+      keyLimitations: undefined,
+      alerts: undefined,
     });
   });
 });

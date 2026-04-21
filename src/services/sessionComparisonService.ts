@@ -215,6 +215,11 @@ export class SessionComparisonService {
       sessionType: note.visitType === 'follow-up' ? 'followup' : 'initial',
       longitudinalSnapshot: {
         painScore: this.extractPainFromSubjective(String(soapData.subjective ?? '')),
+        romStatus: undefined,
+        functionStatus: undefined,
+        adherenceLevel: undefined,
+        keyLimitations: undefined,
+        alerts: undefined,
       },
     };
   }

@@ -105,24 +105,47 @@ export class PatientTrajectoryMemoryService {
     const hasHepAdherenceRate = typeof hepAdherenceRate === 'number';
     if (!hasPainScore && !hasHepAdherenceRate) return null;
     if (!hasPainScore) {
-      return { hepAdherenceRate };
+      const snapshot: EncounterLongitudinalSnapshot = {
+        hepAdherenceRate,
+        romStatus: undefined,
+        functionStatus: undefined,
+        adherenceLevel: undefined,
+        keyLimitations: undefined,
+        alerts: undefined,
+      };
+      return snapshot;
     }
 
     const previousSeries = await this.comparisonService.getLastNPainSeries(patientId, 3);
     const fullSeries = [...previousSeries, painScore];
     if (fullSeries.length < 2) {
-      return { painScore, hepAdherenceRate };
+      const snapshot: EncounterLongitudinalSnapshot = {
+        painScore,
+        hepAdherenceRate,
+        romStatus: undefined,
+        functionStatus: undefined,
+        adherenceLevel: undefined,
+        keyLimitations: undefined,
+        alerts: undefined,
+      };
+      return snapshot;
     }
 
     const classification = classifyTrajectory(fullSeries);
     const trajectory = (classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel;
 
-    return {
+    const snapshot: EncounterLongitudinalSnapshot = {
       painScore,
       hepAdherenceRate,
       trajectory,
       trajectoryConfidence: classification.confidence,
+      romStatus: undefined,
+      functionStatus: undefined,
+      adherenceLevel: undefined,
+      keyLimitations: undefined,
+      alerts: undefined,
     };
+    return snapshot;
   }
 
   /**
