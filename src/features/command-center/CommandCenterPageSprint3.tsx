@@ -21,6 +21,7 @@ import sessionService from '../../services/sessionService';
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
 import { TodayPatientsPanel, type TodayAppointment, type TodayQuickItem } from './components/TodayPatientsPanel';
+import { ClinicalDayViewPanel } from './components/ClinicalDayViewPanel';
 import type { StartSessionModalMode } from './components/StartSessionTwoStepModal';
 import { WorkWithPatientsPanel } from './components/WorkWithPatientsPanel';
 import { PatientSearchBar } from './components/PatientSearchBar';
@@ -39,6 +40,7 @@ import {
 import { getTodayList, saveTodayList } from '../../services/todayListService';
 import { encountersRepo } from '../../repositories/encountersRepo';
 import { PersistenceService } from '../../services/PersistenceService';
+import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
 
 function toDateKeyFromIsoString(value: string): string | null {
   const parsedDate = new Date(value);
@@ -143,6 +145,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [startSessionModalMode, setStartSessionModalMode] = useState<StartSessionModalMode>('start_now');
   const [todayQuickList, setTodayQuickList] = useState<TodayQuickItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
+  const [clinicalDayLoading, setClinicalDayLoading] = useState(false);
 
   // WO-UX-01: No token display in Command Center (backend/tracking may still exist)
 
@@ -175,9 +179,9 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // Load today's appointments
   useEffect(() => {
     if (user?.uid) {
-      getAppointments(new Date());
+      getAppointments(selectedDate);
     }
-  }, [user?.uid, getAppointments]);
+  }, [user?.uid, getAppointments, selectedDate]);
 
   const skipNextSaveRef = React.useRef(false);
 
@@ -262,6 +266,40 @@ export const CommandCenterPageSprint3: React.FC = () => {
     }
     saveTodayList(user.uid, toLocalDateKey(selectedDate), todayQuickList);
   }, [user?.uid, selectedDate, todayQuickList]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    let cancelled = false;
+    const loadClinicalDayRows = async () => {
+      try {
+        setClinicalDayLoading(true);
+        const nextRows = await buildClinicalDayView(selectedDate, patients, {
+          appointments,
+          sessions: inProgressSessions.data,
+          quickItems: todayQuickList,
+        });
+        if (!cancelled) {
+          setClinicalDayRows(nextRows);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          logger.error('Failed to build clinical day view', error);
+          setClinicalDayRows([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setClinicalDayLoading(false);
+        }
+      }
+    };
+
+    void loadClinicalDayRows();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, selectedDate, patients, appointments, inProgressSessions.data, todayQuickList]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -501,6 +539,37 @@ export const CommandCenterPageSprint3: React.FC = () => {
     [inProgressSessions.data, inProgressSessions.refetch]
   );
 
+  const handleOpenClinicalDayRow = useCallback((row: ClinicalDayRow) => {
+    if (row.consultationId) {
+      navigate(`/notes/${row.consultationId}`);
+      return;
+    }
+
+    navigate(`/patients/${row.patientId}/history`);
+  }, [navigate]);
+
+  const handleContinueClinicalDayRow = useCallback((row: ClinicalDayRow) => {
+    const resolvedSessionType = row.sessionType ?? 'followup';
+    if (resolvedSessionType === 'ongoing') {
+      void PatientService.getPatientById(row.patientId).then((patient) => {
+        if (!patient) {
+          return;
+        }
+        setSelectedPatient(patient);
+        setShowOngoingIntake(true);
+      });
+      return;
+    }
+
+    const workflowType = resolvedSessionType === 'initial' ? 'initial' : 'followup';
+    if (row.resumeSessionId) {
+      navigate(`/workflow?type=${workflowType}&patientId=${row.patientId}&sessionId=${row.resumeSessionId}&resume=true`);
+      return;
+    }
+
+    navigate(`/workflow?type=${workflowType}&patientId=${row.patientId}`);
+  }, [navigate]);
+
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
@@ -591,6 +660,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 prev.map((item, i) => (i === index ? { ...item, status: 'pending' as const } : item))
               );
             }}
+          />
+
+          <ClinicalDayViewPanel
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            rows={clinicalDayRows}
+            loading={clinicalDayLoading}
+            onContinue={handleContinueClinicalDayRow}
+            onOpenSoap={handleOpenClinicalDayRow}
+            onReview={handleOpenClinicalDayRow}
           />
 
           {/* Block 2: Work with Patients */}
